@@ -92,7 +92,7 @@ def _source_to_model(source: SourceContract) -> SourceModel:
         export_allowed=source.export_allowed,
         raw_data_allowed=source.raw_data_allowed,
         notes=source.notes,
-        source_metadata={},
+        source_metadata=source.metadata,
     )
 
 
@@ -114,6 +114,7 @@ def _model_to_source(model: SourceModel) -> SourceContract:
         ai_use_allowed=model.ai_use_allowed,
         raw_data_allowed=model.raw_data_allowed,
         notes=model.notes,
+        metadata=model.source_metadata,
     )
 
 

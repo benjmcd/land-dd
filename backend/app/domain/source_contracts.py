@@ -24,3 +24,4 @@ class SourceContract(BaseModel):
     ai_use_allowed: str = "unknown"
     raw_data_allowed: str = "unknown"
     notes: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)

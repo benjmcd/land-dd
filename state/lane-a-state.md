@@ -8,26 +8,35 @@ Last verified: 2026-06-03
 Verification command(s):
 - pytest backend/tests/source_registry/ -v
 - mypy backend/app/source_registry backend/app/domain/source_contracts.py
+- python scripts/seed_sources.py
+- python scripts/seed_sources.py --json
 - ./scripts/verify.sh
 Verification result:
-- 19 Lane A tests passing; lint clean; mypy clean (43 source files)
+- 23 Lane A tests passing
+- Source seed dry-run validates 8 `Must` registry rows
+- Full verification passes: 49 tests; lint clean; mypy clean (48 source files)
 Failed or blocked gates:
 - L2-001: Docker Desktop not running — DB cannot start
 - L2-002: PostGIS extension not verified (Docker blocked)
 - L2-003: Migrations not tested from zero (Docker blocked)
 - L2-004: DB cannot be reset without Docker
 - All L2 gates: BLOCKED (Docker)
+- L3-003/L3-004: Source version and retrieval-run behavior not yet exercised beyond schema
+- L3-007/L3-010: License review workflow/template still pending (TA-050)
 Completion evidence:
 - plans/lane-a-2026-06-03-source-registry.md
-- backend/tests/source_registry/ (11 tests passing)
+- backend/tests/source_registry/ (23 tests passing)
 - archive/2026-06-03_source-registry-lane-migration/backend/app/repositories/
 - archive/2026-06-03_source-registry-lane-migration/backend/app/services/
 - backend/app/source_registry/models.py (SourceModel for source.sources)
 - backend/tests/source_registry/test_source_models.py (4 model contract tests)
 - backend/app/source_registry/source_repo.py (SqlAlchemySourceRepository)
 - backend/tests/source_registry/test_sqlalchemy_source_repo.py (4 repository tests)
+- db/seeds/source_registry_seeds.py (registry-backed source seed loader)
+- scripts/seed_sources.py (dry-run/JSON/apply runner; apply unverified until DB is available)
+- backend/tests/source_registry/test_source_seeds.py (4 seed tests)
 Next lowest-dependency task:
-- TA-040: Source seeds
+- TA-050: License review template and provenance ADR
 Do not work on yet:
 - DB smoke (needs Docker/PostGIS verification)
 - Paid/commercial source connectors

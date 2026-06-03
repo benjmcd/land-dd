@@ -23,6 +23,8 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - Backward-compat shims in `app/repositories/` and `app/services/` were archived under `archive/2026-06-03_source-registry-lane-migration/` (TA-010 complete).
 - `SourceModel` in `backend/app/source_registry/models.py` maps the `source.sources` table (TA-020 complete).
 - `SqlAlchemySourceRepository` in `backend/app/source_registry/source_repo.py` implements the source repository protocol for SQLAlchemy sessions (TA-030 complete).
+- `db/seeds/source_registry_seeds.py` parses `registers/data_source_registry.csv` and validates the 8 `Must` MVP source rows as `SourceContract` objects (TA-040 complete).
+- `scripts/seed_sources.py` supports dry-run and JSON seed review; DB apply is available but unverified until Docker/PostGIS is running (TA-040 complete).
 - Docker Desktop not running at initial lane setup. DB smoke blocked until Docker starts.
 
 ## Proposed design
@@ -111,3 +113,4 @@ RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: TA-010 complete. Archived `backend/app/repositories/` and `backend/app/services/` to `archive/2026-06-03_source-registry-lane-migration/backend/app/` after confirming no active imports.
 - 2026-06-03: TA-020 complete. Added `SourceModel` for `source.sources` with 4 model contract tests. Full verification: 26 tests, ruff clean, mypy clean (42 source files); DB smoke skipped.
 - 2026-06-03: TA-030 complete. Added `SqlAlchemySourceRepository` with non-DB session-bound tests for add/get/list/exists behavior. Full verification: 30 tests, ruff clean, mypy clean (43 source files); DB smoke skipped.
+- 2026-06-03: TA-040 complete. Added registry-backed source seed loader, seed runner, seed tests, and source metadata mapping. Lane A tests: 23 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.

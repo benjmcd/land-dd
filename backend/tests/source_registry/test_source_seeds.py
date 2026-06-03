@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+import importlib.util
+from pathlib import Path
+from types import ModuleType
+
+from app.domain.source_contracts import SourceContract
+
+
+def _load_seed_module() -> ModuleType:
+    root_dir = Path(__file__).resolve().parents[3]
+    module_path = root_dir / "db" / "seeds" / "source_registry_seeds.py"
+    spec = importlib.util.spec_from_file_location("source_registry_seeds", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_must_priority_seed_sources_match_registry_rows() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+
+    assert len(seeds) == 8
+    assert {source.metadata["source_registry_id"] for source in seeds} == {
+        "DS-001",
+        "DS-002",
+        "DS-003",
+        "DS-004",
+        "DS-010",
+        "DS-011",
+        "DS-017",
+        "DS-023",
+    }
+
+
+def test_seed_sources_are_valid_source_contracts() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+
+    assert all(isinstance(source, SourceContract) for source in seeds)
+    assert all(source.metadata["mvp_priority"] == "Must" for source in seeds)
+
+
+def test_seed_metadata_preserves_registry_context() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    county_gis = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-010"
+    )
+
+    assert county_gis.homepage_url is None
+    assert county_gis.metadata["raw_url"] == "Varies"
+    assert county_gis.license_summary == "Approximate; not survey"
+
+
+def test_seed_sources_have_unique_name_organization_pairs() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    pairs = {(source.name, source.organization) for source in seeds}
+
+    assert len(pairs) == len(seeds)

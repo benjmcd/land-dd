@@ -83,6 +83,7 @@ def _make_source() -> SourceContract:
         export_allowed="unknown",
         raw_data_allowed="unknown",
         notes="Fixture source.",
+        metadata={"source_registry_id": "DS-002"},
     )
 
 
@@ -123,7 +124,9 @@ def test_sqlalchemy_source_repository_add_maps_contract_to_model() -> None:
     assert added.organization == source.organization
     assert added.homepage_url == str(source.homepage_url)
     assert added.authority_level == source.authority_level.value
+    assert added.source_metadata == source.metadata
     assert result.source_id == source.source_id
+    assert result.metadata == source.metadata
 
 
 def test_sqlalchemy_source_repository_get_maps_model_to_contract() -> None:
@@ -140,6 +143,7 @@ def test_sqlalchemy_source_repository_get_maps_model_to_contract() -> None:
     assert result.source_id == source.source_id
     assert result.authority_level == AuthorityLevel.OFFICIAL_PRIMARY
     assert result.cache_allowed == "yes"
+    assert result.metadata["fixture"] is True
 
 
 def test_sqlalchemy_source_repository_list_all_maps_models_to_contracts() -> None:
