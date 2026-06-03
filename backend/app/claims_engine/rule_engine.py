@@ -15,6 +15,7 @@ DEFAULT_RULESET_PATH = (
 FLOOD_HIGH_RISK_CONDITION = "material_intersection_with_high_risk_flood_zone"
 ACCESS_NO_PUBLIC_ROAD_CONDITION = "no_public_road_adjacency_or_access_source_unavailable"
 WETLAND_MAPPED_CONDITION = "material_intersection_with_mapped_wetlands"
+SLOPE_INSUFFICIENT_CONDITION = "insufficient_low_slope_buildable_area"
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
 ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacency")
 ACCESS_NO_ADJACENCY_KEYS = ("no_public_road_adjacency",)
@@ -23,6 +24,8 @@ ACCESS_STALE_CLAIM_CODE = "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW"
 WETLAND_INTERSECTION_KEYS = ("intersects_mapped_wetlands",)
 WETLAND_NEEDS_REVIEW_CLAIM_CODE = "WETLAND_EVIDENCE_NEEDS_REVIEW"
 WETLAND_STALE_CLAIM_CODE = "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW"
+SLOPE_NEEDS_REVIEW_CLAIM_CODE = "SLOPE_EVIDENCE_NEEDS_REVIEW"
+SLOPE_STALE_CLAIM_CODE = "SLOPE_STALE_EVIDENCE_NEEDS_REVIEW"
 FLOOD_NEEDS_REVIEW_CLAIM_CODE = "FLOOD_EVIDENCE_NEEDS_REVIEW"
 FLOOD_STALE_CLAIM_CODE = "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
 
@@ -69,6 +72,7 @@ class RuleEngine:
     def evaluate(self, evidence_list: list[EvidenceContract]) -> list[ClaimContract]:
         access_rule = self._ruleset.hard_gate_for_condition(ACCESS_NO_PUBLIC_ROAD_CONDITION)
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
+        slope_rule = self._ruleset.hard_gate_for_condition(SLOPE_INSUFFICIENT_CONDITION)
         wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
         active_evidence = sorted(
             (evidence for evidence in evidence_list if evidence.superseded_by is None),
@@ -120,6 +124,26 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_stale_wetland_evidence(evidence)
+            ]
+            slope_insufficient = [
+                evidence
+                for evidence in area_evidence
+                if _is_insufficient_slope_evidence(evidence)
+            ]
+            slope_sufficient = [
+                evidence
+                for evidence in area_evidence
+                if _is_sufficient_slope_evidence(evidence)
+            ]
+            slope_failures = [
+                evidence
+                for evidence in area_evidence
+                if _is_slope_source_failure(evidence)
+            ]
+            stale_slope_evidence = [
+                evidence
+                for evidence in area_evidence
+                if _is_stale_slope_evidence(evidence)
             ]
             flood_positive = [
                 evidence
@@ -215,6 +239,40 @@ class RuleEngine:
                 )
             if flood_positive:
                 claims.append(self._flood_positive_claim(area_id, flood_rule, flood_positive))
+            if slope_insufficient:
+                claims.append(
+                    self._slope_insufficient_claim(
+                        area_id,
+                        slope_rule,
+                        slope_insufficient,
+                    )
+                )
+            if slope_failures:
+                claims.append(
+                    self._slope_unknown_claim(area_id, slope_rule, slope_failures)
+                )
+            if slope_insufficient and (slope_sufficient or slope_failures):
+                claims.append(
+                    self._slope_needs_review_claim(
+                        area_id,
+                        slope_rule,
+                        _dedupe_evidence_records(
+                            [
+                                *slope_insufficient,
+                                *slope_sufficient,
+                                *slope_failures,
+                            ]
+                        ),
+                    )
+                )
+            if stale_slope_evidence:
+                claims.append(
+                    self._slope_stale_claim(
+                        area_id,
+                        slope_rule,
+                        stale_slope_evidence,
+                    )
+                )
             if flood_failures:
                 claims.append(self._flood_unknown_claim(area_id, flood_rule, flood_failures))
             if flood_positive and (flood_negative or flood_failures):
@@ -367,6 +425,142 @@ class RuleEngine:
             verification_task=(
                 "Refresh stale access screening source evidence before final "
                 "interpretation."
+            ),
+        )
+
+    def _slope_insufficient_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Slope/buildability screening indicates insufficient low-slope area in "
+            "the fixture. This is a screening proxy and does not determine final "
+            "buildability, site-plan approval, or engineering feasibility."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion="Slope screening indicates insufficient low-slope buildable area.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _slope_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Slope/buildability screening remains unknown because required source "
+            "evidence failed or was unavailable. This does not establish buildability."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code="SLOPE_SOURCE_UNAVAILABLE_UNKNOWN",
+            domain=rule.domain,
+            assertion="Slope source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _slope_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Slope/buildability screening evidence is conflicting or incomplete and "
+            "requires human review. The available metrics are screening proxies, not "
+            "engineering or site-plan determinations."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=SLOPE_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Slope evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete slope/buildability screening "
+                "evidence before relying on this result."
+            ),
+        )
+
+    def _slope_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Slope/buildability screening evidence is marked stale in the fixture "
+            "and should be refreshed before relying on low-slope area metrics."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=SLOPE_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Slope evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale slope/buildability screening source evidence before "
+                "final interpretation."
             ),
         )
 
@@ -837,6 +1031,44 @@ def _is_stale_wetland_evidence(evidence: EvidenceContract) -> bool:
     return (
         evidence.domain == "wetlands"
         and not _is_wetland_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
+
+
+def _is_insufficient_slope_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "buildability" or _is_slope_source_failure(evidence):
+        return False
+    return _observed_bool(
+        evidence.observed_value.get("insufficient_low_slope_buildable_area")
+    )
+
+
+def _is_sufficient_slope_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "buildability" or _is_slope_source_failure(evidence):
+        return False
+    if _observed_bool(
+        evidence.observed_value.get("insufficient_low_slope_buildable_area")
+    ):
+        return False
+    if _observed_false(
+        evidence.observed_value.get("insufficient_low_slope_buildable_area")
+    ):
+        return True
+    return _observed_bool(
+        evidence.observed_value.get("low_slope_buildable_area_sufficient")
+    )
+
+
+def _is_slope_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "buildability" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_stale_slope_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "buildability"
+        and not _is_slope_source_failure(evidence)
         and _observed_bool(evidence.observed_value.get("source_stale"))
     )
 

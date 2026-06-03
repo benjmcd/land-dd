@@ -255,6 +255,30 @@ def test_derived_metric_accepts_metric_payload() -> None:
     assert created.observed_value["metric_code"] == "slope_percent"
 
 
+def test_derived_metric_accepts_slope_buildability_fixture_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.DERIVED_METRIC,
+        observed_value={
+            "metric_code": "low_slope_buildable_area_sq_m",
+            "value": 900.0,
+            "unit": "sq_m",
+            "insufficient_low_slope_buildable_area": True,
+            "source_stale": True,
+        },
+        domain="buildability",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["metric_code"] == "low_slope_buildable_area_sq_m"
+    assert created.observed_value["insufficient_low_slope_buildable_area"] is True
+
+
 def test_derived_metric_rejects_missing_metric_code() -> None:
     area_id = uuid4()
     source_id = uuid4()

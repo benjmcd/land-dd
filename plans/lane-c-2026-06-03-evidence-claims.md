@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 83 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 90 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -101,6 +101,15 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 5. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for wetland fixture keys.
 6. Status: COMPLETE for the wetlands fixture hard-gate scope. The rule engine now covers flood, access, and wetlands hard-gate fixtures. Zoning, slope, and water remain pending follow-on slices.
 
+### TC-100: Slope/buildability fixture hard-gate coverage
+1. Extend deterministic rule handling for `SLOPE_G001` using fixture-derived low-slope buildable-area metrics.
+2. Add fixture evidence patterns for explicit insufficient low-slope area, sufficient/no-claim, source failure, stale slope evidence, and mixed/incomplete evidence.
+3. Preserve evidence IDs, caveat propagation, severity/confidence separation, deterministic IDs/order, and verification tasks.
+4. Avoid hard-coding a jurisdictional or engineering threshold; fixture evidence must carry the explicit insufficiency signal.
+5. Keep output language as a buildability screening proxy only: do not assert final buildability, site-plan approval, engineering feasibility, or permitted building envelope.
+6. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for slope fixture keys.
+7. Status: COMPLETE for the slope/buildability fixture hard-gate scope. The rule engine now covers flood, access, wetlands, and slope hard-gate fixtures. Zoning and water remain pending follow-on slices.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -155,3 +164,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-070 complete for the in-memory flood contradiction/stale rule slice. Added deterministic needs-review claims for conflicting active evidence and positive-plus-source-failure evidence, explicit fixture `source_stale` handling, superseded-evidence exclusion, and deterministic review-output tests. Lane C tests: 69 passing. Full verification: 117 tests, ruff clean, mypy clean (60 source files); DB smoke skipped.
 - 2026-06-03: TC-080 complete for the access fixture hard-gate slice. Added deterministic access no-public-road-adjacency claims, access source-unavailable unknowns, access needs-review, stale access review claims, safe road-adjacency/legal-access language, and access adjacency payload validation. Lane C tests: 76 passing. Full verification: 131 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-090 complete for the wetlands fixture hard-gate slice. Added deterministic mapped-wetland/deepwater claims, wetland source-unavailable unknowns, wetland needs-review, stale wetland review claims, screening-only/no-delineation language, and wetland fixture payload validation. Lane C tests: 83 passing. Full verification: 138 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-03: TC-100 complete for the slope/buildability fixture hard-gate slice. Added deterministic insufficient low-slope buildable-area claims, slope source-unavailable unknowns, slope needs-review, stale slope review claims, screening-only/no-final-buildability language, and slope derived-metric payload validation. Lane C tests: 90 passing. Full verification: 145 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

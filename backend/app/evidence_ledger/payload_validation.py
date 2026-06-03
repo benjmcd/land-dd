@@ -63,7 +63,10 @@ SPATIAL_RESULT_KEYS = {
 }
 DERIVED_METRIC_KEYS = {
     "calculation_method",
+    "insufficient_low_slope_buildable_area",
+    "low_slope_buildable_area_sufficient",
     "metric_code",
+    "source_stale",
     "unit",
     "value",
 }
@@ -170,6 +173,13 @@ def _validate_derived_metric(evidence: EvidenceContract) -> None:
     unit = evidence.observed_value.get("unit")
     if unit is not None and (not isinstance(unit, str) or not unit.strip()):
         raise ValueError("derived_metric observed_value unit must be non-empty when present")
+    for key in (
+        "insufficient_low_slope_buildable_area",
+        "low_slope_buildable_area_sufficient",
+        "source_stale",
+    ):
+        if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
+            raise ValueError(f"derived_metric observed_value '{key}' must be boolean")
 
 
 def _validate_document_extract(evidence: EvidenceContract) -> None:
