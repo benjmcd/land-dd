@@ -1,7 +1,7 @@
 # Lane C State — Evidence Ledger + Claims Engine
 
 ```text
-Current milestone: Level 5 - Evidence Ledger (in-memory payload-validation slice)
+Current milestone: Level 5 - Evidence Ledger (in-memory audit-event slice)
 Target milestone: Level 5 (Evidence Ledger) → Level 6 (Claims Engine)
 Milestone status: PARTIAL
 Last verified: 2026-06-03
@@ -15,16 +15,16 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 - ./scripts/verify.sh
 Verification result:
-- 59 Lane C tests passing
+- 63 Lane C tests passing
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 107 tests; lint clean; mypy clean (59 source files)
+- Full verification passes: 111 tests; lint clean; mypy clean (60 source files)
 Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
 - L5-002: PARTIAL/PASS for in-memory service scope (type-specific observed_value validation covers source observation, spatial intersection, derived metric, document extract, source failure, and human-note guardrails)
 - L5-005: PARTIAL (confidence/caveat/method/temporal fields exist; spatial precision not implemented)
 - L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original and stores replacement without silent overwrite)
-- L5-010: NOT_STARTED (audit events not implemented)
+- L5-010: PARTIAL/PASS for in-memory service scope (observation, source-failure, human-note, and supersede paths emit audit events; durable audit persistence remains DB-blocked)
 - L6-001: PARTIAL/PASS for in-memory service/rule scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; rule-generated claims cite evidence IDs)
 - L6-004: PARTIAL/PASS for in-memory service scope (create_unknown requires source-failure evidence)
 - L6-005: PARTIAL (source-failure and flood-rule caveats propagate into generated claims; broader rule-derived caveat propagation pending)
@@ -38,6 +38,7 @@ Failed or blocked gates:
 Completion evidence:
 - plans/lane-c-2026-06-03-evidence-claims.md
 - backend/app/evidence_ledger/evidence_repo.py (EvidenceRepository Protocol + InMemoryEvidenceRepository)
+- backend/app/evidence_ledger/audit_log.py (EvidenceAuditEvent + InMemoryEvidenceAuditLog)
 - backend/app/evidence_ledger/service.py (EvidenceService)
 - backend/app/evidence_ledger/payload_validation.py (type-specific observed_value validators)
 - backend/app/domain/evidence_contracts.py (EvidenceContract)
@@ -48,11 +49,12 @@ Completion evidence:
 - backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
 - backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
 - backend/tests/evidence_ledger/test_payload_validation.py (14 passing)
+- backend/tests/evidence_ledger/test_evidence_audit.py (4 passing)
 - backend/tests/claims_engine/test_claim_contracts.py (4 passing)
 - backend/tests/claims_engine/test_claim_service.py (12 passing)
 - backend/tests/claims_engine/test_rule_engine.py (9 passing)
 Next lowest-dependency task:
-- TC-060: Evidence audit events
+- TC-070: Contradiction/needs-review and stale-evidence rule handling
 Do not work on yet:
 - Cross-lane integration wiring (Lane D's job)
 - PostGIS evidence-geometry linkage (needs Lane A + Lane B DB work)

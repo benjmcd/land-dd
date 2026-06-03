@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 59 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 63 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -77,6 +77,13 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 1. Add in-memory audit-event emission for evidence create/supersede paths.
 2. Keep durable audit persistence blocked until DB smoke is available.
 3. Tests: create/source-failure/human-note/supersede emit auditable events without overwriting evidence.
+4. Status: COMPLETE for the in-memory service slice. `EvidenceService` now emits optional audit events for successful observation, source-failure, human-note, and supersede paths through `EvidenceAuditLog`. Durable audit persistence remains blocked until DB smoke and repository work are available.
+
+### TC-070: Contradiction/needs-review and stale-evidence rule handling
+1. Define the fixture-only stale-evidence signal without hard-coding a jurisdiction or live source policy.
+2. Add deterministic rule handling for contradictory active evidence and source-failure-plus-positive evidence where a human review claim is required.
+3. Add stale-evidence output that separates confidence from severity and cites the triggering evidence IDs.
+4. Tests: contradiction, stale evidence, no stale false positive, superseded evidence ignored, and deterministic output ordering.
 
 ## Files likely to change
 
@@ -128,3 +135,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-030 complete for the in-memory claim-service slice. Added `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService` with evidence existence validation, claim/evidence ID consistency checks, same-area enforcement, unknown claim generation from source-failure evidence, user-safe-language enforcement, and verification-task enforcement. Lane C tests: 35 passing. Full verification: 83 tests, ruff clean, mypy clean (54 source files); DB smoke skipped.
 - 2026-06-03: TC-040 complete for one deterministic in-memory rules slice. Added `RuleEngine`, rule metadata on `ClaimContract`, ruleset loading for `config/ruleset_homestead_mvp.yaml`, deterministic claim IDs, high-risk flood positive claims, flood source-failure unknown claims, caveat propagation, superseded-evidence filtering, and rule-engine tests for determinism, empty input, multi-area grouping, invalid severity, and explicit positive-plus-failure output. Lane C tests: 45 passing. Full verification: 93 tests, ruff clean, mypy clean (56 source files); DB smoke skipped.
 - 2026-06-03: TC-050 complete for the in-memory evidence payload-validation slice. Added type-specific `observed_value` validators for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails, plus payload tests. Lane C tests: 59 passing. Full verification: 107 tests, ruff clean, mypy clean (59 source files); DB smoke skipped.
+- 2026-06-03: TC-060 complete for the in-memory audit-event slice. Added `EvidenceAuditEvent`, `InMemoryEvidenceAuditLog`, optional `EvidenceService` audit-log injection, and create/source-failure/human-note/supersede audit tests. Lane C tests: 63 passing. Full verification: 111 tests, ruff clean, mypy clean (60 source files); DB smoke skipped.

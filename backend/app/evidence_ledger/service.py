@@ -5,6 +5,11 @@ from uuid import UUID
 from app.domain.enums import ConfidenceBand, EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.protocols import AreaExistsProtocol, SourceExistsProtocol
+from app.evidence_ledger.audit_log import (
+    EvidenceAuditEvent,
+    EvidenceAuditEventType,
+    EvidenceAuditLog,
+)
 from app.evidence_ledger.evidence_repo import EvidenceRepository
 from app.evidence_ledger.payload_validation import validate_observed_value
 
@@ -26,10 +31,12 @@ class EvidenceService:
         repo: EvidenceRepository,
         source_checker: SourceExistsProtocol,
         area_checker: AreaExistsProtocol,
+        audit_log: EvidenceAuditLog | None = None,
     ) -> None:
         self._repo = repo
         self._source_checker = source_checker
         self._area_checker = area_checker
+        self._audit_log = audit_log
 
     def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
         self._validate_area_registered(evidence.area_id)
@@ -43,7 +50,9 @@ class EvidenceService:
         self._validate_required_text(evidence)
         validate_observed_value(evidence)
         self._validate_new_record_not_superseded(evidence)
-        return self._repo.add(evidence)
+        created = self._repo.add(evidence)
+        self._record_created(created)
+        return created
 
     def create_source_failure(
         self,
@@ -76,7 +85,9 @@ class EvidenceService:
             is_source_failure=True,
         )
         validate_observed_value(evidence)
-        return self._repo.add(evidence)
+        created = self._repo.add(evidence)
+        self._record_created(created)
+        return created
 
     def create_human_note(self, evidence: EvidenceContract) -> EvidenceContract:
         self._validate_area_registered(evidence.area_id)
@@ -87,7 +98,9 @@ class EvidenceService:
         self._validate_required_text(evidence)
         validate_observed_value(evidence)
         self._validate_new_record_not_superseded(evidence)
-        return self._repo.add(evidence)
+        created = self._repo.add(evidence)
+        self._record_created(created)
+        return created
 
     def supersede(
         self,
@@ -107,7 +120,8 @@ class EvidenceService:
             raise ValueError("replacement evidence must reference the same area")
 
         created = self._create_validated_replacement(replacement)
-        self._repo.mark_superseded(evidence_id, created.evidence_id)
+        superseded_original = self._repo.mark_superseded(evidence_id, created.evidence_id)
+        self._record_superseded(superseded_original)
         return created
 
     def get(self, evidence_id: UUID) -> EvidenceContract | None:
@@ -156,7 +170,9 @@ class EvidenceService:
         self._validate_new_record_not_superseded(evidence)
         if evidence.caveat is None or not evidence.caveat.strip():
             raise ValueError("caveat is required")
-        return self._repo.add(evidence)
+        created = self._repo.add(evidence)
+        self._record_created(created)
+        return created
 
     def _validate_required_text(self, evidence: EvidenceContract) -> None:
         _require_non_empty(evidence.evidence_code, "evidence_code")
@@ -167,6 +183,33 @@ class EvidenceService:
     def _validate_new_record_not_superseded(self, evidence: EvidenceContract) -> None:
         if evidence.superseded_by is not None:
             raise ValueError("new evidence records must not already be superseded")
+
+    def _record_created(self, evidence: EvidenceContract) -> None:
+        if self._audit_log is None:
+            return
+        self._audit_log.record(
+            EvidenceAuditEvent(
+                event_type=EvidenceAuditEventType.CREATED,
+                evidence_id=evidence.evidence_id,
+                area_id=evidence.area_id,
+                source_id=evidence.source_id,
+                evidence_type=evidence.evidence_type,
+            )
+        )
+
+    def _record_superseded(self, evidence: EvidenceContract) -> None:
+        if self._audit_log is None:
+            return
+        self._audit_log.record(
+            EvidenceAuditEvent(
+                event_type=EvidenceAuditEventType.SUPERSEDED,
+                evidence_id=evidence.evidence_id,
+                area_id=evidence.area_id,
+                source_id=evidence.source_id,
+                evidence_type=evidence.evidence_type,
+                superseded_by=evidence.superseded_by,
+            )
+        )
 
 
 def _require_non_empty(value: str, field_name: str) -> None:

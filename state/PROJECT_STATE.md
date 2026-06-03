@@ -14,7 +14,7 @@ Verification command(s):
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 107 tests pass; lint clean; mypy clean (59 source files)
+- 111 tests pass; lint clean; mypy clean (60 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
 - Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
@@ -31,7 +31,7 @@ Failed or blocked gates:
 - L4-003: PARTIAL (AreaContract defaults to SRID 4326; persisted SRID still pending)
 - L4-004/L4-005/L4-010: BLOCKED/PENDING (PostGIS-backed metrics, spatial queries, and versioned geometry)
 - L5-001/L5-002/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory evidence service scope
-- L5-010: NOT_STARTED (audit events)
+- L5-010: PARTIAL/PASS for in-memory service scope (observation, source-failure, human-note, and supersede paths emit evidence audit events; durable audit persistence remains DB-blocked)
 - L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original without deleting or overwriting)
 - L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim/rule scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
 - L6-002/L6-003/L6-010: PARTIAL/PASS for one flood hard-gate rule (ruleset ID/version load, deterministic claim IDs, and rule logic lives in `rule_engine.py`, not an LLM/UI prompt)
@@ -41,7 +41,7 @@ Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (59 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (63 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -51,8 +51,8 @@ Completion evidence:
 - tests/fixtures/geometries/
 Next lowest-dependency task:
 - Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
-- Lane C: TC-060 (evidence audit events)
-- Lane D: TD-020 (thin routers) can proceed after coordinator review; TD-030 report integration should stay fixture-only until audit-event and DB persistence gaps are addressed
+- Lane C: TC-070 (contradiction/needs-review and stale-evidence rule handling)
+- Lane D: TD-020 (thin routers) can proceed after coordinator review; TD-030 report integration should stay fixture-only until DB persistence gaps are addressed
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -108,7 +108,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-107 tests pass; lint clean; mypy clean (59 source files). DB smoke blocked until Docker Desktop starts.
+111 tests pass; lint clean; mypy clean (60 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

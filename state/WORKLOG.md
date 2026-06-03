@@ -28,6 +28,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TC-040: 93 tests pass; ruff clean; mypy clean (56 source files); DB smoke skipped.
 - Completed Lane C TC-050 for the in-memory evidence payload-validation slice: type-specific `observed_value` validation for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails. Spatial validation accepts `flood_zone_code` results and bounds `intersection_ratio` to `0..1`. Lane C tests pass: 59 tests.
 - `verify.sh` passes via Git Bash after TC-050: 107 tests pass; ruff clean; mypy clean (59 source files); DB smoke skipped.
+- Completed Lane C TC-060 for the in-memory evidence audit-event slice: optional `EvidenceAuditLog` injection, `EvidenceAuditEvent`, `InMemoryEvidenceAuditLog`, and create/source-failure/human-note/supersede event tests. Lane C tests pass: 63 tests.
+- `verify.sh` passes via Git Bash after TC-060: 111 tests pass; ruff clean; mypy clean (60 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 
