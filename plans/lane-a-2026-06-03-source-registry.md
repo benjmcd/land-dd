@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - `SourceContract` Pydantic model in `backend/app/domain/source_contracts.py`.
 - `InMemorySourceRepository` + `SourceService` in `backend/app/source_registry/`.
 - 11 passing tests in `backend/tests/source_registry/`.
-- Backward-compat shims in `app/repositories/` and `app/services/` — archive these (TA-010).
+- Backward-compat shims in `app/repositories/` and `app/services/` were archived under `archive/2026-06-03_source-registry-lane-migration/` (TA-010 complete).
 - Docker Desktop not running at initial lane setup. DB smoke blocked until Docker starts.
 
 ## Proposed design
@@ -106,3 +106,4 @@ RUN_DB_SMOKE=1 ./scripts/verify.sh
 ## Progress log
 
 - 2026-06-03: Lane scaffold created. `InMemorySourceRepository` + `SourceService` in `source_registry/`. 11 tests passing.
+- 2026-06-03: TA-010 complete. Archived `backend/app/repositories/` and `backend/app/services/` to `archive/2026-06-03_source-registry-lane-migration/backend/app/` after confirming no active imports.

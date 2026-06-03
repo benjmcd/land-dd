@@ -9,6 +9,8 @@ Append concise entries. Do not rely on chat history.
 - Corrected Lane B and Lane D state evidence so documented lane-specific verification commands now match runnable tests.
 - `verify.sh` passes via Git Bash: 22 tests pass; ruff clean; mypy clean (44 source files); DB smoke skipped.
 - Anchored local `main` to `origin/main` and created local baseline commit `ffb73e1` (`Establish governed scaffold baseline`); no push performed.
+- Completed Lane A TA-010 by archiving backward-compat shims from `backend/app/repositories/` and `backend/app/services/` into `archive/2026-06-03_source-registry-lane-migration/backend/app/`.
+- `verify.sh` passes after TA-010: 22 tests pass; ruff clean; mypy clean (40 active source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

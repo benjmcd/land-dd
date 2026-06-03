@@ -5,6 +5,7 @@ __pycache__/
 *.py[cod]
 .codesight/
 001-audit/
+worktrees/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

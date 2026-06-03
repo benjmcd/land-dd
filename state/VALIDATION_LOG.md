@@ -54,6 +54,29 @@ git log --oneline --decorate --max-count=5
 - `001-audit` still points at `origin/main` (`13b75a9`) and does not contain the scaffold until a new worktree is created from local `main` or the baseline is pushed.
 - DB smoke remains unverified until Docker Desktop is running.
 
+## 2026-06-03 Lane A TA-010 shim archival
+
+**Commands run:**
+
+```bash
+rg -n --fixed-strings "from app.repositories" ./backend/app ./backend/tests ./scripts
+rg -n --fixed-strings "from app.services" ./backend/app ./backend/tests ./scripts
+Move-Item backend/app/repositories archive/2026-06-03_source-registry-lane-migration/backend/app/
+Move-Item backend/app/services archive/2026-06-03_source-registry-lane-migration/backend/app/
+```
+
+**Results:**
+
+- Active-tree import checks found zero uses of `app.repositories` or `app.services`.
+- Shim directories were moved to `archive/2026-06-03_source-registry-lane-migration/backend/app/`; no files were deleted.
+- Lane A unit tests pass: 11 tests.
+- Lane A typecheck passes: no issues in 4 source files.
+- Full verification passes: 22 tests, ruff clean, mypy clean (40 active source files).
+
+**Residual risk:**
+
+- DB smoke remains unverified until Docker Desktop is running.
+
 ## 2026-06-03 repo bootstrap + local index
 
 **Commands run:**

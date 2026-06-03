@@ -10,7 +10,7 @@ Verification command(s):
 - ./scripts/verify.sh
 - pytest backend/tests/ -v (22 tests)
 Verification result:
-- 22 tests pass; lint clean; mypy clean (44 source files)
+- 22 tests pass; lint clean; mypy clean (40 source files)
 - DB smoke blocked (Docker Desktop not running)
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
@@ -19,7 +19,7 @@ Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (11 tests)
 Next lowest-dependency task:
-- Lane A: TA-010 (clean up shims) → TA-020 (ORM model)
+- Lane A: TA-020 (ORM model for source.sources)
 - Lane B: TB-010 (AreaService + InMemoryAreaRepository)
 - Lane C: TC-010 (EvidenceService + InMemoryEvidenceRepository)
 - Lane D: TD-020 (API scaffold — thin routers)
@@ -78,7 +78,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-22 tests pass; lint clean; mypy clean (44 source files). DB smoke blocked until Docker Desktop starts.
+22 tests pass; lint clean; mypy clean (40 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 
