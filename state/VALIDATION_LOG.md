@@ -99,6 +99,28 @@ C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
 - DB smoke remains unverified until Docker Desktop is running.
 - SQLAlchemy-backed repository is next (TA-030); live DB execution remains deferred.
 
+## 2026-06-03 Lane A TA-030 SQLAlchemy repository
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
+cd backend && mypy app/source_registry app/domain/source_contracts.py tests/source_registry/test_sqlalchemy_source_repo.py
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+```
+
+**Results:**
+
+- Lane A source-registry tests pass: 19 tests.
+- Targeted Lane A typecheck passes: no issues in 6 source/test files.
+- Full verification passes: 30 tests, ruff clean, mypy clean (43 source files).
+- `SqlAlchemySourceRepository` implements `add`, `get`, `list_all`, and `exists_by_name_org` against a SQLAlchemy `Session`.
+
+**Residual risk:**
+
+- Repository tests do not execute against live Postgres; DB execution remains blocked until Docker Desktop is running.
+- Source seed implementation is next (TA-040).
+
 ## 2026-06-03 repo bootstrap + local index
 
 **Commands run:**

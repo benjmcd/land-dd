@@ -8,9 +8,9 @@ Milestone status: PARTIAL
 Last verified: 2026-06-03
 Verification command(s):
 - ./scripts/verify.sh
-- pytest backend/tests/ -v (26 tests)
+- pytest backend/tests/ -v (30 tests)
 Verification result:
-- 26 tests pass; lint clean; mypy clean (42 source files)
+- 30 tests pass; lint clean; mypy clean (43 source files)
 - DB smoke blocked (Docker Desktop not running)
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
@@ -19,7 +19,7 @@ Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (11 tests)
 Next lowest-dependency task:
-- Lane A: TA-030 (SQLAlchemy-backed SourceRepository)
+- Lane A: TA-040 (source seeds)
 - Lane B: TB-010 (AreaService + InMemoryAreaRepository)
 - Lane C: TC-010 (EvidenceService + InMemoryEvidenceRepository)
 - Lane D: TD-020 (API scaffold — thin routers)
@@ -78,7 +78,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-26 tests pass; lint clean; mypy clean (42 source files). DB smoke blocked until Docker Desktop starts.
+30 tests pass; lint clean; mypy clean (43 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol, cast
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.domain.enums import AuthorityLevel
 from app.domain.source_contracts import SourceContract
+from app.source_registry.models import SourceModel
 
 
 class SourceRepository(Protocol):
@@ -35,3 +40,85 @@ class InMemorySourceRepository:
             s.name == name and s.organization == organization
             for s in self._store.values()
         )
+
+
+class SqlAlchemySourceRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, source: SourceContract) -> SourceContract:
+        model = _source_to_model(source)
+        self._session.add(model)
+        self._session.flush()
+        return _model_to_source(model)
+
+    def get(self, source_id: UUID) -> SourceContract | None:
+        model = self._session.get(SourceModel, source_id)
+        if model is None:
+            return None
+        return _model_to_source(model)
+
+    def list_all(self) -> list[SourceContract]:
+        statement = select(SourceModel).order_by(SourceModel.name, SourceModel.organization)
+        return [
+            _model_to_source(model)
+            for model in self._session.scalars(statement).all()
+        ]
+
+    def exists_by_name_org(self, name: str, organization: str | None) -> bool:
+        statement = select(SourceModel.source_id).where(SourceModel.name == name)
+        if organization is None:
+            statement = statement.where(SourceModel.organization.is_(None))
+        else:
+            statement = statement.where(SourceModel.organization == organization)
+        return self._session.execute(statement.limit(1)).first() is not None
+
+
+def _source_to_model(source: SourceContract) -> SourceModel:
+    return SourceModel(
+        source_id=source.source_id,
+        name=source.name,
+        organization=source.organization,
+        homepage_url=str(source.homepage_url) if source.homepage_url is not None else None,
+        authority_level=source.authority_level.value,
+        geographic_scope=source.geographic_scope,
+        domain=source.domain,
+        update_cadence=source.update_cadence,
+        commercial_use_status=source.commercial_use_status,
+        license_summary=source.license_summary,
+        attribution_required=source.attribution_required,
+        ai_use_allowed=source.ai_use_allowed,
+        cache_allowed=source.cache_allowed,
+        export_allowed=source.export_allowed,
+        raw_data_allowed=source.raw_data_allowed,
+        notes=source.notes,
+        source_metadata={},
+    )
+
+
+def _model_to_source(model: SourceModel) -> SourceContract:
+    return SourceContract(
+        source_id=model.source_id,
+        name=model.name,
+        organization=model.organization,
+        homepage_url=cast(Any, model.homepage_url),
+        authority_level=AuthorityLevel(model.authority_level),
+        domain=model.domain,
+        geographic_scope=model.geographic_scope,
+        update_cadence=model.update_cadence,
+        commercial_use_status=model.commercial_use_status,
+        license_summary=model.license_summary,
+        attribution_required=model.attribution_required,
+        cache_allowed=model.cache_allowed,
+        export_allowed=model.export_allowed,
+        ai_use_allowed=model.ai_use_allowed,
+        raw_data_allowed=model.raw_data_allowed,
+        notes=model.notes,
+    )
+
+
+__all__ = [
+    "InMemorySourceRepository",
+    "SourceRepository",
+    "SqlAlchemySourceRepository",
+]
