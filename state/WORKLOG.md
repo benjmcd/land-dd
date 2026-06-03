@@ -44,6 +44,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via explicit Git Bash after TC-100: 145 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 - Completed Lane C TC-110 for the zoning/use hard-gate fixture slice: deterministic `ZONING_001`, zoning source-unavailable unknown, zoning needs-review for incomplete/mixed evidence, stale zoning review, screening-only/no-final-legal-use language, and zoning source-observation payload validation. Lane C tests pass: 100 tests.
 - `verify.sh` passes via explicit Git Bash after TC-110: 157 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
+- Completed Lane C TC-120 for the water-context hard-gate fixture slice: deterministic `WATER_001`, water source-unavailable unknown, water needs-review for incomplete/mixed evidence including internally contradictory fixture records, stale water review, screening-only/no-water-rights/no-well-viability language, and water source-observation payload validation. Lane C tests pass: 111 tests.
+- `verify.sh` passes via explicit Git Bash after TC-120: 168 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

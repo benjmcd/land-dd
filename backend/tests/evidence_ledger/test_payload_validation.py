@@ -150,6 +150,69 @@ def test_source_observation_rejects_non_boolean_zoning_fixture_flag() -> None:
         service.create_observation(evidence)
 
 
+def test_source_observation_accepts_water_context_fixture_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        observed_value={
+            "water_context_status": "fixture-no-plausible-context",
+            "no_plausible_water_context": True,
+            "plausible_water_context": False,
+            "nearby_well_log_count": 0,
+            "source_stale": True,
+        },
+        domain="water",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["no_plausible_water_context"] is True
+    assert created.observed_value["nearby_well_log_count"] == 0
+
+
+def test_source_observation_rejects_non_boolean_water_context_flag() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        observed_value={
+            "water_context_status": "fixture-no-plausible-context",
+            "no_plausible_water_context": "yes",
+        },
+        domain="water",
+    )
+
+    with pytest.raises(ValueError, match="must be boolean"):
+        service.create_observation(evidence)
+
+
+def test_source_observation_rejects_negative_water_context_count() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        observed_value={
+            "water_context_status": "fixture-no-plausible-context",
+            "no_plausible_water_context": True,
+            "nearby_well_log_count": -1,
+        },
+        domain="water",
+    )
+
+    with pytest.raises(ValueError, match="non-negative"):
+        service.create_observation(evidence)
+
+
 def test_spatial_intersection_accepts_intersection_payload() -> None:
     area_id = uuid4()
     source_id = uuid4()

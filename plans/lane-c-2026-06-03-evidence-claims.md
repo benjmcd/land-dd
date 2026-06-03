@@ -117,7 +117,16 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 4. Avoid hard-coding a state, county, zoning district taxonomy, ordinance parser, or legal interpretation; fixture evidence must carry the explicit prohibited/unsupported signal.
 5. Keep output language as zoning/use screening only: do not assert final legal use, zoning compliance, permit eligibility, vested rights, minimum lot-size compliance, or buildability.
 6. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for zoning fixture keys.
-7. Status: COMPLETE for the zoning/use fixture hard-gate scope. The rule engine now covers flood, access, zoning, wetlands, and slope hard-gate fixtures. Water remains pending after this slice.
+7. Status: COMPLETE for the zoning/use fixture hard-gate scope. At TC-110 completion, the rule engine covered flood, access, zoning, wetlands, and slope hard-gate fixtures; water was pending after this slice.
+
+### TC-120: Water-context fixture hard-gate coverage
+1. Extend deterministic rule handling for `WATER_G001` using fixture source-observation evidence for water-context screening.
+2. Add fixture evidence patterns for explicit no-plausible-water-context signals, plausible-context/no-claim signals, source failure, stale water evidence, and mixed/incomplete evidence.
+3. Preserve evidence IDs, caveat propagation, severity/confidence separation, deterministic IDs/order, and verification tasks.
+4. Avoid hard-coding a state, county, aquifer, well-log threshold, water-rights rule, hauling rule, or source-specific interpretation; fixture evidence must carry the explicit water-context signal.
+5. Keep output language as water-context screening only: do not assert water rights, well yield or viability, lawful hauling, utility/service availability, potable water, or final water availability.
+6. Tests: positive, negative/no-claim, source-failure/unknown, incomplete/review, stale/review, deterministic ordering, and payload validation for water fixture keys.
+7. Status: COMPLETE for the water-context fixture hard-gate scope. The rule engine now covers the current ruleset's flood, access, zoning, water, wetlands, and slope hard-gate fixtures in memory.
 
 ## Files likely to change
 
@@ -175,3 +184,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-090 complete for the wetlands fixture hard-gate slice. Added deterministic mapped-wetland/deepwater claims, wetland source-unavailable unknowns, wetland needs-review, stale wetland review claims, screening-only/no-delineation language, and wetland fixture payload validation. Lane C tests: 83 passing. Full verification: 138 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-100 complete for the slope/buildability fixture hard-gate slice. Added deterministic insufficient low-slope buildable-area claims, slope source-unavailable unknowns, slope needs-review, stale slope review claims, screening-only/no-final-buildability language, and slope derived-metric payload validation. Lane C tests: 90 passing. Full verification: 145 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-110 complete for the zoning/use fixture hard-gate slice. Added deterministic intended residential/homestead use prohibited-or-unsupported claims, zoning source-unavailable unknowns, zoning needs-review for incomplete/mixed evidence, stale zoning review claims, screening-only/no-final-legal-use language, and zoning source-observation payload validation. Lane C tests: 100 passing. Full verification: 157 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-03: TC-120 complete for the water-context fixture hard-gate slice. Added deterministic no-plausible-water-context claims, water source-unavailable unknowns, water needs-review for incomplete/mixed evidence including internally contradictory fixture records, stale water review claims, screening-only/no-water-rights/no-well-viability language, and water source-observation payload validation. Lane C tests: 111 passing. Full verification: 168 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

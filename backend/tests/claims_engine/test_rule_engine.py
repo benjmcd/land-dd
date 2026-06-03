@@ -240,6 +240,55 @@ def make_zoning_failure(area_id: UUID) -> EvidenceContract:
     )
 
 
+def make_water_evidence(
+    *,
+    area_id: UUID,
+    no_plausible_water_context: bool = True,
+    plausible_water_context: bool | None = None,
+    confidence: ConfidenceBand = ConfidenceBand.MEDIUM,
+    source_stale: bool = False,
+    superseded_by: UUID | None = None,
+) -> EvidenceContract:
+    observed_value: dict[str, object] = {
+        "water_context_status": "fixture-no-plausible-context",
+        "no_plausible_water_context": no_plausible_water_context,
+        "nearby_well_log_count": 0 if no_plausible_water_context else 3,
+    }
+    if plausible_water_context is not None:
+        observed_value["plausible_water_context"] = plausible_water_context
+    if source_stale:
+        observed_value["source_stale"] = True
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="WATER_CONTEXT_SCREEN",
+        domain="water",
+        observation="Fixture water source screens plausible water context.",
+        observed_value=observed_value,
+        method_code="fixture_water_context_screen",
+        confidence=confidence,
+        caveat="Fixture water-context screening only; verify water rights and wells.",
+        superseded_by=superseded_by,
+    )
+
+
+def make_water_failure(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="WATER_SOURCE_FAILURE",
+        domain="water",
+        observation="Fixture water source request failed.",
+        observed_value={},
+        method_code="fixture_water_context_screen",
+        confidence=ConfidenceBand.UNKNOWN,
+        caveat="Water fixture endpoint returned 503.",
+        is_source_failure=True,
+    )
+
+
 def test_load_ruleset_exposes_versioned_access_gate() -> None:
     ruleset = load_ruleset(DEFAULT_RULESET_PATH)
     rule = ruleset.hard_gate_for_condition(
@@ -260,6 +309,17 @@ def test_load_ruleset_exposes_versioned_zoning_gate() -> None:
     assert rule.code == "ZONING_G001"
     assert rule.claim_code == "ZONING_001"
     assert rule.severity_on_fail == SeverityBand.CRITICAL
+
+
+def test_load_ruleset_exposes_versioned_water_gate() -> None:
+    ruleset = load_ruleset(DEFAULT_RULESET_PATH)
+    rule = ruleset.hard_gate_for_condition(
+        "no_plausible_water_context_or_source_unavailable"
+    )
+
+    assert rule.code == "WATER_G001"
+    assert rule.claim_code == "WATER_001"
+    assert rule.severity_on_fail == SeverityBand.HIGH
 
 
 def test_load_ruleset_exposes_versioned_wetland_gate() -> None:
@@ -605,6 +665,156 @@ def test_evaluate_zoning_outputs_are_deterministic_when_input_order_changes() ->
         "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         "ZONING_EVIDENCE_NEEDS_REVIEW",
         "ZONING_STALE_EVIDENCE_NEEDS_REVIEW",
+    ]
+
+
+def test_evaluate_creates_water_claim_from_no_plausible_context() -> None:
+    area_id = uuid4()
+    evidence = make_water_evidence(area_id=area_id)
+    engine = RuleEngine.from_file()
+
+    first_result = engine.evaluate([evidence])
+    second_result = engine.evaluate([evidence])
+
+    assert first_result == second_result
+    claim = first_result[0]
+    assert claim.claim_code == "WATER_001"
+    assert claim.area_id == area_id
+    assert claim.rule_code == "WATER_G001"
+    assert claim.ruleset_id == "homestead_mvp_v0_1"
+    assert claim.ruleset_version == "0.1"
+    assert claim.severity == SeverityBand.HIGH
+    assert claim.confidence == ConfidenceBand.MEDIUM
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert claim.verification_required is True
+    assert "well logs" in (claim.verification_task or "")
+    assert "water-context screening" in claim.user_safe_language
+    assert "does not determine water rights" in claim.user_safe_language
+    assert "well yield or viability" in claim.user_safe_language
+
+
+def test_evaluate_ignores_plausible_water_context_evidence() -> None:
+    area_id = uuid4()
+    evidence = make_water_evidence(
+        area_id=area_id,
+        no_plausible_water_context=False,
+        plausible_water_context=True,
+    )
+
+    assert RuleEngine.from_file().evaluate([evidence]) == []
+
+
+def test_evaluate_routes_internally_conflicting_water_evidence_to_review() -> None:
+    area_id = uuid4()
+    evidence = make_water_evidence(
+        area_id=area_id,
+        no_plausible_water_context=True,
+        plausible_water_context=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "WATER_EVIDENCE_NEEDS_REVIEW"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert "conflicting or incomplete" in claim.user_safe_language
+    assert "does not determine water rights" in claim.user_safe_language
+
+
+def test_evaluate_creates_unknown_claim_from_water_source_failure() -> None:
+    area_id = uuid4()
+    failure = make_water_failure(area_id)
+
+    claims = RuleEngine.from_file().evaluate([failure])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "WATER_SOURCE_UNAVAILABLE_UNKNOWN"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.UNKNOWN
+    assert claim.rule_code == "WATER_G001"
+    assert claim.evidence_ids == [failure.evidence_id]
+    assert "503" in claim.user_safe_language
+    assert "does not establish water rights" in claim.user_safe_language
+
+
+def test_evaluate_creates_needs_review_claim_from_incomplete_water_evidence() -> None:
+    area_id = uuid4()
+    incomplete_evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="WATER_CONTEXT_SCREEN",
+        domain="water",
+        observation="Fixture water source did not expose water-context compatibility.",
+        observed_value={"water_context_status": "fixture-incomplete"},
+        method_code="fixture_water_context_screen",
+        confidence=ConfidenceBand.LOW,
+        caveat="Water fixture lacks explicit context signal.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([incomplete_evidence])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "WATER_EVIDENCE_NEEDS_REVIEW"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.LOW
+    assert claim.evidence_ids == [incomplete_evidence.evidence_id]
+    assert "conflicting or incomplete" in claim.user_safe_language
+    assert "does not determine water rights" in claim.user_safe_language
+
+
+def test_evaluate_creates_stale_water_review_claim_from_fixture_signal() -> None:
+    area_id = uuid4()
+    stale_evidence = make_water_evidence(
+        area_id=area_id,
+        no_plausible_water_context=False,
+        plausible_water_context=True,
+        confidence=ConfidenceBand.LOW,
+        source_stale=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([stale_evidence])
+
+    assert len(claims) == 1
+    stale_claim = claims[0]
+    assert stale_claim.claim_code == "WATER_STALE_EVIDENCE_NEEDS_REVIEW"
+    assert stale_claim.severity == SeverityBand.INFORMATIONAL
+    assert stale_claim.confidence == ConfidenceBand.LOW
+    assert stale_claim.evidence_ids == [stale_evidence.evidence_id]
+    assert "stale" in stale_claim.user_safe_language
+    assert "does not determine water rights" in stale_claim.user_safe_language
+
+
+def test_evaluate_water_outputs_are_deterministic_when_input_order_changes() -> None:
+    area_id = uuid4()
+    no_context = make_water_evidence(area_id=area_id)
+    plausible = make_water_evidence(
+        area_id=area_id,
+        no_plausible_water_context=False,
+        plausible_water_context=True,
+        confidence=ConfidenceBand.HIGH,
+    )
+    failure = make_water_failure(area_id)
+    stale = make_water_evidence(
+        area_id=area_id,
+        no_plausible_water_context=False,
+        plausible_water_context=True,
+        source_stale=True,
+    )
+
+    first_result = RuleEngine.from_file().evaluate([stale, plausible, failure, no_context])
+    second_result = RuleEngine.from_file().evaluate([no_context, failure, plausible, stale])
+
+    assert first_result == second_result
+    assert [claim.claim_code for claim in first_result] == [
+        "WATER_001",
+        "WATER_SOURCE_UNAVAILABLE_UNKNOWN",
+        "WATER_EVIDENCE_NEEDS_REVIEW",
+        "WATER_STALE_EVIDENCE_NEEDS_REVIEW",
     ]
 
 

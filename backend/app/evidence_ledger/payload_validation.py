@@ -20,8 +20,11 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "has_public_road_adjacency",
     "intended_residential_use_allowed",
     "intended_residential_use_prohibited",
+    "nearby_well_log_count",
     "no_public_road_adjacency",
+    "no_plausible_water_context",
     "observed_status",
+    "plausible_water_context",
     "public_road_adjacency",
     "raw_value",
     "road_distance_m",
@@ -30,6 +33,7 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "source_url",
     "status",
     "value",
+    "water_context_status",
     "zone",
     "zoning_district",
 }
@@ -127,10 +131,17 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
     for key in (
         "intended_residential_use_allowed",
         "intended_residential_use_prohibited",
+        "no_plausible_water_context",
+        "plausible_water_context",
         "source_stale",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"source_observation observed_value '{key}' must be boolean")
+    if "nearby_well_log_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["nearby_well_log_count"],
+            "nearby_well_log_count",
+        )
 
 
 def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
