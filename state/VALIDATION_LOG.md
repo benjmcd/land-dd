@@ -2,6 +2,35 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane D TD-020 in-memory API scaffold
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/reports/ tests/api/ -v
+cd backend && ruff check app/reports app/api app/main.py app/domain/report_contracts.py tests/reports tests/api
+cd backend && mypy app/reports app/api app/main.py app/domain/report_contracts.py tests/reports tests/api
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q
+docker info --format '{{.ServerVersion}}'
+```
+
+**Results:**
+
+- Lane D report/API tests pass: 7 tests.
+- Lane D targeted ruff passes.
+- Lane D targeted mypy passes: no issues in 14 source/test files.
+- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (65 source files).
+- Test collection reports 122 tests.
+- Docker client is installed, but Docker Desktop Linux engine is not running; DB smoke remains blocked.
+
+**Residual risk:**
+
+- TD-020 is an in-memory API scaffold only. ReportRunService, evidence-linked report output, unknown/source-failure report content, artifact metadata, and reproducibility snapshots remain pending.
+- Report runs created through `/report-runs` are per-app in-memory records, not persisted durable report runs.
+- The evidence router exposes read-only area-filtered evidence; evidence creation remains service-level and future workflow/integration work.
+- DB-backed report persistence remains blocked until Docker/PostGIS smoke is available.
+
 ## 2026-06-03 Lane C TC-070 contradiction/stale rule handling
 
 **Commands run:**

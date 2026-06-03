@@ -15,8 +15,10 @@ Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay g
 
 - `ReportRunContract` stub in `backend/app/domain/report_contracts.py`.
 - `JobStatus` enum in `backend/app/domain/enums.py`.
-- `backend/app/reports/` and `backend/app/api/` module directories exist (empty `__init__.py`).
+- `backend/app/reports/` and `backend/app/api/` module directories exist.
+- Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
+- 7 Lane D report/API tests pass.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) is a hard prerequisite for integration wiring.
 
@@ -52,6 +54,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 4. Create `backend/app/api/reports.py` router (POST /report-runs, GET /report-runs/{id}).
 5. Register all routers in `backend/app/main.py`.
 6. Tests: 2xx response for each endpoint; 422 for bad input.
+7. Status: COMPLETE for the in-memory API scaffold. Endpoints are backed by isolated per-app in-memory services and do not require DB or live connectors.
 
 ### TD-030: ReportRunService (in-memory)
 1. Create `backend/app/reports/service.py` with `ReportRunService`.
@@ -109,7 +112,7 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 | Lane A TA-060 DB smoke | Blocked | TD-040 cannot proceed |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
-| Lane C TC-030 ClaimService | Pending | TD-030 uses stub until done |
+| Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |
 
 ## Decision log
@@ -121,3 +124,4 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 ## Progress log
 
 - 2026-06-03: Lane scaffold created. ReportRunContract stub defined. Test directories ready.
+- 2026-06-03: TD-020 complete for the in-memory API scaffold. Added per-app in-memory API services, source/area/evidence/report-run routers, router registration, and API contract tests for happy paths and representative 422 cases. Lane D tests: 7 passing. Full verification: 122 tests, ruff clean, mypy clean (65 source files); DB smoke skipped.
