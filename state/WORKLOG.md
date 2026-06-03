@@ -13,6 +13,9 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes after TA-010: 22 tests pass; ruff clean; mypy clean (40 active source files); DB smoke skipped.
 - Completed Lane A TA-020 by adding `SourceModel` for `source.sources` plus model contract tests. `verify.sh` passes: 26 tests pass; ruff clean; mypy clean (42 source files); DB smoke skipped.
 - Completed Lane A TA-030 by adding `SqlAlchemySourceRepository` plus non-DB repository tests. `verify.sh` passes: 30 tests pass; ruff clean; mypy clean (43 source files); DB smoke skipped.
+- Completed Lane A TA-040 by adding registry-backed source seed loading, a seed runner, seed tests, and metadata persistence mapping. Lane A tests pass: 23 tests; seed dry-run validates 8 `Must` rows.
+- Completed Lane B TB-010 through TB-040 for the in-memory fixture slice: AreaService, InMemoryAreaRepository, GeoJSON validator, geometry fixtures, and service/validator tests. Lane B tests pass: 11 tests.
+- `verify.sh` passes via Git Bash after TA-040 and Lane B fixture slice: 49 tests pass; ruff clean; mypy clean (48 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

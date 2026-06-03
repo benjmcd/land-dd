@@ -12,6 +12,7 @@ class AreaContract(BaseModel):
     area_type: AreaType = AreaType.DRAWN_POLYGON
     label: str | None = None
     geom_geojson: dict[str, object] = Field(default_factory=dict)
+    geom_srid: int = 4326
     geom_source: str | None = None
     geom_confidence: ConfidenceBand = ConfidenceBand.UNKNOWN
     geom_validated: bool = False

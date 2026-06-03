@@ -1,25 +1,35 @@
 # Lane B State — Area + Geometry Domain
 
 ```text
-Current milestone: Level 1 — Governed Repo Scaffold (Lane B scaffold complete)
+Current milestone: Level 4 - Area + Geometry Domain (in-memory fixture slice)
 Target milestone: Level 4 (Area + Geometry Domain)
-Milestone status: NOT_STARTED
+Milestone status: PARTIAL
 Last verified: 2026-06-03
 Verification command(s):
 - pytest backend/tests/area_geometry/ -v
 - mypy backend/app/area_geometry backend/app/domain/area_contracts.py
 - ./scripts/verify.sh
 Verification result:
-- Lane B scaffold contract test passes; no AreaService feature tests yet; overall verify.sh passes
+- 11 Lane B tests passing
+- Lane B targeted mypy passes for area geometry service/tests
+- Full verification passes: 49 tests; lint clean; mypy clean (48 source files)
 Failed or blocked gates:
-- All L4 gates: NOT_STARTED (AreaService not yet implemented)
-- L4-005: Spatial queries blocked until PostGIS available (Lane A DB dependency)
+- L4-001/L4-002: Basic polygon/multipolygon validation passes in memory
+- L4-006/L4-007: Geometry source/confidence fields exist; parcel-like areas are caveated as non-survey in service behavior
+- L4-008: PASS for current fixture scope (polygon, multipolygon, invalid, empty, wrong SRID, and large geometry)
+- L4-003: PARTIAL (AreaContract defaults to SRID 4326; persisted SRID still pending)
+- L4-004/L4-005/L4-010: BLOCKED/PENDING until PostGIS-backed area storage, metrics, spatial queries, and versioned geometry exist
 Completion evidence:
 - plans/lane-b-2026-06-03-area-geometry.md
-- backend/app/domain/area_contracts.py (stub)
+- backend/app/domain/area_contracts.py (AreaContract with default SRID 4326)
 - backend/tests/area_geometry/test_area_contracts.py (scaffold contract test)
+- backend/app/area_geometry/area_repo.py (AreaRepository Protocol + InMemoryAreaRepository)
+- backend/app/area_geometry/service.py (AreaService)
+- backend/app/area_geometry/geometry_validator.py (GeoJSON polygon/multipolygon, SRID, CRS, and ring validation)
+- backend/tests/area_geometry/test_area_service.py (service and validator tests)
+- tests/fixtures/geometries/ (valid and invalid GeoJSON fixtures)
 Next lowest-dependency task:
-- TB-010: Implement AreaService + InMemoryAreaRepository
+- TB-050: SQLAlchemy/PostGIS area model and repository (blocked until Lane A TA-060 DB smoke is available)
 Do not work on yet:
 - PostGIS spatial queries (needs Lane A DB smoke to pass first)
 - Any Lane A/C/D files

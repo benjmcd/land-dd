@@ -12,10 +12,12 @@ Complete MILESTONE_MAP.md Level 4: the system can represent, validate, store, an
 
 ## Current state
 
-- `AreaContract` stub in `backend/app/domain/area_contracts.py` (fields: area_id, area_type, label, geom_geojson, geom_source, geom_confidence, geom_validated).
+- `AreaContract` in `backend/app/domain/area_contracts.py` includes area identity/type, GeoJSON payload, default SRID 4326, geometry source, confidence, and validation caveat fields.
 - `AreaType` and `ConfidenceBand` enums in `backend/app/domain/enums.py`.
-- `backend/app/area_geometry/` module directory exists (empty `__init__.py`).
-- `backend/tests/area_geometry/` test directory exists (empty `__init__.py`).
+- `AreaService` and `InMemoryAreaRepository` exist in `backend/app/area_geometry/`.
+- `geometry_validator.py` validates GeoJSON Polygon/MultiPolygon structure, SRID/CRS constraints, and closed rings.
+- `tests/fixtures/geometries/` contains valid, invalid, missing-type, wrong-SRID, open-ring, empty, and large GeoJSON fixtures.
+- `backend/tests/area_geometry/` covers area contract defaults, service create/get behavior, duplicate rejection, parcel-like caveat behavior, and fixture validation.
 - DB table `core.areas` exists in `db/migrations/0001_initial_spine.sql`.
 
 ## Proposed design
@@ -87,3 +89,4 @@ mypy backend/app/area_geometry backend/app/domain/area_contracts.py
 ## Progress log
 
 - 2026-06-03: Lane scaffold created. `AreaContract` stub defined. Test directory created.
+- 2026-06-03: TB-010 through TB-040 complete for the in-memory fixture slice. Added `AreaRepository`, `InMemoryAreaRepository`, `AreaService`, GeoJSON validator, fixtures, and tests. Lane B tests: 11 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.

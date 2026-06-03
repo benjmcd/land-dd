@@ -2,6 +2,41 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane A TA-040 source seeds + Lane B in-memory geometry slice
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
+python scripts/seed_sources.py
+python scripts/seed_sources.py --json
+cd backend && mypy app/source_registry app/domain/source_contracts.py tests/source_registry/test_source_seeds.py tests/source_registry/test_sqlalchemy_source_repo.py
+cd backend && PYTHONPATH=. python -m pytest tests/area_geometry/ -v
+cd backend && mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry/test_area_service.py
+bash ./scripts/verify.sh
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+```
+
+**Results:**
+
+- Lane A source-registry tests pass: 23 tests.
+- Source seed dry-run validates 8 `Must` registry rows: DS-001, DS-002, DS-003, DS-004, DS-010, DS-011, DS-017, DS-023.
+- Source seed JSON output returns the same 8 rows with source names, organizations, and registry IDs.
+- Targeted Lane A typecheck passes: no issues in 7 source/test files.
+- Lane B area-geometry tests pass: 11 tests.
+- Initial targeted Lane B typecheck found one `json.loads` `Any` return in `test_area_service.py`; fixed with a fixture-shape assertion and cast.
+- Full verification initially failed on Lane B ruff issues in the untracked geometry slice; fixed with targeted `ruff check app/area_geometry/geometry_validator.py tests/area_geometry/test_area_service.py --fix --unsafe-fixes`.
+- Plain `bash ./scripts/verify.sh` failed because `bash` resolved to the Windows WSL launcher and `/bin/bash` is unavailable.
+- Canonical verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), 49 backend tests pass, ruff clean, mypy clean (48 source files).
+- DB smoke skipped because `RUN_DB_SMOKE=1` was not set and Docker Desktop is not running.
+
+**Residual risk:**
+
+- DB apply path for `scripts/seed_sources.py --apply` is not live-verified until Docker/PostGIS is available.
+- Level 2 remains blocked by Docker/PostGIS smoke; source and geometry work are verified non-DB slices only.
+- Lane A still needs TA-050 license review/provenance ADR before source governance can be considered adequate for connector work.
+- Lane B TB-050 PostGIS-backed area repository and spatial query behavior remain blocked on Lane A TA-060.
+
 ## 2026-06-03 scaffold validation alignment
 
 **Commands run:**

@@ -4,25 +4,38 @@
 
 ```text
 Current milestone: Level 1 — Governed Repo Scaffold
-Milestone status: PARTIAL
+Milestone status: PASS
 Last verified: 2026-06-03
 Verification command(s):
-- ./scripts/verify.sh
-- pytest backend/tests/ -v (30 tests)
+- C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh
+- cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
+- cd backend && PYTHONPATH=. python -m pytest tests/area_geometry/ -v
+- python scripts/seed_sources.py
+- python scripts/seed_sources.py --json
 Verification result:
-- 30 tests pass; lint clean; mypy clean (43 source files)
-- DB smoke blocked (Docker Desktop not running)
+- 49 tests pass; lint clean; mypy clean (48 source files)
+- Lane A source seeds validate 8 `Must` registry rows without DB access
+- Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
+- DB smoke skipped/blocked because Docker Desktop is not running
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
-- L3-001 to L3-010: PARTIAL (source contract + in-memory service done; DB/seeds pending)
+- L3-001/L3-002/L3-005: PARTIAL (source metadata/seeds/caveats exist; license review workflow pending)
+- L3-003/L3-004: PARTIAL/BLOCKED (source versions/retrieval runs present in schema, not behavior-verified)
+- L4-001/L4-002/L4-006/L4-007: PARTIAL (in-memory geometry validation and caveats exist)
+- L4-008: PASS for current fixture scope (polygon, multipolygon, invalid, empty, wrong SRID, and large geometry)
+- L4-003: PARTIAL (AreaContract defaults to SRID 4326; persisted SRID still pending)
+- L4-004/L4-005/L4-010: BLOCKED/PENDING (PostGIS-backed metrics, spatial queries, and versioned geometry)
 Completion evidence:
 - state/VALIDATION_LOG.md
-- backend/tests/source_registry/ (11 tests)
+- backend/tests/source_registry/ (23 tests)
+- backend/tests/area_geometry/ (11 tests)
+- db/seeds/source_registry_seeds.py
+- scripts/seed_sources.py
+- tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane A: TA-040 (source seeds)
-- Lane B: TB-010 (AreaService + InMemoryAreaRepository)
+- Lane A: TA-050 (license review template and provenance ADR)
 - Lane C: TC-010 (EvidenceService + InMemoryEvidenceRepository)
-- Lane D: TD-020 (API scaffold — thin routers)
+- Lane D: TD-020 (thin routers) after services are ready enough to expose safely
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -78,7 +91,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-30 tests pass; lint clean; mypy clean (43 source files). DB smoke blocked until Docker Desktop starts.
+49 tests pass; lint clean; mypy clean (48 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 
