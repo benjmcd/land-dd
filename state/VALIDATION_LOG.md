@@ -25,8 +25,33 @@ C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
 
 **Residual risk:**
 
-- The root checkout is still an unborn `main` with project files untracked; no baseline commit or push has been performed.
-- `origin/main` still only contains the minimal `README.md`; lane worktrees from `main` do not yet contain the project scaffold.
+- Local baseline commit `ffb73e1` now exists on `main`, parented to `origin/main`.
+- No GitHub push has been performed; `origin/main` remains at `13b75a9`, so fresh worktrees from remote `main` do not yet contain the project scaffold.
+- DB smoke remains unverified until Docker Desktop is running.
+
+## 2026-06-03 local baseline authority commit
+
+**Commands run:**
+
+```bash
+git reset --mixed origin/main
+git add -A --dry-run
+rg -n "password|secret|token|api[_-]?key|private|credential|BEGIN .*KEY|sk-|ghp_|pat_" --glob '!docs/planning_pack/planning_registers.xlsx' --glob '!*.pyc' --glob '!*.db' .
+git add -A
+git commit -m "Establish governed scaffold baseline"
+git log --oneline --decorate --max-count=5
+```
+
+**Results:**
+
+- Local `main` was anchored to `origin/main` before committing, so the scaffold commit is not an unrelated root history.
+- Secret scan found no committed secrets or paid-vendor dumps; matches were policy/planning references and `.env.example` local defaults.
+- Local baseline commit created: `ffb73e1` (`Establish governed scaffold baseline`).
+
+**Residual risk:**
+
+- Commit is local only; no push has been performed.
+- `001-audit` still points at `origin/main` (`13b75a9`) and does not contain the scaffold until a new worktree is created from local `main` or the baseline is pushed.
 - DB smoke remains unverified until Docker Desktop is running.
 
 ## 2026-06-03 repo bootstrap + local index

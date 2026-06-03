@@ -84,6 +84,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 - Local Git initialized on `main`.
 - `origin` is configured as `https://github.com/benjmcd/land-dd.git`.
-- No local commit or GitHub push has been performed.
+- Local baseline commit exists on `main`: `ffb73e1` (`Establish governed scaffold baseline`).
+- No GitHub push has been performed; `origin/main` remains at `13b75a9`.
 - Local Codesight index exists at `.codesight/`; regenerate after significant code changes.
 

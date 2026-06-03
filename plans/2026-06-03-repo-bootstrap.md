@@ -61,12 +61,13 @@ Expected signals:
 
 - DB smoke remains dependent on Docker Desktop and is not part of this local bootstrap.
 - `.codesight/` is generated and should be regenerated after significant code changes.
-- No remote write is allowed until the user explicitly permits commit/push.
+- No remote write is allowed until the user explicitly permits push.
 
 ## Decision log
 
 - 2026-06-03: Keep GitHub interaction local-only: initialize local Git and set `origin`, but do not commit or push.
 - 2026-06-03: Preserve existing lane architecture and product active plan; this bootstrap plan does not replace the foundation or lane plans.
+- 2026-06-03: Baseline authority was later established with a local commit on `main`; this did not push to GitHub.
 
 ## Progress log
 
@@ -75,4 +76,5 @@ Expected signals:
 - 2026-06-03: `tasks/task_queue.yaml` corrected against canonical project/lane state.
 - 2026-06-03: Local Git initialized on `main`; `origin` set to `https://github.com/benjmcd/land-dd.git`; no commit or push performed.
 - 2026-06-03: `verify.sh` passed via Git Bash; DB smoke skipped.
+- 2026-06-03: Local baseline commit created: `ffb73e1` (`Establish governed scaffold baseline`); no GitHub push performed.
 
