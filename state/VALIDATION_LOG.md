@@ -34,36 +34,6 @@ C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
 - L5-002 payload schema validation and L5-010 audit events remain unimplemented.
 - `schemas/claim_schema.json` and `schemas/evidence_schema.json` remain shared-contract drift risks and need a schema alignment pass.
 
-## 2026-06-03 Lane C TC-040 rule engine
-
-**Commands run:**
-
-```bash
-cd backend && PYTHONPATH=. python -m pytest tests/evidence_ledger/ tests/claims_engine/ -v
-cd backend && ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
-cd backend && mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
-rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
-C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
-cd backend && PYTHONPATH=. python -m pytest --collect-only -q
-docker version
-```
-
-**Results:**
-
-- Lane C evidence/claims/rules tests pass: 45 tests.
-- Lane C targeted ruff passes.
-- Lane C targeted mypy passes: no issues in 16 source/test files.
-- Cross-lane import scan returns no matches; Lane C still does not import Lane A/B modules.
-- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (56 source files).
-- Test collection reports 93 tests.
-- Docker client is installed, but Docker Desktop Linux engine is not running; DB smoke remains blocked.
-
-**Residual risk:**
-
-- RuleEngine currently supports the first flood hard-gate slice and the current ruleset YAML shape only. It is not a complete rules framework.
-- Stale evidence handling beyond supersession, contradiction/needs-review claims, and broader rule categories remain pending.
-- L5-002 payload schema validation and L5-010 audit events remain unimplemented.
-
 ## 2026-06-03 Lane C TC-030 claim service
 
 **Commands run:**
