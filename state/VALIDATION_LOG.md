@@ -77,6 +77,28 @@ Move-Item backend/app/services archive/2026-06-03_source-registry-lane-migration
 
 - DB smoke remains unverified until Docker Desktop is running.
 
+## 2026-06-03 Lane A TA-020 source ORM model
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
+cd backend && mypy app/source_registry app/domain/source_contracts.py tests/source_registry/test_source_models.py
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+```
+
+**Results:**
+
+- Lane A source-registry tests pass: 15 tests.
+- Targeted Lane A typecheck passes: no issues in 6 source/test files.
+- Full verification passes: 26 tests, ruff clean, mypy clean (42 source files).
+- `SourceModel` maps `source.sources` without DB access at import time.
+
+**Residual risk:**
+
+- DB smoke remains unverified until Docker Desktop is running.
+- SQLAlchemy-backed repository is next (TA-030); live DB execution remains deferred.
+
 ## 2026-06-03 repo bootstrap + local index
 
 **Commands run:**

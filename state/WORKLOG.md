@@ -11,6 +11,7 @@ Append concise entries. Do not rely on chat history.
 - Anchored local `main` to `origin/main` and created local baseline commit `ffb73e1` (`Establish governed scaffold baseline`); no push performed.
 - Completed Lane A TA-010 by archiving backward-compat shims from `backend/app/repositories/` and `backend/app/services/` into `archive/2026-06-03_source-registry-lane-migration/backend/app/`.
 - `verify.sh` passes after TA-010: 22 tests pass; ruff clean; mypy clean (40 active source files); DB smoke skipped.
+- Completed Lane A TA-020 by adding `SourceModel` for `source.sources` plus model contract tests. `verify.sh` passes: 26 tests pass; ruff clean; mypy clean (42 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

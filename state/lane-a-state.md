@@ -10,7 +10,7 @@ Verification command(s):
 - mypy backend/app/source_registry backend/app/domain/source_contracts.py
 - ./scripts/verify.sh
 Verification result:
-- 11 Lane A tests passing; lint clean; mypy clean (40 active source files)
+- 15 Lane A tests passing; lint clean; mypy clean (42 source files)
 Failed or blocked gates:
 - L2-001: Docker Desktop not running — DB cannot start
 - L2-002: PostGIS extension not verified (Docker blocked)
@@ -22,10 +22,12 @@ Completion evidence:
 - backend/tests/source_registry/ (11 tests passing)
 - archive/2026-06-03_source-registry-lane-migration/backend/app/repositories/
 - archive/2026-06-03_source-registry-lane-migration/backend/app/services/
+- backend/app/source_registry/models.py (SourceModel for source.sources)
+- backend/tests/source_registry/test_source_models.py (4 model contract tests)
 Next lowest-dependency task:
-- TA-020: SQLAlchemy ORM model for source.sources
+- TA-030: SQLAlchemy-backed SourceRepository
 Do not work on yet:
-- SQLAlchemy-backed repository and DB smoke (needs Docker/PostGIS verification)
+- DB smoke (needs Docker/PostGIS verification)
 - Paid/commercial source connectors
 - Any Lane B/C/D files
 ```
