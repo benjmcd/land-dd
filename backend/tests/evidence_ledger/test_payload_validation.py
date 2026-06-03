@@ -108,6 +108,48 @@ def test_source_observation_rejects_unsupported_payload_key() -> None:
         service.create_observation(evidence)
 
 
+def test_source_observation_accepts_zoning_fixture_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        observed_value={
+            "zoning_district": "fixture-rural-district",
+            "intended_residential_use_prohibited": True,
+            "intended_residential_use_allowed": False,
+            "source_stale": True,
+        },
+        domain="zoning",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["zoning_district"] == "fixture-rural-district"
+    assert created.observed_value["intended_residential_use_prohibited"] is True
+
+
+def test_source_observation_rejects_non_boolean_zoning_fixture_flag() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        observed_value={
+            "zoning_district": "fixture-rural-district",
+            "intended_residential_use_prohibited": "yes",
+        },
+        domain="zoning",
+    )
+
+    with pytest.raises(ValueError, match="must be boolean"):
+        service.create_observation(evidence)
+
+
 def test_spatial_intersection_accepts_intersection_payload() -> None:
     area_id = uuid4()
     source_id = uuid4()

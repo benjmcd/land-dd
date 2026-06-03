@@ -18,6 +18,8 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "flood_zones",
     "flood_zone_code",
     "has_public_road_adjacency",
+    "intended_residential_use_allowed",
+    "intended_residential_use_prohibited",
     "no_public_road_adjacency",
     "observed_status",
     "public_road_adjacency",
@@ -29,6 +31,7 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "status",
     "value",
     "zone",
+    "zoning_district",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
@@ -121,6 +124,13 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
             "source_observation observed_value contains unsupported fields: "
             f"{', '.join(sorted(unknown_keys))}"
         )
+    for key in (
+        "intended_residential_use_allowed",
+        "intended_residential_use_prohibited",
+        "source_stale",
+    ):
+        if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
+            raise ValueError(f"source_observation observed_value '{key}' must be boolean")
 
 
 def _validate_spatial_intersection(evidence: EvidenceContract) -> None:

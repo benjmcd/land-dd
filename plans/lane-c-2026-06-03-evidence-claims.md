@@ -91,7 +91,7 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 2. Add fixture evidence patterns for at least one next hard-gate domain.
 3. Preserve evidence IDs, caveat propagation, severity/confidence separation, and verification tasks.
 4. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, and deterministic ordering for the added domain.
-5. Status: COMPLETE for the access fixture hard-gate scope. The rule engine now covers flood and access hard-gate fixtures. Zoning, wetlands, slope, and water remain pending follow-on slices.
+5. Status: COMPLETE for the access fixture hard-gate scope. At TC-080 completion, the rule engine covered flood and access hard-gate fixtures; zoning, wetlands, slope, and water were pending follow-on slices.
 
 ### TC-090: Wetlands fixture hard-gate coverage
 1. Extend deterministic rule handling for `WETLAND_G001` using mapped wetland/deepwater screening fixture evidence.
@@ -99,7 +99,7 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 3. Preserve evidence IDs, caveat propagation, severity/confidence separation, deterministic IDs/order, and verification tasks.
 4. Keep output language strictly screening-only: do not assert jurisdictional wetlands, delineation results, permitting outcomes, or final buildability.
 5. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for wetland fixture keys.
-6. Status: COMPLETE for the wetlands fixture hard-gate scope. The rule engine now covers flood, access, and wetlands hard-gate fixtures. Zoning, slope, and water remain pending follow-on slices.
+6. Status: COMPLETE for the wetlands fixture hard-gate scope. At TC-090 completion, the rule engine covered flood, access, and wetlands hard-gate fixtures; zoning, slope, and water were pending follow-on slices.
 
 ### TC-100: Slope/buildability fixture hard-gate coverage
 1. Extend deterministic rule handling for `SLOPE_G001` using fixture-derived low-slope buildable-area metrics.
@@ -108,7 +108,16 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 4. Avoid hard-coding a jurisdictional or engineering threshold; fixture evidence must carry the explicit insufficiency signal.
 5. Keep output language as a buildability screening proxy only: do not assert final buildability, site-plan approval, engineering feasibility, or permitted building envelope.
 6. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for slope fixture keys.
-7. Status: COMPLETE for the slope/buildability fixture hard-gate scope. The rule engine now covers flood, access, wetlands, and slope hard-gate fixtures. Zoning and water remain pending follow-on slices.
+7. Status: COMPLETE for the slope/buildability fixture hard-gate scope. At TC-100 completion, the rule engine covered flood, access, wetlands, and slope hard-gate fixtures; zoning and water were pending follow-on slices.
+
+### TC-110: Zoning/use fixture hard-gate coverage
+1. Extend deterministic rule handling for `ZONING_G001` using fixture source-observation evidence for intended residential/homestead use screening.
+2. Add fixture evidence patterns for explicit prohibited/unsupported intended residential use, allowed/no-claim, source failure, stale zoning evidence, and mixed/incomplete evidence.
+3. Preserve evidence IDs, caveat propagation, severity/confidence separation, deterministic IDs/order, and verification tasks.
+4. Avoid hard-coding a state, county, zoning district taxonomy, ordinance parser, or legal interpretation; fixture evidence must carry the explicit prohibited/unsupported signal.
+5. Keep output language as zoning/use screening only: do not assert final legal use, zoning compliance, permit eligibility, vested rights, minimum lot-size compliance, or buildability.
+6. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, deterministic ordering, and payload validation for zoning fixture keys.
+7. Status: COMPLETE for the zoning/use fixture hard-gate scope. The rule engine now covers flood, access, zoning, wetlands, and slope hard-gate fixtures. Water remains pending after this slice.
 
 ## Files likely to change
 
@@ -165,3 +174,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-080 complete for the access fixture hard-gate slice. Added deterministic access no-public-road-adjacency claims, access source-unavailable unknowns, access needs-review, stale access review claims, safe road-adjacency/legal-access language, and access adjacency payload validation. Lane C tests: 76 passing. Full verification: 131 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-090 complete for the wetlands fixture hard-gate slice. Added deterministic mapped-wetland/deepwater claims, wetland source-unavailable unknowns, wetland needs-review, stale wetland review claims, screening-only/no-delineation language, and wetland fixture payload validation. Lane C tests: 83 passing. Full verification: 138 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-100 complete for the slope/buildability fixture hard-gate slice. Added deterministic insufficient low-slope buildable-area claims, slope source-unavailable unknowns, slope needs-review, stale slope review claims, screening-only/no-final-buildability language, and slope derived-metric payload validation. Lane C tests: 90 passing. Full verification: 145 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-03: TC-110 complete for the zoning/use fixture hard-gate slice. Added deterministic intended residential/homestead use prohibited-or-unsupported claims, zoning source-unavailable unknowns, zoning needs-review for incomplete/mixed evidence, stale zoning review claims, screening-only/no-final-legal-use language, and zoning source-observation payload validation. Lane C tests: 100 passing. Full verification: 157 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

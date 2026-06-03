@@ -190,6 +190,56 @@ def make_slope_failure(area_id: UUID) -> EvidenceContract:
     )
 
 
+def make_zoning_evidence(
+    *,
+    area_id: UUID,
+    intended_residential_use_prohibited: bool = True,
+    intended_residential_use_allowed: bool | None = None,
+    confidence: ConfidenceBand = ConfidenceBand.MEDIUM,
+    source_stale: bool = False,
+    superseded_by: UUID | None = None,
+) -> EvidenceContract:
+    observed_value: dict[str, object] = {
+        "zoning_district": "fixture-rural-district",
+        "intended_residential_use_prohibited": intended_residential_use_prohibited,
+    }
+    if intended_residential_use_allowed is not None:
+        observed_value["intended_residential_use_allowed"] = (
+            intended_residential_use_allowed
+        )
+    if source_stale:
+        observed_value["source_stale"] = True
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ZONING_USE_SCREEN",
+        domain="zoning",
+        observation="Fixture zoning source screens intended residential/homestead use.",
+        observed_value=observed_value,
+        method_code="fixture_zoning_use_screen",
+        confidence=confidence,
+        caveat="Fixture zoning/use screening only; verify with county planning.",
+        superseded_by=superseded_by,
+    )
+
+
+def make_zoning_failure(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="ZONING_SOURCE_FAILURE",
+        domain="zoning",
+        observation="Fixture zoning source request failed.",
+        observed_value={},
+        method_code="fixture_zoning_use_screen",
+        confidence=ConfidenceBand.UNKNOWN,
+        caveat="Zoning fixture endpoint returned 503.",
+        is_source_failure=True,
+    )
+
+
 def test_load_ruleset_exposes_versioned_access_gate() -> None:
     ruleset = load_ruleset(DEFAULT_RULESET_PATH)
     rule = ruleset.hard_gate_for_condition(
@@ -198,6 +248,17 @@ def test_load_ruleset_exposes_versioned_access_gate() -> None:
 
     assert rule.code == "ACCESS_G001"
     assert rule.claim_code == "ACCESS_001"
+    assert rule.severity_on_fail == SeverityBand.CRITICAL
+
+
+def test_load_ruleset_exposes_versioned_zoning_gate() -> None:
+    ruleset = load_ruleset(DEFAULT_RULESET_PATH)
+    rule = ruleset.hard_gate_for_condition(
+        "intended_residential_use_prohibited_or_unknown"
+    )
+
+    assert rule.code == "ZONING_G001"
+    assert rule.claim_code == "ZONING_001"
     assert rule.severity_on_fail == SeverityBand.CRITICAL
 
 
@@ -386,6 +447,164 @@ def test_evaluate_access_outputs_are_deterministic_when_input_order_changes() ->
         "ACCESS_SOURCE_UNAVAILABLE_UNKNOWN",
         "ACCESS_EVIDENCE_NEEDS_REVIEW",
         "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW",
+    ]
+
+
+def test_evaluate_creates_zoning_claim_from_prohibited_intended_use() -> None:
+    area_id = uuid4()
+    evidence = make_zoning_evidence(area_id=area_id)
+    engine = RuleEngine.from_file()
+
+    first_result = engine.evaluate([evidence])
+    second_result = engine.evaluate([evidence])
+
+    assert first_result == second_result
+    claim = first_result[0]
+    assert claim.claim_code == "ZONING_001"
+    assert claim.area_id == area_id
+    assert claim.rule_code == "ZONING_G001"
+    assert claim.ruleset_id == "homestead_mvp_v0_1"
+    assert claim.ruleset_version == "0.1"
+    assert claim.severity == SeverityBand.CRITICAL
+    assert claim.confidence == ConfidenceBand.MEDIUM
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert claim.verification_required is True
+    assert "county planning" in (claim.verification_task or "")
+    assert "screening" in claim.user_safe_language
+    assert "does not determine final legal use" in claim.user_safe_language
+    assert "permit eligibility" in claim.user_safe_language
+
+
+def test_evaluate_creates_zoning_claim_from_unsupported_intended_use() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ZONING_USE_SCREEN",
+        domain="zoning",
+        observation="Fixture zoning source screens intended residential/homestead use.",
+        observed_value={
+            "zoning_district": "fixture-rural-district",
+            "intended_residential_use_allowed": False,
+        },
+        method_code="fixture_zoning_use_screen",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="Fixture zoning/use screening only; verify with county planning.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "ZONING_001"
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert "does not determine final legal use" in claim.user_safe_language
+
+
+def test_evaluate_ignores_allowed_zoning_use_evidence() -> None:
+    area_id = uuid4()
+    evidence = make_zoning_evidence(
+        area_id=area_id,
+        intended_residential_use_prohibited=False,
+        intended_residential_use_allowed=True,
+    )
+
+    assert RuleEngine.from_file().evaluate([evidence]) == []
+
+
+def test_evaluate_creates_unknown_claim_from_zoning_source_failure() -> None:
+    area_id = uuid4()
+    failure = make_zoning_failure(area_id)
+
+    claims = RuleEngine.from_file().evaluate([failure])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "ZONING_SOURCE_UNAVAILABLE_UNKNOWN"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.UNKNOWN
+    assert claim.rule_code == "ZONING_G001"
+    assert claim.evidence_ids == [failure.evidence_id]
+    assert "503" in claim.user_safe_language
+    assert "does not establish legal use" in claim.user_safe_language
+
+
+def test_evaluate_creates_stale_zoning_review_claim_from_fixture_signal() -> None:
+    area_id = uuid4()
+    stale_evidence = make_zoning_evidence(
+        area_id=area_id,
+        intended_residential_use_prohibited=False,
+        intended_residential_use_allowed=True,
+        confidence=ConfidenceBand.LOW,
+        source_stale=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([stale_evidence])
+
+    assert len(claims) == 1
+    stale_claim = claims[0]
+    assert stale_claim.claim_code == "ZONING_STALE_EVIDENCE_NEEDS_REVIEW"
+    assert stale_claim.severity == SeverityBand.INFORMATIONAL
+    assert stale_claim.confidence == ConfidenceBand.LOW
+    assert stale_claim.evidence_ids == [stale_evidence.evidence_id]
+    assert "stale" in stale_claim.user_safe_language
+    assert "does not determine final legal use" in stale_claim.user_safe_language
+
+
+def test_evaluate_creates_needs_review_claim_from_incomplete_zoning_evidence() -> None:
+    area_id = uuid4()
+    incomplete_evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ZONING_USE_SCREEN",
+        domain="zoning",
+        observation="Fixture zoning source did not expose intended-use compatibility.",
+        observed_value={"zoning_district": "fixture-rural-district"},
+        method_code="fixture_zoning_use_screen",
+        confidence=ConfidenceBand.LOW,
+        caveat="Zoning fixture lacks intended-use compatibility signal.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([incomplete_evidence])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "ZONING_EVIDENCE_NEEDS_REVIEW"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.LOW
+    assert claim.evidence_ids == [incomplete_evidence.evidence_id]
+    assert "conflicting or incomplete" in claim.user_safe_language
+    assert "does not determine final legal use" in claim.user_safe_language
+
+
+def test_evaluate_zoning_outputs_are_deterministic_when_input_order_changes() -> None:
+    area_id = uuid4()
+    prohibited = make_zoning_evidence(area_id=area_id)
+    allowed = make_zoning_evidence(
+        area_id=area_id,
+        intended_residential_use_prohibited=False,
+        intended_residential_use_allowed=True,
+        confidence=ConfidenceBand.HIGH,
+    )
+    failure = make_zoning_failure(area_id)
+    stale = make_zoning_evidence(
+        area_id=area_id,
+        intended_residential_use_prohibited=False,
+        intended_residential_use_allowed=True,
+        source_stale=True,
+    )
+
+    first_result = RuleEngine.from_file().evaluate([stale, allowed, failure, prohibited])
+    second_result = RuleEngine.from_file().evaluate([prohibited, failure, allowed, stale])
+
+    assert first_result == second_result
+    assert [claim.claim_code for claim in first_result] == [
+        "ZONING_001",
+        "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
+        "ZONING_EVIDENCE_NEEDS_REVIEW",
+        "ZONING_STALE_EVIDENCE_NEEDS_REVIEW",
     ]
 
 

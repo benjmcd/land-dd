@@ -14,6 +14,7 @@ DEFAULT_RULESET_PATH = (
 )
 FLOOD_HIGH_RISK_CONDITION = "material_intersection_with_high_risk_flood_zone"
 ACCESS_NO_PUBLIC_ROAD_CONDITION = "no_public_road_adjacency_or_access_source_unavailable"
+ZONING_INTENDED_USE_CONDITION = "intended_residential_use_prohibited_or_unknown"
 WETLAND_MAPPED_CONDITION = "material_intersection_with_mapped_wetlands"
 SLOPE_INSUFFICIENT_CONDITION = "insufficient_low_slope_buildable_area"
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
@@ -21,6 +22,10 @@ ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacenc
 ACCESS_NO_ADJACENCY_KEYS = ("no_public_road_adjacency",)
 ACCESS_NEEDS_REVIEW_CLAIM_CODE = "ACCESS_EVIDENCE_NEEDS_REVIEW"
 ACCESS_STALE_CLAIM_CODE = "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW"
+ZONING_ALLOWED_KEYS = ("intended_residential_use_allowed",)
+ZONING_PROHIBITED_KEYS = ("intended_residential_use_prohibited",)
+ZONING_NEEDS_REVIEW_CLAIM_CODE = "ZONING_EVIDENCE_NEEDS_REVIEW"
+ZONING_STALE_CLAIM_CODE = "ZONING_STALE_EVIDENCE_NEEDS_REVIEW"
 WETLAND_INTERSECTION_KEYS = ("intersects_mapped_wetlands",)
 WETLAND_NEEDS_REVIEW_CLAIM_CODE = "WETLAND_EVIDENCE_NEEDS_REVIEW"
 WETLAND_STALE_CLAIM_CODE = "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW"
@@ -71,6 +76,7 @@ class RuleEngine:
 
     def evaluate(self, evidence_list: list[EvidenceContract]) -> list[ClaimContract]:
         access_rule = self._ruleset.hard_gate_for_condition(ACCESS_NO_PUBLIC_ROAD_CONDITION)
+        zoning_rule = self._ruleset.hard_gate_for_condition(ZONING_INTENDED_USE_CONDITION)
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
         slope_rule = self._ruleset.hard_gate_for_condition(SLOPE_INSUFFICIENT_CONDITION)
         wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
@@ -104,6 +110,31 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_stale_access_evidence(evidence)
+            ]
+            zoning_prohibited = [
+                evidence
+                for evidence in area_evidence
+                if _is_zoning_prohibited_evidence(evidence)
+            ]
+            zoning_allowed = [
+                evidence
+                for evidence in area_evidence
+                if _is_zoning_allowed_evidence(evidence)
+            ]
+            zoning_incomplete = [
+                evidence
+                for evidence in area_evidence
+                if _is_incomplete_zoning_evidence(evidence)
+            ]
+            zoning_failures = [
+                evidence
+                for evidence in area_evidence
+                if _is_zoning_source_failure(evidence)
+            ]
+            stale_zoning_evidence = [
+                evidence
+                for evidence in area_evidence
+                if _is_stale_zoning_evidence(evidence)
             ]
             wetland_positive = [
                 evidence
@@ -197,6 +228,43 @@ class RuleEngine:
                         area_id,
                         access_rule,
                         stale_access_evidence,
+                    )
+                )
+            if zoning_prohibited:
+                claims.append(
+                    self._zoning_prohibited_claim(
+                        area_id,
+                        zoning_rule,
+                        zoning_prohibited,
+                    )
+                )
+            if zoning_failures:
+                claims.append(
+                    self._zoning_unknown_claim(area_id, zoning_rule, zoning_failures)
+                )
+            if zoning_incomplete or (
+                zoning_prohibited and (zoning_allowed or zoning_failures)
+            ):
+                claims.append(
+                    self._zoning_needs_review_claim(
+                        area_id,
+                        zoning_rule,
+                        _dedupe_evidence_records(
+                            [
+                                *zoning_prohibited,
+                                *zoning_allowed,
+                                *zoning_incomplete,
+                                *zoning_failures,
+                            ]
+                        ),
+                    )
+                )
+            if stale_zoning_evidence:
+                claims.append(
+                    self._zoning_stale_claim(
+                        area_id,
+                        zoning_rule,
+                        stale_zoning_evidence,
                     )
                 )
             if wetland_positive:
@@ -424,6 +492,149 @@ class RuleEngine:
             verification_required=True,
             verification_task=(
                 "Refresh stale access screening source evidence before final "
+                "interpretation."
+            ),
+        )
+
+    def _zoning_prohibited_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Zoning/use screening indicates the intended residential or homestead "
+            "use is prohibited or unsupported in the fixture. This is source-linked "
+            "screening only and does not determine final legal use, zoning "
+            "compliance, permit eligibility, vested rights, or buildability."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=(
+                "Zoning/use screening indicates intended residential or homestead "
+                "use is prohibited or unsupported."
+            ),
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _zoning_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Zoning/use screening remains unknown because required zoning source "
+            "evidence failed or was unavailable. This does not establish legal use, "
+            "zoning compliance, permit eligibility, or buildability."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code="ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
+            domain=rule.domain,
+            assertion="Zoning source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _zoning_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Zoning/use screening evidence is conflicting or incomplete and "
+            "requires human review. It does not determine final legal use, zoning "
+            "compliance, permit eligibility, vested rights, or buildability."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ZONING_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Zoning/use evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete zoning/use evidence before "
+                "relying on this screening result."
+            ),
+        )
+
+    def _zoning_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Zoning/use screening evidence is marked stale in the fixture and "
+            "should be refreshed before relying on zoning/use screening results. "
+            "It does not determine final legal use, zoning compliance, permit "
+            "eligibility, vested rights, or buildability."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ZONING_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Zoning/use evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale zoning/use screening source evidence before final "
                 "interpretation."
             ),
         )
@@ -990,6 +1201,61 @@ def _is_stale_access_evidence(evidence: EvidenceContract) -> bool:
     return (
         evidence.domain == "access"
         and not _is_access_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
+
+
+def _is_zoning_prohibited_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "zoning" or _is_zoning_source_failure(evidence):
+        return False
+    has_prohibited_signal = any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ZONING_PROHIBITED_KEYS
+    )
+    has_unsupported_signal = any(
+        evidence.observed_value.get(key) is not None
+        and _observed_false(evidence.observed_value.get(key))
+        for key in ZONING_ALLOWED_KEYS
+    )
+    return has_prohibited_signal or has_unsupported_signal
+
+
+def _is_zoning_allowed_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "zoning" or _is_zoning_source_failure(evidence):
+        return False
+    if any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ZONING_PROHIBITED_KEYS
+    ):
+        return False
+    return any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ZONING_ALLOWED_KEYS
+    )
+
+
+def _is_incomplete_zoning_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "zoning" or _is_zoning_source_failure(evidence):
+        return False
+    has_prohibited_signal = any(
+        evidence.observed_value.get(key) is not None for key in ZONING_PROHIBITED_KEYS
+    )
+    has_allowed_signal = any(
+        evidence.observed_value.get(key) is not None for key in ZONING_ALLOWED_KEYS
+    )
+    return not has_prohibited_signal and not has_allowed_signal
+
+
+def _is_zoning_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "zoning" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_stale_zoning_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "zoning"
+        and not _is_zoning_source_failure(evidence)
         and _observed_bool(evidence.observed_value.get("source_stale"))
     )
 
