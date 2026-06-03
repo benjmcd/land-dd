@@ -83,6 +83,27 @@ class EvidenceService:
         self._validate_required_text(evidence)
         return self._repo.add(evidence)
 
+    def supersede(
+        self,
+        evidence_id: UUID,
+        replacement: EvidenceContract,
+    ) -> EvidenceContract:
+        original = self._repo.get(evidence_id)
+        if original is None:
+            raise ValueError(f"Evidence '{evidence_id}' is not registered")
+        if original.superseded_by is not None:
+            raise ValueError(f"Evidence '{evidence_id}' is already superseded")
+        if replacement.evidence_id == evidence_id:
+            raise ValueError("replacement evidence must use a new evidence_id")
+        if replacement.superseded_by is not None:
+            raise ValueError("replacement evidence must not already be superseded")
+        if replacement.area_id != original.area_id:
+            raise ValueError("replacement evidence must reference the same area")
+
+        created = self._create_validated_replacement(replacement)
+        self._repo.mark_superseded(evidence_id, created.evidence_id)
+        return created
+
     def get(self, evidence_id: UUID) -> EvidenceContract | None:
         return self._repo.get(evidence_id)
 
@@ -105,6 +126,29 @@ class EvidenceService:
     def _validate_source_registered(self, source_id: UUID) -> None:
         if not self._source_checker.source_is_registered(source_id):
             raise ValueError(f"Source '{source_id}' is not registered")
+
+    def _create_validated_replacement(
+        self,
+        evidence: EvidenceContract,
+    ) -> EvidenceContract:
+        if evidence.evidence_type in HUMAN_EVIDENCE_TYPES:
+            return self.create_human_note(evidence)
+        if evidence.evidence_type == EvidenceType.SOURCE_FAILURE:
+            return self._create_source_failure_evidence(evidence)
+        return self.create_observation(evidence)
+
+    def _create_source_failure_evidence(
+        self,
+        evidence: EvidenceContract,
+    ) -> EvidenceContract:
+        self._validate_area_registered(evidence.area_id)
+        self._validate_source_registered(evidence.source_id)
+        if not evidence.is_source_failure:
+            raise ValueError("source failure evidence must set is_source_failure")
+        self._validate_required_text(evidence)
+        if evidence.caveat is None or not evidence.caveat.strip():
+            raise ValueError("caveat is required")
+        return self._repo.add(evidence)
 
     def _validate_required_text(self, evidence: EvidenceContract) -> None:
         _require_non_empty(evidence.evidence_code, "evidence_code")

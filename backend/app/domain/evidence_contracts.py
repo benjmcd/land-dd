@@ -24,5 +24,6 @@ class EvidenceContract(BaseModel):
     caveat: str | None = None
     is_negative_evidence: bool = False
     is_source_failure: bool = False
+    superseded_by: UUID | None = None
     source_date: str | None = None
     observed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

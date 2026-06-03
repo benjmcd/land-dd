@@ -12,7 +12,7 @@ Verification command(s):
 Verification result:
 - 16 Lane B tests passing
 - Lane B targeted mypy passes for area geometry service/tests
-- Full verification passes: 64 tests; lint clean; mypy clean (51 source files)
+- Full verification passes: 70 tests; lint clean; mypy clean (51 source files)
 Failed or blocked gates:
 - L4-001/L4-002: Basic polygon/multipolygon validation passes in memory
 - L4-006/L4-007: Geometry source/confidence fields exist; parcel-like areas are caveated as non-survey in service behavior

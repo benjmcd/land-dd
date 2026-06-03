@@ -15,15 +15,15 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 - ./scripts/verify.sh
 Verification result:
-- 16 Lane C tests passing
+- 22 Lane C tests passing
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 64 tests; lint clean; mypy clean (51 source files)
+- Full verification passes: 70 tests; lint clean; mypy clean (51 source files)
 Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
 - L5-002: NOT_STARTED (type-specific payload schema validation not implemented)
 - L5-005: PARTIAL (confidence/caveat/method/temporal fields exist; spatial precision not implemented)
-- L5-006: NOT_STARTED (supersession/amendment is TC-020)
+- L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original and stores replacement without silent overwrite)
 - L5-010: NOT_STARTED (audit events not implemented)
 - All L6 gates: NOT_STARTED (ClaimService not yet implemented)
 Completion evidence:
@@ -33,10 +33,10 @@ Completion evidence:
 - backend/app/domain/evidence_contracts.py (EvidenceContract)
 - backend/app/domain/claim_contracts.py (ClaimContract, with evidence_ids enforced)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
-- backend/tests/evidence_ledger/test_evidence_service.py (10 passing)
+- backend/tests/evidence_ledger/test_evidence_service.py (16 passing)
 - backend/tests/claims_engine/test_claim_contracts.py (3 passing)
 Next lowest-dependency task:
-- TC-020: Evidence supersession/amendment without silent overwrite
+- TC-030: ClaimService + InMemoryClaimRepository
 Do not work on yet:
 - Cross-lane integration wiring (Lane D's job)
 - PostGIS evidence-geometry linkage (needs Lane A + Lane B DB work)

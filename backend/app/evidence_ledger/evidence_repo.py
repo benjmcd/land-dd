@@ -14,6 +14,12 @@ class EvidenceRepository(Protocol):
 
     def exists(self, evidence_id: UUID) -> bool: ...
 
+    def mark_superseded(
+        self,
+        evidence_id: UUID,
+        superseded_by: UUID,
+    ) -> EvidenceContract: ...
+
     def list_by_area(self, area_id: UUID) -> list[EvidenceContract]: ...
 
     def list_by_source(self, source_id: UUID) -> list[EvidenceContract]: ...
@@ -38,6 +44,18 @@ class InMemoryEvidenceRepository:
 
     def exists(self, evidence_id: UUID) -> bool:
         return evidence_id in self._store
+
+    def mark_superseded(
+        self,
+        evidence_id: UUID,
+        superseded_by: UUID,
+    ) -> EvidenceContract:
+        original = self._store.get(evidence_id)
+        if original is None:
+            raise ValueError(f"Evidence '{evidence_id}' is not stored")
+        superseded = original.model_copy(update={"superseded_by": superseded_by})
+        self._store[evidence_id] = superseded
+        return superseded
 
     def list_by_area(self, area_id: UUID) -> list[EvidenceContract]:
         return [

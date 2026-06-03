@@ -2,6 +2,35 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane C TC-020 evidence supersession
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/evidence_ledger/ tests/claims_engine/ -v
+cd backend && mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+cd backend && ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Lane C evidence/claims tests pass: 22 tests.
+- Lane C targeted mypy passes: no issues in 11 source/test files.
+- Lane C targeted ruff passes.
+- Cross-lane import scan returns no matches; Lane C still does not import Lane A/B modules.
+- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (51 source files).
+- Test collection reports 70 tests.
+- DB smoke skipped because `RUN_DB_SMOKE=1` was not set and Docker Desktop is not running.
+
+**Residual risk:**
+
+- Supersession is verified only in the in-memory repository. Durable Postgres evidence supersession/audit behavior remains blocked by DB smoke and later repository work.
+- L5-002 payload schema validation and L5-010 audit events remain unimplemented.
+- ClaimService/rules engine work is still not started.
+
 ## 2026-06-03 Lane A TA-050 source provenance and license gates
 
 **Commands run:**
