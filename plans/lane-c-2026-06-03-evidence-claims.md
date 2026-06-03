@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 69 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 76 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -91,6 +91,7 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 2. Add fixture evidence patterns for at least one next hard-gate domain.
 3. Preserve evidence IDs, caveat propagation, severity/confidence separation, and verification tasks.
 4. Tests: positive, negative/no-claim, source-failure/unknown, stale/review, and deterministic ordering for the added domain.
+5. Status: COMPLETE for the access fixture hard-gate scope. The rule engine now covers flood and access hard-gate fixtures. Zoning, wetlands, slope, and water remain pending follow-on slices.
 
 ## Files likely to change
 
@@ -144,3 +145,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-050 complete for the in-memory evidence payload-validation slice. Added type-specific `observed_value` validators for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails, plus payload tests. Lane C tests: 59 passing. Full verification: 107 tests, ruff clean, mypy clean (59 source files); DB smoke skipped.
 - 2026-06-03: TC-060 complete for the in-memory audit-event slice. Added `EvidenceAuditEvent`, `InMemoryEvidenceAuditLog`, optional `EvidenceService` audit-log injection, and create/source-failure/human-note/supersede audit tests. Lane C tests: 63 passing. Full verification: 111 tests, ruff clean, mypy clean (60 source files); DB smoke skipped.
 - 2026-06-03: TC-070 complete for the in-memory flood contradiction/stale rule slice. Added deterministic needs-review claims for conflicting active evidence and positive-plus-source-failure evidence, explicit fixture `source_stale` handling, superseded-evidence exclusion, and deterministic review-output tests. Lane C tests: 69 passing. Full verification: 117 tests, ruff clean, mypy clean (60 source files); DB smoke skipped.
+- 2026-06-03: TC-080 complete for the access fixture hard-gate slice. Added deterministic access no-public-road-adjacency claims, access source-unavailable unknowns, access needs-review, stale access review claims, safe road-adjacency/legal-access language, and access adjacency payload validation. Lane C tests: 76 passing. Full verification: 131 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

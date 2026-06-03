@@ -17,8 +17,12 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "flood_zone",
     "flood_zones",
     "flood_zone_code",
+    "has_public_road_adjacency",
+    "no_public_road_adjacency",
     "observed_status",
+    "public_road_adjacency",
     "raw_value",
+    "road_distance_m",
     "source_record_id",
     "source_stale",
     "source_url",
@@ -31,10 +35,14 @@ SPATIAL_INTERSECTION_KEYS = {
     "flood_zones",
     "flood_zone_code",
     "geometry_relation",
+    "has_public_road_adjacency",
     "intersection_area_sq_m",
     "intersection_ratio",
     "intersects",
     "intersects_high_risk_flood_zone",
+    "no_public_road_adjacency",
+    "public_road_adjacency",
+    "road_distance_m",
     "source_stale",
 }
 SPATIAL_RESULT_KEYS = {
@@ -42,8 +50,11 @@ SPATIAL_RESULT_KEYS = {
     "flood_zones",
     "flood_zone_code",
     "geometry_relation",
+    "has_public_road_adjacency",
     "intersects",
     "intersects_high_risk_flood_zone",
+    "no_public_road_adjacency",
+    "public_road_adjacency",
 }
 DERIVED_METRIC_KEYS = {
     "calculation_method",
@@ -115,10 +126,16 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         )
     if not any(key in evidence.observed_value for key in SPATIAL_RESULT_KEYS):
         raise ValueError("spatial_intersection observed_value must contain a spatial result field")
-    for key in ("intersects", "intersects_high_risk_flood_zone"):
+    for key in (
+        "intersects",
+        "intersects_high_risk_flood_zone",
+        "has_public_road_adjacency",
+        "no_public_road_adjacency",
+        "public_road_adjacency",
+    ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"spatial_intersection observed_value '{key}' must be boolean")
-    for key in ("intersection_area_sq_m", "intersection_ratio"):
+    for key in ("intersection_area_sq_m", "intersection_ratio", "road_distance_m"):
         if key in evidence.observed_value:
             _require_non_negative_number(evidence.observed_value[key], key)
     ratio = evidence.observed_value.get("intersection_ratio")

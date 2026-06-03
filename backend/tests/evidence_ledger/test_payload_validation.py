@@ -47,13 +47,14 @@ def make_evidence(
     source_id: UUID,
     evidence_type: EvidenceType,
     observed_value: dict[str, object],
+    domain: str = "flood",
 ) -> EvidenceContract:
     return EvidenceContract(
         area_id=area_id,
         source_id=source_id,
         evidence_type=evidence_type,
         evidence_code=f"{evidence_type.value.upper()}_FIXTURE",
-        domain="flood",
+        domain=domain,
         observation="Fixture evidence payload.",
         observed_value=observed_value,
         method_code="fixture_payload_validation",
@@ -157,6 +158,28 @@ def test_spatial_intersection_accepts_source_stale_fixture_signal() -> None:
     created = service.create_observation(evidence)
 
     assert created.observed_value["source_stale"] is True
+
+
+def test_spatial_intersection_accepts_access_adjacency_fixture_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        observed_value={
+            "public_road_adjacency": False,
+            "road_distance_m": 875.25,
+            "source_stale": True,
+        },
+        domain="access",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["public_road_adjacency"] is False
+    assert created.observed_value["road_distance_m"] == 875.25
 
 
 def test_spatial_intersection_rejects_unsupported_payload_key() -> None:

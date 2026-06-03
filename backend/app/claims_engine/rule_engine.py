@@ -13,7 +13,12 @@ DEFAULT_RULESET_PATH = (
     Path(__file__).resolve().parents[3] / "config" / "ruleset_homestead_mvp.yaml"
 )
 FLOOD_HIGH_RISK_CONDITION = "material_intersection_with_high_risk_flood_zone"
+ACCESS_NO_PUBLIC_ROAD_CONDITION = "no_public_road_adjacency_or_access_source_unavailable"
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
+ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacency")
+ACCESS_NO_ADJACENCY_KEYS = ("no_public_road_adjacency",)
+ACCESS_NEEDS_REVIEW_CLAIM_CODE = "ACCESS_EVIDENCE_NEEDS_REVIEW"
+ACCESS_STALE_CLAIM_CODE = "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW"
 FLOOD_NEEDS_REVIEW_CLAIM_CODE = "FLOOD_EVIDENCE_NEEDS_REVIEW"
 FLOOD_STALE_CLAIM_CODE = "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
 
@@ -58,6 +63,7 @@ class RuleEngine:
         return self._ruleset.version
 
     def evaluate(self, evidence_list: list[EvidenceContract]) -> list[ClaimContract]:
+        access_rule = self._ruleset.hard_gate_for_condition(ACCESS_NO_PUBLIC_ROAD_CONDITION)
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
         active_evidence = sorted(
             (evidence for evidence in evidence_list if evidence.superseded_by is None),
@@ -70,6 +76,26 @@ class RuleEngine:
             key=lambda evidence: evidence.area_id,
         ):
             area_evidence = list(area_evidence_iter)
+            access_no_adjacency = [
+                evidence
+                for evidence in area_evidence
+                if _is_access_no_adjacency_evidence(evidence)
+            ]
+            access_adjacency = [
+                evidence
+                for evidence in area_evidence
+                if _is_access_adjacency_evidence(evidence)
+            ]
+            access_failures = [
+                evidence
+                for evidence in area_evidence
+                if _is_access_source_failure(evidence)
+            ]
+            stale_access_evidence = [
+                evidence
+                for evidence in area_evidence
+                if _is_stale_access_evidence(evidence)
+            ]
             flood_positive = [
                 evidence
                 for evidence in area_evidence
@@ -90,6 +116,40 @@ class RuleEngine:
                 for evidence in area_evidence
                 if _is_stale_flood_evidence(evidence)
             ]
+            if access_no_adjacency:
+                claims.append(
+                    self._access_no_adjacency_claim(
+                        area_id,
+                        access_rule,
+                        access_no_adjacency,
+                    )
+                )
+            if access_failures:
+                claims.append(
+                    self._access_unknown_claim(area_id, access_rule, access_failures)
+                )
+            if access_no_adjacency and (access_adjacency or access_failures):
+                claims.append(
+                    self._access_needs_review_claim(
+                        area_id,
+                        access_rule,
+                        _dedupe_evidence_records(
+                            [
+                                *access_no_adjacency,
+                                *access_adjacency,
+                                *access_failures,
+                            ]
+                        ),
+                    )
+                )
+            if stale_access_evidence:
+                claims.append(
+                    self._access_stale_claim(
+                        area_id,
+                        access_rule,
+                        stale_access_evidence,
+                    )
+                )
             if flood_positive:
                 claims.append(self._flood_positive_claim(area_id, flood_rule, flood_positive))
             if flood_failures:
@@ -109,6 +169,143 @@ class RuleEngine:
                     self._flood_stale_claim(area_id, flood_rule, stale_evidence)
                 )
         return claims
+
+    def _access_no_adjacency_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Road adjacency screening indicates no apparent public road adjacency. "
+            "This is a physical proxy only and does not determine recorded legal "
+            "access or easements."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion="Screening evidence found no apparent public road adjacency.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _access_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Access screening remains unknown because required road/access source "
+            "evidence failed or was unavailable. Road proximity does not determine "
+            "recorded legal access."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code="ACCESS_SOURCE_UNAVAILABLE_UNKNOWN",
+            domain=rule.domain,
+            assertion="Access source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _access_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Access screening evidence is conflicting or incomplete and requires "
+            "human review. Road proximity is a physical proxy and does not determine "
+            "recorded legal access."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ACCESS_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Access evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete access evidence before relying on "
+                "this screening result."
+            ),
+        )
+
+    def _access_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Access screening evidence is marked stale in the fixture and should be "
+            "refreshed before relying on the road-adjacency proxy."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ACCESS_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Access evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale access screening source evidence before final "
+                "interpretation."
+            ),
+        )
 
     def _flood_positive_claim(
         self,
@@ -359,6 +556,49 @@ def _require_key(
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"ruleset field '{key}' is required")
     return value
+
+
+def _is_access_no_adjacency_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "access" or _is_access_source_failure(evidence):
+        return False
+    if any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ACCESS_NO_ADJACENCY_KEYS
+    ):
+        return True
+    return any(
+        evidence.observed_value.get(key) is not None
+        and _observed_false(evidence.observed_value.get(key))
+        for key in ACCESS_ADJACENCY_TRUE_KEYS
+    )
+
+
+def _is_access_adjacency_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "access" or _is_access_source_failure(evidence):
+        return False
+    if any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ACCESS_NO_ADJACENCY_KEYS
+    ):
+        return False
+    return any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ACCESS_ADJACENCY_TRUE_KEYS
+    )
+
+
+def _is_access_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "access" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_stale_access_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "access"
+        and not _is_access_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
 
 
 def _is_high_risk_flood_evidence(evidence: EvidenceContract) -> bool:
