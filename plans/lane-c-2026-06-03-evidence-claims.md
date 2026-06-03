@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 57 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 59 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -71,7 +71,7 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 2. Keep validation in Lane C, before claim/rule use.
 3. Reject arbitrary observed_value payloads with clear errors.
 4. Tests: valid/invalid payloads for each covered evidence type.
-5. Status: COMPLETE for the in-memory service slice. Validators cover source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note observed_value guardrails. The shared `schemas/evidence_schema.json` still needs a coordinated schema-alignment pass.
+5. Status: COMPLETE for the in-memory service slice. Validators cover source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note observed_value guardrails. Spatial validation accepts `flood_zone_code` results and bounds `intersection_ratio` to `0..1`. The shared `schemas/evidence_schema.json` still needs a coordinated schema-alignment pass.
 
 ### TC-060: Evidence audit events
 1. Add in-memory audit-event emission for evidence create/supersede paths.
@@ -127,4 +127,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-020 complete for the in-memory evidence slice. Added `superseded_by` to `EvidenceContract`, repository marking support, and `EvidenceService.supersede` with same-area/new-ID/already-superseded/pre-superseded safeguards. Lane C tests: 23 passing. Full verification: 71 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
 - 2026-06-03: TC-030 complete for the in-memory claim-service slice. Added `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService` with evidence existence validation, claim/evidence ID consistency checks, same-area enforcement, unknown claim generation from source-failure evidence, user-safe-language enforcement, and verification-task enforcement. Lane C tests: 35 passing. Full verification: 83 tests, ruff clean, mypy clean (54 source files); DB smoke skipped.
 - 2026-06-03: TC-040 complete for one deterministic in-memory rules slice. Added `RuleEngine`, rule metadata on `ClaimContract`, ruleset loading for `config/ruleset_homestead_mvp.yaml`, deterministic claim IDs, high-risk flood positive claims, flood source-failure unknown claims, caveat propagation, superseded-evidence filtering, and rule-engine tests for determinism, empty input, multi-area grouping, invalid severity, and explicit positive-plus-failure output. Lane C tests: 45 passing. Full verification: 93 tests, ruff clean, mypy clean (56 source files); DB smoke skipped.
-- 2026-06-03: TC-050 complete for the in-memory evidence payload-validation slice. Added type-specific `observed_value` validators for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails, plus payload tests. Lane C tests: 57 passing. Full verification: 105 tests, ruff clean, mypy clean (58 source files); DB smoke skipped.
+- 2026-06-03: TC-050 complete for the in-memory evidence payload-validation slice. Added type-specific `observed_value` validators for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails, plus payload tests. Lane C tests: 59 passing. Full verification: 107 tests, ruff clean, mypy clean (59 source files); DB smoke skipped.

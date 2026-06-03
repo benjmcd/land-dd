@@ -13,17 +13,18 @@ cd backend && mypy app/evidence_ledger app/claims_engine app/domain/evidence_con
 rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
 cd backend && PYTHONPATH=. python -m pytest --collect-only -q
-docker version
+docker info --format '{{.ServerVersion}}'
 ```
 
 **Results:**
 
-- Lane C evidence/claims/rules tests pass: 57 tests.
+- Lane C evidence/claims/rules tests pass: 59 tests.
 - Lane C targeted ruff passes.
 - Lane C targeted mypy passes: no issues in 18 source/test files.
 - Cross-lane import scan returns no matches; Lane C still does not import Lane A/B modules.
-- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (58 source files).
-- Test collection reports 105 tests.
+- Payload tests cover allowed `flood_zone_code` spatial results and reject `intersection_ratio` above 1.
+- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (59 source files).
+- Test collection reports 107 tests.
 - Docker client is installed, but Docker Desktop Linux engine is not running; DB smoke remains blocked.
 
 **Residual risk:**
