@@ -38,6 +38,9 @@ class ClaimService:
         evidence_ids: list[UUID],
         domain: str = "unknown",
         verification_task: str | None = None,
+        rule_code: str | None = None,
+        ruleset_id: str | None = None,
+        ruleset_version: str | None = None,
     ) -> ClaimContract:
         _require_non_empty(claim_code, "claim_code")
         _require_non_empty(domain, "domain")
@@ -54,6 +57,9 @@ class ClaimService:
             severity=SeverityBand.UNKNOWN,
             confidence=ConfidenceBand.UNKNOWN,
             evidence_ids=list(evidence_ids),
+            rule_code=rule_code,
+            ruleset_id=ruleset_id,
+            ruleset_version=ruleset_version,
             verification_required=True,
             verification_task=verification_task
             or "Re-run or manually verify the failed source before treating this item as resolved.",

@@ -17,6 +17,9 @@ class ClaimContract(BaseModel):
     severity: SeverityBand = SeverityBand.UNKNOWN
     confidence: ConfidenceBand = ConfidenceBand.UNKNOWN
     evidence_ids: list[UUID]
+    rule_code: str | None = None
+    ruleset_id: str | None = None
+    ruleset_version: str | None = None
     verification_required: bool = True
     verification_task: str | None = None
 

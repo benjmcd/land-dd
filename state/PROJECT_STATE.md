@@ -14,11 +14,11 @@ Verification command(s):
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 83 tests pass; lint clean; mypy clean (54 source files)
+- 93 tests pass; lint clean; mypy clean (56 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
 - Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
-- Lane C in-memory evidence/claim-service slice passes targeted runtime, type, lint, and import-isolation checks
+- Lane C in-memory evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks
 - DB smoke skipped/blocked because Docker Desktop is not running
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
@@ -33,14 +33,15 @@ Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory evidence service scope
 - L5-002/L5-010: NOT_STARTED (payload schema validation and audit events)
 - L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original without deleting or overwriting)
-- L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim-service scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
-- L6-002/L6-003/L6-008/L6-010: NOT_STARTED (versioned deterministic rules, contradiction handling, and ruleset module are pending)
-- L6-005/L6-009: PARTIAL (unknown claims propagate source-failure caveats; broader positive/negative/stale/contradiction rule coverage pending)
+- L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim/rule scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
+- L6-002/L6-003/L6-010: PARTIAL/PASS for one flood hard-gate rule (ruleset ID/version load, deterministic claim IDs, and rule logic lives in `rule_engine.py`, not an LLM/UI prompt)
+- L6-005/L6-009: PARTIAL (rule-generated flood claims propagate caveats and cover positive, unknown/source-failure, low-risk, empty-input, multi-area, input-order-determinism, invalid-rule-config, and superseded-evidence cases; stale/contradiction/broader rule categories pending)
+- L6-008: NOT_STARTED (contradiction/needs-review claims pending)
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (35 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (45 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -50,8 +51,8 @@ Completion evidence:
 - tests/fixtures/geometries/
 Next lowest-dependency task:
 - Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
-- Lane C: TC-040 (YAML rules engine slice)
-- Lane D: TD-020 (thin routers) can proceed after coordinator review; TD-030 report integration should wait for deterministic rule output
+- Lane C: TC-050 (evidence payload schema validation)
+- Lane D: TD-020 (thin routers) can proceed after coordinator review; TD-030 report integration should stay fixture-only until payload validation/audit gaps are addressed
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -107,7 +108,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-83 tests pass; lint clean; mypy clean (54 source files). DB smoke blocked until Docker Desktop starts.
+93 tests pass; lint clean; mypy clean (56 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

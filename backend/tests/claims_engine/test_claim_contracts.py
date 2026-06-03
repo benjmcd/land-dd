@@ -50,3 +50,21 @@ def test_claim_stores_verification_task() -> None:
     )
     assert claim.verification_required is True
     assert "delineation" in (claim.verification_task or "")
+
+
+def test_claim_stores_rule_metadata() -> None:
+    claim = ClaimContract(
+        area_id=uuid4(),
+        claim_code="FLOOD_001",
+        domain="flood",
+        assertion="Mapped data indicates possible flood constraint.",
+        severity=SeverityBand.HIGH,
+        confidence=ConfidenceBand.MEDIUM,
+        evidence_ids=[uuid4()],
+        rule_code="FLOOD_G001",
+        ruleset_id="homestead_mvp_v0_1",
+        ruleset_version="0.1",
+    )
+    assert claim.rule_code == "FLOOD_G001"
+    assert claim.ruleset_id == "homestead_mvp_v0_1"
+    assert claim.ruleset_version == "0.1"

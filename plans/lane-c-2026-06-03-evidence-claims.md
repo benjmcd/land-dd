@@ -14,13 +14,13 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 ## Current state
 
 - `EvidenceContract` in `backend/app/domain/evidence_contracts.py` (evidence_type, evidence_code, domain, observation, observed_value, source_id, method_code, confidence, caveat, is_source_failure, etc.).
-- `ClaimContract` in `backend/app/domain/claim_contracts.py` (evidence_ids enforced, severity + confidence separate).
+- `ClaimContract` in `backend/app/domain/claim_contracts.py` (evidence_ids enforced, severity + confidence separate, rule metadata fields).
 - `EvidenceType` enum in `backend/app/domain/enums.py`.
 - `SourceExistsProtocol`, `AreaExistsProtocol` in `backend/app/domain/protocols.py`.
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
-- `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService`.
+- `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 35 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 45 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -61,9 +61,21 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 
 ### TC-040: YAML rules engine slice
 1. Create `backend/app/claims_engine/rule_engine.py` that loads `config/ruleset_homestead_mvp.yaml`.
-2. Implement `evaluate(evidence_list: list[EvidenceContract]) -> list[ClaimContract]` for ONE rule (e.g., flood_screen).
-3. Rule must be deterministic for fixed inputs (L6-003).
-4. Tests: positive evidence → positive claim; failure evidence → unknown claim.
+2. Implement `evaluate(evidence_list: list[EvidenceContract]) -> list[ClaimContract]` for one flood hard-gate rule.
+3. Rule output is deterministic for fixed inputs and input order changes (L6-003).
+4. Tests: positive evidence -> positive claim; failure evidence -> unknown claim.
+5. Status: COMPLETE for one in-memory deterministic flood hard-gate slice. The loader supports the current ruleset YAML shape, not arbitrary YAML. Tests cover ruleset version loading, deterministic high-risk flood claims, source-failure unknowns, low-risk no-claim output, input-order determinism, empty input, multi-area grouping, invalid severity rejection, explicit positive-plus-failure output, and superseded evidence exclusion.
+
+### TC-050: Evidence payload schema validation
+1. Define evidence-type-specific observed_value validators for at least `source_observation`, `spatial_intersection`, `derived_metric`, and `source_failure`.
+2. Keep validation in Lane C, before claim/rule use.
+3. Reject arbitrary observed_value payloads with clear errors.
+4. Tests: valid/invalid payloads for each covered evidence type.
+
+### TC-060: Evidence audit events
+1. Add in-memory audit-event emission for evidence create/supersede paths.
+2. Keep durable audit persistence blocked until DB smoke is available.
+3. Tests: create/source-failure/human-note/supersede emit auditable events without overwriting evidence.
 
 ## Files likely to change
 
@@ -98,12 +110,14 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 | AreaExistsProtocol needs real implementation | Available for in-memory wiring | Lane B AreaService exposes `area_is_registered`; integration wiring remains Lane D's job |
 | New EvidenceType value | Requires shared enums.py change | Stop and record blocker |
 | YAML rules engine needs jurisdiction | Undecided | Use fixture rules only; do not hard-code state |
+| YAML parser scope | Accepted for TC-040 | Current loader supports the checked-in ruleset shape only; broaden with an approved parser/dependency decision before complex YAML features |
 
 ## Decision log
 
 - 2026-06-03: Lane C owns evidence ledger + claims engine (MILESTONE Levels 5-6).
 - 2026-06-03: Cross-lane validation via Protocol injection — never import from source_registry or area_geometry.
 - 2026-06-03: Evidence supersession adds superseded_by field (not silent overwrite).
+- 2026-06-03: TC-040 uses a narrow no-new-dependency ruleset loader for the current YAML shape; broader YAML support requires an explicit dependency/design decision.
 
 ## Progress log
 
@@ -111,3 +125,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-010 complete for the in-memory evidence slice. Added `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService` with source/area protocol validation, production-use rejection for observations, source-failure evidence creation, typed human notes, retrieval by area/source/type, and duplicate evidence protection. Lane C tests: 16 passing. Full verification: 64 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
 - 2026-06-03: TC-020 complete for the in-memory evidence slice. Added `superseded_by` to `EvidenceContract`, repository marking support, and `EvidenceService.supersede` with same-area/new-ID/already-superseded/pre-superseded safeguards. Lane C tests: 23 passing. Full verification: 71 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
 - 2026-06-03: TC-030 complete for the in-memory claim-service slice. Added `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService` with evidence existence validation, claim/evidence ID consistency checks, same-area enforcement, unknown claim generation from source-failure evidence, user-safe-language enforcement, and verification-task enforcement. Lane C tests: 35 passing. Full verification: 83 tests, ruff clean, mypy clean (54 source files); DB smoke skipped.
+- 2026-06-03: TC-040 complete for one deterministic in-memory rules slice. Added `RuleEngine`, rule metadata on `ClaimContract`, ruleset loading for `config/ruleset_homestead_mvp.yaml`, deterministic claim IDs, high-risk flood positive claims, flood source-failure unknown claims, caveat propagation, superseded-evidence filtering, and rule-engine tests for determinism, empty input, multi-area grouping, invalid severity, and explicit positive-plus-failure output. Lane C tests: 45 passing. Full verification: 93 tests, ruff clean, mypy clean (56 source files); DB smoke skipped.
