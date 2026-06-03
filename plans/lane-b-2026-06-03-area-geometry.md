@@ -89,4 +89,4 @@ mypy backend/app/area_geometry backend/app/domain/area_contracts.py
 ## Progress log
 
 - 2026-06-03: Lane scaffold created. `AreaContract` stub defined. Test directory created.
-- 2026-06-03: TB-010 through TB-040 complete for the in-memory fixture slice. Added `AreaRepository`, `InMemoryAreaRepository`, `AreaService`, GeoJSON validator, fixtures, and tests. Lane B tests: 11 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.
+- 2026-06-03: TB-010 through TB-040 complete for the in-memory fixture slice. Added `AreaRepository`, `InMemoryAreaRepository`, `AreaService`, GeoJSON/SRID validator, fixtures, and tests. Lane B tests: 16 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.

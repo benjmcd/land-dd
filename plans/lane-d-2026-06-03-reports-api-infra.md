@@ -24,7 +24,7 @@ Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay g
 
 Lane D's integration work is BLOCKED until:
 1. Lane A completes TA-060 (DB smoke passes, migrations applied).
-2. Lane B completes TB-010 (AreaService + InMemoryAreaRepository ready).
+2. Lane B completes TB-010 (AreaService + InMemoryAreaRepository ready). Done for the in-memory fixture slice on 2026-06-03.
 3. Lane C completes TC-030 (ClaimService ready).
 
 **During the blocking period**, Lane D should work on:
@@ -107,7 +107,7 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 | Blocker | Status | Impact |
 |---|---|---|
 | Lane A TA-060 DB smoke | Blocked | TD-040 cannot proceed |
-| Lane B TB-010 AreaService | Pending | TD-030 uses stub until done |
+| Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Pending | TD-030 uses stub until done |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |
 

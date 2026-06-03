@@ -91,8 +91,8 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 
 | Blocker | Status | Impact |
 |---|---|---|
-| SourceExistsProtocol needs real implementation | Blocked on Lane A | TC-010 uses stub; integration needs Lane A |
-| AreaExistsProtocol needs real implementation | Blocked on Lane B | TC-010 uses stub; integration needs Lane B |
+| SourceExistsProtocol needs real implementation | Pending | TC-010 uses stub; Lane A SourceService does not yet expose all protocol methods |
+| AreaExistsProtocol needs real implementation | Available for in-memory wiring | Lane B AreaService exposes `area_is_registered`; integration wiring remains Lane D's job |
 | New EvidenceType value | Requires shared enums.py change | Stop and record blocker |
 | YAML rules engine needs jurisdiction | Undecided | Use fixture rules only; do not hard-code state |
 

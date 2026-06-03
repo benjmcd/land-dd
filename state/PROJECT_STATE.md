@@ -28,7 +28,7 @@ Failed or blocked gates:
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (23 tests)
-- backend/tests/area_geometry/ (11 tests)
+- backend/tests/area_geometry/ (16 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - tests/fixtures/geometries/

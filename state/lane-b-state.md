@@ -10,7 +10,7 @@ Verification command(s):
 - mypy backend/app/area_geometry backend/app/domain/area_contracts.py
 - ./scripts/verify.sh
 Verification result:
-- 11 Lane B tests passing
+- 16 Lane B tests passing
 - Lane B targeted mypy passes for area geometry service/tests
 - Full verification passes: 49 tests; lint clean; mypy clean (48 source files)
 Failed or blocked gates:

@@ -23,7 +23,7 @@ C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
 - Source seed dry-run validates 8 `Must` registry rows: DS-001, DS-002, DS-003, DS-004, DS-010, DS-011, DS-017, DS-023.
 - Source seed JSON output returns the same 8 rows with source names, organizations, and registry IDs.
 - Targeted Lane A typecheck passes: no issues in 7 source/test files.
-- Lane B area-geometry tests pass: 11 tests.
+- Lane B area-geometry tests pass: 16 tests.
 - Initial targeted Lane B typecheck found one `json.loads` `Any` return in `test_area_service.py`; fixed with a fixture-shape assertion and cast.
 - Full verification initially failed on Lane B ruff issues in the untracked geometry slice; fixed with targeted `ruff check app/area_geometry/geometry_validator.py tests/area_geometry/test_area_service.py --fix --unsafe-fixes`.
 - Plain `bash ./scripts/verify.sh` failed because `bash` resolved to the Windows WSL launcher and `/bin/bash` is unavailable.

@@ -35,8 +35,8 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| SourceExistsProtocol real impl | Lane A pending | TC-010 uses stub; full integration in Lane D |
-| AreaExistsProtocol real impl | Lane B pending | TC-010 uses stub; full integration in Lane D |
+| SourceExistsProtocol real impl | Pending | Lane A SourceService does not yet expose SourceExistsProtocol methods; TC-010 uses stub; full integration in Lane D |
+| AreaExistsProtocol real impl | Available for in-memory wiring | Lane B AreaService exposes `area_is_registered`; full integration remains Lane D's job |
 | Jurisdiction for rules | Undecided | Use fixture rules only |
 
 ## Active plan

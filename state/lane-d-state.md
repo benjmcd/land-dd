@@ -33,7 +33,7 @@ Do not work on yet:
 | Item | Status | Impact |
 |---|---|---|
 | Lane A TA-060 DB smoke | Blocked | TD-040 (persisted reports) blocked |
-| Lane B TB-010 AreaService | Pending | TD-030 integration needs AreaService |
+| Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Pending | TD-030 integration needs ClaimService |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
 
