@@ -17,12 +17,12 @@ cd backend && PYTHONPATH=. python -m pytest --collect-only -q
 
 **Results:**
 
-- Lane C evidence/claims tests pass: 22 tests.
+- Lane C evidence/claims tests pass: 23 tests.
 - Lane C targeted mypy passes: no issues in 11 source/test files.
 - Lane C targeted ruff passes.
 - Cross-lane import scan returns no matches; Lane C still does not import Lane A/B modules.
 - Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (51 source files).
-- Test collection reports 70 tests.
+- Test collection reports 71 tests.
 - DB smoke skipped because `RUN_DB_SMOKE=1` was not set and Docker Desktop is not running.
 
 **Residual risk:**

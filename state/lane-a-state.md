@@ -14,7 +14,7 @@ Verification command(s):
 Verification result:
 - 28 Lane A tests passing
 - Source seed dry-run validates 8 `Must` registry rows
-- Full verification passes: 70 tests; lint clean; mypy clean (51 source files)
+- Full verification passes: 71 tests; lint clean; mypy clean (51 source files)
 Failed or blocked gates:
 - L2-001: Docker Desktop not running — DB cannot start
 - L2-002: PostGIS extension not verified (Docker blocked)

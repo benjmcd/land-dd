@@ -14,7 +14,7 @@ Verification command(s):
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 70 tests pass; lint clean; mypy clean (51 source files)
+- 71 tests pass; lint clean; mypy clean (51 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
 - Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
@@ -37,7 +37,7 @@ Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (22 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (23 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -104,7 +104,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-70 tests pass; lint clean; mypy clean (51 source files). DB smoke blocked until Docker Desktop starts.
+71 tests pass; lint clean; mypy clean (51 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

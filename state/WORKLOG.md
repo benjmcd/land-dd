@@ -20,8 +20,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TC-010: 59 tests pass; ruff clean; mypy clean (51 source files); DB smoke skipped.
 - Completed Lane A TA-050 by adding the source provenance/license ADR, strengthening the canonical data-source license review template, wiring explicit governance fields through the source register/schema/seed path, and adding fail-closed SourceService production-use checks. Lane A tests pass: 28 tests.
 - `verify.sh` passes via Git Bash after TA-050: 64 collected tests; ruff clean; mypy clean (51 source files); DB smoke skipped.
-- Completed Lane C TC-020 for the in-memory evidence slice: `superseded_by`, repository supersession marking, and service safeguards for same-area replacement, new evidence IDs, already-superseded originals, and source-failure replacement. Lane C tests pass: 22 tests.
-- `verify.sh` passes via Git Bash after TC-020: 70 collected tests; ruff clean; mypy clean (51 source files); DB smoke skipped.
+- Completed Lane C TC-020 for the in-memory evidence slice: `superseded_by`, repository supersession marking, and service safeguards for same-area replacement, new evidence IDs, already-superseded originals, pre-superseded new records, and source-failure replacement. Lane C tests pass: 23 tests.
+- `verify.sh` passes via Git Bash after TC-020: 71 collected tests; ruff clean; mypy clean (51 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

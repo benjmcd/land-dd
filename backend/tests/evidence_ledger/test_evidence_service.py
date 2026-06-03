@@ -224,6 +224,18 @@ def test_repository_rejects_duplicate_evidence_id_without_overwrite() -> None:
     assert service.get(observation.evidence_id) == observation
 
 
+def test_create_observation_rejects_pre_superseded_record() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_observation(area_id, source_id).model_copy(
+        update={"superseded_by": uuid4()}
+    )
+
+    with pytest.raises(ValueError, match="must not already be superseded"):
+        service.create_observation(evidence)
+
+
 def test_supersede_marks_original_and_stores_replacement() -> None:
     area_id = uuid4()
     source_id = uuid4()

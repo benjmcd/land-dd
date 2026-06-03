@@ -20,7 +20,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
 - `backend/app/claims_engine/` module directory exists (empty except package marker).
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 22 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 23 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -108,4 +108,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 
 - 2026-06-03: Lane scaffold created. EvidenceContract + ClaimContract in per-lane files. 6 contract tests passing.
 - 2026-06-03: TC-010 complete for the in-memory evidence slice. Added `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService` with source/area protocol validation, production-use rejection for observations, source-failure evidence creation, typed human notes, retrieval by area/source/type, and duplicate evidence protection. Lane C tests: 16 passing. Full verification: 64 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
-- 2026-06-03: TC-020 complete for the in-memory evidence slice. Added `superseded_by` to `EvidenceContract`, repository marking support, and `EvidenceService.supersede` with same-area/new-ID/already-superseded safeguards. Lane C tests: 22 passing. Full verification: 70 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
+- 2026-06-03: TC-020 complete for the in-memory evidence slice. Added `superseded_by` to `EvidenceContract`, repository marking support, and `EvidenceService.supersede` with same-area/new-ID/already-superseded/pre-superseded safeguards. Lane C tests: 23 passing. Full verification: 71 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.

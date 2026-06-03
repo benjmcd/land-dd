@@ -15,10 +15,10 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 - ./scripts/verify.sh
 Verification result:
-- 22 Lane C tests passing
+- 23 Lane C tests passing
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 70 tests; lint clean; mypy clean (51 source files)
+- Full verification passes: 71 tests; lint clean; mypy clean (51 source files)
 Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
 - L5-002: NOT_STARTED (type-specific payload schema validation not implemented)
@@ -33,7 +33,7 @@ Completion evidence:
 - backend/app/domain/evidence_contracts.py (EvidenceContract)
 - backend/app/domain/claim_contracts.py (ClaimContract, with evidence_ids enforced)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
-- backend/tests/evidence_ledger/test_evidence_service.py (16 passing)
+- backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
 - backend/tests/claims_engine/test_claim_contracts.py (3 passing)
 Next lowest-dependency task:
 - TC-030: ClaimService + InMemoryClaimRepository

@@ -40,6 +40,7 @@ class EvidenceService:
         if evidence.is_source_failure:
             raise ValueError("source failure evidence must use create_source_failure")
         self._validate_required_text(evidence)
+        self._validate_new_record_not_superseded(evidence)
         return self._repo.add(evidence)
 
     def create_source_failure(
@@ -81,6 +82,7 @@ class EvidenceService:
         if evidence.is_source_failure:
             raise ValueError("human notes cannot be source-failure evidence")
         self._validate_required_text(evidence)
+        self._validate_new_record_not_superseded(evidence)
         return self._repo.add(evidence)
 
     def supersede(
@@ -146,6 +148,7 @@ class EvidenceService:
         if not evidence.is_source_failure:
             raise ValueError("source failure evidence must set is_source_failure")
         self._validate_required_text(evidence)
+        self._validate_new_record_not_superseded(evidence)
         if evidence.caveat is None or not evidence.caveat.strip():
             raise ValueError("caveat is required")
         return self._repo.add(evidence)
@@ -155,6 +158,10 @@ class EvidenceService:
         _require_non_empty(evidence.domain, "domain")
         _require_non_empty(evidence.observation, "observation")
         _require_non_empty(evidence.method_code, "method_code")
+
+    def _validate_new_record_not_superseded(self, evidence: EvidenceContract) -> None:
+        if evidence.superseded_by is not None:
+            raise ValueError("new evidence records must not already be superseded")
 
 
 def _require_non_empty(value: str, field_name: str) -> None:
