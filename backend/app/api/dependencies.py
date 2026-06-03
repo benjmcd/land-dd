@@ -12,6 +12,7 @@ from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.adapters import AreaServiceProtocolAdapter, SourceServiceProtocolAdapter
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository
@@ -31,8 +32,8 @@ def create_api_services() -> ApiServices:
     evidence_repo = InMemoryEvidenceRepository()
     evidence_service = EvidenceService(
         evidence_repo,
-        source_service,
-        area_service,
+        SourceServiceProtocolAdapter(source_service),
+        AreaServiceProtocolAdapter(area_service),
     )
     claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
     report_service = ReportRunService(

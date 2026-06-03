@@ -18,7 +18,7 @@ Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay g
 - `backend/app/reports/` and `backend/app/api/` module directories exist.
 - Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
-- 11 Lane D report/API tests pass.
+- 15 Lane D report/API tests pass.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) is a hard prerequisite for integration wiring.
 
@@ -76,10 +76,11 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 
 ### TD-050: Implement SourceExistsProtocol + AreaExistsProtocol adapters
 1. Create `backend/app/reports/adapters.py` with:
-   - `SourceServiceProtocolAdapter(source_service: SourceService)` implementing `SourceExistsProtocol`
-   - `AreaServiceProtocolAdapter(area_service: AreaService)` implementing `AreaExistsProtocol`
+   - `SourceServiceProtocolAdapter` implementing `SourceExistsProtocol`
+   - `AreaServiceProtocolAdapter` implementing `AreaExistsProtocol`
 2. Wire adapters into `EvidenceService` constructor in the report pipeline.
-3. Tests confirm source-failure evidence is created when source is not registered.
+3. Tests confirm adapter-backed `EvidenceService` preserves production-use guardrails and still creates source-failure evidence for registered sources.
+4. Status: COMPLETE for the in-memory protocol adapter wiring.
 
 ## Files likely to change
 
@@ -127,3 +128,4 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: Lane scaffold created. ReportRunContract stub defined. Test directories ready.
 - 2026-06-03: TD-020 complete for the in-memory API scaffold. Added per-app in-memory API services, source/area/evidence/report-run routers, router registration, and API contract tests for happy paths and representative 422 cases. Lane D tests: 7 passing. Full verification: 122 tests, ruff clean, mypy clean (65 source files); DB smoke skipped.
 - 2026-06-03: TD-030 complete for the in-memory report-run service. Added ReportRunService, populated ReportRunContract fields, API report-run service wiring, and fixture tests for evidence-linked claims/unknowns/caveats, no-evidence caveat handling, and repeatable claim reuse. Lane D tests: 11 passing. Full verification: 126 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-03: TD-050 complete for the in-memory protocol adapter wiring. Added `backend/app/reports/adapters.py`, wired `SourceServiceProtocolAdapter` and `AreaServiceProtocolAdapter` into `EvidenceService` construction, and added adapter-focused tests for delegation plus production-use/source-failure guardrails. Lane D tests: 15 passing. Full verification: 172 tests, ruff clean, mypy clean (69 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

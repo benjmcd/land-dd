@@ -2,6 +2,35 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane D TD-050 protocol adapter wiring
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest -q tests/reports/test_adapters.py tests/reports/test_report_service.py tests/api/test_api_scaffold.py
+cd backend && PYTHONPATH=. python -m pytest -q tests/reports tests/api
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q tests/reports tests/api
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q
+cd backend && ruff check app/reports app/api tests/reports tests/api
+cd backend && mypy app/reports app/api tests/reports tests/api
+C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh
+```
+
+**Results:**
+
+- Lane D report/API tests pass: 15 tests.
+- Cross-lane adapter wiring preserves the existing report-service behavior and guardrails while making the `EvidenceService` protocol seam explicit.
+- Lane D targeted ruff passes.
+- Lane D targeted mypy passes: no issues in 16 source/test files.
+- Full verification through explicit Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (69 source files).
+- Test collection reports 172 tests.
+- Docker client is installed, but Docker Desktop Linux engine is not running; DB smoke remains blocked.
+
+**Residual risk:**
+
+- TD-050 is intentionally in-memory only. Persisted report runs still wait on DB smoke / Lane A TA-060.
+- The adapter layer is thin by design; its value is architectural clarity and protocol isolation, not new behavior.
+
 ## 2026-06-03 Lane C TC-120 water-context hard-gate fixture coverage
 
 **Commands run:**

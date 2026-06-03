@@ -46,6 +46,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via explicit Git Bash after TC-110: 157 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 - Completed Lane C TC-120 for the water-context hard-gate fixture slice: deterministic `WATER_001`, water source-unavailable unknown, water needs-review for incomplete/mixed evidence including internally contradictory fixture records, stale water review, screening-only/no-water-rights/no-well-viability language, and water source-observation payload validation. Lane C tests pass: 111 tests.
 - `verify.sh` passes via explicit Git Bash after TC-120: 168 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
+- Completed Lane D TD-050 for the in-memory protocol adapter wiring: added `SourceServiceProtocolAdapter` and `AreaServiceProtocolAdapter`, wired them into `EvidenceService` construction in the report pipeline, and added adapter-focused delegation/guardrail tests. Lane D tests pass: 15 tests.
+- `verify.sh` passes via explicit Git Bash after TD-050: 172 tests pass; ruff clean; mypy clean (69 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 
 ## 2026-06-03 (repo bootstrap + local index)
 
