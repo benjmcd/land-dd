@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/source.schema.json",
+  "title": "Source",
+  "type": "object",
+  "required": [
+    "source_id",
+    "name",
+    "domain",
+    "authority_level",
+    "commercial_use_status",
+    "cache_allowed",
+    "export_allowed"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "organization": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "homepage_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "authority_level": {
+      "type": "string"
+    },
+    "geographic_scope": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "update_cadence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "commercial_use_status": {
+      "type": "string"
+    },
+    "license_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "attribution_required": {
+      "type": "boolean"
+    },
+    "ai_use_allowed": {
+      "type": "string"
+    },
+    "cache_allowed": {
+      "type": "string"
+    },
+    "export_allowed": {
+      "type": "string"
+    },
+    "raw_data_allowed": {
+      "type": "string"
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

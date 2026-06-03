@@ -1,0 +1,26 @@
+Risk ID,Category,Risk/Blocker,Severity,Likelihood,Mitigation,Owner,Stage
+R-001,Data,Parcel data license forbids report export or caching.,Critical,Medium,Perform vendor license audit before beta; implement entitlement gates.,Data/Legal,Pre-beta
+R-002,Data,"County zoning data is stale, ambiguous, or not machine-readable.",Critical,High,Start with 3-5 counties; human QA; source citations; local adapter.,Data/Product,MVP
+R-003,Legal,System implies legal buildability or access.,Critical,Medium,Safe-language lint; disclaimers; verification tasks; legal review.,Legal/Product,MVP
+R-004,Legal,Fair housing/steering issue from residential area recommendations.,High,Medium,No demographic scoring; legal review before recommendation features.,Legal,Later
+R-005,Legal,Output becomes regulated AVM if valuation expands.,High,Medium,No mortgage valuation; legal review before valuation features.,Legal/Product,Later
+R-006,Technical,Postgres overloaded by raster-heavy workloads.,Medium,Medium,Store raw rasters as COG/object assets; derive summary metrics; async jobs.,Engineering,MVP
+R-007,Technical,Projection/CRS error causes wrong overlays.,Critical,Low/Medium,CRS validation tests; golden parcels; geometry pipeline review.,Geo Eng,MVP
+R-008,Technical,Source API outage silently becomes 'no issue found'.,Critical,Medium,Record source failure evidence; fail report or mark unknown.,Backend/Data,MVP
+R-009,Financial,Per-report cost exceeds price.,High,Medium,Instrument cost per report; concierge price test.,Product/Finance,MVP
+R-010,Product,Users want listing/comps search more than due diligence.,Medium,Medium,Manual beta interviews; compare willingness to pay.,Product,Phase 0
+R-011,Ops,Human review does not scale.,High,Medium,Risk-based review after golden tests; structured reviewer console.,Ops,Beta
+R-012,Data,Wetlands/flood layers treated as final regulatory determinations.,High,Medium,Caveats; professional verification tasks.,Product/Legal,MVP
+R-013,Data,Legal access cannot be inferred from maps.,Critical,High,Always phrase as access risk; title/easement verification task.,Product,MVP
+R-014,Data,Water rights/well viability too complex in first geography.,High,Medium,Select geography carefully; water module separate; cautious wording.,Product/Data,MVP
+R-015,Data,Mineral source data stale or rights severed.,Medium,High,Screen only; never assert mineral rights; cite source freshness.,Data/Product,Later
+R-016,Security,Owner/user data exposed across workspaces.,Critical,Low/Medium,"RBAC, tenant scoping, audit, tests.",Engineering,MVP
+R-017,Architecture,Vendor schemas leak into core logic.,High,Medium,Adapter normalization; evidence layer boundary.,Engineering,MVP
+R-018,Architecture,UI computes conclusions client-side.,Medium,Medium,Server-authoritative claim/rules/report APIs.,Engineering,Productization
+R-019,Data,Commercial data terms prohibit AI processing.,High,Medium,License review includes AI-use flag.,Legal/Data,Pre-beta
+R-020,Trust,Single score hides missing data and uncertainty.,High,Medium,Suitability/confidence separation; unknown count visible.,Product,MVP
+R-021,Global,Global promise exceeds data/legal coverage.,High,High,Tiered global labels; no Tier 2 claims without local data.,Product,Later
+R-022,Technical,Report runs are not reproducible after source updates.,High,Medium,Dataset versions/source manifests/ruleset versioning.,Engineering,MVP
+R-023,Ops,Source update breaks golden parcel results.,Medium,High,Regression tests before source promotion.,Data QA,MVP
+R-024,Financial,Map/tile/egress costs spike under UI usage.,Medium,Medium,Cache tiles/assets; cap usage; budget alarms.,Engineering/Finance,Productization
+R-025,Legal,Report wording creates reliance/professional liability.,High,Medium,"Legal review, E&O insurance review, cautious language.",Legal,Beta

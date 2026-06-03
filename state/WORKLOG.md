@@ -1,0 +1,61 @@
+# Worklog
+
+Append concise entries. Do not rely on chat history.
+
+## 2026-06-03 (scaffold validation alignment)
+
+- Added `.gitignore` entry for the nested `001-audit/` audit worktree so root status no longer presents it as a candidate repo artifact.
+- Added minimal scaffold tests for Lane B area contract defaults, Lane D report contract defaults, and API health scaffold.
+- Corrected Lane B and Lane D state evidence so documented lane-specific verification commands now match runnable tests.
+- `verify.sh` passes via Git Bash: 22 tests pass; ruff clean; mypy clean (44 source files); DB smoke skipped.
+
+## 2026-06-03 (repo bootstrap + local index)
+
+- Ran `npx codesight --index`; local index written to `.codesight/`.
+- Created `plans/2026-06-03-repo-bootstrap.md` for local-only GitHub bootstrap work.
+- Aligned README and `manifest.json` with target repo `benjmcd/land-dd`.
+- Corrected `tasks/task_queue.yaml` against canonical state: T010 blocked on Docker, T020 done, lane plans listed for implementation routing.
+- Initialized local Git on `main` and set `origin` to `https://github.com/benjmcd/land-dd.git`; no commit or push performed.
+- `verify.sh` passes via Git Bash: 19 tests pass; ruff clean; mypy clean (40 source files); DB smoke skipped.
+- Added `.codesight/` to `.gitignore` and `MANIFEST.md` generated-artifact policy.
+- Added `PROMPT_FOR_ISOLATED_LANE_AGENT.md` for parallel lane agents, with local-only, no-shared-checkout, lane-ownership, and stop-condition rules.
+- Strengthened isolated-lane prompt with no-baseline-commit isolation guidance, Windows/Git Bash command notes, test-first work protocol, tech-debt controls, shared-log conflict handling, and stricter definition of done.
+
+## 2026-06-03 (session 3 — lane scaffold)
+
+- Installed `psycopg[binary]`, `pytest-cov`, `types-PyYAML` (from pyproject.toml dev deps).
+- Fixed `engine.py` to use deferred/lazy initialization (prevents module-import DB connection).
+- Split `backend/app/domain/contracts.py` into per-lane contract files:
+  - `source_contracts.py` (Lane A), `area_contracts.py` (Lane B),
+    `evidence_contracts.py` (Lane C), `claim_contracts.py` (Lane C), `report_contracts.py` (Lane D)
+- Added `protocols.py` (shared: SourceExistsProtocol, AreaExistsProtocol).
+- Extended `enums.py`: added EvidenceType, AreaType, JobStatus.
+- Migrated source_repo + source_service into `backend/app/source_registry/`.
+  Old `repositories/` and `services/` are now backward-compat shims (Lane A archives to `archive/` once no imports remain).
+- Split `test_domain_contracts.py` and `test_source_service.py` into per-lane test directories.
+- Created lane module directories: source_registry/, area_geometry/, evidence_ledger/, claims_engine/, reports/.
+- Created lane test directories: tests/source_registry/, tests/area_geometry/, tests/evidence_ledger/, tests/claims_engine/, tests/reports/.
+- Created per-lane operating contracts: lanes/lane-{a,b,c,d}/AGENTS.md + CLAUDE.md.
+- Created per-lane plans: plans/lane-{a,b,c,d}-2026-06-03-*.md.
+- Created per-lane state files: state/lane-{a,b,c,d}-state.md.
+- Created LANE_OWNERSHIP.md (canonical isolation map).
+- Created db/migrations/MIGRATION_REGISTRY.md.
+- Updated MANIFEST.md, state/PROJECT_STATE.md (MILESTONE_MAP status block added).
+- verify.sh: 19 tests pass; lint clean; mypy clean (40 source files).
+
+## 2026-06-03 (session 2)
+
+- Fixed 3 baseline lint errors (`config.py` E501, `contracts.py` UP017/UP037).
+- Installed mypy in Python 3.11 environment; `verify.sh` typecheck step now executes.
+- T010 (DB smoke) blocked: Docker Desktop not running. Recorded blocker in VALIDATION_LOG.
+- T020 completed: added source registry repository/service layer.
+  - `backend/app/repositories/source_repo.py`: `SourceRepository` Protocol + `InMemorySourceRepository`.
+  - `backend/app/services/source_service.py`: `SourceService` with dedup enforcement.
+  - `backend/tests/test_source_service.py`: 8 fixture-backed tests, all passing.
+- `verify.sh` passes: 14 tests, lint clean, mypy clean.
+
+## 2026-06-03 (initial)
+
+- Created dual-agent workspace structure for Codex and Claude Code.
+- Added thin `AGENTS.md`, `CLAUDE.md` importer, `MANIFEST.md`, plans, skills, subagents, CI, and validation scripts.
+- Preserved comprehensive planning pack under `docs/planning_pack/` as reference, not startup context.

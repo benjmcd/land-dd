@@ -1,0 +1,80 @@
+version: 1
+active_plan: plans/2026-06-03-foundation-vertical-slice.md
+routing_note: Overall task list is superseded for implementation by the lane states in state/PROJECT_STATE.md; use the lane-specific plans for new work.
+lane_plans:
+  lane_a: plans/lane-a-2026-06-03-source-registry.md
+  lane_b: plans/lane-b-2026-06-03-area-geometry.md
+  lane_c: plans/lane-c-2026-06-03-evidence-claims.md
+  lane_d: plans/lane-d-2026-06-03-reports-api-infra.md
+policy:
+  selection: lowest_dependency_unblocked_first
+  default_verification: ./scripts/verify.sh
+  update_state_files:
+    - state/PROJECT_STATE.md
+    - state/WORKLOG.md
+    - state/VALIDATION_LOG.md
+tasks:
+  - id: T000
+    title: Verify dual-agent workspace health
+    status: done
+    depends_on: []
+    files:
+      - AGENTS.md
+      - CLAUDE.md
+      - MANIFEST.md
+      - scripts/verify.sh
+    validation:
+      - ./scripts/verify.sh
+  - id: T010
+    title: Prove DB migration and PostGIS smoke locally
+    status: blocked
+    depends_on: [T000]
+    blocker: Docker Desktop not running; DB migration and PostGIS smoke cannot be verified.
+    files:
+      - db/migrations/0001_initial_spine.sql
+      - scripts/db_apply_migrations.sh
+      - scripts/db_smoke_check.py
+    validation:
+      - docker compose up -d db
+      - ./scripts/db_apply_migrations.sh
+      - python scripts/db_smoke_check.py
+    notes: Requires local Docker/Postgres.
+  - id: T020
+    title: Add source registry repository/service layer
+    status: done
+    depends_on: [T000]
+    files:
+      - backend/app/domain/contracts.py
+      - backend/app/db/
+      - backend/tests/
+    validation:
+      - cd backend && PYTHONPATH=. python -m pytest -q
+  - id: T030
+    title: Add area geometry contract and repository slice
+    status: blocked
+    depends_on: [T010, T020]
+    blocker: Needs DB smoke or explicit decision to continue with fixture-only repository tests.
+  - id: T040
+    title: Add evidence creation service with failure evidence
+    status: blocked
+    depends_on: [T020, T030]
+  - id: T050
+    title: Add claim creation service enforcing evidence IDs
+    status: blocked
+    depends_on: [T040]
+  - id: T060
+    title: Add report-run service and API scaffold
+    status: blocked
+    depends_on: [T050]
+  - id: T070
+    title: Add fixture connector for synthetic area evidence
+    status: blocked
+    depends_on: [T040]
+  - id: T080
+    title: Add first deterministic homestead red-flag rules
+    status: blocked
+    depends_on: [T050, T070]
+  - id: T090
+    title: Add evidence-linked report response
+    status: blocked
+    depends_on: [T060, T080]

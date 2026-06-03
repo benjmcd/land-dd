@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/evidence.schema.json",
+  "title": "Evidence",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "area_id",
+    "evidence_type",
+    "domain",
+    "observation",
+    "method_code",
+    "method_version",
+    "confidence",
+    "retrieved_at"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "area_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_version_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "evidence_type": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "observation": {
+      "type": "string"
+    },
+    "observed_value": {
+      "type": "object"
+    },
+    "method_code": {
+      "type": "string"
+    },
+    "method_version": {
+      "type": "string"
+    },
+    "authority_level": {
+      "enum": [
+        "official_primary",
+        "official_secondary",
+        "commercial_normalized",
+        "open_community",
+        "derived_model",
+        "user_supplied",
+        "unknown"
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "very_low",
+        "low",
+        "medium",
+        "high",
+        "very_high",
+        "unknown"
+      ]
+    },
+    "source_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "caveat": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "is_negative_evidence": {
+      "type": "boolean"
+    },
+    "is_source_failure": {
+      "type": "boolean"
+    },
+    "geometry_wkt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: Area Due-Diligence Compiler API
+  version: 0.1.0
+  description: Draft API for areas, sources, evidence, claims, report runs, and review workflow.
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /areas:
+    post:
+      summary: Create an area from parcel/address/polygon input
+      operationId: createArea
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [area_type]
+              properties:
+                area_type:
+                  enum: [parcel, polygon, address, locality, watershed, corridor, generated_candidate]
+                input_reference: { type: string }
+                geometry_geojson: { type: object }
+                metadata: { type: object }
+      responses:
+        '202':
+          description: Area accepted or created
+  /areas/{area_id}:
+    get:
+      summary: Get area metadata and geometry
+      parameters:
+        - name: area_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Area }
+  /areas/{area_id}/evidence:
+    get:
+      summary: List evidence for an area
+      parameters:
+        - name: area_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Evidence list }
+  /areas/{area_id}/claims:
+    get:
+      summary: List claims for an area
+      parameters:
+        - name: area_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Claim list }
+  /reports:
+    post:
+      summary: Create a report run
+      operationId: createReportRun
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [area_id, intent]
+              properties:
+                area_id: { type: string, format: uuid }
+                intent: { type: string }
+                ruleset_version: { type: string }
+                options: { type: object }
+      responses:
+        '202':
+          description: Report run queued
+  /reports/{report_run_id}:
+    get:
+      summary: Get report run metadata
+      parameters:
+        - name: report_run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Report run }
+  /reports/{report_run_id}/machine-json:
+    get:
+      summary: Get machine-readable report output
+      parameters:
+        - name: report_run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Machine JSON }
+  /reports/{report_run_id}/approve:
+    post:
+      summary: Approve report after human review
+      parameters:
+        - name: report_run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Approved }
+  /sources:
+    get:
+      summary: List source registry entries
+      responses:
+        '200': { description: Source list }
+    post:
+      summary: Create source registry entry
+      responses:
+        '201': { description: Source created }

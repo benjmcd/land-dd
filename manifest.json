@@ -1,0 +1,19 @@
+{
+  "name": "land-dd",
+  "github_repository": "benjmcd/land-dd",
+  "purpose": "Codex and Claude Code ready workspace for bottom-up land diligence product implementation",
+  "canonical_instruction": "AGENTS.md",
+  "claude_adapter": "CLAUDE.md",
+  "active_plan": "plans/2026-06-03-foundation-vertical-slice.md",
+  "verification": "scripts/verify.sh",
+  "system_of_record": "PostgreSQL/PostGIS",
+  "startup_files": [
+    "README.md",
+    "MANIFEST.md",
+    "state/PROJECT_STATE.md",
+    "plans/2026-06-03-foundation-vertical-slice.md"
+  ],
+  "do_not_bulk_load": [
+    "docs/planning_pack"
+  ]
+}

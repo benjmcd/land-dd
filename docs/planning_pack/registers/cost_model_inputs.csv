@@ -1,0 +1,16 @@
+Category,Input,Initial Value,Unit,Importance,Notes
+Data,Parcel vendor cost per parcel/report,Unknown,USD/report,Critical,Quote vendors; model tiers
+Data,Comps/listing data cost,Unknown,USD/report,High,Optional MVP unless users demand market context
+Data,Zoning vendor/API cost,Unknown,USD/report,High,May use local official sources + manual QA first
+Compute,Spatial overlay runtime,TBD,seconds/report,Medium,Measure on 100 parcels
+Compute,Raster slope processing cost,TBD,USD/report,Medium,Precompute where possible
+LLM,Zoning/document extraction tokens,TBD,USD/report,High,Cache by ordinance/version
+Human QA,Reviewer minutes per report,TBD,minutes/report,Critical,Measure in manual beta
+Map,Tile/map asset generation cost,TBD,USD/report,Medium,Prefer cached/static report assets
+Storage,Raw source archive storage,TBD,GB/month,Low/Medium,Object storage; version retention policy
+Support,Support minutes per report,TBD,minutes/report,Medium,Track during beta
+Legal,Compliance review allocation,TBD,USD/month,Medium,Budget before public launch
+Insurance,E&O/professional liability,TBD,USD/year,Medium,Broker quote after MVP positioning
+Revenue,Consumer report price,Hypothesis: 49-299,USD/report,Critical,Test willingness to pay
+Revenue,Pro plan price,Hypothesis: 199-999,USD/month,Medium,Only after repeated usage
+Revenue,Enterprise contract,Hypothesis: negotiated,USD/year,Later,After batch/API demand

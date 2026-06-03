@@ -1,0 +1,108 @@
+# Lane A — Source Registry + DB Infrastructure
+
+## Goal
+
+Complete MILESTONE_MAP.md Levels 2-3:
+- Postgres/PostGIS migrations apply cleanly from scratch.
+- Source registry is seeded, with license/provenance metadata, and backed by tests.
+- DB smoke passes when Docker is available.
+
+## Non-goals
+
+- No area, evidence, claim, or report work.
+- No live connector integration.
+- No paid/commercial data.
+- No global coverage or jurisdiction decisions.
+
+## Current state
+
+- DB migration `db/migrations/0001_initial_spine.sql` exists with all core tables.
+- `SourceContract` Pydantic model in `backend/app/domain/source_contracts.py`.
+- `InMemorySourceRepository` + `SourceService` in `backend/app/source_registry/`.
+- 11 passing tests in `backend/tests/source_registry/`.
+- Backward-compat shims in `app/repositories/` and `app/services/` — archive these (TA-010).
+- Docker Desktop not running at initial lane setup. DB smoke blocked until Docker starts.
+
+## Proposed design
+
+Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed repository → source seeds → DB smoke.
+
+## Bottom-up sequence
+
+### TA-010: Archive backward-compat shims
+1. Confirm no file outside `app/repositories/` imports from `app.repositories.source_repo` or `app.services.source_service` (run a grep).
+2. Move `backend/app/repositories/` to `archive/<today>_source-registry-lane-migration/backend/app/repositories/`.
+3. Move `backend/app/services/` to `archive/<today>_source-registry-lane-migration/backend/app/services/`.
+4. Confirm `pytest backend/tests/source_registry/ -v` still passes.
+5. Confirm `./scripts/verify.sh` still passes.
+
+### TA-020: SQLAlchemy ORM model for source.sources
+1. Create `backend/app/source_registry/models.py` with `SourceModel` (SQLAlchemy Base + mapped_column).
+2. Match `source.sources` table columns from `db/migrations/0001_initial_spine.sql`.
+3. Import test: confirm `from app.source_registry.models import SourceModel` does not crash.
+4. Mypy: clean.
+
+### TA-030: SQLAlchemy-backed SourceRepository
+1. Add `SqlAlchemySourceRepository` to `backend/app/source_registry/source_repo.py`.
+2. Implement `add`, `get`, `list_all`, `exists_by_name_org` using SQLAlchemy Session.
+3. Keep `InMemorySourceRepository` for fixture tests.
+4. Write tests using the in-memory repository (no live DB needed for unit tests).
+
+### TA-040: Source seeds
+1. Parse `registers/data_source_registry.csv` rows marked `MVP Priority = Must`.
+2. Create `db/seeds/source_registry_seeds.py` that inserts 5+ sources.
+3. Add a `scripts/seed_sources.py` runner.
+4. Write a test that instantiates seed sources as `SourceContract` objects (no DB required).
+
+### TA-050: License review template
+1. Create `docs/adr/lane-a-0001-provenance-model.md` (ADR for source/provenance decisions).
+2. Create `templates/source_license_review.md` with required license review fields.
+
+### TA-060: DB smoke (BLOCKED until Docker is running)
+1. Run `docker compose up -d db`.
+2. Run `./scripts/db_apply_migrations.sh`.
+3. Run `python scripts/db_smoke_check.py`.
+4. Record result in `state/VALIDATION_LOG.md`.
+5. If passes: update `state/lane-a-state.md` milestone to L2/L3 candidate.
+
+## Files likely to change
+
+| File | Expected change |
+|---|---|
+| `backend/app/source_registry/models.py` | New: SQLAlchemy ORM model |
+| `backend/app/source_registry/source_repo.py` | Add SQLAlchemy-backed repository |
+| `db/seeds/source_registry_seeds.py` | New: seed data |
+| `scripts/seed_sources.py` | New: seed runner |
+| `docs/adr/lane-a-0001-provenance-model.md` | New: ADR |
+| `templates/source_license_review.md` | New: license review template |
+| `state/lane-a-state.md` | Update after each task |
+| `state/VALIDATION_LOG.md` | DB smoke results |
+
+## Tests / verification
+
+```bash
+pytest backend/tests/source_registry/ -v
+mypy backend/app/source_registry backend/app/domain/source_contracts.py
+./scripts/verify.sh
+# When Docker available:
+RUN_DB_SMOKE=1 ./scripts/verify.sh
+```
+
+## Risks and blockers
+
+| Blocker | Status | Impact |
+|---|---|---|
+| Docker Desktop not running | Blocked | TA-060 cannot proceed |
+| MVP state/county not decided | Undecided | Do not hard-code jurisdiction logic |
+| psycopg[binary] | Installed | Should connect once Docker is running |
+
+## Decision log
+
+- 2026-06-03: Lane A owns source registry and DB infrastructure.
+- 2026-06-03: `SourceContract` expanded to 17 fields matching DB schema + L3 requirements.
+- 2026-06-03: Backward-compat shims in `repositories/` and `services/` are Lane A's to archive (not delete) once no code imports from them.
+- 2026-06-03: `docker-compose.yml` assigned to Lane A ownership.
+
+## Progress log
+
+- 2026-06-03: Lane scaffold created. `InMemorySourceRepository` + `SourceService` in `source_registry/`. 11 tests passing.

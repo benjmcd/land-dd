@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/claim.schema.json",
+  "title": "Claim",
+  "type": "object",
+  "required": [
+    "claim_id",
+    "area_id",
+    "intent",
+    "claim_code",
+    "domain",
+    "assertion",
+    "severity",
+    "confidence",
+    "user_safe_language",
+    "evidence_ids"
+  ],
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "area_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "claim_code": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "assertion": {
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "informational",
+        "unknown"
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "very_low",
+        "low",
+        "medium",
+        "high",
+        "very_high",
+        "unknown"
+      ]
+    },
+    "user_safe_language": {
+      "type": "string"
+    },
+    "verification_required": {
+      "type": "boolean"
+    },
+    "verification_task": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "contradiction_group_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

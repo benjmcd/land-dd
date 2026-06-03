@@ -1,0 +1,14 @@
+# Project-scoped Codex defaults. User/CLI settings may override these.
+# Keep sandboxing conservative; loosen only for trusted local workflows.
+
+model = "gpt-5.5"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+network_access = false
+
+[agents]
+max_threads = 4
+max_depth = 1
+job_max_runtime_seconds = 1800
