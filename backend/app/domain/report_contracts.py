@@ -5,7 +5,9 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import JobStatus
+from app.domain.evidence_contracts import EvidenceContract
 
 
 class ReportRunContract(BaseModel):
@@ -16,6 +18,12 @@ class ReportRunContract(BaseModel):
     source_manifest: dict[str, object] = Field(default_factory=dict)
     assumptions: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+    evidence: list[EvidenceContract] = Field(default_factory=list)
+    claims: list[ClaimContract] = Field(default_factory=list)
+    unknowns: list[ClaimContract] = Field(default_factory=list)
+    red_flags: list[ClaimContract] = Field(default_factory=list)
+    verification_tasks: list[str] = Field(default_factory=list)
+    artifact_metadata: dict[str, object] = Field(default_factory=dict)
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
     output_uri: str | None = None

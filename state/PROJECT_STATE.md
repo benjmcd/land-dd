@@ -14,12 +14,12 @@ Verification command(s):
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 122 tests pass; lint clean; mypy clean (65 source files)
+- 126 tests pass; lint clean; mypy clean (67 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
 - Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
 - Lane C in-memory evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks
-- Lane D in-memory API scaffold exposes source, area, evidence, and report-run endpoints with contract tests
+- Lane D in-memory report-run service composes source, area, evidence, claim, and rule services behind the report-run API
 - DB smoke skipped/blocked because Docker Desktop is not running
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
@@ -37,14 +37,16 @@ Failed or blocked gates:
 - L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim/rule scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
 - L6-002/L6-003/L6-010: PARTIAL/PASS for one flood hard-gate rule (ruleset ID/version load, deterministic claim IDs, and rule logic lives in `rule_engine.py`, not an LLM/UI prompt)
 - L6-005/L6-008/L6-009: PARTIAL/PASS for current flood-rule scope (rule-generated flood claims propagate caveats and cover positive, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review, superseded-evidence, empty-input, multi-area, input-order-determinism, and invalid-rule-config cases; broader rule domains pending)
-- L7-003/L7-008/L7-010: PARTIAL/PASS for in-memory API scaffold (area/report-run create/retrieve, API contract tests, no live APIs)
-- L7-001/L7-002/L7-004/L7-005/L7-006/L7-007/L7-009: NOT_STARTED/BLOCKED (ReportRunService, report content, artifact metadata, and persisted report-run storage pending)
+- L7-001: BLOCKED (durable report-run persistence requires DB smoke)
+- L7-002/L7-004/L7-005/L7-006/L7-007/L7-009: PARTIAL/PASS for in-memory fixture scope (source manifest, evidence-linked claims/unknowns, caveats, screening assumptions, artifact metadata, and deterministic claim reuse are covered; durable storage remains blocked)
+- L7-003/L7-008/L7-010: PARTIAL/PASS for in-memory report API/service (area/report-run create/retrieve, API contract tests, no live APIs)
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
 - backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (69 tests)
-- backend/tests/reports/ and backend/tests/api/ (7 tests)
+- backend/app/reports/service.py
+- backend/tests/reports/ and backend/tests/api/ (11 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -54,7 +56,7 @@ Completion evidence:
 - tests/fixtures/geometries/
 Next lowest-dependency task:
 - Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
-- Lane D: TD-030 (in-memory ReportRunService) is the next unblocked vertical-slice integration step; TD-040 persistence remains DB-blocked
+- Lane D: TD-040 persisted report runs remains DB-blocked; TD-050 protocol adapters can proceed if the next pass stays in-memory
 - Lane C: TC-080 (broader fixture hard-gate coverage) can proceed in parallel if integration is not prioritized
 Do not work on yet:
 - Live connectors
@@ -111,7 +113,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-122 tests pass; lint clean; mypy clean (65 source files). DB smoke blocked until Docker Desktop starts.
+126 tests pass; lint clean; mypy clean (67 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

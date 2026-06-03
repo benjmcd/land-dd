@@ -13,12 +13,12 @@ Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay g
 
 ## Current state
 
-- `ReportRunContract` stub in `backend/app/domain/report_contracts.py`.
+- `ReportRunContract` includes evidence, claims, unknowns, red flags, verification tasks, caveats, source manifest, and artifact metadata.
 - `JobStatus` enum in `backend/app/domain/enums.py`.
 - `backend/app/reports/` and `backend/app/api/` module directories exist.
 - Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
-- 7 Lane D report/API tests pass.
+- 11 Lane D report/API tests pass.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) is a hard prerequisite for integration wiring.
 
@@ -66,6 +66,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
    - Returns populated ReportRunContract with claims, unknowns, caveats.
 4. Uses only in-memory repositories — no live DB needed.
 5. Tests: fixture area + fixture evidence → report run with claims + unknowns.
+6. Status: COMPLETE for the in-memory fixture scope. Report runs remain in app memory and are not durable.
 
 ### TD-040: Persisted report runs (BLOCKED on Lane A TA-060)
 1. Add `ReportRunModel` SQLAlchemy ORM model in `backend/app/reports/models.py`.
@@ -125,3 +126,4 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 
 - 2026-06-03: Lane scaffold created. ReportRunContract stub defined. Test directories ready.
 - 2026-06-03: TD-020 complete for the in-memory API scaffold. Added per-app in-memory API services, source/area/evidence/report-run routers, router registration, and API contract tests for happy paths and representative 422 cases. Lane D tests: 7 passing. Full verification: 122 tests, ruff clean, mypy clean (65 source files); DB smoke skipped.
+- 2026-06-03: TD-030 complete for the in-memory report-run service. Added ReportRunService, populated ReportRunContract fields, API report-run service wiring, and fixture tests for evidence-linked claims/unknowns/caveats, no-evidence caveat handling, and repeatable claim reuse. Lane D tests: 11 passing. Full verification: 126 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.

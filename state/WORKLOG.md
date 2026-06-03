@@ -34,6 +34,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TC-070: 117 tests pass; ruff clean; mypy clean (60 source files); DB smoke skipped.
 - Completed Lane D TD-020 for the in-memory API scaffold: per-app in-memory service wiring, source/area/evidence/report-run routers, router registration, and API tests for happy paths and representative 422 cases. Lane D tests pass: 7 tests.
 - `verify.sh` passes via Git Bash after TD-020: 122 tests pass; ruff clean; mypy clean (65 source files); DB smoke skipped.
+- Completed Lane D TD-030 for the in-memory report-run service: ReportRunService validates registered areas, gathers area evidence, runs the deterministic rule engine, stores evidence-linked claims through ClaimService, and returns report evidence, claims, unknowns, red flags, caveats, verification tasks, source manifest, and artifact metadata. Lane D tests pass: 11 tests.
+- `verify.sh` passes via explicit Git Bash after TD-030: 126 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

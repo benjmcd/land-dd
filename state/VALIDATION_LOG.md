@@ -2,6 +2,40 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane D TD-030 in-memory ReportRunService
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest -q tests/reports tests/api
+bash ./scripts/verify.sh
+cd backend && PYTHONPATH=. python -m pytest -q
+cd backend && ruff check .
+cd backend && mypy app tests
+docker info --format '{{.ServerVersion}}'
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Lane D report/API tests pass: 11 tests.
+- Plain `bash ./scripts/verify.sh` fails on this machine because `bash` resolves to the Windows WSL launcher and `/bin/bash` is unavailable.
+- Workspace/agent-context equivalent checks pass in PowerShell; JSON check passes: 14 files.
+- Full backend test suite passes: 126 tests.
+- Ruff passes.
+- Mypy passes: no issues in 67 source files.
+- Full verification through explicit Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (67 source files).
+- Test collection reports 126 tests.
+- Docker client is installed, but Docker Desktop Linux engine is not running; DB smoke remains blocked.
+
+**Residual risk:**
+
+- TD-030 is in-memory only. Report runs are stored inside the per-app ReportRunService and are not durable.
+- Report output now contains evidence-linked claims, unknowns, caveats, red flags, verification tasks, source manifest, and artifact metadata, but no persisted report sections or exported artifacts exist yet.
+- Report source manifest is a fixture-scope snapshot, not a durable source-version/retrieval-run snapshot.
+- DB-backed report persistence remains blocked until Docker/PostGIS smoke is available.
+
 ## 2026-06-03 Lane D TD-020 in-memory API scaffold
 
 **Commands run:**

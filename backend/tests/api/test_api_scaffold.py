@@ -78,7 +78,15 @@ def test_api_scaffold_creates_and_lists_areas() -> None:
 
 def test_api_scaffold_creates_and_gets_report_run() -> None:
     client = TestClient(create_app())
-    area_id = str(uuid4())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    area_id = area_response.json()["area_id"]
 
     create_response = client.post(
         "/report-runs",
@@ -88,7 +96,9 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert create_response.status_code == 201
     report_run = create_response.json()
     assert report_run["area_id"] == area_id
-    assert report_run["status"] == "queued"
+    assert report_run["status"] == "succeeded"
+    assert report_run["claims"] == []
+    assert report_run["artifact_metadata"]["artifact_kind"] == "in_memory_report_run"
 
     get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
     assert get_response.status_code == 200

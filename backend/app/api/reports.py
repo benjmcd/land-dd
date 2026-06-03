@@ -23,12 +23,16 @@ def create_report_run(
     request: ReportRunCreateRequest,
     services: ServicesDep,
 ) -> ReportRunContract:
-    report_run = ReportRunContract(
-        area_id=request.area_id,
-        intent_code=request.intent_code,
-    )
-    services.report_runs[report_run.report_run_id] = report_run
-    return report_run
+    try:
+        return services.report_service.create_report_run(
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("/{report_run_id}", response_model=ReportRunContract)
@@ -36,7 +40,7 @@ def get_report_run(
     report_run_id: UUID,
     services: ServicesDep,
 ) -> ReportRunContract:
-    report_run = services.report_runs.get(report_run_id)
+    report_run = services.report_service.get_report_run(report_run_id)
     if report_run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report_run
