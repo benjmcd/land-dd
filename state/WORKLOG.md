@@ -22,6 +22,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TA-050: 64 collected tests; ruff clean; mypy clean (51 source files); DB smoke skipped.
 - Completed Lane C TC-020 for the in-memory evidence slice: `superseded_by`, repository supersession marking, and service safeguards for same-area replacement, new evidence IDs, already-superseded originals, pre-superseded new records, and source-failure replacement. Lane C tests pass: 23 tests.
 - `verify.sh` passes via Git Bash after TC-020: 71 collected tests; ruff clean; mypy clean (51 source files); DB smoke skipped.
+- Completed Lane C TC-030 for the in-memory claim-service slice: `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService` with stored evidence-link validation, same-area enforcement, unknown claim generation from source-failure evidence, user-safe-language enforcement, and verification-task enforcement. Lane C tests pass: 35 tests.
+- `verify.sh` passes via Git Bash after TC-030: 83 tests pass; ruff clean; mypy clean (54 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

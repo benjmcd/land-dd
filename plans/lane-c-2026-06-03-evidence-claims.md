@@ -18,9 +18,9 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `EvidenceType` enum in `backend/app/domain/enums.py`.
 - `SourceExistsProtocol`, `AreaExistsProtocol` in `backend/app/domain/protocols.py`.
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
-- `backend/app/claims_engine/` module directory exists (empty except package marker).
+- `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 23 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 35 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -57,6 +57,7 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 3. `ClaimService.create_claim(claim: ClaimContract, evidence_ids: list[UUID]) -> ClaimContract`: validates all evidence_ids exist in the evidence repo.
 4. `ClaimService.create_unknown(area_id, claim_code, reason, evidence_ids)`: creates unknown/blocker claim from source-failure evidence.
 5. Tests: evidence-linked claim, empty-evidence rejection, unknown claim from source failure.
+6. Status: COMPLETE for the in-memory service slice. Service also rejects duplicate evidence IDs, mismatched supplied IDs, cross-area evidence links, missing user-safe language, missing verification tasks when required, unknown claims without source-failure evidence, and duplicate claim IDs.
 
 ### TC-040: YAML rules engine slice
 1. Create `backend/app/claims_engine/rule_engine.py` that loads `config/ruleset_homestead_mvp.yaml`.
@@ -109,3 +110,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: Lane scaffold created. EvidenceContract + ClaimContract in per-lane files. 6 contract tests passing.
 - 2026-06-03: TC-010 complete for the in-memory evidence slice. Added `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService` with source/area protocol validation, production-use rejection for observations, source-failure evidence creation, typed human notes, retrieval by area/source/type, and duplicate evidence protection. Lane C tests: 16 passing. Full verification: 64 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
 - 2026-06-03: TC-020 complete for the in-memory evidence slice. Added `superseded_by` to `EvidenceContract`, repository marking support, and `EvidenceService.supersede` with same-area/new-ID/already-superseded/pre-superseded safeguards. Lane C tests: 23 passing. Full verification: 71 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
+- 2026-06-03: TC-030 complete for the in-memory claim-service slice. Added `ClaimRepository`, `InMemoryClaimRepository`, and `ClaimService` with evidence existence validation, claim/evidence ID consistency checks, same-area enforcement, unknown claim generation from source-failure evidence, user-safe-language enforcement, and verification-task enforcement. Lane C tests: 35 passing. Full verification: 83 tests, ruff clean, mypy clean (54 source files); DB smoke skipped.

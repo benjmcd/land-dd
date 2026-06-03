@@ -1,7 +1,7 @@
 # Lane C State — Evidence Ledger + Claims Engine
 
 ```text
-Current milestone: Level 5 - Evidence Ledger (in-memory service slice)
+Current milestone: Level 6 - Claims Engine (in-memory claim-service slice)
 Target milestone: Level 5 (Evidence Ledger) → Level 6 (Claims Engine)
 Milestone status: PARTIAL
 Last verified: 2026-06-03
@@ -15,28 +15,37 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 - ./scripts/verify.sh
 Verification result:
-- 23 Lane C tests passing
+- 35 Lane C tests passing
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 71 tests; lint clean; mypy clean (51 source files)
+- Full verification passes: 83 tests; lint clean; mypy clean (54 source files)
 Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
 - L5-002: NOT_STARTED (type-specific payload schema validation not implemented)
 - L5-005: PARTIAL (confidence/caveat/method/temporal fields exist; spatial precision not implemented)
 - L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original and stores replacement without silent overwrite)
 - L5-010: NOT_STARTED (audit events not implemented)
-- All L6 gates: NOT_STARTED (ClaimService not yet implemented)
+- L6-001: PARTIAL/PASS for in-memory service scope (ClaimService refuses missing, empty, duplicate, mismatched, and cross-area evidence links)
+- L6-004: PARTIAL/PASS for in-memory service scope (create_unknown requires source-failure evidence)
+- L6-005: PARTIAL (source-failure caveats propagate into generated unknown claims; broader rule-derived caveat propagation pending)
+- L6-006: PASS for current contract/service scope (severity and confidence remain separate)
+- L6-007: PARTIAL/PASS for in-memory service scope (ClaimService requires verification_task when verification_required is true)
+- L6-002/L6-003/L6-008/L6-010: NOT_STARTED (versioned deterministic rules, contradiction handling, and non-LLM rule module pending)
+- L6-009: PARTIAL (claim-service tests cover positive evidence-linked storage, missing/empty/duplicate/cross-area rejection, source-failure unknowns, and duplicate claim rejection; stale/contradiction/ruleset cases pending)
 Completion evidence:
 - plans/lane-c-2026-06-03-evidence-claims.md
 - backend/app/evidence_ledger/evidence_repo.py (EvidenceRepository Protocol + InMemoryEvidenceRepository)
 - backend/app/evidence_ledger/service.py (EvidenceService)
 - backend/app/domain/evidence_contracts.py (EvidenceContract)
 - backend/app/domain/claim_contracts.py (ClaimContract, with evidence_ids enforced)
+- backend/app/claims_engine/claim_repo.py (ClaimRepository Protocol + InMemoryClaimRepository)
+- backend/app/claims_engine/service.py (ClaimService)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
 - backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
 - backend/tests/claims_engine/test_claim_contracts.py (3 passing)
+- backend/tests/claims_engine/test_claim_service.py (12 passing)
 Next lowest-dependency task:
-- TC-030: ClaimService + InMemoryClaimRepository
+- TC-040: YAML rules engine slice
 Do not work on yet:
 - Cross-lane integration wiring (Lane D's job)
 - PostGIS evidence-geometry linkage (needs Lane A + Lane B DB work)
