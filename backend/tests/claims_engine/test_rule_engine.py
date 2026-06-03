@@ -98,6 +98,51 @@ def make_access_failure(area_id: UUID) -> EvidenceContract:
     )
 
 
+def make_wetland_evidence(
+    *,
+    area_id: UUID,
+    intersects_mapped_wetlands: bool = True,
+    confidence: ConfidenceBand = ConfidenceBand.MEDIUM,
+    source_stale: bool = False,
+    superseded_by: UUID | None = None,
+) -> EvidenceContract:
+    observed_value: dict[str, object] = {
+        "intersects_mapped_wetlands": intersects_mapped_wetlands,
+        "mapped_wetland_area_sq_m": 1700.0 if intersects_mapped_wetlands else 0.0,
+    }
+    if source_stale:
+        observed_value["source_stale"] = True
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="WETLAND_SCREEN",
+        domain="wetlands",
+        observation="Fixture wetland source screens mapped wetland/deepwater features.",
+        observed_value=observed_value,
+        method_code="fixture_wetland_overlay",
+        confidence=confidence,
+        caveat="Mapped wetlands are screening inputs only; order delineation.",
+        superseded_by=superseded_by,
+    )
+
+
+def make_wetland_failure(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="WETLAND_SOURCE_FAILURE",
+        domain="wetlands",
+        observation="Fixture wetland source request failed.",
+        observed_value={},
+        method_code="fixture_wetland_overlay",
+        confidence=ConfidenceBand.UNKNOWN,
+        caveat="Wetland fixture endpoint returned 503.",
+        is_source_failure=True,
+    )
+
+
 def test_load_ruleset_exposes_versioned_access_gate() -> None:
     ruleset = load_ruleset(DEFAULT_RULESET_PATH)
     rule = ruleset.hard_gate_for_condition(
@@ -107,6 +152,15 @@ def test_load_ruleset_exposes_versioned_access_gate() -> None:
     assert rule.code == "ACCESS_G001"
     assert rule.claim_code == "ACCESS_001"
     assert rule.severity_on_fail == SeverityBand.CRITICAL
+
+
+def test_load_ruleset_exposes_versioned_wetland_gate() -> None:
+    ruleset = load_ruleset(DEFAULT_RULESET_PATH)
+    rule = ruleset.hard_gate_for_condition("material_intersection_with_mapped_wetlands")
+
+    assert rule.code == "WETLAND_G001"
+    assert rule.claim_code == "WETLAND_001"
+    assert rule.severity_on_fail == SeverityBand.HIGH
 
 
 def test_load_ruleset_exposes_versioned_flood_gate() -> None:
@@ -276,6 +330,103 @@ def test_evaluate_access_outputs_are_deterministic_when_input_order_changes() ->
         "ACCESS_SOURCE_UNAVAILABLE_UNKNOWN",
         "ACCESS_EVIDENCE_NEEDS_REVIEW",
         "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW",
+    ]
+
+
+def test_evaluate_creates_wetland_claim_from_mapped_intersection() -> None:
+    area_id = uuid4()
+    evidence = make_wetland_evidence(area_id=area_id)
+    engine = RuleEngine.from_file()
+
+    first_result = engine.evaluate([evidence])
+    second_result = engine.evaluate([evidence])
+
+    assert first_result == second_result
+    claim = first_result[0]
+    assert claim.claim_code == "WETLAND_001"
+    assert claim.area_id == area_id
+    assert claim.rule_code == "WETLAND_G001"
+    assert claim.ruleset_id == "homestead_mvp_v0_1"
+    assert claim.ruleset_version == "0.1"
+    assert claim.severity == SeverityBand.HIGH
+    assert claim.confidence == ConfidenceBand.MEDIUM
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert claim.verification_required is True
+    assert "wetland delineation" in (claim.verification_task or "")
+    assert "screening" in claim.user_safe_language
+    assert "not a jurisdictional wetland determination" in claim.user_safe_language
+
+
+def test_evaluate_ignores_no_mapped_wetland_intersection() -> None:
+    area_id = uuid4()
+    evidence = make_wetland_evidence(
+        area_id=area_id,
+        intersects_mapped_wetlands=False,
+    )
+
+    assert RuleEngine.from_file().evaluate([evidence]) == []
+
+
+def test_evaluate_creates_unknown_claim_from_wetland_source_failure() -> None:
+    area_id = uuid4()
+    failure = make_wetland_failure(area_id)
+
+    claims = RuleEngine.from_file().evaluate([failure])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "WETLAND_SOURCE_UNAVAILABLE_UNKNOWN"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.UNKNOWN
+    assert claim.rule_code == "WETLAND_G001"
+    assert claim.evidence_ids == [failure.evidence_id]
+    assert "503" in claim.user_safe_language
+
+
+def test_evaluate_creates_stale_wetland_review_claim_from_fixture_signal() -> None:
+    area_id = uuid4()
+    stale_evidence = make_wetland_evidence(
+        area_id=area_id,
+        intersects_mapped_wetlands=False,
+        confidence=ConfidenceBand.LOW,
+        source_stale=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([stale_evidence])
+
+    assert len(claims) == 1
+    stale_claim = claims[0]
+    assert stale_claim.claim_code == "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW"
+    assert stale_claim.severity == SeverityBand.INFORMATIONAL
+    assert stale_claim.confidence == ConfidenceBand.LOW
+    assert stale_claim.evidence_ids == [stale_evidence.evidence_id]
+    assert "stale" in stale_claim.user_safe_language
+
+
+def test_evaluate_wetland_outputs_are_deterministic_when_input_order_changes() -> None:
+    area_id = uuid4()
+    positive = make_wetland_evidence(area_id=area_id)
+    negative = make_wetland_evidence(
+        area_id=area_id,
+        intersects_mapped_wetlands=False,
+        confidence=ConfidenceBand.HIGH,
+    )
+    failure = make_wetland_failure(area_id)
+    stale = make_wetland_evidence(
+        area_id=area_id,
+        intersects_mapped_wetlands=False,
+        source_stale=True,
+    )
+
+    first_result = RuleEngine.from_file().evaluate([stale, negative, failure, positive])
+    second_result = RuleEngine.from_file().evaluate([positive, failure, negative, stale])
+
+    assert first_result == second_result
+    assert [claim.claim_code for claim in first_result] == [
+        "WETLAND_001",
+        "WETLAND_SOURCE_UNAVAILABLE_UNKNOWN",
+        "WETLAND_EVIDENCE_NEEDS_REVIEW",
+        "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW",
     ]
 
 

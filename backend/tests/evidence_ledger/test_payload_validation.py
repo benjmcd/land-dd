@@ -182,6 +182,29 @@ def test_spatial_intersection_accepts_access_adjacency_fixture_payload() -> None
     assert created.observed_value["road_distance_m"] == 875.25
 
 
+def test_spatial_intersection_accepts_wetland_fixture_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        observed_value={
+            "intersects_mapped_wetlands": True,
+            "mapped_wetland_area_sq_m": 1700.0,
+            "wetland_type": "freshwater emergent wetland",
+            "source_stale": True,
+        },
+        domain="wetlands",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["intersects_mapped_wetlands"] is True
+    assert created.observed_value["mapped_wetland_area_sq_m"] == 1700.0
+
+
 def test_spatial_intersection_rejects_unsupported_payload_key() -> None:
     area_id = uuid4()
     source_id = uuid4()

@@ -38,6 +38,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via explicit Git Bash after TD-030: 126 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 - Completed Lane C TC-080 for the access hard-gate fixture slice: deterministic `ACCESS_001`, access source-unavailable unknown, access needs-review, stale access review, safe legal-access language, and access adjacency payload validation. Lane C tests pass: 76 tests.
 - `verify.sh` passes via explicit Git Bash after TC-080: 131 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
+- Completed Lane C TC-090 for the wetlands hard-gate fixture slice: deterministic `WETLAND_001`, wetland source-unavailable unknown, wetland needs-review, stale wetland review, screening-only/no-delineation language, and wetland fixture payload validation. Lane C tests pass: 83 tests.
+- `verify.sh` passes via explicit Git Bash after TC-090: 138 tests pass; ruff clean; mypy clean (67 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

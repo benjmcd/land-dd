@@ -14,11 +14,15 @@ DEFAULT_RULESET_PATH = (
 )
 FLOOD_HIGH_RISK_CONDITION = "material_intersection_with_high_risk_flood_zone"
 ACCESS_NO_PUBLIC_ROAD_CONDITION = "no_public_road_adjacency_or_access_source_unavailable"
+WETLAND_MAPPED_CONDITION = "material_intersection_with_mapped_wetlands"
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
 ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacency")
 ACCESS_NO_ADJACENCY_KEYS = ("no_public_road_adjacency",)
 ACCESS_NEEDS_REVIEW_CLAIM_CODE = "ACCESS_EVIDENCE_NEEDS_REVIEW"
 ACCESS_STALE_CLAIM_CODE = "ACCESS_STALE_EVIDENCE_NEEDS_REVIEW"
+WETLAND_INTERSECTION_KEYS = ("intersects_mapped_wetlands",)
+WETLAND_NEEDS_REVIEW_CLAIM_CODE = "WETLAND_EVIDENCE_NEEDS_REVIEW"
+WETLAND_STALE_CLAIM_CODE = "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW"
 FLOOD_NEEDS_REVIEW_CLAIM_CODE = "FLOOD_EVIDENCE_NEEDS_REVIEW"
 FLOOD_STALE_CLAIM_CODE = "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
 
@@ -65,6 +69,7 @@ class RuleEngine:
     def evaluate(self, evidence_list: list[EvidenceContract]) -> list[ClaimContract]:
         access_rule = self._ruleset.hard_gate_for_condition(ACCESS_NO_PUBLIC_ROAD_CONDITION)
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
+        wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
         active_evidence = sorted(
             (evidence for evidence in evidence_list if evidence.superseded_by is None),
             key=lambda evidence: (str(evidence.area_id), str(evidence.evidence_id)),
@@ -95,6 +100,26 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_stale_access_evidence(evidence)
+            ]
+            wetland_positive = [
+                evidence
+                for evidence in area_evidence
+                if _is_mapped_wetland_evidence(evidence)
+            ]
+            wetland_negative = [
+                evidence
+                for evidence in area_evidence
+                if _is_negative_wetland_evidence(evidence)
+            ]
+            wetland_failures = [
+                evidence
+                for evidence in area_evidence
+                if _is_wetland_source_failure(evidence)
+            ]
+            stale_wetland_evidence = [
+                evidence
+                for evidence in area_evidence
+                if _is_stale_wetland_evidence(evidence)
             ]
             flood_positive = [
                 evidence
@@ -148,6 +173,44 @@ class RuleEngine:
                         area_id,
                         access_rule,
                         stale_access_evidence,
+                    )
+                )
+            if wetland_positive:
+                claims.append(
+                    self._wetland_positive_claim(
+                        area_id,
+                        wetland_rule,
+                        wetland_positive,
+                    )
+                )
+            if wetland_failures:
+                claims.append(
+                    self._wetland_unknown_claim(
+                        area_id,
+                        wetland_rule,
+                        wetland_failures,
+                    )
+                )
+            if wetland_positive and (wetland_negative or wetland_failures):
+                claims.append(
+                    self._wetland_needs_review_claim(
+                        area_id,
+                        wetland_rule,
+                        _dedupe_evidence_records(
+                            [
+                                *wetland_positive,
+                                *wetland_negative,
+                                *wetland_failures,
+                            ]
+                        ),
+                    )
+                )
+            if stale_wetland_evidence:
+                claims.append(
+                    self._wetland_stale_claim(
+                        area_id,
+                        wetland_rule,
+                        stale_wetland_evidence,
                     )
                 )
             if flood_positive:
@@ -303,6 +366,142 @@ class RuleEngine:
             verification_required=True,
             verification_task=(
                 "Refresh stale access screening source evidence before final "
+                "interpretation."
+            ),
+        )
+
+    def _wetland_positive_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Mapped wetland/deepwater screening evidence intersects the area. "
+            "This is screening only and is not a jurisdictional wetland determination "
+            "or field delineation."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion="Mapped wetland/deepwater screening evidence intersects the area.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _wetland_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Wetland screening remains unknown because required source evidence "
+            "failed or was unavailable. Wetland maps are screening inputs only."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code="WETLAND_SOURCE_UNAVAILABLE_UNKNOWN",
+            domain=rule.domain,
+            assertion="Wetland source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _wetland_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Wetland screening evidence is conflicting or incomplete and requires "
+            "human review. Maps are screening inputs, not field delineations or "
+            "jurisdictional determinations."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=WETLAND_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Wetland evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete wetland screening evidence before "
+                "relying on this result."
+            ),
+        )
+
+    def _wetland_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Wetland screening evidence is marked stale in the fixture and should be "
+            "refreshed before relying on mapped wetland/deepwater results."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=WETLAND_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Wetland evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale wetland screening source evidence before final "
                 "interpretation."
             ),
         )
@@ -601,6 +800,47 @@ def _is_stale_access_evidence(evidence: EvidenceContract) -> bool:
     )
 
 
+def _is_mapped_wetland_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "wetlands" or _is_wetland_source_failure(evidence):
+        return False
+    if any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in WETLAND_INTERSECTION_KEYS
+    ):
+        return True
+    area = evidence.observed_value.get("mapped_wetland_area_sq_m")
+    return _is_positive_number(area)
+
+
+def _is_negative_wetland_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "wetlands" or _is_wetland_source_failure(evidence):
+        return False
+    if evidence.is_negative_evidence:
+        return True
+    if any(
+        evidence.observed_value.get(key) is not None
+        and _observed_false(evidence.observed_value.get(key))
+        for key in WETLAND_INTERSECTION_KEYS
+    ):
+        return True
+    area = evidence.observed_value.get("mapped_wetland_area_sq_m")
+    return area is not None and _observed_number(area) == 0
+
+
+def _is_wetland_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "wetlands" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_stale_wetland_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "wetlands"
+        and not _is_wetland_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
+
+
 def _is_high_risk_flood_evidence(evidence: EvidenceContract) -> bool:
     if evidence.domain != "flood" or evidence.is_source_failure:
         return False
@@ -667,6 +907,19 @@ def _observed_false(value: object) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"0", "false", "no"}
     return False
+
+
+def _observed_number(value: object) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return value
+    return None
+
+
+def _is_positive_number(value: object) -> bool:
+    number = _observed_number(value)
+    return number is not None and number > 0
 
 
 def _sorted_evidence_ids(evidence_records: list[EvidenceContract]) -> list[UUID]:

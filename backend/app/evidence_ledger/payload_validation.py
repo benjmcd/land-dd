@@ -40,10 +40,14 @@ SPATIAL_INTERSECTION_KEYS = {
     "intersection_ratio",
     "intersects",
     "intersects_high_risk_flood_zone",
+    "intersects_mapped_wetlands",
+    "mapped_wetland_area_sq_m",
     "no_public_road_adjacency",
     "public_road_adjacency",
     "road_distance_m",
     "source_stale",
+    "wetland_type",
+    "wetland_types",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",
@@ -53,6 +57,7 @@ SPATIAL_RESULT_KEYS = {
     "has_public_road_adjacency",
     "intersects",
     "intersects_high_risk_flood_zone",
+    "intersects_mapped_wetlands",
     "no_public_road_adjacency",
     "public_road_adjacency",
 }
@@ -130,12 +135,18 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         "intersects",
         "intersects_high_risk_flood_zone",
         "has_public_road_adjacency",
+        "intersects_mapped_wetlands",
         "no_public_road_adjacency",
         "public_road_adjacency",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"spatial_intersection observed_value '{key}' must be boolean")
-    for key in ("intersection_area_sq_m", "intersection_ratio", "road_distance_m"):
+    for key in (
+        "intersection_area_sq_m",
+        "intersection_ratio",
+        "mapped_wetland_area_sq_m",
+        "road_distance_m",
+    ):
         if key in evidence.observed_value:
             _require_non_negative_number(evidence.observed_value[key], key)
     ratio = evidence.observed_value.get("intersection_ratio")
