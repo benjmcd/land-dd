@@ -1,7 +1,7 @@
 # Lane C State — Evidence Ledger + Claims Engine
 
 ```text
-Current milestone: Level 5 - Evidence Ledger (in-memory audit-event slice)
+Current milestone: Level 6 - Claims Engine (in-memory contradiction/stale rule slice)
 Target milestone: Level 5 (Evidence Ledger) → Level 6 (Claims Engine)
 Milestone status: PARTIAL
 Last verified: 2026-06-03
@@ -15,10 +15,10 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
 - ./scripts/verify.sh
 Verification result:
-- 63 Lane C tests passing
+- 69 Lane C tests passing
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 111 tests; lint clean; mypy clean (60 source files)
+- Full verification passes: 117 tests; lint clean; mypy clean (60 source files)
 Failed or blocked gates:
 - L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
 - L5-002: PARTIAL/PASS for in-memory service scope (type-specific observed_value validation covers source observation, spatial intersection, derived metric, document extract, source failure, and human-note guardrails)
@@ -27,13 +27,13 @@ Failed or blocked gates:
 - L5-010: PARTIAL/PASS for in-memory service scope (observation, source-failure, human-note, and supersede paths emit audit events; durable audit persistence remains DB-blocked)
 - L6-001: PARTIAL/PASS for in-memory service/rule scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; rule-generated claims cite evidence IDs)
 - L6-004: PARTIAL/PASS for in-memory service scope (create_unknown requires source-failure evidence)
-- L6-005: PARTIAL (source-failure and flood-rule caveats propagate into generated claims; broader rule-derived caveat propagation pending)
+- L6-005: PARTIAL/PASS for current flood-rule scope (positive, unknown, needs-review, and stale-review claims propagate evidence caveats; broader rule domains pending)
 - L6-006: PASS for current contract/service scope (severity and confidence remain separate)
 - L6-007: PARTIAL/PASS for in-memory service scope (ClaimService requires verification_task when verification_required is true)
 - L6-002: PARTIAL/PASS for current rule-engine scope (ruleset ID/version load from `config/ruleset_homestead_mvp.yaml` and are copied into generated claims)
 - L6-003: PARTIAL/PASS for one flood hard-gate rule (deterministic claim IDs and deterministic output when input order changes)
-- L6-008: NOT_STARTED (contradiction/needs-review claims pending)
-- L6-009: PARTIAL (claim-service and rule-engine tests cover positive evidence-linked storage, missing/empty/duplicate/superseded/cross-area rejection, source-failure unknowns, low-risk no-claim output, empty input, multi-area grouping, deterministic order, invalid rule config, and duplicate claim rejection; stale/contradiction/broader ruleset cases pending)
+- L6-008: PARTIAL/PASS for current flood-rule scope (conflicting active evidence and positive-plus-source-failure evidence emit needs-review claims)
+- L6-009: PARTIAL/PASS for current flood-rule scope (claim-service and rule-engine tests cover positive evidence-linked storage, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review, superseded evidence, deterministic order, invalid rule config, and duplicate claim rejection; broader rule domains pending)
 - L6-010: PARTIAL/PASS for current rule-engine scope (business logic lives in `backend/app/claims_engine/rule_engine.py`, not an LLM prompt or UI copy)
 Completion evidence:
 - plans/lane-c-2026-06-03-evidence-claims.md
@@ -48,13 +48,13 @@ Completion evidence:
 - backend/app/claims_engine/rule_engine.py (RuleEngine + constrained ruleset loader)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
 - backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
-- backend/tests/evidence_ledger/test_payload_validation.py (14 passing)
+- backend/tests/evidence_ledger/test_payload_validation.py (15 passing)
 - backend/tests/evidence_ledger/test_evidence_audit.py (4 passing)
 - backend/tests/claims_engine/test_claim_contracts.py (4 passing)
 - backend/tests/claims_engine/test_claim_service.py (12 passing)
-- backend/tests/claims_engine/test_rule_engine.py (9 passing)
+- backend/tests/claims_engine/test_rule_engine.py (14 passing)
 Next lowest-dependency task:
-- TC-070: Contradiction/needs-review and stale-evidence rule handling
+- TC-080: Broader fixture hard-gate coverage
 Do not work on yet:
 - Cross-lane integration wiring (Lane D's job)
 - PostGIS evidence-geometry linkage (needs Lane A + Lane B DB work)

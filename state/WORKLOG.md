@@ -30,6 +30,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TC-050: 107 tests pass; ruff clean; mypy clean (59 source files); DB smoke skipped.
 - Completed Lane C TC-060 for the in-memory evidence audit-event slice: optional `EvidenceAuditLog` injection, `EvidenceAuditEvent`, `InMemoryEvidenceAuditLog`, and create/source-failure/human-note/supersede event tests. Lane C tests pass: 63 tests.
 - `verify.sh` passes via Git Bash after TC-060: 111 tests pass; ruff clean; mypy clean (60 source files); DB smoke skipped.
+- Completed Lane C TC-070 for the in-memory flood contradiction/stale rule slice: deterministic needs-review claims for conflicting active evidence and positive-plus-source-failure evidence, explicit `source_stale` fixture handling, superseded-evidence exclusion, and deterministic review-output ordering. Lane C tests pass: 69 tests.
+- `verify.sh` passes via Git Bash after TC-070: 117 tests pass; ruff clean; mypy clean (60 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

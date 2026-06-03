@@ -143,6 +143,22 @@ def test_spatial_intersection_accepts_flood_zone_code_result() -> None:
     assert created.observed_value["flood_zone_code"] == "AE"
 
 
+def test_spatial_intersection_accepts_source_stale_fixture_signal() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        observed_value={"flood_zone": "X", "source_stale": True},
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["source_stale"] is True
+
+
 def test_spatial_intersection_rejects_unsupported_payload_key() -> None:
     area_id = uuid4()
     source_id = uuid4()

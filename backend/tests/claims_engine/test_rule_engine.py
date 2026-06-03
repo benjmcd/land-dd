@@ -15,8 +15,13 @@ def make_flood_evidence(
     area_id: UUID,
     flood_zone: str = "AE",
     confidence: ConfidenceBand = ConfidenceBand.MEDIUM,
+    is_negative_evidence: bool = False,
+    source_stale: bool = False,
     superseded_by: UUID | None = None,
 ) -> EvidenceContract:
+    observed_value: dict[str, object] = {"flood_zone": flood_zone}
+    if source_stale:
+        observed_value["source_stale"] = True
     return EvidenceContract(
         area_id=area_id,
         source_id=uuid4(),
@@ -24,10 +29,11 @@ def make_flood_evidence(
         evidence_code="FLOOD_ZONE_SCREEN",
         domain="flood",
         observation="Fixture flood source intersects a mapped flood zone.",
-        observed_value={"flood_zone": flood_zone},
+        observed_value=observed_value,
         method_code="fixture_flood_overlay",
         confidence=confidence,
         caveat="Screening fixture only; confirm locally.",
+        is_negative_evidence=is_negative_evidence,
         superseded_by=superseded_by,
     )
 
@@ -145,6 +151,111 @@ def test_evaluate_reports_positive_and_source_failure_evidence_explicitly() -> N
     assert [claim.claim_code for claim in claims] == [
         "FLOOD_001",
         "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
+        "FLOOD_EVIDENCE_NEEDS_REVIEW",
+    ]
+    assert claims[-1].evidence_ids == sorted(
+        [evidence.evidence_id, failure.evidence_id],
+        key=str,
+    )
+
+
+def test_evaluate_creates_needs_review_claim_for_contradictory_flood_evidence() -> None:
+    area_id = uuid4()
+    positive = make_flood_evidence(area_id=area_id, flood_zone="AE")
+    negative = make_flood_evidence(
+        area_id=area_id,
+        flood_zone="X",
+        confidence=ConfidenceBand.HIGH,
+        is_negative_evidence=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([negative, positive])
+
+    assert [claim.claim_code for claim in claims] == [
+        "FLOOD_001",
+        "FLOOD_EVIDENCE_NEEDS_REVIEW",
+    ]
+    review_claim = claims[-1]
+    assert review_claim.severity == SeverityBand.UNKNOWN
+    assert review_claim.confidence == ConfidenceBand.MEDIUM
+    assert review_claim.verification_required is True
+    assert "conflicting" in review_claim.user_safe_language
+    assert review_claim.evidence_ids == sorted(
+        [positive.evidence_id, negative.evidence_id],
+        key=str,
+    )
+
+
+def test_evaluate_creates_stale_claim_from_fixture_signal() -> None:
+    area_id = uuid4()
+    stale_evidence = make_flood_evidence(
+        area_id=area_id,
+        flood_zone="X",
+        confidence=ConfidenceBand.LOW,
+        source_stale=True,
+    )
+
+    claims = RuleEngine.from_file().evaluate([stale_evidence])
+
+    assert len(claims) == 1
+    stale_claim = claims[0]
+    assert stale_claim.claim_code == "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
+    assert stale_claim.severity == SeverityBand.INFORMATIONAL
+    assert stale_claim.confidence == ConfidenceBand.LOW
+    assert stale_claim.evidence_ids == [stale_evidence.evidence_id]
+    assert "stale" in stale_claim.user_safe_language
+
+
+def test_evaluate_does_not_create_stale_claim_without_fixture_signal() -> None:
+    area_id = uuid4()
+    fresh_low_risk = make_flood_evidence(area_id=area_id, flood_zone="X")
+
+    assert RuleEngine.from_file().evaluate([fresh_low_risk]) == []
+
+
+def test_evaluate_ignores_superseded_stale_and_contradictory_evidence() -> None:
+    area_id = uuid4()
+    positive = make_flood_evidence(area_id=area_id, flood_zone="AE")
+    superseded_negative = make_flood_evidence(
+        area_id=area_id,
+        flood_zone="X",
+        is_negative_evidence=True,
+        superseded_by=uuid4(),
+    )
+    superseded_stale = make_flood_evidence(
+        area_id=area_id,
+        flood_zone="X",
+        source_stale=True,
+        superseded_by=uuid4(),
+    )
+
+    claims = RuleEngine.from_file().evaluate(
+        [superseded_negative, positive, superseded_stale]
+    )
+
+    assert [claim.claim_code for claim in claims] == ["FLOOD_001"]
+
+
+def test_evaluate_review_outputs_are_deterministic_when_input_order_changes() -> None:
+    area_id = uuid4()
+    positive = make_flood_evidence(area_id=area_id, flood_zone="AE")
+    failure = make_flood_failure(area_id)
+    negative = make_flood_evidence(
+        area_id=area_id,
+        flood_zone="X",
+        is_negative_evidence=True,
+    )
+    stale = make_flood_evidence(area_id=area_id, flood_zone="X", source_stale=True)
+
+    first_result = RuleEngine.from_file().evaluate([stale, negative, failure, positive])
+    second_result = RuleEngine.from_file().evaluate([positive, failure, negative, stale])
+
+    assert first_result == second_result
+    assert [claim.claim_code for claim in first_result] == [
+        "FLOOD_001",
+        "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
+        "FLOOD_EVIDENCE_NEEDS_REVIEW",
+        "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW",
     ]
 
 

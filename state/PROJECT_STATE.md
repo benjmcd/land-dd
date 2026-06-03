@@ -14,7 +14,7 @@ Verification command(s):
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 111 tests pass; lint clean; mypy clean (60 source files)
+- 117 tests pass; lint clean; mypy clean (60 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
 - Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
@@ -35,13 +35,12 @@ Failed or blocked gates:
 - L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original without deleting or overwriting)
 - L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim/rule scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
 - L6-002/L6-003/L6-010: PARTIAL/PASS for one flood hard-gate rule (ruleset ID/version load, deterministic claim IDs, and rule logic lives in `rule_engine.py`, not an LLM/UI prompt)
-- L6-005/L6-009: PARTIAL (rule-generated flood claims propagate caveats and cover positive, unknown/source-failure, low-risk, empty-input, multi-area, input-order-determinism, invalid-rule-config, and superseded-evidence cases; stale/contradiction/broader rule categories pending)
-- L6-008: NOT_STARTED (contradiction/needs-review claims pending)
+- L6-005/L6-008/L6-009: PARTIAL/PASS for current flood-rule scope (rule-generated flood claims propagate caveats and cover positive, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review, superseded-evidence, empty-input, multi-area, input-order-determinism, and invalid-rule-config cases; broader rule domains pending)
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (63 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (69 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -51,8 +50,8 @@ Completion evidence:
 - tests/fixtures/geometries/
 Next lowest-dependency task:
 - Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
-- Lane C: TC-070 (contradiction/needs-review and stale-evidence rule handling)
-- Lane D: TD-020 (thin routers) can proceed after coordinator review; TD-030 report integration should stay fixture-only until DB persistence gaps are addressed
+- Lane D: TD-020 (thin routers) is the next unblocked vertical-slice integration step; TD-030 report integration should stay fixture-only until DB persistence gaps are addressed
+- Lane C: TC-080 (broader fixture hard-gate coverage) can proceed in parallel if integration is not prioritized
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -108,7 +107,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-111 tests pass; lint clean; mypy clean (60 source files). DB smoke blocked until Docker Desktop starts.
+117 tests pass; lint clean; mypy clean (60 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

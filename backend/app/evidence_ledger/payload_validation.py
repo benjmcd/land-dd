@@ -20,6 +20,7 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "observed_status",
     "raw_value",
     "source_record_id",
+    "source_stale",
     "source_url",
     "status",
     "value",
@@ -34,6 +35,7 @@ SPATIAL_INTERSECTION_KEYS = {
     "intersection_ratio",
     "intersects",
     "intersects_high_risk_flood_zone",
+    "source_stale",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",

@@ -14,6 +14,8 @@ DEFAULT_RULESET_PATH = (
 )
 FLOOD_HIGH_RISK_CONDITION = "material_intersection_with_high_risk_flood_zone"
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
+FLOOD_NEEDS_REVIEW_CLAIM_CODE = "FLOOD_EVIDENCE_NEEDS_REVIEW"
+FLOOD_STALE_CLAIM_CODE = "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
 
 
 @dataclass(frozen=True)
@@ -78,10 +80,34 @@ class RuleEngine:
                 for evidence in area_evidence
                 if _is_flood_source_failure(evidence)
             ]
+            flood_negative = [
+                evidence
+                for evidence in area_evidence
+                if _is_negative_flood_evidence(evidence)
+            ]
+            stale_evidence = [
+                evidence
+                for evidence in area_evidence
+                if _is_stale_flood_evidence(evidence)
+            ]
             if flood_positive:
                 claims.append(self._flood_positive_claim(area_id, flood_rule, flood_positive))
             if flood_failures:
                 claims.append(self._flood_unknown_claim(area_id, flood_rule, flood_failures))
+            if flood_positive and (flood_negative or flood_failures):
+                claims.append(
+                    self._flood_needs_review_claim(
+                        area_id,
+                        flood_rule,
+                        _dedupe_evidence_records(
+                            [*flood_positive, *flood_negative, *flood_failures]
+                        ),
+                    )
+                )
+            if stale_evidence:
+                claims.append(
+                    self._flood_stale_claim(area_id, flood_rule, stale_evidence)
+                )
         return claims
 
     def _flood_positive_claim(
@@ -146,6 +172,75 @@ class RuleEngine:
             ruleset_version=self._ruleset.version,
             verification_required=True,
             verification_task=rule.verification_task,
+        )
+
+    def _flood_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Flood screening evidence is conflicting or incomplete and requires human "
+            "review before interpreting floodplain constraints."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=FLOOD_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Flood evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete flood evidence before relying on "
+                "this screening result."
+            ),
+        )
+
+    def _flood_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Flood screening evidence is marked stale in the fixture and should be "
+            "refreshed before relying on the result."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=FLOOD_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Flood evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale flood screening source evidence before final interpretation."
+            ),
         )
 
     def _deterministic_claim_id(
@@ -271,16 +366,43 @@ def _is_high_risk_flood_evidence(evidence: EvidenceContract) -> bool:
         return False
     if _observed_bool(evidence.observed_value.get("intersects_high_risk_flood_zone")):
         return True
-    for zone in _observed_values(evidence.observed_value.get("flood_zone")):
+    for zone in _flood_zone_values(evidence):
         if zone.upper() in HIGH_RISK_FLOOD_ZONES:
             return True
     return False
+
+
+def _is_negative_flood_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "flood" or _is_flood_source_failure(evidence):
+        return False
+    if evidence.is_negative_evidence:
+        return True
+    high_risk_intersection = evidence.observed_value.get("intersects_high_risk_flood_zone")
+    if high_risk_intersection is not None:
+        return _observed_false(high_risk_intersection)
+    zones = _flood_zone_values(evidence)
+    return bool(zones) and all(zone.upper() not in HIGH_RISK_FLOOD_ZONES for zone in zones)
 
 
 def _is_flood_source_failure(evidence: EvidenceContract) -> bool:
     return evidence.domain == "flood" and (
         evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
     )
+
+
+def _is_stale_flood_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "flood"
+        and not _is_flood_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
+
+
+def _flood_zone_values(evidence: EvidenceContract) -> list[str]:
+    values: list[str] = []
+    for key in ("flood_zone", "flood_zones", "flood_zone_code", "zone"):
+        values.extend(_observed_values(evidence.observed_value.get(key)))
+    return values
 
 
 def _observed_values(value: object) -> list[str]:
@@ -299,11 +421,24 @@ def _observed_bool(value: object) -> bool:
     return False
 
 
+def _observed_false(value: object) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, str):
+        return value.strip().lower() in {"0", "false", "no"}
+    return False
+
+
 def _sorted_evidence_ids(evidence_records: list[EvidenceContract]) -> list[UUID]:
     return sorted(
         [evidence.evidence_id for evidence in evidence_records],
         key=str,
     )
+
+
+def _dedupe_evidence_records(evidence_records: list[EvidenceContract]) -> list[EvidenceContract]:
+    by_id = {evidence.evidence_id: evidence for evidence in evidence_records}
+    return sorted(by_id.values(), key=lambda evidence: str(evidence.evidence_id))
 
 
 def _format_caveats(evidence_records: list[EvidenceContract]) -> str:
