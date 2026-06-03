@@ -12,9 +12,9 @@ Verification command(s):
 - python scripts/seed_sources.py --json
 - ./scripts/verify.sh
 Verification result:
-- 23 Lane A tests passing
+- 28 Lane A tests passing
 - Source seed dry-run validates 8 `Must` registry rows
-- Full verification passes: 49 tests; lint clean; mypy clean (48 source files)
+- Full verification passes: 64 tests; lint clean; mypy clean (51 source files)
 Failed or blocked gates:
 - L2-001: Docker Desktop not running — DB cannot start
 - L2-002: PostGIS extension not verified (Docker blocked)
@@ -22,10 +22,11 @@ Failed or blocked gates:
 - L2-004: DB cannot be reset without Docker
 - All L2 gates: BLOCKED (Docker)
 - L3-003/L3-004: Source version and retrieval-run behavior not yet exercised beyond schema
-- L3-007/L3-010: License review workflow/template still pending (TA-050)
+- L3-007: PARTIAL (SourceService fails closed for production-use checks; DB/live connector enforcement unverified)
+- L3-010: PARTIAL (license review template exists; no persisted review/export workflow yet)
 Completion evidence:
 - plans/lane-a-2026-06-03-source-registry.md
-- backend/tests/source_registry/ (23 tests passing)
+- backend/tests/source_registry/ (28 tests passing)
 - archive/2026-06-03_source-registry-lane-migration/backend/app/repositories/
 - archive/2026-06-03_source-registry-lane-migration/backend/app/services/
 - backend/app/source_registry/models.py (SourceModel for source.sources)
@@ -34,9 +35,13 @@ Completion evidence:
 - backend/tests/source_registry/test_sqlalchemy_source_repo.py (4 repository tests)
 - db/seeds/source_registry_seeds.py (registry-backed source seed loader)
 - scripts/seed_sources.py (dry-run/JSON/apply runner; apply unverified until DB is available)
-- backend/tests/source_registry/test_source_seeds.py (4 seed tests)
+- backend/tests/source_registry/test_source_seeds.py (5 seed tests)
+- docs/adr/lane-a-0001-provenance-model.md (source provenance/license gate ADR)
+- templates/data_source_license_review.md (canonical license review template)
+- registers/data_source_registry.csv (explicit governance columns)
+- schemas/source_schema.json (source-governance fields)
 Next lowest-dependency task:
-- TA-050: License review template and provenance ADR
+- TA-060: DB smoke (blocked until Docker/PostGIS is available)
 Do not work on yet:
 - DB smoke (needs Docker/PostGIS verification)
 - Paid/commercial source connectors

@@ -43,6 +43,8 @@ def test_seed_sources_are_valid_source_contracts() -> None:
 
     assert all(isinstance(source, SourceContract) for source in seeds)
     assert all(source.metadata["mvp_priority"] == "Must" for source in seeds)
+    assert all(source.review_status == "pending" for source in seeds)
+    assert all(source.freshness_class == "unreviewed" for source in seeds)
 
 
 def test_seed_metadata_preserves_registry_context() -> None:
@@ -55,7 +57,27 @@ def test_seed_metadata_preserves_registry_context() -> None:
 
     assert county_gis.homepage_url is None
     assert county_gis.metadata["raw_url"] == "Varies"
+    assert county_gis.source_type == "Local official/varies"
+    assert county_gis.license_status == "unknown"
+    assert county_gis.redistribution_status == "unknown"
+    assert county_gis.metadata["review_owner"] == "unassigned"
     assert county_gis.license_summary == "Approximate; not survey"
+
+
+def test_commercial_blocker_seed_fails_closed_for_usage_statuses() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    vendor = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-017"
+    )
+
+    assert vendor.license_status == "blocked"
+    assert vendor.commercial_use_status == "blocked"
+    assert vendor.cache_allowed == "blocked"
+    assert vendor.export_allowed == "blocked"
+    assert vendor.ai_use_allowed == "blocked"
+    assert vendor.raw_data_allowed == "blocked"
 
 
 def test_seed_sources_have_unique_name_organization_pairs() -> None:

@@ -76,3 +76,45 @@ def test_list_all_returns_all_registered_sources(service: SourceService) -> None
 
 def test_list_all_empty_when_no_sources_registered(service: SourceService) -> None:
     assert service.list_all() == []
+
+
+def test_source_is_registered_matches_repository_state(service: SourceService) -> None:
+    registered = service.register(_make_source())
+
+    assert service.source_is_registered(registered.source_id) is True
+    assert service.source_is_registered(uuid.uuid4()) is False
+
+
+def test_source_production_use_fails_closed_for_unknown_review(
+    service: SourceService,
+) -> None:
+    registered = service.register(_make_source())
+
+    assert service.source_production_use_allowed(registered.source_id) is False
+
+
+def test_source_production_use_allows_reviewed_source(service: SourceService) -> None:
+    source = _make_source().model_copy(
+        update={
+            "review_status": "approved",
+            "license_status": "approved",
+            "commercial_use_status": "yes",
+        }
+    )
+    registered = service.register(source)
+
+    assert service.source_production_use_allowed(registered.source_id) is True
+
+
+def test_source_production_use_rejects_blocked_source(service: SourceService) -> None:
+    source = _make_source().model_copy(
+        update={
+            "review_status": "approved",
+            "license_status": "blocked",
+            "commercial_use_status": "yes",
+        }
+    )
+    registered = service.register(source)
+
+    assert service.source_production_use_allowed(registered.source_id) is False
+    assert service.source_production_use_allowed(uuid.uuid4()) is False

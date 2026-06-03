@@ -10,31 +10,43 @@ Verification command(s):
 - C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh
 - cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
 - cd backend && PYTHONPATH=. python -m pytest tests/area_geometry/ -v
+- cd backend && PYTHONPATH=. python -m pytest tests/evidence_ledger/ tests/claims_engine/ -v
 - python scripts/seed_sources.py
 - python scripts/seed_sources.py --json
 Verification result:
-- 49 tests pass; lint clean; mypy clean (48 source files)
+- 64 tests pass; lint clean; mypy clean (51 source files)
 - Lane A source seeds validate 8 `Must` registry rows without DB access
+- Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
 - Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
+- Lane C in-memory evidence-service slice passes targeted runtime, type, lint, and import-isolation checks
 - DB smoke skipped/blocked because Docker Desktop is not running
 Failed or blocked gates:
 - L2-001 to L2-010: BLOCKED (Docker Desktop not running)
-- L3-001/L3-002/L3-005: PARTIAL (source metadata/seeds/caveats exist; license review workflow pending)
+- L3-001/L3-002/L3-005: PARTIAL (source metadata/seeds/caveats and review fields exist; persisted review workflow pending)
 - L3-003/L3-004: PARTIAL/BLOCKED (source versions/retrieval runs present in schema, not behavior-verified)
+- L3-007: PARTIAL (SourceService fails closed for production use; DB/live connector enforcement unverified)
+- L3-010: PARTIAL (license review template exists; source metadata export/review workflow not implemented)
 - L4-001/L4-002/L4-006/L4-007: PARTIAL (in-memory geometry validation and caveats exist)
 - L4-008: PASS for current fixture scope (polygon, multipolygon, invalid, empty, wrong SRID, and large geometry)
 - L4-003: PARTIAL (AreaContract defaults to SRID 4326; persisted SRID still pending)
 - L4-004/L4-005/L4-010: BLOCKED/PENDING (PostGIS-backed metrics, spatial queries, and versioned geometry)
+- L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory evidence service scope
+- L5-002/L5-006/L5-010: NOT_STARTED (payload schema validation, supersession, and audit events)
 Completion evidence:
 - state/VALIDATION_LOG.md
-- backend/tests/source_registry/ (23 tests)
+- backend/tests/source_registry/ (28 tests)
 - backend/tests/area_geometry/ (16 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (16 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
+- docs/adr/lane-a-0001-provenance-model.md
+- templates/data_source_license_review.md
+- registers/data_source_registry.csv
+- schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane A: TA-050 (license review template and provenance ADR)
-- Lane C: TC-010 (EvidenceService + InMemoryEvidenceRepository)
+- Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
+- Lane C: TC-020 (evidence supersession/amendment)
 - Lane D: TD-020 (thin routers) after services are ready enough to expose safely
 Do not work on yet:
 - Live connectors
@@ -91,7 +103,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-49 tests pass; lint clean; mypy clean (48 source files). DB smoke blocked until Docker Desktop starts.
+64 tests pass; lint clean; mypy clean (51 source files). DB smoke blocked until Docker Desktop starts.
 
 ## Local repo bootstrap state
 

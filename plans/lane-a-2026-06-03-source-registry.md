@@ -19,12 +19,16 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - DB migration `db/migrations/0001_initial_spine.sql` exists with all core tables.
 - `SourceContract` Pydantic model in `backend/app/domain/source_contracts.py`.
 - `InMemorySourceRepository` + `SourceService` in `backend/app/source_registry/`.
-- 11 passing tests in `backend/tests/source_registry/`.
+- 28 passing tests in `backend/tests/source_registry/`.
 - Backward-compat shims in `app/repositories/` and `app/services/` were archived under `archive/2026-06-03_source-registry-lane-migration/` (TA-010 complete).
 - `SourceModel` in `backend/app/source_registry/models.py` maps the `source.sources` table (TA-020 complete).
 - `SqlAlchemySourceRepository` in `backend/app/source_registry/source_repo.py` implements the source repository protocol for SQLAlchemy sessions (TA-030 complete).
 - `db/seeds/source_registry_seeds.py` parses `registers/data_source_registry.csv` and validates the 8 `Must` MVP source rows as `SourceContract` objects (TA-040 complete).
 - `scripts/seed_sources.py` supports dry-run and JSON seed review; DB apply is available but unverified until Docker/PostGIS is running (TA-040 complete).
+- `docs/adr/lane-a-0001-provenance-model.md` defines fail-closed source provenance and license gates (TA-050 complete).
+- `templates/data_source_license_review.md` is the canonical source license review template; it was strengthened instead of creating a near-duplicate `source_license_review.md` (TA-050 complete).
+- `registers/data_source_registry.csv`, `schemas/source_schema.json`, and the seed loader now carry explicit license/review/freshness fields (TA-050 complete).
+- `SourceService` implements source existence and fail-closed production-use checks for `SourceExistsProtocol` wiring (TA-050 complete).
 - Docker Desktop not running at initial lane setup. DB smoke blocked until Docker starts.
 
 ## Proposed design
@@ -60,7 +64,8 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 
 ### TA-050: License review template
 1. Create `docs/adr/lane-a-0001-provenance-model.md` (ADR for source/provenance decisions).
-2. Create `templates/source_license_review.md` with required license review fields.
+2. Strengthen the existing canonical `templates/data_source_license_review.md` with required license review fields instead of creating a duplicate template.
+3. Add explicit governance fields to the source register/schema/seed path: license status, redistribution status, freshness class, last checked, review owner, review status, and fail-closed usage statuses.
 
 ### TA-060: DB smoke (BLOCKED until Docker is running)
 1. Run `docker compose up -d db`.
@@ -78,7 +83,9 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 | `db/seeds/source_registry_seeds.py` | New: seed data |
 | `scripts/seed_sources.py` | New: seed runner |
 | `docs/adr/lane-a-0001-provenance-model.md` | New: ADR |
-| `templates/source_license_review.md` | New: license review template |
+| `templates/data_source_license_review.md` | Strengthen canonical license review template |
+| `registers/data_source_registry.csv` | Add explicit governance fields |
+| `schemas/source_schema.json` | Add source-governance fields |
 | `state/lane-a-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB smoke results |
 
@@ -114,3 +121,4 @@ RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: TA-020 complete. Added `SourceModel` for `source.sources` with 4 model contract tests. Full verification: 26 tests, ruff clean, mypy clean (42 source files); DB smoke skipped.
 - 2026-06-03: TA-030 complete. Added `SqlAlchemySourceRepository` with non-DB session-bound tests for add/get/list/exists behavior. Full verification: 30 tests, ruff clean, mypy clean (43 source files); DB smoke skipped.
 - 2026-06-03: TA-040 complete. Added registry-backed source seed loader, seed runner, seed tests, and source metadata mapping. Lane A tests: 23 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.
+- 2026-06-03: TA-050 complete. Added source provenance/license ADR, strengthened the canonical data-source license review template, wired explicit governance fields through the register/schema/seed path, and added fail-closed SourceService production-use checks. Lane A tests: 28 passing. Full verification: 64 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.

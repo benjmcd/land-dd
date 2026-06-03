@@ -107,6 +107,7 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 | Blocker | Status | Impact |
 |---|---|---|
 | Lane A TA-060 DB smoke | Blocked | TD-040 cannot proceed |
+| Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Pending | TD-030 uses stub until done |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |

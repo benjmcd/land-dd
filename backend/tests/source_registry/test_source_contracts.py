@@ -37,3 +37,7 @@ def test_source_contract_defaults_usage_flags_to_unknown() -> None:
     assert source.ai_use_allowed == "unknown"
     assert source.export_allowed == "unknown"
     assert source.attribution_required is False
+    assert source.license_status == "unknown"
+    assert source.redistribution_status == "unknown"
+    assert source.freshness_class == "unknown"
+    assert source.review_status == "pending"

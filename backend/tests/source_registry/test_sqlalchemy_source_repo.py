@@ -71,17 +71,24 @@ def _make_source() -> SourceContract:
             Any,
             "https://www.fema.gov/flood-maps/national-flood-hazard-layer",
         ),
+        source_type="Public official",
         authority_level=AuthorityLevel.OFFICIAL_PRIMARY,
         domain="flood",
         geographic_scope="US",
         update_cadence="continuous",
+        license_status="pending-review",
         commercial_use_status="yes",
+        redistribution_status="restricted",
         license_summary="Public official data with caveats.",
         attribution_required=True,
         ai_use_allowed="unknown",
         cache_allowed="yes",
         export_allowed="unknown",
         raw_data_allowed="unknown",
+        freshness_class="current",
+        last_checked_at="2026-06-03",
+        review_owner="lane-a",
+        review_status="pending",
         notes="Fixture source.",
         metadata={"source_registry_id": "DS-002"},
     )
@@ -105,7 +112,16 @@ def _make_model(source: SourceContract) -> SourceModel:
         export_allowed=source.export_allowed,
         raw_data_allowed=source.raw_data_allowed,
         notes=source.notes,
-        source_metadata={"fixture": True},
+        source_metadata={
+            "fixture": True,
+            "source_type": source.source_type,
+            "license_status": source.license_status,
+            "redistribution_status": source.redistribution_status,
+            "freshness_class": source.freshness_class,
+            "last_checked_at": source.last_checked_at,
+            "review_owner": source.review_owner,
+            "review_status": source.review_status,
+        },
     )
 
 
@@ -124,9 +140,15 @@ def test_sqlalchemy_source_repository_add_maps_contract_to_model() -> None:
     assert added.organization == source.organization
     assert added.homepage_url == str(source.homepage_url)
     assert added.authority_level == source.authority_level.value
-    assert added.source_metadata == source.metadata
+    assert added.source_metadata["source_registry_id"] == "DS-002"
+    assert added.source_metadata["license_status"] == "pending-review"
+    assert added.source_metadata["redistribution_status"] == "restricted"
     assert result.source_id == source.source_id
-    assert result.metadata == source.metadata
+    assert result.source_type == source.source_type
+    assert result.license_status == source.license_status
+    assert result.redistribution_status == source.redistribution_status
+    assert result.freshness_class == source.freshness_class
+    assert result.review_owner == source.review_owner
 
 
 def test_sqlalchemy_source_repository_get_maps_model_to_contract() -> None:
@@ -144,6 +166,10 @@ def test_sqlalchemy_source_repository_get_maps_model_to_contract() -> None:
     assert result.authority_level == AuthorityLevel.OFFICIAL_PRIMARY
     assert result.cache_allowed == "yes"
     assert result.metadata["fixture"] is True
+    assert result.source_type == "Public official"
+    assert result.license_status == "pending-review"
+    assert result.redistribution_status == "restricted"
+    assert result.freshness_class == "current"
 
 
 def test_sqlalchemy_source_repository_list_all_maps_models_to_contracts() -> None:

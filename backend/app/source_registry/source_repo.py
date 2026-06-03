@@ -75,6 +75,16 @@ class SqlAlchemySourceRepository:
 
 
 def _source_to_model(source: SourceContract) -> SourceModel:
+    source_metadata = {
+        **source.metadata,
+        "source_type": source.source_type,
+        "license_status": source.license_status,
+        "redistribution_status": source.redistribution_status,
+        "freshness_class": source.freshness_class,
+        "last_checked_at": source.last_checked_at,
+        "review_owner": source.review_owner,
+        "review_status": source.review_status,
+    }
     return SourceModel(
         source_id=source.source_id,
         name=source.name,
@@ -92,30 +102,78 @@ def _source_to_model(source: SourceContract) -> SourceModel:
         export_allowed=source.export_allowed,
         raw_data_allowed=source.raw_data_allowed,
         notes=source.notes,
-        source_metadata=source.metadata,
+        source_metadata=source_metadata,
     )
 
 
 def _model_to_source(model: SourceModel) -> SourceContract:
+    metadata = model.source_metadata
     return SourceContract(
         source_id=model.source_id,
         name=model.name,
         organization=model.organization,
         homepage_url=cast(Any, model.homepage_url),
+        source_type=_metadata_str(metadata, "source_type"),
         authority_level=AuthorityLevel(model.authority_level),
         domain=model.domain,
         geographic_scope=model.geographic_scope,
         update_cadence=model.update_cadence,
+        license_status=_metadata_required_str(
+            metadata,
+            "license_status",
+            default="unknown",
+        ),
         commercial_use_status=model.commercial_use_status,
+        redistribution_status=_metadata_required_str(
+            metadata,
+            "redistribution_status",
+            default="unknown",
+        ),
         license_summary=model.license_summary,
         attribution_required=model.attribution_required,
         cache_allowed=model.cache_allowed,
         export_allowed=model.export_allowed,
         ai_use_allowed=model.ai_use_allowed,
         raw_data_allowed=model.raw_data_allowed,
+        freshness_class=_metadata_required_str(
+            metadata,
+            "freshness_class",
+            default="unknown",
+        ),
+        last_checked_at=_metadata_str(metadata, "last_checked_at"),
+        review_owner=_metadata_str(metadata, "review_owner"),
+        review_status=_metadata_required_str(
+            metadata,
+            "review_status",
+            default="pending",
+        ),
         notes=model.notes,
-        metadata=model.source_metadata,
+        metadata=metadata,
     )
+
+
+def _metadata_str(
+    metadata: dict[str, Any],
+    key: str,
+) -> str | None:
+    value = metadata.get(key)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _metadata_required_str(
+    metadata: dict[str, Any],
+    key: str,
+    *,
+    default: str,
+) -> str:
+    value = _metadata_str(metadata, key)
+    if value is None:
+        return default
+    return value
 
 
 __all__ = [

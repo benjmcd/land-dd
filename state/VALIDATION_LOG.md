@@ -2,6 +2,65 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-03 Lane A TA-050 source provenance and license gates
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
+python scripts/seed_sources.py
+python scripts/seed_sources.py --json
+cd backend && mypy app/source_registry app/evidence_ledger app/domain/source_contracts.py app/domain/evidence_contracts.py tests/source_registry/test_source_seeds.py tests/source_registry/test_sqlalchemy_source_repo.py tests/evidence_ledger/test_evidence_service.py
+python scripts/check_json_files.py
+python -c "import csv; rows=list(csv.DictReader(open('./registers/data_source_registry.csv', newline='', encoding='utf-8'))); print(len(rows)); print(rows[0]['License Status'], rows[16]['License Status'], rows[16]['Cache Allowed'])"
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+cd backend && PYTHONPATH=. python -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Lane A source-registry tests pass: 28 tests.
+- Source seed dry-run validates 8 `Must` registry rows and JSON output returns the same 8 row summaries.
+- Targeted mypy passes: no issues in 12 source/test files.
+- JSON check passes: 14 files.
+- Source register parses 25 rows; DS-001 has unknown license status, and DS-017 is blocked for license/cache usage.
+- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (51 source files).
+- Test collection reports 64 tests.
+- DB smoke skipped because `RUN_DB_SMOKE=1` was not set and Docker Desktop is not running.
+
+**Residual risk:**
+
+- Source governance is still non-DB and non-production: DB seed apply, source-version behavior, retrieval-run behavior, and live connector enforcement are not verified.
+- The license review template exists, but no source has completed human license review; unknown statuses remain fail-closed.
+- Durable Level 2 and durable Level 3 claims remain blocked until Docker/PostGIS smoke runs.
+
+## 2026-06-03 Lane C TC-010 evidence service slice
+
+**Commands run:**
+
+```bash
+cd backend && PYTHONPATH=. python -m pytest tests/evidence_ledger/ tests/claims_engine/ -v
+cd backend && ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+cd backend && mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
+C:/Program\ Files/Git/bin/bash.exe ./scripts/verify.sh
+```
+
+**Results:**
+
+- Lane C evidence/claims tests pass: 16 tests.
+- Lane C targeted ruff passes.
+- Lane C targeted mypy passes: no issues in 11 source/test files.
+- Cross-lane import scan returns no matches; Lane C does not import Lane A/B modules.
+- Full verification through Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), 59 backend tests pass, ruff clean, mypy clean (51 source files).
+- DB smoke skipped because `RUN_DB_SMOKE=1` was not set and Docker Desktop is not running.
+
+**Residual risk:**
+
+- TC-010 is an in-memory evidence-service slice only; durable Postgres evidence persistence remains blocked by DB smoke/migration work.
+- L5-002 payload schema validation, L5-006 supersession/amendment, and L5-010 audit events remain unimplemented.
+- ClaimService/rules engine work is still not started.
+
 ## 2026-06-03 Lane A TA-040 source seeds + Lane B in-memory geometry slice
 
 **Commands run:**

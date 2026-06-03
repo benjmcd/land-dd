@@ -48,21 +48,37 @@ def _row_to_source(row: dict[str, str]) -> SourceContract:
         "use": row["Use"],
         "caveats": row["Caveats"],
         "raw_url": row["URL"],
+        "license_status": row["License Status"],
+        "redistribution_status": row["Redistribution Status"],
+        "attribution_required_status": row["Attribution Required"],
+        "freshness_class": row["Freshness Class"],
+        "last_checked_at": _optional_text(row["Last Checked At"]),
+        "review_owner": row["Review Owner"],
+        "review_status": row["Review Status"],
     }
 
     return SourceContract(
         name=row["Name"],
         organization=row["Organization"],
         homepage_url=url,
+        source_type=row["Source Type"],
         authority_level=_authority_for(row["Source Type"]),
         domain=row["Domain"],
         geographic_scope=row["Geography"],
-        commercial_use_status="unknown",
+        update_cadence=row["Update Cadence"],
+        license_status=row["License Status"],
+        commercial_use_status=row["Commercial Use Status"],
+        redistribution_status=row["Redistribution Status"],
         license_summary=row["Caveats"],
-        cache_allowed="unknown",
-        export_allowed="unknown",
-        ai_use_allowed="unknown",
-        raw_data_allowed="unknown",
+        attribution_required=_status_to_bool(row["Attribution Required"]),
+        cache_allowed=row["Cache Allowed"],
+        export_allowed=row["Export Allowed"],
+        ai_use_allowed=row["AI Use Status"],
+        raw_data_allowed=row["Raw Data Allowed"],
+        freshness_class=row["Freshness Class"],
+        last_checked_at=_optional_text(row["Last Checked At"]),
+        review_owner=row["Review Owner"],
+        review_status=row["Review Status"],
         notes=row["Use"],
         metadata=metadata,
     )
@@ -76,6 +92,16 @@ def _typed_homepage_url(raw_url: str) -> Any | None:
 
 def _authority_for(source_type: str) -> AuthorityLevel:
     return _AUTHORITY_BY_SOURCE_TYPE.get(source_type, AuthorityLevel.UNKNOWN)
+
+
+def _optional_text(value: str) -> str | None:
+    if not value.strip():
+        return None
+    return value
+
+
+def _status_to_bool(value: str) -> bool:
+    return value.strip().lower() == "yes"
 
 
 __all__ = ["DEFAULT_PRIORITY", "DEFAULT_REGISTER_PATH", "load_seed_sources"]

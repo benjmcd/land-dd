@@ -6,11 +6,17 @@
   "required": [
     "source_id",
     "name",
+    "source_type",
     "domain",
     "authority_level",
+    "license_status",
     "commercial_use_status",
+    "redistribution_status",
     "cache_allowed",
-    "export_allowed"
+    "export_allowed",
+    "ai_use_allowed",
+    "freshness_class",
+    "review_status"
   ],
   "properties": {
     "source_id": {
@@ -33,6 +39,12 @@
       ],
       "format": "uri"
     },
+    "source_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "domain": {
       "type": "string"
     },
@@ -54,6 +66,12 @@
     "commercial_use_status": {
       "type": "string"
     },
+    "license_status": {
+      "type": "string"
+    },
+    "redistribution_status": {
+      "type": "string"
+    },
     "license_summary": {
       "type": [
         "string",
@@ -73,6 +91,24 @@
       "type": "string"
     },
     "raw_data_allowed": {
+      "type": "string"
+    },
+    "freshness_class": {
+      "type": "string"
+    },
+    "last_checked_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "review_owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "review_status": {
       "type": "string"
     },
     "notes": {
