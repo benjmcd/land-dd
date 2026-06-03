@@ -26,6 +26,8 @@ Append concise entries. Do not rely on chat history.
 - `verify.sh` passes via Git Bash after TC-030: 83 tests pass; ruff clean; mypy clean (54 source files); DB smoke skipped.
 - Completed Lane C TC-040 for the first deterministic rule-engine slice: rule metadata on claims, constrained current-ruleset loading, deterministic flood hard-gate claims, source-failure unknown claims, low-risk no-claim output, empty input, multi-area grouping, simultaneous positive/failure output, input-order determinism, invalid severity rejection, and superseded-evidence exclusion. Lane C tests pass: 45 tests.
 - `verify.sh` passes via Git Bash after TC-040: 93 tests pass; ruff clean; mypy clean (56 source files); DB smoke skipped.
+- Completed Lane C TC-050 for the in-memory evidence payload-validation slice: type-specific `observed_value` validation for source observations, spatial intersections, derived metrics, document extracts, source failures, and human-note guardrails. Lane C tests pass: 57 tests.
+- `verify.sh` passes via Git Bash after TC-050: 105 tests pass; ruff clean; mypy clean (58 source files); DB smoke skipped.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

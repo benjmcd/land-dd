@@ -6,6 +6,7 @@ from app.domain.enums import ConfidenceBand, EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.protocols import AreaExistsProtocol, SourceExistsProtocol
 from app.evidence_ledger.evidence_repo import EvidenceRepository
+from app.evidence_ledger.payload_validation import validate_observed_value
 
 HUMAN_EVIDENCE_TYPES = {
     EvidenceType.HUMAN_VERIFICATION,
@@ -40,6 +41,7 @@ class EvidenceService:
         if evidence.is_source_failure:
             raise ValueError("source failure evidence must use create_source_failure")
         self._validate_required_text(evidence)
+        validate_observed_value(evidence)
         self._validate_new_record_not_superseded(evidence)
         return self._repo.add(evidence)
 
@@ -73,6 +75,7 @@ class EvidenceService:
             caveat=caveat,
             is_source_failure=True,
         )
+        validate_observed_value(evidence)
         return self._repo.add(evidence)
 
     def create_human_note(self, evidence: EvidenceContract) -> EvidenceContract:
@@ -82,6 +85,7 @@ class EvidenceService:
         if evidence.is_source_failure:
             raise ValueError("human notes cannot be source-failure evidence")
         self._validate_required_text(evidence)
+        validate_observed_value(evidence)
         self._validate_new_record_not_superseded(evidence)
         return self._repo.add(evidence)
 
@@ -148,6 +152,7 @@ class EvidenceService:
         if not evidence.is_source_failure:
             raise ValueError("source failure evidence must set is_source_failure")
         self._validate_required_text(evidence)
+        validate_observed_value(evidence)
         self._validate_new_record_not_superseded(evidence)
         if evidence.caveat is None or not evidence.caveat.strip():
             raise ValueError("caveat is required")
