@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 C-001 ORM FK and flush repair
+
+**Commands run:**
+
+```powershell
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine/test_sqlalchemy_claim_repo.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial full gate failed in `tests/claims_engine/test_sqlalchemy_claim_repo.py`: ORM flush could not resolve cross-schema FK metadata for `claims.claim_evidence.evidence_id -> evidence.observations.evidence_id`.
+- First repair mapped cross-schema DB FKs in `backend/app/claims_engine/models.py` as scalar UUID columns, leaving DB migrations as the FK authority and avoiding cross-lane metadata requirements.
+- Second repair flushed the parent `ClaimModel` before adding claim/evidence links and verification tasks, preserving DB FK order.
+- Exact failing claim DB file passes: 4 tests.
+- Lane C evidence/claims tests pass: 137 tests with DB smoke enabled.
+- Targeted Lane C ruff passes.
+- Targeted Lane C mypy passes: no issues in 25 source/test files.
+- Lane C cross-lane import scan returns 0 matches.
+- Full collection reports 242 tests.
+- Full PowerShell verification passes with DB smoke enabled: 242 tests; lint clean; mypy clean (85 source files); migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- C-001 is now live-verified after repair.
+- Level 6 remains partial until C-002 adds the four not-evaluated categories or equivalent explicit unknown/report surfacing without crossing lane ownership boundaries.
+- D-001 remains a Level 7 dependency and should not claim pass until Lane C Level 6 gates are complete.
+
 ## 2026-06-04 Lane C TC-150 DB-backed claim persistence
 
 **Commands run:**

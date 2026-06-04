@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (C-001 ORM FK and flush repair)
+
+- Re-verified the C-001 handoff from the external session export against live repo state and found the full DB-smoke gate failed in the four DB-backed claim repository tests.
+- Root cause: `ClaimModel` and dependent claim models declared ORM `ForeignKey(...)` constraints to cross-schema tables that were not all present in the active SQLAlchemy metadata, then claim/evidence links could flush before the parent claim row.
+- Fixed `backend/app/claims_engine/models.py` so cross-schema DB FKs remain database-migration authority while the Lane C ORM maps those references as scalar UUID columns; internal `claims.claims` FKs remain for claim-local dependencies.
+- Fixed `SqlAlchemyClaimRepository.add()` to flush the parent claim before adding claim/evidence links and verification tasks.
+- Verified: failing claim DB test file passes (4 tests); Lane C evidence/claims tests pass (137 tests with DB smoke enabled); targeted ruff and mypy pass; Lane C import-isolation scan returns 0 matches; full collection reports 242 tests; `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` passes with lint clean, mypy clean (85 source files), migrations/seeds, and DB smoke.
+- Re-audit note: C-001 is now live-verified after repair; Level 6 remains partial until C-002 not-evaluated categories are implemented by Lane C and surfaced through Lane D without violating ownership boundaries.
+
 ## 2026-06-04 (C-001 Claims ORM models + coordination infra)
 
 - Implemented C-001: created `backend/app/claims_engine/models.py` with `ClaimModel`, `ClaimEvidenceLinkModel`, and `VerificationTaskModel` (all inheriting `AppBase`). All three ORM models verified against `db/migrations/0001_initial_spine.sql`. `ClaimModel.claim_metadata` is mapped with Python attribute name to avoid `DeclarativeBase.metadata` collision (actual DB column name is `metadata`). `rule_execution_run_id` and `intent_id` nullable FKs are mapped but not yet populated by the current rule engine path.

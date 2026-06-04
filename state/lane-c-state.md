@@ -13,10 +13,10 @@ Verification command(s):
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 130 Lane C tests passing with DB smoke enabled
+- 137 Lane C tests passing with DB smoke enabled
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 235 tests; lint clean; mypy clean (81 source files); DB smoke passes
+- Full verification passes: 242 tests; lint clean; mypy clean (85 source files); DB smoke passes
 Failed or blocked gates:
 - L5-001 through L5-010: PASS for DB-backed repository/service scope (`SqlAlchemyEvidenceRepository` persists source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, optional geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, and `SqlAlchemyEvidenceAuditLog` durable audit events; `docs/adr/lane-c-evidence.md` documents immutability/amendment policy)
 - L6-001: PARTIAL/PASS for current DB-backed service/repository scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; `SqlAlchemyClaimRepository` persists claims plus `claims.claim_evidence` links via ORM models `ClaimModel`/`ClaimEvidenceLinkModel`/`VerificationTaskModel`; rule-generated claims cite evidence IDs)
@@ -53,7 +53,7 @@ Completion evidence:
 - backend/tests/claims_engine/test_sqlalchemy_claim_repo.py (4 passing)
 - docs/adr/lane-c-rules.md (rules and claim persistence ADR)
 Next lowest-dependency task:
-- **C-001: DONE** — `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM. Verified: lint clean, mypy clean, 201 tests pass.
+- **C-001: DONE** — `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM and repaired for cross-schema FK metadata/flush ordering. Verified: Lane C DB tests pass, lint clean, mypy clean, and the full DB-smoke gate passes with 242 tests.
 - **C-002 (IMMEDIATE next)**: Add 4 not-evaluated rule categories (soil/septic, env_hazard, resource_context, market_context) using sentinel source failure evidence approach. Full spec in `plans/2026-06-03-codex-deferred-tasks.md`.
 Do not work on yet:
 - D-001 cross-lane wiring (Lane D owns `api/dependencies.py`, `main.py`, and `db/session.py`)

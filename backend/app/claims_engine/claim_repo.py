@@ -77,6 +77,7 @@ class SqlAlchemyClaimRepository:
             claim_metadata=_claim_metadata(claim),
         )
         self._session.add(model)
+        self._session.flush()
 
         self._session.add_all(
             ClaimEvidenceLinkModel(

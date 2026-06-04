@@ -28,21 +28,17 @@ class ClaimModel(AppBase):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
-    area_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("core.areas.area_id"),
-        nullable=False,
-    )
-    # rule_execution_run_id and intent_id are nullable FKs present in the DB
-    # schema but not yet populated by the current rule engine path.
+    # Cross-schema FK constraints live in the DB migration. The ORM keeps these
+    # as scalar UUIDs so Lane C does not require every referenced table in metadata.
+    area_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    # rule_execution_run_id and intent_id are nullable DB FKs, but are not yet
+    # populated by the current rule engine path.
     rule_execution_run_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("rules.rule_execution_runs.rule_execution_run_id"),
         nullable=True,
     )
     intent_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("core.intents.intent_id"),
         nullable=True,
     )
     claim_code: Mapped[str] = mapped_column(Text, nullable=False)
@@ -96,7 +92,6 @@ class ClaimEvidenceLinkModel(AppBase):
     )
     evidence_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("evidence.observations.evidence_id"),
         primary_key=True,
     )
     support_role: Mapped[str] = mapped_column(
@@ -117,11 +112,7 @@ class VerificationTaskModel(AppBase):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
-    area_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("core.areas.area_id"),
-        nullable=False,
-    )
+    area_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
     claim_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("claims.claims.claim_id"),
