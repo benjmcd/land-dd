@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (integration rehearsal TC-180 plus CON-017/CON-018)
+
+- Created isolated branch `codex/session2-lane-c-con018-rehearsal` from rebased Lane C TC-180 at `6dde79e` and merged Session 2 branch `codex/con-017-queue-read-model`.
+- Resolved only append-style shared state conflicts in `state/PROJECT_STATE.md`, `state/VALIDATION_LOG.md`, and `state/WORKLOG.md`, preserving both TC-180 and CON-017/CON-018 records.
+- Verified the combined branch with focused connector/API/Lane C checks, DB-enabled focused queue/API/evidence persistence checks, ruff/mypy, backend collection, and full DB-enabled Windows PowerShell verification with 331 backend tests passing.
+- Preserved root `main` during the rehearsal; root landing remains a separate clean checkpoint.
+
 ## 2026-06-04 (Lane C TC-180 source-failure evidence ID preservation)
 
 - Created isolated worktree `worktrees/lane-c-failure-id` on branch `lane-c/failure-id-preservation` from root `main` at `e8f13fd` to avoid Session 2's connector-zone work.
@@ -11,6 +18,23 @@ Append concise entries. Do not rely on chat history.
 - Preserved the boundary: no connector implementation, connector tests, connector fixtures, API queue/status code, migrations, shared schemas, live I/O, claims, or reports were changed. Connector adapter usage remains a connector-zone follow-up.
 - Rebased onto root `main` at `6777134` after CON-016 landed, preserving connector queue worker state, task, validation, and worklog records.
 - Verification passed: focused evidence-service tests; DB-gated source-failure persistence assertion; targeted ruff/mypy; Lane C evidence/claims tests with DB smoke; Lane C ruff/mypy; import-isolation scan; `git diff --check`; full DB-enabled PowerShell verification with 326 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
+## 2026-06-04 (connector CON-018)
+
+- Completed CON-018 as repository-level connector queue retry/requeue/cancel semantics.
+- Added `docs/adr/lane-d-0007-connector-queue-retry-cancel.md` to define retry and cancellation boundaries.
+- Extended connector review queue repositories with `requeue_failed(...)` and `cancel(...)`.
+- Requeue is limited to failed connector review jobs with remaining attempts, preserves attempt count, clears lock/finish metadata, schedules `not_before`, and records a reason.
+- Cancellation is limited to non-succeeded/non-cancelled connector review jobs and records a reason.
+- Preserved the existing boundary: no API-side mutation, automatic retry policy, timeout handling, scheduler, background loop, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration edit, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
+## 2026-06-04 (connector CON-017)
+
+- Completed CON-017 as read-only connector queue worker-state API surfacing.
+- Added `docs/adr/lane-d-0006-connector-queue-worker-read-model.md` to define the read-model boundary after CON-016 queue lease semantics.
+- Extended `GET /connector-runs/{ingest_run_id}/review-queue` responses with attempts, max attempts, lock/start/finish timestamps, lock owner, and last error.
+- Added in-memory and DB-backed API tests proving queued defaults and leased running worker state are surfaced through the existing endpoint.
+- Preserved the existing boundary: no API-side job mutation, worker execution, scheduler, background loop, retry/requeue/cancel policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration edit, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
 
 ## 2026-06-04 (connector CON-016)
 

@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Combined TC-180 plus CON-017/CON-018 integration rehearsal
+
+**Commands run:**
+
+```powershell
+git merge --no-ff codex/con-017-queue-read-model
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py tests/evidence_ledger/test_evidence_service.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py tests/api/test_connector_review_queue_db.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py::test_sqlalchemy_evidence_service_persists_source_failure_and_human_note
+ruff check app/connectors app/api app/evidence_ledger/service.py tests/connectors tests/api tests/evidence_ledger/test_evidence_service.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py
+mypy app/connectors app/api app/evidence_ledger/service.py tests/connectors tests/api tests/evidence_ledger/test_evidence_service.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused combined connector/API/Lane C evidence-service tests with DB smoke skipped by default: 32 passed, 5 skipped.
+- DB-enabled focused combined queue/API/evidence persistence tests: 12 passed.
+- Combined connector/API/Lane C ruff: clean.
+- Combined connector/API/Lane C mypy: clean over 38 source/test files.
+- Backend collection: 331 tests.
+- Full DB-enabled PowerShell verification: ok after prepending the root `local_artifacts` Windows wrapper directory for isolated-worktree `psql` lookup; 331 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- This is an isolated integration rehearsal branch only. Root `main` remains separately controlled; landing still needs a clean root fast-forward/merge checkpoint that preserves Session 1 TC-180 and Session 2 CON-017/CON-018 records.
+
 ## 2026-06-04 Lane C TC-180 source-failure evidence ID preservation
 
 **Commands run:**
@@ -40,6 +70,78 @@ py -3.12 -m pytest --collect-only -q
 **Residual risk:**
 
 - TC-180 closes the Lane C public service side of source-failure evidence ID preservation only. Connector-owned adapters still need a coordinated pass before fixture source-failure inputs preserve their deterministic `EvidenceContract.evidence_id` through connector ingestion.
+
+## 2026-06-04 CON-018 connector queue retry and cancel semantics
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+ruff check app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+mypy app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused queue tests with DB smoke skipped by default: 6 passed, 3 skipped.
+- DB-enabled queue tests: 9 passed.
+- Focused queue ruff: clean.
+- Focused queue mypy: clean over 3 source/test files.
+- Connector/API tests with DB smoke skipped by default: 64 passed, 8 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source files.
+- Backend collection: 329 tests.
+- Full DB-enabled PowerShell verification: ok after prepending the root `local_artifacts` Windows wrapper directory for isolated-worktree `psql` lookup; 329 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-018 is repository-level retry/requeue/cancel semantics only. It does not add API-side mutation, automatic retry policy, timeout handling, scheduler, background loop, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+- Default connector review queue items still use `max_attempts = 1`; retry remains fail-closed unless a future planned producer/operator explicitly permits additional attempts.
+
+## 2026-06-04 CON-017 connector queue worker read model
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
+ruff check app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused queue API tests with DB smoke skipped by default: 7 passed, 2 skipped.
+- DB-enabled queue API tests: 2 passed.
+- Focused queue API ruff: clean.
+- Focused queue API mypy: clean over 3 source/test files.
+- Connector/API tests with DB smoke skipped by default: 62 passed, 7 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source files.
+- Backend collection: 326 tests.
+- Full DB-enabled PowerShell verification: ok after prepending the root `local_artifacts` Windows wrapper directory for isolated-worktree `psql` lookup; 326 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-017 is read-only worker-state API surfacing only. It does not add API-side job mutation, worker execution, scheduler, background loop, retry/requeue/cancel policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+- The first isolated-worktree full verification attempt failed at DB migration because `psql` was not on that worktree PATH. No code/test failure was observed; rerun passed using the existing root `local_artifacts/psql.cmd` wrapper on PATH.
 
 ## 2026-06-04 CON-016 connector queue worker lease semantics
 

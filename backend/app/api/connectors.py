@@ -56,6 +56,13 @@ class ConnectorReviewQueueItemResponse(BaseModel):
     idempotency_key: str
     payload: dict[str, Any]
     created_at: datetime
+    attempts: int
+    max_attempts: int
+    locked_by: str | None
+    locked_at: datetime | None
+    started_at: datetime | None
+    finished_at: datetime | None
+    last_error: str | None
 
 
 @router.get(
@@ -98,4 +105,11 @@ def get_connector_review_queue_item(
         "idempotency_key": queue_item.idempotency_key,
         "payload": queue_item.payload,
         "created_at": queue_item.created_at,
+        "attempts": queue_item.attempts,
+        "max_attempts": queue_item.max_attempts,
+        "locked_by": queue_item.locked_by,
+        "locked_at": queue_item.locked_at,
+        "started_at": queue_item.started_at,
+        "finished_at": queue_item.finished_at,
+        "last_error": queue_item.last_error,
     }

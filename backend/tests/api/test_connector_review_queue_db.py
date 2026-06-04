@@ -153,6 +153,69 @@ def test_db_connector_review_queue_endpoint_reads_persisted_queue_item(
         assert record["priority"] == 10
         assert record["idempotency_key"] == idempotency_key
         assert record["payload"]["ingest_run_id"] == str(ingest_run_id)
+        assert record["attempts"] == 0
+        assert record["max_attempts"] == 1
+        assert record["locked_by"] is None
+        assert record["locked_at"] is None
+        assert record["started_at"] is None
+        assert record["finished_at"] is None
+        assert record["last_error"] is None
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text(
+                    "DELETE FROM jobs.job_queue "
+                    "WHERE idempotency_key = :idempotency_key"
+                ),
+                {"idempotency_key": idempotency_key},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_connector_review_queue_endpoint_surfaces_worker_state(
+    tmp_path: Path,
+) -> None:
+    engine = build_engine()
+    review_status = _review_status()
+    ingest_run_id = review_status.handoff.packet.ingest_run_id
+    idempotency_key = f"{CONNECTOR_REVIEW_STATUS_JOB_TYPE}:{ingest_run_id}"
+    app = create_app(
+        settings=Settings(OBJECT_STORE_ROOT=str(tmp_path / "object-store")),
+        use_db_services=True,
+    )
+    client = TestClient(app)
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text(
+                    "DELETE FROM jobs.job_queue "
+                    "WHERE idempotency_key = :idempotency_key"
+                ),
+                {"idempotency_key": idempotency_key},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            repo.enqueue_review_status(review_status)
+            leased = repo.lease_next(worker_id="db-api-worker")
+            assert leased is not None
+            repo.mark_failed(leased.job_id, error="review packet rejected")
+            session.commit()
+
+        response = client.get(f"/connector-runs/{ingest_run_id}/review-queue")
+
+        assert response.status_code == 200
+        record = response.json()
+        assert record["ingest_run_id"] == str(ingest_run_id)
+        assert record["job_type"] == CONNECTOR_REVIEW_STATUS_JOB_TYPE
+        assert record["status"] == "failed"
+        assert record["attempts"] == 1
+        assert record["max_attempts"] == 1
+        assert record["locked_by"] == "db-api-worker"
+        assert record["locked_at"] is not None
+        assert record["started_at"] is not None
+        assert record["finished_at"] is not None
+        assert record["last_error"] == "review packet rejected"
     finally:
         with Session(engine) as session:
             session.execute(
