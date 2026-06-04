@@ -22,48 +22,52 @@ Primary resources:
 - report_run
 - job
 
-## 3. Endpoint groups
+## 3. Current implemented endpoint groups
+
+The current local API authority is the FastAPI app in `backend/app/main.py`.
+`api/openapi_stub.yaml` is generated from `create_app().openapi()` and is
+guarded by `backend/tests/test_planning_pack_schema_copies.py`.
 
 ### Areas
 
 - `POST /areas`
-- `GET /areas/{area_id}`
-- `GET /areas/{area_id}/features`
-- `GET /areas/{area_id}/evidence`
-- `GET /areas/{area_id}/claims`
-- `GET /areas/{area_id}/reports`
+- `GET /areas`
 
 ### Sources
 
 - `GET /sources`
 - `POST /sources`
-- `GET /sources/{source_id}`
-- `GET /datasets/{dataset_id}/versions`
-- `POST /ingest-runs`
+
+### Evidence
+
+- `GET /evidence`
 
 ### Reports
 
-- `POST /reports`
-- `GET /reports/{report_run_id}`
-- `GET /reports/{report_run_id}/status`
-- `GET /reports/{report_run_id}/sections`
-- `GET /reports/{report_run_id}/assets`
-- `GET /reports/{report_run_id}/machine-json`
+- `POST /report-runs`
+- `GET /report-runs/{report_run_id}`
 
-### Review
+### Connector review status
 
-- `POST /claims/{claim_id}/review-notes`
-- `POST /verification-tasks/{id}/complete`
-- `POST /reports/{report_run_id}/approve`
-- `POST /reports/{report_run_id}/reject`
+- `GET /connector-runs/{ingest_run_id}/review-status`
+- `GET /connector-runs/{ingest_run_id}/review-queue`
 
-### Batch screening
+### Health/version
 
-- `POST /screening-jobs`
-- `GET /screening-jobs/{job_id}`
-- `GET /screening-jobs/{job_id}/results`
+- `GET /health`
+- `GET /version`
 
-## 4. API requirements
+## 4. Future endpoint groups not yet implemented
+
+These groups remain product/API roadmap items, not active API claims:
+
+- area features, area evidence-by-path, area claims-by-path, and area report lists;
+- source detail, dataset versions, and ingest-run creation;
+- report status, sections, assets, machine JSON, approve, and reject routes;
+- claim review-note and verification-task mutation routes;
+- batch screening jobs and result retrieval.
+
+## 5. API requirements
 
 1. All mutating calls require workspace context.
 2. All report calls return source/run metadata.
@@ -76,7 +80,7 @@ Primary resources:
 9. API returns stable IDs for all evidence and claims.
 10. API has explicit versioning.
 
-## 5. Integration boundaries
+## 6. Integration boundaries
 
 External systems:
 - parcel vendors
@@ -100,6 +104,7 @@ Internal events:
 - `report.approved`
 - `source.failure_recorded`
 
-## 6. OpenAPI draft
+## 7. OpenAPI draft
 
-See `api/openapi_stub.yaml`.
+See `api/openapi_stub.yaml`. It is a generated current-reference file for the
+local FastAPI app, not a broader product-roadmap contract.

@@ -684,3 +684,31 @@ tasks:
       - cost_metrics declares non-negative evidence, claim, unknown, red-flag, and verification-task counts
       - Nested report metadata maps keep additionalProperties true for future additive extensions
       - No runtime validation, API behavior, DB migration, connector behavior, live IO, hook config, POSIX script, source provenance-family schema, job schema, OpenAPI refresh, or durable ingest_run_id evidence-row linkage is introduced
+
+  - id: TD-090
+    title: Lane D planning-pack OpenAPI refresh
+    status: done
+    depends_on: [TD-080]
+    lane: D
+    notes: Refreshed docs/planning_pack/api/openapi_stub.yaml from the live FastAPI app and added a parity test so the planning-pack OpenAPI reference fails closed if it drifts from create_app().openapi(). No API behavior, connector runtime, schemas, migrations, or live IO changed.
+    spec: plans/lane-d-2026-06-03-reports-api-infra.md#td-090-planning-pack-openapi-refresh-complete
+    files:
+      - docs/planning_pack/api/openapi_stub.yaml
+      - docs/planning_pack/11_API_AND_INTEGRATION_SPEC.md
+      - docs/planning_pack/README.md
+      - backend/tests/test_planning_pack_schema_copies.py
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/test_planning_pack_schema_copies.py
+      - cd backend; ruff check tests/test_planning_pack_schema_copies.py
+      - cd backend; mypy tests/test_planning_pack_schema_copies.py
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Planning-pack OpenAPI reference matches create_app().openapi()
+      - Planning-pack API spec distinguishes implemented routes from future roadmap routes
+      - No connector runtime, queue mutation, report behavior, schemas, migrations, live IO, or hook config is introduced

@@ -41,7 +41,7 @@ The intended product is not a generic GIS viewer. It is an **intent-aware due-di
 | `planning_registers.xlsx` | Multi-sheet planning workbook |
 | `schemas/*.json` | JSON schemas for source/evidence/claim/job objects |
 | `config/ruleset_homestead_mvp.yaml` | MVP ruleset draft |
-| `api/openapi_stub.yaml` | API contract draft |
+| `api/openapi_stub.yaml` | FastAPI-generated current API reference |
 | `templates/*.md` | Report, call script, and data-license review templates |
 | `diagrams/*.mmd` | Mermaid diagrams |
 

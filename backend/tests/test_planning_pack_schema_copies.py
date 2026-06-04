@@ -4,11 +4,19 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+import yaml
+
+from app.main import create_app
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_json(path: Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+
+
+def load_yaml(path: Path) -> dict[str, Any]:
+    return cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
 
 
 def test_planning_pack_evidence_and_claim_schemas_match_root_contract_schemas() -> None:
@@ -21,3 +29,12 @@ def test_planning_pack_evidence_and_claim_schemas_match_root_contract_schemas() 
         )
 
         assert planning_pack_schema == root_schema
+
+
+def test_planning_pack_openapi_stub_matches_generated_fastapi_contract() -> None:
+    generated_openapi = create_app().openapi()
+    planning_pack_openapi = load_yaml(
+        REPO_ROOT / "docs" / "planning_pack" / "api" / "openapi_stub.yaml"
+    )
+
+    assert planning_pack_openapi == generated_openapi

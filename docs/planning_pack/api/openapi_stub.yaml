@@ -1,126 +1,988 @@
 openapi: 3.1.0
 info:
-  title: Area Due-Diligence Compiler API
+  title: land-diligence
+  description: Intent-aware land/locality due-diligence backend scaffold.
   version: 0.1.0
-  description: Draft API for areas, sources, evidence, claims, report runs, and review workflow.
-servers:
-  - url: https://api.example.com/v1
 paths:
-  /areas:
-    post:
-      summary: Create an area from parcel/address/polygon input
-      operationId: createArea
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [area_type]
-              properties:
-                area_type:
-                  enum: [parcel, polygon, address, locality, watershed, corridor, generated_candidate]
-                input_reference: { type: string }
-                geometry_geojson: { type: object }
-                metadata: { type: object }
-      responses:
-        '202':
-          description: Area accepted or created
-  /areas/{area_id}:
+  /health:
     get:
-      summary: Get area metadata and geometry
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
+      tags:
+      - health
+      summary: Health
+      operationId: health_health_get
       responses:
-        '200': { description: Area }
-  /areas/{area_id}/evidence:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
+  /version:
     get:
-      summary: List evidence for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
+      tags:
+      - health
+      summary: Version
+      operationId: version_version_get
       responses:
-        '200': { description: Evidence list }
-  /areas/{area_id}/claims:
-    get:
-      summary: List claims for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Claim list }
-  /reports:
-    post:
-      summary: Create a report run
-      operationId: createReportRun
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [area_id, intent]
-              properties:
-                area_id: { type: string, format: uuid }
-                intent: { type: string }
-                ruleset_version: { type: string }
-                options: { type: object }
-      responses:
-        '202':
-          description: Report run queued
-  /reports/{report_run_id}:
-    get:
-      summary: Get report run metadata
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Report run }
-  /reports/{report_run_id}/machine-json:
-    get:
-      summary: Get machine-readable report output
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Machine JSON }
-  /reports/{report_run_id}/approve:
-    post:
-      summary: Approve report after human review
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Approved }
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Version Version Get
   /sources:
     get:
-      summary: List source registry entries
+      tags:
+      - sources
+      summary: List Sources
+      operationId: list_sources_sources_get
       responses:
-        '200': { description: Source list }
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SourceContract'
+                type: array
+                title: Response List Sources Sources Get
     post:
-      summary: Create source registry entry
+      tags:
+      - sources
+      summary: Create Source
+      operationId: create_source_sources_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceContract'
+        required: true
       responses:
-        '201': { description: Source created }
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceContract'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /areas:
+    get:
+      tags:
+      - areas
+      summary: List Areas
+      operationId: list_areas_areas_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AreaContract'
+                type: array
+                title: Response List Areas Areas Get
+    post:
+      tags:
+      - areas
+      summary: Create Area
+      operationId: create_area_areas_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaContract'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaContract'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /evidence:
+    get:
+      tags:
+      - evidence
+      summary: List Evidence
+      operationId: list_evidence_evidence_get
+      parameters:
+      - name: area_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Area Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceContract'
+                title: Response List Evidence Evidence Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /report-runs:
+    post:
+      tags:
+      - report-runs
+      summary: Create Report Run
+      operationId: create_report_run_report_runs_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRunCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRunContract'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /report-runs/{report_run_id}:
+    get:
+      tags:
+      - report-runs
+      summary: Get Report Run
+      operationId: get_report_run_report_runs__report_run_id__get
+      parameters:
+      - name: report_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Report Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRunContract'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/{ingest_run_id}/review-status:
+    get:
+      tags:
+      - connector-runs
+      summary: Get Connector Run Review Status
+      operationId: get_connector_run_review_status_connector_runs__ingest_run_id__review_status_get
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorRunReviewStatusResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/{ingest_run_id}/review-queue:
+    get:
+      tags:
+      - connector-runs
+      summary: Get Connector Review Queue Item
+      operationId: get_connector_review_queue_item_connector_runs__ingest_run_id__review_queue_get
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AreaContract:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        area_type:
+          $ref: '#/components/schemas/AreaType'
+          default: drawn_polygon
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+        geom_geojson:
+          additionalProperties: true
+          type: object
+          title: Geom Geojson
+        geom_srid:
+          type: integer
+          title: Geom Srid
+          default: 4326
+        geom_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Geom Source
+        geom_confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        geom_validated:
+          type: boolean
+          title: Geom Validated
+          default: false
+      type: object
+      title: AreaContract
+    AreaType:
+      type: string
+      enum:
+      - parcel_like
+      - drawn_polygon
+      - multi_polygon
+      - locality
+      - buffer
+      - generated_candidate
+      title: AreaType
+    AuthorityLevel:
+      type: string
+      enum:
+      - official_primary
+      - official_secondary
+      - commercial_normalized
+      - open_community
+      - derived_model
+      - user_supplied
+      - unknown
+      title: AuthorityLevel
+    ClaimContract:
+      properties:
+        claim_id:
+          type: string
+          format: uuid
+          title: Claim Id
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        claim_code:
+          type: string
+          title: Claim Code
+        domain:
+          type: string
+          title: Domain
+          default: unknown
+        assertion:
+          type: string
+          title: Assertion
+        user_safe_language:
+          type: string
+          title: User Safe Language
+          default: ''
+        severity:
+          $ref: '#/components/schemas/SeverityBand'
+          default: unknown
+        confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        evidence_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Evidence Ids
+        rule_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rule Code
+        ruleset_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ruleset Id
+        ruleset_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ruleset Version
+        verification_required:
+          type: boolean
+          title: Verification Required
+          default: true
+        verification_task:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Verification Task
+      type: object
+      required:
+      - area_id
+      - claim_code
+      - assertion
+      - evidence_ids
+      title: ClaimContract
+    ConfidenceBand:
+      type: string
+      enum:
+      - very_low
+      - low
+      - medium
+      - high
+      - very_high
+      - unknown
+      title: ConfidenceBand
+    ConnectorFixtureQualityIssueResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        blocking:
+          type: boolean
+          title: Blocking
+      type: object
+      required:
+      - code
+      - message
+      - blocking
+      title: ConnectorFixtureQualityIssueResponse
+    ConnectorFixtureQualityResponse:
+      properties:
+        passed:
+          type: boolean
+          title: Passed
+        evidence_count:
+          type: integer
+          title: Evidence Count
+        source_failure_count:
+          type: integer
+          title: Source Failure Count
+        blocking_issue_count:
+          type: integer
+          title: Blocking Issue Count
+        issues:
+          items:
+            $ref: '#/components/schemas/ConnectorFixtureQualityIssueResponse'
+          type: array
+          title: Issues
+      type: object
+      required:
+      - passed
+      - evidence_count
+      - source_failure_count
+      - blocking_issue_count
+      - issues
+      title: ConnectorFixtureQualityResponse
+    ConnectorReviewQueueItemResponse:
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          title: Job Id
+        ingest_run_id:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+        job_type:
+          type: string
+          title: Job Type
+        status:
+          type: string
+          title: Status
+        priority:
+          type: integer
+          title: Priority
+        idempotency_key:
+          type: string
+          title: Idempotency Key
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        attempts:
+          type: integer
+          title: Attempts
+        max_attempts:
+          type: integer
+          title: Max Attempts
+        locked_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locked By
+        locked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Locked At
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+      type: object
+      required:
+      - job_id
+      - ingest_run_id
+      - job_type
+      - status
+      - priority
+      - idempotency_key
+      - payload
+      - created_at
+      - attempts
+      - max_attempts
+      - locked_by
+      - locked_at
+      - started_at
+      - finished_at
+      - last_error
+      title: ConnectorReviewQueueItemResponse
+    ConnectorRunReviewStatusResponse:
+      properties:
+        queue_name:
+          type: string
+          title: Queue Name
+        disposition:
+          type: string
+          title: Disposition
+        priority:
+          type: string
+          title: Priority
+        title:
+          type: string
+          title: Title
+        summary:
+          type: string
+          title: Summary
+        connector_name:
+          type: string
+          title: Connector Name
+        ingest_run_id:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+        dataset_version_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Dataset Version Id
+        retrieval_status:
+          type: string
+          title: Retrieval Status
+        review_required:
+          type: boolean
+          title: Review Required
+        evidence_created_count:
+          type: integer
+          title: Evidence Created Count
+        evidence_skipped_count:
+          type: integer
+          title: Evidence Skipped Count
+        source_failure_created_count:
+          type: integer
+          title: Source Failure Created Count
+        source_failure_skipped_count:
+          type: integer
+          title: Source Failure Skipped Count
+        signal_codes:
+          items:
+            type: string
+          type: array
+          title: Signal Codes
+        tasks:
+          items:
+            type: string
+          type: array
+          title: Tasks
+        quality:
+          $ref: '#/components/schemas/ConnectorFixtureQualityResponse'
+      type: object
+      required:
+      - queue_name
+      - disposition
+      - priority
+      - title
+      - summary
+      - connector_name
+      - ingest_run_id
+      - dataset_version_id
+      - retrieval_status
+      - review_required
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - signal_codes
+      - tasks
+      - quality
+      title: ConnectorRunReviewStatusResponse
+    EvidenceContract:
+      properties:
+        evidence_id:
+          type: string
+          format: uuid
+          title: Evidence Id
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        evidence_type:
+          $ref: '#/components/schemas/EvidenceType'
+          default: source_observation
+        evidence_code:
+          type: string
+          title: Evidence Code
+        domain:
+          type: string
+          title: Domain
+        observation:
+          type: string
+          title: Observation
+        observed_value:
+          additionalProperties: true
+          type: object
+          title: Observed Value
+        source_id:
+          type: string
+          format: uuid
+          title: Source Id
+        dataset_version_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Dataset Version Id
+        method_code:
+          type: string
+          title: Method Code
+        method_version:
+          type: string
+          title: Method Version
+          default: 0.1.0
+        confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        caveat:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Caveat
+        is_negative_evidence:
+          type: boolean
+          title: Is Negative Evidence
+          default: false
+        is_source_failure:
+          type: boolean
+          title: Is Source Failure
+          default: false
+        superseded_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Superseded By
+        source_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Date
+        observed_at:
+          type: string
+          format: date-time
+          title: Observed At
+        geometry_geojson:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Geometry Geojson
+        geometry_srid:
+          type: integer
+          title: Geometry Srid
+          default: 4326
+        spatial_precision_meters:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Spatial Precision Meters
+      type: object
+      required:
+      - area_id
+      - evidence_code
+      - domain
+      - observation
+      - source_id
+      - method_code
+      title: EvidenceContract
+    EvidenceType:
+      type: string
+      enum:
+      - source_observation
+      - spatial_intersection
+      - derived_metric
+      - document_extract
+      - source_failure
+      - human_verification
+      - manual_note
+      title: EvidenceType
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IntentCode:
+      type: string
+      enum:
+      - rural_land_purchase
+      - homestead_feasibility
+      - farmland
+      - development
+      - solar
+      - data_center
+      - conservation
+      - mineral_resource_screen
+      - speculative_hold
+      title: IntentCode
+      description: 'Intent codes that drive report evaluation.
+
+
+        Values must exactly match the core.intent_code SQL enum defined in
+
+        db/migrations/0001_initial_spine.sql. Two intents are seeded in
+
+        db/seeds/001_seed_intents.sql; others are defined for future use.
+
+
+        Do not add or rename values here without a coordinated schema migration.'
+    JobStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      - cancelled
+      - needs_review
+      title: JobStatus
+    ReportRunContract:
+      properties:
+        report_run_id:
+          type: string
+          format: uuid
+          title: Report Run Id
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+          default: queued
+        source_manifest:
+          additionalProperties: true
+          type: object
+          title: Source Manifest
+        assumptions:
+          items:
+            type: string
+          type: array
+          title: Assumptions
+        caveats:
+          items:
+            type: string
+          type: array
+          title: Caveats
+        evidence:
+          items:
+            $ref: '#/components/schemas/EvidenceContract'
+          type: array
+          title: Evidence
+        claims:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          type: array
+          title: Claims
+        unknowns:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          type: array
+          title: Unknowns
+        red_flags:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          type: array
+          title: Red Flags
+        verification_tasks:
+          items:
+            type: string
+          type: array
+          title: Verification Tasks
+        artifact_metadata:
+          additionalProperties: true
+          type: object
+          title: Artifact Metadata
+        started_at:
+          type: string
+          format: date-time
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+        output_uri:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Output Uri
+      type: object
+      required:
+      - area_id
+      - intent_code
+      title: ReportRunContract
+    ReportRunCreateRequest:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+      type: object
+      required:
+      - area_id
+      - intent_code
+      title: ReportRunCreateRequest
+    SeverityBand:
+      type: string
+      enum:
+      - critical
+      - high
+      - medium
+      - low
+      - informational
+      - unknown
+      title: SeverityBand
+    SourceContract:
+      properties:
+        source_id:
+          type: string
+          format: uuid
+          title: Source Id
+        name:
+          type: string
+          title: Name
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        homepage_url:
+          anyOf:
+          - type: string
+            maxLength: 2083
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Homepage Url
+        source_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Type
+        authority_level:
+          $ref: '#/components/schemas/AuthorityLevel'
+          default: unknown
+        domain:
+          type: string
+          title: Domain
+        geographic_scope:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Geographic Scope
+        update_cadence:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Update Cadence
+        license_status:
+          type: string
+          title: License Status
+          default: unknown
+        commercial_use_status:
+          type: string
+          title: Commercial Use Status
+          default: unknown
+        redistribution_status:
+          type: string
+          title: Redistribution Status
+          default: unknown
+        license_summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: License Summary
+        attribution_required:
+          type: boolean
+          title: Attribution Required
+          default: false
+        cache_allowed:
+          type: string
+          title: Cache Allowed
+          default: unknown
+        export_allowed:
+          type: string
+          title: Export Allowed
+          default: unknown
+        ai_use_allowed:
+          type: string
+          title: Ai Use Allowed
+          default: unknown
+        raw_data_allowed:
+          type: string
+          title: Raw Data Allowed
+          default: unknown
+        freshness_class:
+          type: string
+          title: Freshness Class
+          default: unknown
+        last_checked_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Checked At
+        review_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Review Owner
+        review_status:
+          type: string
+          title: Review Status
+          default: pending
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        metadata:
+          additionalProperties: true
+          type: object
+          title: Metadata
+      type: object
+      required:
+      - name
+      - domain
+      title: SourceContract
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
