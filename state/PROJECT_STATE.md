@@ -22,12 +22,13 @@ Verification command(s):
 - cd backend; rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
 - cd backend; py -3.12 -m pytest --collect-only -q
 - python scripts/db_smoke_check.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
 - .\scripts\verify.ps1
 Verification result:
-- 252 tests pass with DB smoke enabled; lint clean; mypy clean (91 source files)
+- 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files)
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
-- Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, and stores immutable prior-geometry rows in `core.area_versions` on geometry replacement
+- Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
 - Lane C evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, and evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
@@ -41,7 +42,7 @@ Failed or blocked gates:
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (41 tests)
-- backend/tests/area_geometry/ (46 tests)
+- backend/tests/area_geometry/ (49 tests)
 - backend/app/domain/area_contracts.py (`AreaContract`, `AreaMetricsContract`, `AreaSpatialRelationContract`, `AreaVersionContract`)
 - backend/app/area_geometry/models.py (`AreaModel`, `AreaVersionModel`)
 - backend/app/area_geometry/area_repo.py (`SqlAlchemyAreaRepository`)
@@ -127,7 +128,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-252 tests pass with DB smoke enabled; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, and D-003 are complete on root `main`; Session 1's Lane A/B branches remain isolated and are not merged into root.
+255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, and Lane B TB-100 are complete on root `main`.
 
 ## Local repo bootstrap state
 

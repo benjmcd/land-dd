@@ -18,11 +18,12 @@ Complete MILESTONE_MAP.md Level 4: the system can represent, validate, store, an
 - `AreaVersionContract` captures immutable prior-geometry version rows from `core.area_versions`.
 - `AreaType` and `ConfidenceBand` enums in `backend/app/domain/enums.py`.
 - `AreaService`, `InMemoryAreaRepository`, `AreaModel`, `AreaVersionModel`, and `SqlAlchemyAreaRepository` exist in `backend/app/area_geometry/`.
-- `geometry_validator.py` validates GeoJSON Polygon/MultiPolygon structure, SRID/CRS constraints, and closed rings.
+- `geometry_validator.py` validates GeoJSON Polygon/MultiPolygon structure, SRID/CRS constraints, closed rings, finite coordinate values, and EPSG:4326 longitude/latitude bounds.
 - `tests/fixtures/geometries/` contains valid, invalid, missing-type, wrong-SRID, open-ring, empty, and large GeoJSON fixtures.
 - `backend/tests/area_geometry/` covers area contract defaults, metrics/relation/version contract behavior, service create/get behavior, duplicate rejection, parcel-like caveat behavior, fixture validation, PostGIS repository round-trips, all six Level 4 domain area types, PostGIS-derived metrics reads, PostGIS spatial relation helpers, and versioned geometry replacement.
 - DB table `core.areas` exists in `db/migrations/0001_initial_spine.sql`.
 - DB table `core.area_versions` exists in `db/migrations/0001_initial_spine.sql`.
+- Post-PASS hardening: TB-100 closes the coordinate-sanity gap for non-finite values and out-of-range EPSG:4326 longitude/latitude positions.
 
 ## Proposed design
 
@@ -81,6 +82,12 @@ Build bottom-up: area contract -> in-memory repository -> geometry validation se
 3. Fail closed if stored DB area type conflicts with metadata domain type.
 4. Tests: all six domain area types round-trip and corrupt metadata is rejected.
 
+### TB-100: Coordinate bounds and finite-value hardening
+1. Keep the existing GeoJSON type/ring/SRID validation behavior.
+2. Reject non-finite longitude/latitude values.
+3. Reject longitude outside `-180..180` and latitude outside `-90..90`.
+4. Add fixture-backed invalid-range coverage plus direct non-finite regression coverage.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -92,6 +99,9 @@ Build bottom-up: area contract -> in-memory repository -> geometry validation se
 | `backend/app/domain/area_contracts.py` | Area and area-metrics contracts |
 | `tests/fixtures/geometries/` | New: GeoJSON fixture files |
 | `state/lane-b-state.md` | Update after each task |
+| `backend/app/area_geometry/geometry_validator.py` | TB-100 coordinate bounds and finite-value checks |
+| `backend/tests/area_geometry/test_area_service.py` | TB-100 validator/service regressions |
+| `tests/fixtures/geometries/` | TB-100 invalid coordinate fixtures |
 
 ## Tests / verification
 
@@ -123,6 +133,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: Spatial relation helpers are repository-level screening facts only; they must not emit claims or legal boundary determinations.
 - 2026-06-04: Geometry replacement must store the prior canonical geometry in `core.area_versions` before updating `core.areas`; version rows are immutable history, not claims.
 - 2026-06-04: Exact domain area type is preserved in `core.areas.metadata.domain_area_type` when DB enum buckets are broader than domain names. `multi_polygon` stores in DB bucket `polygon`; `buffer` stores in DB bucket `generated_candidate`.
+- 2026-06-04: Coordinate sanity belongs at the Lane B validator boundary. It is a screening validity check, not a claim or survey-quality assertion.
 
 ## Progress log
 
@@ -133,3 +144,5 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: TB-070 complete for the PostGIS spatial relation helper slice. Added `AreaSpatialRelationContract`, `SqlAlchemyAreaRepository.get_spatial_relation`, DB tests for contained/disjoint/missing/wrong-SRID/invalid comparison geometry, and screening-only caveats. Lane B tests: 35 passing with DB smoke enabled. Full PowerShell verification: 205 tests, ruff clean, mypy clean (78 source files), DB smoke passes.
 - 2026-06-04: TB-080 complete for the current DB-backed area versioning slice. Added `AreaVersionContract`, `AreaVersionModel`, `SqlAlchemyAreaRepository.replace_geometry`, `SqlAlchemyAreaRepository.list_versions`, and DB tests for immutable prior-geometry storage, version sequencing, missing-area no-op, invalid replacement rejection, and rollback behavior. Lane B tests: 41 passing with DB smoke enabled. Full PowerShell verification: 211 tests, ruff clean, mypy clean (78 source files), DB smoke passes.
 - 2026-06-04: TB-090 complete for supported domain area-type mapping. `SqlAlchemyAreaRepository` now stores exact domain type in `core.areas.metadata.domain_area_type`, maps `multi_polygon` to DB `polygon`, maps `buffer` to DB `generated_candidate`, and fails closed on conflicting metadata. Lane B tests: 46 passing with DB smoke enabled. Full PowerShell verification: 216 tests, ruff clean, mypy clean (78 source files), DB smoke passes.
+- 2026-06-04: TB-100 selected as a low-conflict Session 1 Lane B hardening slice while Session 2 owns Lane D D-001. Scope is limited to finite/range coordinate validation and tests.
+- 2026-06-04: TB-100 complete and reconciled with root `main` D-003. `validate_geojson` now rejects non-finite longitude/latitude values, longitude outside `-180..180`, and latitude outside `-90..90`; added fixture and inline regression coverage. Lane B tests: 49 passing with DB smoke enabled. Full post-D-003 PowerShell verification: 255 tests, ruff clean, mypy clean (91 source files), DB smoke passes.

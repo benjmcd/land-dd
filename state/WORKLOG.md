@@ -2,6 +2,22 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 1 Lane B TB-100 coordinate validation hardening)
+
+- Created isolated worktree `worktrees/session1-lane-b` on branch `lane-b/session1-geometry-hardening` from root `main` at `04d0a8f` to avoid Session 2's active Lane D D-001 checkout edits.
+- Implemented a Lane B-only validator hardening slice: non-finite longitude/latitude values and out-of-range EPSG:4326 longitude/latitude positions now fail `validate_geojson`.
+- Added one invalid coordinate fixture plus inline non-finite coordinate regression coverage in `backend/tests/area_geometry/test_area_service.py`.
+- Verified focused service/validator checks, DB-enabled Lane B tests, targeted Lane B lint/type checks, and full PowerShell verification with DB smoke enabled. Pre-merge result: 253 tests pass; lint clean; mypy clean (89 source files); DB smoke passes.
+- Merged root `main` at D-001 into the Lane B worktree, resolving conflicts only in shared state files by preserving both Session 2 D-001 state and Session 1 TB-100 state.
+- Verified post-merge focused Lane B/report/API checks and full PowerShell verification with DB smoke enabled. Result: 254 tests pass; lint clean; mypy clean (90 source files); DB smoke passes.
+- Merged root `main` at D-002 into the Lane B worktree after `main` advanced again; conflicts were again limited to shared state files and resolved by preserving D-002 as current repo-wide authority and TB-100 as the isolated Lane B contribution.
+- Verified post-D-002 focused Lane B/report/API checks and full PowerShell verification with DB smoke enabled. Result: 255 tests pass; lint clean; mypy clean (91 source files); DB smoke passes.
+- Merged root `main` at D-003 into the Lane B worktree after coordination; conflicts were again limited to shared state files and resolved by preserving D-003 as current repo-wide authority and TB-100 as the isolated Lane B contribution.
+- Verified post-D-003 full PowerShell verification with DB smoke enabled. Result: 255 tests pass; lint clean; mypy clean (91 source files); DB smoke passes.
+- Squash-merged the verified Lane B TB-100 branch onto root `main` so coordinate hardening is now mainline without carrying temporary cross-session merge commits.
+- Verified root `main` after squash merge: Lane B targeted tests pass with DB smoke enabled; targeted Lane B ruff/mypy pass; full PowerShell verification with DB smoke enabled passes with 255 tests, lint clean, mypy clean (91 source files), migrations/seeds, and DB smoke.
+- Coordination note sent to Session 2 without changing its reasoning level; no action requested.
+
 ## 2026-06-04 (Session 2 D-000 report surfacing)
 
 - Completed Lane D D-000 by updating `ReportRunService` to create stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation.

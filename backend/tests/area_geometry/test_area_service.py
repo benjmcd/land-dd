@@ -116,6 +116,8 @@ def test_validate_geojson_accepts_supported_geometries(fixture_name: str) -> Non
         ("wrong_type.geojson", "Polygon or MultiPolygon"),
         ("wrong_srid.geojson", "must be EPSG:4326"),
         ("open_ring.geojson", "must be closed"),
+        ("out_of_range_coordinates.geojson", "longitude must be between -180 and 180"),
+        ("out_of_range_coordinates.geojson", "latitude must be between -90 and 90"),
     ],
 )
 def test_validate_geojson_rejects_invalid_geometries(
@@ -125,3 +127,21 @@ def test_validate_geojson_rejects_invalid_geometries(
     errors = validate_geojson(load_geometry(fixture_name))
 
     assert any(expected_error in error for error in errors)
+
+
+def test_validate_geojson_rejects_non_finite_coordinates() -> None:
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [-120.0, 38.0],
+                [float("nan"), 38.0],
+                [-120.0, float("inf")],
+                [-120.0, 38.0],
+            ]
+        ],
+    }
+
+    errors = validate_geojson(geometry)
+
+    assert any("longitude and latitude must be finite" in error for error in errors)

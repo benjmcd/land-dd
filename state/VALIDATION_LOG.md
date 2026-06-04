@@ -2,6 +2,86 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 1 Lane B TB-100 coordinate validation hardening
+
+**Commands run:**
+
+```powershell
+git worktree add -b lane-b/session1-geometry-hardening ./worktrees/session1-lane-b main
+Set-Location backend
+py -3.12 -m pytest -q tests/area_geometry/test_area_service.py
+ruff check app/area_geometry/geometry_validator.py tests/area_geometry/test_area_service.py
+mypy app/area_geometry/geometry_validator.py tests/area_geometry/test_area_service.py
+$env:RUN_DB_SMOKE='1'
+py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+Set-Location ..
+$rootArtifacts = Resolve-Path ../../local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git merge main --no-edit
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry tests/reports tests/api
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry app/reports app/api app/db tests/reports tests/api
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry app/reports app/api app/db tests/reports tests/api
+py -3.12 -m pytest --collect-only -q
+$rootArtifacts = Resolve-Path ../../local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git merge main --no-edit
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry tests/reports tests/api
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry app/reports app/api app/db tests/reports tests/api
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry app/reports app/api app/db tests/reports tests/api
+py -3.12 -m pytest --collect-only -q
+$rootArtifacts = Resolve-Path ../../local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git merge main --no-edit
+py -3.12 -m pytest --collect-only -q
+$rootArtifacts = Resolve-Path ../../local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+Set-Location ..\..
+git merge --squash lane-b/session1-geometry-hardening
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = Resolve-Path ./local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Work ran in isolated worktree `worktrees/session1-lane-b` on branch `lane-b/session1-geometry-hardening`; root checkout Lane D files were not edited.
+- `validate_geojson` now rejects non-finite longitude/latitude values and out-of-range EPSG:4326 longitude/latitude positions.
+- Focused service/validator tests pass: 18 tests.
+- Lane B area-geometry tests pass with DB smoke enabled: 49 tests.
+- Lane B ruff and mypy pass.
+- Pre-D-003 full PowerShell verification after merging D-002 passes with DB smoke enabled: 255 backend tests; lint clean; mypy clean (91 source files); migrations/seeds apply; DB smoke passes.
+- Root `main` D-003 was merged into the Lane B worktree; conflicts were limited to shared state files and resolved by preserving both D-003 and TB-100 entries.
+- Post-D-003 collection reports 255 tests.
+- Post-D-003 full PowerShell verification passes with DB smoke enabled: 255 backend tests; lint clean; mypy clean (91 source files); migrations/seeds apply; DB smoke passes.
+- Lane B TB-100 was squash-merged from `lane-b/session1-geometry-hardening` onto root `main` after confirming the root diff only contained Lane B validator/test/fixture changes plus shared state records.
+- Root `main` targeted Lane B tests pass with DB smoke enabled: 49 tests.
+- Root `main` targeted Lane B ruff and mypy pass.
+- Root `main` collection reports 255 tests.
+- Root `main` full PowerShell verification passes with DB smoke enabled: 255 backend tests; lint clean; mypy clean (91 source files); migrations/seeds apply; DB smoke passes.
+- No `.claude/settings.json`, `.codex/hooks.json`, hook-driven execution, `.sh` scripts, or replacement of `local_artifacts/psql.cmd` were introduced.
+
+**Residual risk:**
+
+- This is coordinate-sanity hardening only; it does not assert survey accuracy, legal boundary correctness, or suitability.
+- Level 8 connector implementation remains blocked until D-004 maps connector gates to lane owners and fixture-only acceptance criteria.
+
 ## 2026-06-04 Session 2 D-003 schema-contract alignment
 
 **Commands run:**

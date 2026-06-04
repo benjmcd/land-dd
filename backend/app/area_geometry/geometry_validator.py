@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from math import isfinite
 from typing import cast
 
 SUPPORTED_GEOMETRY_TYPES = {"Polygon", "MultiPolygon"}
@@ -76,6 +77,10 @@ def _validate_ring(value: object, path: str) -> list[str]:
     for position_index, position in enumerate(value):
         if not _is_position(position):
             errors.append(f"{path}[{position_index}] must be a numeric lon/lat position")
+            continue
+        position_pair = _position_pair(position)
+        if position_pair is not None:
+            errors.extend(_validate_position_bounds(position_pair, f"{path}[{position_index}]"))
 
     if errors:
         return errors
@@ -109,6 +114,22 @@ def _position_pair(value: object) -> tuple[int | float, int | float] | None:
         return None
     position = cast(Sequence[object], value)
     return cast(int | float, position[0]), cast(int | float, position[1])
+
+
+def _validate_position_bounds(
+    position: tuple[int | float, int | float],
+    path: str,
+) -> list[str]:
+    longitude, latitude = position
+    if not isfinite(longitude) or not isfinite(latitude):
+        return [f"{path} longitude and latitude must be finite"]
+
+    errors: list[str] = []
+    if longitude < -180 or longitude > 180:
+        errors.append(f"{path} longitude must be between -180 and 180")
+    if latitude < -90 or latitude > 90:
+        errors.append(f"{path} latitude must be between -90 and 90")
+    return errors
 
 
 __all__ = ["validate_geojson"]
