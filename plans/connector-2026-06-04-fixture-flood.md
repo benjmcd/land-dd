@@ -847,7 +847,6 @@ The next Level 8 pass should choose one of:
 - expose retry/cancel state or mutation routes through API only after route semantics are accepted;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
 - propose report-run schema only after nested schema scope is settled;
-- plan source provenance-family schemas with Lane A ownership;
 - broaden fixture data-quality coverage for another selected fixture category.
 
 ## CON-021 Connector Human Review Action Semantics Plan
@@ -883,7 +882,6 @@ The next Level 8 pass should choose one of:
 - implement a narrow human-review action API only after route semantics, reviewer identity, and auth expectations are accepted;
 - expose retry/cancel mutation routes only after route semantics are accepted;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
-- plan source provenance-family schemas with Lane A ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.
 
@@ -934,6 +932,5 @@ The next Level 8 pass should choose one of:
 - implement the narrow human-review action API only after auth/reviewer identity enforcement and required queue transition substrate are accepted;
 - expose retry/cancel mutation behavior through the accepted action route or a separate accepted route;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
-- plan source provenance-family schemas with Lane A ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.

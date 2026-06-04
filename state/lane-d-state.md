@@ -32,7 +32,7 @@ Verification command(s):
 - cd backend; mypy tests/reports/test_report_schema_contract.py
 - cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 Verification result:
-- Full verification passes locally with DB smoke enabled after CON-022 human-review API semantics planning: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after merging TA-080 source provenance-family schema parity on top of CON-022 human-review API semantics planning: 350 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-081 report manifest metadata schema tightening: 343 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
@@ -67,7 +67,7 @@ Verification result:
 - CON-022 is complete as a planning-only human-review API semantics slice. Future route/reviewer/auth/idempotency semantics are accepted before any API mutation route, OpenAPI change, queue code, auth code, schema, or migration.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned. Remaining gaps are source provenance-family schemas, job schema, future report metadata extensions, durable `ingest_run_id` evidence-row linkage, and future API mutation/workflow implementation.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned. Remaining gaps are job schema, future report metadata extensions, durable `ingest_run_id` evidence-row linkage, and future API mutation/workflow implementation.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -126,7 +126,7 @@ Next lowest-dependency task:
 - **TD-090 (DONE)**: Planning-pack OpenAPI refresh is complete and full DB-enabled verification passes.
 - **CON-021 (DONE)**: Connector human-review action semantics are planned before API mutation or worker implementation.
 - **CON-022 (DONE)**: Connector human-review API route/reviewer/auth semantics are planned before mutation implementation.
-- **NEXT**: Select a coordinated Level 8 follow-up: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, future report metadata extensions, or another selected fixture category.
+- **NEXT**: Select a coordinated Level 8 follow-up: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence-row linkage coordination, future report metadata extensions, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

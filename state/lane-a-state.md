@@ -7,6 +7,7 @@ Milestone status: PASS
 Last verified: 2026-06-04
 Verification command(s):
 - py -3.12 -m pytest -q tests/source_registry/test_source_schema_contract.py
+- py -3.12 -m pytest -q tests/source_registry/test_source_provenance_schema_contract.py
 - py -3.12 -m pytest -q tests/source_registry
 - ruff check app/source_registry app/domain/source_contracts.py tests/source_registry
 - mypy app/source_registry app/domain/source_contracts.py tests/source_registry
@@ -18,12 +19,14 @@ Verification command(s):
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
 - Source schema-contract parity test: 4 passed
-- Lane A source-registry collection: 48 tests; default local run has 47 passed and 1 DB-gated skip
+- Source provenance-family schema-contract parity test: 6 passed
+- Lane A source-registry collection: 54 tests; default local run has one DB-gated skip
 - Source seed dry-run validates 8 `Must` registry rows
-- Full DB-enabled verification passes: 330 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
+- Full DB-enabled verification passes after TA-080: 350 backend tests pass; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Source provenance layer records source datasets, dataset versions, and retrieval runs in the existing source schema
 - Public source provenance service can preserve supplied connector retrieval-run identity through `record_retrieval_run_contract(...)`
 - Canonical `schemas/source_schema.json` is aligned to serialized `SourceContract` and explicitly excludes dataset/version/retrieval-run family fields pending separate schema-family work
+- `schemas/source_provenance_schema.json` is aligned to serialized `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract`; it tracks retrieval status enum values and non-negative retrieval counts without adding runtime validation or connector behavior
 - Source freshness, authority, and license/review/usage-right metadata are visible in downstream report source manifests and review exports
 Failed or blocked gates:
 - None for Level 3; Level 4 area geometry DB work is next
@@ -40,6 +43,7 @@ Completion evidence:
 - backend/tests/source_registry/test_source_provenance.py
 - backend/tests/source_registry/test_source_provenance_models.py
 - backend/tests/source_registry/test_source_schema_contract.py
+- backend/tests/source_registry/test_source_provenance_schema_contract.py
 - backend/app/connectors/public_wiring.py (connector public-service adapter uses Lane A public service without repository imports)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
@@ -47,6 +51,7 @@ Completion evidence:
 - templates/data_source_license_review.md
 - registers/data_source_registry.csv
 - schemas/source_schema.json
+- schemas/source_provenance_schema.json
 - backend/app/reports/service.py (downstream freshness/authority visibility in report source manifests)
 Next lowest-dependency task:
 - TB-050: SQLAlchemy/PostGIS area model and repository
@@ -64,7 +69,7 @@ Do not work on yet:
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
 | Connector retrieval-run identity | Public service supported | `record_retrieval_run_contract(...)` preserves supplied `ingest_run_id` |
-| Source provenance family schemas | Open | `schemas/source_schema.json` covers `SourceContract` only; dataset/version/retrieval-run schemas need a separate decision |
+| Source provenance family schemas | Resolved for serialized contracts | `schemas/source_provenance_schema.json` covers dataset/version/retrieval-run contracts; runtime validation and downstream linkage remain separate future work |
 
 ## Active plan
 

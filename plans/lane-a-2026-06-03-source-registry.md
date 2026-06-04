@@ -31,6 +31,7 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - `SourceService` implements source existence and fail-closed production-use checks for `SourceExistsProtocol` wiring (TA-050 complete).
 - DB smoke now passes via the Windows PowerShell verification wrapper.
 - `schemas/source_schema.json` now explicitly represents serialized `SourceContract` only, tracks the current `SourceContract.model_fields` field set, constrains `authority_level` to the Lane A enum values, and rejects dataset/version/retrieval-run family fields (TA-070 complete).
+- `schemas/source_provenance_schema.json` now separately represents serialized `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract` via `$defs`, tracks their field sets, constrains retrieval status values, and keeps retrieval row/error/warning counts non-negative (TA-080 complete).
 
 ## Proposed design
 
@@ -83,6 +84,13 @@ Status: COMPLETE. DB smoke passes locally, and the PowerShell verification wrapp
 4. Record that dataset, dataset-version, and retrieval-run schemas remain a future schema-family decision rather than hidden fields in `source_schema.json`.
 Status: COMPLETE. The source schema now covers only `SourceContract`; the provenance family contracts remain separate future work.
 
+### TA-080: Source provenance-family schema parity (COMPLETE)
+1. Keep `schemas/source_schema.json` scoped to serialized `SourceContract`.
+2. Add a separate source provenance-family schema for `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract`.
+3. Add schema-contract tests that fail if provenance-family schema properties or required fields drift from those contract field sets.
+4. Constrain `SourceRetrievalStatus` values and non-negative retrieval counts without adding runtime validation, migrations, connector behavior, queue semantics, live I/O, or evidence-row linkage.
+Status: COMPLETE. The provenance-family schema covers Lane A source dataset/version/retrieval-run contracts only.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -96,6 +104,8 @@ Status: COMPLETE. The source schema now covers only `SourceContract`; the proven
 | `registers/data_source_registry.csv` | Add explicit governance fields |
 | `schemas/source_schema.json` | Align to serialized `SourceContract` field set |
 | `backend/tests/source_registry/test_source_schema_contract.py` | Guard source schema parity with `SourceContract` |
+| `schemas/source_provenance_schema.json` | Add separate provenance-family schema for dataset/version/retrieval-run contracts |
+| `backend/tests/source_registry/test_source_provenance_schema_contract.py` | Guard source provenance-family schema parity |
 | `state/lane-a-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB smoke results |
 
@@ -125,6 +135,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: Backward-compat shims in `repositories/` and `services/` are Lane A's to archive (not delete) once no code imports from them.
 - 2026-06-03: `docker-compose.yml` assigned to Lane A ownership.
 - 2026-06-04: `schemas/source_schema.json` is the serialized `SourceContract` schema only. `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract` need separate schemas or an explicit future schema-family decision.
+- 2026-06-04: `schemas/source_provenance_schema.json` is the separate source provenance-family schema for serialized source dataset, dataset-version, and retrieval-run contracts. It is parity coverage only, not runtime validation or connector workflow behavior.
 
 ## Progress log
 
@@ -138,3 +149,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: Source production-use gating now checks review, license, commercial, redistribution, cache, export, raw-data, and AI-use rights. Full verification: 186 tests, ruff clean, mypy clean (76 source files); strengthened DB smoke passes.
 - 2026-06-04: CON-007 coordinated Lane A public provenance follow-up complete. `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`, `retrieval_run_exists(...)` exposes public duplicate checks, and DB-enabled source provenance tests verify round-trip identity preservation. Full DB-enabled PowerShell verification: 289 tests, lint clean, mypy clean (104 source files), migrations/seeds apply, DB smoke passes.
 - 2026-06-04: TA-070 complete. Aligned `schemas/source_schema.json` with serialized `SourceContract`, added source schema-contract parity tests, and kept dataset/version/retrieval-run schemas as a future Lane A/coordinator schema-family follow-up. Lane A collection: 48 tests; full DB-enabled PowerShell verification: 330 tests, lint clean, mypy clean (119 source files), migrations/seeds apply, DB smoke passes.
+- 2026-06-04: TA-080 complete. Added `schemas/source_provenance_schema.json` plus parity tests for `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract`; no runtime validation, migration, connector behavior, queue semantics, live I/O, or evidence-row linkage changed.
