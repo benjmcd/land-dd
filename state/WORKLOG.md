@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-007)
+
+- Completed CON-007 as a coordinated Lane A public provenance follow-up plus connector public wiring.
+- Added `SourceProvenanceService.record_retrieval_run_contract(...)` and `retrieval_run_exists(...)`, preserving supplied `SourceRetrievalRunContract.ingest_run_id` while validating referenced dataset versions.
+- Added `SourceProvenanceServiceRetrievalPort` and `build_fixture_workflow_with_public_lane_services(...)` so connector workflows can use the public Lane A provenance service without importing Lane A repositories.
+- Added source provenance and connector tests proving identity preservation, duplicate failure, SQLAlchemy round-trip with DB smoke enabled, and connector public-service wiring without repository imports.
+- Verification passed: `$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/source_registry/test_source_provenance.py tests/connectors`; targeted ruff/mypy; `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-006)
 
 - Completed CON-006 in the connector integration zone: added `build_fixture_workflow_with_public_services` in `backend/app/connectors/public_wiring.py`.

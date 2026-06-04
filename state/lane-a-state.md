@@ -13,10 +13,11 @@ Verification command(s):
 - .\scripts\verify.ps1
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 41 Lane A tests passing
+- 43 Lane A tests passing
 - Source seed dry-run validates 8 `Must` registry rows
-- Full verification passes: 186 tests; lint clean; mypy clean (76 source files)
+- Full DB-enabled verification passes: 289 tests; lint clean; mypy clean (104 source files); migrations/seeds apply; DB smoke passes
 - Source provenance layer records source datasets, dataset versions, and retrieval runs in the existing source schema
+- Public source provenance service can preserve supplied connector retrieval-run identity through `record_retrieval_run_contract(...)`
 - Source freshness, authority, and license/review/usage-right metadata are visible in downstream report source manifests and review exports
 Failed or blocked gates:
 - None for Level 3; Level 4 area geometry DB work is next
@@ -32,6 +33,7 @@ Completion evidence:
 - backend/tests/source_registry/test_source_seeds.py
 - backend/tests/source_registry/test_source_provenance.py
 - backend/tests/source_registry/test_source_provenance_models.py
+- backend/app/connectors/public_wiring.py (connector public-service adapter uses Lane A public service without repository imports)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -54,6 +56,7 @@ Do not work on yet:
 | MVP state/county | Undecided | Do not hard-code jurisdiction-specific logic |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
+| Connector retrieval-run identity | Public service supported | `record_retrieval_run_contract(...)` preserves supplied `ingest_run_id` |
 
 ## Active plan
 

@@ -2,6 +2,33 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-007 Lane A public provenance identity-preservation follow-up
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/source_registry/test_source_provenance.py tests/connectors
+ruff check app/source_registry/provenance_service.py app/connectors tests/source_registry/test_source_provenance.py tests/connectors
+mypy app/source_registry/provenance_service.py app/connectors tests/source_registry/test_source_provenance.py tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Targeted DB-enabled source-provenance/connector tests: 29 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 13 source/test files.
+- Full DB-enabled PowerShell verification: ok; 289 collected backend tests; lint clean; mypy clean over 104 source files; migrations/seeds apply; DB smoke passes.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- Public Lane A and Lane C service wiring now exists. The next connector proof should run the full fixture workflow against DB-backed public services together before making broader production ingestion claims.
+
 ## 2026-06-04 CON-006 concrete public-service workflow wiring handoff
 
 **Commands run:**

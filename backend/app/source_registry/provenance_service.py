@@ -133,6 +133,22 @@ class SourceProvenanceService:
         run = SourceRetrievalRunContract.model_validate(run_kwargs)
         return self._repo.add_retrieval_run(run)
 
+    def record_retrieval_run_contract(
+        self,
+        retrieval_run: SourceRetrievalRunContract,
+    ) -> SourceRetrievalRunContract:
+        if retrieval_run.dataset_version_id is not None:
+            self._require_dataset_version(retrieval_run.dataset_version_id)
+        _require_non_empty(retrieval_run.connector_name, "connector_name")
+        if self.retrieval_run_exists(retrieval_run.ingest_run_id):
+            raise ValueError(
+                f"Retrieval run '{retrieval_run.ingest_run_id}' is already registered"
+            )
+        return self._repo.add_retrieval_run(retrieval_run)
+
+    def retrieval_run_exists(self, ingest_run_id: UUID) -> bool:
+        return self._repo.get_retrieval_run(ingest_run_id) is not None
+
     def export_review_bundle(self, source_id: UUID) -> dict[str, object]:
         source = self._require_source(source_id)
         datasets = self._repo.list_datasets_by_source(source_id)

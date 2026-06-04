@@ -343,10 +343,10 @@ tasks:
 
   - id: CON-007
     title: Level 8 Lane A public provenance identity-preservation follow-up
-    status: pending
+    status: done
     depends_on: [CON-006]
     lane: connector-integration
-    notes: Coordinate or implement the Lane A-owned public provenance method/adapter that can record a supplied SourceRetrievalRunContract while preserving ingest_run_id. Do not claim DB-backed connector workflow ingestion until this is wired and DB-smoke verified.
+    notes: Implemented the coordinated Lane A public provenance method and connector public-service adapter. SourceProvenanceService can now record a supplied SourceRetrievalRunContract while preserving ingest_run_id; connector wiring uses the public service without Lane A repository imports. Full DB-enabled verification passes.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-006-public-service-workflow-wiring-handoff
     files:
       - backend/app/connectors/
@@ -361,3 +361,23 @@ tasks:
       - Supplied SourceRetrievalRunContract.ingest_run_id is preserved through public provenance wiring
       - Connector workflow can use the public provenance wiring without Lane A repository imports
       - DB-backed connector workflow claim is backed by DB-smoke verification
+
+  - id: CON-008
+    title: Level 8 DB-backed fixture workflow smoke
+    status: pending
+    depends_on: [CON-007]
+    lane: connector-integration
+    notes: Prove the fixture workflow can run against DB-backed public Lane A provenance and public Lane C evidence services together. Remain fixture-only, avoid live IO and claim/report shortcuts, and do not add schema changes unless separately planned.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-007-lane-a-public-provenance-identity-preservation
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - DB-backed fixture workflow records source retrieval provenance with supplied ingest_run_id
+      - DB-backed fixture workflow persists evidence through public Lane C service methods
+      - Repeated DB-backed fixture workflow run is idempotent
+      - No live IO, claim/report shortcut, or schema change is introduced

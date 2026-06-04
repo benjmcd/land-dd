@@ -13,7 +13,11 @@ from app.connectors.flood_fixture import (
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
 )
-from app.connectors.public_wiring import build_fixture_workflow_with_public_services
+from app.connectors.public_wiring import (
+    SourceProvenanceServiceRetrievalPort,
+    build_fixture_workflow_with_public_lane_services,
+    build_fixture_workflow_with_public_services,
+)
 from app.connectors.retrieval_provenance import (
     ConnectorRetrievalProvenanceAdapter,
     ConnectorRetrievalProvenanceResult,
@@ -31,7 +35,9 @@ __all__ = [
     "FixtureConnectorIngestWorkflow",
     "FixtureConnectorIngestWorkflowResult",
     "FloodFixtureConnectorResult",
+    "SourceProvenanceServiceRetrievalPort",
     "SourceRetrievalProvenancePort",
     "StaticFloodFixtureConnector",
+    "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
 ]

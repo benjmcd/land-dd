@@ -304,3 +304,43 @@ Result: connector tests pass (23 tests); connector ruff clean; connector mypy cl
 ### Remaining Gap
 
 The next connector task must coordinate or implement the Lane A public provenance method/adapter that can record a supplied `SourceRetrievalRunContract` while preserving `ingest_run_id`. Only after that is wired and DB-smoke verified should the project claim durable DB-backed connector workflow ingestion.
+
+## CON-007 Lane A Public Provenance Identity Preservation
+
+Status: complete on 2026-06-04 as a coordinated Lane A public-service change plus connector public wiring. No schema, migration, live connector, claim, report/API, or Lane A repository import in connector code was added.
+
+### Implemented Design
+
+Lane A `SourceProvenanceService` now exposes:
+
+- `record_retrieval_run_contract(retrieval_run)` to validate and persist a supplied `SourceRetrievalRunContract` while preserving `ingest_run_id`;
+- `retrieval_run_exists(ingest_run_id)` as the public duplicate-check method needed by connector retrieval provenance wiring.
+
+Connector public wiring now includes `SourceProvenanceServiceRetrievalPort`, which adapts the public Lane A service to the connector `SourceRetrievalProvenancePort` without importing Lane A repositories. `build_fixture_workflow_with_public_lane_services(...)` composes that public Lane A provenance service with the public Lane C `EvidenceService`.
+
+### Verification
+
+Tests prove:
+
+- public Lane A service recording preserves a supplied retrieval-run identity;
+- duplicate supplied retrieval-run identities fail closed;
+- SQLAlchemy-backed source provenance round-trips supplied `ingest_run_id` with DB smoke enabled;
+- connector public wiring can use Lane A/Lane C public services without connector imports from Lane A repositories;
+- full DB-enabled workspace verification passes.
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/source_registry/test_source_provenance.py tests/connectors
+ruff check app/source_registry/provenance_service.py app/connectors tests/source_registry/test_source_provenance.py tests/connectors
+mypy app/source_registry/provenance_service.py app/connectors tests/source_registry/test_source_provenance.py tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: targeted DB-enabled source-provenance/connector tests pass (29 tests); targeted ruff clean; targeted mypy clean; full DB-enabled PowerShell verification passes with 289 collected backend tests, lint clean, mypy clean (104 source files), migrations/seeds apply, and DB smoke passes; whitespace check clean.
+
+### Next Slice
+
+CON-008 should prove a DB-backed fixture workflow smoke using public Lane A provenance wiring and public Lane C evidence wiring together. It must still remain fixture-only, avoid live I/O and claim/report shortcuts, and avoid schema changes unless separately planned.

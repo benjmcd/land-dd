@@ -35,11 +35,14 @@ Unknown or incompatible rights fail closed. A source with unknown, blocked, or i
 
 `templates/data_source_license_review.md` is the canonical human review worksheet for TA-050. Lane A intentionally does not create a second near-duplicate license template; future references to `source_license_review` should use this root template unless the plan is explicitly revised.
 
+Connector retrieval attempts may hand Lane A a complete `SourceRetrievalRunContract` when the connector owns deterministic attempt identity. The public `SourceProvenanceService.record_retrieval_run_contract(...)` method records that supplied contract after validating the referenced dataset version and preserving the supplied `ingest_run_id`. Connector code must call this through the public service surface and must not import Lane A repositories directly.
+
 ## Consequences
 
 - Evidence creation must reject unregistered source IDs except controlled human-note evidence types.
 - Future `SourceExistsProtocol.source_production_use_allowed` behavior must check review status and usage constraints, not only row existence.
 - Source-failure and blocked-source outcomes must create explicit evidence or run-state records; missing data must never become "no issue found."
+- Fixture connector workflows can preserve deterministic retrieval-run identity through the public provenance service before evidence ingestion.
 - Live connectors remain blocked until the source registry row, license review, fixture tests, failure behavior, and output caveats are all present.
 - DB smoke remains a separate prerequisite for claiming Level 2 or durable Level 3 completion.
 
