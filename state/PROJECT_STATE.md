@@ -37,6 +37,7 @@ Verification result:
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector runtime contract slice is implemented as a static local flood fixture with no live network, explicit idempotency, blocked/source-failure behavior, and source retrieval provenance
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 - CON-001 is complete: `StaticFloodFixtureConnector` reads local flood fixture JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure source-failure fixtures, and stays before claims/reports
+- CON-002 is complete: connector evidence-ingestion handoff is defined; the connector-zone adapter must use injected public Lane C EvidenceService methods, direct Lane C repository/private-helper access is rejected, and durable retrieval-run/evidence linkage gaps are recorded for future coordination
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -76,7 +77,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- CON-002: Level 8 connector evidence-ingestion handoff plan.
+- CON-003: Level 8 connector evidence-ingestion adapter.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -129,11 +130,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 complete; next is CON-002 evidence-ingestion handoff |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 and CON-002 complete; next is CON-003 evidence-ingestion adapter |
 
 ## Last verified state
 
-Latest CON-001 verification: `.\scripts\verify.ps1` passes on root `main` with 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, and Lane B TB-100 are complete on root `main`.
+Latest CON-002 verification: `.\scripts\verify.ps1` passes on root `main` with 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, and Lane B TB-100 are complete on root `main`.
 
 ## Local repo bootstrap state
 

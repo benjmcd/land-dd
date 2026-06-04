@@ -30,8 +30,34 @@ git diff --check
 
 **Residual risk:**
 
-- CON-001 does not persist connector outputs. CON-002 must define the evidence-ingestion handoff without connector code modifying Lane C implementation.
+- CON-001 does not persist connector outputs. CON-002 defines the evidence-ingestion handoff without connector code modifying Lane C implementation.
 - Live connector behavior remains blocked by license, fixture, failure, rate-limit, and caveat gates.
+
+## 2026-06-04 Session 2 CON-002 evidence-ingestion handoff
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+cd backend; py -3.12 -m pytest --collect-only -q
+git diff --check
+```
+
+**Results:**
+
+- Defined the connector evidence-ingestion boundary in `plans/connector-2026-06-04-fixture-flood.md`.
+- Decided that connector-zone ingestion adapters must use injected public Lane C EvidenceService methods rather than Lane C repositories or private service helpers.
+- Normal connector evidence routes to `create_observation`.
+- Source-failure templates route to `create_source_failure`, with returned evidence treated as persistence authority.
+- Recorded durable retrieval-run/evidence linkage and exact source-failure field preservation as future Lane C/schema coordination gaps.
+- No Lane C implementation, shared schema, migration, live connector, credential, browser/download, claim, report, or API files changed.
+- Full PowerShell verification passes: 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- CON-003 must implement the adapter and prove idempotency using public evidence service methods.
+- Durable `ingest_run_id` linkage remains unimplemented until a coordinated contract/schema pass.
 
 ## 2026-06-04 Session 2 D-005 connector ownership decision packet
 

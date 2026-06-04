@@ -8,6 +8,7 @@ Append concise entries. Do not rely on chat history.
 - Added local success and failure fixtures under `tests/fixtures/connectors/`.
 - Added connector tests proving source retrieval provenance, flood spatial evidence output, blocked source-failure output, idempotent fixture IDs, URI-like path rejection, and no claim/report/live-IO imports.
 - Kept Lane A/B/C/D implementation files, shared schemas, migrations, API/report wiring, credentials, browser/download steps, and live network behavior out of scope.
+- Completed CON-002 as a handoff decision: connector-zone ingestion adapters must call injected public Lane C evidence service methods, not Lane C repositories/private helpers. Normal evidence routes to `create_observation`; source-failure templates route to `create_source_failure`; durable `ingest_run_id` linkage and exact source-failure field preservation remain future Lane C/schema coordination gaps.
 
 ## 2026-06-04 (Session 2 D-005 connector ownership decision packet)
 

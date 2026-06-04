@@ -6,6 +6,8 @@ Milestone status: IN PROGRESS
 Last verified: 2026-06-04
 Current task:
 - CON-001: DONE - Level 8 fixture-only flood connector contract slice.
+- CON-002: DONE - connector evidence-ingestion handoff plan.
+- CON-003: NEXT - connector-zone evidence ingestion adapter.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -22,6 +24,7 @@ Do not work on yet:
 - `backend/tests/connectors/test_flood_fixture_connector.py`
 - `tests/fixtures/connectors/flood_success.json`
 - `tests/fixtures/connectors/flood_failure.json`
+- `plans/connector-2026-06-04-fixture-flood.md` CON-002 evidence-ingestion handoff section
 
 ## Verification
 
@@ -43,4 +46,5 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Item | Status | Impact |
 |---|---|---|
 | Live connector gates | Not satisfied | CON-001 must remain fixture-only |
-| Lane-owned ingestion/storage changes | Not coordinated | Connector output must remain typed inputs, not storage/runtime wiring |
+| Durable retrieval-run/evidence linkage | Gap recorded | Current `EvidenceContract` lacks `ingest_run_id`; coordinate Lane C/schema before claiming durable linkage |
+| Exact source-failure field preservation | Gap recorded | Current public Lane C source-failure API creates the persisted evidence record; connector-provided source-failure IDs are templates unless Lane C adds a public method |

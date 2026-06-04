@@ -75,3 +75,62 @@ git diff --check
 
 - 2026-06-04: Plan created from root `main` after D-005 (`dc3c38e`).
 - 2026-06-04: CON-001 implemented as a fixture-only contract slice. `StaticFloodFixtureConnector` reads local JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure fixtures, and avoids claim/report imports.
+
+## CON-002 Evidence-Ingestion Handoff
+
+Status: complete on 2026-06-04 as a handoff/boundary decision. No Lane C implementation, shared schema, migration, live connector, report/API, or claim code changed.
+
+### Current Service Authority
+
+| Surface | Current authority | Handoff implication |
+|---|---|---|
+| Connector output | `FloodFixtureConnectorResult` with `SourceRetrievalRunContract` plus `EvidenceContract` inputs | Connector zone owns local fixture parsing, connector validation, and typed handoff values. |
+| Normal evidence persistence | `EvidenceService.create_observation(evidence)` | Connector ingestion adapter can call the public Lane C service with non-failure source-derived `EvidenceContract` inputs. |
+| Source-failure persistence | `EvidenceService.create_source_failure(...)` | Connector ingestion adapter must use the public Lane C source-failure API and treat the returned evidence as persistence authority. It must not call private Lane C helpers. |
+| Idempotency | `EvidenceService.evidence_exists(...)`, `list_by_area(...)`, and repository duplicate rejection | Adapter should skip already-stored deterministic evidence IDs and use an explicit source-failure fingerprint for public API-created failure records. |
+| Retrieval provenance | `SourceRetrievalRunContract` / `source.ingest_runs` | Connector zone owns retrieval-run handoff to Lane A provenance. Evidence ingestion must not replace source retrieval provenance. |
+
+### Boundary Decision
+
+The next ingestion adapter belongs in the connector integration zone, not Lane C. It should depend on an injected evidence-ingestion port that mirrors only the Lane C public service methods needed by connectors:
+
+- `create_observation(evidence: EvidenceContract) -> EvidenceContract`
+- `create_source_failure(...) -> EvidenceContract`
+- `evidence_exists(evidence_id) -> bool`
+- `list_by_area(area_id) -> list[EvidenceContract]`
+
+The adapter must not import Lane C repositories, DB sessions, rule/claim modules, report modules, or private Lane C service helpers. Lane C remains the owner of validation, audit behavior, repository semantics, and any new public method if stronger source-failure preservation is required.
+
+### Persistence Mapping
+
+1. Persist or record the connector retrieval run through Lane A provenance before evidence ingestion.
+2. For connector evidence where `is_source_failure` is false, call `create_observation(evidence)`.
+3. For connector evidence where `is_source_failure` is true, call `create_source_failure` using the connector input's area, source, method, caveat, evidence code, domain, observation, and observed value.
+4. Treat the returned `EvidenceContract` as the persisted failure authority because the current public source-failure API constructs the stored evidence record.
+5. Do not feed connector outputs into claims or reports until persisted evidence has passed Lane C validation.
+
+### Known Contract Gaps
+
+- Current `EvidenceContract` does not carry `ingest_run_id`, even though `evidence.observations` has an `ingest_run_id` column in the DB spine.
+- Current SQLAlchemy evidence persistence does not round-trip `dataset_version_id` from `EvidenceContract`.
+- Current public source-failure creation does not preserve a connector-provided source-failure `evidence_id`, `dataset_version_id`, or `observed_at`.
+
+These are not CON-002 code changes. If future connector work requires durable retrieval-run/evidence linkage or exact source-failure ID preservation, coordinate a Lane C/schema follow-up before implementation.
+
+### Boundary Debate
+
+| Option | Argument for | Argument against | Decision |
+|---|---|---|---|
+| Connector adapter writes directly to `EvidenceRepository` | Simple persistence path | Bypasses Lane C service validation, production-use checks, payload validation, and audit hooks | Rejected |
+| Connector adapter calls public `EvidenceService` methods | Preserves Lane C validation boundary and avoids Lane C file edits | Source-failure API does not preserve every connector-provided field | Accepted for next adapter slice |
+| Modify Lane C now to accept source-failure `EvidenceContract` directly | Stronger field preservation | Violates CON-002 no-Lane-C-change scope and overlaps Session 1 Lane C work | Deferred |
+
+### Next Slice
+
+CON-003 should implement a connector-zone ingestion adapter against the public evidence-ingestion port above, with tests proving:
+
+- normal flood evidence calls `create_observation`;
+- source-failure evidence calls `create_source_failure`;
+- duplicate deterministic evidence IDs are skipped;
+- source-failure fingerprints prevent duplicate failures on repeated fixture runs;
+- no claim/report shortcuts are introduced.
