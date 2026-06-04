@@ -20,6 +20,8 @@ Verification command(s):
 - cd backend; mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
 - cd backend; mypy app/claims_engine tests/claims_engine
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+- cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+- cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
@@ -53,6 +55,7 @@ Verification command(s):
 - cd backend; py -3.12 -m pytest --collect-only
 Verification result:
 - 362 tests pass in the DB-enabled Windows PowerShell verification path after TD-083 report validation metadata; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
+- 363 tests pass in the DB-enabled Windows PowerShell verification path after CON-027 connector fixture retrieval metric quality; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 350 tests pass in the DB-enabled Windows PowerShell verification path after TA-080 source provenance-family schema parity; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes.
 - 343 tests pass in the DB-enabled Windows PowerShell verification path after TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes.
 - 344 tests pass in the DB-enabled Windows PowerShell verification path after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes.
@@ -105,6 +108,7 @@ Verification result:
 - CON-025 is complete as a local service-account reviewer principal dependency for future connector review mutation routes, without registering a route or changing OpenAPI.
 - CON-026 is complete as a connector review action route-subset decision for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred to avoid Session 1's Lane C evidence-linkage/OpenAPI branch.
 - TD-083 is complete as a report validation metadata implementation: `artifact_metadata.validation` records report contract/profile and ruleset identity, with schema/regression coverage, without claiming verification-command execution or changing routes, OpenAPI, DB schema, connector runtime, queue behavior, live I/O, hook config, POSIX scripts, or Lane A/B/C modules.
+- CON-027 is complete: connector-local fixture quality now fails closed when succeeded retrievals have nonzero errors or missing/mismatched row counts, and when blocked/failed retrievals lack explicit zero row count or positive error count, without changing API/OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality.
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -224,7 +228,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-362 tests pass in the DB-enabled Windows PowerShell verification path after TD-083 report validation metadata; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, CON-024, CON-025, CON-026, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-083, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should implement the accepted review-action mutation route subset with OpenAPI refresh after Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, or choose broader fixture-quality/report metadata work if route work would conflict.
+363 tests pass in the DB-enabled Windows PowerShell verification path after CON-027 connector fixture retrieval metric quality; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, CON-024, CON-025, CON-026, CON-027, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-083, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should implement the accepted review-action mutation route subset with OpenAPI refresh after Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, or choose broader fixture-quality/report metadata work if route work would conflict.
 
 ## Local repo bootstrap state
 

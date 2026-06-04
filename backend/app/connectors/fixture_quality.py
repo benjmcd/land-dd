@@ -17,6 +17,9 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     FIXTURE_LOG_URI_NOT_LOCAL = "fixture_log_uri_not_local"
     FIXTURE_METRIC_MISSING = "fixture_metric_missing"
     SUCCEEDED_ROW_COUNT_MISMATCH = "succeeded_row_count_mismatch"
+    SUCCEEDED_ERROR_COUNT_NONZERO = "succeeded_error_count_nonzero"
+    BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO = "blocked_or_failed_row_count_not_zero"
+    BLOCKED_OR_FAILED_ERROR_COUNT_MISSING = "blocked_or_failed_error_count_missing"
     SUCCEEDED_HAS_SOURCE_FAILURE = "succeeded_has_source_failure"
     BLOCKED_HAS_NON_FAILURE_EVIDENCE = "blocked_has_non_failure_evidence"
     SPATIAL_EVIDENCE_GEOMETRY_MISSING = "spatial_evidence_geometry_missing"
@@ -105,13 +108,22 @@ def evaluate_flood_fixture_quality(
 
     if (
         retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
-        and retrieval_run.row_count is not None
         and retrieval_run.row_count != non_failure_count
     ):
         issues.append(
             _issue(
                 ConnectorFixtureQualityIssueCode.SUCCEEDED_ROW_COUNT_MISMATCH,
                 "succeeded fixture row_count must match non-failure evidence count",
+            ),
+        )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and retrieval_run.error_count != 0
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_ERROR_COUNT_NONZERO,
+                "succeeded fixture error_count must be zero",
             ),
         )
     if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED and source_failure_count:
@@ -124,13 +136,28 @@ def evaluate_flood_fixture_quality(
     if retrieval_run.status in {
         SourceRetrievalStatus.BLOCKED,
         SourceRetrievalStatus.FAILED,
-    } and non_failure_count:
-        issues.append(
-            _issue(
-                ConnectorFixtureQualityIssueCode.BLOCKED_HAS_NON_FAILURE_EVIDENCE,
-                "blocked or failed fixture must not emit non-failure evidence",
-            ),
-        )
+    }:
+        if retrieval_run.row_count != 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO,
+                    "blocked or failed fixture row_count must be zero",
+                ),
+            )
+        if retrieval_run.error_count <= 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ERROR_COUNT_MISSING,
+                    "blocked or failed fixture must record at least one error",
+                ),
+            )
+        if non_failure_count:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_HAS_NON_FAILURE_EVIDENCE,
+                    "blocked or failed fixture must not emit non-failure evidence",
+                ),
+            )
 
     evidence_ids = set()
     for evidence in evidence_inputs:

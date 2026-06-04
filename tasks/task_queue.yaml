@@ -913,6 +913,36 @@ tasks:
       - acknowledge, approve_for_connector_qa, durable idempotency, reviewer ownership persistence, reviewer action history, production auth, dashboard workflow, route registration, and OpenAPI refresh remain future work
       - No API route, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior is introduced
 
+  - id: CON-027
+    title: Level 8 connector fixture retrieval metric quality
+    status: done
+    depends_on: [CON-012, CON-020, CON-023]
+    lane: connector-integration
+    notes: Tightened connector-local fixture quality so succeeded retrievals require row_count to match non-failure evidence and error_count to be zero, while blocked/failed retrievals require explicit zero row_count and positive error_count. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside the connector quality evaluator was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-027-connector-fixture-retrieval-metric-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Succeeded fixture retrieval row_count must match non-failure evidence count
+      - Succeeded fixture retrieval error_count must be zero
+      - Blocked or failed fixture retrieval row_count must be explicit zero
+      - Blocked or failed fixture retrieval error_count must be positive
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done

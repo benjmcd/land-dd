@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-027 fixture retrieval metric quality)
+
+- Tightened connector-local fixture quality around retrieval-run metric consistency.
+- Succeeded fixture retrievals now fail closed unless `row_count` matches non-failure evidence count and `error_count` is zero.
+- Blocked or failed fixture retrievals now fail closed unless `row_count` is explicit zero and `error_count` is positive.
+- Preserved boundary: no API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or lane-owned module outside connector quality changed.
+- Verification passed with DB smoke: 363 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Lane D TD-083 report validation metadata)
 
 - Implemented optional `artifact_metadata.validation` in generated report runs with report contract/profile and ruleset identity.

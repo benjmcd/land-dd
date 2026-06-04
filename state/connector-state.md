@@ -31,6 +31,7 @@ Current task:
 - CON-024: DONE - connector review action API auth blocker decision.
 - CON-025: DONE - connector reviewer principal boundary.
 - CON-026: DONE - connector review action route subset decision.
+- CON-027: DONE - connector fixture retrieval metric quality checks.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -144,6 +145,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-026 result: whitespace check clean; default Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, and DB smoke skipped by default; full DB-enabled Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, migrations/seeds apply, and DB smoke passes. Decision-only route subset; no route/OpenAPI/runtime mutation.
 
+2026-06-04 CON-027 result: focused fixture-quality tests pass (11 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local fixture retrieval metric validation; no route/OpenAPI/runtime/schema/queue mutation.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -155,7 +158,7 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |
 | Connector run/status review handoff | Satisfied for fixture workflow projection | `build_connector_run_review_packet(...)` summarizes workflow status and review signals without adding API, claims, reports, schema edits, or persistence changes |
 | Connector review handoff consumer | Satisfied for connector-local projection | `build_connector_review_handoff(...)` classifies review packets into deterministic handoff dispositions without adding API, persistence, reports, claims, schema edits, or live I/O |
-| Connector fixture quality profile | Satisfied for flood fixture output | `evaluate_flood_fixture_quality(...)` flags fixture-local provenance, dataset-version, row-count, spatial evidence, and source-failure payload inconsistencies without adding API, persistence, reports, claims, schema edits, or live I/O |
+| Connector fixture quality profile | Satisfied for flood fixture output | `evaluate_flood_fixture_quality(...)` flags fixture-local provenance, dataset-version, retrieval metric, row-count, spatial evidence, and source-failure payload inconsistencies without adding API, persistence, reports, claims, schema edits, or live I/O |
 | Connector review status API | Satisfied for in-memory status surface | `build_connector_run_review_status(...)` composes handoff and quality data, and `GET /connector-runs/{ingest_run_id}/review-status` returns stored status without durable queue persistence, schema edits, reports, claims, or live I/O |
 | Durable connector review queue | Satisfied for connector review status items | `SqlAlchemyConnectorReviewQueueRepository` writes idempotent `connector_review_status` jobs to `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`; workers/API DB retrieval remain future work |
 | Connector review queue API retrieval | Satisfied for read-only queue item lookup | `GET /connector-runs/{ingest_run_id}/review-queue` reads stored queue items without job mutation, worker execution, claims, reports, schema edits, or live I/O |
