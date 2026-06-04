@@ -2,6 +2,35 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 1 planning-pack schema-copy reconciliation
+
+**Commands run:**
+
+```powershell
+git rebase main
+rg -n "(<{7}|={7}|>{7})" ./state/PROJECT_STATE.md ./state/VALIDATION_LOG.md ./state/WORKLOG.md
+py -3.12 -m pytest -q backend/tests/test_planning_pack_schema_copies.py
+ruff check backend/tests/test_planning_pack_schema_copies.py
+mypy backend/tests/test_planning_pack_schema_copies.py
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+git diff --no-index --quiet ./schemas/evidence_schema.json ./docs/planning_pack/schemas/evidence_schema.json
+git diff --no-index --quiet ./schemas/claim_schema.json ./docs/planning_pack/schemas/claim_schema.json
+git diff --check
+```
+
+**Results:**
+
+- Preserved CON-009 state/task records from root `main` at `56d53c8`.
+- `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` parse-match their canonical root schema files in the isolated branch.
+- Added a planning-pack schema-copy parity test for the evidence and claim schema copies.
+- Post-rebase focused checks are recorded in this entry after execution.
+
+**Residual risk:**
+
+- This pass only reconciles planning-pack evidence/claim schema copies. Planning-pack OpenAPI, source/job schemas, report schema proposals, connector envelopes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, and connector run/status review workflow planning remain separate owner-specific follow-ups.
+
 ## 2026-06-04 CON-009 DB-backed source-failure fixture workflow smoke
 
 **Commands run:**

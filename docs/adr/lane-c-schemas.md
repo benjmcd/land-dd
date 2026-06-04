@@ -17,6 +17,6 @@ Lane C keeps schema parity tests for these files in `backend/tests/evidence_ledg
 ## Consequences
 
 - Report and connector work can reference the root evidence and claim schemas as current Lane C contract truth.
-- `docs/planning_pack/schemas/*.json` remains a docs-packaging surface and may be stale until a separate packaging pass reconciles it.
+- `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` are documentation-packaging copies of the root Lane C schemas and should stay parse-equivalent to those root files.
 - Source, job, report-run, and connector-envelope schemas remain outside this ADR.
 - Type-specific `observed_value` schemas remain deferred until a dedicated payload-schema pass decides whether to encode those constraints in JSON Schema or leave them enforced by Lane C runtime validators.

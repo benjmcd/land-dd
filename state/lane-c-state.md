@@ -23,8 +23,8 @@ Verification result:
 - Lane C evidence/claims tests pass with DB smoke enabled
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full backend collection reports 268 tests
-- Full PowerShell verification passes with DB smoke enabled: 268 tests; lint clean; mypy clean (96 source files); migrations/seeds apply; DB smoke passes
+- Full backend collection reports 283 tests after rebasing the planning-pack schema-copy branch onto CON-005 at `9228f89`
+- Full PowerShell verification passes with DB smoke enabled: 283 tests; lint clean; mypy clean (103 source files); migrations/seeds apply; DB smoke passes
 - C-001 claims ORM persistence is stable on the current main base after removing cross-schema ORM FK metadata assumptions and flushing the parent claim before child link/task rows
 Failed or blocked gates:
 - L5-001 through L5-010: PASS for DB-backed repository/service scope (`SqlAlchemyEvidenceRepository` persists source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, optional geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, and `SqlAlchemyEvidenceAuditLog` durable audit events; `docs/adr/lane-c-evidence.md` documents immutability/amendment policy)
@@ -72,7 +72,7 @@ Next lowest-dependency task:
 - **C-001: DONE and DB-gated stable on current main** - `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM; ORM metadata/flush ordering repaired and verified with DB-gated claim tests.
 - **C-002: DONE for Lane C-owned rule/claim scope** - `RuleEngine.evaluate()` emits deterministic UNKNOWN claims for soil/septic, environmental hazards, resource context, and market context when provided stored source-failure evidence.
 - **TC-170: DONE for canonical Lane C schema/contract scope** - `schemas/evidence_schema.json` and `schemas/claim_schema.json` mirror serialized `EvidenceContract` and `ClaimContract` fields and enums; `docs/adr/lane-c-schemas.md` records the shared-schema decision.
-- **Next repo-wide dependency**: CON-001 fixture-only flood connector contract work belongs to the connector integration zone, not Lane C.
+- **Next repo-wide dependency**: CON-005 fixture connector ingest workflow composition belongs to the connector integration zone, not Lane C.
 Do not work on yet:
 - D-001 cross-lane wiring (Lane D owns `api/dependencies.py`, `main.py`, and `db/session.py`)
 - Live connectors, jurisdiction-specific rules, or UI/LLM summarization
@@ -88,7 +88,7 @@ Do not work on yet:
 | Jurisdiction for rules | Undecided | Use fixture rules only |
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial-precision fields; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
 | Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, resource context, and market context emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run source-failure injection remains Lane D integration |
-| Planning-pack schema copies | Deferred | Canonical root schemas now align with Lane C contracts; `docs/planning_pack/schemas/*.json` remains a docs-packaging follow-up |
+| Planning-pack evidence/claim schema copies | Closed | `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` mirror the canonical root Lane C schemas; `backend/tests/test_planning_pack_schema_copies.py` guards against silent drift |
 
 ## Active plan
 

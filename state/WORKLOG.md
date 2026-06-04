@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 1 planning-pack schema-copy reconciliation)
+
+- Created isolated worktree `worktrees/session1-pack-schemas` on branch `lane-c/session1-pack-schemas` to avoid Session 2's active connector-zone work.
+- Rebased the worktree onto root `main` at `56d53c8` after CON-009 landed, preserving CON-003/CON-004/CON-005/CON-006/CON-007/CON-008/CON-009 connector state/task records.
+- Synced `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` to the canonical root Lane C schemas.
+- Added `backend/tests/test_planning_pack_schema_copies.py` so the planning-pack evidence/claim schema copies cannot silently drift from the root contract schemas.
+- Updated Lane C schema ADR/plan/state wording to close the docs-packaging follow-up while keeping source/job/report/OpenAPI schema work out of scope.
+
 ## 2026-06-04 (connector CON-009)
 
 - Completed CON-009 in the connector integration zone as a DB-backed fixture source-failure workflow smoke.
