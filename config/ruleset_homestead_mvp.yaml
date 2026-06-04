@@ -50,6 +50,30 @@ ruleset:
       condition: no_plausible_water_context_or_source_unavailable
       claim_code: WATER_001
       verification_task: Check well logs, water rights, hauling rules, and local well contractors.
+    - code: SOIL_G001
+      domain: soil_septic
+      severity_on_fail: unknown
+      condition: soil_septic_unsupported
+      claim_code: SOIL_NOT_EVALUATED
+      verification_task: Verify soil and septic feasibility with perc testing, county health department records, and a septic engineer.
+    - code: ENV_G001
+      domain: env_hazard
+      severity_on_fail: unknown
+      condition: env_hazard_unsupported
+      claim_code: ENV_HAZ_NOT_EVALUATED
+      verification_task: Review EPA, state environmental agency, and local environmental records before relying on this category.
+    - code: RESOURCE_G001
+      domain: resource_context
+      severity_on_fail: unknown
+      condition: resource_context_unsupported
+      claim_code: RESOURCE_NOT_EVALUATED
+      verification_task: Verify mineral, timber, water-rights, and other resource-context records through title and appropriate state or local sources.
+    - code: MARKET_G001
+      domain: market_context
+      severity_on_fail: unknown
+      condition: market_context_out_of_scope
+      claim_code: MARKET_OUT_OF_SCOPE
+      verification_task: Use qualified local professionals for sales-comparison, appraisal, buyer-suitability, or financial-return questions.
   scoring:
     output: bands_not_raw_score
     weights:

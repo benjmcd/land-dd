@@ -153,6 +153,14 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 6. Add a rules/claim persistence ADR covering deterministic rules, evidence links, rule version metadata, verification tasks, hard gates before scoring, and deferred suitability scoring.
 7. Status: COMPLETE for durable claim persistence in the current fixture-backed DB scope. L6 remains PARTIAL until remaining minimum rule categories are implemented or explicitly marked not evaluated in report/API output.
 
+### TC-160: Not-evaluated minimum rule categories
+1. Add Lane C-owned unsupported-domain definitions for `soil_septic`, `env_hazard`, `resource_context`, and `market_context`.
+2. Add four explicit hard-gate rules to `config/ruleset_homestead_mvp.yaml`.
+3. Make `RuleEngine.evaluate()` emit deterministic `SeverityBand.UNKNOWN` claims when provided source-failure evidence for those unsupported domains.
+4. Preserve the evidence-before-claim invariant by requiring stored source-failure evidence input; the rule engine does not create free-standing not-evaluated claims.
+5. Tests: ruleset declarations, source-failure evidence helper, four unknown not-evaluated claims, deterministic output, non-failure records ignored, evidence-ID ordering, and market-context safe language.
+6. Status: COMPLETE for Lane C-owned Level 6 claim/rule scope. Report-run auto-creation of unsupported-domain source-failure evidence is a Lane D integration handoff because `backend/app/reports/service.py` is Lane D-owned.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -188,7 +196,7 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 | YAML rules engine needs jurisdiction | Undecided | Use fixture rules only; do not hard-code state |
 | YAML parser scope | Accepted for TC-040 | Current loader supports the checked-in ruleset shape only; broaden with an approved parser/dependency decision before complex YAML features |
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial precision; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
-| Minimum rule categories | Partial | Soil/septic, environmental hazards, market context, and resource context need fixture-backed rules or explicit not-evaluated report/API labels before Level 6 can pass |
+| Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, market context, and resource context now emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run auto-injection is a Lane D handoff |
 
 ## Decision log
 
@@ -219,3 +227,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-04: TC-130 complete for the DB-backed evidence repository/audit slice. Added `SqlAlchemyEvidenceRepository`, `SqlAlchemyEvidenceAuditLog`, and DB-gated tests for source observation, source failure, spatial intersection, derived metric, document extract, human verification, invalid payload rejection, supersession, retrieval by area/source/type, rollback, and durable audit events. Lane C tests: 122 passing with DB smoke enabled. Full PowerShell verification: 227 tests, ruff clean, mypy clean (80 source files), DB smoke passes.
 - 2026-06-04: TC-140 complete for evidence geometry/spatial precision mapping. Added optional GeoJSON/SRID/spatial precision fields to `EvidenceContract`, mapped geometry to `evidence.observations.geometry`, preserved precision in metadata, added DB-gated round-trip tests, and recorded the evidence persistence ADR. Lane C tests: 126 passing with DB smoke enabled. Full PowerShell verification: 231 tests, ruff clean, mypy clean (80 source files), DB smoke passes.
 - 2026-06-04: TC-150 complete for DB-backed claim persistence. Added `SqlAlchemyClaimRepository`, DB-backed claim/evidence links, verification-task persistence, durable unknown/source-failure claim tests, duplicate/rollback tests, and the rules/claim persistence ADR. Lane C tests: 130 passing with DB smoke enabled. Full PowerShell verification: 235 tests, ruff clean, mypy clean (81 source files), DB smoke passes.
+- 2026-06-04: TC-160 complete for Lane C-owned not-evaluated rule categories. Added unsupported-domain constants/helper, four YAML hard gates, deterministic UNKNOWN rule-engine claims from source-failure evidence, and tests for ruleset declarations, helper output, evidence-linked claims, deterministic ordering, non-failure ignore behavior, and market-context safe language. Lane C tests: 143 collected with DB smoke enabled. Full backend collection: 248 tests; full DB-gated backend pytest, direct DB smoke, targeted ruff/mypy, and default PowerShell verification pass.

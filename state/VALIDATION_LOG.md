@@ -2,6 +2,46 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 1 C-002 not-evaluated rule categories
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/claims_engine/test_not_evaluated_claims.py tests/claims_engine/test_rule_engine.py tests/claims_engine/test_forbidden_language.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
+py -3.12 -m pytest -q tests/reports tests/api
+ruff check app/claims_engine tests/claims_engine
+mypy app/claims_engine tests/claims_engine
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+python scripts/db_smoke_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Added `backend/app/claims_engine/not_evaluated.py` with unsupported-domain constants and a source-failure evidence helper.
+- Added four explicit unsupported-domain hard gates to `config/ruleset_homestead_mvp.yaml`.
+- `RuleEngine.evaluate()` emits deterministic `SeverityBand.UNKNOWN` claims for soil/septic, environmental hazard, resource context, and market context when provided corresponding source-failure evidence.
+- Not-evaluated claims cite source-failure evidence IDs and preserve ruleset metadata, confidence/severity separation, caveats, and verification tasks.
+- Non-failure unsupported-domain records do not produce claims.
+- Market-context not-evaluated claim language avoids unsafe market/steering terms.
+- Lane C evidence/claims collection reports 143 tests before Session 2's later API additions.
+- Full backend collection reports 248 tests before Session 2's later API additions.
+- Lane C claims tests pass with DB smoke enabled.
+- Report/API tests pass.
+- Full DB-gated backend pytest passes.
+- Targeted Lane C ruff and mypy pass.
+- Direct DB smoke check passes against the currently running local Postgres/PostGIS database.
+- Default Windows verification passes: workspace validation, structural invariants, backend tests, lint, and mypy; DB smoke skipped by default.
+
+**Residual risk:**
+
+- Report-run auto-creation/registration of unsupported-domain source-failure evidence is not implemented in Session 1 because `backend/app/reports/service.py` is Lane D-owned. D-000 should use the Lane C helper before rule evaluation so report runs include these unknowns.
+- Default `.\scripts\verify.ps1` still skips DB smoke unless `RUN_DB_SMOKE=1`; DB runtime health was separately verified through DB-gated pytest and direct `scripts/db_smoke_check.py`.
+
 ## 2026-06-04 Session 2 API unknown surfacing regression
 
 **Commands run:**
@@ -62,7 +102,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - D-000 report surfacing is blocked until Lane C C-002 emits UNKNOWN claims for unsupported-category SOURCE_FAILURE evidence.
 - Full D-001 DB-backed API wiring remains blocked until C-002 and D-000 complete; `api/dependencies.py`, `main.py`, and DB-backed API integration tests were intentionally not modified in this pass.
 
-## 2026-06-04 C-001 ORM FK and flush repair
+## 2026-06-04 Session 1 C-001 ORM stabilization
 
 **Commands run:**
 

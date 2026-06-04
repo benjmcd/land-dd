@@ -56,6 +56,30 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: material_intersection_with_mapped_wetlands
           claim_code: WETLAND_MAPPED
           verification_task: Commission jurisdictional wetland delineation.
+        - code: HG-SOIL-001
+          domain: soil_septic
+          severity_on_fail: informational
+          condition: soil_septic_unsupported
+          claim_code: SOIL_NOT_EVALUATED
+          verification_task: Verify soil and septic feasibility with local professionals.
+        - code: HG-ENV-001
+          domain: env_hazard
+          severity_on_fail: informational
+          condition: env_hazard_unsupported
+          claim_code: ENV_HAZ_NOT_EVALUATED
+          verification_task: Review environmental hazard records.
+        - code: HG-RESOURCE-001
+          domain: resource_context
+          severity_on_fail: informational
+          condition: resource_context_unsupported
+          claim_code: RESOURCE_NOT_EVALUATED
+          verification_task: Review title and state resource records.
+        - code: HG-MARKET-001
+          domain: market_context
+          severity_on_fail: informational
+          condition: market_context_out_of_scope
+          claim_code: MARKET_OUT_OF_SCOPE
+          verification_task: Consult qualified local professionals for market context.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.
