@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-012 connector fixture quality profile
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors tests/connectors/test_fixture_quality.py
+mypy app/connectors tests/connectors/test_fixture_quality.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused fixture-quality tests: 7 passed.
+- Full connector tests: 39 passed, 2 skipped by DB-smoke gating.
+- Connector ruff: clean.
+- Connector mypy: clean over 17 source/test files.
+- Full DB-enabled PowerShell verification: ok; 307 backend tests pass; lint clean; mypy clean over 111 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-012 is a connector-owned fixture-quality evaluator only. It does not add API routing, durable queue persistence, claims, reports, schema edits, live I/O, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+
 ## 2026-06-04 CON-011 connector review handoff consumer
 
 **Commands run:**

@@ -4,6 +4,12 @@ from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionResult,
     EvidenceIngestionPort,
 )
+from app.connectors.fixture_quality import (
+    ConnectorFixtureQualityIssue,
+    ConnectorFixtureQualityIssueCode,
+    ConnectorFixtureQualityProfile,
+    evaluate_flood_fixture_quality,
+)
 from app.connectors.fixture_workflow import (
     FixtureConnectorIngestWorkflow,
     FixtureConnectorIngestWorkflowResult,
@@ -40,6 +46,9 @@ __all__ = [
     "ConnectorEvidenceIngestionAdapter",
     "ConnectorEvidenceIngestionError",
     "ConnectorEvidenceIngestionResult",
+    "ConnectorFixtureQualityIssue",
+    "ConnectorFixtureQualityIssueCode",
+    "ConnectorFixtureQualityProfile",
     "ConnectorReviewDisposition",
     "ConnectorReviewHandoff",
     "ConnectorReviewPriority",
@@ -60,4 +69,5 @@ __all__ = [
     "build_connector_review_handoff",
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
+    "evaluate_flood_fixture_quality",
 ]

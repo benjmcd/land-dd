@@ -494,3 +494,46 @@ The next Level 8 pass should choose one of:
 - exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
 - a Lane D/API status endpoint or durable human-review queue that consumes the connector review handoff;
 - broader fixture data-quality coverage if another connector fixture category is selected.
+
+## CON-012 Connector Fixture Quality Profile
+
+CON-012 is complete. The connector integration zone now exposes `evaluate_flood_fixture_quality(...)`, a deterministic fixture quality profile over `FloodFixtureConnectorResult`.
+
+The profile checks:
+
+- retrieval timing, dataset-version presence, fixture-local log URI, and `fixture_only` metrics;
+- retrieval status consistency with emitted non-failure/source-failure evidence;
+- row-count consistency for successful fixture retrievals;
+- evidence dataset-version alignment with the retrieval run;
+- required geometry and spatial precision for non-failure spatial-intersection evidence;
+- controlled source-failure payload keys and UNKNOWN confidence for source-failure evidence.
+
+### Boundary Preserved
+
+This is a connector-local fixture-quality evaluator only. It does not create API routes, durable queues, report output, claims, schema changes, live I/O, DB sessions, persistence behavior, Lane A/B/C/D implementation changes, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors tests/connectors/test_fixture_quality.py
+mypy app/connectors tests/connectors/test_fixture_quality.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused fixture-quality tests pass (7 tests); full connector tests pass with DB smoke skipped by default (39 passed, 2 skipped); connector ruff clean; connector mypy clean over 17 source/test files; full DB-enabled PowerShell verification passes with 307 backend tests, lint clean, mypy clean over 111 source files, migrations/seeds apply, and DB smoke passes.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- a coordinated Lane C/schema slice for durable `ingest_run_id` linkage on evidence rows;
+- exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
+- a Lane D/API status endpoint or durable human-review queue that consumes the connector review handoff and/or fixture quality profile;
+- broader fixture data-quality coverage for another fixture category after that fixture is selected.

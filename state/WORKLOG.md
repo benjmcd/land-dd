@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-012)
+
+- Completed CON-012 in the connector integration zone as a deterministic fixture quality profile for flood fixture connector output.
+- Added `evaluate_flood_fixture_quality(...)`, `ConnectorFixtureQualityProfile`, and fixture quality issue codes in `backend/app/connectors/fixture_quality.py`.
+- The evaluator flags fixture-local provenance, dataset-version, row-count, spatial evidence geometry/precision, retrieval-status/evidence consistency, and source-failure payload/confidence gaps.
+- Added connector tests proving the success and source-failure fixtures pass, synthetic fixture mutations fail closed with explicit issue codes, and the module avoids API, persistence, reports, claims, Lane A/C implementation, and live I/O imports.
+- Preserved the existing boundary: no live I/O, API route, durable queue persistence, claim/report shortcut, schema edit, Lane A/B/C/D implementation change, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+- Verification passed: focused fixture-quality tests; full connector tests; connector ruff/mypy; full DB-enabled `.\scripts\verify.ps1`.
+
 ## 2026-06-04 (connector CON-011)
 
 - Completed CON-011 in the connector integration zone as a pure consumer for CON-010 review packets.

@@ -443,3 +443,24 @@ tasks:
       - Repeated/idempotent fixture review packets route to idempotent_noop
       - Handoff records are JSON-safe for later consumers
       - No API, durable queue persistence, report, claim, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced
+
+  - id: CON-012
+    title: Level 8 connector fixture quality profile
+    status: done
+    depends_on: [CON-011]
+    lane: connector-integration
+    notes: Added a connector-local fixture quality evaluator for FloodFixtureConnectorResult. It flags fixture-local provenance, dataset-version, row-count, spatial evidence geometry/precision, retrieval-status/evidence consistency, and source-failure payload/confidence gaps without API routing, durable queue persistence, claims, reports, schema changes, live IO, DB/session imports, or Lane A/B/C/D implementation changes.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-012-connector-fixture-quality-profile
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - backend/app/connectors/__init__.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Success fixture quality profile passes with no blocking issues
+      - Source-failure fixture quality profile passes with no blocking issues
+      - Dataset-version, row-count, spatial geometry, nonlocal log URI, missing fixture metric, source-failure payload, and source-failure confidence gaps fail closed with explicit issue codes
+      - No API, durable queue persistence, report, claim, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced

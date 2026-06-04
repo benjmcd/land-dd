@@ -16,6 +16,7 @@ Current task:
 - CON-009: DONE - DB-backed source-failure fixture workflow smoke.
 - CON-010: DONE - connector run/status review packet and human-review handoff projection.
 - CON-011: DONE - connector review handoff consumer for review packets.
+- CON-012: DONE - connector fixture quality profile for flood fixture output.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -45,6 +46,8 @@ Do not work on yet:
 - `backend/tests/connectors/test_review_packet.py`
 - `backend/app/connectors/review_handoff.py`
 - `backend/tests/connectors/test_review_handoff.py`
+- `backend/app/connectors/fixture_quality.py`
+- `backend/tests/connectors/test_fixture_quality.py`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -81,6 +84,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-011 result: focused review-handoff/review-packet tests pass (8 tests); full connector tests pass with DB smoke skipped by default (32 passed, 2 skipped); connector ruff clean; connector mypy clean over 15 source/test files; full DB-enabled PowerShell verification passes with 300 backend tests, lint clean, mypy clean over 109 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-012 result: focused fixture-quality tests pass (7 tests); full connector tests pass with DB smoke skipped by default (39 passed, 2 skipped); connector ruff clean; connector mypy clean over 17 source/test files; full DB-enabled PowerShell verification passes with 307 backend tests, lint clean, mypy clean over 111 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -92,3 +97,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |
 | Connector run/status review handoff | Satisfied for fixture workflow projection | `build_connector_run_review_packet(...)` summarizes workflow status and review signals without adding API, claims, reports, schema edits, or persistence changes |
 | Connector review handoff consumer | Satisfied for connector-local projection | `build_connector_review_handoff(...)` classifies review packets into deterministic handoff dispositions without adding API, persistence, reports, claims, schema edits, or live I/O |
+| Connector fixture quality profile | Satisfied for flood fixture output | `evaluate_flood_fixture_quality(...)` flags fixture-local provenance, dataset-version, row-count, spatial evidence, and source-failure payload inconsistencies without adding API, persistence, reports, claims, schema edits, or live I/O |
