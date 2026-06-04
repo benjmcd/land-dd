@@ -21,6 +21,7 @@ Current task:
 - CON-014: DONE - durable connector review queue persistence.
 - CON-015: DONE - connector review queue API retrieval.
 - CON-016: DONE - connector review queue worker lease and finish semantics.
+- CON-017: DONE - connector queue worker-state read model.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -63,6 +64,7 @@ Do not work on yet:
 - `docs/adr/lane-d-0003-connector-review-queue.md`
 - `docs/adr/lane-d-0004-connector-queue-retrieval.md`
 - `docs/adr/lane-d-0005-connector-queue-worker.md`
+- `docs/adr/lane-d-0006-connector-queue-worker-read-model.md`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -109,6 +111,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-016 result: focused queue tests pass with DB smoke skipped by default (4 passed, 2 skipped); DB-enabled queue tests pass (6 tests); connector tests pass with DB smoke skipped by default (47 passed, 4 skipped); connector ruff clean; connector mypy clean over 21 source/test files; full DB-enabled PowerShell verification passes with 324 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-017 result: focused queue API tests pass with DB smoke skipped by default (7 passed, 2 skipped); DB-enabled queue API tests pass (2 tests); connector/API tests pass with DB smoke skipped by default (62 passed, 7 skipped); connector/API ruff clean; connector/API mypy clean over 36 source files; full DB-enabled PowerShell verification passes with 326 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -125,3 +129,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Durable connector review queue | Satisfied for connector review status items | `SqlAlchemyConnectorReviewQueueRepository` writes idempotent `connector_review_status` jobs to `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`; workers/API DB retrieval remain future work |
 | Connector review queue API retrieval | Satisfied for read-only queue item lookup | `GET /connector-runs/{ingest_run_id}/review-queue` reads stored queue items without job mutation, worker execution, claims, reports, schema edits, or live I/O |
 | Connector review queue worker lease semantics | Satisfied for repository-level lease/finish methods | `ConnectorReviewQueueRepository` implementations can lease eligible connector review jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation |
+| Connector queue worker-state read model | Satisfied for read-only API surfacing | `GET /connector-runs/{ingest_run_id}/review-queue` now surfaces attempts, lock/start/finish metadata, and last error without leasing, completing, failing, retrying, requeueing, cancelling, creating, or executing jobs |

@@ -245,6 +245,36 @@ def test_connector_review_queue_endpoint_returns_in_memory_queue_item() -> None:
     assert record["idempotency_key"] == f"connector_review_status:{ingest_run_id}"
     assert record["payload"]["ingest_run_id"] == ingest_run_id
     assert record["payload"]["kind"] == "connector_review_status"
+    assert record["attempts"] == 0
+    assert record["max_attempts"] == 1
+    assert record["locked_by"] is None
+    assert record["locked_at"] is None
+    assert record["started_at"] is None
+    assert record["finished_at"] is None
+    assert record["last_error"] is None
+
+
+def test_connector_review_queue_endpoint_surfaces_in_memory_worker_state() -> None:
+    app = create_app()
+    client = TestClient(app)
+    ingest_run_id = _enqueue_review_status(app, fixture_name="flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    leased = services.connector_review_queue.lease_next(worker_id="api-test-worker")
+
+    assert leased is not None
+
+    response = client.get(f"/connector-runs/{ingest_run_id}/review-queue")
+
+    assert response.status_code == 200
+    record = response.json()
+    assert record["status"] == "running"
+    assert record["attempts"] == 1
+    assert record["max_attempts"] == 1
+    assert record["locked_by"] == "api-test-worker"
+    assert record["locked_at"] is not None
+    assert record["started_at"] is not None
+    assert record["finished_at"] is None
+    assert record["last_error"] is None
 
 
 def test_connector_review_queue_endpoint_returns_404_for_unknown_run() -> None:

@@ -704,3 +704,39 @@ The next Level 8 pass should choose one of:
 - expose worker result/status behavior through a planned API or review workflow after queue mutation semantics are stable;
 - add retry/requeue/cancel semantics with a separate ADR if worker execution needs them;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-017 Connector Queue Worker Read Model
+
+CON-017 is complete. The existing read-only connector review queue endpoint now surfaces worker-state metadata already carried by `ConnectorReviewQueueItem` and `jobs.job_queue`:
+
+- attempts and max attempts;
+- lock owner and lock timestamp;
+- start and finish timestamps;
+- last error.
+
+This lets API consumers inspect queued, running, succeeded, or failed connector review queue state after CON-016 without adding job mutation routes.
+
+### Boundary Preserved
+
+This is read-only API surfacing for worker state. It does not lease, complete, fail, retry, requeue, cancel, create, or execute jobs; does not add a scheduler, background loop, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation. `source.ingest_runs` remains connector attempt provenance and lifecycle authority; `jobs.job_queue` remains orchestration state.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
+ruff check app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+```
+
+Result: focused queue API tests pass with DB smoke skipped by default (7 passed, 2 skipped); DB-enabled queue API tests pass (2 tests); focused queue API ruff clean; focused queue API mypy clean over 3 source/test files. Full connector/API and workspace verification results are recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- integrate or preserve Session 1's Lane C source-failure identity-preservation branch after it rebases onto CON-017;
+- add retry/requeue/cancel semantics with a separate ADR if worker execution needs them;
+- add an explicit human-review workflow action surface after mutation semantics are planned;
+- broaden fixture data-quality coverage for another selected fixture category.

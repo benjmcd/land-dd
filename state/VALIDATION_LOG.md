@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-017 connector queue worker read model
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
+ruff check app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/api/connectors.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused queue API tests with DB smoke skipped by default: 7 passed, 2 skipped.
+- DB-enabled queue API tests: 2 passed.
+- Focused queue API ruff: clean.
+- Focused queue API mypy: clean over 3 source/test files.
+- Connector/API tests with DB smoke skipped by default: 62 passed, 7 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source files.
+- Backend collection: 326 tests.
+- Full DB-enabled PowerShell verification: ok after prepending the root `local_artifacts` Windows wrapper directory for isolated-worktree `psql` lookup; 326 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-017 is read-only worker-state API surfacing only. It does not add API-side job mutation, worker execution, scheduler, background loop, retry/requeue/cancel policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+- The first isolated-worktree full verification attempt failed at DB migration because `psql` was not on that worktree PATH. No code/test failure was observed; rerun passed using the existing root `local_artifacts/psql.cmd` wrapper on PATH.
+
 ## 2026-06-04 CON-016 connector queue worker lease semantics
 
 **Commands run:**

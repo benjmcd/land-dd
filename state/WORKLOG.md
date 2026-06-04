@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-017)
+
+- Completed CON-017 as read-only connector queue worker-state API surfacing.
+- Added `docs/adr/lane-d-0006-connector-queue-worker-read-model.md` to define the read-model boundary after CON-016 queue lease semantics.
+- Extended `GET /connector-runs/{ingest_run_id}/review-queue` responses with attempts, max attempts, lock/start/finish timestamps, lock owner, and last error.
+- Added in-memory and DB-backed API tests proving queued defaults and leased running worker state are surfaced through the existing endpoint.
+- Preserved the existing boundary: no API-side job mutation, worker execution, scheduler, background loop, retry/requeue/cancel policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration edit, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
 ## 2026-06-04 (connector CON-016)
 
 - Completed CON-016 as repository-level connector review queue worker lease and finish semantics.

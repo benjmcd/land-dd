@@ -560,3 +560,27 @@ tasks:
       - Only running connector review queue jobs can be marked succeeded or failed
       - Worker lease semantics do not replace source.ingest_runs as connector provenance or lifecycle authority
       - No long-running worker, scheduler, API mutation route, retry/requeue policy, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
+
+  - id: CON-017
+    title: Level 8 connector queue worker read model
+    status: done
+    depends_on: [CON-016]
+    lane: connector-integration
+    notes: Extended the existing read-only connector review queue API response with worker-state metadata already carried by ConnectorReviewQueueItem and jobs.job_queue: attempts, max_attempts, locked_by, locked_at, started_at, finished_at, and last_error. No API-side job mutation, worker execution, scheduler, retry/requeue/cancel policy, live IO, reports, claims, schema migration, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-017-connector-queue-worker-read-model
+    files:
+      - backend/app/api/connectors.py
+      - backend/tests/api/test_connector_review_status.py
+      - backend/tests/api/test_connector_review_queue_db.py
+      - docs/adr/lane-d-0006-connector-queue-worker-read-model.md
+      - plans/connector-*.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Queue API responses include attempts and max_attempts for queued and running connector review jobs
+      - Queue API responses include lock/start/finish metadata and last_error when present
+      - In-memory and DB-backed queue API paths surface worker state consistently
+      - Queue API retrieval remains read-only and does not mutate, lease, complete, fail, retry, requeue, cancel, create, or execute jobs
+      - No scheduler, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
