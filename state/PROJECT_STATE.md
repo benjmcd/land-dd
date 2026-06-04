@@ -3,52 +3,52 @@
 ## MILESTONE_MAP status block
 
 ```text
-Current milestone: Level 1 — Governed Repo Scaffold
+Current milestone: Level 5 - Evidence Ledger
 Milestone status: PASS
-Last verified: 2026-06-03
+Last verified: 2026-06-04
 Verification command(s):
-- C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh
-- cd backend && PYTHONPATH=. python -m pytest tests/source_registry/ -v
-- cd backend && PYTHONPATH=. python -m pytest tests/area_geometry/ -v
-- cd backend && PYTHONPATH=. python -m pytest tests/evidence_ledger/ tests/claims_engine/ -v
-- python scripts/seed_sources.py
-- python scripts/seed_sources.py --json
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+- cd backend; ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- cd backend; mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- cd backend; rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+- cd backend; py -3.12 -m pytest --collect-only -q
+- $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 172 tests pass; lint clean; mypy clean (69 source files)
-- Lane A source seeds validate 8 `Must` registry rows without DB access
-- Lane A source governance fields, license review template, provenance ADR, and fail-closed production-use check are present
-- Lane B in-memory area/geometry fixture slice passes targeted runtime and type checks
-- Lane C in-memory evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks for flood, access, zoning, water, wetlands, and slope fixture hard gates
-- Lane D in-memory report-run service composes source, area, evidence, claim, and rule services behind the report-run API and uses protocol adapters for cross-lane evidence checks
-- DB smoke skipped/blocked because Docker Desktop is not running
+- 235 tests pass; lint clean; mypy clean (81 source files)
+- Local Postgres/PostGIS starts from repo instructions, migrations apply cleanly, seeds apply deterministically, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
+- Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
+- Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, and stores immutable prior-geometry rows in `core.area_versions` on geometry replacement
+- Lane C evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, and spatial precision preserved in evidence metadata
+- Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`
 Failed or blocked gates:
-- L2-001 to L2-010: BLOCKED (Docker Desktop not running)
-- L3-001/L3-002/L3-005: PARTIAL (source metadata/seeds/caveats and review fields exist; persisted review workflow pending)
-- L3-003/L3-004: PARTIAL/BLOCKED (source versions/retrieval runs present in schema, not behavior-verified)
-- L3-007: PARTIAL (SourceService fails closed for production use; DB/live connector enforcement unverified)
-- L3-010: PARTIAL (license review template exists; source metadata export/review workflow not implemented)
-- L4-001/L4-002/L4-006/L4-007: PARTIAL (in-memory geometry validation and caveats exist)
-- L4-008: PASS for current fixture scope (polygon, multipolygon, invalid, empty, wrong SRID, and large geometry)
-- L4-003: PARTIAL (AreaContract defaults to SRID 4326; persisted SRID still pending)
-- L4-004/L4-005/L4-010: BLOCKED/PENDING (PostGIS-backed metrics, spatial queries, and versioned geometry)
-- L5-001/L5-002/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory evidence service scope
-- L5-010: PARTIAL/PASS for in-memory service scope (observation, source-failure, human-note, and supersede paths emit evidence audit events; durable audit persistence remains DB-blocked)
-- L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original without deleting or overwriting)
-- L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS for in-memory claim/rule scope (stored claims require evidence links, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks are enforced when required)
+- No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
+- L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
+- L6-001/L6-004/L6-006/L6-007: PARTIAL/PASS with durable claim persistence for current scope (stored claims require evidence links, `claims.claim_evidence` links are DB-backed, unknown claims require source-failure evidence, severity/confidence stay separate, and verification tasks persist to `claims.verification_tasks`)
 - L6-002/L6-003/L6-010: PARTIAL/PASS for flood, access, zoning, water, wetlands, and slope hard-gate rules (ruleset ID/version load, deterministic claim IDs, and rule logic lives in `rule_engine.py`, not an LLM/UI prompt)
 - L6-005/L6-008/L6-009: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (rule-generated claims propagate caveats and cover positive, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review where implemented, incomplete evidence where implemented, superseded evidence, empty input, multi-area, input-order determinism, and invalid-rule-config cases)
-- L7-001: BLOCKED (durable report-run persistence requires DB smoke)
-- L7-002/L7-004/L7-005/L7-006/L7-007/L7-009: PARTIAL/PASS for in-memory fixture scope (source manifest, evidence-linked claims/unknowns, caveats, screening assumptions, artifact metadata, deterministic claim reuse, and adapter-backed evidence-service guardrails are covered; durable storage remains blocked)
-- L7-003/L7-008/L7-010: PARTIAL/PASS for in-memory report API/service (area/report-run create/retrieve, API contract tests, adapter-backed evidence validation, no live APIs)
 Completion evidence:
 - state/VALIDATION_LOG.md
-- backend/tests/source_registry/ (28 tests)
-- backend/tests/area_geometry/ (16 tests)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (111 tests)
+- backend/tests/source_registry/ (41 tests)
+- backend/tests/area_geometry/ (46 tests)
+- backend/app/domain/area_contracts.py (`AreaContract`, `AreaMetricsContract`, `AreaSpatialRelationContract`, `AreaVersionContract`)
+- backend/app/area_geometry/models.py (`AreaModel`, `AreaVersionModel`)
+- backend/app/area_geometry/area_repo.py (`SqlAlchemyAreaRepository`)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (130 tests)
+- backend/app/domain/evidence_contracts.py (`EvidenceContract` with optional GeoJSON/SRID/spatial precision fields)
+- backend/app/evidence_ledger/evidence_repo.py (`SqlAlchemyEvidenceRepository`)
+- backend/app/evidence_ledger/audit_log.py (`SqlAlchemyEvidenceAuditLog`)
+- docs/adr/lane-c-evidence.md
+- backend/app/claims_engine/claim_repo.py (`SqlAlchemyClaimRepository`)
+- docs/adr/lane-c-rules.md
 - backend/app/reports/service.py
+- backend/app/reports/models.py
+- backend/app/reports/report_repo.py
 - backend/app/reports/adapters.py
+- docs/adr/lane-d-0001-report-persistence.md
+- backend/tests/reports/test_report_repository.py (1 test)
 - backend/tests/reports/test_adapters.py (4 tests)
-- backend/tests/reports/ and backend/tests/api/ (15 tests)
+- backend/tests/reports/ and backend/tests/api/ (16 tests)
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -57,17 +57,14 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane A: TA-060 DB smoke (blocked until Docker/PostGIS is available)
-- Lane D: TD-040 persisted report runs remains DB-blocked; any further Lane D durability work waits on Lane A TA-060 / Docker
-- Lane C: current ruleset hard-gate domains are covered in memory; shared-schema alignment needs a coordinated plan before editing `schemas/*.json`
+- Lane C/Lane D coordination: close the remaining Level 6 rule-category gap by implementing or explicitly marking not-evaluated categories for soil/septic, environmental hazards, market context, and resource context before claiming a complete rules/report workflow
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
 - Production ops/security/observability
-- New jurisdictions or intents until Level 4-5 DB gates pass
+- New jurisdictions or intents until durable Level 6 claim persistence and Level 7 report/API workflow gates pass
 ```
 
----
 
 ## Current objective
 
@@ -111,11 +108,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | MVP state/counties | Undecided | Do not hard-code jurisdiction-specific logic |
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
-| Docker availability | Not running | DB smoke blocked for all lanes |
+| Docker availability | Available | DB smoke now passes locally |
 
 ## Last verified state
 
-172 tests pass; lint clean; mypy clean (69 source files). DB smoke blocked until Docker Desktop starts.
+235 tests pass; lint clean; mypy clean (81 source files). DB smoke passes with schema/table/column/enum/FK/seed assertions.
 
 ## Local repo bootstrap state
 

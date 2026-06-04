@@ -2,6 +2,340 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane C TC-150 DB-backed claim persistence
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine/test_sqlalchemy_claim_repo.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- New claim DB tests pass: 4 tests with DB smoke enabled.
+- Lane C evidence/claims tests pass: 130 tests with DB smoke enabled.
+- `SqlAlchemyClaimRepository` persists claims to `claims.claims`.
+- Claim/evidence links persist to `claims.claim_evidence`.
+- Verification tasks persist to `claims.verification_tasks`.
+- Rule metadata and evidence ordering are preserved in `claims.claims.metadata`.
+- DB-backed service tests cover durable claim round-trip, unknown/source-failure claim persistence, duplicate claim rejection, and rollback behavior.
+- Added `docs/adr/lane-c-rules.md` for deterministic rules, evidence links, rule metadata, verification tasks, hard gates, and deferred suitability scoring.
+- Targeted Lane C ruff passes.
+- Targeted Lane C mypy passes: no issues in 23 source/test files.
+- Lane C cross-lane import scan returns 0 matches.
+- Full collection reports 235 tests.
+- Full PowerShell verification passes with DB smoke enabled: 235 tests; lint clean; mypy clean (81 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Level 6 remains partial: durable claim persistence is in place, but the remaining minimum rule categories still need fixture-backed implementation or explicit not-evaluated labeling in report/API output.
+- Rule metadata remains metadata-preserved until a coordinated schema migration promotes it to first-class columns.
+
+## 2026-06-04 Lane C TC-140 evidence geometry/spatial precision and automation guardrails
+
+**Commands run:**
+
+```powershell
+rg -n --hidden --glob '!.git/**' --glob '!node_modules/**' --glob '!archive/**' -i "P[o]stToolUse|h[o]oks\.json|\.codex[\\/]h[o]oks|\.claude[\\/]settings|h[o]ok" .
+Test-Path (Join-Path .\.claude 'settings.json'); Test-Path (Join-Path .\.codex ('h' + 'ooks.json')); Test-Path .\local_artifacts\psql.cmd
+.\scripts\agent-context-check.ps1
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Automation sweep returns 0 active matches; the Claude/Codex automatic config paths are absent; `local_artifacts/psql.cmd` remains present.
+- Updated `CLAUDE.md`, `AGENTS.md`, and repo-local Claude skills so Windows verification uses PowerShell wrappers instead of automatic or `.sh` execution.
+- Initial evidence DB test run failed on `psycopg.errors.AmbiguousParameter` for the nullable geometry bind inside a SQL `CASE`; fixed by casting the GeoJSON bind to text in the PostGIS insert expression.
+- Cleaned 22 committed `core.areas` rows with test-only label `evidence fixture area` left by the failed DB run; no linked evidence or audit rows were present.
+- Lane C evidence tests pass: 62 tests with DB smoke enabled.
+- Lane C evidence/claims tests pass: 126 tests with DB smoke enabled.
+- Targeted Lane C ruff passes.
+- Targeted Lane C mypy passes: no issues in 22 source/test files.
+- Lane C cross-lane import scan returns 0 matches.
+- Full collection reports 231 tests.
+- Full PowerShell verification passes with DB smoke enabled: 231 tests; lint clean; mypy clean (80 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Level 5 evidence ledger now passes for the fixture-backed DB path.
+- Level 6 remains partial because claims and claim/evidence links are still in-memory, not durably persisted.
+- Contract-only evidence metadata fields remain metadata-preserved until a coordinated schema migration promotes them.
+
+## 2026-06-04 Lane C TC-130 DB-backed evidence repository and audit log
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane C evidence/claims tests pass: 122 tests with DB smoke enabled.
+- `SqlAlchemyEvidenceRepository` persists to `evidence.observations` and round-trips source observations, source failures, spatial intersections, derived metrics, document extracts, and human verification notes.
+- Contract-only fields are preserved in `evidence.observations.metadata`: `source_id`, `evidence_code`, `observed_at`, and `superseded_by`.
+- DB-backed service tests cover invalid payload rejection before storage, supersession without overwrite, deterministic retrieval by area/source/type, rollback behavior, and durable audit events.
+- `SqlAlchemyEvidenceAuditLog` persists create/supersede events in `audit.events`.
+- Targeted Lane C ruff passes.
+- Targeted Lane C mypy passes: no issues in 22 source/test files.
+- Lane C cross-lane import scan returns 0 matches.
+- Full PowerShell verification passes with DB smoke enabled: 227 collected tests; lint clean; mypy clean (80 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Level 5 remains partial: `EvidenceContract` does not yet expose geometry/SRID/spatial-precision fields, so `evidence.observations.geometry` is not mapped by the repository.
+- `source_id`, `evidence_code`, `observed_at`, and `superseded_by` are metadata-preserved rather than first-class columns until a coordinated schema migration promotes them.
+
+## 2026-06-04 Lane B TB-090 supported domain area-type mapping
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane B area tests pass: 46 tests with DB smoke enabled.
+- `SqlAlchemyAreaRepository` supports all six Level 4 domain area types: `parcel_like`, `drawn_polygon`, `multi_polygon`, `locality`, `buffer`, and `generated_candidate`.
+- Exact domain area type is stored in `core.areas.metadata.domain_area_type`; `multi_polygon` uses DB bucket `polygon`, and `buffer` uses DB bucket `generated_candidate`.
+- Reads fail closed when `metadata.domain_area_type` conflicts with stored `core.areas.area_type`.
+- Targeted Lane B ruff passes.
+- Targeted Lane B mypy passes: no issues in 10 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 216 collected tests; lint clean; mypy clean (78 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Broader spatial query/source-feature geometry support remains deferred; current relation helpers intentionally support fixture polygon/multipolygon comparison geometry only.
+- Area version rows still preserve prior geometry and change reason only because that is the current schema shape; preserving prior source/confidence metadata would require a coordinated schema/ADR pass.
+
+## 2026-06-04 Lane B TB-080 DB-backed area versioning
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane B area tests pass: 41 tests with DB smoke enabled.
+- `AreaVersionContract` captures immutable prior-geometry version rows from `core.area_versions`.
+- `AreaVersionModel` maps `core.area_versions`, including the `(area_id, version_num)` uniqueness constraint and SRID 4326 MultiPolygon geometry type.
+- `SqlAlchemyAreaRepository.replace_geometry` stores the prior canonical geometry in `core.area_versions` before updating `core.areas`.
+- `SqlAlchemyAreaRepository.list_versions` returns ordered prior-geometry versions as typed contracts.
+- DB tests cover immutable prior-geometry storage, version sequencing, missing-area no-op, invalid replacement rejection, and rollback behavior.
+- Targeted Lane B ruff passes.
+- Targeted Lane B mypy passes: no issues in 10 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 211 collected tests; lint clean; mypy clean (78 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Superseded by TB-090: the `multi_polygon`/`buffer` domain-to-DB area-type mismatch was resolved for the current repository path with explicit `metadata.domain_area_type` preservation.
+- Version rows preserve prior geometry and change reason only because that is the current schema shape; if source/confidence history must be immutable too, a coordinated schema/ADR pass is required.
+
+## 2026-06-04 Lane B TB-070 PostGIS spatial relation helper
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane B area tests pass: 35 tests with DB smoke enabled.
+- `AreaSpatialRelationContract` captures fixture-backed intersects, contains, distance, intersection area, intersection ratio, method, and screening caveat.
+- `SqlAlchemyAreaRepository.get_spatial_relation` validates comparison GeoJSON/SRID before SQL and queries PostGIS `ST_Intersects`, `ST_Contains`, `ST_Distance`, and `ST_Intersection`.
+- DB tests cover contained, disjoint, missing-area, wrong-SRID, empty-geometry, and unsupported-geometry-type behavior.
+- Targeted Lane B ruff passes.
+- Targeted Lane B mypy passes: no issues in 10 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 205 collected tests; lint clean; mypy clean (78 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Area versioning is still pending for Level 4.
+- The spatial helper intentionally supports fixture polygon/multipolygon comparison geometry only; broader source-feature geometry types require a scoped plan.
+
+## 2026-06-04 Lane B TB-060 PostGIS area metrics read model
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry app/domain/area_contracts.py tests/area_geometry
+mypy app/area_geometry app/domain/area_contracts.py tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane B area tests pass: 27 tests with DB smoke enabled.
+- `AreaMetricsContract` captures SRID, centroid GeoJSON, bbox GeoJSON, geodesic area in square meters, measurement method, and screening caveat.
+- `SqlAlchemyAreaRepository.get_metrics` reads PostGIS generated `centroid` and `bbox` columns and `ST_Area(geom::geography)` without modifying canonical geometry.
+- Polygon and MultiPolygon fixture rows return deterministic SRID, Point centroid, Polygon bbox, positive area, and a non-survey caveat.
+- Targeted Lane B ruff passes.
+- Targeted Lane B mypy passes: no issues in 10 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 197 collected tests; lint clean; mypy clean (78 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Spatial query helpers and area versioning are still pending for Level 4.
+- Metrics are screening values from stored geometry, not legal/survey acreage.
+
+## 2026-06-04 Lane B TB-050 PostGIS area repository
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/area_geometry
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry/test_sqlalchemy_area_repo.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+ruff check app/area_geometry tests/area_geometry
+mypy app/area_geometry tests/area_geometry
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Lane B area tests pass: 22 tests with DB smoke enabled.
+- `SqlAlchemyAreaRepository` round-trips Polygon and MultiPolygon fixtures through `core.areas` as SRID 4326 PostGIS MultiPolygon geometry.
+- Geometry source, confidence, and validated flags round-trip through the DB-backed repository.
+- Domain area types without a safe `core.area_type` mapping (`multi_polygon`, `buffer`) fail closed rather than being silently mapped to parcel/corridor semantics.
+- Targeted Lane B ruff passes.
+- Targeted Lane B mypy passes: no issues in 9 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 192 collected tests; lint clean; mypy clean (78 source files); DB smoke passes.
+
+**Residual risk:**
+
+- Area metrics/read model, spatial query helpers, and area versioning are still pending for Level 4.
+- The repository intentionally does not support every `core.area_type` enum value until domain/schema alignment is planned.
+
+## 2026-06-04 source-governance and DB verification hardening
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='.'; py -3.12 -m pytest -q tests/source_registry/test_source_service.py
+py -3.12 scripts/db_smoke_check.py
+$env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports/test_report_service.py tests/reports/test_report_repository.py
+$env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/source_registry/test_source_provenance.py tests/source_registry/test_source_service.py
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Source service tests pass: 19 tests.
+- Report DB/repository and source provenance targeted tests pass with `RUN_DB_SMOKE=1`.
+- PowerShell verification now selects Python 3.12.10 even when `python` on PATH points at Python 3.11.
+- Full verification passes with DB smoke enabled: 186 tests pass; ruff clean; mypy clean (76 source files).
+- DB smoke now validates required schemas, 18 tables, 11 column groups, 2 enums, 8 foreign keys, seeded sources, and seeded intents.
+
+**Residual risk:**
+
+- The new GitHub Actions PostGIS job is defined but not yet proven by a remote CI run in this local-only workspace.
+- Lane D remains a partial report-run persistence harness until Lane B area persistence and Lane C durable evidence/claim/rule-execution persistence are wired underneath it.
+
+## 2026-06-03 Windows PowerShell verification wrapper
+
+**Commands run:**
+
+```powershell
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- PowerShell-native verification wrapper passes end to end without launching Git Bash.
+- Workspace validation passes, including agent context checks and JSON file checks.
+- Backend tests pass: 179 tests.
+- Backend lint passes.
+- Backend typecheck passes: no issues in 76 source files.
+- DB migration + smoke passes using the local `psql` shim in `local_artifacts`.
+
+**Residual risk:**
+
+- The Bash entrypoints still exist for Linux/CI compatibility; Windows users should use `.\scripts\verify.ps1` to avoid the separate Git Bash launcher.
+- The wrapper now owns the local `psql` PATH shim, so future DB-smoke changes should keep that prepend in sync.
+
+## 2026-06-03 Lane D TD-040 persisted report runs
+
+**Commands run:**
+
+```bash
+Set-Location .\backend; $env:PYTHONPATH='.'; python -m pytest tests/reports tests/api -q
+Set-Location .\backend; $env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; python -m pytest tests/reports tests/api -q
+Set-Location .\backend; ruff check app/reports app/api app/main.py app/domain/report_contracts.py tests/reports tests/api
+Set-Location .\backend; mypy app/reports app/api app/main.py app/domain/report_contracts.py tests/reports tests/api
+& 'C:\Program Files\Git\bin\bash.exe' -lc 'cd /c/Users/benny/OneDrive/Desktop/land_diligence_dual_agent_workspace && PATH="$PWD/local_artifacts:$PATH" RUN_DB_SMOKE=1 ./scripts/verify.sh'
+Set-Location .\backend; $env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; python -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Lane D report/API tests pass: 16 tests.
+- SQLAlchemy-backed report persistence round-trips through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`.
+- Lane D targeted ruff passes.
+- Lane D targeted mypy passes: no issues in 21 source/test files.
+- Full verification through explicit Git Bash passes: agent context check ok, workspace validation ok, JSON check ok (14 files), backend tests pass, ruff clean, mypy clean (72 source files), DB smoke passes.
+- Test collection reports 173 tests.
+- Docker Desktop Linux engine is running; DB smoke is available.
+
+**Residual risk:**
+
+- The default in-memory API scaffold still exists for fixture tests; the persisted report path is exercised through repository injection and round-trip tests.
+- Shared-schema alignment remains the next coordinated pass before editing `schemas/*.json`.
+
 ## 2026-06-03 Lane D TD-050 protocol adapter wiring
 
 **Commands run:**

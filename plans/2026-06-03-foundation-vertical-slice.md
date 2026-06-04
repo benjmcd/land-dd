@@ -63,14 +63,14 @@ Implement fixture-backed behavior before live connectors. Use Postgres/PostGIS s
 ./scripts/agent-context-check.sh
 ./scripts/validate_workspace.sh
 cd backend && PYTHONPATH=. python -m pytest -q
-./scripts/verify.sh
+.\scripts\verify.ps1
 ```
 
 Optional DB verification:
 
 ```bash
 docker compose up -d db
-./scripts/db_apply_migrations.sh
+.\scripts\db_apply_migrations.ps1
 python scripts/db_smoke_check.py
 ```
 

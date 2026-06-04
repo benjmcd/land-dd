@@ -24,12 +24,12 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - `SourceModel` in `backend/app/source_registry/models.py` maps the `source.sources` table (TA-020 complete).
 - `SqlAlchemySourceRepository` in `backend/app/source_registry/source_repo.py` implements the source repository protocol for SQLAlchemy sessions (TA-030 complete).
 - `db/seeds/source_registry_seeds.py` parses `registers/data_source_registry.csv` and validates the 8 `Must` MVP source rows as `SourceContract` objects (TA-040 complete).
-- `scripts/seed_sources.py` supports dry-run and JSON seed review; DB apply is available but unverified until Docker/PostGIS is running (TA-040 complete).
+- `scripts/seed_sources.py` supports dry-run and JSON seed review; DB apply and smoke are verified via the Windows PowerShell wrapper (TA-040 complete).
 - `docs/adr/lane-a-0001-provenance-model.md` defines fail-closed source provenance and license gates (TA-050 complete).
 - `templates/data_source_license_review.md` is the canonical source license review template; it was strengthened instead of creating a near-duplicate `source_license_review.md` (TA-050 complete).
 - `registers/data_source_registry.csv`, `schemas/source_schema.json`, and the seed loader now carry explicit license/review/freshness fields (TA-050 complete).
 - `SourceService` implements source existence and fail-closed production-use checks for `SourceExistsProtocol` wiring (TA-050 complete).
-- Docker Desktop not running at initial lane setup. DB smoke blocked until Docker starts.
+- DB smoke now passes via the Windows PowerShell verification wrapper.
 
 ## Proposed design
 
@@ -42,7 +42,7 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 2. Move `backend/app/repositories/` to `archive/<today>_source-registry-lane-migration/backend/app/repositories/`.
 3. Move `backend/app/services/` to `archive/<today>_source-registry-lane-migration/backend/app/services/`.
 4. Confirm `pytest backend/tests/source_registry/ -v` still passes.
-5. Confirm `./scripts/verify.sh` still passes.
+5. Confirm `.\scripts\verify.ps1` still passes.
 
 ### TA-020: SQLAlchemy ORM model for source.sources
 1. Create `backend/app/source_registry/models.py` with `SourceModel` (SQLAlchemy Base + mapped_column).
@@ -67,12 +67,13 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 2. Strengthen the existing canonical `templates/data_source_license_review.md` with required license review fields instead of creating a duplicate template.
 3. Add explicit governance fields to the source register/schema/seed path: license status, redistribution status, freshness class, last checked, review owner, review status, and fail-closed usage statuses.
 
-### TA-060: DB smoke (BLOCKED until Docker is running)
+### TA-060: DB smoke (COMPLETE)
 1. Run `docker compose up -d db`.
-2. Run `./scripts/db_apply_migrations.sh`.
+2. Run `.\scripts\db_apply_migrations.ps1`.
 3. Run `python scripts/db_smoke_check.py`.
 4. Record result in `state/VALIDATION_LOG.md`.
 5. If passes: update `state/lane-a-state.md` milestone to L2/L3 candidate.
+Status: COMPLETE. DB smoke passes locally, and the PowerShell verification wrapper now owns the local `psql` shim PATH prepend.
 
 ## Files likely to change
 
@@ -94,16 +95,16 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 ```bash
 pytest backend/tests/source_registry/ -v
 mypy backend/app/source_registry backend/app/domain/source_contracts.py
-./scripts/verify.sh
+.\scripts\verify.ps1
 # When Docker available:
-RUN_DB_SMOKE=1 ./scripts/verify.sh
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
 ## Risks and blockers
 
 | Blocker | Status | Impact |
 |---|---|---|
-| Docker Desktop not running | Blocked | TA-060 cannot proceed |
+| Docker Desktop | Available | TA-060 complete; DB smoke verified |
 | MVP state/county not decided | Undecided | Do not hard-code jurisdiction logic |
 | psycopg[binary] | Installed | Should connect once Docker is running |
 
@@ -122,3 +123,5 @@ RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: TA-030 complete. Added `SqlAlchemySourceRepository` with non-DB session-bound tests for add/get/list/exists behavior. Full verification: 30 tests, ruff clean, mypy clean (43 source files); DB smoke skipped.
 - 2026-06-03: TA-040 complete. Added registry-backed source seed loader, seed runner, seed tests, and source metadata mapping. Lane A tests: 23 passing. Full verification: 49 tests, ruff clean, mypy clean (48 source files); DB smoke skipped.
 - 2026-06-03: TA-050 complete. Added source provenance/license ADR, strengthened the canonical data-source license review template, wired explicit governance fields through the register/schema/seed path, and added fail-closed SourceService production-use checks. Lane A tests: 28 passing. Full verification at TA-050: 64 tests, ruff clean, mypy clean (51 source files); DB smoke skipped.
+- 2026-06-03: TA-060 complete. DB smoke passes locally using the PowerShell verification wrapper, which prepends `local_artifacts` so the `psql` shim is available on Windows. Full verification: 179 tests, ruff clean, mypy clean (76 source files); DB smoke passes.
+- 2026-06-04: Source production-use gating now checks review, license, commercial, redistribution, cache, export, raw-data, and AI-use rights. Full verification: 186 tests, ruff clean, mypy clean (76 source files); strengthened DB smoke passes.

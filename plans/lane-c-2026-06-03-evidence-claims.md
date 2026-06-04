@@ -17,10 +17,10 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `ClaimContract` in `backend/app/domain/claim_contracts.py` (evidence_ids enforced, severity + confidence separate, rule metadata fields).
 - `EvidenceType` enum in `backend/app/domain/enums.py`.
 - `SourceExistsProtocol`, `AreaExistsProtocol` in `backend/app/domain/protocols.py`.
-- `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, and `EvidenceService`.
+- `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, `SqlAlchemyEvidenceRepository`, `EvidenceService`, `InMemoryEvidenceAuditLog`, and `SqlAlchemyEvidenceAuditLog`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 90 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 130 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -128,6 +128,31 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 6. Tests: positive, negative/no-claim, source-failure/unknown, incomplete/review, stale/review, deterministic ordering, and payload validation for water fixture keys.
 7. Status: COMPLETE for the water-context fixture hard-gate scope. The rule engine now covers the current ruleset's flood, access, zoning, water, wetlands, and slope hard-gate fixtures in memory.
 
+### TC-130: DB-backed evidence repository and audit log
+1. Add SQLAlchemy-backed repository behavior for `evidence.observations`.
+2. Preserve contract fields that are not first-class columns (`source_id`, `evidence_code`, `superseded_by`, `observed_at`) in observation metadata.
+3. Add SQLAlchemy-backed evidence audit events using `audit.events`.
+4. Tests: source observation, source failure, spatial intersection, derived metric, document extract, human verification, invalid payload rejection, supersession, retrieval by area/source/type, rollback behavior, and durable audit events.
+5. Status: COMPLETE for the DB-backed repository/audit scope. L5 remains PARTIAL until first-class evidence geometry/spatial-precision fields are exposed in the contract and mapped to `evidence.observations.geometry`.
+
+### TC-140: Evidence geometry and spatial precision mapping
+1. Add optional evidence geometry fields to `EvidenceContract` with fail-closed SRID 4326 validation.
+2. Add optional `spatial_precision_meters` to the evidence contract.
+3. Persist evidence geometry to `evidence.observations.geometry` through `SqlAlchemyEvidenceRepository`.
+4. Preserve spatial precision in `evidence.observations.metadata.spatial_precision_meters` until a schema migration promotes it.
+5. Add DB-gated tests for geometry/SRID/precision storage and readback.
+6. Add an evidence-ledger persistence ADR covering immutability, supersession/amendment, audit events, geometry mapping, source failures, and metadata-preserved fields.
+7. Status: COMPLETE. Level 5 now passes for the fixture-backed DB evidence-ledger path.
+
+### TC-150: DB-backed claim persistence and evidence links
+1. Add SQLAlchemy-backed repository behavior for `claims.claims`.
+2. Persist claim/evidence links through `claims.claim_evidence`.
+3. Preserve rule metadata (`rule_code`, `ruleset_id`, `ruleset_version`) and evidence ordering in claim metadata until a coordinated schema migration promotes those fields.
+4. Persist verification tasks through `claims.verification_tasks` when a claim requires professional/local confirmation.
+5. Tests: durable claim round-trip, evidence-link rows, verification-task rows, unknown/source-failure claim persistence, duplicate claim rejection, and rollback behavior.
+6. Add a rules/claim persistence ADR covering deterministic rules, evidence links, rule version metadata, verification tasks, hard gates before scoring, and deferred suitability scoring.
+7. Status: COMPLETE for durable claim persistence in the current fixture-backed DB scope. L6 remains PARTIAL until remaining minimum rule categories are implemented or explicitly marked not evaluated in report/API output.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -150,7 +175,7 @@ mypy backend/app/evidence_ledger backend/app/claims_engine \
 # Verify cross-lane import isolation:
 grep -r "from app.source_registry" backend/app/evidence_ledger/ backend/app/claims_engine/
 grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims_engine/
-./scripts/verify.sh
+.\scripts\verify.ps1
 ```
 
 ## Risks and blockers
@@ -162,6 +187,8 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 | New EvidenceType value | Requires shared enums.py change | Stop and record blocker |
 | YAML rules engine needs jurisdiction | Undecided | Use fixture rules only; do not hard-code state |
 | YAML parser scope | Accepted for TC-040 | Current loader supports the checked-in ruleset shape only; broaden with an approved parser/dependency decision before complex YAML features |
+| Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial precision; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
+| Minimum rule categories | Partial | Soil/septic, environmental hazards, market context, and resource context need fixture-backed rules or explicit not-evaluated report/API labels before Level 6 can pass |
 
 ## Decision log
 
@@ -169,6 +196,10 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: Cross-lane validation via Protocol injection — never import from source_registry or area_geometry.
 - 2026-06-03: Evidence supersession adds superseded_by field (not silent overwrite).
 - 2026-06-03: TC-040 uses a narrow no-new-dependency ruleset loader for the current YAML shape; broader YAML support requires an explicit dependency/design decision.
+- 2026-06-04: `SqlAlchemyEvidenceRepository` stores contract-only provenance/amendment fields in `evidence.observations.metadata` until a coordinated schema change promotes them to first-class columns.
+- 2026-06-04: `SqlAlchemyEvidenceAuditLog` records evidence create/supersede events in `audit.events` with `target_table='evidence.observations'`.
+- 2026-06-04: Evidence geometry remains optional and SRID 4326; spatial precision remains metadata-preserved until a coordinated schema migration promotes it.
+- 2026-06-04: `SqlAlchemyClaimRepository` stores rule metadata and evidence ordering in `claims.claims.metadata`, claim/evidence links in `claims.claim_evidence`, and verification tasks in `claims.verification_tasks`.
 
 ## Progress log
 
@@ -185,3 +216,6 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-03: TC-100 complete for the slope/buildability fixture hard-gate slice. Added deterministic insufficient low-slope buildable-area claims, slope source-unavailable unknowns, slope needs-review, stale slope review claims, screening-only/no-final-buildability language, and slope derived-metric payload validation. Lane C tests: 90 passing. Full verification: 145 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-110 complete for the zoning/use fixture hard-gate slice. Added deterministic intended residential/homestead use prohibited-or-unsupported claims, zoning source-unavailable unknowns, zoning needs-review for incomplete/mixed evidence, stale zoning review claims, screening-only/no-final-legal-use language, and zoning source-observation payload validation. Lane C tests: 100 passing. Full verification: 157 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TC-120 complete for the water-context fixture hard-gate slice. Added deterministic no-plausible-water-context claims, water source-unavailable unknowns, water needs-review for incomplete/mixed evidence including internally contradictory fixture records, stale water review claims, screening-only/no-water-rights/no-well-viability language, and water source-observation payload validation. Lane C tests: 111 passing. Full verification: 168 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-04: TC-130 complete for the DB-backed evidence repository/audit slice. Added `SqlAlchemyEvidenceRepository`, `SqlAlchemyEvidenceAuditLog`, and DB-gated tests for source observation, source failure, spatial intersection, derived metric, document extract, human verification, invalid payload rejection, supersession, retrieval by area/source/type, rollback, and durable audit events. Lane C tests: 122 passing with DB smoke enabled. Full PowerShell verification: 227 tests, ruff clean, mypy clean (80 source files), DB smoke passes.
+- 2026-06-04: TC-140 complete for evidence geometry/spatial precision mapping. Added optional GeoJSON/SRID/spatial precision fields to `EvidenceContract`, mapped geometry to `evidence.observations.geometry`, preserved precision in metadata, added DB-gated round-trip tests, and recorded the evidence persistence ADR. Lane C tests: 126 passing with DB smoke enabled. Full PowerShell verification: 231 tests, ruff clean, mypy clean (80 source files), DB smoke passes.
+- 2026-06-04: TC-150 complete for DB-backed claim persistence. Added `SqlAlchemyClaimRepository`, DB-backed claim/evidence links, verification-task persistence, durable unknown/source-failure claim tests, duplicate/rollback tests, and the rules/claim persistence ADR. Lane C tests: 130 passing with DB smoke enabled. Full PowerShell verification: 235 tests, ruff clean, mypy clean (81 source files), DB smoke passes.

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay groundwork for Levels 8-10.
+Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay groundwork for Levels 8-10.
 
 ## Non-goals
 
@@ -18,27 +18,19 @@ Complete MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and lay g
 - `backend/app/reports/` and `backend/app/api/` module directories exist.
 - Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
-- 15 Lane D report/API tests pass.
+- 16 Lane D report/API tests pass, including the persisted report-run repository round-trip.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
-- Lane A's TA-060 (DB smoke) is a hard prerequisite for integration wiring.
+- Lane A's TA-060 (DB smoke) now passes; report persistence can use the live local Postgres/PostGIS stack.
+- Lane D is a partial report-run harness, not a complete Level 7 vertical slice: default API wiring remains in-memory, and durable area/evidence/claim/rule-execution persistence is still lower-layer work.
 
 ## Blockers at lane setup
 
-Lane D's integration work is BLOCKED until:
-1. Lane A completes TA-060 (DB smoke passes, migrations applied).
-2. Lane B completes TB-010 (AreaService + InMemoryAreaRepository ready). Done for the in-memory fixture slice on 2026-06-03.
-3. Lane C completes TC-030 (ClaimService ready).
-
-**During the blocking period**, Lane D should work on:
-- docker-compose confirmation (can Lane D start the DB?).
-- API scaffold (thin FastAPI routers for sources, areas, evidence, reports).
-- Report contract finalization (`ReportRunContract` fields complete).
-- Integration tests using ALL in-memory repositories (no real DB).
+Lane D has no blocking dependency for the report-run harness slice. Complete Level 7 still depends on Lane B area persistence, Lane C durable evidence/claim/rule-execution persistence, and shared-schema alignment before any `schemas/*.json` edit.
 
 ## Proposed design
 
 Phase 1 (in-memory, available now): wire A/B/C in-memory repositories together via report service.
-Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports.report_runs`.
+Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`.
 
 ## Bottom-up sequence
 
@@ -68,11 +60,12 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 5. Tests: fixture area + fixture evidence → report run with claims + unknowns.
 6. Status: COMPLETE for the in-memory fixture scope. Report runs remain in app memory and are not durable.
 
-### TD-040: Persisted report runs (BLOCKED on Lane A TA-060)
+### TD-040: Persisted report runs (COMPLETE)
 1. Add `ReportRunModel` SQLAlchemy ORM model in `backend/app/reports/models.py`.
 2. Add `SqlAlchemyReportRunRepository`.
 3. Store report runs in `reports.report_runs` table.
 4. Update integration test to use DB.
+5. Status: COMPLETE for the repository harness. Report runs now persist through the repository abstraction, write a machine-readable artifact, and round-trip through a fresh DB session; underlying evidence/claim/rule-execution lineage remains lower-layer follow-up work.
 
 ### TD-050: Implement SourceExistsProtocol + AreaExistsProtocol adapters
 1. Create `backend/app/reports/adapters.py` with:
@@ -93,7 +86,9 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `backend/app/main.py` | Register new routers |
 | `backend/app/reports/service.py` | New: ReportRunService |
 | `backend/app/reports/adapters.py` | New: Protocol adapters |
-| `backend/app/reports/models.py` | New: SQLAlchemy ORM model (deferred) |
+| `backend/app/reports/models.py` | New: SQLAlchemy ORM model |
+| `backend/app/reports/report_repo.py` | New: in-memory and SQLAlchemy report repositories |
+| `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
 
@@ -102,16 +97,17 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 ```bash
 pytest backend/tests/reports/ backend/tests/api/ -v
 mypy backend/app/reports backend/app/api
-./scripts/verify.sh
+.\scripts\verify.ps1
 # Full integration:
-docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
+docker compose up -d db
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
 ## Risks and blockers
 
 | Blocker | Status | Impact |
 |---|---|---|
-| Lane A TA-060 DB smoke | Blocked | TD-040 cannot proceed |
+| Shared-schema alignment for `schemas/*.json` | Pending | Future payload changes need a coordinated contract pass |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
@@ -122,6 +118,7 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: Lane D owns reports, API, and integration (MILESTONE Levels 7+).
 - 2026-06-03: Phase 1 (in-memory integration) does not need DB. Phase 2 does.
 - 2026-06-03: docker-compose.yml owned by Lane A; Lane D reads only.
+- 2026-06-03: Persisted report runs use the existing `reports.report_runs` table plus `OBJECT_STORE_ROOT` JSON artifacts. The in-memory scaffold remains available for fixture tests.
 
 ## Progress log
 
@@ -129,3 +126,4 @@ docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh
 - 2026-06-03: TD-020 complete for the in-memory API scaffold. Added per-app in-memory API services, source/area/evidence/report-run routers, router registration, and API contract tests for happy paths and representative 422 cases. Lane D tests: 7 passing. Full verification: 122 tests, ruff clean, mypy clean (65 source files); DB smoke skipped.
 - 2026-06-03: TD-030 complete for the in-memory report-run service. Added ReportRunService, populated ReportRunContract fields, API report-run service wiring, and fixture tests for evidence-linked claims/unknowns/caveats, no-evidence caveat handling, and repeatable claim reuse. Lane D tests: 11 passing. Full verification: 126 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TD-050 complete for the in-memory protocol adapter wiring. Added `backend/app/reports/adapters.py`, wired `SourceServiceProtocolAdapter` and `AreaServiceProtocolAdapter` into `EvidenceService` construction, and added adapter-focused tests for delegation plus production-use/source-failure guardrails. Lane D tests: 15 passing. Full verification: 172 tests, ruff clean, mypy clean (69 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
+- 2026-06-03: TD-040 complete for persisted report runs. Added `backend/app/reports/models.py`, `backend/app/reports/report_repo.py`, a SQLAlchemy-backed `reports.report_runs` round-trip test, and `docs/adr/lane-d-0001-report-persistence.md`. Lane D tests: 16 passing. Full verification: 173 tests, ruff clean, mypy clean (72 source files); DB smoke passes on the local Postgres/PostGIS container.

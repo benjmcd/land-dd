@@ -1,35 +1,29 @@
 # Lane C State — Evidence Ledger + Claims Engine
 
 ```text
-Current milestone: Level 6 - Claims Engine (in-memory current-ruleset hard-gate slice)
+Current milestone: Level 6 - Claims Engine
 Target milestone: Level 5 (Evidence Ledger) → Level 6 (Claims Engine)
 Milestone status: PARTIAL
-Last verified: 2026-06-03
+Last verified: 2026-06-04
 Verification command(s):
-- pytest backend/tests/evidence_ledger/ backend/tests/claims_engine/ -v
-- ruff check backend/app/evidence_ledger backend/app/claims_engine
-  backend/app/domain/evidence_contracts.py backend/app/domain/claim_contracts.py
-  backend/tests/evidence_ledger backend/tests/claims_engine
-- mypy backend/app/evidence_ledger backend/app/claims_engine
-  backend/app/domain/evidence_contracts.py backend/app/domain/claim_contracts.py
-- rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" backend/app/evidence_ledger backend/app/claims_engine
-- ./scripts/verify.sh
+- $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
+- $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+- ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+- $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 111 Lane C tests passing
+- 130 Lane C tests passing with DB smoke enabled
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 168 tests; lint clean; mypy clean (67 source files)
+- Full verification passes: 235 tests; lint clean; mypy clean (81 source files); DB smoke passes
 Failed or blocked gates:
-- L5-001/L5-003/L5-004/L5-007/L5-008: PARTIAL/PASS for in-memory service scope (provenance checks, source failure records, area linkage, typed human notes, area/source/type retrieval)
-- L5-002: PARTIAL/PASS for in-memory service scope (type-specific observed_value validation covers source observation, spatial intersection, derived metric, document extract, source failure, and human-note guardrails)
-- L5-005: PARTIAL (confidence/caveat/method/temporal fields exist; spatial precision not implemented)
-- L5-006: PARTIAL/PASS for in-memory service scope (supersession marks original and stores replacement without silent overwrite)
-- L5-010: PARTIAL/PASS for in-memory service scope (observation, source-failure, human-note, and supersede paths emit audit events; durable audit persistence remains DB-blocked)
-- L6-001: PARTIAL/PASS for in-memory service/rule scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; rule-generated claims cite evidence IDs)
-- L6-004: PARTIAL/PASS for in-memory service scope (create_unknown requires source-failure evidence)
+- L5-001 through L5-010: PASS for DB-backed repository/service scope (`SqlAlchemyEvidenceRepository` persists source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, optional geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, and `SqlAlchemyEvidenceAuditLog` durable audit events; `docs/adr/lane-c-evidence.md` documents immutability/amendment policy)
+- L6-001: PARTIAL/PASS for current DB-backed service/repository scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; `SqlAlchemyClaimRepository` persists claims plus `claims.claim_evidence` links; rule-generated claims cite evidence IDs)
+- L6-004: PARTIAL/PASS for current DB-backed service/repository scope (create_unknown requires source-failure evidence and persists unknown claims with evidence links)
 - L6-005: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (positive, unknown, needs-review, and stale-review claims propagate evidence caveats)
 - L6-006: PASS for current contract/service scope (severity and confidence remain separate)
-- L6-007: PARTIAL/PASS for in-memory service scope (ClaimService requires verification_task when verification_required is true)
+- L6-007: PARTIAL/PASS for current DB-backed service/repository scope (ClaimService requires verification_task when verification_required is true; `SqlAlchemyClaimRepository` persists verification tasks to `claims.verification_tasks`)
 - L6-002: PARTIAL/PASS for current rule-engine scope (ruleset ID/version load from `config/ruleset_homestead_mvp.yaml` and are copied into generated flood/access/zoning/water/wetlands/slope claims)
 - L6-003: PARTIAL/PASS for flood, access, zoning, water, wetlands, and slope hard-gate rules (deterministic claim IDs and deterministic output when input order changes)
 - L6-008: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (conflicting active evidence, incomplete active evidence, and positive-plus-source-failure evidence emit needs-review claims where implemented)
@@ -37,27 +31,31 @@ Failed or blocked gates:
 - L6-010: PARTIAL/PASS for current rule-engine scope (business logic lives in `backend/app/claims_engine/rule_engine.py`, not an LLM prompt or UI copy)
 Completion evidence:
 - plans/lane-c-2026-06-03-evidence-claims.md
-- backend/app/evidence_ledger/evidence_repo.py (EvidenceRepository Protocol + InMemoryEvidenceRepository)
-- backend/app/evidence_ledger/audit_log.py (EvidenceAuditEvent + InMemoryEvidenceAuditLog)
+- backend/app/evidence_ledger/evidence_repo.py (EvidenceRepository Protocol + InMemoryEvidenceRepository + SqlAlchemyEvidenceRepository)
+- backend/app/evidence_ledger/audit_log.py (EvidenceAuditEvent + InMemoryEvidenceAuditLog + SqlAlchemyEvidenceAuditLog)
 - backend/app/evidence_ledger/service.py (EvidenceService)
 - backend/app/evidence_ledger/payload_validation.py (type-specific observed_value validators)
 - backend/app/domain/evidence_contracts.py (EvidenceContract)
 - backend/app/domain/claim_contracts.py (ClaimContract, with evidence_ids enforced)
-- backend/app/claims_engine/claim_repo.py (ClaimRepository Protocol + InMemoryClaimRepository)
+- backend/app/claims_engine/claim_repo.py (ClaimRepository Protocol + InMemoryClaimRepository + SqlAlchemyClaimRepository)
 - backend/app/claims_engine/service.py (ClaimService)
 - backend/app/claims_engine/rule_engine.py (RuleEngine + constrained ruleset loader)
-- backend/tests/evidence_ledger/test_evidence_contracts.py (3 passing)
+- backend/tests/evidence_ledger/test_evidence_contracts.py (6 passing)
 - backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
 - backend/tests/evidence_ledger/test_payload_validation.py (23 passing)
 - backend/tests/evidence_ledger/test_evidence_audit.py (4 passing)
+- backend/tests/evidence_ledger/test_sqlalchemy_evidence_repo.py (12 passing)
+- docs/adr/lane-c-evidence.md (evidence persistence/immutability/amendment ADR)
 - backend/tests/claims_engine/test_claim_contracts.py (4 passing)
 - backend/tests/claims_engine/test_claim_service.py (12 passing)
 - backend/tests/claims_engine/test_rule_engine.py (48 passing)
+- backend/tests/claims_engine/test_sqlalchemy_claim_repo.py (4 passing)
+- docs/adr/lane-c-rules.md (rules and claim persistence ADR)
 Next lowest-dependency task:
-- Current ruleset fixture hard-gate domains are covered in memory; shift to Lane D TD-050 in-memory protocol adapters if integration is prioritized, or plan a coordinated shared-schema alignment pass before editing `schemas/*.json`
+- Implement fixture-backed coverage or explicit not-evaluated labels for the remaining Level 6 minimum categories: soil/septic, environmental hazards, market context, and resource context
 Do not work on yet:
 - Cross-lane integration wiring (Lane D's job)
-- PostGIS evidence-geometry linkage (needs Lane A + Lane B DB work)
+- Claim Level 6 PASS before missing categories are implemented or explicitly labeled as not evaluated
 - Any Lane A/B/D files
 ```
 
@@ -68,6 +66,8 @@ Do not work on yet:
 | SourceExistsProtocol real impl | Available for in-memory wiring | Lane A SourceService exposes source existence and fail-closed production-use checks; full integration remains Lane D's job |
 | AreaExistsProtocol real impl | Available for in-memory wiring | Lane B AreaService exposes `area_is_registered`; full integration remains Lane D's job |
 | Jurisdiction for rules | Undecided | Use fixture rules only |
+| Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial-precision fields; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
+| Minimum rule categories | Partial | Soil/septic, environmental hazards, market context, and resource context need fixture-backed rules or explicit not-evaluated report/API labels before Level 6 can pass |
 
 ## Active plan
 
@@ -75,18 +75,12 @@ Do not work on yet:
 
 ## Lane-specific verification commands
 
-```bash
-# Lane C unit tests only:
-cd backend && PYTHONPATH=. pytest tests/evidence_ledger/ tests/claims_engine/ -v
-
-# Cross-lane import isolation check (must return 0 matches):
-rg -n "from app\\.source_registry|from app\\.area_geometry|import app\\.source_registry|import app\\.area_geometry" \
-  backend/app/evidence_ledger backend/app/claims_engine
-
-# Lane C type check:
-cd backend && mypy app/evidence_ledger app/claims_engine \
-  app/domain/evidence_contracts.py app/domain/claim_contracts.py
-
-# Full workspace gate:
-./scripts/verify.sh
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\\.source_registry|from app\\.area_geometry|import app\\.source_registry|import app\\.area_geometry" app/evidence_ledger app/claims_engine
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
