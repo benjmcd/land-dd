@@ -937,3 +937,37 @@ tasks:
       - Metadata extensions cannot assert evidence-row ingest_run_id lineage until storage support exists
       - New stable metadata keys require a planned schema/test slice before becoming required in schemas/report_run_schema.json
       - No report runtime behavior, API behavior, OpenAPI change, schema change, migration, queue behavior, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage is introduced
+
+  - id: TD-083
+    title: Level 7 report validation metadata implementation
+    status: done
+    depends_on: [TD-082, CON-026]
+    lane: D
+    notes: Implemented optional artifact_metadata.validation for report contract/profile and ruleset identity while avoiding connector review routes/OpenAPI overlap with Session 1's Lane C evidence-linkage branch. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C module change was introduced.
+    spec: plans/lane-d-2026-06-03-reports-api-infra.md
+    files:
+      - backend/app/reports/service.py
+      - backend/tests/reports/test_report_service.py
+      - backend/tests/reports/test_report_regression.py
+      - backend/tests/reports/test_report_schema_contract.py
+      - schemas/report_run_schema.json
+      - docs/adr/lane-d-0017-report-validation-metadata.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+      - cd backend; ruff check app/reports tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+      - cd backend; mypy app/reports tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - ReportRunService emits artifact_metadata.validation with ReportRunContract identity, report contract version, validation profile, ruleset id, and ruleset version
+      - schemas/report_run_schema.json constrains the optional validation metadata object without making it required
+      - Regression tests cover the emitted validation metadata in fixture report artifacts
+      - Validation metadata does not claim command execution, command success, legal conclusions, or evidence-row ingest_run_id lineage
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C module change is introduced

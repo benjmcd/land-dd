@@ -104,6 +104,8 @@ def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
     properties = cast(dict[str, Any], schema["properties"])
     artifact_metadata = cast(dict[str, Any], properties["artifact_metadata"])
     artifact_properties = cast(dict[str, Any], artifact_metadata["properties"])
+    validation = cast(dict[str, Any], artifact_properties["validation"])
+    validation_properties = cast(dict[str, Any], validation["properties"])
     cost_metrics = cast(dict[str, Any], artifact_properties["cost_metrics"])
     cost_metric_properties = cast(dict[str, Any], cost_metrics["properties"])
 
@@ -120,6 +122,19 @@ def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
     ]
     assert artifact_properties["output_uri"]["type"] == "string"
     assert artifact_properties["machine_json_uri"]["type"] == "string"
+    assert set(validation["required"]) == {
+        "contract_name",
+        "contract_version",
+        "validation_profile",
+        "ruleset_id",
+        "ruleset_version",
+    }
+    assert validation_properties["contract_name"]["const"] == "ReportRunContract"
+    assert validation_properties["contract_version"]["const"] == "report_run_contract_v1"
+    assert validation_properties["validation_profile"]["const"] == "fixture_report_contract_v1"
+    assert validation_properties["ruleset_id"]["minLength"] == 1
+    assert validation_properties["ruleset_version"]["minLength"] == 1
+    assert validation["additionalProperties"] is True
     assert set(cost_metrics["required"]) == {
         "evidence_count",
         "claim_count",

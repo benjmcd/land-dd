@@ -89,6 +89,7 @@ class ReportRunService:
             artifact_metadata={
                 "artifact_kind": "report_run",
                 "report_schema": "report_run_contract_v1",
+                "validation": _validation_metadata(self._rule_engine),
                 "cost_metrics": _cost_metrics(evidence, stored_claims),
             },
             finished_at=datetime.now(UTC),
@@ -254,6 +255,16 @@ def _cost_metrics(
         "unknown_count": len(_unknown_claims(claims)),
         "red_flag_count": len(_red_flag_claims(claims)),
         "verification_task_count": len(_verification_tasks(claims)),
+    }
+
+
+def _validation_metadata(rule_engine: RuleEngine) -> dict[str, str]:
+    return {
+        "contract_name": "ReportRunContract",
+        "contract_version": "report_run_contract_v1",
+        "validation_profile": "fixture_report_contract_v1",
+        "ruleset_id": rule_engine.ruleset_id,
+        "ruleset_version": rule_engine.ruleset_version,
     }
 
 

@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-083 report validation metadata)
+
+- Implemented optional `artifact_metadata.validation` in generated report runs with report contract/profile and ruleset identity.
+- Tightened `schemas/report_run_schema.json` for the optional validation metadata object and updated report schema/service/regression tests.
+- Added ADR `docs/adr/lane-d-0017-report-validation-metadata.md` to record that the metadata does not claim verification-command execution or durable evidence-row `ingest_run_id` lineage.
+- Preserved boundary: no API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or Lane A/B/C module changed.
+- Verification passed with DB smoke: 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-026 review action route subset)
 
 - Added ADR `docs/adr/lane-d-0016-connector-review-action-route-subset.md` to accept the next connector review mutation route subset before implementation.

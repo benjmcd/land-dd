@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane D TD-083 report validation metadata
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+ruff check app/reports tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+mypy app/reports tests/reports/test_report_schema_contract.py tests/reports/test_report_service.py tests/reports/test_report_regression.py
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+cd backend
+py -3.12 -m pytest --collect-only
+```
+
+**Results:**
+
+- Focused report metadata tests: 11 passed.
+- Focused report ruff: clean.
+- Focused report mypy: clean over 8 source files.
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 362 backend tests collected, lint clean, mypy clean over 123 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- TD-083 records report contract/profile and ruleset identity only. It does not claim that a verification command was run or passed inside report artifacts. It does not add API routes, OpenAPI changes, DB schema changes, runtime JSON Schema validation, queue behavior, connector runtime behavior, live I/O, hook config, POSIX scripts, durable evidence-row `ingest_run_id` linkage, or Lane A/B/C implementation changes. Connector review route/OpenAPI implementation remains deferred while Session 1's Lane C evidence-linkage/OpenAPI branch is parked.
+
 ## 2026-06-04 Connector CON-026 review action route subset
 
 **Commands run:**

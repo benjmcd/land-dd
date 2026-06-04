@@ -162,6 +162,13 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     assert report_run.artifact_metadata["report_schema"] == "report_run_contract_v1"
     assert report_run.artifact_metadata["persistence"] == "memory"
+    assert report_run.artifact_metadata["validation"] == {
+        "contract_name": "ReportRunContract",
+        "contract_version": "report_run_contract_v1",
+        "validation_profile": "fixture_report_contract_v1",
+        "ruleset_id": "homestead_mvp_v0_1",
+        "ruleset_version": "0.1",
+    }
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
     assert cost_metrics["evidence_count"] == 6
     assert cost_metrics["claim_count"] == 7

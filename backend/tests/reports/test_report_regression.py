@@ -140,6 +140,13 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
             "artifact_kind": "report_run",
             "report_schema": "report_run_contract_v1",
             "persistence": "memory",
+            "validation": {
+                "contract_name": "ReportRunContract",
+                "contract_version": "report_run_contract_v1",
+                "validation_profile": "fixture_report_contract_v1",
+                "ruleset_id": "homestead_mvp_v0_1",
+                "ruleset_version": "0.1",
+            },
             "cost_metrics": {
                 "evidence_count": 5,
                 "claim_count": 5,

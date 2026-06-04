@@ -238,6 +238,39 @@
         "machine_json_uri": {
           "type": "string"
         },
+        "validation": {
+          "type": "object",
+          "required": [
+            "contract_name",
+            "contract_version",
+            "validation_profile",
+            "ruleset_id",
+            "ruleset_version"
+          ],
+          "properties": {
+            "contract_name": {
+              "type": "string",
+              "const": "ReportRunContract"
+            },
+            "contract_version": {
+              "type": "string",
+              "const": "report_run_contract_v1"
+            },
+            "validation_profile": {
+              "type": "string",
+              "const": "fixture_report_contract_v1"
+            },
+            "ruleset_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ruleset_version": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": true
+        },
         "cost_metrics": {
           "type": "object",
           "required": [
