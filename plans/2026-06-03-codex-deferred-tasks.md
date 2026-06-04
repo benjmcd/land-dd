@@ -293,6 +293,7 @@ Add unit tests in `backend/tests/claims_engine/test_not_evaluated_claims.py`:
 
 **Priority:** MEDIUM
 **Prerequisite:** Tasks C-001 + C-002 + D-000 complete (claims ORM models, Level 6 rule behavior, and unsupported-category report surfacing must exist)
+**Status:** Complete as Session 2 D-001 on 2026-06-04.
 
 **Context:**
 The API `POST /report-runs` endpoint currently uses in-memory repositories injected from
@@ -307,6 +308,13 @@ a new engine per call, destroying connection pooling. Use `get_session()` from `
 `app.state.services = create_api_services()`
 **D-001 must update `main.py`** to conditionally inject DB-backed services alongside the
 `api/dependencies.py` update. Both files need to change.
+
+**Completion note:** The final wiring uses explicit `create_app(use_db_services=True)` instead
+of automatically switching all `create_app()` calls when `RUN_DB_SMOKE=1`. This preserves the
+existing cheap in-memory API scaffold tests while the DB-gated integration test exercises the
+Postgres-backed report/API path. The default `DATABASE_URL` is already a Postgres URL, so using
+that setting alone as an automatic switch would silently change every default test app into DB
+mode.
 
 **Work:**
 
@@ -327,8 +335,7 @@ a new engine per call, destroying connection pooling. Use `get_session()` from `
 
 2. Update `api/dependencies.py`:
    - Add `create_db_services(session: Session, settings: Settings) -> ApiServices`
-   - When `settings.database_url` is a real postgres URL (not default/test)
-     OR `os.getenv("RUN_DB_SMOKE") == "1"`, inject:
+   - In explicit DB mode, inject:
      - `SqlAlchemyAreaRepository(session)` as the area repo
      - `SqlAlchemyEvidenceRepository(session)` as the evidence repo
      - `SqlAlchemyClaimRepository(session)` as the claim repo
@@ -336,17 +343,16 @@ a new engine per call, destroying connection pooling. Use `get_session()` from `
    - Keep `create_api_services()` as the in-memory fallback for local dev / unit tests
 
 3. Update `backend/app/main.py` to conditionally use DB-backed services:
-   - Replace `app.state.services = create_api_services()` with logic that:
-     - Reads `settings = get_settings()`
-     - If `RUN_DB_SMOKE == "1"` or `settings.database_url` points to postgres:
-       does NOT set `app.state.services` at startup
-       instead adds a `lifespan` context manager or `startup` event that creates
-       a DB-session-scoped service set per request
-     - Otherwise: keeps `app.state.services = create_api_services()` (in-memory)
-   - Wire the `POST /report-runs` router to use `get_db_session` when available
+   - Replace unconditional `app.state.services = create_api_services()` with explicit
+     `create_app(use_db_services=True)` support:
+     - default mode keeps `app.state.services = create_api_services()` (in-memory)
+     - DB mode does not set app-global SQLAlchemy services
+     - DB mode overrides the shared service dependency with request-scoped services
+   - Wire the report-run router through the shared service dependency so DB mode uses
+     `get_db_session` and SQLAlchemy repositories.
 
 4. Add a DB-backed API integration test in `backend/tests/api/test_report_runs_db.py`:
-   - Seeds a `core.areas` row and a `core.intents` row
+   - Creates a `core.areas` row through `POST /areas` and uses seeded `core.intents`
    - Posts to `POST /report-runs` with a valid `area_id` + `intent_code`
    - Verifies 201 response
    - Verifies the `reports.report_runs` row exists in DB with `intent_id` populated
@@ -354,6 +360,7 @@ a new engine per call, destroying connection pooling. Use `get_session()` from `
 
 **Acceptance criteria:**
 - `POST /report-runs` uses DB repos when `RUN_DB_SMOKE=1`
+- `POST /report-runs` uses DB repos when the test app is created with `use_db_services=True`
 - `get_db_session()` in `session.py` delegates to `get_session()` from `engine.py`
   (does NOT call `build_engine()` directly)
 - The DB-backed API test passes

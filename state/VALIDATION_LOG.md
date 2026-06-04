@@ -2,6 +2,37 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-001 DB-backed API workflow
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api tests/reports
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api tests/reports
+ruff check app/api app/main.py app/reports tests/api tests/reports
+mypy app/api app/main.py app/reports tests/api/test_report_runs_db.py
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Default API scaffold tests remain in-memory and pass; the DB-backed API test is skipped unless `RUN_DB_SMOKE=1`.
+- Lane D report/API tests pass with DB smoke enabled: 19 tests.
+- DB-backed API mode creates areas and report runs through SQLAlchemy-backed services, retrieves the persisted report artifact, and stores a non-null `intent_id` in `reports.report_runs`.
+- Unsupported-category source failures still surface as UNKNOWN claims in DB-backed API report output.
+- Targeted Lane D/API ruff passes.
+- Targeted Lane D/API mypy passes.
+- Full PowerShell verification with DB smoke enabled passes: 251 backend tests, lint clean, mypy clean (90 source files), migrations/seeds apply, and DB smoke passes.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- Shared report/schema JSON alignment remains a coordinated follow-up before editing `schemas/*.json`.
+- Live connectors, UI workflow, auth/security, and production observability remain out of scope until Level 8+ planning.
+
 ## 2026-06-04 Session 2 D-000 report surfacing
 
 **Commands run:**

@@ -16,19 +16,20 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - `ReportRunContract` includes evidence, claims, unknowns, red flags, verification tasks, caveats, source manifest, and artifact metadata.
 - `JobStatus` enum in `backend/app/domain/enums.py`.
 - `backend/app/reports/` and `backend/app/api/` module directories exist.
-- Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services.
+- Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services by default and by request-scoped SQLAlchemy services when `create_app(use_db_services=True)`.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
-- 18 Lane D report/API tests pass, including the persisted report-run repository round-trip, API source-failure unknown surfacing regression, and D-000 unsupported-category report surfacing.
+- 19 Lane D report/API tests pass with DB smoke enabled, including the persisted report-run repository round-trip, DB-backed API create/retrieve workflow, API source-failure unknown surfacing regression, and D-000 unsupported-category report surfacing.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) now passes; report persistence can use the live local Postgres/PostGIS stack.
-- Lane D is a partial report-run harness, not a complete Level 7 vertical slice: default API wiring remains in-memory until D-001 connects the existing DB-backed repositories through the API workflow.
+- Lane D now has a fixture-backed Level 7 report/API vertical slice: default API wiring remains in-memory for cheap scaffold tests, and explicit DB mode wires existing SQLAlchemy repositories through the API workflow.
 - Session 2 split the unsupported-category work by lane ownership: Lane C owns C-002 rule/claim behavior; Lane D owns D-000 report/API surfacing after C-002.
-- `backend/app/db/session.py` now provides D-001 pre-work by delegating `get_db_session()` to the shared `get_session()` factory; DB service wiring in `api/dependencies.py`/`main.py` is now the next Lane D task.
+- `backend/app/db/session.py` provides the DB session dependency by delegating `get_db_session()` to the shared `get_session()` factory; API DB mode commits successful requests and rolls back failed requests in `api/dependencies.py`.
 - D-000 is complete: report runs create stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`.
+- D-001 is complete: `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` work through SQLAlchemy-backed API services, persisted report artifacts, and non-null seeded `intent_id` linkage.
 
 ## Blockers at lane setup
 
-Lane D has no blocking dependency for the report-run harness slice. Complete Level 7 still depends on DB-backed API workflow wiring and shared-schema alignment before any `schemas/*.json` edit.
+Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Shared-schema alignment remains pending before any `schemas/*.json` edit.
 
 ## Proposed design
 
@@ -78,6 +79,14 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 3. Tests confirm adapter-backed `EvidenceService` preserves production-use guardrails and still creates source-failure evidence for registered sources.
 4. Status: COMPLETE for the in-memory protocol adapter wiring.
 
+### TD-060: DB-backed API workflow (COMPLETE)
+1. Add explicit DB service mode in `backend/app/api/dependencies.py` and `backend/app/main.py`.
+2. Build SQLAlchemy-backed source, area, evidence, claim, and report services per request.
+3. Commit successful DB API requests and roll back failed requests in the API dependency.
+4. Keep default API wiring in-memory for fast fixture tests.
+5. Add a DB-backed API integration test for `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted report row, non-null `intent_id`, unsupported-category unknowns, and report artifact path.
+6. Status: COMPLETE for the fixture-backed Level 7 DB API workflow.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -87,10 +96,12 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `backend/app/api/evidence.py` | New: FastAPI router |
 | `backend/app/api/reports.py` | New: FastAPI router |
 | `backend/app/main.py` | Register new routers |
+| `backend/app/api/dependencies.py` | DB-backed API service factory and request-scoped dependency |
 | `backend/app/reports/service.py` | New: ReportRunService |
 | `backend/app/reports/adapters.py` | New: Protocol adapters |
 | `backend/app/reports/models.py` | New: SQLAlchemy ORM model |
 | `backend/app/reports/report_repo.py` | New: in-memory and SQLAlchemy report repositories |
+| `backend/tests/api/test_report_runs_db.py` | DB-backed report-run API integration test |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
@@ -115,6 +126,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
 | Lane C C-002 unsupported-category claims | Complete on `main` | D-000 report surfacing is complete; D-001 DB-backed API workflow is now next |
+| DB-backed API workflow | Complete | D-001 wires SQLAlchemy repositories through the API workflow without changing default in-memory tests |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |
 
 ## Decision log
@@ -123,6 +135,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: Phase 1 (in-memory integration) does not need DB. Phase 2 does.
 - 2026-06-03: docker-compose.yml owned by Lane A; Lane D reads only.
 - 2026-06-03: Persisted report runs use the existing `reports.report_runs` table plus `OBJECT_STORE_ROOT` JSON artifacts. The in-memory scaffold remains available for fixture tests.
+- 2026-06-04: API DB mode is explicit (`create_app(use_db_services=True)`) so default scaffold tests remain in-memory while DB integration tests exercise the Postgres/PostGIS system of record.
 
 ## Progress log
 
@@ -136,3 +149,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: Session 2 read-only coordination check found C-002 is still not canonical on root `main`; the Session 1 worktree is mid-conflict in state logs, and the draft branch still marks the four unsupported-category rules as `informational`. Sent Session 1 a coordination note and kept D-000/D-001 blocked until C-002 lands with `unknown` ruleset metadata.
 - 2026-06-04: Merged Session 1 C-002 into root `main` after the severity metadata issue was corrected. Full verification with DB smoke enabled passes: 250 tests, lint clean, mypy clean (89 source files). D-000 is now the next Lane D task.
 - 2026-06-04: D-000 complete. `ReportRunService` now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, reuses the sentinel source on repeat report runs, and surfaces soil/septic, environmental hazards, resource context, and market context as UNKNOWN report/API claims. Lane D tests pass with DB smoke enabled: 18 tests; full verification passes with DB smoke enabled: 250 tests, lint clean, mypy clean (89 source files).
+- 2026-06-04: D-001 complete. Added explicit DB-backed API service wiring, request-scoped DB service construction, successful-request commit/failed-request rollback, and a DB-backed API integration test proving `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted report row, non-null `intent_id`, unsupported-category UNKNOWNs, and artifact path. Lane D tests pass with DB smoke enabled: 19 tests.

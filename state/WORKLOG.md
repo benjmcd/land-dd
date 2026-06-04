@@ -187,6 +187,15 @@ Append concise entries. Do not rely on chat history.
 - Corrected Windows DB-smoke command snippets and demoted Lane D state wording to a partial report-run harness rather than full Level 7 PASS.
 - Verified `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`: Python 3.12.10 selected; 186 tests pass; ruff clean; mypy clean; migrations/seeds and stronger DB smoke pass.
 
+## 2026-06-04 (Session 2 D-001 DB-backed API workflow)
+
+- Completed Lane D D-001 from clean root `main` without touching Session 1's Lane A or Lane B worktrees.
+- Added explicit DB API mode through `create_app(use_db_services=True)`, preserving default in-memory API services for fast fixture tests.
+- Wired request-scoped SQLAlchemy-backed source, area, evidence, claim, and report services in `backend/app/api/dependencies.py`; successful DB requests commit and failed requests roll back.
+- Added DB-backed API integration coverage for `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted `reports.report_runs` row, non-null seeded `intent_id`, unsupported-category UNKNOWN claims, and report artifact path.
+- Hardened Lane D's internal unsupported-category sentinel lookup to use a stable source UUID instead of scanning all source rows. This avoids coupling report generation to Lane A source-row URL normalization while keeping the change inside Lane D-owned report code.
+- Verified targeted Lane D/API checks with DB smoke enabled before full workspace verification.
+
 ## 2026-06-03 (Windows PowerShell verification wrapper)
 
 - Added PowerShell-native wrappers for verification, workspace validation, DB migration application, and bootstrap so Windows users can avoid launching Git Bash.

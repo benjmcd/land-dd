@@ -36,6 +36,7 @@ _NO_EVIDENCE_CAVEAT = (
     "No evidence records were available for this area; report contains no "
     "due-diligence findings."
 )
+_NOT_EVALUATED_SOURCE_ID = UUID("00000000-0000-4000-8000-0000000007d0")
 
 
 class ReportRunService:
@@ -133,14 +134,12 @@ class ReportRunService:
         return enriched_evidence
 
     def _ensure_not_evaluated_source(self) -> SourceContract:
-        for source in self._source_service.list_all():
-            if (
-                source.name == NOT_EVALUATED_SOURCE_NAME
-                and source.organization == NOT_EVALUATED_SOURCE_ORG
-            ):
-                return source
+        existing = self._source_service.get(_NOT_EVALUATED_SOURCE_ID)
+        if existing is not None:
+            return existing
         return self._source_service.register(
             SourceContract(
+                source_id=_NOT_EVALUATED_SOURCE_ID,
                 name=NOT_EVALUATED_SOURCE_NAME,
                 organization=NOT_EVALUATED_SOURCE_ORG,
                 source_type="internal_sentinel",

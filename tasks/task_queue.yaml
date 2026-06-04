@@ -122,10 +122,10 @@ tasks:
 
   - id: D-001
     title: Level 7 DB wiring — full report-run pipeline through DB
-    status: pending
+    status: done
     depends_on: [C-001, C-002, D-000]
     lane: D
-    notes: D-000 is complete and db/session pre-work exists; next work is DB-backed API service wiring and integration coverage.
+    notes: DB-backed API service wiring is complete behind explicit create_app(use_db_services=True); default scaffold wiring remains in-memory for cheap fixture tests.
     spec: plans/2026-06-03-codex-deferred-tasks.md#task-d-001
     files:
       - backend/app/db/session.py (new)
@@ -139,7 +139,7 @@ tasks:
       - cd backend; mypy app/api app/reports app/db
       - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
     acceptance:
-      - POST /report-runs uses DB repos when RUN_DB_SMOKE=1
+      - POST /report-runs uses DB repos when create_app(use_db_services=True)
       - Report runs create/register unsupported-domain source-failure evidence through Lane C's not-evaluated helper before rule evaluation
       - get_db_session() delegates to get_session() (NOT build_engine())
       - DB-backed API integration test passes

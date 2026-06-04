@@ -3,14 +3,17 @@
 ## MILESTONE_MAP status block
 
 ```text
-Current milestone: Level 6 - Claims Engine
-Milestone status: PASS for Lane C claim/rule scope
+Current milestone: Level 7 - Reproducible Report Vertical Slice
+Milestone status: PASS for fixture-backed report/API workflow
 Last verified: 2026-06-04
 Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
 - cd backend; py -3.12 -m pytest -q tests/reports tests/api
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api tests/reports
+- cd backend; ruff check app/api app/main.py app/reports tests/api tests/reports
+- cd backend; mypy app/api app/main.py app/reports tests/api/test_report_runs_db.py
 - cd backend; ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
 - cd backend; ruff check app/claims_engine tests/claims_engine
 - cd backend; mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
@@ -20,17 +23,18 @@ Verification command(s):
 - python scripts/db_smoke_check.py
 - .\scripts\verify.ps1
 Verification result:
-- 250 tests pass with DB smoke enabled; lint clean; mypy clean (89 source files)
+- 251 tests pass with DB smoke enabled; lint clean; mypy clean
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, and stores immutable prior-geometry rows in `core.area_versions` on geometry replacement
 - Lane C evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, and evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
+- Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
 - L6-001 through L6-010: PASS for Lane C claim/rule scope (claims require evidence links, unknowns require source-failure evidence, severity/confidence stay separate, verification tasks persist, rules are versioned/deterministic, caveats propagate, contradiction/stale/incomplete/source-failure/not-evaluated cases are tested, and rule logic lives in code/config rather than an LLM/UI prompt)
-- Level 7 remains PARTIAL until Lane D wires DB-backed API/report-run services.
+- L7-001 through L7-010: PASS for the fixture-backed report/API vertical slice (persisted report run, source/evidence/rule manifest data, API create/retrieve path, evidence-linked claims, unknown/source-failure surfacing, caveats/verification tasks, repeatable fixture behavior, API contract coverage, artifact metadata, and no live external APIs)
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (41 tests)
@@ -54,7 +58,8 @@ Completion evidence:
 - docs/adr/lane-d-0001-report-persistence.md
 - backend/tests/reports/test_report_repository.py (1 test)
 - backend/tests/reports/test_adapters.py (4 tests)
-- backend/tests/reports/ and backend/tests/api/ (18 tests)
+- backend/tests/reports/ and backend/tests/api/ (19 tests)
+- backend/tests/api/test_report_runs_db.py
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -63,12 +68,12 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane D D-001: complete DB-backed report/API wiring now that C-002 and D-000 are complete.
+- Coordinated Level 7 closeout/schema-contract pass before any `schemas/*.json` changes or Level 8 fixture connector work.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
 - Production ops/security/observability
-- New jurisdictions or intents until Level 7 report/API workflow gates pass
+- New jurisdictions or intents until Level 8/Level 9 planning explicitly selects them
 ```
 
 
@@ -118,7 +123,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-250 tests pass with DB smoke enabled; lint clean; mypy clean (89 source files). C-002 and D-000 are complete on root `main`; D-001 is the next Lane D task.
+251 tests pass with DB smoke enabled; lint clean; mypy clean. C-002, D-000, and D-001 are complete on root `main`; Session 1's Lane A branch remains isolated and is not merged into root.
 
 ## Local repo bootstrap state
 
