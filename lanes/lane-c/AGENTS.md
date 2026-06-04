@@ -70,7 +70,7 @@ mypy backend/app/evidence_ledger backend/app/claims_engine \
 grep -r "from app.source_registry" backend/app/evidence_ledger/ backend/app/claims_engine/
 grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims_engine/
 # Both greps must return 0 matches.
-./scripts/verify.sh
+.\scripts\verify.ps1
 ```
 
 ## Stop conditions

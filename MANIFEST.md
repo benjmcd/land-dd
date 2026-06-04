@@ -40,7 +40,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Data/source strategy | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `schemas/source_schema.json` | Source metadata, licensing, provenance |
 | Evidence/claims | `schemas/evidence_schema.json`, `schemas/claim_schema.json`, `config/ruleset_homestead_mvp.yaml` | Claim-first semantics |
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |
-| Validation | `scripts/verify.sh`, `scripts/validate_workspace.sh`, `.github/workflows/ci.yml` | Executable gates |
+| Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `.github/workflows/ci.yml` | Executable gates |
 | Comprehensive reference | `docs/planning_pack/**` | Read only when needed for ambiguity or major changes |
 
 ## Protected files

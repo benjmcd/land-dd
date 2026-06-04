@@ -57,6 +57,8 @@ Create or update `plans/YYYY-MM-DD-<slug>.md` when any of these are true:
 Follow `.agent/PLANS.md` for plan format.
 
 ## Common commands
+On Windows, use the PowerShell equivalents in this section. Do not run `.sh` scripts locally unless the task explicitly requires the POSIX path and calls that out first.
+
 ```bash
 ./scripts/bootstrap.sh                 # local setup helper
 ./scripts/verify.sh                    # canonical verification gate
@@ -64,11 +66,25 @@ Follow `.agent/PLANS.md` for plan format.
 cd backend && PYTHONPATH=. python -m pytest -q
 ```
 
+Windows PowerShell equivalents:
+```powershell
+.\scripts\bootstrap.ps1
+.\scripts\verify.ps1
+.\scripts\agent-context-check.ps1
+```
+
 Optional DB checks require Docker:
 ```bash
 docker compose up -d db
 ./scripts/db_apply_migrations.sh
 python scripts/db_smoke_check.py
+```
+
+Windows PowerShell equivalent:
+```powershell
+.\scripts\db_apply_migrations.ps1
+python scripts\db_smoke_check.py
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
 ## Work protocol
@@ -80,7 +96,7 @@ For non-trivial work:
 3. Add or update tests/fixtures before or alongside behavior changes.
 4. Implement the smallest bottom-up slice.
 5. Run narrow checks after each slice.
-6. Run `./scripts/verify.sh` before handoff.
+6. Run `./scripts/verify.sh` before handoff, or `.\scripts\verify.ps1` on Windows to avoid a Git Bash popup.
 7. Update `state/PROJECT_STATE.md`, `state/WORKLOG.md`, and `state/VALIDATION_LOG.md`.
 8. Add/update ADRs for architecture-level decisions.
 
@@ -88,7 +104,7 @@ For non-trivial work:
 - Behavior is implemented at the lowest sensible layer before higher-level integrations.
 - Tests or validation checks cover the changed behavior.
 - Docs/plans/state are updated only where materially affected.
-- `./scripts/verify.sh` passes, or failures are recorded with a specific blocker.
+- `./scripts/verify.sh` passes, or failures are recorded with a specific blocker. On Windows, `.\scripts\verify.ps1` is the preferred local gate.
 - Final handoff includes changed files, checks run, current risk, and next task.
 
 ## Stop-and-record conditions

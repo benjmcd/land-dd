@@ -59,8 +59,9 @@ You implement `SourceExistsProtocol` and `AreaExistsProtocol` from `app.domain.p
 ```bash
 pytest backend/tests/reports/ backend/tests/api/ -v
 mypy backend/app/reports backend/app/api
-./scripts/verify.sh
-docker compose up -d db && RUN_DB_SMOKE=1 ./scripts/verify.sh  # full L2 gate
+.\scripts\verify.ps1
+docker compose up -d db
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1  # full L2 gate
 ```
 
 ## Stop conditions

@@ -24,6 +24,16 @@ docker compose up -d db
 python scripts/db_smoke_check.py
 ```
 
+Windows PowerShell equivalents avoid launching a separate Git Bash window:
+```powershell
+.\scripts\bootstrap.ps1
+.\scripts\verify.ps1
+docker compose up -d db
+.\scripts\db_apply_migrations.ps1
+python scripts\db_smoke_check.py
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
 ## Current locked scope
 
 ```text

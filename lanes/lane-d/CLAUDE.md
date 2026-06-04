@@ -8,5 +8,5 @@
 - You are the integration lane. You wire A/B/C services together — never modify their files.
 - Use plan mode for any API contract, report schema, or infrastructure change.
 - Run `pytest backend/tests/reports/ backend/tests/api/ -v` after every change.
-- Run `./scripts/verify.sh` before handoff.
+- Run `.\scripts\verify.ps1` before handoff on Windows.
 - Do NOT modify any file owned by Lane A, B, or C.

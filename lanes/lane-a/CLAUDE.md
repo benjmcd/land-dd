@@ -8,5 +8,5 @@
 - Use plan mode for any schema, API, or architecture change.
 - Keep API handlers thin; put business logic in `source_registry/service.py`.
 - Run `pytest backend/tests/source_registry/ -v` after every change.
-- Run `./scripts/verify.sh` before handoff.
+- Run `.\scripts\verify.ps1` before handoff on Windows.
 - Do NOT modify any file owned by Lane B, C, or D.

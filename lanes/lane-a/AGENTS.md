@@ -54,9 +54,9 @@ Do NOT import from: `app.area_geometry`, `app.evidence_ledger`, `app.claims_engi
 ```bash
 pytest backend/tests/source_registry/ -v
 mypy backend/app/source_registry backend/app/domain/source_contracts.py
-./scripts/verify.sh
+.\scripts\verify.ps1
 # Once Docker running:
-RUN_DB_SMOKE=1 ./scripts/verify.sh
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
 ## Stop conditions

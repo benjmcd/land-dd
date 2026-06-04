@@ -8,5 +8,5 @@
 - Use plan mode for any evidence/claim contract, rules engine, or audit change.
 - Never import from `app.source_registry` or `app.area_geometry` — use `app.domain.protocols` for cross-lane checks.
 - Run `pytest backend/tests/evidence_ledger/ backend/tests/claims_engine/ -v` after every change.
-- Run `./scripts/verify.sh` before handoff.
+- Run `.\scripts\verify.ps1` before handoff on Windows.
 - Do NOT modify any file owned by Lane A, B, or D.

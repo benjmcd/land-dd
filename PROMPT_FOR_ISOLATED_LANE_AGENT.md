@@ -38,8 +38,8 @@ Hard global rules:
 - Do not modify outside the fresh lane worktree after it is created, except for the unavoidable `.git/worktrees` metadata created by `git worktree add`.
 - Do not add production dependencies, live connectors, paid/vendor data, secrets, `.env*`, UI, LLM summaries, global coverage, or broad refactors.
 - Ignore generated/local artifacts, especially `.codesight/`, caches, and `__pycache__/`.
-- Do not create or depend on automatic agent hooks. `agent-context-check.sh` is manual/CI validation only.
-- Use relative repo paths in commands after entering the workspace. Absolute `C:/Program Files/Git/bin/bash.exe` is allowed only for Windows bash-script execution.
+- Do not create or depend on automatic agent automation. `agent-context-check.ps1` is manual/CI validation only on Windows.
+- Use relative repo paths in commands after entering the workspace. On Windows, prefer PowerShell wrappers like `.\scripts\verify.ps1` instead of launching Git Bash.
 
 Parallel isolation rules:
 - If the current directory is not the fresh `worktrees/<chosen-worktree-dir>` path you created, stop before edits.
@@ -68,7 +68,7 @@ Before edits, prove scope:
 2. Run `git status --short --branch`.
 3. Identify current milestone, assigned lane, owned files, readable-but-not-modifiable files, forbidden files, next task, and blockers.
 4. Run baseline verification:
-   `C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh`
+   `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1`
 5. Run lane-specific tests from `<LANE STATE>`.
 6. If any baseline gate fails, investigate first. Do not start feature work until failure is understood and either fixed within lane scope or recorded as blocker.
 
@@ -100,10 +100,10 @@ State and documentation updates:
 
 Validation command notes:
 - Prefer Git Bash for repo bash scripts:
-  `C:/Program Files/Git/bin/bash.exe ./scripts/verify.sh`
+  `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1`
 - In PowerShell, use `$env:PYTHONPATH='.'` instead of bash-style `PYTHONPATH=.`.
 - Do not skip tests, ruff, or mypy. If a gate cannot run, report exact command, exact failure/blocker, and residual risk.
-- DB smoke requires Docker. Do not claim DB-backed maturity unless `RUN_DB_SMOKE=1 ./scripts/verify.sh` or the documented DB migration/smoke commands actually pass.
+- DB smoke requires Docker. On Windows PowerShell, do not claim DB-backed maturity unless `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` or the documented DB migration/smoke commands actually pass.
 
 Project invariants that must not weaken:
 - Postgres/PostGIS is the system of record for structured state.

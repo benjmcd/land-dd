@@ -11,7 +11,7 @@ description: Diagnose and fix failing tests, broken scripts, runtime errors, or 
 2. Capture the exact error and affected files.
 3. Identify whether the problem is test, code, environment, or data/fixture.
 4. Make the smallest fix that addresses the root cause.
-5. Re-run the narrow command, then `./scripts/verify.sh` if the fix is material.
+5. Re-run the narrow command, then the repo verify gate if the fix is material: on Windows use `.\scripts\verify.ps1`; on POSIX use `./scripts/verify.sh`.
 6. Update `state/VALIDATION_LOG.md` with command, result, and residual risk.
 
 Do not skip, weaken, or delete tests to create a passing state unless the active plan explicitly calls for replacing them with stronger tests.

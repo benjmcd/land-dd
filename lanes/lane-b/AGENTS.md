@@ -58,7 +58,7 @@ Do NOT import from: `app.source_registry`, `app.evidence_ledger`, `app.claims_en
 ```bash
 pytest backend/tests/area_geometry/ -v
 mypy backend/app/area_geometry backend/app/domain/area_contracts.py
-./scripts/verify.sh
+.\scripts\verify.ps1
 ```
 
 ## Stop conditions

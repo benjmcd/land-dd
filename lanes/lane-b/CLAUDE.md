@@ -7,5 +7,5 @@
 - Read `../../LANE_OWNERSHIP.md` and `../../state/lane-b-state.md` before doing anything.
 - Use plan mode for any schema, geometry contract, or PostGIS query change.
 - Run `pytest backend/tests/area_geometry/ -v` after every change.
-- Run `./scripts/verify.sh` before handoff.
+- Run `.\scripts\verify.ps1` before handoff on Windows.
 - Do NOT modify any file owned by Lane A, C, or D.
