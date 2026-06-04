@@ -2,6 +2,40 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane D TD-081 report manifest metadata schema
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/reports/test_report_schema_contract.py tests/reports/test_report_contracts.py
+ruff check tests/reports/test_report_schema_contract.py
+mypy tests/reports/test_report_schema_contract.py
+py -3.12 -m pytest -q tests/reports tests/api
+ruff check app/reports app/api app/main.py tests/reports tests/api
+mypy app/reports app/api app/main.py tests/reports tests/api
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Focused report schema/default contract tests: 7 passed.
+- Focused report schema ruff: clean.
+- Focused report schema mypy: clean over 1 source file.
+- Broader report/API tests: 31 passed, 4 skipped.
+- Broader report/API ruff: clean.
+- Broader report/API mypy: clean over 27 source/test files.
+- Full DB-enabled PowerShell verification: ok; 343 backend tests pass; lint clean; mypy clean over 120 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 343 tests, including 6 report schema-contract tests.
+
+**Residual risk:**
+
+- TD-081 tightens stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys only. It does not add runtime JSON Schema validation, API behavior changes, DB migrations, connector behavior, source provenance-family schemas, job schema, OpenAPI refresh, live connectors, or durable `ingest_run_id` evidence-row linkage.
+- Nested report metadata maps still allow extension fields by design; future extension keys need their own decision before being treated as stable.
+
 ## 2026-06-04 Combined CON-020 plus TD-080 root verification
 
 **Commands run:**
@@ -20,7 +54,7 @@ py -3.12 -m pytest --collect-only -q
 **Residual risk:**
 
 - CON-020 remains fixture-local connector quality coverage only.
-- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. Source provenance-family schemas, job schema, report manifest metadata tightening, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys. Source provenance-family schemas, job schema, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
 
 ## 2026-06-04 CON-020 connector fixture identity and timing quality
 
@@ -81,7 +115,7 @@ py -3.12 -m pytest --collect-only -q
 
 **Residual risk:**
 
-- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. Source provenance-family schemas, job schema, report source-manifest/artifact-metadata tightening, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys. Source provenance-family schemas, job schema, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
 
 ## 2026-06-04 CON-019 connector source-failure evidence ID adoption
 

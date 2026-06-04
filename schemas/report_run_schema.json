@@ -57,6 +57,114 @@
     },
     "source_manifest": {
       "type": "object",
+      "required": [
+        "source_ids",
+        "source_count",
+        "evidence_count",
+        "claim_count",
+        "ruleset_id",
+        "ruleset_version",
+        "source_names",
+        "source_details"
+      ],
+      "properties": {
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "source_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "claim_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ruleset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ruleset_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_id",
+              "name",
+              "authority_level",
+              "license_status",
+              "commercial_use_status",
+              "freshness_class",
+              "review_status",
+              "review_owner",
+              "last_checked_at"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "authority_level": {
+                "type": "string",
+                "enum": [
+                  "official_primary",
+                  "official_secondary",
+                  "commercial_normalized",
+                  "open_community",
+                  "derived_model",
+                  "user_supplied",
+                  "unknown"
+                ]
+              },
+              "license_status": {
+                "type": "string"
+              },
+              "commercial_use_status": {
+                "type": "string"
+              },
+              "freshness_class": {
+                "type": "string"
+              },
+              "review_status": {
+                "type": "string"
+              },
+              "review_owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last_checked_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
       "additionalProperties": true
     },
     "assumptions": {
@@ -103,6 +211,67 @@
     },
     "artifact_metadata": {
       "type": "object",
+      "required": [
+        "artifact_kind",
+        "report_schema",
+        "cost_metrics"
+      ],
+      "properties": {
+        "artifact_kind": {
+          "type": "string",
+          "const": "report_run"
+        },
+        "report_schema": {
+          "type": "string",
+          "const": "report_run_contract_v1"
+        },
+        "persistence": {
+          "type": "string",
+          "enum": [
+            "memory",
+            "postgres+object_store"
+          ]
+        },
+        "output_uri": {
+          "type": "string"
+        },
+        "machine_json_uri": {
+          "type": "string"
+        },
+        "cost_metrics": {
+          "type": "object",
+          "required": [
+            "evidence_count",
+            "claim_count",
+            "unknown_count",
+            "red_flag_count",
+            "verification_task_count"
+          ],
+          "properties": {
+            "evidence_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "claim_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "red_flag_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "verification_task_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": true
+        }
+      },
       "additionalProperties": true
     },
     "started_at": {

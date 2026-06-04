@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
-from app.domain.enums import IntentCode, JobStatus
+from app.domain.enums import AuthorityLevel, IntentCode, JobStatus
 from app.domain.report_contracts import ReportRunContract
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -43,6 +43,96 @@ def test_report_run_schema_references_lane_owned_nested_contract_schemas() -> No
     assert properties["claims"]["items"]["$ref"] == CLAIM_REF
     assert properties["unknowns"]["items"]["$ref"] == CLAIM_REF
     assert properties["red_flags"]["items"]["$ref"] == CLAIM_REF
+
+
+def test_report_run_schema_tightens_source_manifest_shape() -> None:
+    schema = load_schema()
+    properties = cast(dict[str, Any], schema["properties"])
+    source_manifest = cast(dict[str, Any], properties["source_manifest"])
+    manifest_properties = cast(dict[str, Any], source_manifest["properties"])
+    source_details = cast(dict[str, Any], manifest_properties["source_details"])
+    source_detail_item = cast(dict[str, Any], source_details["items"])
+    source_detail_properties = cast(dict[str, Any], source_detail_item["properties"])
+
+    assert set(source_manifest["required"]) == {
+        "source_ids",
+        "source_count",
+        "evidence_count",
+        "claim_count",
+        "ruleset_id",
+        "ruleset_version",
+        "source_names",
+        "source_details",
+    }
+    assert manifest_properties["source_ids"]["items"] == {
+        "type": "string",
+        "format": "uuid",
+    }
+    assert manifest_properties["source_count"]["minimum"] == 0
+    assert manifest_properties["evidence_count"]["minimum"] == 0
+    assert manifest_properties["claim_count"]["minimum"] == 0
+    assert manifest_properties["ruleset_id"]["minLength"] == 1
+    assert manifest_properties["ruleset_version"]["minLength"] == 1
+    assert manifest_properties["source_names"]["items"]["type"] == "string"
+
+    assert set(source_detail_item["required"]) == {
+        "source_id",
+        "name",
+        "authority_level",
+        "license_status",
+        "commercial_use_status",
+        "freshness_class",
+        "review_status",
+        "review_owner",
+        "last_checked_at",
+    }
+    assert source_detail_properties["source_id"] == {
+        "type": "string",
+        "format": "uuid",
+    }
+    assert source_detail_properties["authority_level"]["enum"] == [
+        item.value for item in AuthorityLevel
+    ]
+    assert source_detail_properties["review_owner"]["type"] == ["string", "null"]
+    assert source_detail_properties["last_checked_at"]["type"] == ["string", "null"]
+    assert source_detail_item["additionalProperties"] is True
+    assert source_manifest["additionalProperties"] is True
+
+
+def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
+    schema = load_schema()
+    properties = cast(dict[str, Any], schema["properties"])
+    artifact_metadata = cast(dict[str, Any], properties["artifact_metadata"])
+    artifact_properties = cast(dict[str, Any], artifact_metadata["properties"])
+    cost_metrics = cast(dict[str, Any], artifact_properties["cost_metrics"])
+    cost_metric_properties = cast(dict[str, Any], cost_metrics["properties"])
+
+    assert set(artifact_metadata["required"]) == {
+        "artifact_kind",
+        "report_schema",
+        "cost_metrics",
+    }
+    assert artifact_properties["artifact_kind"]["const"] == "report_run"
+    assert artifact_properties["report_schema"]["const"] == "report_run_contract_v1"
+    assert artifact_properties["persistence"]["enum"] == [
+        "memory",
+        "postgres+object_store",
+    ]
+    assert artifact_properties["output_uri"]["type"] == "string"
+    assert artifact_properties["machine_json_uri"]["type"] == "string"
+    assert set(cost_metrics["required"]) == {
+        "evidence_count",
+        "claim_count",
+        "unknown_count",
+        "red_flag_count",
+        "verification_task_count",
+    }
+    assert all(
+        cost_metric_properties[name]["minimum"] == 0
+        for name in cost_metrics["required"]
+    )
+    assert cost_metrics["additionalProperties"] is True
+    assert artifact_metadata["additionalProperties"] is True
 
 
 def test_serialized_report_run_contract_uses_schema_field_set() -> None:

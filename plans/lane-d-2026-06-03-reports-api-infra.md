@@ -28,10 +28,11 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - D-001 is complete: `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` work through SQLAlchemy-backed API services, persisted report artifacts, and non-null seeded `intent_id` linkage.
 - D-002 is complete: a normalized Lane D regression test fixes the stable semantic shape of the generated fixture report artifact while ignoring dynamic UUID/timestamp/path fields.
 - TD-080 is complete: `schemas/report_run_schema.json` represents serialized `ReportRunContract`, references Lane C evidence/claim schemas for nested arrays, and is guarded by report schema-contract parity tests.
+- TD-081 is complete: `schemas/report_run_schema.json` now constrains stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys while preserving extension fields and avoiding runtime/API/DB behavior changes.
 
 ## Blockers at lane setup
 
-Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas are now aligned to serialized domain contracts; source provenance-family schemas, job schema, report manifest metadata tightening, and OpenAPI refresh remain future coordinated work.
+Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas are now aligned to serialized domain contracts, and stable generated report manifest metadata is schema-constrained. Source provenance-family schemas, job schema, and OpenAPI refresh remain future coordinated work.
 
 ## Proposed design
 
@@ -98,9 +99,18 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 ### TD-080: Report-run schema contract (COMPLETE)
 1. Add `schemas/report_run_schema.json` as the serialized `ReportRunContract` schema.
 2. Reference Lane C evidence and claim schema IDs for nested report arrays instead of duplicating nested contracts in Lane D.
-3. Keep `source_manifest` and `artifact_metadata` open objects until report manifest metadata semantics stabilize.
+3. Keep `source_manifest` and `artifact_metadata` open objects for TD-080; TD-081 later tightens their stable generated report artifact keys while preserving extension fields.
 4. Add schema-contract tests for field parity, required-field parity, enum parity, and nested schema references.
 5. Status: COMPLETE for the Level 7 report JSON schema requirement.
+
+### TD-081: Report manifest metadata schema tightening (COMPLETE)
+
+1. Tighten `source_manifest` around the stable generated report keys: source IDs, source/evidence/claim counts, ruleset identity, source names, and per-source details.
+2. Tighten `source_details` around source governance fields emitted by `ReportRunService`, including parity with the current Lane A `AuthorityLevel` enum values.
+3. Tighten `artifact_metadata` around report artifact identity, schema identity, optional persistence/output URIs, and non-negative cost metrics.
+4. Keep `additionalProperties: true` for nested metadata maps so future report artifact extensions remain additive.
+5. Record ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`; no API route behavior, runtime validation, DB schema, connector behavior, source provenance-family schema, job schema, OpenAPI, live I/O, hook config, or POSIX script change is introduced.
+6. Status: COMPLETE for generated report manifest metadata schema tightening.
 
 ## Files likely to change
 
@@ -121,6 +131,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `schemas/report_run_schema.json` | Report-run JSON schema contract |
 | `backend/tests/reports/test_report_schema_contract.py` | Report schema-contract parity tests |
 | `docs/adr/lane-d-0009-report-run-schema.md` | Report-run schema decision |
+| `docs/adr/lane-d-0010-report-manifest-metadata.md` | Report manifest metadata schema decision |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
@@ -140,7 +151,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 
 | Blocker | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned | Source provenance-family schemas, job schema, manifest metadata, and OpenAPI remain future coordinated passes |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened | Source provenance-family schemas, job schema, and OpenAPI remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
@@ -155,7 +166,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: docker-compose.yml owned by Lane A; Lane D reads only.
 - 2026-06-03: Persisted report runs use the existing `reports.report_runs` table plus `OBJECT_STORE_ROOT` JSON artifacts. The in-memory scaffold remains available for fixture tests.
 - 2026-06-04: API DB mode is explicit (`create_app(use_db_services=True)`) so default scaffold tests remain in-memory while DB integration tests exercise the Postgres/PostGIS system of record.
-- 2026-06-04: `schemas/report_run_schema.json` is the serialized `ReportRunContract` schema. Nested evidence and claim arrays reference the lane-owned schemas, while `source_manifest` and `artifact_metadata` remain open objects pending future manifest metadata decisions.
+- 2026-06-04: `schemas/report_run_schema.json` is the serialized `ReportRunContract` schema. Nested evidence and claim arrays reference the lane-owned schemas; ADR Lane D 0010 tightens stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys while keeping extension fields open.
 
 ## Progress log
 
@@ -172,3 +183,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: D-001 complete. Added explicit DB-backed API service wiring, request-scoped DB service construction, successful-request commit/failed-request rollback, and a DB-backed API integration test proving `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted report row, non-null `intent_id`, unsupported-category UNKNOWNs, and artifact path. Lane D tests pass with DB smoke enabled: 19 tests.
 - 2026-06-04: D-002 complete. Added `backend/tests/reports/test_report_regression.py` to assert the stable semantic shape of the generated fixture report artifact while ignoring dynamic IDs/timestamps/paths. Lane D report/API tests pass with DB smoke enabled: 20 tests.
 - 2026-06-04: TD-080 complete. Added `schemas/report_run_schema.json`, report schema-contract parity tests, and ADR `lane-d-0009-report-run-schema`. Lane D report/API collection: 33 tests; full DB-enabled PowerShell verification: 339 tests, lint clean, mypy clean (120 source files), migrations/seeds apply, DB smoke passes.
+- 2026-06-04: TD-081 complete. Tightened generated report manifest metadata schema keys, added ADR `lane-d-0010-report-manifest-metadata`, and extended report schema-contract tests without changing API, DB, connector behavior, runtime validation, live I/O, hook config, or POSIX scripts.

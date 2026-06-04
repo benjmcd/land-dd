@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-081 report manifest metadata schema)
+
+- Tightened `schemas/report_run_schema.json` for stable generated report metadata: `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics`.
+- Extended `backend/tests/reports/test_report_schema_contract.py` to guard nested manifest required keys, source governance detail shape, `AuthorityLevel` enum parity, artifact identity, optional persistence/output fields, and non-negative cost metrics.
+- Added ADR `docs/adr/lane-d-0010-report-manifest-metadata.md` and amended ADR `lane-d-0009-report-run-schema` to record TD-081 as the separate manifest metadata follow-up it had deferred.
+- Updated Lane D and Level 7/8 planning/state records so report manifest metadata tightening is no longer listed as an open schema gap; source provenance-family schemas, job schema, OpenAPI refresh, new report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain future work.
+- Preserved the boundary: no API route behavior, runtime JSON Schema validation, DB migration, connector behavior, Lane A/B/C implementation, live I/O, hook config, or POSIX scripts were changed.
+- Verification passed: focused report schema/default contract tests; focused report schema ruff/mypy; broader report/API pytest/ruff/mypy; full DB-enabled PowerShell verification with 343 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (Lane D TD-080 report-run schema contract)
 
 - Created isolated worktree `worktrees/lane-d-report-schema` on branch `lane-d/report-schema` from root `main` at `3001c65` to avoid Session 2's active connector fixture-quality work.

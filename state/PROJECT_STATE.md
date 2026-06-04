@@ -37,7 +37,14 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
+- cd backend; py -3.12 -m pytest -q tests/reports/test_report_schema_contract.py tests/reports/test_report_contracts.py
+- cd backend; py -3.12 -m pytest -q tests/reports tests/api
+- cd backend; ruff check tests/reports/test_report_schema_contract.py
+- cd backend; ruff check app/reports app/api app/main.py tests/reports tests/api
+- cd backend; mypy tests/reports/test_report_schema_contract.py
+- cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 Verification result:
+- 343 tests pass in the DB-enabled Windows PowerShell verification path after TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes.
 - 331 tests pass in the DB-enabled Windows PowerShell verification path after combined Lane C TC-180 plus CON-017/CON-018 integration rehearsal; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
 - 330 tests pass in the DB-enabled Windows PowerShell verification path after aligning the Lane A source schema with serialized `SourceContract`; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes.
 - 335 tests pass in the DB-enabled Windows PowerShell verification path after merging Lane A TA-070 and CON-019 connector source-failure ID adoption into the Session 2 integration branch; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes.
@@ -51,7 +58,7 @@ Verification result:
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
-- Shared schema gaps for source provenance-family schemas, job, report manifest metadata, and planning-pack OpenAPI remain recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; Lane A source, Lane C evidence/claim root schemas, Lane D report-run schema, and planning-pack evidence/claim schema copies are now aligned to their serialized domain contracts
+- Shared schema gaps for source provenance-family schemas, job schema, planning-pack/OpenAPI, and future report metadata extensions remain recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; Lane A source, Lane C evidence/claim root schemas, Lane D report-run schema plus stable generated report manifest metadata keys, and planning-pack evidence/claim schema copies are now aligned to their serialized domain contracts
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector runtime contract slice is implemented as a static local flood fixture with no live network, explicit idempotency, blocked/source-failure behavior, and source retrieval provenance
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 - CON-001 is complete: `StaticFloodFixtureConnector` reads local flood fixture JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure source-failure fixtures, and stays before claims/reports
@@ -75,6 +82,7 @@ Verification result:
 - CON-018 is complete: connector review queue repositories can requeue failed `connector_review_status` jobs only when attempts remain and cancel nonfinal jobs with reasons, without adding API-side mutation, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-019 is complete in the Session 2 integration branch: connector evidence ingestion now passes deterministic source-failure evidence IDs into Lane C's public `create_source_failure(...)` method and DB-backed public wiring proves the ID round-trips; no Lane C implementation/schema edits, live I/O, queue mutation/API route, claim/report shortcut, or durable `ingest_run_id` evidence-row linkage was added
 - CON-020 is complete: connector fixture quality now flags duplicate evidence IDs and evidence observed outside the retrieval-run time window without adding API mutation routes, persistence, live I/O, shared schema edits, claims, reports, or durable `ingest_run_id` evidence-row linkage
+- TD-081 is complete: stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with parity tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`, without adding runtime validation, API behavior changes, DB migrations, connector behavior, live I/O, hook config, or POSIX scripts
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -113,6 +121,7 @@ Completion evidence:
 - backend/tests/reports/test_report_regression.py
 - schemas/report_run_schema.json
 - backend/tests/reports/test_report_schema_contract.py
+- docs/adr/lane-d-0010-report-manifest-metadata.md
 - db/seeds/source_registry_seeds.py
 - scripts/seed_sources.py
 - docs/adr/lane-a-0001-provenance-model.md
@@ -122,7 +131,7 @@ Completion evidence:
 - backend/tests/source_registry/test_source_schema_contract.py
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 pass after CON-020 plus TD-080 landing: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, report manifest metadata tightening, planning-pack/OpenAPI refresh, or broader fixture data-quality coverage for another selected fixture category.
+- Select the next Level 8 pass after CON-020 plus TD-081 landing: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, planning-pack/OpenAPI refresh, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -179,7 +188,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-341 tests pass in the DB-enabled Windows PowerShell verification path after merging CON-020 connector fixture identity/timing quality with Lane D TD-080 report-run schema contract; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, Lane A TA-070, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from human-review action workflow planning, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, report manifest metadata tightening, planning-pack/OpenAPI refresh, or broader fixture data-quality coverage for another selected fixture category.
+343 tests pass in the DB-enabled Windows PowerShell verification path after Lane D TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, Lane A TA-070, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from human-review action workflow planning, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, planning-pack/OpenAPI refresh, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
 
 ## Local repo bootstrap state
 

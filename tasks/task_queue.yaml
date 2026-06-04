@@ -659,3 +659,28 @@ tasks:
       - Evidence observed after retrieval finish produces a blocking quality issue
       - Fixture identity/timing quality remains connector-owned and fixture-only
       - No API mutation route, persistence, live IO, schema edit, claim, report, or durable ingest_run_id evidence linkage is introduced
+
+  - id: TD-081
+    title: Level 7 report manifest metadata schema tightening
+    status: done
+    depends_on: [TD-080]
+    lane: lane-d
+    notes: Tightened the stable generated report metadata schema keys for source_manifest, source_details, artifact_metadata, and cost_metrics while keeping nested extension fields open. No runtime JSON Schema validation, API behavior, DB migration, connector behavior, live IO, hook config, POSIX script, source provenance-family schema, job schema, OpenAPI refresh, or durable ingest_run_id evidence-row linkage was introduced.
+    spec: plans/lane-d-2026-06-03-reports-api-infra.md#td-081-report-manifest-metadata-schema-tightening-complete
+    files:
+      - schemas/report_run_schema.json
+      - backend/tests/reports/test_report_schema_contract.py
+      - docs/adr/lane-d-0010-report-manifest-metadata.md
+      - docs/adr/lane-d-0009-report-run-schema.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/lane-d-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - source_manifest declares stable generated report manifest keys and non-negative count fields
+      - source_details declares stable source governance fields and AuthorityLevel enum parity
+      - artifact_metadata declares report artifact identity, schema identity, optional persistence/output fields, and cost_metrics
+      - cost_metrics declares non-negative evidence, claim, unknown, red-flag, and verification-task counts
+      - Nested report metadata maps keep additionalProperties true for future additive extensions
+      - No runtime validation, API behavior, DB migration, connector behavior, live IO, hook config, POSIX script, source provenance-family schema, job schema, OpenAPI refresh, or durable ingest_run_id evidence-row linkage is introduced
