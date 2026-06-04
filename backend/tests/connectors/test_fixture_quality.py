@@ -45,6 +45,25 @@ def test_fixture_quality_accepts_source_failure_fixture() -> None:
     assert profile.issues == ()
 
 
+def test_fixture_quality_flags_connector_name_mismatch() -> None:
+    result = _load_success()
+    retrieval_run = result.retrieval_run.model_copy(
+        update={"connector_name": "fixture_zoning_static"},
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=result.evidence_inputs,
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.RETRIEVAL_CONNECTOR_NAME_MISMATCH,
+    )
+
+
 def test_fixture_quality_flags_dataset_version_mismatch() -> None:
     result = _load_success()
     mismatched = result.evidence_inputs[0].model_copy(

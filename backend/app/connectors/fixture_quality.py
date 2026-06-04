@@ -12,6 +12,7 @@ from .flood_fixture import FloodFixtureConnectorResult
 
 class ConnectorFixtureQualityIssueCode(StrEnum):
     RETRIEVAL_FINISHED_BEFORE_STARTED = "retrieval_finished_before_started"
+    RETRIEVAL_CONNECTOR_NAME_MISMATCH = "retrieval_connector_name_mismatch"
     RETRIEVAL_DATASET_VERSION_MISSING = "retrieval_dataset_version_missing"
     EVIDENCE_DOMAIN_MISMATCH = "evidence_domain_mismatch"
     EVIDENCE_DATASET_VERSION_MISMATCH = "evidence_dataset_version_mismatch"
@@ -43,6 +44,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
 
 
 _FLOOD_FIXTURE_DOMAIN = "flood"
+_FLOOD_FIXTURE_CONNECTOR_NAME = "fixture_flood_static"
 
 
 @dataclass(frozen=True)
@@ -83,6 +85,13 @@ def evaluate_flood_fixture_quality(
             _issue(
                 ConnectorFixtureQualityIssueCode.RETRIEVAL_FINISHED_BEFORE_STARTED,
                 "fixture retrieval finished before it started",
+            ),
+        )
+    if retrieval_run.connector_name != _FLOOD_FIXTURE_CONNECTOR_NAME:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.RETRIEVAL_CONNECTOR_NAME_MISMATCH,
+                "flood fixture retrieval connector_name must be fixture_flood_static",
             ),
         )
     if retrieval_run.dataset_version_id is None:

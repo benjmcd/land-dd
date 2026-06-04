@@ -1084,6 +1084,34 @@ tasks:
       - Fixture quality rejects domain drift before evidence is accepted as flood evidence
       - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
 
+  - id: CON-033
+    title: Level 8 connector fixture retrieval name quality
+    status: done
+    depends_on: [CON-032]
+    lane: connector-integration
+    notes: Tightened connector-local fixture quality so flood fixture retrievals must use connector_name fixture_flood_static. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-033-connector-fixture-retrieval-name-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; python -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Flood fixture retrievals must use connector_name fixture_flood_static
+      - Fixture quality rejects connector-name drift before a retrieval is accepted as flood fixture output
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done
