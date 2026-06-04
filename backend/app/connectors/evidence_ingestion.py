@@ -22,6 +22,7 @@ class EvidenceIngestionPort(Protocol):
     def create_source_failure(
         self,
         *,
+        evidence_id: UUID | None = None,
         area_id: UUID,
         source_id: UUID,
         method_code: str,
@@ -61,16 +62,19 @@ class ConnectorEvidenceIngestionAdapter:
         skipped: list[EvidenceContract] = []
 
         for evidence in evidence_inputs:
-            if self._evidence_port.evidence_exists(evidence.evidence_id):
-                skipped.append(evidence)
-                continue
-
             if evidence.is_source_failure:
                 skipped_failure = self._matching_source_failure(evidence)
                 if skipped_failure is not None:
                     skipped.append(skipped_failure)
                     continue
+                if self._evidence_port.evidence_exists(evidence.evidence_id):
+                    skipped.append(evidence)
+                    continue
                 created.append(self._create_source_failure(evidence))
+                continue
+
+            if self._evidence_port.evidence_exists(evidence.evidence_id):
+                skipped.append(evidence)
                 continue
 
             if evidence.evidence_type == EvidenceType.SOURCE_FAILURE:
@@ -94,6 +98,7 @@ class ConnectorEvidenceIngestionAdapter:
                 "is_source_failure connector evidence must use source_failure type",
             )
         return self._evidence_port.create_source_failure(
+            evidence_id=evidence.evidence_id,
             area_id=evidence.area_id,
             source_id=evidence.source_id,
             method_code=evidence.method_code,
