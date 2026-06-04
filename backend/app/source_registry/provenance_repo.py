@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Protocol, cast
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.source_contracts import (
@@ -140,12 +141,14 @@ class SqlAlchemySourceProvenanceRepository:
         return _model_to_dataset(model)
 
     def list_datasets_by_source(self, source_id: UUID) -> list[SourceDatasetContract]:
+        stmt = (
+            select(SourceDatasetModel)
+            .where(SourceDatasetModel.source_id == source_id)
+            .order_by(SourceDatasetModel.dataset_name)
+        )
         return [
             _model_to_dataset(model)
-            for model in self._session.query(SourceDatasetModel)
-            .filter(SourceDatasetModel.source_id == source_id)
-            .order_by(SourceDatasetModel.dataset_name)
-            .all()
+            for model in self._session.execute(stmt).scalars().all()
         ]
 
     def add_dataset_version(
@@ -170,15 +173,17 @@ class SqlAlchemySourceProvenanceRepository:
         self,
         dataset_id: UUID,
     ) -> list[SourceDatasetVersionContract]:
-        return [
-            _model_to_version(model)
-            for model in self._session.query(SourceDatasetVersionModel)
-            .filter(SourceDatasetVersionModel.dataset_id == dataset_id)
+        stmt = (
+            select(SourceDatasetVersionModel)
+            .where(SourceDatasetVersionModel.dataset_id == dataset_id)
             .order_by(
                 SourceDatasetVersionModel.version_label,
                 SourceDatasetVersionModel.retrieved_at,
             )
-            .all()
+        )
+        return [
+            _model_to_version(model)
+            for model in self._session.execute(stmt).scalars().all()
         ]
 
     def add_retrieval_run(
@@ -203,12 +208,14 @@ class SqlAlchemySourceProvenanceRepository:
         self,
         dataset_version_id: UUID,
     ) -> list[SourceRetrievalRunContract]:
+        stmt = (
+            select(SourceIngestRunModel)
+            .where(SourceIngestRunModel.dataset_version_id == dataset_version_id)
+            .order_by(SourceIngestRunModel.started_at, SourceIngestRunModel.ingest_run_id)
+        )
         return [
             _model_to_run(model)
-            for model in self._session.query(SourceIngestRunModel)
-            .filter(SourceIngestRunModel.dataset_version_id == dataset_version_id)
-            .order_by(SourceIngestRunModel.started_at, SourceIngestRunModel.ingest_run_id)
-            .all()
+            for model in self._session.execute(stmt).scalars().all()
         ]
 
 
