@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 C-002 handoff risk check)
+
+- Rechecked root `main`, Session 1's worktree, and the Session 1 log before advancing Lane D. Root `main` remains clean and does not contain C-002.
+- Found Session 1's C-002 worktree still in a detached rebase state with unresolved conflict markers in `state/VALIDATION_LOG.md`.
+- Read-only validation of the draft C-002 branch found the emitted not-evaluated claims are UNKNOWN, but the four unsupported-category ruleset entries and unit test still declare `severity_on_fail: informational`.
+- Sent Session 1 a coordination note because D-000 depends on a canonical C-002 handoff whose claim behavior and ruleset metadata both use UNKNOWN for unsupported categories.
+- Non-mutating merge simulation showed the current C-002 branch conflicts with root `main` only in state files; no report/API code conflicts were identified.
+
 ## 2026-06-04 (Session 2 API unknown surfacing regression)
 
 - Added a Lane D API regression proving `POST /report-runs` surfaces `SeverityBand.UNKNOWN` claims generated from stored source-failure evidence in the response `unknowns` list and cost metrics.

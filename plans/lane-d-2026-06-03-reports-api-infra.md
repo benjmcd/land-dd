@@ -24,6 +24,7 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - Lane D is a partial report-run harness, not a complete Level 7 vertical slice: default API wiring remains in-memory, and durable area/evidence/claim/rule-execution persistence is still lower-layer work.
 - Session 2 split the unsupported-category work by lane ownership: Lane C owns C-002 rule/claim behavior; Lane D owns D-000 report/API surfacing after C-002.
 - `backend/app/db/session.py` now provides D-001 pre-work by delegating `get_db_session()` to the shared `get_session()` factory; DB service wiring in `api/dependencies.py`/`main.py` remains blocked until C-002 and D-000 complete.
+- Session 2 read-only coordination found the draft C-002 branch still declared the four unsupported-category rules as `severity_on_fail: informational` while emitting UNKNOWN claims. D-000 entry criteria require the canonical C-002 handoff to use `severity_on_fail: unknown` for those rules so report unknowns and ruleset metadata stay aligned.
 
 ## Blockers at lane setup
 
@@ -113,7 +114,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
-| Lane C C-002 unsupported-category claims | Pending | D-000 report surfacing and full D-001 DB-backed API workflow must wait for this |
+| Lane C C-002 unsupported-category claims | Pending | D-000 report surfacing and full D-001 DB-backed API workflow must wait for this; C-002 must land with UNKNOWN claim behavior and `severity_on_fail: unknown` ruleset metadata for all four unsupported categories |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |
 
 ## Decision log
@@ -132,3 +133,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: TD-040 complete for persisted report runs. Added `backend/app/reports/models.py`, `backend/app/reports/report_repo.py`, a SQLAlchemy-backed `reports.report_runs` round-trip test, and `docs/adr/lane-d-0001-report-persistence.md`. Lane D tests: 16 passing. Full verification: 173 tests, ruff clean, mypy clean (72 source files); DB smoke passes on the local Postgres/PostGIS container.
 - 2026-06-04: Session 2 D-001 pre-work complete for the DB session dependency. Added `backend/app/db/session.py` and `backend/tests/api/test_db_session.py`; split D-000 report surfacing from Lane C C-002 in coordination docs. Lane D tests: 17 passing. Full verification: 243 tests, ruff clean, mypy clean (87 source files); DB smoke passes.
 - 2026-06-04: Added API regression proving existing source-failure UNKNOWN claims appear in `POST /report-runs` response unknowns and cost metrics. This supports D-000 report surfacing once Lane C C-002 provides unsupported-category unknown claims. Lane D tests: 18 passing. Full verification: 244 tests, ruff clean, mypy clean (87 source files); DB smoke passes.
+- 2026-06-04: Session 2 read-only coordination check found C-002 is still not canonical on root `main`; the Session 1 worktree is mid-conflict in state logs, and the draft branch still marks the four unsupported-category rules as `informational`. Sent Session 1 a coordination note and kept D-000/D-001 blocked until C-002 lands with `unknown` ruleset metadata.

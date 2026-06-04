@@ -40,7 +40,7 @@ Completion evidence:
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 Next lowest-dependency task:
-- **D-000 (BLOCKED on C-002)**: Report surfacing for unsupported categories. Once Lane C emits UNKNOWN claims for unsupported-category SOURCE_FAILURE evidence, Lane D owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
+- **D-000 (BLOCKED on canonical C-002)**: Report surfacing for unsupported categories. Once Lane C lands C-002 on `main` with unsupported-category SOURCE_FAILURE evidence producing UNKNOWN claims and the four C-002 ruleset entries using `severity_on_fail: unknown`, Lane D owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
 - **D-001 (PARTIAL PRE-WORK DONE; FULL TASK BLOCKED on C-002 + D-000)**: `backend/app/db/session.py` now delegates `get_db_session()` to `get_session()` from `app.db.engine`; do not update `api/dependencies.py`, update `main.py`, or add/run the DB-backed report API integration test until C-002 and D-000 are complete.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
@@ -56,6 +56,7 @@ Do not work on yet:
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
+| Lane C C-002 not-evaluated severity metadata | Pending | D-000 should not start from a C-002 handoff whose four unsupported-category ruleset entries are still `informational`; Lane D requires `unknown` so the report unknown contract and ruleset metadata agree |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
 
 ## Active plan

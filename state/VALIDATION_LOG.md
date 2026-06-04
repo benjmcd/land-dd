@@ -2,6 +2,35 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 C-002 handoff risk check
+
+**Commands run:**
+
+```powershell
+git status --short --branch
+git -C ./worktrees/session1-lane-c status --short --branch
+Get-Content -Path 'C:\Users\benny\.codex\sessions\2026\06\03\rollout-2026-06-03T06-53-13-019e8dc2-681d-7480-aa9f-d8aeac662772.jsonl' -Tail 180
+git show codex/session1-lane-c:config/ruleset_homestead_mvp.yaml | Select-String -Pattern 'SOIL_NOT_EVALUATED|ENV_HAZ_NOT_EVALUATED|RESOURCE_NOT_EVALUATED|MARKET_OUT_OF_SCOPE|severity_on_fail' -Context 0,2
+git show codex/session1-lane-c:backend/tests/claims_engine/test_not_evaluated_claims.py | Select-String -Pattern 'severity_on_fail|SeverityBand.INFORMATIONAL|SeverityBand.UNKNOWN' -Context 1,1
+rg -n '<{7}|>{7}|={7}' ./worktrees/session1-lane-c/state/PROJECT_STATE.md ./worktrees/session1-lane-c/state/VALIDATION_LOG.md ./worktrees/session1-lane-c/state/WORKLOG.md ./worktrees/session1-lane-c/tasks/task_queue.yaml ./worktrees/session1-lane-c/plans/2026-06-03-codex-deferred-tasks.md
+git merge-tree main codex/session1-lane-c
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Root `main` is clean and does not yet contain C-002.
+- Session 1's C-002 worktree remains detached during rebase and still has conflict markers in `state/VALIDATION_LOG.md`.
+- The draft C-002 branch emits not-evaluated claims as `SeverityBand.UNKNOWN`, but its four unsupported-category ruleset entries still declare `severity_on_fail: informational`, and the C-002 unit test currently asserts `SeverityBand.INFORMATIONAL` for that metadata.
+- Session 2 sent Session 1 a coordination note to correct the C-002 handoff before landing.
+- Non-mutating `git merge-tree main codex/session1-lane-c` reports conflicts only in `state/PROJECT_STATE.md`, `state/VALIDATION_LOG.md`, and `state/WORKLOG.md`; no report/API code conflicts were identified.
+- Default PowerShell verification passes after this state update: workspace validation, 244 backend tests, lint, and mypy clean; DB smoke skipped by default.
+
+**Residual risk:**
+
+- D-000 should remain blocked until C-002 is canonical on root `main` with both UNKNOWN claim behavior and `severity_on_fail: unknown` ruleset metadata for the four unsupported categories.
+- D-001 remains blocked until D-000 completes.
+
 ## 2026-06-04 Session 2 API unknown surfacing regression
 
 **Commands run:**
