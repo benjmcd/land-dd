@@ -14,6 +14,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     RETRIEVAL_FINISHED_BEFORE_STARTED = "retrieval_finished_before_started"
     RETRIEVAL_CONNECTOR_NAME_MISMATCH = "retrieval_connector_name_mismatch"
     RETRIEVAL_DATASET_VERSION_MISSING = "retrieval_dataset_version_missing"
+    EVIDENCE_SOURCE_ID_MISMATCH = "evidence_source_id_mismatch"
     EVIDENCE_DOMAIN_MISMATCH = "evidence_domain_mismatch"
     EVIDENCE_DATASET_VERSION_MISMATCH = "evidence_dataset_version_mismatch"
     FIXTURE_LOG_URI_NOT_LOCAL = "fixture_log_uri_not_local"
@@ -194,6 +195,14 @@ def evaluate_flood_fixture_quality(
             )
 
     evidence_ids = set()
+    source_ids = {evidence.source_id for evidence in evidence_inputs}
+    if len(source_ids) > 1:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_SOURCE_ID_MISMATCH,
+                "fixture evidence source_id values must match within one run",
+            ),
+        )
     for evidence in evidence_inputs:
         if evidence.evidence_id in evidence_ids:
             issues.append(

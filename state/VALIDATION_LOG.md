@@ -2,6 +2,37 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-034 fixture evidence source consistency
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+cd backend
+python -m pytest --collect-only
+```
+
+**Results:**
+
+- Focused fixture-quality tests: 16 passed.
+- Focused connector ruff: clean.
+- Focused connector mypy: clean over 2 source files.
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 368 backend tests collected, lint clean, mypy clean over 123 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 368 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+- Backend collection: 368 tests collected.
+
+**Residual risk:**
+
+- CON-034 is connector-local fixture quality only. It does not add API routes, OpenAPI changes, DB schema changes, queue behavior, connector runtime behavior, live I/O, hook config, POSIX scripts, durable evidence-row `ingest_run_id` linkage, or Lane A/B/C/D module changes outside connector quality. Connector review route/OpenAPI implementation remains deferred while Session 1's Lane C evidence-linkage/OpenAPI branch is parked.
+
 ## 2026-06-04 Connector CON-033 fixture retrieval name quality
 
 **Commands run:**
