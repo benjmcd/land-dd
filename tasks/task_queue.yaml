@@ -225,10 +225,10 @@ tasks:
 
   - id: CON-001
     title: Level 8 fixture-only flood connector contract slice
-    status: pending
+    status: done
     depends_on: [D-005]
     lane: connector-integration
-    notes: First runtime connector slice. Build only in the connector integration zone; use local fixture JSON, source retrieval provenance, and evidence/source-failure outputs before claims or reports. No live network, credentials, browser/download steps, paid APIs, schema edits, or Lane A/B/C/D implementation changes without explicit owner coordination.
+    notes: Implemented StaticFloodFixtureConnector in the connector integration zone. It reads local flood fixture JSON, rejects URI-like paths, returns source retrieval provenance plus evidence/source-failure inputs before claims or reports, and has success/failure/idempotency/boundary tests.
     spec: plans/2026-06-04-l7-closeout-l8-entry.md#l8p-001-first-fixture-only-connector-preparation
     files:
       - backend/app/connectors/
@@ -243,3 +243,21 @@ tasks:
       - Connector attempts use source retrieval run provenance
       - Successful output enters evidence inputs before claims
       - Failure output records blocked/failed retrieval and/or SOURCE_FAILURE evidence behavior
+
+  - id: CON-002
+    title: Level 8 connector evidence-ingestion handoff plan
+    status: pending
+    depends_on: [CON-001]
+    lane: connector-integration
+    notes: Next pre-code handoff: decide how connector-produced EvidenceContract inputs are persisted through Lane C EvidenceService without connector code modifying Lane C implementation. This should define owner boundaries, tests, and whether an adapter or service call belongs in connector zone or Lane C.
+    spec: plans/connector-2026-06-04-fixture-flood.md
+    files:
+      - plans/connector-*.md
+      - state/connector-state.md
+      - state/PROJECT_STATE.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Evidence ingestion boundary is explicit
+      - Required Lane C coordination, if any, is recorded before code
+      - No connector-to-claim/report shortcut is introduced

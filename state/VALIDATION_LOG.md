@@ -2,6 +2,37 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 CON-001 fixture flood connector
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector targeted tests pass: 5 tests.
+- Connector ruff and mypy checks pass.
+- `StaticFloodFixtureConnector` reads local fixture JSON and rejects URI-like paths.
+- Success fixture returns source retrieval provenance plus flood spatial-intersection evidence input.
+- Failure fixture returns blocked retrieval provenance plus SOURCE_FAILURE evidence input.
+- Connector module does not import claim/report modules or live-IO libraries.
+- Full PowerShell verification passes: 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- CON-001 does not persist connector outputs. CON-002 must define the evidence-ingestion handoff without connector code modifying Lane C implementation.
+- Live connector behavior remains blocked by license, fixture, failure, rate-limit, and caveat gates.
+
 ## 2026-06-04 Session 2 D-005 connector ownership decision packet
 
 **Commands run:**

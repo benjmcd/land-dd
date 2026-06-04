@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 CON-001 fixture flood connector)
+
+- Implemented `StaticFloodFixtureConnector` in the connector integration zone only.
+- Added local success and failure fixtures under `tests/fixtures/connectors/`.
+- Added connector tests proving source retrieval provenance, flood spatial evidence output, blocked source-failure output, idempotent fixture IDs, URI-like path rejection, and no claim/report/live-IO imports.
+- Kept Lane A/B/C/D implementation files, shared schemas, migrations, API/report wiring, credentials, browser/download steps, and live network behavior out of scope.
+
 ## 2026-06-04 (Session 2 D-005 connector ownership decision packet)
 
 - Prepared D-005 without editing `LANE_OWNERSHIP.md`, because that file is canonical but reserves updates for the human coordinator.
