@@ -661,3 +661,46 @@ The next Level 8 pass should choose one of:
 - exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
 - worker execution/lease semantics for connector review queue items after a worker ADR is accepted;
 - broader fixture data-quality coverage for another fixture category after that fixture is selected.
+
+## CON-016 Connector Review Queue Worker Lease Semantics
+
+CON-016 is complete. The connector review queue repository now exposes worker lease and finish semantics for queued connector review items:
+
+- `lease_next(worker_id=...)` leases the next eligible `connector_review_status` item by priority and creation time;
+- eligible items are limited to `queued` or `needs_review` rows with remaining attempts;
+- leased items transition to `running`, increment `attempts`, and record lock/start metadata;
+- `mark_succeeded(job_id)` completes only running connector review queue jobs;
+- `mark_failed(job_id, error=...)` fails only running connector review queue jobs and records the failure error.
+
+The DB-backed implementation uses existing `jobs.job_queue` columns and does not require a schema migration. The in-memory implementation mirrors the same fail-closed transition rules for cheap connector tests.
+
+### Boundary Preserved
+
+This is repository-level worker lease and finish behavior only. It does not add a long-running worker process, scheduler, background loop, API mutation route, retry/requeue policy, cancellation path, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation. `source.ingest_runs` remains connector attempt provenance and lifecycle authority; `jobs.job_queue` remains orchestration state.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+ruff check app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+mypy app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused queue tests pass with DB smoke skipped by default (4 passed, 2 skipped); DB-enabled queue tests pass (6 tests); focused queue ruff clean; focused queue mypy clean over 3 source/test files. Full connector and workspace verification results are recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- coordinate the Lane C/schema result for durable `ingest_run_id` evidence linkage after Session 1's source-failure identity-preservation slice lands;
+- expose worker result/status behavior through a planned API or review workflow after queue mutation semantics are stable;
+- add retry/requeue/cancel semantics with a separate ADR if worker execution needs them;
+- broaden fixture data-quality coverage for another selected fixture category.

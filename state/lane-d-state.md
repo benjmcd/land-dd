@@ -23,8 +23,8 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
+- Full verification passes locally with DB smoke enabled after CON-016: 324 tests; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
-- Full verification passes locally with DB smoke enabled: 321 tests; lint clean; mypy clean (118 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
@@ -37,6 +37,7 @@ Verification result:
 - CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
 - CON-014 is complete: connector review status can now be persisted as idempotent `connector_review_status` jobs in `jobs.job_queue`, referencing `source.ingest_runs.ingest_run_id` without replacing source retrieval provenance or adding worker/API queue retrieval behavior
 - CON-015 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` retrieves queued connector review items from in-memory or DB-backed API services without mutating, locking, retrying, cancelling, completing, or leasing jobs
+- CON-016 is complete: connector review queue repositories can lease eligible connector review jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -48,6 +49,7 @@ Completion evidence:
 - backend/app/reports/report_repo.py
 - backend/app/reports/adapters.py (SourceServiceProtocolAdapter and AreaServiceProtocolAdapter)
 - docs/adr/lane-d-0001-report-persistence.md
+- docs/adr/lane-d-0005-connector-queue-worker.md
 - backend/app/api/dependencies.py (per-app API service wiring)
 - backend/app/api/sources.py (source router)
 - backend/app/api/areas.py (area router)
@@ -78,7 +80,8 @@ Next lowest-dependency task:
 - **CON-013 (DONE)**: Connector review-status API surface is complete for in-memory status records that consume connector handoff and fixture quality profile data.
 - **CON-014 (DONE)**: Durable connector review queue persistence is complete using existing `jobs.job_queue`.
 - **CON-015 (DONE)**: Connector review queue API retrieval is complete for read-only in-memory and DB-backed queued item lookup.
-- **NEXT**: Select a coordinated Level 8 follow-up: durable `ingest_run_id` evidence linkage, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or another selected fixture category.
+- **CON-016 (DONE)**: Connector review queue worker lease semantics are complete at repository level; no API mutation route, scheduler, retry/requeue policy, or live connector execution was added.
+- **NEXT**: Select a coordinated Level 8 follow-up: durable `ingest_run_id` evidence linkage after Lane C coordination lands, worker result/API surfacing after queue mutation semantics are stable, retry/requeue/cancel semantics after a separate ADR, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

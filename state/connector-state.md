@@ -20,8 +20,10 @@ Current task:
 - CON-013: DONE - connector review status composition and API status surface.
 - CON-014: DONE - durable connector review queue persistence.
 - CON-015: DONE - connector review queue API retrieval.
+- CON-016: DONE - connector review queue worker lease and finish semantics.
 Do not work on yet:
 - Live connector behavior
+- Long-running worker/scheduler/background loops
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
 - Shared schema edits
 - Lane A/B/C/D implementation changes unless explicitly coordinated with the owning lane
@@ -60,6 +62,7 @@ Do not work on yet:
 - `backend/tests/api/test_connector_review_queue_db.py`
 - `docs/adr/lane-d-0003-connector-review-queue.md`
 - `docs/adr/lane-d-0004-connector-queue-retrieval.md`
+- `docs/adr/lane-d-0005-connector-queue-worker.md`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -104,6 +107,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-015 result: focused queue-retrieval API tests pass with DB smoke skipped by default (6 passed, 1 skipped); DB-enabled queue-retrieval API test passes (1 test); connector/API tests pass with DB smoke skipped by default (59 passed, 5 skipped); connector/API ruff clean; connector/API mypy clean over 36 source/test files; full DB-enabled PowerShell verification passes with 321 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-016 result: focused queue tests pass with DB smoke skipped by default (4 passed, 2 skipped); DB-enabled queue tests pass (6 tests); connector tests pass with DB smoke skipped by default (47 passed, 4 skipped); connector ruff clean; connector mypy clean over 21 source/test files; full DB-enabled PowerShell verification passes with 324 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -119,3 +124,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector review status API | Satisfied for in-memory status surface | `build_connector_run_review_status(...)` composes handoff and quality data, and `GET /connector-runs/{ingest_run_id}/review-status` returns stored status without durable queue persistence, schema edits, reports, claims, or live I/O |
 | Durable connector review queue | Satisfied for connector review status items | `SqlAlchemyConnectorReviewQueueRepository` writes idempotent `connector_review_status` jobs to `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`; workers/API DB retrieval remain future work |
 | Connector review queue API retrieval | Satisfied for read-only queue item lookup | `GET /connector-runs/{ingest_run_id}/review-queue` reads stored queue items without job mutation, worker execution, claims, reports, schema edits, or live I/O |
+| Connector review queue worker lease semantics | Satisfied for repository-level lease/finish methods | `ConnectorReviewQueueRepository` implementations can lease eligible connector review jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation |

@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-016)
+
+- Completed CON-016 as repository-level connector review queue worker lease and finish semantics.
+- Added `docs/adr/lane-d-0005-connector-queue-worker.md` to accept queue mutation rules before worker-facing behavior.
+- Extended `ConnectorReviewQueueRepository`, `InMemoryConnectorReviewQueueRepository`, and `SqlAlchemyConnectorReviewQueueRepository` with `lease_next(...)`, `mark_succeeded(...)`, and `mark_failed(...)`.
+- Lease behavior is limited to `connector_review_status` jobs in `queued` or `needs_review` state, respects attempts/not-before state, increments attempts, and records lock/start metadata.
+- Finish behavior only completes running connector review queue jobs and records success or failure metadata.
+- Preserved the existing boundary: no long-running worker process, scheduler, background loop, API mutation route, retry/requeue policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration edit, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
 ## 2026-06-04 (connector CON-015)
 
 - Completed CON-015 as read-only connector review queue API retrieval.

@@ -537,3 +537,26 @@ tasks:
       - Unknown queued connector review items return 404
       - Queue retrieval is read-only and does not mutate, lock, retry, cancel, complete, or lease jobs
       - No worker, queue dashboard, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
+
+  - id: CON-016
+    title: Level 8 connector review queue worker lease semantics
+    status: done
+    depends_on: [CON-015]
+    lane: connector-integration
+    notes: Added repository-level lease and finish semantics for connector_review_status jobs in jobs.job_queue. Eligible queued or needs_review items can be leased by worker_id, transition to running, increment attempts, and record lock/start metadata; running items can be marked succeeded or failed with finish metadata. No long-running worker process, scheduler, background loop, API mutation route, retry/requeue policy, queue dashboard, live IO, evidence persistence, claims, reports, schema migration, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-016-connector-review-queue-worker-lease-semantics
+    files:
+      - backend/app/connectors/review_queue.py
+      - backend/tests/connectors/test_review_queue.py
+      - docs/adr/lane-d-0005-connector-queue-worker.md
+      - plans/connector-*.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Connector review queue repositories can lease eligible queued or needs_review connector_review_status jobs
+      - Leased jobs transition to running, increment attempts, and record worker lock/start metadata
+      - Only running connector review queue jobs can be marked succeeded or failed
+      - Worker lease semantics do not replace source.ingest_runs as connector provenance or lifecycle authority
+      - No long-running worker, scheduler, API mutation route, retry/requeue policy, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced

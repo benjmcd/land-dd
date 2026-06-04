@@ -144,6 +144,53 @@ def test_in_memory_review_queue_prioritizes_human_review_status() -> None:
     assert item.payload["kind"] == CONNECTOR_REVIEW_STATUS_JOB_TYPE
 
 
+def test_in_memory_review_queue_leases_and_finishes_items() -> None:
+    success_status = _review_status("flood_success.json")
+    failure_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    success_item = repo.enqueue_review_status(success_status)
+    failure_item = repo.enqueue_review_status(failure_status)
+
+    first_lease = repo.lease_next(worker_id=" worker-1 ")
+    second_lease = repo.lease_next(worker_id="worker-1")
+
+    assert first_lease is not None
+    assert first_lease.job_id == failure_item.job_id
+    assert first_lease.status == JobStatus.RUNNING
+    assert first_lease.attempts == 1
+    assert first_lease.locked_by == "worker-1"
+    assert first_lease.started_at is not None
+    assert second_lease is not None
+    assert second_lease.job_id == success_item.job_id
+    assert second_lease.status == JobStatus.RUNNING
+    assert repo.lease_next(worker_id="worker-1") is None
+
+    succeeded = repo.mark_succeeded(first_lease.job_id)
+    failed = repo.mark_failed(second_lease.job_id, error="fixture review rejected")
+
+    assert succeeded.status == JobStatus.SUCCEEDED
+    assert succeeded.finished_at is not None
+    assert succeeded.last_error is None
+    assert failed.status == JobStatus.FAILED
+    assert failed.finished_at is not None
+    assert failed.last_error == "fixture review rejected"
+
+
+def test_in_memory_review_queue_rejects_invalid_worker_transitions() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    with pytest.raises(ValueError, match="worker_id is required"):
+        repo.lease_next(worker_id=" ")
+    with pytest.raises(ValueError, match="not running"):
+        repo.mark_succeeded(item.job_id)
+    leased = repo.lease_next(worker_id="worker-1")
+    assert leased is not None
+    with pytest.raises(ValueError, match="failure error is required"):
+        repo.mark_failed(leased.job_id, error="")
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
     engine = build_engine()
@@ -189,5 +236,60 @@ def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
                     "WHERE idempotency_key = :idempotency_key"
                 ),
                 {"idempotency_key": idempotency_key},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_leases_and_completes_job_queue_item() -> None:
+    engine = build_engine()
+    review_status = _review_status("flood_failure.json")
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            queued = repo.enqueue_review_status(review_status)
+            session.commit()
+
+        with Session(engine) as session:
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            leased = repo.lease_next(worker_id="connector-worker-1")
+            assert leased is not None
+            assert leased.job_id == queued.job_id
+            assert leased.status == JobStatus.RUNNING
+            assert leased.attempts == 1
+            assert leased.max_attempts == 1
+            assert leased.locked_by == "connector-worker-1"
+            assert leased.locked_at is not None
+            assert leased.started_at is not None
+            assert repo.lease_next(worker_id="connector-worker-1") is None
+
+            finished = repo.mark_succeeded(leased.job_id)
+            session.commit()
+
+            assert finished.status == JobStatus.SUCCEEDED
+            assert finished.finished_at is not None
+            assert finished.last_error is None
+
+        with Session(engine) as session:
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            stored = repo.get_by_ingest_run_id(review_status.handoff.packet.ingest_run_id)
+
+            assert stored is not None
+            assert stored.status == JobStatus.SUCCEEDED
+            assert stored.attempts == 1
+            assert stored.locked_by == "connector-worker-1"
+            assert stored.finished_at is not None
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text(
+                    "DELETE FROM jobs.job_queue WHERE job_type = :job_type"
+                ),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
             )
             session.commit()

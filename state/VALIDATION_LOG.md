@@ -2,6 +2,50 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-016 connector queue worker lease semantics
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+ruff check app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+mypy app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+git diff --check
+```
+
+**Results:**
+
+- Focused queue tests with DB smoke skipped by default: 4 passed, 2 skipped.
+- DB-enabled queue tests: 6 passed.
+- Focused queue ruff: clean.
+- Focused queue mypy: clean over 3 source/test files.
+- Connector tests with DB smoke skipped by default: 47 passed, 4 skipped.
+- Connector ruff: clean.
+- Connector mypy: clean over 21 source/test files.
+- Connector/API tests with DB smoke skipped by default: 61 passed, 6 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source/test files.
+- Full DB-enabled PowerShell verification: ok; 324 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection: 324 tests.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- CON-016 is repository-level queue lease and finish semantics only. It does not add a long-running worker process, scheduler, background loop, API mutation route, retry/requeue policy, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+
 ## 2026-06-04 CON-015 connector review queue API retrieval
 
 **Commands run:**
