@@ -414,3 +414,43 @@ The connector fixture success and source-failure paths are now both proven throu
 - a Lane C/schema coordination slice for durable `ingest_run_id` linkage on evidence rows;
 - a connector run/status API or human-review handoff plan, if Level 9 workflow entry is preferred;
 - broader fixture data-quality coverage if another connector fixture category is selected.
+
+## CON-010 Connector Run/Status Review Packet
+
+CON-010 is complete. The connector integration zone now exposes a pure review-packet projection over `FixtureConnectorIngestWorkflowResult` through `build_connector_run_review_packet(...)`. The packet summarizes:
+
+- connector name, `ingest_run_id`, dataset version, retrieval status, timing, counts, log URI, and metrics;
+- whether retrieval provenance was recorded or skipped;
+- evidence input, created, skipped, and source-failure counts;
+- created, skipped, and source-failure evidence IDs;
+- review signals and deterministic human-review tasks.
+
+### Boundary Preserved
+
+This is a handoff/status surface only. It does not persist new data, add an API route, evaluate claims, build reports, perform live I/O, change schemas, or modify Lane A/B/C/D implementation files. The packet treats the existing workflow result as authority and keeps durable `ingest_run_id` evidence-row linkage and exact source-failure evidence ID preservation as separate Lane C/schema coordination gaps.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_packet.py tests/connectors/test_fixture_workflow.py
+ruff check app/connectors tests/connectors/test_review_packet.py
+mypy app/connectors tests/connectors/test_review_packet.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused review-packet/fixture-workflow tests pass (8 tests); full connector tests pass with DB smoke skipped by default (28 passed, 2 skipped); connector ruff clean; connector mypy clean over 13 source/test files. Full workspace verification result is recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- a Lane C/schema coordination slice for durable `ingest_run_id` linkage on evidence rows;
+- exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
+- a connector API/status endpoint or human-review queue surface that consumes the review packet without changing connector persistence semantics;
+- broader fixture data-quality coverage if another connector fixture category is selected.

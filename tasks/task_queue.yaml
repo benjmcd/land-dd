@@ -400,3 +400,24 @@ tasks:
       - DB-backed fixture source-failure workflow persists source-failure evidence through public Lane C service methods
       - Repeated DB-backed source-failure fixture workflow run is idempotent
       - No live IO, claim/report shortcut, schema change, or exact source-failure evidence ID preservation claim is introduced
+
+  - id: CON-010
+    title: Level 8 connector run/status review packet
+    status: done
+    depends_on: [CON-009]
+    lane: connector-integration
+    notes: Added a pure connector-zone review packet projection over FixtureConnectorIngestWorkflowResult. It summarizes retrieval provenance, evidence counts, source-failure counts, skipped/idempotent records, review signals, and human-review tasks without API, claims, reports, schema changes, live IO, or persistence changes.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-010-connector-runstatus-review-packet
+    files:
+      - backend/app/connectors/review_packet.py
+      - backend/tests/connectors/test_review_packet.py
+      - backend/app/connectors/__init__.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Review packet summarizes connector retrieval status, provenance action, evidence counts, source-failure counts, and evidence IDs
+      - Blocked/source-failure fixture workflow emits human-review-required signals
+      - Repeated fixture workflow emits an idempotent skip signal without requiring human review
+      - No API, claim/report shortcut, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced

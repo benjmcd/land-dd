@@ -14,6 +14,7 @@ Current task:
 - CON-007: DONE - Lane A public provenance identity-preservation follow-up.
 - CON-008: DONE - DB-backed fixture workflow smoke.
 - CON-009: DONE - DB-backed source-failure fixture workflow smoke.
+- CON-010: DONE - connector run/status review packet and human-review handoff projection.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -39,6 +40,8 @@ Do not work on yet:
 - `backend/tests/connectors/test_fixture_workflow.py`
 - `backend/app/connectors/public_wiring.py`
 - `backend/tests/connectors/test_public_wiring.py`
+- `backend/app/connectors/review_packet.py`
+- `backend/tests/connectors/test_review_packet.py`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -71,6 +74,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-009 result: targeted connector public-wiring tests pass with DB smoke skipped by default (5 passed, 2 skipped); targeted DB-enabled connector public-wiring tests pass (7 tests); targeted ruff clean; targeted mypy clean; full DB-enabled PowerShell verification passes with 291 collected backend tests, lint clean, mypy clean (104 source files), migrations/seeds apply, and DB smoke passes; whitespace check clean.
 
+2026-06-04 CON-010 result: focused review-packet/fixture-workflow tests pass (8 tests); full connector tests pass with DB smoke skipped by default (28 passed, 2 skipped); connector ruff clean; connector mypy clean over 13 source/test files. Full workspace verification result is recorded in `state/VALIDATION_LOG.md`.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -80,3 +85,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Exact source-failure field preservation | Gap recorded | Current public Lane C source-failure API creates the persisted evidence record; connector-provided source-failure IDs are templates unless Lane C adds a public method |
 | Lane A concrete retrieval-run wiring | Satisfied for public service | `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`; connector wiring uses it through a public-service adapter |
 | DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |
+| Connector run/status review handoff | Satisfied for fixture workflow projection | `build_connector_run_review_packet(...)` summarizes workflow status and review signals without adding API, claims, reports, schema edits, or persistence changes |

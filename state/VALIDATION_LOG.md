@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-010 connector run/status review packet
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_packet.py tests/connectors/test_fixture_workflow.py
+ruff check app/connectors tests/connectors/test_review_packet.py
+mypy app/connectors tests/connectors/test_review_packet.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused review-packet/fixture-workflow tests: 8 passed.
+- Full connector tests: 28 passed, 2 skipped by DB-smoke gating.
+- Connector ruff: clean.
+- Connector mypy: clean over 13 source/test files.
+- Full DB-enabled PowerShell verification: ok; 296 backend tests pass; lint clean; mypy clean over 107 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-010 is a connector-owned run/status and human-review handoff projection only. It does not add API routing, persistence, claims, reports, schema edits, live I/O, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation.
+
 ## 2026-06-04 Session 1 planning-pack schema-copy reconciliation
 
 **Commands run:**

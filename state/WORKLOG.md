@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-010)
+
+- Completed CON-010 in the connector integration zone as a pure run/status review packet and human-review handoff projection.
+- Added `build_connector_run_review_packet(...)`, `ConnectorRunReviewPacket`, `ConnectorReviewSignal`, and `ConnectorReviewSignalCode` in `backend/app/connectors/review_packet.py`.
+- The packet summarizes connector retrieval status, provenance recorded/skipped state, evidence input/created/skipped counts, source-failure counts, evidence IDs, review signals, and deterministic human-review tasks.
+- Added connector tests proving successful fixture workflow packets do not require human review, blocked/source-failure workflow packets do require review, repeated fixture runs emit idempotent skip signals without requiring review, and the review packet module avoids API, reports, claims, DB/session, Lane A/C implementation, and live I/O imports.
+- Preserved the existing boundary: no live I/O, API route, claim/report shortcut, persistence change, schema edit, Lane A/B/C/D implementation change, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+- Verification passed: focused review-packet/fixture-workflow tests; full connector tests; connector ruff/mypy; full DB-enabled `.\scripts\verify.ps1`.
+
 ## 2026-06-04 (Session 1 planning-pack schema-copy reconciliation)
 
 - Created isolated worktree `worktrees/session1-pack-schemas` on branch `lane-c/session1-pack-schemas` to avoid Session 2's active connector-zone work.
