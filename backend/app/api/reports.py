@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.api.dependencies import ApiServices, get_services
+from app.domain.enums import IntentCode
 from app.domain.report_contracts import ReportRunContract
 
 router = APIRouter(prefix="/report-runs", tags=["report-runs"])
@@ -15,7 +16,7 @@ ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
 class ReportRunCreateRequest(BaseModel):
     area_id: UUID
-    intent_code: str
+    intent_code: IntentCode
 
 
 @router.post("", response_model=ReportRunContract, status_code=status.HTTP_201_CREATED)

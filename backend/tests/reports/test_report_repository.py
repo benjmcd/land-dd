@@ -17,7 +17,7 @@ from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import ConfidenceBand, EvidenceType
+from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
@@ -152,7 +152,7 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
 
         report_run = report_service.create_report_run(
             area_id=area.area_id,
-            intent_code="homestead_feasibility",
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
         )
         session.commit()
 
@@ -163,6 +163,23 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
     assert cost_metrics["evidence_count"] == 2
+
+    # Verify intent_id is populated in the DB row (not NULL), confirming the
+    # intent_code → intent_id lookup in SqlAlchemyReportRunRepository works.
+    with Session(engine) as session:
+        row = session.execute(
+            text(
+                "SELECT intent_id FROM reports.report_runs "
+                "WHERE report_run_id = :report_run_id"
+            ),
+            {"report_run_id": report_run.report_run_id},
+        ).one_or_none()
+    assert row is not None, "report run row not found in DB"
+    db_intent_id = row[0]
+    assert db_intent_id is not None, (
+        "intent_id is NULL in reports.report_runs — "
+        "_resolve_intent_id did not find 'homestead_feasibility' in core.intents"
+    )
 
     with Session(engine) as session:
         repo = SqlAlchemyReportRunRepository(session, report_store)

@@ -8,7 +8,7 @@ from app.area_geometry.service import AreaService
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import JobStatus, SeverityBand
+from app.domain.enums import IntentCode, JobStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
 from app.evidence_ledger.service import EvidenceService
@@ -53,7 +53,7 @@ class ReportRunService:
         self,
         *,
         area_id: UUID,
-        intent_code: str,
+        intent_code: IntentCode,
     ) -> ReportRunContract:
         _require_non_empty(intent_code, "intent_code")
         if not self._area_service.area_is_registered(area_id):

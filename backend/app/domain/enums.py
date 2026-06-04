@@ -57,3 +57,24 @@ class JobStatus(StrEnum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     NEEDS_REVIEW = "needs_review"
+
+
+class IntentCode(StrEnum):
+    """Intent codes that drive report evaluation.
+
+    Values must exactly match the core.intent_code SQL enum defined in
+    db/migrations/0001_initial_spine.sql. Two intents are seeded in
+    db/seeds/001_seed_intents.sql; others are defined for future use.
+
+    Do not add or rename values here without a coordinated schema migration.
+    """
+
+    RURAL_LAND_PURCHASE = "rural_land_purchase"
+    HOMESTEAD_FEASIBILITY = "homestead_feasibility"
+    FARMLAND = "farmland"
+    DEVELOPMENT = "development"
+    SOLAR = "solar"
+    DATA_CENTER = "data_center"
+    CONSERVATION = "conservation"
+    MINERAL_RESOURCE_SCREEN = "mineral_resource_screen"
+    SPECULATIVE_HOLD = "speculative_hold"

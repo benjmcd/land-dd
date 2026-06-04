@@ -6,14 +6,14 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import JobStatus
+from app.domain.enums import IntentCode, JobStatus
 from app.domain.evidence_contracts import EvidenceContract
 
 
 class ReportRunContract(BaseModel):
     report_run_id: UUID = Field(default_factory=uuid4)
     area_id: UUID
-    intent_code: str
+    intent_code: IntentCode
     status: JobStatus = JobStatus.QUEUED
     source_manifest: dict[str, object] = Field(default_factory=dict)
     assumptions: list[str] = Field(default_factory=list)

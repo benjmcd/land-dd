@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID
 
+from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
 from app.domain.report_contracts import ReportRunContract
@@ -96,14 +97,34 @@ class SqlAlchemyReportRunRepository:
             raise ValueError(f"Report run '{model.report_run_id}' has no artifact URI")
         return Path(uri)
 
+    def _resolve_intent_id(self, intent_code: str) -> UUID | None:
+        """Look up intent_id from core.intents by intent_code string.
+
+        Returns None if the intent_code is not present in the DB (e.g. when
+        a new IntentCode value has been added but the seed has not been applied).
+        Callers should log a warning but not fail hard — the row can still be
+        stored without the FK; it simply won't be linked until seeds are applied.
+        """
+        row = self._session.execute(
+            sql_text(
+                "SELECT intent_id FROM core.intents WHERE intent_code = :intent_code LIMIT 1"
+            ),
+            {"intent_code": str(intent_code)},
+        ).one_or_none()
+        if row is None:
+            return None
+        return UUID(str(row[0]))
+
     def _contract_to_model(
         self,
         report_run: ReportRunContract,
         artifact_path: Path,
     ) -> ReportRunModel:
+        intent_id = self._resolve_intent_id(report_run.intent_code)
         return ReportRunModel(
             report_run_id=report_run.report_run_id,
             area_id=report_run.area_id,
+            intent_id=intent_id,
             status=report_run.status.value,
             started_at=report_run.started_at,
             finished_at=report_run.finished_at,
