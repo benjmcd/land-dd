@@ -34,6 +34,7 @@ Verification command(s):
 Verification result:
 - Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-024 connector review action API auth blocker decision: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-025 connector reviewer principal boundary: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-081 report manifest metadata schema tightening: 343 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
@@ -69,9 +70,10 @@ Verification result:
 - CON-023 is complete as a connector-local fixture-quality slice. Fixture evidence now fails closed when provenance text, caveats, or non-failure source dates are missing.
 - TD-082 is complete as a planning-only report metadata extension boundary. Future extension families and promotion rules are accepted before any schema/runtime/API changes.
 - CON-024 is complete as a connector review action API auth blocker decision. Current API mutation implementation remains blocked because no authenticated reviewer/operator principal dependency exists.
+- CON-025 is complete as a local service-account reviewer principal dependency for future connector review mutation routes; no routes are registered and OpenAPI is unchanged.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; connector review mutation API auth is blocked until a principal boundary exists; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, reviewer/operator principal dependency, and future API mutation/workflow implementation.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, and future API mutation/workflow implementation.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -89,6 +91,9 @@ Completion evidence:
 - docs/adr/lane-d-0013-report-metadata-extension-boundary.md
 - docs/adr/lane-d-0011-connector-human-review-actions.md
 - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
+- docs/adr/lane-d-0015-connector-reviewer-principal.md
+- backend/app/api/reviewer_auth.py
+- backend/tests/api/test_reviewer_auth.py
 - schemas/report_run_schema.json
 - backend/app/api/dependencies.py (per-app API service wiring)
 - backend/app/api/sources.py (source router)
@@ -135,7 +140,8 @@ Next lowest-dependency task:
 - **CON-023 (DONE)**: Connector fixture evidence provenance quality is complete for missing evidence text, caveat, and non-failure source-date checks.
 - **TD-082 (DONE)**: Report metadata extension boundary is planned before schema/runtime/API implementation.
 - **CON-024 (DONE)**: Connector review action API auth blocker is recorded; mutation routes must wait for an authenticated reviewer/operator principal dependency or accepted service-account delegation rule.
-- **NEXT**: Select a coordinated Level 8 follow-up: add the reviewer/operator principal dependency before connector review mutation routes, choose a specific accepted report metadata extension implementation, broaden fixture data-quality coverage for another selected fixture category, or coordinate durable `ingest_run_id` evidence linkage after Lane C ownership is clear.
+- **CON-025 (DONE)**: Connector reviewer principal boundary is implemented as a local service-account dependency with focused API tests; no mutation route is registered.
+- **NEXT**: Select a coordinated Level 8 follow-up: plan or implement the narrow review-action mutation route subset supported by existing queue transitions and the tested reviewer principal, choose a specific accepted report metadata extension implementation, broaden fixture data-quality coverage for another selected fixture category, or coordinate durable `ingest_run_id` evidence linkage after Lane C ownership is clear.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

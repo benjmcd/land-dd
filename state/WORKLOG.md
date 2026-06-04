@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-025 reviewer principal boundary)
+
+- Added `backend/app/api/reviewer_auth.py` with a local service-account reviewer principal dependency for future connector review mutation routes.
+- Added `backend/tests/api/test_reviewer_auth.py` covering accepted credentials, missing credentials, invalid credentials, unconfigured fail-closed behavior, and blank configuration rejection.
+- Added ADR `docs/adr/lane-d-0015-connector-reviewer-principal.md` to accept the local service-account boundary while keeping production auth, route wiring, reviewer ownership persistence, and action history separate.
+- Preserved boundary: no API route, OpenAPI change, queue mutation, settings/secrets, schema, migration, connector runtime behavior, live I/O, hook config, POSIX script, evidence behavior, claim behavior, or report behavior changed.
+- Verification passed with DB smoke: 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-024 review action API auth blocker)
 
 - Added ADR `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md` to record that connector review mutation API implementation is blocked by the absence of an authenticated reviewer/operator principal dependency.

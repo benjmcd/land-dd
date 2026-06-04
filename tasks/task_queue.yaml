@@ -848,6 +848,41 @@ tasks:
       - Existing read-only connector review API and repository-level queue transitions remain unchanged
       - No API route, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior is introduced
 
+  - id: CON-025
+    title: Level 8 connector reviewer principal boundary
+    status: done
+    depends_on: [CON-024]
+    lane: D
+    notes: Added a local service-account reviewer principal dependency for future connector review mutation routes, with focused API tests for accepted credentials, missing credentials, invalid credentials, unconfigured fail-closed behavior, and blank configuration rejection. No API route, OpenAPI change, queue mutation, settings/secrets, production auth, reviewer ownership persistence, reviewer action history, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior changed.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-025-connector-reviewer-principal-boundary
+    files:
+      - backend/app/api/reviewer_auth.py
+      - backend/tests/api/test_reviewer_auth.py
+      - docs/adr/lane-d-0015-connector-reviewer-principal.md
+      - docs/adr/lane-d-0014-connector-review-api-auth-blocker.md
+      - plans/connector-2026-06-04-fixture-flood.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/api/test_reviewer_auth.py
+      - cd backend; ruff check app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+      - cd backend; mypy app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+      - cd backend; py -3.12 -m pytest --collect-only -q
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Local service-account reviewer principal dependency validates configured reviewer IDs and tokens
+      - Missing credentials return 401
+      - Invalid credentials return 403
+      - Unconfigured auth returns 503
+      - Blank service-account configuration is rejected
+      - No API route, OpenAPI change, queue mutation, settings/secrets, production auth, reviewer ownership persistence, reviewer action history, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done

@@ -23,6 +23,8 @@ Current accepted blocker:
 
 The next implementation-enabling slice should add a narrow reviewer principal dependency and tests, or document a service-account delegation rule, before any review-action route is added.
 
+ADR Lane D 0015 accepts and tests that local service-account principal boundary.
+
 ## Consequences
 
 - The repo avoids shipping a mutation endpoint that overclaims auth or reviewer provenance.
@@ -34,5 +36,6 @@ The next implementation-enabling slice should add a narrow reviewer principal de
 
 - `docs/adr/lane-d-0011-connector-human-review-actions.md`
 - `docs/adr/lane-d-0012-connector-human-review-api-semantics.md`
+- `docs/adr/lane-d-0015-connector-reviewer-principal.md`
 - `backend/app/api/connectors.py`
 - `backend/app/connectors/review_queue.py`

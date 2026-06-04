@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-025 reviewer principal boundary
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/api/test_reviewer_auth.py
+ruff check app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+mypy app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+py -3.12 -m pytest --collect-only -q
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused reviewer auth tests: 11 passed.
+- Focused ruff: clean.
+- Focused mypy: clean over 2 source files.
+- Backend collection: 362 tests.
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- CON-025 adds a tested local service-account reviewer principal dependency only. It does not register API routes, change OpenAPI, mutate queue rows, add settings/secrets, add production auth, persist reviewer ownership, persist reviewer action history, change connector runtime behavior, change evidence/claim/report behavior, add schemas, add migrations, use live I/O, alter hook config, or invoke POSIX scripts. Future mutation-route work must still compare request reviewer identity to the authenticated principal and avoid claiming durable action history until storage is accepted.
+
 ## 2026-06-04 Connector CON-024 review action API auth blocker
 
 **Commands run:**

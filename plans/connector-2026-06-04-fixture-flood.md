@@ -80,6 +80,7 @@ git diff --check
 - 2026-06-04: CON-005 implemented as a fixture-only connector ingest workflow. It composes the static flood fixture connector, retrieval provenance adapter, and evidence ingestion adapter; records retrieval provenance before evidence ingestion; proves repeated fixture workflow idempotency; and keeps live I/O, Lane A/C repository imports, claims, reports, schemas, and DB sessions out of scope.
 - 2026-06-04: CON-006 implemented the connector-owned public-service wiring path that is currently possible without Lane A/C repository imports. `build_fixture_workflow_with_public_services` wires the fixture workflow to public Lane C `EvidenceService` methods through the evidence adapter and requires an identity-preserving retrieval provenance port. The flood source-failure fixture now uses Lane C's controlled source-failure payload keys.
 - 2026-06-04: CON-024 recorded the connector review action API implementation blocker. The current repo has no authenticated reviewer/operator principal dependency, so mutation-route implementation remains blocked even though repository-level request-fix, requeue, and cancel substrate exists.
+- 2026-06-04: CON-025 added a local service-account reviewer principal dependency and focused API tests without registering a mutation route or changing OpenAPI.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -1014,3 +1015,38 @@ Result: pass on 2026-06-04. Whitespace check clean; default Windows PowerShell v
 ### Next Slice
 
 The next API-enabling slice should add a narrow reviewer/operator principal dependency and tests, or document a service-account delegation rule, before any connector review mutation route is added. Other low-conflict work can continue in report metadata extensions or fixture-quality coverage while Session 1 owns Lane C evidence linkage.
+
+## CON-025 Connector Reviewer Principal Boundary
+
+CON-025 is complete as a narrow API-auth substrate slice. ADR `docs/adr/lane-d-0015-connector-reviewer-principal.md` accepts a local service-account reviewer principal dependency for future connector review mutation routes.
+
+### Implemented Surface
+
+- `backend/app/api/reviewer_auth.py` defines `ReviewerPrincipal` and `LocalServiceAccountReviewerAuth`.
+- `backend/tests/api/test_reviewer_auth.py` covers accepted credentials, missing credentials, invalid credentials, unconfigured fail-closed behavior, and blank configuration rejection.
+
+The dependency accepts `X-Reviewer-Id` and `X-Reviewer-Token`, validates the reviewer against a caller-supplied allow-list, and returns a `ReviewerPrincipal` only after token validation.
+
+### Boundary Preserved
+
+This is a dependency/test substrate only. It does not register an API route, change OpenAPI, mutate queue rows, add settings or secrets, add production auth, add reviewer ownership persistence, add reviewer action history, change connector runtime behavior, change evidence/claim/report behavior, add schemas, add migrations, use live I/O, alter hook config, or invoke POSIX scripts.
+
+### Validation
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/api/test_reviewer_auth.py
+ruff check app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+mypy app/api/reviewer_auth.py tests/api/test_reviewer_auth.py
+py -3.12 -m pytest --collect-only -q
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Focused API auth tests: 11 passed. Focused ruff and mypy clean. Backend collection: 362 tests. Default and DB-enabled Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+### Next Slice
+
+The next connector review API slice can plan or implement only the subset of mutation actions that already have repository substrate and principal matching: `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`. `acknowledge`, `approve_for_connector_qa`, durable idempotency, reviewer ownership persistence, reviewer action history, production auth, and dashboard workflow remain separate future slices.

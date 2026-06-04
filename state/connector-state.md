@@ -29,10 +29,11 @@ Current task:
 - CON-022: DONE - connector human-review API route/reviewer/auth semantics.
 - CON-023: DONE - connector fixture evidence provenance quality checks.
 - CON-024: DONE - connector review action API auth blocker decision.
+- CON-025: DONE - connector reviewer principal boundary.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
-- Connector review mutation API routes until authenticated reviewer/operator identity is accepted and tested
+- Connector review mutation API routes beyond the subset supported by the tested reviewer principal and existing queue transitions
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
 - Shared schema edits
 - Lane A/B/C/D implementation changes unless explicitly coordinated with the owning lane
@@ -78,6 +79,9 @@ Do not work on yet:
 - `docs/adr/lane-d-0011-connector-human-review-actions.md`
 - `docs/adr/lane-d-0012-connector-human-review-api-semantics.md`
 - `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md`
+- `docs/adr/lane-d-0015-connector-reviewer-principal.md`
+- `backend/app/api/reviewer_auth.py`
+- `backend/tests/api/test_reviewer_auth.py`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -134,6 +138,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-024 result: whitespace check clean; default Windows PowerShell verification passes with 351 backend tests, lint clean, mypy clean over 121 source files, and DB smoke skipped by default; full DB-enabled PowerShell verification passes with 351 backend tests, lint clean, mypy clean over 121 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-025 result: focused reviewer auth tests pass (11 tests); focused ruff clean; focused mypy clean over 2 source files; backend collection reports 362 tests; whitespace check clean; default and DB-enabled Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -154,4 +160,5 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector queue retry/requeue/cancel semantics | Satisfied for repository-level orchestration methods | `ConnectorReviewQueueRepository` implementations can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons; no API mutation route, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation was added |
 | Connector source-failure evidence ID adoption | Satisfied for connector adapter/public wiring scope | `ConnectorEvidenceIngestionAdapter` passes deterministic source-failure `EvidenceContract.evidence_id` values into Lane C's public source-failure creation method and DB-backed public wiring proves the ID persists; durable `ingest_run_id` evidence-row linkage remains a future coordinated schema/service pass |
 | Connector fixture identity/timing quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now flags duplicate evidence IDs and evidence observations outside the retrieval-run time window without adding API, persistence, schema edits, live I/O, claims, or reports |
-| Connector review action API auth boundary | Blocked by missing authenticated reviewer/operator principal | ADR Lane D 0014 records that mutation-route implementation must not trust caller-supplied reviewer identity alone; add a reviewer principal dependency or accepted service-account delegation rule before implementing `POST /connector-runs/{ingest_run_id}/review-actions` |
+| Connector review action API auth boundary | Satisfied for local service-account substrate | ADR Lane D 0015 adds the tested reviewer principal dependency required by ADR Lane D 0014; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
+| Connector reviewer principal dependency | Satisfied for local service-account fixture/developer substrate | `LocalServiceAccountReviewerAuth` validates configured reviewer IDs and tokens, fails closed when unconfigured, and returns `ReviewerPrincipal`; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
