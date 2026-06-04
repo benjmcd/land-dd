@@ -108,6 +108,7 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 2. Define the first fixture-only connector slice that does not need live network, new vendors, or new jurisdiction decisions.
 3. Define failure/idempotency acceptance tests before connector implementation.
 4. Add any new queue entries only after lane ownership is clear.
+5. Status: COMPLETE. See "D-004 Level 8 Ownership and Fixture Acceptance Plan" below.
 
 ### L8P-001: First fixture-only connector preparation
 
@@ -115,6 +116,59 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 2. Prefer a narrow contract/fixture test before connector runtime code.
 3. Prohibit live requests by default and make any live check opt-in.
 4. Fail closed on unknown source license/review status.
+
+## D-004 Level 8 Ownership and Fixture Acceptance Plan
+
+Status: complete on 2026-06-04 as a planning/ownership pass. No connector runtime code, schemas, migrations, or lane-owned implementation files were edited.
+
+### L8 Gate Ownership Map
+
+| Gate | Requirement | Primary owner for next implementation | Supporting owners | Acceptance signal before Level 8 PASS |
+|---|---|---|---|---|
+| L8-001 | Shared connector interface and source registry use | Coordinator assigns new connector module owner before code; Lane A owns source registry checks | Lane C for evidence output contract; Lane D for API/report surfacing | Connector cannot run without registered source/dataset/version references and a reviewed interface contract. |
+| L8-002 | Connector run lifecycle persisted with timing, source version, and error metadata | Lane A | Lane D only if surfacing run status through API later | `SourceRetrievalRunContract` / provenance repository records status, timestamps, `dataset_version_id`, `log_uri`, counts, and metrics. |
+| L8-003 | Idempotent ingestion | Lane A for dataset version/retrieval identity; Lane C for evidence duplicate/supersession behavior | Coordinator if a cross-lane idempotency key is needed | Re-running the same fixture does not duplicate evidence or creates a documented supersession path. |
+| L8-004 | Failures become source-failure evidence or blocked retrieval records | Lane C for `EvidenceService.create_source_failure`; Lane A for blocked/failed retrieval runs | Lane D verifies report/API unknown surfacing | Fixture failure case records a failed/blocked retrieval run and/or stored SOURCE_FAILURE evidence that appears as an UNKNOWN report claim. |
+| L8-005 | Rate limits, timeouts, retry policy explicit | Future connector owner assigned by coordinator | Lane A records retry/failure metadata; Lane D may document API behavior | Fixture connector has no live calls; live connector plans must define timeout/retry/rate-limit defaults before implementation. |
+| L8-006 | Data-quality gates reject malformed or unsafe records | Lane C for evidence payload validation; Lane B for geometry validation | Lane A for source/license constraints | Malformed fixture payloads fail closed before evidence/claims; geometry fixtures use Lane B validators. |
+| L8-007 | Connector output enters evidence ledger before claims | Lane C | Lane D validates downstream report behavior | Connector output is `EvidenceContract`/SOURCE_FAILURE only; it never emits claims directly. |
+| L8-008 | Normal verification does not require live network | Coordinator/test owner; likely connector module owner | Lane D records validation; CI keeps live tests opt-in | Default `.\scripts\verify.ps1` passes with fixture-only connector tests and no network. |
+| L8-009 | Production connector blocked if license/terms unresolved | Lane A | Lane C evidence service enforces production-use source checks | Unknown/blocked source rights prevent source-derived evidence creation and connector production use. |
+| L8-010 | Logs/metrics diagnose connector failures | Lane A for retrieval metrics/log URI | Lane D for future operator/report surfacing | Fixture success/failure runs include row/error/warning counts and failure reason metadata. |
+
+### First Fixture-Only Connector Acceptance Path
+
+The first connector implementation should be a static local fixture connector for one already-modeled screening domain, preferably flood, because current rule/report tests already verify flood evidence and flood source-failure behavior.
+
+Proposed fixture path:
+
+1. Input is local fixture JSON only; no HTTP, browser, shell download, vendor credential, or live API call is allowed.
+2. Fixture references an existing approved/restricted source registry row and a Lane A dataset/version record.
+3. Success fixture produces one or more `EvidenceContract` records with `evidence_type=spatial_intersection`, `domain=flood`, source ID, method code/version, caveat, confidence, and validated observed value.
+4. Failure fixture records a failed or blocked retrieval run and creates SOURCE_FAILURE evidence through Lane C service behavior.
+5. Re-running the same fixture is idempotent: it either returns the same evidence identity, skips duplicates, or records a controlled supersession. The expected behavior must be selected before code.
+6. Report verification proves connector-created evidence reaches the existing report/API path before claims and that failures surface as UNKNOWNs.
+7. Default verification remains fixture-only; any live connector smoke requires an explicit opt-in environment variable and separate runbook.
+
+### Required Pre-Code Decisions
+
+| Decision | Why it matters | Owner / resolver |
+|---|---|---|
+| Who owns future `backend/app/connectors/` if created | `LANE_OWNERSHIP.md` does not currently assign connector module ownership | Coordinator before implementation |
+| Whether connector run status uses source retrieval runs, jobs, or both | D-003 identified job/source retrieval status schema divergence | Coordinator with Lane A and Lane D |
+| Idempotency identity | Prevents duplicate evidence and unclear retry semantics | Lane A + Lane C before connector code |
+| Success fixture evidence shape | Must align with Lane C payload validation and current rule domains | Lane C, with Lane D downstream test |
+| Failure taxonomy | Determines failed retrieval vs SOURCE_FAILURE evidence behavior | Lane A + Lane C |
+| Geometry fixture needs | Must use Lane B hardened EPSG:4326 coordinate validation | Lane B only if new geometry fixtures are needed |
+
+### Stop Conditions Before L8P-001 Code
+
+- Stop if connector implementation requires a new shared connector directory without ownership update.
+- Stop if source license/review status is unknown or incompatible.
+- Stop if fixture evidence payload shape is not accepted by Lane C validators.
+- Stop if idempotency behavior is unspecified.
+- Stop if implementation requires live network, credentials, paid/vendor data, or selecting the MVP jurisdiction.
+- Stop if schema edits are needed before D-003 owner-specific follow-up happens.
 
 ## Files likely to change
 
@@ -173,3 +227,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: Plan created from root `main` after D-001 (`c3453ce`). No schema or implementation files changed in this planning slice.
 - 2026-06-04: D-002 completed from root `main` (`16c5d7f`) with a normalized report artifact regression.
 - 2026-06-04: D-003 schema-contract alignment note completed. Shared schemas were audited but not edited; future schema ownership and edit order are recorded above.
+- 2026-06-04: D-004 Level 8 ownership and fixture-only connector acceptance plan completed after Lane B TB-100 landed on root `main` (`cf9897e`). No connector runtime, schema, migration, or lane-owned implementation files were changed.

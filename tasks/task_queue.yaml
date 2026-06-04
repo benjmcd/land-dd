@@ -187,11 +187,11 @@ tasks:
 
   - id: D-004
     title: Level 8 entry — connector ownership and fixture-only acceptance plan
-    status: pending
+    status: done
     depends_on: [D-003]
     lane: D
-    notes: Next safe Session 2 slice: map L8-001 through L8-010 to lane owners and define the first fixture-only connector acceptance path before connector runtime code.
-    spec: plans/2026-06-04-l7-closeout-l8-entry.md#l7c-003-level-8-ownership-plan
+    notes: L8-001 through L8-010 are mapped to lane owners, and a fixture-only flood connector acceptance path is specified without live network use or runtime code.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md#d-004-level-8-ownership-and-fixture-acceptance-plan
     files:
       - plans/2026-06-04-l7-closeout-l8-entry.md
       - state/PROJECT_STATE.md
@@ -203,3 +203,22 @@ tasks:
       - L8 gates are mapped to lane owners
       - First fixture-only connector path is specified without live network use
       - Stop conditions are recorded for source licensing, source versions, evidence output shape, idempotency, and failures
+
+  - id: D-005
+    title: Level 8 pre-code handoff — connector module ownership decision
+    status: pending
+    depends_on: [D-004]
+    lane: D
+    notes: Next safe step before connector runtime code: resolve who owns any future `backend/app/connectors/` module, whether connector runs use source retrieval runs/jobs/both, and which lane opens the first fixture connector implementation slice.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md#required-pre-code-decisions
+    files:
+      - LANE_OWNERSHIP.md (only if coordinator approves connector ownership update)
+      - docs/adr/ (only if an ADR is needed for connector ownership/run lifecycle)
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/PROJECT_STATE.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Future connector module ownership is explicit
+      - Connector run lifecycle surface is selected
+      - First fixture connector implementation lane is assigned

@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 D-004 Level 8 ownership and fixture acceptance)
+
+- Completed Lane D D-004 from root `main` after Session 1 landed Lane B TB-100 at `cf9897e`.
+- Mapped Level 8 connector gates L8-001 through L8-010 to lane owners and supporting owners before connector runtime code.
+- Defined the first fixture-only connector acceptance path as a static local flood fixture: no live network, no browser/download step, no vendor credential, and no paid/live API dependency.
+- Recorded pre-code decisions for future `backend/app/connectors/` ownership, connector run lifecycle authority, idempotency identity, success evidence shape, failure taxonomy, and geometry fixture needs.
+- Preserved D-003 schema-contract boundaries: no shared schemas, migrations, connector runtime code, or Lane A/B/C implementation files were edited.
+- Set D-005 as the next safe step: resolve connector module ownership and run lifecycle authority before any fixture connector implementation.
+
 ## 2026-06-04 (Session 1 Lane B TB-100 coordinate validation hardening)
 
 - Created isolated worktree `worktrees/session1-lane-b` on branch `lane-b/session1-geometry-hardening` from root `main` at `04d0a8f` to avoid Session 2's active Lane D D-001 checkout edits.

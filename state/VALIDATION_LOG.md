@@ -2,6 +2,29 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-004 Level 8 ownership and fixture acceptance
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Mapped Level 8 connector gates L8-001 through L8-010 to primary and supporting lane owners in `plans/2026-06-04-l7-closeout-l8-entry.md`.
+- Defined the first connector acceptance path as a static local flood fixture with no live network use, no runtime connector code in this slice, and explicit report/API downstream verification expectations.
+- Recorded stop conditions for unassigned connector module ownership, unresolved source licensing, invalid Lane C evidence payload shape, unspecified idempotency, live-network requirements, and premature schema edits.
+- No connector runtime code, shared schemas, migrations, or Lane A/B/C implementation files were edited.
+- Full PowerShell verification passes: 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- D-005 must resolve future `backend/app/connectors/` ownership and connector run lifecycle authority before Level 8 runtime implementation starts.
+- The first fixture connector behavior remains a plan/acceptance contract only; it is not implemented in D-004.
+
 ## 2026-06-04 Session 1 Lane B TB-100 coordinate validation hardening
 
 **Commands run:**

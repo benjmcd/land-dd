@@ -34,6 +34,7 @@ Verification result:
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
 - Shared schema gaps for source, evidence, claim, job, missing report schema, and planning-pack OpenAPI are recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; no shared schema files were edited
+- Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector acceptance path is defined as a static local flood fixture with no live network, no runtime connector code yet, and explicit idempotency/failure/source licensing stop conditions
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -73,12 +74,13 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane D D-004: Level 8 connector ownership and fixture-only acceptance plan before connector runtime code.
+- Lane D D-005: Level 8 pre-code connector module ownership decision before connector runtime code.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
 - Production ops/security/observability
 - New jurisdictions or intents until Level 8/Level 9 planning explicitly selects them
+- Connector runtime code until future `backend/app/connectors/` ownership and connector run lifecycle authority are decided
 ```
 
 
@@ -128,7 +130,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, and Lane B TB-100 are complete on root `main`.
+Latest D-004 verification: `.\scripts\verify.ps1` passes on root `main` with 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, and Lane B TB-100 are complete on root `main`.
 
 ## Local repo bootstrap state
 

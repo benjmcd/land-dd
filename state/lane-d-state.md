@@ -24,6 +24,7 @@ Verification result:
 - `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` pass in a DB-backed API integration test and the report row stores a non-null `intent_id`
 - Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
 - Shared source/evidence/claim/job/report schema gaps are recorded in `plans/2026-06-04-l7-closeout-l8-entry.md` without editing shared schema files
+- Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -55,7 +56,8 @@ Next lowest-dependency task:
 - **D-000 (DONE)**: Report surfacing for unsupported categories is complete. C-002 is merged on `main`; report runs now create or inject stored unsupported-category SOURCE_FAILURE evidence and surface soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
 - **D-002 (DONE)**: Normalized report artifact regression is complete.
 - **D-003 (DONE)**: Schema-contract alignment note is complete; future schema ownership and edit order are recorded before any shared `schemas/*.json` edits.
-- **D-004 (NEXT)**: Level 8 ownership and fixture-only connector acceptance plan before connector runtime code.
+- **D-004 (DONE)**: Level 8 ownership and fixture-only connector acceptance plan is complete.
+- **D-005 (NEXT)**: Level 8 pre-code connector module ownership decision before connector runtime code.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -72,6 +74,7 @@ Do not work on yet:
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
 | Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 is complete; D-001 can now use report output that includes all four unsupported-category unknowns |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
+| Future `backend/app/connectors/` ownership | Pending coordinator decision | Do not create connector runtime code until ownership is assigned |
 
 ## Active plan
 
