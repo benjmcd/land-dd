@@ -81,6 +81,7 @@ git diff --check
 - 2026-06-04: CON-006 implemented the connector-owned public-service wiring path that is currently possible without Lane A/C repository imports. `build_fixture_workflow_with_public_services` wires the fixture workflow to public Lane C `EvidenceService` methods through the evidence adapter and requires an identity-preserving retrieval provenance port. The flood source-failure fixture now uses Lane C's controlled source-failure payload keys.
 - 2026-06-04: CON-024 recorded the connector review action API implementation blocker. The current repo has no authenticated reviewer/operator principal dependency, so mutation-route implementation remains blocked even though repository-level request-fix, requeue, and cancel substrate exists.
 - 2026-06-04: CON-025 added a local service-account reviewer principal dependency and focused API tests without registering a mutation route or changing OpenAPI.
+- 2026-06-04: CON-026 accepted the connector review action route implementation subset and deferred route/OpenAPI changes to avoid conflict with Session 1's Lane C evidence-linkage/OpenAPI branch.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -1050,3 +1051,36 @@ Result: pass on 2026-06-04. Focused API auth tests: 11 passed. Focused ruff and 
 ### Next Slice
 
 The next connector review API slice can plan or implement only the subset of mutation actions that already have repository substrate and principal matching: `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`. `acknowledge`, `approve_for_connector_qa`, durable idempotency, reviewer ownership persistence, reviewer action history, production auth, and dashboard workflow remain separate future slices.
+
+## CON-026 Connector Review Action Route Subset
+
+CON-026 is complete as a route-subset decision. ADR `docs/adr/lane-d-0016-connector-review-action-route-subset.md` accepts the exact mutation actions that may be implemented next without inventing new queue semantics.
+
+### Accepted Implementation Subset
+
+- `request_fixture_fix`: use `ConnectorReviewQueueRepository.mark_failed(...)` for running connector review jobs only.
+- `requeue_after_fix`: use `ConnectorReviewQueueRepository.requeue_failed(...)` for failed connector review jobs only when attempts remain.
+- `cancel_review`: use `ConnectorReviewQueueRepository.cancel(...)` for nonfinal cancellable connector review jobs.
+
+Each accepted action must require a non-empty reason and an authenticated reviewer principal. If a future request carries `reviewer_id`, that value must match `ReviewerPrincipal.reviewer_id`.
+
+### Still Out Of Scope
+
+- `acknowledge`, because reviewer ownership storage is not accepted.
+- `approve_for_connector_qa`, because no accepted queue transition maps it to current persistence.
+- Durable idempotency and reviewer action history, because no persistence decision exists.
+- Route registration, OpenAPI refresh, queue code changes, repository method changes, production auth, reviewer ownership persistence, worker execution, live connector behavior, evidence/claim/report mutation, schemas, migrations, hook config, and POSIX scripts.
+
+### Validation
+
+```powershell
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: recorded in `state/VALIDATION_LOG.md` for CON-026.
+
+### Next Slice
+
+After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice.

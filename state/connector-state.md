@@ -30,6 +30,7 @@ Current task:
 - CON-023: DONE - connector fixture evidence provenance quality checks.
 - CON-024: DONE - connector review action API auth blocker decision.
 - CON-025: DONE - connector reviewer principal boundary.
+- CON-026: DONE - connector review action route subset decision.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -80,6 +81,7 @@ Do not work on yet:
 - `docs/adr/lane-d-0012-connector-human-review-api-semantics.md`
 - `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md`
 - `docs/adr/lane-d-0015-connector-reviewer-principal.md`
+- `docs/adr/lane-d-0016-connector-review-action-route-subset.md`
 - `backend/app/api/reviewer_auth.py`
 - `backend/tests/api/test_reviewer_auth.py`
 - `backend/app/source_registry/provenance_service.py`
@@ -140,6 +142,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-025 result: focused reviewer auth tests pass (11 tests); focused ruff clean; focused mypy clean over 2 source files; backend collection reports 362 tests; whitespace check clean; default and DB-enabled Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-026 result: whitespace check clean; default Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, and DB smoke skipped by default; full DB-enabled Windows PowerShell verification passes with 362 backend tests, lint clean, mypy clean over 123 source files, migrations/seeds apply, and DB smoke passes. Decision-only route subset; no route/OpenAPI/runtime mutation.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -162,3 +166,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector fixture identity/timing quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now flags duplicate evidence IDs and evidence observations outside the retrieval-run time window without adding API, persistence, schema edits, live I/O, claims, or reports |
 | Connector review action API auth boundary | Satisfied for local service-account substrate | ADR Lane D 0015 adds the tested reviewer principal dependency required by ADR Lane D 0014; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
 | Connector reviewer principal dependency | Satisfied for local service-account fixture/developer substrate | `LocalServiceAccountReviewerAuth` validates configured reviewer IDs and tokens, fails closed when unconfigured, and returns `ReviewerPrincipal`; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
+| Connector review action route subset | Satisfied for implementation planning | ADR Lane D 0016 accepts only `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` for the next route implementation; route/OpenAPI changes remain future coordinated work |

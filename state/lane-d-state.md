@@ -71,9 +71,10 @@ Verification result:
 - TD-082 is complete as a planning-only report metadata extension boundary. Future extension families and promotion rules are accepted before any schema/runtime/API changes.
 - CON-024 is complete as a connector review action API auth blocker decision. Current API mutation implementation remains blocked because no authenticated reviewer/operator principal dependency exists.
 - CON-025 is complete as a local service-account reviewer principal dependency for future connector review mutation routes; no routes are registered and OpenAPI is unchanged.
+- CON-026 is complete as a review-action route-subset decision for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, and future API mutation/workflow implementation.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; review-action route subset is accepted; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, route/OpenAPI implementation, and broader API mutation/workflow implementation.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -92,6 +93,7 @@ Completion evidence:
 - docs/adr/lane-d-0011-connector-human-review-actions.md
 - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
 - docs/adr/lane-d-0015-connector-reviewer-principal.md
+- docs/adr/lane-d-0016-connector-review-action-route-subset.md
 - backend/app/api/reviewer_auth.py
 - backend/tests/api/test_reviewer_auth.py
 - schemas/report_run_schema.json
@@ -141,7 +143,8 @@ Next lowest-dependency task:
 - **TD-082 (DONE)**: Report metadata extension boundary is planned before schema/runtime/API implementation.
 - **CON-024 (DONE)**: Connector review action API auth blocker is recorded; mutation routes must wait for an authenticated reviewer/operator principal dependency or accepted service-account delegation rule.
 - **CON-025 (DONE)**: Connector reviewer principal boundary is implemented as a local service-account dependency with focused API tests; no mutation route is registered.
-- **NEXT**: Select a coordinated Level 8 follow-up: plan or implement the narrow review-action mutation route subset supported by existing queue transitions and the tested reviewer principal, choose a specific accepted report metadata extension implementation, broaden fixture data-quality coverage for another selected fixture category, or coordinate durable `ingest_run_id` evidence linkage after Lane C ownership is clear.
+- **CON-026 (DONE)**: Connector review action route subset is accepted for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred.
+- **NEXT**: After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose a specific accepted report metadata extension implementation/broader fixture-quality slice if route work would conflict.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

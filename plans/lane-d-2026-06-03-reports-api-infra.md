@@ -36,10 +36,11 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - TD-082 is complete as a planning-only report metadata extension boundary. It accepts future extension families and promotion rules without changing report runtime behavior, schemas, API behavior, queues, migrations, or live I/O.
 - CON-024 is complete as a connector review action API auth blocker decision. It records that mutation-route implementation remains blocked until an authenticated reviewer/operator principal dependency or accepted service-account delegation rule exists.
 - CON-025 is complete as a narrow reviewer principal boundary. It adds a tested local service-account dependency without registering a mutation route or changing OpenAPI.
+- CON-026 is complete as a review-action route-subset decision. It accepts only `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` for the next route implementation slice and leaves route/OpenAPI changes deferred.
 
 ## Blockers at lane setup
 
-Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas and source provenance-family schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, the planning-pack OpenAPI reference is aligned to the generated FastAPI contract, connector human-review action plus route/reviewer/auth semantics are planned, a local service-account reviewer principal boundary is tested, and future report metadata extension boundaries are accepted. Job schema, production auth, reviewer ownership/action history, durable evidence-row retrieval lineage, and API mutation implementation remain future coordinated work.
+Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas and source provenance-family schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, the planning-pack OpenAPI reference is aligned to the generated FastAPI contract, connector human-review action plus route/reviewer/auth semantics are planned, a local service-account reviewer principal boundary is tested, the narrow review-action route subset is accepted, and future report metadata extension boundaries are accepted. Job schema, production auth, reviewer ownership/action history, durable evidence-row retrieval lineage, and API mutation implementation remain future coordinated work.
 
 ## Proposed design
 
@@ -153,6 +154,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` | Connector human-review API semantics decision |
 | `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md` | Connector review action API auth blocker decision |
 | `docs/adr/lane-d-0015-connector-reviewer-principal.md` | Connector reviewer principal boundary decision |
+| `docs/adr/lane-d-0016-connector-review-action-route-subset.md` | Connector review action route subset decision |
 | `backend/app/api/reviewer_auth.py` | Local service-account reviewer principal dependency |
 | `backend/tests/api/test_reviewer_auth.py` | Reviewer principal dependency tests |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
@@ -176,6 +178,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 |---|---|---|
 | Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; source provenance-family schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract; report metadata extension boundary accepted | Job schema and API mutation implementation remain future coordinated passes |
 | Connector review mutation API auth | Local service-account reviewer principal dependency accepted and tested | Production auth, reviewer ownership/action history, and mutation-route implementation remain future coordinated passes |
+| Connector review action route subset | Accepted for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` | Route implementation and OpenAPI refresh remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
@@ -215,3 +218,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: TD-082 complete as a planning-only report metadata extension boundary. Added ADR `lane-d-0013-report-metadata-extension-boundary` without changing report runtime behavior, API behavior, OpenAPI, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: CON-024 complete as a connector review action API auth blocker decision. Added ADR `lane-d-0014-connector-review-api-auth-blocker` without changing API behavior, OpenAPI, queue code, repository methods, schemas, migrations, connector runtime behavior, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: CON-025 complete as a local service-account reviewer principal boundary. Added `backend/app/api/reviewer_auth.py`, focused tests, and ADR `lane-d-0015-connector-reviewer-principal` without registering routes, changing OpenAPI, mutating queue rows, adding settings/secrets, or changing connector/evidence/claim/report behavior.
+- 2026-06-04: CON-026 complete as a review-action route-subset decision. Added ADR `lane-d-0016-connector-review-action-route-subset` without registering routes, changing OpenAPI, mutating queue rows, adding repository methods, or changing connector/evidence/claim/report behavior.

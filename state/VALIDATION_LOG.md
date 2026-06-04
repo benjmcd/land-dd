@@ -2,6 +2,26 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-026 review action route subset
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 362 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- CON-026 is a route-subset decision only. It does not register API routes, change OpenAPI, mutate queue rows, add repository methods, add production auth, persist reviewer ownership, persist reviewer action history, change connector runtime behavior, change evidence/claim/report behavior, add schemas, add migrations, use live I/O, alter hook config, or invoke POSIX scripts. Route implementation and OpenAPI refresh remain a future coordinated pass after Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point.
+
 ## 2026-06-04 Connector CON-025 reviewer principal boundary
 
 **Commands run:**

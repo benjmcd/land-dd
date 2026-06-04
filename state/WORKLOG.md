@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-026 review action route subset)
+
+- Added ADR `docs/adr/lane-d-0016-connector-review-action-route-subset.md` to accept the next connector review mutation route subset before implementation.
+- Accepted only `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` because they map to existing queue repository transitions plus the tested reviewer principal.
+- Kept `acknowledge`, `approve_for_connector_qa`, durable idempotency, reviewer ownership persistence, reviewer action history, production auth, dashboard workflow, and route implementation out of scope.
+- Preserved boundary: no route registration, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live I/O, hook config, POSIX script, evidence behavior, claim behavior, or report behavior changed.
+
 ## 2026-06-04 (Connector CON-025 reviewer principal boundary)
 
 - Added `backend/app/api/reviewer_auth.py` with a local service-account reviewer principal dependency for future connector review mutation routes.

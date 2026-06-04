@@ -97,6 +97,7 @@ Verification result:
 - TD-082 is complete as a planning-only report metadata extension boundary. Future report metadata extension families and promotion rules are accepted without changing report runtime behavior, APIs, schemas, queues, migrations, or live I/O.
 - CON-024 is complete as a connector review action API auth blocker decision. The future review-action mutation route remains blocked until an authenticated reviewer/operator principal dependency or accepted service-account delegation rule is added and tested.
 - CON-025 is complete as a local service-account reviewer principal dependency for future connector review mutation routes, without registering a route or changing OpenAPI.
+- CON-026 is complete as a connector review action route-subset decision for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred to avoid Session 1's Lane C evidence-linkage/OpenAPI branch.
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -141,6 +142,7 @@ Completion evidence:
 - docs/adr/lane-d-0014-connector-review-api-auth-blocker.md
 - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
 - docs/adr/lane-d-0015-connector-reviewer-principal.md
+- docs/adr/lane-d-0016-connector-review-action-route-subset.md
 - backend/app/api/reviewer_auth.py
 - backend/tests/api/test_reviewer_auth.py
 - docs/planning_pack/api/openapi_stub.yaml
@@ -157,7 +159,7 @@ Completion evidence:
 - backend/tests/connectors/test_fixture_quality.py
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 pass after CON-025: plan or implement the narrow review-action mutation route subset supported by existing queue transitions and the tested reviewer principal, choose a specific accepted report metadata extension implementation, broaden fixture data-quality coverage for another selected fixture category, or coordinate durable `ingest_run_id` evidence linkage with Lane C/schema ownership after Session 1's Lane C slice lands.
+- After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose a specific accepted report metadata extension implementation/broader fixture-quality slice if route work would conflict.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -214,7 +216,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-362 tests pass in the DB-enabled Windows PowerShell verification path after CON-025 connector reviewer principal boundary; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, CON-024, CON-025, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should plan or implement the narrow review-action mutation route subset supported by existing queue transitions and the tested reviewer principal, choose a specific accepted report metadata extension implementation, broaden fixture data-quality coverage for another selected fixture category, or coordinate durable `ingest_run_id` evidence linkage with Lane C/schema ownership after Session 1's Lane C slice lands.
+362 tests pass in the DB-enabled Windows PowerShell verification path after CON-026 connector review action route-subset decision; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, CON-024, CON-025, CON-026, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should implement the accepted review-action mutation route subset with OpenAPI refresh after Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, or choose a specific accepted report metadata extension implementation/broader fixture-quality slice if route work would conflict.
 
 ## Local repo bootstrap state
 
