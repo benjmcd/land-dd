@@ -13,7 +13,7 @@ from app.claims_engine.claim_repo import InMemoryClaimRepository
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import ConfidenceBand, EvidenceType, JobStatus
+from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode, JobStatus
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
@@ -116,7 +116,7 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
 
     report_run = report_service.create_report_run(
         area_id=area.area_id,
-        intent_code="homestead_feasibility",
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
     )
 
     assert report_run.status == JobStatus.SUCCEEDED
@@ -168,11 +168,11 @@ def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:
 
     first_run = report_service.create_report_run(
         area_id=area.area_id,
-        intent_code="homestead_feasibility",
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
     )
     second_run = report_service.create_report_run(
         area_id=area.area_id,
-        intent_code="homestead_feasibility",
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
     )
 
     assert first_run.report_run_id != second_run.report_run_id
@@ -188,7 +188,7 @@ def test_create_report_run_without_evidence_carries_explicit_caveat() -> None:
 
     report_run = report_service.create_report_run(
         area_id=area.area_id,
-        intent_code="homestead_feasibility",
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
     )
 
     assert report_run.status == JobStatus.SUCCEEDED
@@ -209,5 +209,5 @@ def test_create_report_run_rejects_unregistered_area() -> None:
     with pytest.raises(ValueError, match="is not registered"):
         report_service.create_report_run(
             area_id=uuid4(),
-            intent_code="homestead_feasibility",
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
         )
