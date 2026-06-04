@@ -34,6 +34,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
         "source_observation_source_date_missing"
     )
     SOURCE_FAILURE_PAYLOAD_INCOMPLETE = "source_failure_payload_incomplete"
+    SOURCE_FAILURE_PAYLOAD_INVALID = "source_failure_payload_invalid"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
 
 
@@ -271,6 +272,17 @@ def _append_source_failure_issues(
                 "source-failure fixture evidence must include controlled failure keys",
             ),
         )
+    elif (
+        not _non_empty_text(evidence.observed_value["failure_reason"])
+        or not _non_empty_text(evidence.observed_value["error_message"])
+        or not isinstance(evidence.observed_value["retryable"], bool)
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_PAYLOAD_INVALID,
+                "source-failure fixture payload values must be typed and non-empty",
+            ),
+        )
     if evidence.confidence != ConfidenceBand.UNKNOWN:
         issues.append(
             _issue(
@@ -285,6 +297,10 @@ def _issue(
     message: str,
 ) -> ConnectorFixtureQualityIssue:
     return ConnectorFixtureQualityIssue(code=code, message=message)
+
+
+def _non_empty_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 __all__ = [

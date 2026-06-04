@@ -943,6 +943,35 @@ tasks:
       - Blocked or failed fixture retrieval error_count must be positive
       - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
 
+  - id: CON-028
+    title: Level 8 connector source-failure payload type quality
+    status: done
+    depends_on: [CON-023, CON-027]
+    lane: connector-integration
+    notes: Tightened connector-local fixture quality so source-failure observed_value fields are type-checked after required keys are present: failure_reason and error_message must be non-empty text, and retryable must be boolean. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-028-connector-source-failure-payload-type-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Source-failure fixture payload must still include failure_reason, error_message, and retryable
+      - failure_reason and error_message must be non-empty strings
+      - retryable must be boolean
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done

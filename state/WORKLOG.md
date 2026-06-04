@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-028 source-failure payload type quality)
+
+- Tightened connector-local fixture quality for source-failure payload value types.
+- Source-failure fixture payloads now fail closed unless `failure_reason` and `error_message` are non-empty text and `retryable` is boolean.
+- Preserved boundary: no API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or lane-owned module outside connector quality changed.
+- Verification passed with DB smoke: 364 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Lane D TD-084 job schema boundary)
 
 - Added ADR `docs/adr/lane-d-0018-job-schema-boundary.md` before any shared job schema edit.

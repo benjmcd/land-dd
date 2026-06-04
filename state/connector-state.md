@@ -32,6 +32,7 @@ Current task:
 - CON-025: DONE - connector reviewer principal boundary.
 - CON-026: DONE - connector review action route subset decision.
 - CON-027: DONE - connector fixture retrieval metric quality checks.
+- CON-028: DONE - connector source-failure payload type quality checks.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -147,6 +148,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-027 result: focused fixture-quality tests pass (11 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local fixture retrieval metric validation; no route/OpenAPI/runtime/schema/queue mutation.
 
+2026-06-04 CON-028 result: focused fixture-quality tests pass (12 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local source-failure payload type validation; no route/OpenAPI/runtime/schema/queue mutation.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -167,6 +170,7 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector queue retry/requeue/cancel semantics | Satisfied for repository-level orchestration methods | `ConnectorReviewQueueRepository` implementations can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons; no API mutation route, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation was added |
 | Connector source-failure evidence ID adoption | Satisfied for connector adapter/public wiring scope | `ConnectorEvidenceIngestionAdapter` passes deterministic source-failure `EvidenceContract.evidence_id` values into Lane C's public source-failure creation method and DB-backed public wiring proves the ID persists; durable `ingest_run_id` evidence-row linkage remains a future coordinated schema/service pass |
 | Connector fixture identity/timing quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now flags duplicate evidence IDs and evidence observations outside the retrieval-run time window without adding API, persistence, schema edits, live I/O, claims, or reports |
+| Connector source-failure payload quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now requires source-failure payload keys and type/non-empty value checks without adding API, persistence, schema edits, live I/O, claims, or reports |
 | Connector review action API auth boundary | Satisfied for local service-account substrate | ADR Lane D 0015 adds the tested reviewer principal dependency required by ADR Lane D 0014; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
 | Connector reviewer principal dependency | Satisfied for local service-account fixture/developer substrate | `LocalServiceAccountReviewerAuth` validates configured reviewer IDs and tokens, fails closed when unconfigured, and returns `ReviewerPrincipal`; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
 | Connector review action route subset | Satisfied for implementation planning | ADR Lane D 0016 accepts only `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` for the next route implementation; route/OpenAPI changes remain future coordinated work |
