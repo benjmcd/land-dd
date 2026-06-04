@@ -17,3 +17,7 @@ local_artifacts/
 *.log
 .DS_Store
 CLAUDE.local.md
+# Agent working notes (not source artifacts)
+findings.md
+progress.md
+task_plan.md
