@@ -15,6 +15,7 @@ Current task:
 - CON-008: DONE - DB-backed fixture workflow smoke.
 - CON-009: DONE - DB-backed source-failure fixture workflow smoke.
 - CON-010: DONE - connector run/status review packet and human-review handoff projection.
+- CON-011: DONE - connector review handoff consumer for review packets.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -42,6 +43,8 @@ Do not work on yet:
 - `backend/tests/connectors/test_public_wiring.py`
 - `backend/app/connectors/review_packet.py`
 - `backend/tests/connectors/test_review_packet.py`
+- `backend/app/connectors/review_handoff.py`
+- `backend/tests/connectors/test_review_handoff.py`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -76,6 +79,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-010 result: focused review-packet/fixture-workflow tests pass (8 tests); full connector tests pass with DB smoke skipped by default (28 passed, 2 skipped); connector ruff clean; connector mypy clean over 13 source/test files. Full workspace verification result is recorded in `state/VALIDATION_LOG.md`.
 
+2026-06-04 CON-011 result: focused review-handoff/review-packet tests pass (8 tests); full connector tests pass with DB smoke skipped by default (32 passed, 2 skipped); connector ruff clean; connector mypy clean over 15 source/test files; full DB-enabled PowerShell verification passes with 300 backend tests, lint clean, mypy clean over 109 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -86,3 +91,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Lane A concrete retrieval-run wiring | Satisfied for public service | `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`; connector wiring uses it through a public-service adapter |
 | DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |
 | Connector run/status review handoff | Satisfied for fixture workflow projection | `build_connector_run_review_packet(...)` summarizes workflow status and review signals without adding API, claims, reports, schema edits, or persistence changes |
+| Connector review handoff consumer | Satisfied for connector-local projection | `build_connector_review_handoff(...)` classifies review packets into deterministic handoff dispositions without adding API, persistence, reports, claims, schema edits, or live I/O |

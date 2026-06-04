@@ -421,3 +421,25 @@ tasks:
       - Blocked/source-failure fixture workflow emits human-review-required signals
       - Repeated fixture workflow emits an idempotent skip signal without requiring human review
       - No API, claim/report shortcut, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced
+
+  - id: CON-011
+    title: Level 8 connector review handoff consumer
+    status: done
+    depends_on: [CON-010]
+    lane: connector-integration
+    notes: Added a pure connector-zone consumer for review packets. It classifies packets into needs_human_review, ready_for_connector_qa, or idempotent_noop handoffs and emits JSON-safe review records without API routing, durable queue persistence, reports, claims, schema changes, live IO, or Lane A/B/C/D implementation changes.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-011-connector-review-handoff-consumer
+    files:
+      - backend/app/connectors/review_handoff.py
+      - backend/tests/connectors/test_review_handoff.py
+      - backend/app/connectors/__init__.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Successful fixture workflow review packets route to ready_for_connector_qa
+      - Blocked/source-failure review packets route to needs_human_review with high priority
+      - Repeated/idempotent fixture review packets route to idempotent_noop
+      - Handoff records are JSON-safe for later consumers
+      - No API, durable queue persistence, report, claim, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced

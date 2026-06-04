@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-011)
+
+- Completed CON-011 in the connector integration zone as a pure consumer for CON-010 review packets.
+- Added `build_connector_review_handoff(...)`, `ConnectorReviewHandoff`, `ConnectorReviewDisposition`, and `ConnectorReviewPriority` in `backend/app/connectors/review_handoff.py`.
+- The handoff classifies packets into `needs_human_review`, `ready_for_connector_qa`, or `idempotent_noop`, and exposes `to_review_record()` for JSON-safe future consumers.
+- Added connector tests proving successful fixture workflow packets route to connector QA, blocked/source-failure packets route to high-priority human review, repeated fixture runs route to an idempotency log, and the handoff module avoids API, persistence, reports, claims, Lane A/C implementation, and live I/O imports.
+- Preserved the existing boundary: no live I/O, API route, durable queue persistence, claim/report shortcut, schema edit, Lane A/B/C/D implementation change, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+- Verification passed: focused review-handoff/review-packet tests; full connector tests; connector ruff/mypy; full DB-enabled `.\scripts\verify.ps1`.
+
 ## 2026-06-04 (connector CON-010)
 
 - Completed CON-010 in the connector integration zone as a pure run/status review packet and human-review handoff projection.

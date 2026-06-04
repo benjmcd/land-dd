@@ -454,3 +454,43 @@ The next Level 8 pass should choose one of:
 - exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
 - a connector API/status endpoint or human-review queue surface that consumes the review packet without changing connector persistence semantics;
 - broader fixture data-quality coverage if another connector fixture category is selected.
+
+## CON-011 Connector Review Handoff Consumer
+
+CON-011 is complete. The connector integration zone now exposes `build_connector_review_handoff(...)`, a pure consumer for CON-010 review packets. It classifies fixture workflow review packets into deterministic handoff dispositions:
+
+- `needs_human_review` for packets with review-required signals;
+- `ready_for_connector_qa` for successful fixture workflow packets that created evidence and need normal QA review;
+- `idempotent_noop` for repeated fixture workflow packets that skipped existing retrieval/evidence records without requiring human review.
+
+The handoff includes a queue name, priority, title, summary, tasks, signal codes, and `to_review_record()` for a JSON-safe record that future API or workflow code can consume without reinterpreting connector packet semantics.
+
+### Boundary Preserved
+
+This is a connector-local consumer surface only. It does not create a database queue, add API routes, evaluate claims, generate reports, perform live I/O, change schemas, or modify Lane A/B/C/D implementation files. Future API/status or durable human-review queue work can consume this surface, but must still be separately planned if it crosses Lane D/API or persistence ownership.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_handoff.py tests/connectors/test_review_packet.py
+ruff check app/connectors tests/connectors/test_review_handoff.py tests/connectors/test_review_packet.py
+mypy app/connectors tests/connectors/test_review_handoff.py tests/connectors/test_review_packet.py
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused review-handoff/review-packet tests pass (8 tests); full connector tests pass with DB smoke skipped by default (32 passed, 2 skipped); connector ruff clean; connector mypy clean over 15 source/test files; full DB-enabled PowerShell verification passes with 300 backend tests, lint clean, mypy clean over 109 source files, migrations/seeds apply, and DB smoke passes.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- a coordinated Lane C/schema slice for durable `ingest_run_id` linkage on evidence rows;
+- exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
+- a Lane D/API status endpoint or durable human-review queue that consumes the connector review handoff;
+- broader fixture data-quality coverage if another connector fixture category is selected.

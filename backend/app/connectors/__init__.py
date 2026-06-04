@@ -23,6 +23,12 @@ from app.connectors.retrieval_provenance import (
     ConnectorRetrievalProvenanceResult,
     SourceRetrievalProvenancePort,
 )
+from app.connectors.review_handoff import (
+    ConnectorReviewDisposition,
+    ConnectorReviewHandoff,
+    ConnectorReviewPriority,
+    build_connector_review_handoff,
+)
 from app.connectors.review_packet import (
     ConnectorReviewSignal,
     ConnectorReviewSignalCode,
@@ -34,6 +40,9 @@ __all__ = [
     "ConnectorEvidenceIngestionAdapter",
     "ConnectorEvidenceIngestionError",
     "ConnectorEvidenceIngestionResult",
+    "ConnectorReviewDisposition",
+    "ConnectorReviewHandoff",
+    "ConnectorReviewPriority",
     "ConnectorReviewSignal",
     "ConnectorReviewSignalCode",
     "ConnectorRunReviewPacket",
@@ -48,6 +57,7 @@ __all__ = [
     "SourceRetrievalProvenancePort",
     "StaticFloodFixtureConnector",
     "build_connector_run_review_packet",
+    "build_connector_review_handoff",
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
 ]
