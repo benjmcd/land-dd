@@ -23,7 +23,7 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- Full verification passes locally with DB smoke enabled after CON-018: 329 tests; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-019 and root `ca10f85` reconciliation: 335 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`

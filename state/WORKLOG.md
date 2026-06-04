@@ -440,6 +440,8 @@ Append concise entries. Do not rely on chat history.
 - Adjusted connector source-failure idempotency to check existing stored source-failure fingerprints before deterministic-ID duplicate fallback, preserving stored authority for repeated fixture runs.
 - Updated connector/API fake evidence ports and DB-backed public wiring assertions so supplied source-failure IDs are preserved in tests.
 - Added `docs/adr/lane-d-0008-connector-source-failure-ids.md`.
+- Merged root `main` at `ca10f85` into the Session 2 integration branch, preserving Lane A TA-070 source schema-contract records and resolving only append-style shared state conflicts.
+- Verification passed after reconciliation: focused connector adoption tests, DB-backed public wiring source-failure ID test, targeted/broader connector/API ruff and mypy, connector/API tests, full DB-enabled PowerShell verification with 335 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
 - Preserved boundaries: no Lane C implementation/schema edits, no database migration, no live I/O, no queue API mutation, no claims/reports shortcut, and no durable `ingest_run_id` evidence-row linkage.
 
 ## 2026-06-03 (Windows PowerShell verification wrapper)

@@ -15,6 +15,11 @@ mypy app/connectors/evidence_ingestion.py tests/connectors/test_evidence_ingesti
 py -3.12 -m pytest -q tests/connectors tests/api -rA
 ruff check app/connectors app/api app/main.py tests/connectors tests/api
 mypy app/connectors app/api app/main.py tests/connectors tests/api
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
 ```
 
 **Results:**
@@ -26,10 +31,11 @@ mypy app/connectors app/api app/main.py tests/connectors tests/api
 - Broader connector/API tests with DB smoke skipped by default: 64 passed, 8 skipped.
 - Broader connector/API ruff: clean.
 - Broader connector/API mypy: clean over 36 source/test files.
+- Full DB-enabled PowerShell verification after merging root `ca10f85`: ok; 335 backend tests pass; lint clean; mypy clean over 119 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 335 tests.
 
 **Residual risk:**
 
-- Full DB-enabled workspace verification remains to be rerun after CON-019 docs/state updates and after merging current root `ca10f85` Lane A source schema-contract records into this integration branch.
 - CON-019 preserves deterministic source-failure evidence IDs through connector ingestion/public Lane C service wiring only. Durable `ingest_run_id` evidence-row linkage remains a future coordinated Lane C/schema pass.
 
 ## 2026-06-04 Lane A TA-070 source schema-contract parity

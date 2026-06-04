@@ -119,7 +119,7 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-018 result: focused queue tests pass with DB smoke skipped by default (6 passed, 3 skipped); DB-enabled queue tests pass (9 tests); connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); connector/API ruff clean; connector/API mypy clean over 36 source files; full DB-enabled PowerShell verification passes with 329 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
 
-2026-06-04 CON-019 targeted result: focused connector adoption tests pass with DB smoke skipped by default (15 passed, 2 skipped); DB-backed public wiring source-failure ID test passes (1 test); targeted ruff clean; targeted mypy clean over 10 source/test files; connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); connector/API ruff clean; connector/API mypy clean over 36 source/test files. Full workspace verification is recorded in `state/VALIDATION_LOG.md`.
+2026-06-04 CON-019 result: focused connector adoption tests pass with DB smoke skipped by default (15 passed, 2 skipped); DB-backed public wiring source-failure ID test passes (1 test); targeted ruff clean; targeted mypy clean over 10 source/test files; connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); connector/API ruff clean; connector/API mypy clean over 36 source/test files; full DB-enabled PowerShell verification passes after merging root `ca10f85` with 335 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
 
 ## Known blockers
 
