@@ -30,8 +30,9 @@ This ADR tightens the generated report artifact schema. It does not redefine `Re
 ## Consequences
 
 - Report manifest and artifact metadata drift is now test-guarded for stable generated report outputs.
-- Lane D can claim report manifest metadata tightening without claiming source provenance-family schema coverage, job schema coverage, OpenAPI refresh, live connectors, or durable `ingest_run_id` evidence-row linkage.
+- Lane D can claim report manifest metadata tightening without claiming job schema coverage, live connectors, or durable `ingest_run_id` evidence-row linkage.
 - Future persistence metadata can remain additive while the stable generated keys stay constrained.
+- ADR Lane D 0013 defines the future report metadata extension boundary without changing this schema decision.
 
 ## Links
 
@@ -40,3 +41,4 @@ This ADR tightens the generated report artifact schema. It does not redefine `Re
 - `plans/2026-06-04-l7-closeout-l8-entry.md`
 - `schemas/report_run_schema.json`
 - `backend/tests/reports/test_report_schema_contract.py`
+- `docs/adr/lane-d-0013-report-metadata-extension-boundary.md`

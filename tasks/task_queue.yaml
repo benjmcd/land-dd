@@ -820,3 +820,28 @@ tasks:
       - Non-failure fixture evidence without source_date fails closed
       - Source-failure fixture evidence may omit source_date while still requiring controlled failure payload and unknown confidence
       - No API route, OpenAPI change, durable queue behavior, repository method, source/evidence/claim/report behavior, schema, migration, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage is introduced
+
+  - id: TD-082
+    title: Level 7 report metadata extension boundary
+    status: done
+    depends_on: [TD-081, TD-090, TA-080, CON-023]
+    lane: D
+    notes: Accepted future report metadata extension families and promotion rules before any schema/runtime/API implementation. No report runtime behavior, API behavior, OpenAPI change, schema change, migration, queue behavior, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage changed.
+    spec: plans/lane-d-2026-06-03-reports-api-infra.md
+    files:
+      - docs/adr/lane-d-0013-report-metadata-extension-boundary.md
+      - docs/adr/lane-d-0010-report-manifest-metadata.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Accepted future report metadata extension families are recorded
+      - Metadata extensions cannot reinterpret evidence, claims, red flags, unknowns, caveats, or verification tasks
+      - Metadata extensions cannot assert evidence-row ingest_run_id lineage until storage support exists
+      - New stable metadata keys require a planned schema/test slice before becoming required in schemas/report_run_schema.json
+      - No report runtime behavior, API behavior, OpenAPI change, schema change, migration, queue behavior, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage is introduced

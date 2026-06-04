@@ -64,7 +64,7 @@ Verification result:
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
-- Shared schema gaps for job schema and future report metadata extensions remain recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; Lane A source and source provenance-family schemas, Lane C evidence/claim root schemas, Lane D report-run schema plus stable generated report manifest metadata keys, planning-pack evidence/claim schema copies, and planning-pack OpenAPI are now aligned to their serialized/generated contract authorities
+- Shared schema gaps for job schema remain recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; Lane A source and source provenance-family schemas, Lane C evidence/claim root schemas, Lane D report-run schema plus stable generated report manifest metadata keys and report metadata extension boundaries, planning-pack evidence/claim schema copies, and planning-pack OpenAPI are now aligned to their serialized/generated contract authorities
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector runtime contract slice is implemented as a static local flood fixture with no live network, explicit idempotency, blocked/source-failure behavior, and source retrieval provenance
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 - CON-001 is complete: `StaticFloodFixtureConnector` reads local flood fixture JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure source-failure fixtures, and stays before claims/reports
@@ -94,6 +94,7 @@ Verification result:
 - CON-022 is complete as a planning-only human-review API semantics pass. Future route/reviewer/auth/idempotency semantics are accepted before API mutation implementation or OpenAPI change.
 - TA-080 is complete: the separate source provenance-family schema now covers serialized source dataset, dataset-version, and retrieval-run contracts without changing runtime validation, migrations, connector behavior, queue semantics, live I/O, or durable evidence-row linkage.
 - CON-023 is complete: connector-local fixture quality now fails closed when evidence provenance text, caveats, or non-failure source dates are missing, without changing APIs, schemas, queues, source/evidence/claim/report behavior, or live I/O.
+- TD-082 is complete as a planning-only report metadata extension boundary. Future report metadata extension families and promotion rules are accepted without changing report runtime behavior, APIs, schemas, queues, migrations, or live I/O.
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -133,6 +134,7 @@ Completion evidence:
 - schemas/report_run_schema.json
 - backend/tests/reports/test_report_schema_contract.py
 - docs/adr/lane-d-0010-report-manifest-metadata.md
+- docs/adr/lane-d-0013-report-metadata-extension-boundary.md
 - docs/adr/lane-d-0011-connector-human-review-actions.md
 - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
 - docs/planning_pack/api/openapi_stub.yaml
@@ -149,7 +151,7 @@ Completion evidence:
 - backend/tests/connectors/test_fixture_quality.py
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 pass after CON-023 and TA-080: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence linkage coordination, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
+- Select the next Level 8 pass after CON-023, TA-080, and TD-082: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence linkage coordination, a specific accepted report metadata extension implementation, or broader fixture data-quality coverage for another selected fixture category.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -206,7 +208,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-351 tests pass in the DB-enabled Windows PowerShell verification path after CON-023 connector fixture evidence provenance quality; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from narrow human-review action API implementation only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence linkage coordination, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
+351 tests pass in the DB-enabled Windows PowerShell verification path after TD-082 report metadata extension boundary planning; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from narrow human-review action API implementation only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence linkage coordination, a specific accepted report metadata extension implementation, or broader fixture data-quality coverage for another selected fixture category.
 
 ## Local repo bootstrap state
 

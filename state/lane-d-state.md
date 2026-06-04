@@ -32,7 +32,7 @@ Verification command(s):
 - cd backend; mypy tests/reports/test_report_schema_contract.py
 - cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 Verification result:
-- Full verification passes locally with DB smoke enabled after CON-023 connector fixture evidence provenance quality: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-081 report manifest metadata schema tightening: 343 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
@@ -50,7 +50,7 @@ Verification result:
 - `schemas/report_run_schema.json` is aligned to serialized `ReportRunContract`, references Lane C evidence/claim schemas for nested arrays, and is guarded by schema-contract parity tests
 - Stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with schema-contract tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`
 - Planning-pack OpenAPI now matches the generated FastAPI contract.
-- Shared source provenance-family, job, and future report metadata extension gaps remain recorded in `plans/2026-06-04-l7-closeout-l8-entry.md`.
+- Job schema, durable evidence-row retrieval lineage, and API mutation/workflow implementation gaps remain recorded in `plans/2026-06-04-l7-closeout-l8-entry.md`.
 - Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
 - CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
@@ -66,9 +66,10 @@ Verification result:
 - CON-021 is complete as a planning-only human-review action semantics slice. Future action vocabulary is defined before any API mutation route, worker, scheduler, dashboard, connector runtime change, schema, or migration.
 - CON-022 is complete as a planning-only human-review API semantics slice. Future route/reviewer/auth/idempotency semantics are accepted before any API mutation route, OpenAPI change, queue code, auth code, schema, or migration.
 - CON-023 is complete as a connector-local fixture-quality slice. Fixture evidence now fails closed when provenance text, caveats, or non-failure source dates are missing.
+- TD-082 is complete as a planning-only report metadata extension boundary. Future extension families and promotion rules are accepted before any schema/runtime/API changes.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned. Remaining gaps are job schema, future report metadata extensions, durable `ingest_run_id` evidence-row linkage, and future API mutation/workflow implementation.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, and future API mutation/workflow implementation.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -83,6 +84,7 @@ Completion evidence:
 - docs/adr/lane-d-0008-connector-source-failure-ids.md
 - docs/adr/lane-d-0009-report-run-schema.md
 - docs/adr/lane-d-0010-report-manifest-metadata.md
+- docs/adr/lane-d-0013-report-metadata-extension-boundary.md
 - docs/adr/lane-d-0011-connector-human-review-actions.md
 - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
 - schemas/report_run_schema.json
@@ -129,7 +131,8 @@ Next lowest-dependency task:
 - **CON-021 (DONE)**: Connector human-review action semantics are planned before API mutation or worker implementation.
 - **CON-022 (DONE)**: Connector human-review API route/reviewer/auth semantics are planned before mutation implementation.
 - **CON-023 (DONE)**: Connector fixture evidence provenance quality is complete for missing evidence text, caveat, and non-failure source-date checks.
-- **NEXT**: Select a coordinated Level 8 follow-up: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence-row linkage coordination, future report metadata extensions, or another selected fixture category.
+- **TD-082 (DONE)**: Report metadata extension boundary is planned before schema/runtime/API implementation.
+- **NEXT**: Select a coordinated Level 8 follow-up: implement the narrow human-review action API only after auth/reviewer identity enforcement and needed queue transition substrate are accepted, retry/cancel API surfacing only through accepted route semantics, durable `ingest_run_id` evidence-row linkage coordination, a specific accepted report metadata extension implementation, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -140,7 +143,7 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, future report metadata extensions, durable evidence-row retrieval lineage, and API mutation/workflow implementation remain future coordinated passes |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; source provenance-family schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract; report metadata extension boundary accepted | Job schema, durable evidence-row retrieval lineage, and API mutation/workflow implementation remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |

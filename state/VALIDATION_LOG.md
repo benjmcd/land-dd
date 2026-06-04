@@ -2,6 +2,22 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane D TD-082 report metadata extension boundary
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Pass. Full Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- TD-082 is planning-only. It does not add report runtime behavior, API behavior, OpenAPI changes, schema changes, migrations, queue behavior, live I/O, hook config, POSIX scripts, or durable `ingest_run_id` evidence-row linkage. Job schema, API mutation/workflow implementation, rendering/export implementation, and durable evidence-row retrieval lineage remain separate future work.
+
 ## 2026-06-04 Connector CON-023 fixture evidence provenance quality
 
 **Commands run:**

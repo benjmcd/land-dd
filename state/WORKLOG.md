@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-082 report metadata extension boundary)
+
+- Added ADR `docs/adr/lane-d-0013-report-metadata-extension-boundary.md` to define accepted future report metadata extension families and promotion rules.
+- Recorded that future metadata extensions must be additive, namespaced, and unable to assert evidence-row `ingest_run_id` lineage before lower-layer storage support exists.
+- Preserved boundary: no report runtime behavior, API behavior, OpenAPI change, schema change, migration, queue behavior, live I/O, hook config, or POSIX script changed.
+- Verification passed with DB smoke: 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-023 fixture evidence provenance quality)
 
 - Extended connector-local fixture quality with blocking checks for missing evidence provenance text, missing caveats, and missing non-failure source dates.
