@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-03 (pre-Codex structural hardening — ralplan A-minus)
+
+- Committed all 49 uncommitted files in 9 logical groups (CI scripts, Lane A provenance, Lane B area models, Lane C evidence/claim models, Lane D report persistence, ADRs, agent docs, state/plans, archive cleanup).
+- Created `backend/app/db/base.py` with single `AppBase(DeclarativeBase)` + MetaData naming_convention for Alembic readiness.
+- Created `backend/app/db/types.py` with canonical `authority_level_enum`, `confidence_band_enum`, `job_status_enum` (one definition each, `create_type=False`).
+- Updated all 4 ORM model modules (source_registry, area_geometry, evidence_ledger, reports) to inherit from `AppBase`; removed duplicate enum declarations; backward-compat aliases preserved.
+- Fixed 3 legacy `.query()` sites in `source_registry/provenance_repo.py` → SQLAlchemy 2.x `select()` style.
+- Added `IntentCode(StrEnum)` to `domain/enums.py` with 9 values matching `core.intent_code` SQL enum exactly.
+- Constrained `ReportRunContract.intent_code` to `IntentCode`; updated API and service signatures.
+- Fixed `SqlAlchemyReportRunRepository._contract_to_model()` which was silently dropping `intent_id` (setting it NULL); added `_resolve_intent_id()` that looks up `core.intents` by `intent_code`.
+- Added DB assertion to `test_report_repository.py` verifying `intent_id` is NOT NULL after round-trip.
+- Verified: 235 tests pass; `ruff check app/` clean; `mypy app/` clean (50 source files).
+- Deferred to Codex: Claims ORM models (Phase 3), Level 6 completion (Phase 6), Level 7 DB wiring (Phase 7). See `plans/2026-06-03-codex-deferred-tasks.md`.
+
 ## 2026-06-04 (Lane C DB-backed claim persistence)
 
 - Completed Lane C TC-150 by adding `SqlAlchemyClaimRepository` for `claims.claims`, DB-backed claim/evidence links in `claims.claim_evidence`, and verification-task persistence in `claims.verification_tasks`.
