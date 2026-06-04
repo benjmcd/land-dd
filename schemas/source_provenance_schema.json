@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/source-provenance.schema.json",
+  "title": "SourceProvenanceContracts",
+  "type": "object",
+  "$defs": {
+    "SourceDatasetContract": {
+      "type": "object",
+      "required": [
+        "dataset_id",
+        "source_id",
+        "dataset_name",
+        "dataset_code",
+        "domain",
+        "geometry_type",
+        "spatial_resolution",
+        "temporal_coverage",
+        "legal_caveat",
+        "source_url",
+        "metadata"
+      ],
+      "properties": {
+        "dataset_id": { "type": "string", "format": "uuid" },
+        "source_id": { "type": "string", "format": "uuid" },
+        "dataset_name": { "type": "string" },
+        "dataset_code": { "type": ["string", "null"] },
+        "domain": { "type": "string" },
+        "geometry_type": { "type": ["string", "null"] },
+        "spatial_resolution": { "type": ["string", "null"] },
+        "temporal_coverage": { "type": ["string", "null"] },
+        "legal_caveat": { "type": ["string", "null"] },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "SourceDatasetVersionContract": {
+      "type": "object",
+      "required": [
+        "dataset_version_id",
+        "dataset_id",
+        "version_label",
+        "published_at",
+        "retrieved_at",
+        "valid_from",
+        "valid_to",
+        "checksum",
+        "storage_uri",
+        "manifest",
+        "is_current",
+        "notes"
+      ],
+      "properties": {
+        "dataset_version_id": { "type": "string", "format": "uuid" },
+        "dataset_id": { "type": "string", "format": "uuid" },
+        "version_label": { "type": "string" },
+        "published_at": { "type": ["string", "null"], "format": "date-time" },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "valid_from": { "type": ["string", "null"], "format": "date-time" },
+        "valid_to": { "type": ["string", "null"], "format": "date-time" },
+        "checksum": { "type": ["string", "null"] },
+        "storage_uri": { "type": ["string", "null"] },
+        "manifest": { "type": "object" },
+        "is_current": { "type": "boolean" },
+        "notes": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "SourceRetrievalRunContract": {
+      "type": "object",
+      "required": [
+        "ingest_run_id",
+        "dataset_version_id",
+        "connector_name",
+        "status",
+        "started_at",
+        "finished_at",
+        "row_count",
+        "error_count",
+        "warning_count",
+        "log_uri",
+        "metrics"
+      ],
+      "properties": {
+        "ingest_run_id": { "type": "string", "format": "uuid" },
+        "dataset_version_id": { "type": ["string", "null"], "format": "uuid" },
+        "connector_name": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "running", "succeeded", "failed", "blocked", "skipped"]
+        },
+        "started_at": { "type": "string", "format": "date-time" },
+        "finished_at": { "type": ["string", "null"], "format": "date-time" },
+        "row_count": { "type": ["integer", "null"], "minimum": 0 },
+        "error_count": { "type": "integer", "minimum": 0 },
+        "warning_count": { "type": "integer", "minimum": 0 },
+        "log_uri": { "type": ["string", "null"] },
+        "metrics": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "datasets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SourceDatasetContract" }
+    },
+    "dataset_versions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SourceDatasetVersionContract" }
+    },
+    "retrieval_runs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SourceRetrievalRunContract" }
+    }
+  },
+  "required": ["datasets", "dataset_versions", "retrieval_runs"],
+  "additionalProperties": false
+}
