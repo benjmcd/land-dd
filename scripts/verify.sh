@@ -18,6 +18,11 @@ PY
 echo "== workspace validation =="
 PYTHON_BIN="$PYTHON_BIN" ./scripts/validate_workspace.sh
 
+if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
+  echo "== db migration + seed =="
+  ./scripts/db_apply_migrations.sh
+fi
+
 echo "== backend tests =="
 (
   cd backend
@@ -39,8 +44,7 @@ else
 fi
 
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
-  echo "== db migration + smoke =="
-  ./scripts/db_apply_migrations.sh
+  echo "== db smoke =="
   "$PYTHON_BIN" scripts/db_smoke_check.py
 else
   echo "db smoke skipped; set RUN_DB_SMOKE=1 after 'make db-up'"

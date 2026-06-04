@@ -81,6 +81,11 @@ Select-Python
 Write-Host '== workspace validation =='
 & (Join-Path $PSScriptRoot 'validate_workspace.ps1')
 
+if ($env:RUN_DB_SMOKE -eq '1') {
+    Write-Host '== db migration + seed =='
+    & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')
+}
+
 Write-Host '== backend tests =='
 Push-Location backend
 try {
@@ -107,9 +112,7 @@ finally {
 }
 
 if ($env:RUN_DB_SMOKE -eq '1') {
-    Write-Host '== db migration + smoke =='
-    & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')
-
+    Write-Host '== db smoke =='
     Invoke-PythonCommand -Label 'db smoke' -Arguments @('scripts/db_smoke_check.py')
 } else {
     Write-Host "db smoke skipped; set RUN_DB_SMOKE=1 after 'make db-up'"

@@ -153,7 +153,14 @@ def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
             source_service=source_service,
             repo=SqlAlchemySourceProvenanceRepository(session),
         )
-        source = source_service.register(_make_source())
+        source = source_service.register(
+            _make_source().model_copy(
+                update={
+                    "name": "Fixture Provenance DB Test",
+                    "organization": "Test Sources",
+                }
+            )
+        )
         dataset = provenance_service.create_dataset(
             source_id=source.source_id,
             dataset_name="National Flood Hazard Layer",
