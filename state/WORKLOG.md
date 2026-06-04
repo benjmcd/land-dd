@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 API unknown surfacing regression)
+
+- Added a Lane D API regression proving `POST /report-runs` surfaces `SeverityBand.UNKNOWN` claims generated from stored source-failure evidence in the response `unknowns` list and cost metrics.
+- This does not implement D-000 unsupported-category injection before C-002; it hardens the existing report/API behavior D-000 will rely on after Lane C emits unsupported-category unknown claims.
+- Verified focused API checks: 8 API tests pass; targeted ruff and mypy pass.
+- Verified Lane D checks: 18 report/API tests pass with DB smoke enabled.
+- Verified `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`: 244 tests; lint clean; mypy clean (87 source files); migrations/seeds and DB smoke pass.
+
 ## 2026-06-04 (Session 2 Lane D boundary split + DB session pre-work)
 
 - Resolved the C-002 report-surfacing ownership conflict in planning/coordination docs: Lane C owns unsupported-category claim/rule behavior; Lane D owns report/API surfacing as D-000 after C-002.

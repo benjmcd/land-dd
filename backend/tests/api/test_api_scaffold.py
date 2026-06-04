@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import ApiServices
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
@@ -105,6 +106,56 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
     assert get_response.status_code == 200
     assert get_response.json()["report_run_id"] == report_run["report_run_id"]
+
+
+def test_api_report_run_surfaces_source_failure_unknowns() -> None:
+    app = create_app()
+    client = TestClient(app)
+    source_response = client.post(
+        "/sources",
+        json={
+            "name": "Fixture FEMA failure source",
+            "organization": "FEMA",
+            "domain": "flood",
+            "license_status": "approved",
+            "commercial_use_status": "approved",
+            "review_status": "approved",
+        },
+    )
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    source_id = UUID(source_response.json()["source_id"])
+    area_id = UUID(area_response.json()["area_id"])
+    services = cast(ApiServices, app.state.services)
+    services.evidence_service.create_source_failure(
+        area_id=area_id,
+        source_id=source_id,
+        method_code="fixture_flood_overlay",
+        evidence_code="FLOOD_SOURCE_FAILURE",
+        domain="flood",
+        caveat="FEMA fixture endpoint returned 503.",
+    )
+
+    create_response = client.post(
+        "/report-runs",
+        json={
+            "area_id": str(area_id),
+            "intent_code": "homestead_feasibility",
+        },
+    )
+
+    assert create_response.status_code == 201
+    report_run = create_response.json()
+    assert [claim["claim_code"] for claim in report_run["unknowns"]] == [
+        "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN"
+    ]
+    assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 1
 
 
 def test_api_scaffold_returns_422_for_bad_input() -> None:

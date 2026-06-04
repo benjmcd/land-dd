@@ -15,7 +15,7 @@ Verification command(s):
 - cd backend; py -3.12 -m pytest --collect-only -q
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 243 tests pass; lint clean; mypy clean (87 source files)
+- 244 tests pass; lint clean; mypy clean (87 source files)
 - Local Postgres/PostGIS starts from repo instructions, migrations apply cleanly, seeds apply deterministically, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, and stores immutable prior-geometry rows in `core.area_versions` on geometry replacement
@@ -112,7 +112,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-243 tests pass; lint clean; mypy clean (87 source files). DB smoke passes with schema/table/column/enum/FK/seed assertions.
+244 tests pass; lint clean; mypy clean (87 source files). DB smoke passes with schema/table/column/enum/FK/seed assertions.
 
 ## Local repo bootstrap state
 

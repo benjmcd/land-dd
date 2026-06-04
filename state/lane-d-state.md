@@ -11,8 +11,8 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- 17 Lane D report/API tests pass
-- Full verification passes locally with DB smoke enabled: 243 tests; lint clean; mypy clean (87 source files)
+- 18 Lane D report/API tests pass
+- Full verification passes locally with DB smoke enabled: 244 tests; lint clean; mypy clean (87 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
 Failed or blocked gates:
@@ -37,7 +37,7 @@ Completion evidence:
 - backend/tests/reports/test_report_service.py (4 report service tests)
 - backend/tests/reports/test_adapters.py (4 adapter tests)
 - backend/tests/reports/test_report_repository.py (DB-backed persistence round-trip)
-- backend/tests/api/test_api_scaffold.py (6 passing API contract tests)
+- backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 Next lowest-dependency task:
 - **D-000 (BLOCKED on C-002)**: Report surfacing for unsupported categories. Once Lane C emits UNKNOWN claims for unsupported-category SOURCE_FAILURE evidence, Lane D owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
