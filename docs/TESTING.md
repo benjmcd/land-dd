@@ -6,6 +6,15 @@
 ./scripts/verify.sh
 ```
 
+On Windows PowerShell, use:
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
+`python` on `PATH` points at an older interpreter.
+
 ## Test layers
 
 | Layer | Purpose | Current / future |
@@ -41,3 +50,15 @@ docker compose up -d db
 ./scripts/db_apply_migrations.sh
 python scripts/db_smoke_check.py
 ```
+
+Windows PowerShell equivalent:
+
+```powershell
+docker compose up -d db
+.\scripts\db_apply_migrations.ps1
+python scripts\db_smoke_check.py
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+CI has a separate PostGIS-backed job that runs the full gate with
+`RUN_DB_SMOKE=1`. The default CI job remains the fast non-DB gate.
