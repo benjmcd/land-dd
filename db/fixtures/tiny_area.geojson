@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "fixture_square_area",
+        "intent": "homestead_feasibility"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -105.001,
+              39.001
+            ],
+            [
+              -105.0,
+              39.001
+            ],
+            [
+              -105.0,
+              39.002
+            ],
+            [
+              -105.001,
+              39.002
+            ],
+            [
+              -105.001,
+              39.001
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

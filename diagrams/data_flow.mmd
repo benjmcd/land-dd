@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User
+    participant API
+    participant DB as Postgres/PostGIS
+    participant Worker
+    participant Sources
+    participant Reviewer
+
+    User->>API: submit parcel/polygon + intent
+    API->>DB: create area + report_run
+    API->>Worker: enqueue feature extraction
+    Worker->>DB: resolve source manifest
+    Worker->>Sources: fetch/cache source data if needed
+    Worker->>DB: write evidence observations
+    Worker->>DB: execute rules/write claims/tasks
+    Worker->>DB: compile report sections
+    Reviewer->>DB: review/approve/annotate
+    API->>User: deliver dossier + JSON

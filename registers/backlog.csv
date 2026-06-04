@@ -1,0 +1,31 @@
+Epic,Backlog ID,Item,Owner,Priority,Phase,Dependencies,Acceptance Criteria
+E01,B-001,Create source registry schema,Backend/Data,Must,Phase 1,None,Source tables created and seed loaded
+E02,B-002,Create Postgres/PostGIS core schema,Backend,Must,Phase 1,None,DDL runs in dev DB
+E03,B-003,Implement area geometry validation,Geo Eng,Must,Phase 1,B-002,Invalid geometry rejected or repaired with audit
+E01,B-004,Seed public source registry,Data,Must,Phase 1,B-001,USGS/FEMA/USDA/USFWS/EPA/BLM sources present
+E04,B-005,Build parcel ingestion adapter for target counties,Data,Must,Phase 2,B-002,Target county parcels loaded with lineage
+E04,B-006,Build FEMA NFHL ingestion/overlay,Geo Eng,Must,Phase 2,B-002,Flood intersection evidence created
+E04,B-007,Build NWI ingestion/overlay,Geo Eng,Must,Phase 2,B-002,Wetland intersection evidence created
+E04,B-008,Build soils ingestion/lookup,Geo Eng/Data,Must,Phase 2,B-002,Soil evidence created
+E04,B-009,Build elevation/slope pipeline,Geo Eng,Must,Phase 2,B-002,Slope metrics created
+E04,B-010,Build EPA ECHO proximity adapter,Data,Should,Phase 2,B-002,Nearest regulated facilities evidence created
+E05,B-011,Implement feature extraction job runner,Backend/Geo,Must,Phase 3,B-003,Async feature jobs complete and log costs
+E06,B-012,Implement evidence service,Backend,Must,Phase 3,B-002,Evidence records can be created/queried
+E06,B-013,Implement source failure evidence,Backend,Must,Phase 3,B-012,Failed source checks appear as evidence
+E07,B-014,Implement hard-gate rules engine,Backend/Product,Must,Phase 4,B-012,Rules execute on evidence and output gates
+E07,B-015,Implement confidence bands,Backend/Product,Must,Phase 4,B-014,Claims include confidence
+E07,B-016,Implement red-flag taxonomy v0,Product,Must,Phase 4,B-014,Claim codes documented and generated
+E07,B-017,Implement verification task generator,Backend/Product,Must,Phase 4,B-014,High/critical claims create tasks
+E08,B-018,Build Markdown report compiler,Backend/Product,Must,Phase 5,B-017,Report sections generated
+E08,B-019,Build machine-readable JSON output,Backend,Should,Phase 5,B-018,JSON artifact generated and stored
+E09,B-020,Build reviewer approval workflow,Backend/Ops,Must,Phase 5,B-018,Reports need approval before delivery
+E13,B-021,Create golden parcel test set,QA/Product,Must,Phase 3,B-005,Regression parcels documented
+E13,B-022,Safe-language linting,QA/Legal,Must,Phase 4,B-018,Forbidden wording detected
+E12,B-023,Implement entitlement checks,Backend/Legal,Must,Phase 5,B-001,Restricted data cannot be exported
+E10,B-024,Implement report API endpoints,Backend,Should,Phase 6,B-018,POST/GET reports working
+E11,B-025,Build minimal report dashboard,Frontend,Could,Phase 7,B-024,User can view reports
+E11,B-026,Build map asset viewer,Frontend/Geo,Could,Phase 7,B-025,Report maps visible
+E12,B-027,Add billing/report credits,Backend/Product,Could,Phase 7,B-024,Pay-per-report flow works
+E15,B-028,Define jurisdiction adapter interface,Architecture,Should,Phase 2,B-002,Adapter contract documented
+E14,B-029,Legal review of disclaimers and output language,Legal/Product,Must,Pre-beta,B-018,Approved language
+E14,B-030,Data-license review workflow,Legal/Data,Must,Phase 1,B-001,License checklist complete

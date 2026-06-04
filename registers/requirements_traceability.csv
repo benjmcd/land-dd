@@ -1,0 +1,40 @@
+Requirement ID,Domain,Requirement,Priority,Rationale,Acceptance Criteria
+REQ-CORE-001,Core,The system shall store every area with validated geometry and source/provenance metadata.,Must,Postgres/PostGIS,Area geometry can be queried spatially and has confidence/source fields.
+REQ-CORE-002,Core,"The system shall support parcels, polygons, localities, watersheds, corridors, and generated candidates.",Must,Global-ready area model,Area type enum supports all MVP and future area categories.
+REQ-CORE-003,Core,The system shall store report runs as reproducible artifacts with source manifests.,Must,Reproducibility,"A report run includes source versions, rule version, method versions, and timestamp."
+REQ-SRC-001,Source Registry,The system shall maintain a source registry before using any dataset.,Must,Data governance,Every dataset version references a source registry row.
+REQ-SRC-002,Source Registry,The system shall store license/entitlement attributes per source.,Must,Data rights,Display/export/cache/AI-use flags are available to policy checks.
+REQ-SRC-003,Source Registry,The system shall record failed source lookups as evidence.,Must,False negative prevention,Source failures appear in report unknowns.
+REQ-SRC-004,Source Registry,The system shall store immutable raw source snapshots where license permits.,Should,Reproducibility,Dataset version rows have checksums and storage URIs.
+REQ-DATA-001,Data Ingestion,"The system shall validate CRS, geometry validity, row counts, and schema drift on ingest.",Must,Data QA,Ingest run stores validation metrics and warnings.
+REQ-DATA-002,Data Ingestion,The system shall preserve source-native attributes in JSON alongside normalized fields.,Should,Non-fragility,Source schema changes do not destroy unknown fields.
+REQ-DATA-003,Data Ingestion,The system shall support local/jurisdiction adapters.,Must,Expansion,New county/state sources can be added without core schema rewrite.
+REQ-GEO-001,Feature Extraction,The system shall compute flood/wetland intersection metrics for an area.,Must,MVP report,Evidence records include intersection area/percent.
+REQ-GEO-002,Feature Extraction,The system shall compute slope/elevation metrics.,Must,MVP report,Evidence/metrics include mean/max/percentile slope or buildable-area proxy.
+REQ-GEO-003,Feature Extraction,The system shall compute road/access proximity as proxy evidence only.,Must,Access caveat,Claim language states physical proximity does not prove legal access.
+REQ-GEO-004,Feature Extraction,The system shall compute nearest environmental regulated facilities where source data is available.,Should,MVP hazards,"Evidence includes distance, facility ID, and source date."
+REQ-EVID-001,Evidence,The system shall store evidence separately from claims.,Must,Claim-first model,Claims join to evidence through claim_evidence table.
+REQ-EVID-002,Evidence,The system shall support negative evidence and source-failure evidence.,Must,Unknown handling,Reports distinguish none found vs source unavailable.
+REQ-EVID-003,Evidence,Evidence shall include method code and method version.,Must,Auditability,Every evidence row has method_code/method_version.
+REQ-CLAIM-001,Claims,Every claim shall link to at least one evidence item unless it is explicitly marked as a source failure/unknown claim.,Must,Trust,Claim-evidence link exists or unknown reason is present.
+REQ-CLAIM-002,Claims,Claims shall include confidence and severity bands.,Must,Risk reporting,Reports display both fields.
+REQ-CLAIM-003,Claims,High and critical claims shall generate verification tasks.,Must,User safety,Verification task row created.
+REQ-RULE-001,Rules,Hard gates shall execute before weighted scoring.,Must,Avoid false precision,Rule run output shows gate results before suitability band.
+REQ-RULE-002,Rules,Rulesets shall be versioned and immutable after report publication.,Must,Reproducibility,Report references rule_version_id.
+REQ-RULE-003,Rules,Suitability and confidence shall be reported separately.,Must,Trust,Report has both suitability band and confidence summary.
+REQ-REP-001,Reports,"Reports shall include executive summary, red flags, unknowns, verification tasks, and source appendix.",Must,MVP output,Report template includes required sections.
+REQ-REP-002,Reports,Reports shall avoid definitive legal/title/survey/appraisal wording.,Must,Compliance,Safe-language lint passes.
+REQ-REP-003,Reports,Reports shall include machine-readable JSON output.,Should,Integrations,Report run has machine_json_uri.
+REQ-QA-001,QA,Golden parcels shall be maintained for regression tests.,Must,Quality,Regression suite includes known flood/wetland/access/zoning cases.
+REQ-QA-002,QA,All beta reports shall receive human review.,Must,Beta safety,Report status cannot become approved without reviewer action.
+REQ-QA-003,QA,The system shall log per-report cost metrics.,Must,Unit economics,Report run contains cost_metrics JSON.
+REQ-SEC-001,Security,Workspace-level access control shall protect user/report data.,Must,Security,All area/report queries scoped to workspace.
+REQ-SEC-002,Security,Data-license entitlements shall control display and export.,Must,Data rights,Export path checks source flags.
+REQ-LEGAL-001,Compliance,The MVP shall not use protected-class demographic variables for scoring.,Must,Fair housing risk,No protected-class inputs exist in MVP ruleset.
+REQ-LEGAL-002,Compliance,The MVP shall not position outputs as mortgage AVMs or appraisals.,Must,AVM risk,Report contains valuation disclaimer and no collateral-value output.
+REQ-OPS-001,Operations,"Source onboarding shall require license review, QA, and documented caveats.",Must,Governance,Source status cannot be production without checklist.
+REQ-OPS-002,Operations,Reviewer overrides shall preserve original evidence and be audited.,Must,Audit,Audit event written for override.
+REQ-API-001,API,Report generation shall be asynchronous and idempotent.,Must,Scalability,POST /reports accepts idempotency key and returns job/report ID.
+REQ-API-002,API,"API responses shall distinguish false, unknown, missing, and source failed.",Must,Semantic correctness,Response schema includes status fields.
+REQ-GLB-001,Global,Core area/evidence/claim schemas shall not hard-code U.S.-specific legal terms.,Should,Global readiness,Jurisdiction-specific fields live in adapters/metadata.
+REQ-GLB-002,Global,Global reports shall state diligence tier.,Should,Scope clarity,Tier 0/1/2 label appears in global outputs.
