@@ -34,10 +34,11 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - CON-022 is complete as a planning-only connector human-review API semantics slice. It accepts route/reviewer/auth semantics for a future narrow action route without changing API behavior or OpenAPI.
 - CON-023 is complete as a connector-local fixture-quality slice. It fails closed on missing evidence provenance text, caveats, and non-failure source dates without changing API behavior, schemas, queues, or report semantics.
 - TD-082 is complete as a planning-only report metadata extension boundary. It accepts future extension families and promotion rules without changing report runtime behavior, schemas, API behavior, queues, migrations, or live I/O.
+- CON-024 is complete as a connector review action API auth blocker decision. It records that mutation-route implementation remains blocked until an authenticated reviewer/operator principal dependency or accepted service-account delegation rule exists.
 
 ## Blockers at lane setup
 
-Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas and source provenance-family schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, the planning-pack OpenAPI reference is aligned to the generated FastAPI contract, connector human-review action plus route/reviewer/auth semantics are planned, and future report metadata extension boundaries are accepted. Job schema and API mutation implementation remain future coordinated work.
+Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas and source provenance-family schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, the planning-pack OpenAPI reference is aligned to the generated FastAPI contract, connector human-review action plus route/reviewer/auth semantics are planned, connector review mutation API auth is blocked until a principal boundary exists, and future report metadata extension boundaries are accepted. Job schema, reviewer/operator principal dependency, durable evidence-row retrieval lineage, and API mutation implementation remain future coordinated work.
 
 ## Proposed design
 
@@ -149,6 +150,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `docs/adr/lane-d-0013-report-metadata-extension-boundary.md` | Report metadata extension boundary decision |
 | `docs/adr/lane-d-0011-connector-human-review-actions.md` | Connector human-review action semantics decision |
 | `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` | Connector human-review API semantics decision |
+| `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md` | Connector review action API auth blocker decision |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
@@ -169,6 +171,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 | Blocker | Status | Impact |
 |---|---|---|
 | Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; source provenance-family schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract; report metadata extension boundary accepted | Job schema and API mutation implementation remain future coordinated passes |
+| Connector review mutation API auth | Blocked by missing reviewer/operator principal boundary | Add an authenticated reviewer/operator principal dependency or accepted service-account delegation rule before implementing review-action mutation routes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
@@ -206,3 +209,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: CON-022 complete as a planning-only human-review API semantics pass. Added ADR `lane-d-0012-connector-human-review-api-semantics` without changing API behavior, OpenAPI, connector runtime, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: CON-023 complete as a connector-local fixture-quality pass. Added missing provenance text, caveat, and non-failure source-date quality checks without changing API behavior, OpenAPI, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: TD-082 complete as a planning-only report metadata extension boundary. Added ADR `lane-d-0013-report-metadata-extension-boundary` without changing report runtime behavior, API behavior, OpenAPI, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
+- 2026-06-04: CON-024 complete as a connector review action API auth blocker decision. Added ADR `lane-d-0014-connector-review-api-auth-blocker` without changing API behavior, OpenAPI, queue code, repository methods, schemas, migrations, connector runtime behavior, live I/O, hook config, or POSIX scripts.

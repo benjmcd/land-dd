@@ -2,6 +2,26 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-024 review action API auth blocker
+
+**Commands run:**
+
+```powershell
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- CON-024 is an implementation-blocker decision only. It does not add API routes, OpenAPI changes, queue code, repository methods, schemas, migrations, connector runtime behavior, live I/O, hook config, POSIX scripts, evidence behavior, claim behavior, or report behavior. Connector review mutation routes remain blocked until an authenticated reviewer/operator principal dependency or accepted service-account delegation rule is added and tested.
+
 ## 2026-06-04 Lane D TD-082 report metadata extension boundary
 
 **Commands run:**

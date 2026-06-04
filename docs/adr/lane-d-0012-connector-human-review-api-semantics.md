@@ -71,5 +71,6 @@ Implementation preconditions:
 
 - Future API mutation work has accepted route/reviewer/auth semantics.
 - Implementation remains blocked until auth/reviewer identity enforcement and any needed reviewer-ownership persistence or repository transitions are explicitly planned.
+- ADR Lane D 0014 records the current implementation blocker: this repo has no authenticated reviewer/operator principal dependency, so a review-action mutation route must not be implemented by trusting caller-supplied identity alone.
 - Retry/cancel API surfacing remains separate from this route decision unless implemented through the accepted action route in a future planned slice.
 - This slice changes no API behavior, OpenAPI, connector runtime, queue code, schemas, migrations, evidence, claims, reports, live I/O, hook config, or POSIX scripts.

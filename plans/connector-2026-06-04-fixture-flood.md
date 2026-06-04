@@ -79,6 +79,7 @@ git diff --check
 - 2026-06-04: CON-004 implemented as a connector-zone retrieval-run provenance adapter. It depends on an injected source retrieval provenance port, records deterministic `SourceRetrievalRunContract` values without Lane A repository imports, skips duplicate `ingest_run_id` values, and keeps evidence ingestion separate from retrieval provenance.
 - 2026-06-04: CON-005 implemented as a fixture-only connector ingest workflow. It composes the static flood fixture connector, retrieval provenance adapter, and evidence ingestion adapter; records retrieval provenance before evidence ingestion; proves repeated fixture workflow idempotency; and keeps live I/O, Lane A/C repository imports, claims, reports, schemas, and DB sessions out of scope.
 - 2026-06-04: CON-006 implemented the connector-owned public-service wiring path that is currently possible without Lane A/C repository imports. `build_fixture_workflow_with_public_services` wires the fixture workflow to public Lane C `EvidenceService` methods through the evidence adapter and requires an identity-preserving retrieval provenance port. The flood source-failure fixture now uses Lane C's controlled source-failure payload keys.
+- 2026-06-04: CON-024 recorded the connector review action API implementation blocker. The current repo has no authenticated reviewer/operator principal dependency, so mutation-route implementation remains blocked even though repository-level request-fix, requeue, and cancel substrate exists.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -929,8 +930,9 @@ Result: pass on 2026-06-04. Full Windows PowerShell verification passed with 344
 
 The next Level 8 pass should choose one of:
 
+- add a narrow reviewer/operator principal dependency or documented service-account delegation rule before any review-action mutation route;
 - implement the narrow human-review action API only after auth/reviewer identity enforcement and required queue transition substrate are accepted;
-- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route;
+- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route after auth is satisfied;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.
@@ -968,8 +970,47 @@ Result: pass on 2026-06-04. Fixture-quality tests cover 10 cases; focused ruff c
 
 The next Level 8 pass should choose one of:
 
+- add a narrow reviewer/operator principal dependency or documented service-account delegation rule before any review-action mutation route;
 - implement the narrow human-review action API only after auth/reviewer identity enforcement and required queue transition substrate are accepted;
-- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route;
+- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route after auth is satisfied;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-024 Connector Review Action API Auth Blocker
+
+CON-024 is complete as an implementation-blocker decision. ADR `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md` records that the current repo has no authenticated reviewer/operator principal dependency, so the future `POST /connector-runs/{ingest_run_id}/review-actions` mutation route must not be implemented by trusting caller-supplied identity alone.
+
+### Current Authority
+
+- `backend/app/api/connectors.py` exposes read-only connector review status and queue retrieval.
+- `backend/app/connectors/review_queue.py` has repository-level queue mutation methods for failure, requeue, and cancellation.
+- `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` requires an authenticated reviewer/operator boundary before mutation-route implementation.
+
+### Decision
+
+The following actions remain blocked at API level:
+
+- `acknowledge`, because reviewer ownership storage is not accepted;
+- `approve_for_connector_qa`, because no accepted queue transition maps it to current persistence;
+- `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`, because API surfacing still needs authenticated reviewer identity matching before mutating `jobs.job_queue`.
+
+Header-only reviewer identity is not sufficient unless a future ADR explicitly accepts a local service-account delegation rule and its limits.
+
+### Boundary Preserved
+
+This is an auth/blocker decision only. It does not add API routes, OpenAPI changes, queue code, repository methods, schemas, migrations, connector runtime behavior, live I/O, hook config, POSIX scripts, evidence behavior, claim behavior, or report behavior.
+
+### Validation
+
+```powershell
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Whitespace check clean; default Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, and DB smoke skipped by default; DB-enabled Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
+### Next Slice
+
+The next API-enabling slice should add a narrow reviewer/operator principal dependency and tests, or document a service-account delegation rule, before any connector review mutation route is added. Other low-conflict work can continue in report metadata extensions or fixture-quality coverage while Session 1 owns Lane C evidence linkage.

@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-024 review action API auth blocker)
+
+- Added ADR `docs/adr/lane-d-0014-connector-review-api-auth-blocker.md` to record that connector review mutation API implementation is blocked by the absence of an authenticated reviewer/operator principal dependency.
+- Rejected header-only reviewer identity as insufficient unless a future ADR defines a documented local service-account delegation rule with explicit limits.
+- Preserved boundary: no API route, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live I/O, hook config, POSIX script, evidence behavior, claim behavior, or report behavior changed.
+- Verification passed with DB smoke: 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Lane D TD-082 report metadata extension boundary)
 
 - Added ADR `docs/adr/lane-d-0013-report-metadata-extension-boundary.md` to define accepted future report metadata extension families and promotion rules.

@@ -821,6 +821,33 @@ tasks:
       - Source-failure fixture evidence may omit source_date while still requiring controlled failure payload and unknown confidence
       - No API route, OpenAPI change, durable queue behavior, repository method, source/evidence/claim/report behavior, schema, migration, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage is introduced
 
+  - id: CON-024
+    title: Level 8 connector review action API auth blocker
+    status: done
+    depends_on: [CON-022, CON-023]
+    lane: connector-integration
+    notes: Recorded that connector review mutation API implementation is blocked because the current repo has no authenticated reviewer/operator principal dependency. Header-only reviewer identity is not sufficient unless a future ADR accepts a documented local service-account delegation rule. No API route, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior changed.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-024-connector-review-action-api-auth-blocker
+    files:
+      - docs/adr/lane-d-0014-connector-review-api-auth-blocker.md
+      - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Current API mutation implementation blocker is recorded
+      - Header-only reviewer identity is rejected unless a future ADR accepts a documented delegation rule
+      - Future review-action mutation routes require an authenticated reviewer/operator boundary before mutating jobs.job_queue
+      - Existing read-only connector review API and repository-level queue transitions remain unchanged
+      - No API route, OpenAPI change, queue code, repository method, schema, migration, connector runtime behavior, live IO, hook config, POSIX script, evidence behavior, claim behavior, or report behavior is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done
