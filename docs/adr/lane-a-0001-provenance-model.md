@@ -37,7 +37,9 @@ Unknown or incompatible rights fail closed. A source with unknown, blocked, or i
 
 Connector retrieval attempts may hand Lane A a complete `SourceRetrievalRunContract` when the connector owns deterministic attempt identity. The public `SourceProvenanceService.record_retrieval_run_contract(...)` method records that supplied contract after validating the referenced dataset version and preserving the supplied `ingest_run_id`. Connector code must call this through the public service surface and must not import Lane A repositories directly.
 
-`schemas/source_schema.json` represents the serialized `SourceContract` only. It must track the `SourceContract.model_fields` field set and Lane A source identity/governance enums. It intentionally does not model `SourceDatasetContract`, `SourceDatasetVersionContract`, or `SourceRetrievalRunContract`; those contracts have separate identities, lifecycle semantics, and connector/provenance responsibilities, so they need separate schemas or an explicit future schema-family decision.
+`schemas/source_schema.json` represents the serialized `SourceContract` only. It must track the `SourceContract.model_fields` field set and Lane A source identity/governance enums. It intentionally does not model `SourceDatasetContract`, `SourceDatasetVersionContract`, or `SourceRetrievalRunContract`; those contracts have separate identities, lifecycle semantics, and connector/provenance responsibilities.
+
+`schemas/source_provenance_schema.json` is the separate source provenance-family schema. It carries `$defs` for serialized `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract`, tracks their Pydantic field sets, constrains `SourceRetrievalStatus`, and keeps row/error/warning counts non-negative. This schema is contract documentation and parity coverage only; it does not add runtime JSON Schema validation, migrations, connector behavior, queue semantics, live I/O, or evidence-row linkage.
 
 ## Consequences
 
@@ -45,7 +47,7 @@ Connector retrieval attempts may hand Lane A a complete `SourceRetrievalRunContr
 - Future `SourceExistsProtocol.source_production_use_allowed` behavior must check review status and usage constraints, not only row existence.
 - Source-failure and blocked-source outcomes must create explicit evidence or run-state records; missing data must never become "no issue found."
 - Fixture connector workflows can preserve deterministic retrieval-run identity through the public provenance service before evidence ingestion.
-- Source schema parity is now test-enforced for the `SourceContract` surface; dataset, dataset-version, and retrieval-run schemas remain future Lane A/coordinator work rather than hidden fields in `source_schema.json`.
+- Source schema parity is now test-enforced for the `SourceContract` surface; source provenance-family schema parity is separately test-enforced for dataset, dataset-version, and retrieval-run contracts rather than hiding those fields in `source_schema.json`.
 - Live connectors remain blocked until the source registry row, license review, fixture tests, failure behavior, and output caveats are all present.
 - DB smoke remains a separate prerequisite for claiming Level 2 or durable Level 3 completion.
 
@@ -55,4 +57,5 @@ Connector retrieval attempts may hand Lane A a complete `SourceRetrievalRunContr
 - `docs/DATA_SOURCE_STRATEGY.md`
 - `registers/data_source_registry.csv`
 - `schemas/source_schema.json`
+- `schemas/source_provenance_schema.json`
 - `templates/data_source_license_review.md`

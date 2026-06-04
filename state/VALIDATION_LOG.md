@@ -2,6 +2,32 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane A TA-080 source provenance-family schema parity
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/source_registry/test_source_provenance_schema_contract.py
+ruff check tests/source_registry/test_source_provenance_schema_contract.py
+mypy tests/source_registry/test_source_provenance_schema_contract.py
+py -3.12 -m pytest --collect-only -q
+cd ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Source provenance-family schema parity tests: 6 passed.
+- Focused ruff: clean.
+- Focused mypy: clean over 1 source file.
+- Backend collection includes 350 tests.
+- Full DB-enabled PowerShell verification: ok; 350 backend tests pass, lint clean, mypy clean over 121 source files, migrations/seeds apply, and DB smoke passes.
+
+**Residual risk:**
+
+- TA-080 is schema-contract parity only. It does not add runtime JSON Schema validation, DB migrations, connector behavior, queue semantics, live I/O, future report metadata extensions, human-review API routes, or durable `ingest_run_id` evidence-row linkage.
+
 ## 2026-06-04 Connector CON-021 human-review action semantics
 
 **Commands run:**

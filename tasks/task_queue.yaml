@@ -737,3 +737,32 @@ tasks:
       - jobs.job_queue remains review orchestration state
       - Future API mutation implementation is explicitly left as a separate planned slice
       - No connector runtime, API route, repository method, queue code, schema, migration, live IO, hook config, POSIX script, evidence, claim, or report behavior is introduced
+
+  - id: TA-080
+    title: Lane A source provenance-family schema parity
+    status: done
+    depends_on: [TA-070, CON-021]
+    lane: A
+    notes: Added a separate source provenance-family schema for serialized SourceDatasetContract, SourceDatasetVersionContract, and SourceRetrievalRunContract, with parity tests for field sets, retrieval status values, and non-negative retrieval counts. No runtime validation, migrations, connector behavior, queue semantics, live IO, hook config, POSIX script, claim/report behavior, or durable ingest_run_id evidence-row linkage changed.
+    spec: plans/lane-a-2026-06-03-source-registry.md#ta-080-source-provenance-family-schema-parity-complete
+    files:
+      - schemas/source_provenance_schema.json
+      - backend/tests/source_registry/test_source_provenance_schema_contract.py
+      - docs/adr/lane-a-0001-provenance-model.md
+      - plans/lane-a-2026-06-03-source-registry.md
+      - state/lane-a-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_provenance_schema_contract.py
+      - cd backend; ruff check tests/source_registry/test_source_provenance_schema_contract.py
+      - cd backend; mypy tests/source_registry/test_source_provenance_schema_contract.py
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Source provenance schema contains separate dataset, dataset-version, and retrieval-run contract definitions
+      - Schema definitions match serialized Lane A provenance contract field sets
+      - Retrieval-run schema tracks SourceRetrievalStatus values
+      - Retrieval row/error/warning counts are non-negative when present
+      - SourceContract remains scoped to schemas/source_schema.json
+      - No runtime validation, migration, connector behavior, queue semantics, live IO, hook config, POSIX script, claim/report behavior, or durable ingest_run_id evidence-row linkage is introduced

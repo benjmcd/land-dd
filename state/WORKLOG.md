@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane A TA-080 source provenance-family schema parity)
+
+- Created isolated worktree `worktrees/lane-a-provenance-schemas` on branch `lane-a/provenance-schemas` from root `main` at `a1ae1b5` to avoid Session 2 connector review workflow/API mutation work.
+- Added `schemas/source_provenance_schema.json` as the separate source provenance-family schema for `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract`.
+- Added source provenance-family schema parity tests that track contract field sets, `SourceRetrievalStatus` values, and non-negative retrieval row/error/warning counts.
+- Updated Lane A ADR/plan/state plus project state to close the source provenance-family schema gap while leaving runtime validation, migrations, connector behavior, queue semantics, live I/O, and durable `ingest_run_id` evidence-row linkage as separate future work.
+- Verification passed: focused source provenance-family schema tests; focused ruff/mypy; backend collection; full DB-enabled PowerShell verification with 350 backend tests passing, lint clean, mypy clean over 121 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (Connector CON-021 human-review action semantics)
 
 - Added ADR `docs/adr/lane-d-0011-connector-human-review-actions.md` to define future connector human-review action vocabulary before any mutation API or worker workflow.
