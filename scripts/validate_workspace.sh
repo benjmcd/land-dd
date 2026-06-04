@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PYTHON_BIN="${PYTHON_BIN:-python}"
+
 echo "== workspace structure =="
 required=(
   AGENTS.md
@@ -23,6 +25,6 @@ for f in "${required[@]}"; do
 done
 
 ./scripts/agent-context-check.sh
-python scripts/check_json_files.py
+"$PYTHON_BIN" scripts/check_json_files.py
 
 echo "workspace validation: ok"
