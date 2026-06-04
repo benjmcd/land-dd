@@ -236,16 +236,19 @@ Add 4 new `_xxx_source_failure_check()` predicates and 4 new claim-emitting meth
 - `_market_context_not_evaluated_claim(area_id, rule, evidence_records) -> ClaimContract`
 
 Each `_xxx_not_evaluated_claim` method should:
-- Set `severity = SeverityBand.INFORMATIONAL`
+- Set `severity = SeverityBand.UNKNOWN` — consistent with ALL other "source not available"
+  claims in the rule engine (e.g. `_access_unknown_claim`, `_zoning_unknown_claim`, etc.)
 - Set `confidence = ConfidenceBand.UNKNOWN`
 - Set user_safe_language from `NOT_EVALUATED_CAVEATS[domain]`
 - Set `verification_required = True` with an appropriate verification_task
 
-Note: Because `severity == SeverityBand.INFORMATIONAL` (NOT UNKNOWN), these claims will
-NOT appear in `ReportRunContract.unknowns` (which filters `severity == UNKNOWN`).
-They WILL correctly represent "the tool disclosed a gap" without being falsely flagged as risks.
-If you want them in `unknowns`, use `severity = SeverityBand.UNKNOWN` instead.
-Choose based on the desired UX: INFORMATIONAL = disclosure note; UNKNOWN = gap warning.
+Using `SeverityBand.UNKNOWN` ensures these claims appear in `ReportRunContract.unknowns`
+via the existing `_unknown_claims()` filter in `reports/service.py` (which checks
+`claim.severity == SeverityBand.UNKNOWN`). This is the correct conservative stance:
+"the tool does not know this domain's status for this parcel."
+
+Do NOT use `SeverityBand.INFORMATIONAL` — that would silently drop them from the
+`unknowns` list, causing reports to omit known screening gaps.
 
 ### Step 5 — Tests
 

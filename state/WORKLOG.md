@@ -2,8 +2,9 @@
 
 Append concise entries. Do not rely on chat history.
 
-## 2026-06-03 (pre-Codex structural hardening — ralplan A-minus)
+## 2026-06-03 (pre-Codex structural hardening — ralplan A-minus + deep re-audit)
 
+**Initial hardening (commit group 99cde91–3d5a9fd):**
 - Committed all 49 uncommitted files in 9 logical groups (CI scripts, Lane A provenance, Lane B area models, Lane C evidence/claim models, Lane D report persistence, ADRs, agent docs, state/plans, archive cleanup).
 - Created `backend/app/db/base.py` with single `AppBase(DeclarativeBase)` + MetaData naming_convention for Alembic readiness.
 - Created `backend/app/db/types.py` with canonical `authority_level_enum`, `confidence_band_enum`, `job_status_enum` (one definition each, `create_type=False`).
@@ -13,8 +14,18 @@ Append concise entries. Do not rely on chat history.
 - Constrained `ReportRunContract.intent_code` to `IntentCode`; updated API and service signatures.
 - Fixed `SqlAlchemyReportRunRepository._contract_to_model()` which was silently dropping `intent_id` (setting it NULL); added `_resolve_intent_id()` that looks up `core.intents` by `intent_code`.
 - Added DB assertion to `test_report_repository.py` verifying `intent_id` is NOT NULL after round-trip.
-- Verified: 235 tests pass; `ruff check app/` clean; `mypy app/` clean (50 source files).
-- Deferred to Codex: Claims ORM models (Phase 3), Level 6 completion (Phase 6), Level 7 DB wiring (Phase 7). See `plans/2026-06-03-codex-deferred-tasks.md`.
+
+**Deep re-audit (commits 4f4c0ca, 714a07b):**
+- Discovered that the global `mypy` used by `verify.ps1` catches errors that `python -m mypy` misses. Fixed 6 pre-existing type errors in report test files (string literals passed where `IntentCode` is required).
+- Audited the Codex task spec (`plans/2026-06-03-codex-deferred-tasks.md`) against the actual migration SQL and found 3 blocking schema errors:
+  - `claims.claims`: spec listed `is_negative`/`is_unknown`/`needs_review` (not in DB); omitted `rule_execution_run_id` and `intent_id` (are in DB).
+  - `claims.claim_evidence`: spec had `evidence_order int` (not in DB); actual column is `support_role text`.
+  - `claims.verification_tasks`: spec showed 3-column stub; actual table has 12 columns.
+- Added `severity_band_enum` to `backend/app/db/types.py` (pre-completes the structural prerequisite for C-001 ORM models; all 4 canonical DB ENUMs are now in `db/types.py`).
+- Corrected C-002 design: the `evidence_ids` non-empty invariant blocks naive not-evaluated claims; updated spec to use sentinel source failure evidence approach (creates SOURCE_FAILURE evidence records for each missing domain, then the rule engine emits UNKNOWN claims from them — preserves evidence-before-claim invariant).
+- Corrected D-001 design: removed `build_engine()`-per-request anti-pattern (destroys connection pooling); delegated to existing `get_session()` singleton from `engine.py`. Added `main.py` to required change list.
+- Made C-002 severity choice definitive: not-evaluated claims use `SeverityBand.UNKNOWN` (consistent with all other "source not available" claims; ensures they appear in `ReportRunContract.unknowns`).
+- Verified: 235 tests pass; `ruff check` clean; global `mypy` clean (83 source files including tests).
 
 ## 2026-06-04 (Lane C DB-backed claim persistence)
 
