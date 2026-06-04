@@ -77,6 +77,7 @@ git diff --check
 - 2026-06-04: CON-001 implemented as a fixture-only contract slice. `StaticFloodFixtureConnector` reads local JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure fixtures, and avoids claim/report imports.
 - 2026-06-04: CON-003 implemented as a connector-zone evidence-ingestion adapter. It depends on an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source-failure templates to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and avoids claim/report imports.
 - 2026-06-04: CON-004 implemented as a connector-zone retrieval-run provenance adapter. It depends on an injected source retrieval provenance port, records deterministic `SourceRetrievalRunContract` values without Lane A repository imports, skips duplicate `ingest_run_id` values, and keeps evidence ingestion separate from retrieval provenance.
+- 2026-06-04: CON-005 implemented as a fixture-only connector ingest workflow. It composes the static flood fixture connector, retrieval provenance adapter, and evidence ingestion adapter; records retrieval provenance before evidence ingestion; proves repeated fixture workflow idempotency; and keeps live I/O, Lane A/C repository imports, claims, reports, schemas, and DB sessions out of scope.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -209,3 +210,43 @@ Result: connector tests pass (15 tests); connector ruff clean; connector mypy cl
 ### Next Slice
 
 CON-005 should compose the fixture connector, retrieval provenance adapter, and evidence ingestion adapter into one fixture-only workflow. It must record retrieval provenance before evidence ingestion, preserve fixture-only/no-live-IO behavior, stay before claims/reports, and continue to use injected ports rather than Lane A/Lane C repositories.
+
+## CON-005 Fixture Connector Ingest Workflow
+
+Status: complete on 2026-06-04. No Lane A/C implementation, repository, shared schema, migration, live connector, report/API, claim, or DB-session code changed.
+
+### Implemented Design
+
+`FixtureConnectorIngestWorkflow` lives in the connector integration zone and composes:
+
+- `StaticFloodFixtureConnector`
+- `ConnectorRetrievalProvenanceAdapter`
+- `ConnectorEvidenceIngestionAdapter`
+
+The workflow loads a local fixture, records retrieval provenance, then ingests evidence. The result exposes the connector output, retrieval-provenance result, and evidence-ingestion result so callers can audit each stage independently.
+
+### Verification
+
+Tests prove:
+
+- retrieval provenance is recorded before evidence ingestion for successful fixture evidence;
+- blocked/source-failure fixture runs record retrieval provenance before routing source failure evidence;
+- repeated fixture workflow runs skip duplicate retrieval runs and duplicate evidence;
+- workflow code remains connector-owned and does not import live I/O, Lane A source registry, Lane C evidence/claims, reports, DB sessions, or schemas.
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+Result: connector tests pass (19 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 282 collected backend tests, lint clean, mypy clean (102 source files), and DB smoke skipped by default; whitespace check clean.
+
+### Remaining Gap
+
+CON-005 proves the connector workflow boundary with injected ports only. Concrete production wiring still needs a Lane A-compatible public provenance port that preserves supplied `SourceRetrievalRunContract.ingest_run_id`, plus wiring to a public Lane C evidence-ingestion port. No connector workflow should claim durable DB-backed production ingestion until that wiring is implemented and DB-smoke verified.

@@ -4,6 +4,10 @@ from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionResult,
     EvidenceIngestionPort,
 )
+from app.connectors.fixture_workflow import (
+    FixtureConnectorIngestWorkflow,
+    FixtureConnectorIngestWorkflowResult,
+)
 from app.connectors.flood_fixture import (
     FixtureConnectorError,
     FloodFixtureConnectorResult,
@@ -23,6 +27,8 @@ __all__ = [
     "ConnectorRetrievalProvenanceResult",
     "EvidenceIngestionPort",
     "FixtureConnectorError",
+    "FixtureConnectorIngestWorkflow",
+    "FixtureConnectorIngestWorkflowResult",
     "FloodFixtureConnectorResult",
     "SourceRetrievalProvenancePort",
     "StaticFloodFixtureConnector",

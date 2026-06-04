@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-005 fixture connector ingest workflow composition
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector tests: 19 passed.
+- Connector ruff: clean.
+- Connector mypy: clean over 9 connector source/test files.
+- Full PowerShell verification: ok; 282 collected backend tests; lint clean; mypy clean over 102 source files; DB smoke skipped by default.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- DB smoke was not rerun for CON-005 because this slice does not touch DB wiring or schema.
+- CON-005 composes injected ports only. Concrete DB-backed workflow wiring still needs a public Lane A-compatible provenance port that preserves supplied `SourceRetrievalRunContract.ingest_run_id`, plus public Lane C evidence-ingestion service wiring.
+
 ## 2026-06-04 CON-004 connector retrieval-run provenance adapter
 
 **Commands run:**

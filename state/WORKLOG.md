@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-005)
+
+- Completed CON-005 in the connector integration zone: added `FixtureConnectorIngestWorkflow` in `backend/app/connectors/fixture_workflow.py`.
+- Added connector workflow tests proving retrieval provenance is recorded before evidence ingestion for success and blocked/source-failure fixtures, repeated fixture workflow runs are idempotent across retrieval and evidence stages, and workflow code does not import live I/O modules, Lane A source registry, Lane C evidence/claims, reports, schemas, or DB sessions.
+- Recorded the remaining concrete wiring gap: CON-005 composes injected ports only; DB-backed production workflow wiring needs a public Lane A-compatible provenance port that preserves supplied `SourceRetrievalRunContract.ingest_run_id`, plus public Lane C evidence-ingestion service wiring.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors`; `ruff check app/connectors tests/connectors`; `mypy app/connectors tests/connectors`; `.\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-004)
 
 - Completed CON-004 in the connector integration zone: added `ConnectorRetrievalProvenanceAdapter` and `SourceRetrievalProvenancePort` in `backend/app/connectors/retrieval_provenance.py`.

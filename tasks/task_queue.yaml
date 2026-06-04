@@ -303,10 +303,10 @@ tasks:
 
   - id: CON-005
     title: Level 8 fixture connector ingest workflow composition
-    status: pending
+    status: done
     depends_on: [CON-004]
     lane: connector-integration
-    notes: Compose the fixture connector, retrieval provenance adapter, and evidence ingestion adapter into one fixture-only workflow. Retrieval provenance must be recorded before evidence ingestion; the workflow must remain fixture-only, injected-port based, and before claims/reports.
+    notes: Implemented a fixture-only workflow that composes the static flood connector, retrieval provenance adapter, and evidence ingestion adapter. It records retrieval provenance before evidence ingestion, proves repeated fixture workflow idempotency, remains injected-port based, and stays before claims/reports.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-004-retrieval-run-provenance-adapter
     files:
       - backend/app/connectors/
@@ -320,3 +320,23 @@ tasks:
       - Fixture workflow routes evidence through the evidence ingestion adapter
       - Repeated fixture workflow runs are idempotent
       - No live IO, claim/report shortcut, schema edit, or Lane A/C repository import is introduced
+
+  - id: CON-006
+    title: Level 8 concrete public-service workflow wiring handoff
+    status: pending
+    depends_on: [CON-005]
+    lane: connector-integration
+    notes: Define or implement concrete public-service wiring for the fixture workflow. The retrieval provenance port must preserve supplied SourceRetrievalRunContract.ingest_run_id, and evidence ingestion must use the public Lane C evidence port. Do not import Lane A/C repositories or modify Lane A/C implementation without explicit coordination.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-005-fixture-connector-ingest-workflow
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Concrete workflow wiring path is explicit
+      - Retrieval-run identity preservation is handled before DB-backed claims
+      - Evidence ingestion uses public Lane C service methods
+      - Any required Lane A/C implementation change is separately coordinated
