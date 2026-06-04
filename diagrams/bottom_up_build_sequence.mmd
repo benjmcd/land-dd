@@ -1,0 +1,11 @@
+flowchart LR
+    S1[1 Source registry] --> S2[2 Postgres/PostGIS schema]
+    S2 --> S3[3 Area/geometry validation]
+    S3 --> S4[4 Ingest MVP sources]
+    S4 --> S5[5 Feature extraction]
+    S5 --> S6[6 Evidence ledger]
+    S6 --> S7[7 Rules/claims]
+    S7 --> S8[8 Report compiler]
+    S8 --> S9[9 Human review]
+    S9 --> S10[10 API/UI]
+    S10 --> S11[11 Batch/site selection]

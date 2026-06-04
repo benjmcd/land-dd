@@ -1,0 +1,14 @@
+flowchart TD
+    A[Source Registry] --> B[Raw Immutable Archive]
+    B --> C[Ingestion Adapters]
+    C --> D[(Postgres/PostGIS)]
+    D --> E[Feature Extraction Workers]
+    E --> F[Evidence Ledger]
+    F --> G[Rules + Claims Engine]
+    G --> H[Report Compiler]
+    H --> I[Human Review]
+    I --> J[Delivered Dossier]
+    D --> K[API]
+    K --> L[UI / Map / Batch Screening]
+    B -. large rasters/docs .-> M[Object Storage]
+    M --> H

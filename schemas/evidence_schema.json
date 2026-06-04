@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/evidence.schema.json",
+  "title": "EvidenceContract",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "area_id",
+    "evidence_type",
+    "evidence_code",
+    "domain",
+    "observation",
+    "observed_value",
+    "source_id",
+    "dataset_version_id",
+    "method_code",
+    "method_version",
+    "confidence",
+    "caveat",
+    "is_negative_evidence",
+    "is_source_failure",
+    "superseded_by",
+    "source_date",
+    "observed_at",
+    "geometry_geojson",
+    "geometry_srid",
+    "spatial_precision_meters"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "area_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_version_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "evidence_type": {
+      "enum": [
+        "source_observation",
+        "spatial_intersection",
+        "derived_metric",
+        "document_extract",
+        "source_failure",
+        "human_verification",
+        "manual_note"
+      ]
+    },
+    "evidence_code": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "observation": {
+      "type": "string"
+    },
+    "observed_value": {
+      "type": "object"
+    },
+    "method_code": {
+      "type": "string"
+    },
+    "method_version": {
+      "type": "string"
+    },
+    "confidence": {
+      "enum": [
+        "very_low",
+        "low",
+        "medium",
+        "high",
+        "very_high",
+        "unknown"
+      ]
+    },
+    "caveat": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "is_negative_evidence": {
+      "type": "boolean"
+    },
+    "is_source_failure": {
+      "type": "boolean"
+    },
+    "superseded_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "source_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "geometry_geojson": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "geometry_srid": {
+      "type": "integer",
+      "const": 4326
+    },
+    "spatial_precision_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

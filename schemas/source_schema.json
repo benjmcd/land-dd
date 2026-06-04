@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/source.schema.json",
+  "title": "Source",
+  "type": "object",
+  "required": [
+    "source_id",
+    "name",
+    "source_type",
+    "domain",
+    "authority_level",
+    "license_status",
+    "commercial_use_status",
+    "redistribution_status",
+    "cache_allowed",
+    "export_allowed",
+    "ai_use_allowed",
+    "freshness_class",
+    "review_status"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "organization": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "homepage_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "source_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "domain": {
+      "type": "string"
+    },
+    "authority_level": {
+      "type": "string"
+    },
+    "geographic_scope": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "update_cadence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "commercial_use_status": {
+      "type": "string"
+    },
+    "license_status": {
+      "type": "string"
+    },
+    "redistribution_status": {
+      "type": "string"
+    },
+    "license_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "attribution_required": {
+      "type": "boolean"
+    },
+    "ai_use_allowed": {
+      "type": "string"
+    },
+    "cache_allowed": {
+      "type": "string"
+    },
+    "export_allowed": {
+      "type": "string"
+    },
+    "raw_data_allowed": {
+      "type": "string"
+    },
+    "freshness_class": {
+      "type": "string"
+    },
+    "last_checked_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "review_owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "review_status": {
+      "type": "string"
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

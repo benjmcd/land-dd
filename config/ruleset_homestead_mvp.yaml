@@ -1,0 +1,102 @@
+ruleset:
+  id: homestead_mvp_v0_1
+  name: Homestead feasibility MVP ruleset
+  intent: homestead_feasibility
+  status: draft
+  version: 0.1
+  applies_to:
+    country: US
+    geography_scope: target_mvp_counties
+  principles:
+    - hard_gates_before_scores
+    - confidence_separate_from_suitability
+    - source_failures_are_unknowns
+    - road_proximity_does_not_equal_legal_access
+    - wetland_maps_are_screening_not_delineation
+  hard_gates:
+    - code: ACCESS_G001
+      domain: access
+      severity_on_fail: critical
+      condition: no_public_road_adjacency_or_access_source_unavailable
+      claim_code: ACCESS_001
+      verification_task: Confirm recorded legal access/easements through title review and county records.
+    - code: ZONING_G001
+      domain: zoning
+      severity_on_fail: critical
+      condition: intended_residential_use_prohibited_or_unknown
+      claim_code: ZONING_001
+      verification_task: Call county planning and verify permitted uses, overlays, and minimum lot size.
+    - code: FLOOD_G001
+      domain: flood
+      severity_on_fail: high
+      condition: material_intersection_with_high_risk_flood_zone
+      claim_code: FLOOD_001
+      verification_task: Confirm flood zone and insurance/building implications with local floodplain administrator.
+    - code: WETLAND_G001
+      domain: wetlands
+      severity_on_fail: high
+      condition: material_intersection_with_mapped_wetlands
+      claim_code: WETLAND_001
+      verification_task: Order professional wetland delineation before site planning.
+    - code: SLOPE_G001
+      domain: buildability
+      severity_on_fail: high
+      condition: insufficient_low_slope_buildable_area
+      claim_code: SLOPE_001
+      verification_task: Confirm buildable envelope with surveyor/engineer.
+    - code: WATER_G001
+      domain: water
+      severity_on_fail: high
+      condition: no_plausible_water_context_or_source_unavailable
+      claim_code: WATER_001
+      verification_task: Check well logs, water rights, hauling rules, and local well contractors.
+    - code: SOIL_G001
+      domain: soil_septic
+      severity_on_fail: unknown
+      condition: soil_septic_unsupported
+      claim_code: SOIL_NOT_EVALUATED
+      verification_task: Verify soil and septic feasibility with perc testing, county health department records, and a septic engineer.
+    - code: ENV_G001
+      domain: env_hazard
+      severity_on_fail: unknown
+      condition: env_hazard_unsupported
+      claim_code: ENV_HAZ_NOT_EVALUATED
+      verification_task: Review EPA, state environmental agency, and local environmental records before relying on this category.
+    - code: RESOURCE_G001
+      domain: resource_context
+      severity_on_fail: unknown
+      condition: resource_context_unsupported
+      claim_code: RESOURCE_NOT_EVALUATED
+      verification_task: Verify mineral, timber, water-rights, and other resource-context records through title and appropriate state or local sources.
+    - code: MARKET_G001
+      domain: market_context
+      severity_on_fail: unknown
+      condition: market_context_out_of_scope
+      claim_code: MARKET_OUT_OF_SCOPE
+      verification_task: Use qualified local professionals for sales-comparison, appraisal, buyer-suitability, or financial-return questions.
+  scoring:
+    output: bands_not_raw_score
+    weights:
+      buildability: 0.20
+      access: 0.20
+      water: 0.15
+      zoning_legal: 0.15
+      flood_wetlands: 0.10
+      soil_septic: 0.10
+      environmental_hazards: 0.05
+      market_context: 0.05
+  confidence:
+    downgrade_if:
+      - source_unavailable
+      - source_stale
+      - conflicting_sources
+      - proxy_only
+      - low_spatial_precision
+      - legal_right_not_verified
+  forbidden_language:
+    - You can build here.
+    - This parcel has legal access.
+    - This land has water rights.
+    - This property is safe.
+    - This property is worth
+    - No environmental problems exist.
