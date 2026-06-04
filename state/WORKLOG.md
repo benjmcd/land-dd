@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-013)
+
+- Completed CON-013 as a connector review status composition plus Lane D API status surface.
+- Added `ConnectorRunReviewStatus` and `build_connector_run_review_status(...)` in `backend/app/connectors/review_status.py` to combine a connector review handoff with a fixture quality profile.
+- Added `GET /connector-runs/{ingest_run_id}/review-status` in `backend/app/api/connectors.py`, backed by an in-memory `ApiServices.connector_review_statuses` store.
+- Added connector/API tests proving success status, source-failure human-review status, fixture-quality blocking issues, connector-name mismatch fail-closed behavior, and 404 behavior for unknown connector runs.
+- Preserved the existing boundary: no live I/O, durable queue persistence, connector status DB table, schema/migration edit, claim/report shortcut, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+- Verification passed: focused review-status/API tests; connector/API tests; connector/API ruff/mypy; full DB-enabled `.\scripts\verify.ps1`.
+
 ## 2026-06-04 (connector CON-012)
 
 - Completed CON-012 in the connector integration zone as a deterministic fixture quality profile for flood fixture connector output.

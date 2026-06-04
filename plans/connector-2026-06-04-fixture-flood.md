@@ -537,3 +537,44 @@ The next Level 8 pass should choose one of:
 - exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
 - a Lane D/API status endpoint or durable human-review queue that consumes the connector review handoff and/or fixture quality profile;
 - broader fixture data-quality coverage for another fixture category after that fixture is selected.
+
+## CON-013 Connector Review Status API Surface
+
+CON-013 is complete. The connector integration zone now exposes `build_connector_run_review_status(...)`, which composes a connector review handoff with a fixture quality profile into one JSON-safe status record. Lane D API now registers `GET /connector-runs/{ingest_run_id}/review-status`, backed by the existing `ApiServices` in-memory status store.
+
+The status surface reports:
+
+- review handoff queue, disposition, priority, tasks, and signal codes;
+- connector name, `ingest_run_id`, dataset version, retrieval status, and evidence/source-failure counts;
+- fixture quality pass/fail state, blocking issue count, and issue code/message records;
+- `review_required` as true when either the handoff requires human review or fixture quality has blocking issues.
+
+### Boundary Preserved
+
+This is an API status surface and in-memory handoff store only. It does not create a durable queue, connector status table, schema/migration, live connector, DB-backed connector status repository, claims, reports, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation. Unknown connector runs return 404 rather than manufacturing status.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
+ruff check app/connectors/review_status.py app/api/connectors.py app/api/dependencies.py app/main.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
+mypy app/connectors/review_status.py app/api/connectors.py app/api/dependencies.py app/main.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused review-status/API tests pass (8 tests); connector/API tests pass with DB smoke skipped by default (55 passed, 3 skipped); connector/API ruff clean; connector/API mypy clean over 33 source/test files; full DB-enabled PowerShell verification passes with 315 backend tests, lint clean, mypy clean over 115 source files, migrations/seeds apply, and DB smoke passes.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- a coordinated Lane C/schema slice for durable `ingest_run_id` linkage on evidence rows;
+- exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
+- durable human-review queue persistence for connector review status after schema/queue ownership is planned;
+- broader fixture data-quality coverage for another fixture category after that fixture is selected.

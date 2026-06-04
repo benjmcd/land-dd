@@ -464,3 +464,29 @@ tasks:
       - Source-failure fixture quality profile passes with no blocking issues
       - Dataset-version, row-count, spatial geometry, nonlocal log URI, missing fixture metric, source-failure payload, and source-failure confidence gaps fail closed with explicit issue codes
       - No API, durable queue persistence, report, claim, schema edit, live IO, DB/session import, or Lane A/B/C/D implementation change is introduced
+
+  - id: CON-013
+    title: Level 8 connector review status API surface
+    status: done
+    depends_on: [CON-012]
+    lane: connector-integration
+    notes: Added a connector review status composition and a Lane D API status endpoint backed by an in-memory status store. The status combines connector review handoff data with fixture quality profile results and exposes GET /connector-runs/{ingest_run_id}/review-status without durable queue persistence, schema changes, live IO, reports, claims, or DB-backed connector status.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-013-connector-review-status-api-surface
+    files:
+      - backend/app/connectors/review_status.py
+      - backend/app/api/connectors.py
+      - backend/app/api/dependencies.py
+      - backend/app/main.py
+      - backend/tests/connectors/test_review_status.py
+      - backend/tests/api/test_connector_review_status.py
+      - backend/app/connectors/__init__.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Connector review status combines handoff disposition and fixture quality outcome
+      - API status endpoint returns stored connector review status by ingest_run_id
+      - Source-failure handoff and fixture-quality blocking issues both require review
+      - Unknown connector run status returns 404
+      - No durable queue persistence, connector status DB table, schema edit, live IO, report, claim, or DB-backed connector status is introduced

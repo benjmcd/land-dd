@@ -41,6 +41,10 @@ from app.connectors.review_packet import (
     ConnectorRunReviewPacket,
     build_connector_run_review_packet,
 )
+from app.connectors.review_status import (
+    ConnectorRunReviewStatus,
+    build_connector_run_review_status,
+)
 
 __all__ = [
     "ConnectorEvidenceIngestionAdapter",
@@ -55,6 +59,7 @@ __all__ = [
     "ConnectorReviewSignal",
     "ConnectorReviewSignalCode",
     "ConnectorRunReviewPacket",
+    "ConnectorRunReviewStatus",
     "ConnectorRetrievalProvenanceAdapter",
     "ConnectorRetrievalProvenanceResult",
     "EvidenceIngestionPort",
@@ -66,6 +71,7 @@ __all__ = [
     "SourceRetrievalProvenancePort",
     "StaticFloodFixtureConnector",
     "build_connector_run_review_packet",
+    "build_connector_run_review_status",
     "build_connector_review_handoff",
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",

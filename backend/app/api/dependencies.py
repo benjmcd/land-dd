@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, cast
+from uuid import UUID
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.area_geometry.service import AreaService
 from app.claims_engine.claim_repo import InMemoryClaimRepository, SqlAlchemyClaimRepository
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
+from app.connectors import ConnectorRunReviewStatus
 from app.db.session import get_db_session
 from app.evidence_ledger.evidence_repo import (
     InMemoryEvidenceRepository,
@@ -32,6 +34,7 @@ class ApiServices:
     area_service: AreaService
     evidence_service: EvidenceService
     report_service: ReportRunService
+    connector_review_statuses: dict[UUID, ConnectorRunReviewStatus]
 
 
 def create_api_services() -> ApiServices:
@@ -56,6 +59,7 @@ def create_api_services() -> ApiServices:
         area_service=area_service,
         evidence_service=evidence_service,
         report_service=report_service,
+        connector_review_statuses={},
     )
 
 
@@ -86,6 +90,7 @@ def create_db_api_services(
         area_service=area_service,
         evidence_service=evidence_service,
         report_service=report_service,
+        connector_review_statuses={},
     )
 
 

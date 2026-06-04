@@ -12,11 +12,15 @@ Verification command(s):
 - cd backend; ruff check app/api app/main.py app/reports tests/api tests/reports
 - cd backend; mypy app/api app/main.py app/reports tests/api/test_report_runs_db.py
 - .\scripts\verify.ps1
+- cd backend; py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
+- cd backend; py -3.12 -m pytest -q tests/connectors tests/api -rA
+- cd backend; ruff check app/connectors app/api app/main.py tests/connectors tests/api
+- cd backend; mypy app/connectors app/api app/main.py tests/connectors tests/api
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- 20 Lane D report/API tests pass with DB smoke enabled
-- Full verification passes locally with DB smoke enabled: 252 tests; lint clean; mypy clean (91 source files)
+- Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
+- Full verification passes locally with DB smoke enabled: 315 tests; lint clean; mypy clean (115 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
@@ -26,6 +30,7 @@ Verification result:
 - Shared source/evidence/claim/job/report schema gaps are recorded in `plans/2026-06-04-l7-closeout-l8-entry.md` without editing shared schema files
 - Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
+- CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -42,6 +47,7 @@ Completion evidence:
 - backend/app/api/areas.py (area router)
 - backend/app/api/evidence.py (evidence router)
 - backend/app/api/reports.py (report-run router)
+- backend/app/api/connectors.py (connector review-status router)
 - backend/app/main.py (router registration)
 - backend/app/db/session.py (FastAPI-compatible DB session dependency; delegates to shared `get_session()`)
 - backend/tests/reports/test_report_contracts.py (contract defaults)
@@ -50,6 +56,7 @@ Completion evidence:
 - backend/tests/reports/test_report_repository.py (DB-backed persistence round-trip)
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_report_runs_db.py (DB-backed API create/retrieve/persistence integration test)
+- backend/tests/api/test_connector_review_status.py (connector review-status API tests)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 - backend/tests/reports/test_report_regression.py (normalized fixture report artifact semantic regression)
 Next lowest-dependency task:
@@ -59,7 +66,8 @@ Next lowest-dependency task:
 - **D-003 (DONE)**: Schema-contract alignment note is complete; future schema ownership and edit order are recorded before any shared `schemas/*.json` edits.
 - **D-004 (DONE)**: Level 8 ownership and fixture-only connector acceptance plan is complete.
 - **D-005 (DONE)**: Connector integration-zone ownership and source-retrieval-run lifecycle decision are canonical in `LANE_OWNERSHIP.md` and `docs/adr/lane-d-0002-connector-entry-ownership.md`.
-- **CON-001 (NEXT)**: Level 8 fixture-only flood connector contract slice in the connector integration zone.
+- **CON-013 (DONE)**: Connector review-status API surface is complete for in-memory status records that consume connector handoff and fixture quality profile data.
+- **NEXT**: Select a coordinated Level 8 follow-up: durable `ingest_run_id` evidence linkage, exact source-failure evidence ID preservation, durable human-review queue persistence after ownership/schema planning, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -76,7 +84,7 @@ Do not work on yet:
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
 | Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 is complete; D-001 can now use report output that includes all four unsupported-category unknowns |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
-| Future `backend/app/connectors/` ownership | Resolved in `LANE_OWNERSHIP.md` | First runtime work belongs to the connector integration zone, not Lane D report/API code |
+| Future `backend/app/connectors/` ownership | Resolved in `LANE_OWNERSHIP.md` | Connector runtime work belongs to the connector integration zone; Lane D may expose explicit API surfaces that consume connector-owned status records |
 
 ## Active plan
 
