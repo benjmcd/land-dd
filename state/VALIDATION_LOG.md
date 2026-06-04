@@ -2,6 +2,30 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-023 fixture evidence provenance quality
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused fixture-quality tests: 10 passed.
+- Focused ruff: clean.
+- Focused mypy: clean over 2 source files.
+- Full Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- CON-023 is connector-local fixture-quality validation only. It does not add API mutation, auth/reviewer enforcement, durable queue behavior, repository methods, source/evidence/claim/report behavior, schema changes, migrations, live I/O, future report metadata extensions, or durable `ingest_run_id` evidence-row linkage.
+
 ## 2026-06-04 TA-080 plus CON-022 merge reconciliation
 
 **Commands run:**

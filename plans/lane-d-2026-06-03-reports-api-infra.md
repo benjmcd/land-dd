@@ -32,6 +32,7 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - TD-090 is complete: `docs/planning_pack/api/openapi_stub.yaml` is regenerated from the live FastAPI app, and a planning-pack test guards it against drift from `create_app().openapi()`.
 - CON-021 is complete as a planning-only connector human-review action semantics slice. It defines future action vocabulary before any API mutation route, worker, scheduler, dashboard, or connector runtime change.
 - CON-022 is complete as a planning-only connector human-review API semantics slice. It accepts route/reviewer/auth semantics for a future narrow action route without changing API behavior or OpenAPI.
+- CON-023 is complete as a connector-local fixture-quality slice. It fails closed on missing evidence provenance text, caveats, and non-failure source dates without changing API behavior, schemas, queues, or report semantics.
 
 ## Blockers at lane setup
 
@@ -201,3 +202,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: TD-090 complete. Regenerated the planning-pack OpenAPI reference from `create_app().openapi()`, updated the planning-pack API spec to distinguish implemented routes from future roadmap routes, and added a parity test that fails closed on future OpenAPI drift.
 - 2026-06-04: CON-021 complete as a planning-only human-review action semantics pass. Added ADR `lane-d-0011-connector-human-review-actions` without changing API behavior, connector runtime, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: CON-022 complete as a planning-only human-review API semantics pass. Added ADR `lane-d-0012-connector-human-review-api-semantics` without changing API behavior, OpenAPI, connector runtime, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
+- 2026-06-04: CON-023 complete as a connector-local fixture-quality pass. Added missing provenance text, caveat, and non-failure source-date quality checks without changing API behavior, OpenAPI, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.

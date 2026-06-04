@@ -934,3 +934,42 @@ The next Level 8 pass should choose one of:
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-023 Connector Fixture Evidence Provenance Quality
+
+CON-023 extends the connector-local flood fixture quality evaluator to fail closed when evidence omits reviewer-critical provenance text.
+
+New blocking issue codes:
+
+- `evidence_provenance_text_missing`;
+- `evidence_caveat_missing`;
+- `source_observation_source_date_missing`.
+
+The evaluator now requires fixture evidence to include non-empty evidence code, observation, method code, method version, and caveat. Non-failure source observations must also include `source_date`. Source-failure evidence may continue to omit `source_date` because the retrieval failure itself is the evidence.
+
+### Boundary Preserved
+
+This is connector-local fixture-quality validation only. It does not add API routes, OpenAPI changes, durable queue behavior, repository methods, source/evidence/claim/report behavior, schemas, migrations, live I/O, hook config, or POSIX scripts.
+
+### Validation
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+.\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Fixture-quality tests cover 10 cases; focused ruff clean; focused mypy clean over 2 source files. Full Windows PowerShell verification passed with 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- implement the narrow human-review action API only after auth/reviewer identity enforcement and required queue transition substrate are accepted;
+- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route;
+- coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
+- define future report metadata extensions;
+- broaden fixture data-quality coverage for another selected fixture category.

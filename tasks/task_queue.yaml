@@ -793,3 +793,30 @@ tasks:
       - Retrieval row/error/warning counts are non-negative when present
       - SourceContract remains scoped to schemas/source_schema.json
       - No runtime validation, migration, connector behavior, queue semantics, live IO, hook config, POSIX script, claim/report behavior, or durable ingest_run_id evidence-row linkage is introduced
+
+  - id: CON-023
+    title: Level 8 connector fixture evidence provenance quality
+    status: done
+    depends_on: [CON-020, CON-022]
+    lane: connector-integration
+    notes: Extended connector-local fixture quality to fail closed when evidence provenance text, caveats, or non-failure source dates are missing. No API route, OpenAPI change, durable queue behavior, repository method, source/evidence/claim/report behavior, schema, migration, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage changed.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-023-connector-fixture-evidence-provenance-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Fixture evidence with missing code, observation, method code, or method version fails closed
+      - Fixture evidence without a caveat fails closed
+      - Non-failure fixture evidence without source_date fails closed
+      - Source-failure fixture evidence may omit source_date while still requiring controlled failure payload and unknown confidence
+      - No API route, OpenAPI change, durable queue behavior, repository method, source/evidence/claim/report behavior, schema, migration, live IO, hook config, POSIX script, or durable ingest_run_id evidence-row linkage is introduced

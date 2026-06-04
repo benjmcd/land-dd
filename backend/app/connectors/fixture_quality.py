@@ -25,6 +25,11 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED = (
         "evidence_observed_after_retrieval_finished"
     )
+    EVIDENCE_PROVENANCE_TEXT_MISSING = "evidence_provenance_text_missing"
+    EVIDENCE_CAVEAT_MISSING = "evidence_caveat_missing"
+    SOURCE_OBSERVATION_SOURCE_DATE_MISSING = (
+        "source_observation_source_date_missing"
+    )
     SOURCE_FAILURE_PAYLOAD_INCOMPLETE = "source_failure_payload_incomplete"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
 
@@ -166,6 +171,7 @@ def evaluate_flood_fixture_quality(
                     "fixture evidence dataset_version_id must match retrieval run",
                 ),
             )
+        _append_evidence_provenance_issues(issues, evidence)
         if (
             evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
             and not evidence.is_source_failure
@@ -189,6 +195,41 @@ def evaluate_flood_fixture_quality(
         source_failure_count=source_failure_count,
         issues=tuple(issues),
     )
+
+
+def _append_evidence_provenance_issues(
+    issues: list[ConnectorFixtureQualityIssue],
+    evidence: EvidenceContract,
+) -> None:
+    required_text = (
+        evidence.evidence_code,
+        evidence.observation,
+        evidence.method_code,
+        evidence.method_version,
+    )
+    if any(not value.strip() for value in required_text):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_PROVENANCE_TEXT_MISSING,
+                "fixture evidence must include code, observation, method, and version",
+            ),
+        )
+    if evidence.caveat is None or not evidence.caveat.strip():
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_CAVEAT_MISSING,
+                "fixture evidence must include a caveat",
+            ),
+        )
+    if not evidence.is_source_failure and (
+        evidence.source_date is None or not evidence.source_date.strip()
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SOURCE_OBSERVATION_SOURCE_DATE_MISSING,
+                "non-failure fixture evidence must include source_date",
+            ),
+        )
 
 
 def _append_source_failure_issues(

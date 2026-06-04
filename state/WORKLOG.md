@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-023 fixture evidence provenance quality)
+
+- Extended connector-local fixture quality with blocking checks for missing evidence provenance text, missing caveats, and missing non-failure source dates.
+- Added focused fixture-quality coverage proving those gaps fail closed while source-failure evidence can still omit `source_date`.
+- Preserved boundary: no API route, OpenAPI change, durable queue behavior, repository method, source/evidence/claim/report behavior, schema, migration, live I/O, hook config, or POSIX script changed.
+- Verification passed with DB smoke: 351 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (TA-080 plus CON-022 merge reconciliation)
 
 - Resolved shared state/task merge records by preserving both CON-022 connector human-review API semantics and TA-080 Lane A source provenance-family schema parity.

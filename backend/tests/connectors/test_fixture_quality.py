@@ -155,6 +155,34 @@ def test_fixture_quality_flags_source_failure_payload_and_confidence_gaps() -> N
     )
 
 
+def test_fixture_quality_flags_evidence_provenance_text_gaps() -> None:
+    result = _load_success()
+    evidence = result.evidence_inputs[0].model_copy(
+        update={
+            "evidence_code": "",
+            "observation": " ",
+            "method_code": "",
+            "method_version": "",
+            "caveat": None,
+            "source_date": None,
+        },
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(evidence,),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.EVIDENCE_PROVENANCE_TEXT_MISSING,
+        ConnectorFixtureQualityIssueCode.EVIDENCE_CAVEAT_MISSING,
+        ConnectorFixtureQualityIssueCode.SOURCE_OBSERVATION_SOURCE_DATE_MISSING,
+    )
+
+
 def test_fixture_quality_flags_nonlocal_log_and_missing_fixture_metric() -> None:
     result = _load_success()
     retrieval_run = result.retrieval_run.model_copy(
