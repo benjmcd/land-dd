@@ -30,6 +30,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     SUCCEEDED_HAS_SOURCE_FAILURE = "succeeded_has_source_failure"
     BLOCKED_HAS_NON_FAILURE_EVIDENCE = "blocked_has_non_failure_evidence"
     SPATIAL_EVIDENCE_GEOMETRY_MISSING = "spatial_evidence_geometry_missing"
+    SOURCE_FAILURE_GEOMETRY_PRESENT = "source_failure_geometry_present"
     DUPLICATE_EVIDENCE_ID = "duplicate_evidence_id"
     EVIDENCE_OBSERVED_BEFORE_RETRIEVAL = "evidence_observed_before_retrieval"
     EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED = (
@@ -294,6 +295,16 @@ def evaluate_flood_fixture_quality(
                 ),
             )
         if evidence.is_source_failure:
+            if (
+                evidence.geometry_geojson is not None
+                or evidence.spatial_precision_meters is not None
+            ):
+                issues.append(
+                    _issue(
+                        ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_GEOMETRY_PRESENT,
+                        "source-failure fixture evidence must not include geometry",
+                    ),
+                )
             _append_source_failure_issues(
                 issues,
                 evidence,

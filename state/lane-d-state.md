@@ -50,6 +50,7 @@ Verification result:
 - Full verification passes locally with DB smoke enabled after CON-035 connector fixture evidence area consistency: 369 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-036 connector fixture source-failure type consistency: 370 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-037 connector fixture method-code consistency: 371 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-038 connector fixture source-failure geometry absence: 372 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-024 connector review action API auth blocker decision: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-025 connector reviewer principal boundary: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
@@ -103,6 +104,7 @@ Verification result:
 - CON-035 is complete as connector-local fixture evidence area consistency. One flood fixture retrieval must not emit evidence with mixed `area_id` values. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-036 is complete as connector-local fixture source-failure type consistency. Fixture evidence `is_source_failure` must agree with `evidence_type == "source_failure"`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-037 is complete as connector-local fixture method-code consistency. Non-empty flood fixture evidence `method_code` values must start with `fixture_flood_`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
+- CON-038 is complete as connector-local fixture source-failure geometry absence. Source-failure fixture evidence must not carry geometry or spatial precision fields. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; review-action route subset is accepted; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, route/OpenAPI implementation, and broader API mutation/workflow implementation.
@@ -190,6 +192,7 @@ Next lowest-dependency task:
 - **CON-035 (DONE)**: Connector fixture evidence area consistency now rejects mixed `area_id` values inside one flood fixture run.
 - **CON-036 (DONE)**: Connector fixture source-failure type consistency now rejects source-failure flag/type drift.
 - **CON-037 (DONE)**: Connector fixture method-code consistency now rejects non-empty flood method codes outside the `fixture_flood_` namespace.
+- **CON-038 (DONE)**: Connector fixture source-failure geometry absence now rejects source-failure evidence carrying geometry or spatial precision.
 - **NEXT**: After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose broader fixture-quality/report metadata work if route work would conflict.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)

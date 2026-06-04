@@ -304,6 +304,39 @@ def test_fixture_quality_flags_source_failure_type_mismatch() -> None:
     )
 
 
+def test_fixture_quality_flags_source_failure_geometry() -> None:
+    result = _load_failure()
+    evidence = result.evidence_inputs[0].model_copy(
+        update={
+            "geometry_geojson": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-121.0, 38.0],
+                        [-121.0, 38.01],
+                        [-120.99, 38.01],
+                        [-120.99, 38.0],
+                        [-121.0, 38.0],
+                    ],
+                ],
+            },
+            "spatial_precision_meters": 30.0,
+        },
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(evidence,),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_GEOMETRY_PRESENT,
+    )
+
+
 def test_fixture_quality_flags_source_failure_payload_type_gaps() -> None:
     result = _load_failure()
     evidence = result.evidence_inputs[0].model_copy(

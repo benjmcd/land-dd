@@ -42,6 +42,7 @@ Current task:
 - CON-035: DONE - connector fixture evidence area consistency checks.
 - CON-036: DONE - connector fixture source-failure type consistency checks.
 - CON-037: DONE - connector fixture method-code consistency checks.
+- CON-038: DONE - connector fixture source-failure geometry absence checks.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -176,6 +177,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 2026-06-04 CON-036 result: focused fixture-quality tests pass (18 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local source-failure type consistency validation; no route/OpenAPI/runtime/schema/queue mutation.
 
 2026-06-04 CON-037 result: focused fixture-quality tests pass (19 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local method-code consistency validation; no route/OpenAPI/runtime/schema/queue mutation.
+
+2026-06-04 CON-038 result: focused fixture-quality tests pass (20 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local source-failure geometry absence validation; no route/OpenAPI/runtime/schema/queue mutation.
 
 ## Known blockers
 
