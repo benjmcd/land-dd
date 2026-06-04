@@ -3,33 +3,43 @@ Your scope is **Area + Geometry Domain** (MILESTONE_MAP Level 4).
 
 Repository: `C:\Users\benny\OneDrive\Desktop\land_diligence_dual_agent_workspace`
 
-You have authority to work autonomously within Lane B's scope. Do not touch files owned by other lanes. Do not rely on chat history. Treat repository files as the source of truth.
-
 **Read in this order before touching any code:**
 
-1. `CLAUDE.md` (imports `AGENTS.md` — read that too)
-2. `MILESTONE_MAP.md` — your gate targets are L4-001 to L4-010
+1. `AGENTS.md` (top-level operating contract — includes all non-negotiables)
+2. `CODEX_PARALLEL.md` — parallel session coordination protocol
 3. `LANE_OWNERSHIP.md` — your owned files, readable files, and forbidden files
-4. `lanes/lane-b/AGENTS.md` — your full operating contract
-5. `state/lane-b-state.md` — current state and next task
-6. `plans/lane-b-2026-06-03-area-geometry.md` — your active implementation plan
+4. `state/lane-b-state.md` — current state
 
-**Run baseline verification:**
+**Run baseline verification (Windows):**
 
-```bash
-./scripts/verify.sh
+```powershell
+.\scripts\verify.ps1
 ```
 
-**Run your lane tests (currently scaffold-only — 0 feature tests expected):**
+---
 
-```bash
-cd backend && PYTHONPATH=. pytest tests/area_geometry/ -v
-```
+## Current milestone status
 
-**Your next task is TB-010** (detailed in your plan): implement `AreaService` and `InMemoryAreaRepository` in `backend/app/area_geometry/`. The `AreaContract` stub is already in `backend/app/domain/area_contracts.py`. Write tests in `backend/tests/area_geometry/` for create, get, and get-missing, then proceed to TB-020 (GeoJSON validation).
+Level 4 (Area + Geometry Domain): **PASS** — 46 tests; all L4 gates pass; no remaining Lane B tasks.
 
-**Import constraint:** you may only import from `app.domain.*`, `app.db.*`, `app.core.*`, and `app.area_geometry.*`. Never import from `app.source_registry`, `app.evidence_ledger`, `app.claims_engine`, or `app.reports`.
+**Lane B is complete for the current MVP scope.** Do not start new Lane B work unless `state/lane-b-state.md` lists a specific blocker or next task.
 
-**Milestone gate you are working toward:** L4-001 (valid GeoJSON creates area), L4-002 (invalid geometry handled deterministically), L4-007 (parcel-like geometry caveated as non-survey).
+---
 
-**Stop conditions:** record a blocker in `state/lane-b-state.md` if PostGIS spatial queries are required and Docker is unavailable, or if a new `AreaType` enum value is needed (shared `enums.py` — requires cross-lane coordination).
+## If you have been assigned to help another lane
+
+If the human coordinator has assigned you to a cross-lane task (via a note in `state/lane-b-state.md` or `CODEX_PARALLEL.md`), follow those instructions. Otherwise:
+
+1. **Review and verify** Lane C or Lane D work without modifying their files.
+2. **Stop** and update `state/lane-b-state.md` to record that no Lane B work remains.
+
+Do not invent new Lane B work. Do not touch Lane A/C/D implementation files.
+
+---
+
+## Stop conditions
+
+Stop and record a blocker in `state/lane-b-state.md` if:
+- A new `AreaType` enum value is needed (shared `enums.py` — requires cross-lane ADR)
+- A new DB migration for area tables is needed (coordinate with Lane A)
+- You are asked to write geometry queries that require changes to `evidence_ledger` or `claims_engine`

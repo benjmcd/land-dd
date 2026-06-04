@@ -2,6 +2,17 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (C-001 Claims ORM models + coordination infra)
+
+- Implemented C-001: created `backend/app/claims_engine/models.py` with `ClaimModel`, `ClaimEvidenceLinkModel`, and `VerificationTaskModel` (all inheriting `AppBase`). All three ORM models verified against `db/migrations/0001_initial_spine.sql`. `ClaimModel.claim_metadata` is mapped with Python attribute name to avoid `DeclarativeBase.metadata` collision (actual DB column name is `metadata`). `rule_execution_run_id` and `intent_id` nullable FKs are mapped but not yet populated by the current rule engine path.
+- Refactored `SqlAlchemyClaimRepository` in `claim_repo.py` from raw `text()` SQL to SQLAlchemy 2.x ORM (`session.add()`, `session.get()`, `select()`). All raw SQL and `_row_to_claim()`/`_claim_params()`/`_select_claim_statement()` helpers replaced by ORM equivalents. `_claim_metadata()`, `_metadata_evidence_ids()`, `_validate_claim_for_persistence()`, and `_verification_priority()` preserved unchanged.
+- Updated `state/lane-c-state.md` and `state/lane-d-state.md` with C-001/C-002/D-001 as explicit next tasks.
+- Created `CODEX_PARALLEL.md` — parallel session coordination protocol with file ownership map, pre-condition checks, and safe parallel execution rules.
+- Updated `PROMPT_LANE_*.md` files to reflect current done/pending state for all four lanes.
+- Updated `tasks/task_queue.yaml` — all T000-T060 now `done`; C-001 `pending`, C-002/D-001 `blocked`.
+- Updated `LANE_OWNERSHIP.md` — added `db/base.py`, `db/types.py`, `validate_workspace.ps1`, `verify.ps1`, and `CODEX_PARALLEL.md` to the Shared Interface Zone.
+- Verified: 201 tests pass; structural invariants ok; lint clean; mypy clean (85 source files).
+
 ## 2026-06-03 (non-fragility audit + invariant enforcement)
 
 - Found and fixed critical non-negotiable violation: `forbidden_language` block in `ruleset_homestead_mvp.yaml` was silently discarded by the hand-rolled YAML parser (section != "hard_gates" guard). Fixed: parser now loads the 6 forbidden phrases into `RuleSet.forbidden_language`; `RuleEngine._check_forbidden_language()` raises `ValueError` if any generated claim contains a forbidden phrase. 7 tests added in `test_forbidden_language.py`.

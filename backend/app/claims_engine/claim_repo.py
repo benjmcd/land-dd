@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import json
-from typing import Any, Protocol
+from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import text
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.elements import TextClause
 
+from app.claims_engine.models import (
+    ClaimEvidenceLinkModel,
+    ClaimModel,
+    VerificationTaskModel,
+)
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import SeverityBand
+from app.domain.enums import ConfidenceBand, SeverityBand
 
 
 class ClaimRepository(Protocol):
@@ -60,41 +63,42 @@ class SqlAlchemyClaimRepository:
         if self.exists(claim.claim_id):
             raise ValueError(f"Claim '{claim.claim_id}' is already stored")
 
-        self._session.execute(
-            text(
-                """
-                INSERT INTO claims.claims (
-                    claim_id,
-                    area_id,
-                    claim_code,
-                    domain,
-                    assertion,
-                    severity,
-                    confidence,
-                    user_safe_language,
-                    verification_required,
-                    verification_task,
-                    metadata
-                )
-                VALUES (
-                    :claim_id,
-                    :area_id,
-                    :claim_code,
-                    :domain,
-                    :assertion,
-                    CAST(:severity AS claims.severity_band),
-                    CAST(:confidence AS evidence.confidence_band),
-                    :user_safe_language,
-                    :verification_required,
-                    :verification_task,
-                    CAST(:metadata AS jsonb)
-                )
-                """
-            ),
-            _claim_params(claim),
+        model = ClaimModel(
+            claim_id=claim.claim_id,
+            area_id=claim.area_id,
+            claim_code=claim.claim_code,
+            domain=claim.domain,
+            assertion=claim.assertion,
+            severity=claim.severity.value,
+            confidence=claim.confidence.value,
+            user_safe_language=claim.user_safe_language,
+            verification_required=claim.verification_required,
+            verification_task=claim.verification_task,
+            claim_metadata=_claim_metadata(claim),
         )
-        self._insert_evidence_links(claim)
-        self._insert_verification_task(claim)
+        self._session.add(model)
+
+        self._session.add_all(
+            ClaimEvidenceLinkModel(
+                claim_id=claim.claim_id,
+                evidence_id=ev_id,
+                support_role="supports",
+            )
+            for ev_id in claim.evidence_ids
+        )
+
+        if claim.verification_required and claim.verification_task is not None:
+            self._session.add(
+                VerificationTaskModel(
+                    area_id=claim.area_id,
+                    claim_id=claim.claim_id,
+                    task_code=claim.claim_code,
+                    task_text=claim.verification_task,
+                    priority=_verification_priority(claim.severity.value),
+                    status="open",
+                )
+            )
+
         self._session.flush()
         stored = self.get(claim.claim_id)
         if stored is None:
@@ -102,155 +106,39 @@ class SqlAlchemyClaimRepository:
         return stored
 
     def get(self, claim_id: UUID) -> ClaimContract | None:
-        row = self._session.execute(
-            _select_claim_statement("WHERE claim_id = :claim_id"),
-            {"claim_id": claim_id},
-        ).mappings().one_or_none()
-        if row is None:
+        model = self._session.get(ClaimModel, claim_id)
+        if model is None:
             return None
-        return _row_to_claim(row, self._linked_evidence_ids(claim_id))
+        return _model_to_claim(model, self._linked_evidence_ids(claim_id))
 
     def exists(self, claim_id: UUID) -> bool:
-        return (
-            self._session.execute(
-                text(
-                    """
-                    SELECT 1
-                    FROM claims.claims
-                    WHERE claim_id = :claim_id
-                    LIMIT 1
-                    """
-                ),
-                {"claim_id": claim_id},
-            ).first()
-            is not None
-        )
+        return self._session.get(ClaimModel, claim_id) is not None
 
     def list_by_area(self, area_id: UUID) -> list[ClaimContract]:
-        rows = self._session.execute(
-            _select_claim_statement(
-                "WHERE area_id = :area_id ORDER BY created_at, claim_id"
-            ),
-            {"area_id": area_id},
-        ).mappings().all()
+        stmt = (
+            select(ClaimModel)
+            .where(ClaimModel.area_id == area_id)
+            .order_by(ClaimModel.created_at, ClaimModel.claim_id)
+        )
         return [
-            _row_to_claim(row, self._linked_evidence_ids(row["claim_id"]))
-            for row in rows
+            _model_to_claim(m, self._linked_evidence_ids(m.claim_id))
+            for m in self._session.scalars(stmt).all()
         ]
 
     def list_all(self) -> list[ClaimContract]:
-        rows = self._session.execute(
-            _select_claim_statement("ORDER BY created_at, claim_id")
-        ).mappings().all()
+        stmt = select(ClaimModel).order_by(ClaimModel.created_at, ClaimModel.claim_id)
         return [
-            _row_to_claim(row, self._linked_evidence_ids(row["claim_id"]))
-            for row in rows
+            _model_to_claim(m, self._linked_evidence_ids(m.claim_id))
+            for m in self._session.scalars(stmt).all()
         ]
 
-    def _insert_evidence_links(self, claim: ClaimContract) -> None:
-        for evidence_id in claim.evidence_ids:
-            self._session.execute(
-                text(
-                    """
-                    INSERT INTO claims.claim_evidence (
-                        claim_id,
-                        evidence_id,
-                        support_role
-                    )
-                    VALUES (
-                        :claim_id,
-                        :evidence_id,
-                        'supports'
-                    )
-                    """
-                ),
-                {"claim_id": claim.claim_id, "evidence_id": evidence_id},
-            )
-
-    def _insert_verification_task(self, claim: ClaimContract) -> None:
-        if not claim.verification_required or claim.verification_task is None:
-            return
-        self._session.execute(
-            text(
-                """
-                INSERT INTO claims.verification_tasks (
-                    area_id,
-                    claim_id,
-                    task_code,
-                    task_text,
-                    priority,
-                    status
-                )
-                VALUES (
-                    :area_id,
-                    :claim_id,
-                    :task_code,
-                    :task_text,
-                    CAST(:priority AS claims.severity_band),
-                    'open'
-                )
-                """
-            ),
-            {
-                "area_id": claim.area_id,
-                "claim_id": claim.claim_id,
-                "task_code": claim.claim_code,
-                "task_text": claim.verification_task,
-                "priority": _verification_priority(claim.severity.value),
-            },
-        )
-
     def _linked_evidence_ids(self, claim_id: UUID) -> list[UUID]:
-        return list(
-            self._session.execute(
-                text(
-                    """
-                    SELECT evidence_id
-                    FROM claims.claim_evidence
-                    WHERE claim_id = :claim_id
-                    ORDER BY evidence_id
-                    """
-                ),
-                {"claim_id": claim_id},
-            ).scalars().all()
+        stmt = (
+            select(ClaimEvidenceLinkModel.evidence_id)
+            .where(ClaimEvidenceLinkModel.claim_id == claim_id)
+            .order_by(ClaimEvidenceLinkModel.evidence_id)
         )
-
-
-def _select_claim_statement(suffix: str) -> TextClause:
-    return text(
-        f"""
-        SELECT
-            claim_id,
-            area_id,
-            claim_code,
-            domain,
-            assertion,
-            severity::text AS severity,
-            confidence::text AS confidence,
-            user_safe_language,
-            verification_required,
-            verification_task,
-            metadata AS claim_metadata
-        FROM claims.claims
-        {suffix}
-        """
-    )
-
-
-def _claim_params(claim: ClaimContract) -> dict[str, object]:
-    return {
-        "claim_id": claim.claim_id,
-        "area_id": claim.area_id,
-        "claim_code": claim.claim_code,
-        "domain": claim.domain,
-        "assertion": claim.assertion,
-        "severity": claim.severity.value,
-        "confidence": claim.confidence.value,
-        "user_safe_language": claim.user_safe_language,
-        "verification_required": claim.verification_required,
-        "verification_task": claim.verification_task,
-        "metadata": json.dumps(_claim_metadata(claim)),
-    }
+        return list(self._session.scalars(stmt).all())
 
 
 def _claim_metadata(claim: ClaimContract) -> dict[str, object]:
@@ -266,24 +154,24 @@ def _claim_metadata(claim: ClaimContract) -> dict[str, object]:
     return metadata
 
 
-def _row_to_claim(row: Any, linked_evidence_ids: list[UUID]) -> ClaimContract:
-    metadata = _json_object(row["claim_metadata"], "claim metadata")
+def _model_to_claim(model: ClaimModel, linked_evidence_ids: list[UUID]) -> ClaimContract:
+    metadata = model.claim_metadata if isinstance(model.claim_metadata, dict) else {}
     evidence_ids = _metadata_evidence_ids(metadata, linked_evidence_ids)
     return ClaimContract(
-        claim_id=row["claim_id"],
-        area_id=row["area_id"],
-        claim_code=row["claim_code"],
-        domain=row["domain"],
-        assertion=row["assertion"],
-        user_safe_language=row["user_safe_language"],
-        severity=row["severity"],
-        confidence=row["confidence"],
+        claim_id=model.claim_id,
+        area_id=model.area_id,
+        claim_code=model.claim_code,
+        domain=model.domain,
+        assertion=model.assertion,
+        user_safe_language=model.user_safe_language,
+        severity=SeverityBand(model.severity),
+        confidence=ConfidenceBand(model.confidence),
         evidence_ids=evidence_ids,
         rule_code=_optional_metadata_str(metadata, "rule_code"),
         ruleset_id=_optional_metadata_str(metadata, "ruleset_id"),
         ruleset_version=_optional_metadata_str(metadata, "ruleset_version"),
-        verification_required=row["verification_required"],
-        verification_task=row["verification_task"],
+        verification_required=model.verification_required,
+        verification_task=model.verification_task,
     )
 
 
@@ -308,14 +196,6 @@ def _optional_metadata_str(metadata: dict[str, object], key: str) -> str | None:
         return None
     if not isinstance(value, str) or not value:
         raise ValueError(f"claims.claims metadata.{key} must be a string")
-    return value
-
-
-def _json_object(value: object, label: str) -> dict[str, object]:
-    if isinstance(value, str):
-        value = json.loads(value)
-    if not isinstance(value, dict):
-        raise ValueError(f"claims.claims returned invalid {label}")
     return value
 
 

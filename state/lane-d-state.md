@@ -38,10 +38,12 @@ Completion evidence:
 - backend/tests/reports/test_report_repository.py (DB-backed persistence round-trip)
 - backend/tests/api/test_api_scaffold.py (6 passing API contract tests)
 Next lowest-dependency task:
-- Lane B TB-050 area persistence, then durable Lane C evidence/claim/rule-execution persistence before promoting report/API persistence semantics
+- **D-001 (BLOCKED on C-001 + C-002)**: Level 7 DB wiring — `backend/app/db/session.py` (FastAPI-compatible `get_db_session()` delegating to `get_session()` from engine.py), update `api/dependencies.py` with `create_db_services()`, update `main.py` to use DB-backed services, add DB-backed API integration test. Full spec in `plans/2026-06-03-codex-deferred-tasks.md`.
+- Pre-condition check: `backend/app/claims_engine/models.py` must exist with `ClaimModel` (C-001 complete). Level 6 not-evaluated categories must be in `rule_engine.py` (C-002 complete).
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - Any Lane A/B/C module files (read only)
+- D-001 until `backend/app/claims_engine/models.py` contains `ClaimModel`
 ```
 
 ## Known blockers

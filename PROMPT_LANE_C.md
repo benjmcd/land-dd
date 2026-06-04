@@ -7,40 +7,71 @@ You have authority to work autonomously within Lane C's scope. Do not touch file
 
 **Read in this order before touching any code:**
 
-1. `CLAUDE.md` (imports `AGENTS.md` — read that too)
-2. `MILESTONE_MAP.md` — your gate targets are L5-001 to L5-010 and L6-001 to L6-010
-3. `LANE_OWNERSHIP.md` — your owned files, readable files, and forbidden files
-4. `lanes/lane-c/AGENTS.md` — your full operating contract
+1. `AGENTS.md` (top-level operating contract — includes all non-negotiables)
+2. `CODEX_PARALLEL.md` — parallel session coordination protocol; check active session assignments
+3. `MILESTONE_MAP.md` — your gate targets are L5-001 to L5-010 and L6-001 to L6-010
+4. `LANE_OWNERSHIP.md` — your owned files, readable files, and forbidden files
 5. `state/lane-c-state.md` — current state and next task
 6. `plans/lane-c-2026-06-03-evidence-claims.md` — your active implementation plan
+7. `plans/2026-06-03-codex-deferred-tasks.md` — current deferred task specs (C-001 and C-002)
 
-**Run baseline verification:**
+**Run baseline verification (Windows):**
 
-```bash
-./scripts/verify.sh
+```powershell
+.\scripts\verify.ps1
 ```
 
-**Run your lane tests:**
+**Run your lane tests (with DB):**
 
-```bash
-cd backend && PYTHONPATH=. pytest tests/evidence_ledger/ tests/claims_engine/ -v
+```powershell
+Set-Location backend
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 ```
 
-**Verify cross-lane import isolation (both greps must return 0 matches):**
+**Verify cross-lane import isolation (both must return 0 matches):**
 
-```bash
-grep -r "from app.source_registry" backend/app/evidence_ledger/ backend/app/claims_engine/
-grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims_engine/
+```powershell
+Set-Location backend
+rg -n "from app\.source_registry|from app\.area_geometry" app/evidence_ledger app/claims_engine
 ```
 
-**Your next task is TC-010** (detailed in your plan): implement `EvidenceService` and `InMemoryEvidenceRepository` in `backend/app/evidence_ledger/`. The `EvidenceContract` is in `backend/app/domain/evidence_contracts.py`. Your service constructor must accept `source_checker: SourceExistsProtocol` and `area_checker: AreaExistsProtocol` from `app.domain.protocols` — provide in-memory stubs in your tests. Implement `create_observation`, `create_source_failure`, and `list_by_area`.
+---
 
-**Non-negotiable invariants you own:**
-- Source failure MUST create an evidence record — never silently swallow missing data (L5-003, G-II-003).
-- Evidence cannot be created without `source_id` and `method_code` (L5-001, G-II-002).
-- Claims cannot be created without at least one `evidence_id` (L6-001, G-II-001).
-- Severity and confidence are always separate fields on `ClaimContract` (L6-006, G-II-004).
+## Current milestone status
 
-**Import constraint:** you may only import from `app.domain.*`, `app.db.*`, `app.core.*`, `app.evidence_ledger.*`, and `app.claims_engine.*`. Never import from `app.source_registry` or `app.area_geometry`. Use `app.domain.protocols` for cross-lane validation via dependency injection.
+Level 5 (Evidence Ledger): **PASS** — 130 Lane C tests pass with DB smoke.
+Level 6 (Claims Engine): **PARTIAL** — 2 blockers remain:
 
-**Stop conditions:** record a blocker in `state/lane-c-state.md` if a new `EvidenceType` is needed (shared `enums.py`), if claims require spatial queries (needs Lane B), or if a rule requires an MVP jurisdiction decision.
+1. **C-001**: ✅ **DONE** — `backend/app/claims_engine/models.py` exists with `ClaimModel`, `ClaimEvidenceLinkModel`, `VerificationTaskModel`. `SqlAlchemyClaimRepository` uses ORM models. Verified: lint/mypy clean, 201 tests pass.
+
+2. **C-002**: 4 rule categories (soil/septic, env_hazard, resource_context, market_context) are not evaluated. They must emit `SeverityBand.UNKNOWN` claims backed by `SOURCE_FAILURE` evidence records so they appear in `ReportRunContract.unknowns`. This preserves the evidence-before-claim invariant.
+
+---
+
+## Your next task: C-002
+
+**Full spec**: `plans/2026-06-03-codex-deferred-tasks.md` — Task C-002 section.
+
+Key constraints:
+- C-001 pre-condition is already met: `backend/app/claims_engine/models.py` exists
+- New not-evaluated claims must use `SeverityBand.UNKNOWN` (NOT `INFORMATIONAL`) so they appear in `ReportRunContract.unknowns`
+- Market context MUST NOT assert valuation, pricing, or investment advice
+- The sentinel source failure evidence approach preserves the evidence-before-claim invariant
+- Do NOT import from `app.source_registry` or `app.area_geometry`
+
+---
+
+## Non-negotiable invariants you own
+
+- Evidence-before-claim: every claim must cite stored evidence IDs; `ClaimContract.evidence_ids` must be non-empty
+- Source failure is first-class evidence, not a silent "no issue found" result
+- Severity and confidence are always separate fields on `ClaimContract`
+- No report may assert legal access, buildability, title status, water rights, appraisal value, or investment advice
+- The `forbidden_language` block in `config/ruleset_homestead_mvp.yaml` is enforced at runtime by `RuleEngine._check_forbidden_language()` — do not bypass it
+- All new SQLAlchemy models must inherit from `AppBase` (never from `DeclarativeBase` directly)
+- All ENUM instances must be imported from `app.db.types` — never redeclared in model files
+- Do not add agent names, model names, or AI authorship to any file or commit message
+
+**Import constraint:** may only import from `app.domain.*`, `app.db.*`, `app.core.*`, `app.evidence_ledger.*`, and `app.claims_engine.*`. Never import from `app.source_registry` or `app.area_geometry`.
+
+**Stop conditions:** record a blocker in `state/lane-c-state.md` if a new `EvidenceType` or `SeverityBand` value is needed (shared `enums.py`), if the task requires a new DB migration, or if the task requires modifying `db/types.py` (Shared Interface Zone — requires ADR).

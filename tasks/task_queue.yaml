@@ -1,6 +1,10 @@
-version: 1
+version: 2
 active_plan: plans/2026-06-03-foundation-vertical-slice.md
-routing_note: Overall task list is superseded for implementation by the lane states in state/PROJECT_STATE.md; use the lane-specific plans for new work.
+routing_note: >
+  Implementation is driven by lane-specific plans and deferred task specs.
+  For Lane C next work, see plans/2026-06-03-codex-deferred-tasks.md (C-001, C-002).
+  For Lane D next work, see plans/2026-06-03-codex-deferred-tasks.md (D-001).
+  For parallel session coordination, see CODEX_PARALLEL.md.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -8,73 +12,112 @@ lane_plans:
   lane_d: plans/lane-d-2026-06-03-reports-api-infra.md
 policy:
   selection: lowest_dependency_unblocked_first
-  default_verification: ./scripts/verify.sh
+  default_verification: .\scripts\verify.ps1
   update_state_files:
     - state/PROJECT_STATE.md
     - state/WORKLOG.md
     - state/VALIDATION_LOG.md
 tasks:
+  # --- Completed ---
   - id: T000
     title: Verify dual-agent workspace health
     status: done
     depends_on: []
-    files:
-      - AGENTS.md
-      - CLAUDE.md
-      - MANIFEST.md
-      - scripts/verify.sh
-    validation:
-      - ./scripts/verify.sh
   - id: T010
     title: Prove DB migration and PostGIS smoke locally
-    status: blocked
-    depends_on: [T000]
-    blocker: Docker Desktop not running; DB migration and PostGIS smoke cannot be verified.
-    files:
-      - db/migrations/0001_initial_spine.sql
-      - scripts/db_apply_migrations.sh
-      - scripts/db_smoke_check.py
-    validation:
-      - docker compose up -d db
-      - ./scripts/db_apply_migrations.sh
-      - python scripts/db_smoke_check.py
-    notes: Requires local Docker/Postgres.
-  - id: T020
-    title: Add source registry repository/service layer
     status: done
     depends_on: [T000]
-    files:
-      - backend/app/domain/contracts.py
-      - backend/app/db/
-      - backend/tests/
-    validation:
-      - cd backend && PYTHONPATH=. python -m pytest -q
+    notes: Docker available; DB smoke passes. Verified 2026-06-04.
+  - id: T020
+    title: Add source registry repository/service layer (Lane A)
+    status: done
+    depends_on: [T000]
+    notes: Level 3 PASS. 41 tests. Provenance model, seeded sources, license metadata.
   - id: T030
-    title: Add area geometry contract and repository slice
-    status: blocked
+    title: Add area geometry contract and repository slice (Lane B)
+    status: done
     depends_on: [T010, T020]
-    blocker: Needs DB smoke or explicit decision to continue with fixture-only repository tests.
+    notes: Level 4 PASS. 46 tests. PostGIS area repo with versioning and spatial relations.
   - id: T040
-    title: Add evidence creation service with failure evidence
-    status: blocked
+    title: Add evidence ledger with DB-backed repository (Lane C)
+    status: done
     depends_on: [T020, T030]
+    notes: Level 5 PASS. 62 evidence tests. SqlAlchemyEvidenceRepository + AuditLog.
   - id: T050
-    title: Add claim creation service enforcing evidence IDs
-    status: blocked
+    title: Add claim service and rule engine (Lane C)
+    status: done
     depends_on: [T040]
+    notes: Level 6 PARTIAL. Rule engine, claim service, SqlAlchemyClaimRepository (raw SQL).
   - id: T060
-    title: Add report-run service and API scaffold
-    status: blocked
+    title: Add report-run service and API scaffold (Lane D)
+    status: done
     depends_on: [T050]
-  - id: T070
-    title: Add fixture connector for synthetic area evidence
+    notes: Level 7 PARTIAL. In-memory services, API routers, report persistence.
+
+  # --- Active ---
+  - id: C-001
+    title: Claims ORM models — refactor SqlAlchemyClaimRepository to use ORM
+    status: done
+    depends_on: [T050]
+    lane: C
+    spec: plans/2026-06-03-codex-deferred-tasks.md#task-c-001
+    files:
+      - backend/app/claims_engine/models.py (new)
+      - backend/app/claims_engine/claim_repo.py (refactor)
+    validation:
+      - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
+      - cd backend; ruff check app/claims_engine
+      - cd backend; mypy app/claims_engine
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - grep returns 0 .query() calls in backend/app/
+      - grep returns exactly 1 DeclarativeBase subclass in backend/app/
+      - grep returns exactly 1 severity_band_enum assignment in backend/app/
+      - rule_execution_run_id and support_role mapped in models.py
+      - 4 existing test_sqlalchemy_claim_repo.py DB tests pass
+
+  - id: C-002
+    title: Level 6 completion — not-evaluated rule categories
+    status: pending
+    depends_on: [C-001]
+    lane: C
+    spec: plans/2026-06-03-codex-deferred-tasks.md#task-c-002
+    files:
+      - backend/app/claims_engine/not_evaluated.py (new)
+      - backend/app/claims_engine/rule_engine.py
+      - backend/app/reports/service.py
+      - config/ruleset_homestead_mvp.yaml
+      - backend/tests/claims_engine/test_not_evaluated_claims.py (new)
+    validation:
+      - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
+      - cd backend; ruff check app/claims_engine app/reports
+      - cd backend; mypy app/claims_engine app/reports
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - RuleEngine.evaluate() emits UNKNOWN claims for all 4 not-evaluated domains
+      - Claims appear in ReportRunContract.unknowns (severity == SeverityBand.UNKNOWN)
+      - No assertion about property value, neighborhood desirability, or investment
+      - L6-001 through L6-010 all PASS in state/lane-c-state.md
+
+  - id: D-001
+    title: Level 7 DB wiring — full report-run pipeline through DB
     status: blocked
-    depends_on: [T040]
-  - id: T080
-    title: Add first deterministic homestead red-flag rules
-    status: blocked
-    depends_on: [T050, T070]
-  - id: T090
-    title: Add evidence-linked report response
-    status: blocked
-    depends_on: [T060, T080]
+    depends_on: [C-001, C-002]
+    lane: D
+    blocker: C-001 must be complete; C-002 must be complete for Level 6/7 gates to pass
+    spec: plans/2026-06-03-codex-deferred-tasks.md#task-d-001
+    files:
+      - backend/app/db/session.py (new)
+      - backend/app/api/dependencies.py
+      - backend/app/main.py
+      - backend/tests/api/test_report_runs_db.py (new)
+    validation:
+      - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api tests/reports
+      - cd backend; ruff check app/api app/reports app/db
+      - cd backend; mypy app/api app/reports app/db
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - POST /report-runs uses DB repos when RUN_DB_SMOKE=1
+      - get_db_session() delegates to get_session() (NOT build_engine())
+      - DB-backed API integration test passes
+      - L7-001 through L7-010 all PASS in state/lane-d-state.md

@@ -45,6 +45,8 @@ Changes require cross-lane review and an ADR update.
 | `backend/app/domain/enums.py` | Shared enums: AuthorityLevel, ConfidenceBand, SeverityBand, EvidenceType, AreaType, JobStatus |
 | `backend/app/domain/protocols.py` | Service protocol interfaces for cross-lane validation (SourceExistsProtocol, AreaExistsProtocol) |
 | `backend/app/db/engine.py` | SQLAlchemy engine factory — must stay lazily initialized |
+| `backend/app/db/base.py` | Single `AppBase(DeclarativeBase)` — all ORM models must inherit this; never add a second DeclarativeBase |
+| `backend/app/db/types.py` | Canonical SQLAlchemy ENUM instances — import from here; never redeclare in model files |
 | `backend/app/core/config.py` | Application settings |
 | `backend/app/core/__init__.py` | Package marker |
 | `backend/app/db/__init__.py` | Package marker |
@@ -54,11 +56,14 @@ Changes require cross-lane review and an ADR update.
 | `backend/app/api/health.py` | Health/version endpoints — do not modify |
 | `AGENTS.md` | Root operating contract |
 | `CLAUDE.md` | Claude Code adapter |
+| `CODEX_PARALLEL.md` | Parallel session coordination — human coordinator updates only |
 | `README.md` | Human overview |
 | `MANIFEST.md` | Routing map |
 | `MILESTONE_MAP.md` | Maturity gate definitions |
 | `LANE_OWNERSHIP.md` | This file — human coordinator updates only |
-| `scripts/verify.sh` | Canonical verification gate |
+| `scripts/verify.sh` | Canonical verification gate (Linux/macOS) |
+| `scripts/verify.ps1` | Canonical verification gate (Windows) — includes structural invariant checks |
+| `scripts/validate_workspace.ps1` | Workspace structure + structural invariant checks |
 | `scripts/agent-context-check.sh` | Context check |
 | `schemas/*.json` | JSON schema contracts between lanes |
 | `.github/`, `.agent/`, `.codex/` | CI and agent config |
@@ -194,11 +199,11 @@ Example: `archive/2026-06-10_source-registry-lane-migration/backend/app/reposito
 
 **Import invariant**: May import from `app.domain.*`, `app.db.*`, `app.core.*`, `app.evidence_ledger.*`, `app.claims_engine.*` only. NEVER imports from `app.source_registry` or `app.area_geometry`. Cross-lane validation uses `app.domain.protocols.SourceExistsProtocol` and `AreaExistsProtocol` (injected, not imported from Lane A/B).
 
-**First-session tasks** (see `plans/lane-c-2026-06-03-evidence-claims.md`):
-1. Implement `EvidenceService` with `create_observation`, `create_source_failure`, `create_human_note`.
-2. Implement `InMemoryEvidenceRepository`.
-3. Write tests covering happy path, source-failure evidence, and supersession/amendment.
-4. Add initial `ClaimService` with evidence-ID enforcement.
+**ORM invariant**: All new ORM models must inherit `AppBase` from `app.db.base`. All SQLAlchemy ENUM instances must be imported from `app.db.types` — never redeclared in model files.
+
+**Current tasks** (see `plans/2026-06-03-codex-deferred-tasks.md`):
+1. C-001: Create `claims_engine/models.py` with ORM models; refactor `SqlAlchemyClaimRepository` from raw SQL to ORM.
+2. C-002: Add 4 not-evaluated rule categories using sentinel SOURCE_FAILURE evidence approach.
 
 ---
 
@@ -238,11 +243,8 @@ Example: `archive/2026-06-10_source-registry-lane-migration/backend/app/reposito
 
 **Import invariant**: May import from all modules' PUBLIC service APIs, but NEVER modifies other lanes' files. Implements `SourceExistsProtocol` and `AreaExistsProtocol` using real services and injects them into Lane C's evidence service.
 
-**First-session tasks** (see `plans/lane-d-2026-06-03-reports-api-infra.md`):
-1. Stand up `docker compose up -d db` and confirm DB connectivity.
-2. Implement `ReportRunService` with fixture-backed integration test.
-3. Add FastAPI routers: `/sources`, `/areas`, `/evidence`, `/reports`.
-4. Add API contract tests.
+**Current tasks** (see `plans/2026-06-03-codex-deferred-tasks.md`):
+1. D-001: Create `db/session.py` with `get_db_session()`; update `api/dependencies.py` and `main.py` for DB-backed services; add DB-backed API integration test. **Blocked until C-001 is complete.**
 
 ---
 
