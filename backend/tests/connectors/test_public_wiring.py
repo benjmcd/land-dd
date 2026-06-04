@@ -46,6 +46,7 @@ FIXTURE_SOURCE_ID = UUID("55555555-5555-4555-8555-555555555555")
 FIXTURE_DATASET_ID = UUID("11111111-2222-4333-8444-555555555555")
 FIXTURE_DATASET_VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
 FIXTURE_INGEST_RUN_ID = UUID("11111111-1111-4111-8111-111111111111")
+FIXTURE_FAILURE_INGEST_RUN_ID = UUID("66666666-6666-4666-8666-666666666666")
 FIXTURE_AREA_ID = UUID("44444444-4444-4444-8444-444444444444")
 FIXTURE_EVIDENCE_ID = UUID("33333333-3333-4333-8333-333333333333")
 FIXTURE_AREA_GEOMETRY: dict[str, object] = {
@@ -260,16 +261,33 @@ def _seed_db_fixture_prerequisites(session: Session) -> None:
 
 def _reset_db_fixture_rows(session: Session) -> None:
     session.execute(
-        text("DELETE FROM audit.events WHERE target_id = :evidence_id"),
-        {"evidence_id": FIXTURE_EVIDENCE_ID},
+        text(
+            """
+            DELETE FROM audit.events
+            WHERE target_id IN (
+                SELECT evidence_id
+                FROM evidence.observations
+                WHERE area_id = :area_id
+            )
+            """
+        ),
+        {"area_id": FIXTURE_AREA_ID},
     )
     session.execute(
-        text("DELETE FROM evidence.observations WHERE evidence_id = :evidence_id"),
-        {"evidence_id": FIXTURE_EVIDENCE_ID},
+        text("DELETE FROM evidence.observations WHERE area_id = :area_id"),
+        {"area_id": FIXTURE_AREA_ID},
     )
     session.execute(
-        text("DELETE FROM source.ingest_runs WHERE ingest_run_id = :ingest_run_id"),
-        {"ingest_run_id": FIXTURE_INGEST_RUN_ID},
+        text(
+            """
+            DELETE FROM source.ingest_runs
+            WHERE ingest_run_id IN (:success_ingest_run_id, :failure_ingest_run_id)
+            """
+        ),
+        {
+            "success_ingest_run_id": FIXTURE_INGEST_RUN_ID,
+            "failure_ingest_run_id": FIXTURE_FAILURE_INGEST_RUN_ID,
+        },
     )
     session.execute(
         text(
@@ -386,6 +404,81 @@ def test_db_backed_public_lane_service_fixture_workflow_is_idempotent() -> None:
             assert second.evidence_ingestion.created_evidence == ()
             assert second.evidence_ingestion.skipped_evidence == (
                 second.connector_result.evidence_inputs[0],
+            )
+    finally:
+        with Session(engine) as session:
+            _reset_db_fixture_rows(session)
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_backed_public_lane_service_fixture_source_failure_is_idempotent() -> None:
+    engine = build_engine()
+    try:
+        with Session(engine) as session:
+            _reset_db_fixture_rows(session)
+            _seed_db_fixture_prerequisites(session)
+            source_provenance_service, evidence_service = _db_public_lane_services(
+                session,
+            )
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=source_provenance_service,
+                evidence_service=evidence_service,
+            )
+
+            first = workflow.ingest_fixture(FIXTURE_DIR / "flood_failure.json")
+
+            assert first.retrieval_provenance.recorded_run is not None
+            assert (
+                first.retrieval_provenance.recorded_run.ingest_run_id
+                == FIXTURE_FAILURE_INGEST_RUN_ID
+            )
+            assert len(first.evidence_ingestion.created_evidence) == 1
+            created_failure = first.evidence_ingestion.created_evidence[0]
+            assert created_failure.is_source_failure is True
+            assert created_failure.evidence_type == EvidenceType.SOURCE_FAILURE
+            assert created_failure.evidence_code == "FLOOD_SOURCE_UNAVAILABLE"
+            assert created_failure.observed_value == {
+                "failure_reason": "fixture_source_unavailable",
+                "error_message": "Fixture flood source unavailable.",
+                "retryable": False,
+            }
+            session.commit()
+
+        with Session(engine) as session:
+            source_provenance_service, evidence_service = _db_public_lane_services(
+                session,
+            )
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=source_provenance_service,
+                evidence_service=evidence_service,
+            )
+
+            second = workflow.ingest_fixture(FIXTURE_DIR / "flood_failure.json")
+            stored_run = SqlAlchemySourceProvenanceRepository(session).get_retrieval_run(
+                FIXTURE_FAILURE_INGEST_RUN_ID,
+            )
+            source_failures = [
+                evidence
+                for evidence in evidence_service.list_by_area(FIXTURE_AREA_ID)
+                if evidence.is_source_failure
+            ]
+
+            assert stored_run is not None
+            assert stored_run.ingest_run_id == FIXTURE_FAILURE_INGEST_RUN_ID
+            assert stored_run.status == "blocked"
+            assert len(source_failures) == 1
+            assert source_failures[0].evidence_code == "FLOOD_SOURCE_UNAVAILABLE"
+            assert source_failures[0].observed_value["failure_reason"] == (
+                "fixture_source_unavailable"
+            )
+            assert SqlAlchemyEvidenceAuditLog(session).list_by_evidence(
+                source_failures[0].evidence_id,
+            )
+            assert second.retrieval_provenance.recorded_run is None
+            assert second.retrieval_provenance.skipped_run == stored_run
+            assert second.evidence_ingestion.created_evidence == ()
+            assert second.evidence_ingestion.skipped_evidence == (
+                source_failures[0],
             )
     finally:
         with Session(engine) as session:

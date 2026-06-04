@@ -381,3 +381,36 @@ The fixture connector path is now proven through DB-backed public Lane A and Lan
 - source-failure DB-backed workflow smoke for blocked/unavailable fixture source behavior;
 - a Lane C/schema coordination slice for durable `ingest_run_id` linkage on evidence rows;
 - a connector run/status API or human-review handoff plan, if Level 9 workflow entry is preferred.
+
+## CON-009 DB-Backed Source-Failure Fixture Workflow Smoke
+
+CON-009 is complete. The connector public-service wiring now has a DB-enabled smoke for the blocked/unavailable fixture path in `tests/fixtures/connectors/flood_failure.json`. The smoke uses the same SQLAlchemy-backed public Lane A provenance service, public Lane C evidence service, and local fixture-only workflow as CON-008.
+
+The first run records the connector-supplied blocked retrieval run in `source.ingest_runs` and persists a Lane C source-failure evidence record through `EvidenceService.create_source_failure(...)`. The second run proves idempotency by skipping the existing retrieval run and matching the persisted source-failure evidence by the connector adapter's source-failure fingerprint. The test removes fixture-owned DB rows before and after execution.
+
+### Boundary Preserved
+
+This smoke does not introduce live I/O, claims, reports, schema changes, or production connector behavior. It also preserves the existing exact-field boundary: public Lane C source-failure creation is persistence authority and generates the persisted source-failure evidence ID, so connector-provided source-failure IDs remain templates unless Lane C adds a public method for exact source-failure contract persistence.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_public_wiring.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py
+ruff check tests/connectors/test_public_wiring.py
+mypy tests/connectors/test_public_wiring.py
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: targeted connector public-wiring tests pass with DB smoke skipped by default (5 passed, 2 skipped); targeted DB-enabled connector public-wiring tests pass (7 passed); targeted ruff clean; targeted mypy clean; full DB-enabled PowerShell verification passes with 291 collected backend tests, lint clean, mypy clean (104 source files), migrations/seeds apply, and DB smoke passes; whitespace check clean.
+
+### Next Slice
+
+The connector fixture success and source-failure paths are now both proven through DB-backed public Lane A and Lane C services. The next Level 8 pass should choose between:
+
+- a Lane C/schema coordination slice for durable `ingest_run_id` linkage on evidence rows;
+- a connector run/status API or human-review handoff plan, if Level 9 workflow entry is preferred;
+- broader fixture data-quality coverage if another connector fixture category is selected.

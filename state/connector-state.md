@@ -13,6 +13,7 @@ Current task:
 - CON-006: DONE - concrete public-service workflow wiring handoff.
 - CON-007: DONE - Lane A public provenance identity-preservation follow-up.
 - CON-008: DONE - DB-backed fixture workflow smoke.
+- CON-009: DONE - DB-backed source-failure fixture workflow smoke.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -68,6 +69,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-008 result: targeted connector public-wiring tests pass with DB smoke skipped by default (5 passed, 1 skipped); targeted DB-enabled connector public-wiring tests pass (6 tests); targeted ruff clean; targeted mypy clean; full DB-enabled PowerShell verification passes with 290 collected backend tests, lint clean, mypy clean (104 source files), migrations/seeds apply, and DB smoke passes; whitespace check clean.
 
+2026-06-04 CON-009 result: targeted connector public-wiring tests pass with DB smoke skipped by default (5 passed, 2 skipped); targeted DB-enabled connector public-wiring tests pass (7 tests); targeted ruff clean; targeted mypy clean; full DB-enabled PowerShell verification passes with 291 collected backend tests, lint clean, mypy clean (104 source files), migrations/seeds apply, and DB smoke passes; whitespace check clean.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -76,4 +79,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Durable retrieval-run/evidence linkage | Gap recorded | Current `EvidenceContract` lacks `ingest_run_id`; coordinate Lane C/schema before claiming durable linkage |
 | Exact source-failure field preservation | Gap recorded | Current public Lane C source-failure API creates the persisted evidence record; connector-provided source-failure IDs are templates unless Lane C adds a public method |
 | Lane A concrete retrieval-run wiring | Satisfied for public service | `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`; connector wiring uses it through a public-service adapter |
-| DB-backed workflow wiring | Satisfied for fixture success smoke | Fixture workflow now records retrieval provenance and persists evidence through DB-backed public Lane A and Lane C services; source-failure DB smoke and broader production ingestion remain unclaimed |
+| DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |

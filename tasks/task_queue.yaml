@@ -381,3 +381,22 @@ tasks:
       - DB-backed fixture workflow persists evidence through public Lane C service methods
       - Repeated DB-backed fixture workflow run is idempotent
       - No live IO, claim/report shortcut, or schema change is introduced
+
+  - id: CON-009
+    title: Level 8 DB-backed source-failure fixture workflow smoke
+    status: done
+    depends_on: [CON-008]
+    lane: connector-integration
+    notes: DB-backed fixture source-failure workflow smoke is complete. The first run records the blocked retrieval run with the supplied ingest_run_id and persists source-failure evidence through public Lane C service methods; the second run skips the existing retrieval run and source-failure fingerprint. No live IO, claim/report shortcut, schema change, or exact source-failure evidence ID preservation claim was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-009-db-backed-source-failure-fixture-workflow-smoke
+    files:
+      - backend/tests/connectors/test_public_wiring.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - DB-backed fixture source-failure workflow records blocked source retrieval provenance with supplied ingest_run_id
+      - DB-backed fixture source-failure workflow persists source-failure evidence through public Lane C service methods
+      - Repeated DB-backed source-failure fixture workflow run is idempotent
+      - No live IO, claim/report shortcut, schema change, or exact source-failure evidence ID preservation claim is introduced

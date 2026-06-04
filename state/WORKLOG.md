@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-009)
+
+- Completed CON-009 in the connector integration zone as a DB-backed fixture source-failure workflow smoke.
+- Added a DB-enabled public-wiring test that runs `flood_failure.json` through SQLAlchemy-backed public Lane A provenance and public Lane C evidence services, then repeats the run to prove idempotency.
+- Verified first-run behavior records the blocked retrieval run with the connector-supplied `ingest_run_id` and persists source-failure evidence through `EvidenceService.create_source_failure(...)`.
+- Verified second-run behavior skips the existing retrieval run and the matching persisted source-failure fingerprint.
+- Preserved the existing boundary: no live I/O, claims, reports, schema changes, production connector behavior, or exact source-failure evidence ID preservation claim was introduced.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors/test_public_wiring.py`; `$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py`; `ruff check tests/connectors/test_public_wiring.py`; `mypy tests/connectors/test_public_wiring.py`; `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-008)
 
 - Completed CON-008 in the connector integration zone as a DB-backed fixture success workflow smoke.
