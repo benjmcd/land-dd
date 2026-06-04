@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
@@ -18,6 +18,7 @@ from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.report_repo import ReportRunRepository
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository
@@ -31,7 +32,9 @@ def load_geometry(name: str) -> dict[str, object]:
     return cast(dict[str, object], data)
 
 
-def make_service() -> tuple[
+def make_service(
+    report_repo: ReportRunRepository | None = None,
+) -> tuple[
     SourceService,
     AreaService,
     EvidenceService,
@@ -49,6 +52,7 @@ def make_service() -> tuple[
         evidence_service=evidence_service,
         claim_service=claim_service,
         rule_engine=RuleEngine.from_file(),
+        report_repo=report_repo,
     )
     return source_service, area_service, evidence_service, claim_service, report_service
 
@@ -61,6 +65,11 @@ def register_source(source_service: SourceService) -> SourceContract:
             domain="flood",
             license_status="approved",
             commercial_use_status="approved",
+            redistribution_status="restricted",
+            cache_allowed="approved",
+            export_allowed="approved-with-restrictions",
+            raw_data_allowed="approved",
+            ai_use_allowed="restricted",
             review_status="approved",
         )
     )
@@ -128,6 +137,11 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     assert report_run.source_manifest["source_ids"] == [str(source.source_id)]
     assert report_run.source_manifest["evidence_count"] == 2
     assert report_run.source_manifest["claim_count"] == 3
+    source_details = cast(
+        list[dict[str, Any]], report_run.source_manifest["source_details"]
+    )
+    assert source_details[0]["freshness_class"] == "unknown"
+    assert source_details[0]["review_status"] == "approved"
     assert report_run.caveats == [
         "FEMA fixture endpoint returned 503.",
         "Screening fixture only; confirm locally.",
@@ -136,7 +150,11 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
         "local floodplain administrator" in task
         for task in report_run.verification_tasks
     )
-    assert report_run.artifact_metadata["persistence"] == "none"
+    assert report_run.artifact_metadata["artifact_kind"] == "report_run"
+    assert report_run.artifact_metadata["report_schema"] == "report_run_contract_v1"
+    assert report_run.artifact_metadata["persistence"] == "memory"
+    cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
+    assert cost_metrics["evidence_count"] == 2
     assert report_service.get_report_run(report_run.report_run_id) == report_run
 
 

@@ -98,7 +98,9 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert report_run["area_id"] == area_id
     assert report_run["status"] == "succeeded"
     assert report_run["claims"] == []
-    assert report_run["artifact_metadata"]["artifact_kind"] == "in_memory_report_run"
+    assert report_run["artifact_metadata"]["artifact_kind"] == "report_run"
+    assert report_run["artifact_metadata"]["report_schema"] == "report_run_contract_v1"
+    assert report_run["artifact_metadata"]["persistence"] == "memory"
 
     get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
     assert get_response.status_code == 200

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 from uuid import UUID
 
 from app.area_geometry.service import AreaService
@@ -11,11 +12,18 @@ from app.domain.enums import JobStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
 from app.evidence_ledger.service import EvidenceService
+from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
 
 _REPORT_ASSUMPTIONS = [
-    "In-memory fixture report run; not persisted.",
-    "Screening output only; no legal, title, insurance, lending, or investment conclusion.",
+    (
+        "Fixture-backed screening output; not a legal, title, insurance, "
+        "lending, or investment conclusion."
+    ),
+    (
+        "Report output is reproducible only within the recorded fixture "
+        "source and ruleset versions."
+    ),
 ]
 _NO_EVIDENCE_CAVEAT = (
     "No evidence records were available for this area; report contains no "
@@ -32,13 +40,14 @@ class ReportRunService:
         evidence_service: EvidenceService,
         claim_service: ClaimService,
         rule_engine: RuleEngine,
+        report_repo: ReportRunRepository | None = None,
     ) -> None:
         self._source_service = source_service
         self._area_service = area_service
         self._evidence_service = evidence_service
         self._claim_service = claim_service
         self._rule_engine = rule_engine
-        self._report_runs: dict[UUID, ReportRunContract] = {}
+        self._report_repo = report_repo or InMemoryReportRunRepository()
 
     def create_report_run(
         self,
@@ -68,17 +77,16 @@ class ReportRunService:
             red_flags=_red_flag_claims(stored_claims),
             verification_tasks=_verification_tasks(stored_claims),
             artifact_metadata={
-                "artifact_kind": "in_memory_report_run",
-                "persistence": "none",
-                "report_schema": "contract_only",
+                "artifact_kind": "report_run",
+                "report_schema": "report_run_contract_v1",
+                "cost_metrics": _cost_metrics(evidence, stored_claims),
             },
             finished_at=datetime.now(UTC),
         )
-        self._report_runs[report_run.report_run_id] = report_run
-        return report_run
+        return self._report_repo.add(report_run)
 
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
-        return self._report_runs.get(report_run_id)
+        return self._report_repo.get(report_run_id)
 
     def _store_claim_if_needed(self, claim: ClaimContract) -> ClaimContract:
         existing = self._claim_service.get(claim.claim_id)
@@ -96,6 +104,24 @@ class ReportRunService:
             self._source_service.get(record.source_id)
             for record in evidence
         ]
+        source_details = sorted(
+            [
+                {
+                    "source_id": str(source.source_id),
+                    "name": source.name,
+                    "authority_level": source.authority_level.value,
+                    "license_status": source.license_status,
+                    "commercial_use_status": source.commercial_use_status,
+                    "freshness_class": source.freshness_class,
+                    "review_status": source.review_status,
+                    "review_owner": source.review_owner,
+                    "last_checked_at": source.last_checked_at,
+                }
+                for source in registered_sources
+                if source is not None
+            ],
+            key=lambda detail: cast(str, detail["source_id"]),
+        )
         return {
             "source_ids": source_ids,
             "source_count": len(source_ids),
@@ -110,6 +136,7 @@ class ReportRunService:
                     if source is not None
                 }
             ),
+            "source_details": source_details,
         }
 
 
@@ -156,6 +183,19 @@ def _report_caveats(evidence: list[EvidenceContract]) -> list[str]:
     if not evidence:
         return [_NO_EVIDENCE_CAVEAT]
     return caveats
+
+
+def _cost_metrics(
+    evidence: list[EvidenceContract],
+    claims: list[ClaimContract],
+) -> dict[str, int]:
+    return {
+        "evidence_count": len(evidence),
+        "claim_count": len(claims),
+        "unknown_count": len(_unknown_claims(claims)),
+        "red_flag_count": len(_red_flag_claims(claims)),
+        "verification_task_count": len(_verification_tasks(claims)),
+    }
 
 
 def _require_non_empty(value: str, field_name: str) -> None:
