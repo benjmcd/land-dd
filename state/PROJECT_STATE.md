@@ -38,11 +38,11 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 324 tests pass in the DB-enabled Windows PowerShell verification path after CON-016 connector queue worker lease semantics; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
+- 326 tests pass in the DB-enabled Windows PowerShell verification path after rebasing Lane C TC-180 source-failure evidence ID preservation onto CON-016 connector queue worker lease semantics; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
-- Lane C evidence/claim/rule-engine/schema slices pass targeted runtime, type, lint, schema-contract, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories, and canonical evidence/claim JSON schemas aligned to serialized domain contracts
+- Lane C evidence/claim/rule-engine/schema slices pass targeted runtime, type, lint, schema-contract, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, source-failure evidence ID preservation through the public Lane C service, evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories, and canonical evidence/claim JSON schemas aligned to serialized domain contracts
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
@@ -65,6 +65,7 @@ Verification result:
 - CON-014 is complete: connector review status can now be persisted as idempotent `connector_review_status` jobs in `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`, preserving source retrieval runs as connector provenance and lifecycle authority
 - CON-015 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` retrieves in-memory or DB-backed connector review queue items by `ingest_run_id` without job mutation, worker execution, schema edits, live I/O, claims, reports, or DB-backed evidence linkage
 - CON-016 is complete: connector review queue repositories can lease eligible `connector_review_status` jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
+- TC-180 is complete for Lane C public service scope: `EvidenceService.create_source_failure(...)` preserves caller-supplied source-failure evidence IDs through in-memory and SQLAlchemy-backed evidence storage while still rejecting duplicate IDs without overwrite; connector adapter adoption remains a connector-zone follow-up
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -77,7 +78,7 @@ Completion evidence:
 - backend/app/domain/area_contracts.py (`AreaContract`, `AreaMetricsContract`, `AreaSpatialRelationContract`, `AreaVersionContract`)
 - backend/app/area_geometry/models.py (`AreaModel`, `AreaVersionModel`)
 - backend/app/area_geometry/area_repo.py (`SqlAlchemyAreaRepository`)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (151 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (153 tests)
 - backend/app/domain/evidence_contracts.py (`EvidenceContract` with optional GeoJSON/SRID/spatial precision fields)
 - backend/app/evidence_ledger/evidence_repo.py (`SqlAlchemyEvidenceRepository`)
 - backend/app/evidence_ledger/audit_log.py (`SqlAlchemyEvidenceAuditLog`)
@@ -109,7 +110,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 connector pass: durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
+- Select the next Level 8 connector pass: durable `ingest_run_id` evidence linkage coordination, connector adapter adoption of supplied source-failure evidence IDs, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -162,11 +163,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-015 complete; next Level 8 connector pass needs selection |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-016 complete; next Level 8 connector pass needs selection |
 
 ## Last verified state
 
-321 tests pass in the DB-enabled Windows PowerShell verification path after CON-015 connector review queue API retrieval; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, Lane C TC-170, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
+326 tests pass in the DB-enabled Windows PowerShell verification path after rebasing Lane C TC-180 source-failure evidence ID preservation onto CON-016 connector queue worker lease semantics; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, connector adapter adoption of supplied source-failure evidence IDs, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
 
 ## Local repo bootstrap state
 

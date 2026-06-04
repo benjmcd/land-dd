@@ -2,6 +2,16 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane C TC-180 source-failure evidence ID preservation)
+
+- Created isolated worktree `worktrees/lane-c-failure-id` on branch `lane-c/failure-id-preservation` from root `main` at `e8f13fd` to avoid Session 2's connector-zone work.
+- Extended `EvidenceService.create_source_failure(...)` with optional `evidence_id` support so Lane C's public service can preserve caller-supplied source-failure evidence identity.
+- Added in-memory evidence-service tests proving supplied source-failure IDs are preserved and duplicate supplied IDs are rejected without overwrite.
+- Updated the DB-gated SQLAlchemy evidence-service persistence test to prove a supplied source-failure ID round-trips through `evidence.observations`.
+- Preserved the boundary: no connector implementation, connector tests, connector fixtures, API queue/status code, migrations, shared schemas, live I/O, claims, or reports were changed. Connector adapter usage remains a connector-zone follow-up.
+- Rebased onto root `main` at `6777134` after CON-016 landed, preserving connector queue worker state, task, validation, and worklog records.
+- Verification passed: focused evidence-service tests; DB-gated source-failure persistence assertion; targeted ruff/mypy; Lane C evidence/claims tests with DB smoke; Lane C ruff/mypy; import-isolation scan; `git diff --check`; full DB-enabled PowerShell verification with 326 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (connector CON-016)
 
 - Completed CON-016 as repository-level connector review queue worker lease and finish semantics.

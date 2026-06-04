@@ -329,7 +329,9 @@ def test_sqlalchemy_evidence_service_persists_source_failure_and_human_note(
     )
 
     try:
+        failure_id = uuid4()
         failure = service.create_source_failure(
+            evidence_id=failure_id,
             area_id=area_id,
             source_id=source_id,
             method_code="fixture_fema_request",
@@ -356,6 +358,7 @@ def test_sqlalchemy_evidence_service_persists_source_failure_and_human_note(
 
         with Session(session.get_bind()) as read_session:
             read_repo = SqlAlchemyEvidenceRepository(read_session)
+            assert failure.evidence_id == failure_id
             assert read_repo.get(failure.evidence_id) == failure
             assert read_repo.get(note.evidence_id) == note
             assert read_repo.list_by_type(EvidenceType.SOURCE_FAILURE) == [failure]

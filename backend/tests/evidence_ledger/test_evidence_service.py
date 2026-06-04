@@ -156,6 +156,62 @@ def test_create_source_failure_records_missing_data_as_evidence() -> None:
     assert service.list_by_area(area_id) == [created]
 
 
+def test_create_source_failure_preserves_supplied_evidence_id() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    evidence_id = uuid4()
+    service = make_service(
+        area_id=area_id,
+        source_id=source_id,
+        production_allowed=False,
+    )
+
+    created = service.create_source_failure(
+        evidence_id=evidence_id,
+        area_id=area_id,
+        source_id=source_id,
+        method_code="fixture_fema_request",
+        caveat="FEMA fixture endpoint returned 503.",
+        domain="flood",
+    )
+
+    assert created.evidence_id == evidence_id
+    assert created.evidence_type == EvidenceType.SOURCE_FAILURE
+    assert created.is_source_failure is True
+    assert service.get(evidence_id) == created
+
+
+def test_create_source_failure_rejects_duplicate_supplied_evidence_id() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    evidence_id = uuid4()
+    service = make_service(
+        area_id=area_id,
+        source_id=source_id,
+        production_allowed=False,
+    )
+
+    created = service.create_source_failure(
+        evidence_id=evidence_id,
+        area_id=area_id,
+        source_id=source_id,
+        method_code="fixture_fema_request",
+        caveat="FEMA fixture endpoint returned 503.",
+        domain="flood",
+    )
+
+    with pytest.raises(ValueError, match="already stored"):
+        service.create_source_failure(
+            evidence_id=evidence_id,
+            area_id=area_id,
+            source_id=source_id,
+            method_code="fixture_fema_request",
+            caveat="FEMA fixture endpoint returned 503.",
+            domain="flood",
+        )
+    assert service.get(evidence_id) == created
+
+
 def test_create_source_failure_requires_registered_source() -> None:
     area_id = uuid4()
     source_id = uuid4()

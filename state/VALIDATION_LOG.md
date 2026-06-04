@@ -2,6 +2,45 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane C TC-180 source-failure evidence ID preservation
+
+**Commands run:**
+
+```powershell
+git rebase main
+Set-Location backend
+py -3.12 -m pytest -q tests/evidence_ledger/test_evidence_service.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger/test_sqlalchemy_evidence_repo.py::test_sqlalchemy_evidence_service_persists_source_failure_and_human_note
+ruff check app/evidence_ledger/service.py tests/evidence_ledger/test_evidence_service.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py
+mypy app/evidence_ledger/service.py tests/evidence_ledger/test_evidence_service.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+git diff --check
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Focused evidence-service tests: 19 passed.
+- DB-gated source-failure persistence assertion: 1 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 3 source/test files.
+- Lane C evidence/claims tests with DB smoke enabled: 153 passed.
+- Lane C ruff: clean.
+- Lane C mypy: clean over 29 source files.
+- Cross-lane import-isolation scan: 0 matches.
+- Whitespace check: clean.
+- Full DB-enabled PowerShell verification: ok; 326 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 326 tests, including 19 evidence-service tests.
+
+**Residual risk:**
+
+- TC-180 closes the Lane C public service side of source-failure evidence ID preservation only. Connector-owned adapters still need a coordinated pass before fixture source-failure inputs preserve their deterministic `EvidenceContract.evidence_id` through connector ingestion.
+
 ## 2026-06-04 CON-016 connector queue worker lease semantics
 
 **Commands run:**
@@ -34,7 +73,7 @@ git diff --check
 - Focused queue mypy: clean over 3 source/test files.
 - Connector tests with DB smoke skipped by default: 47 passed, 4 skipped.
 - Connector ruff: clean.
-- Connector mypy: clean over 21 source/test files.
+- Connector mypy: clean over 21 source files.
 - Connector/API tests with DB smoke skipped by default: 61 passed, 6 skipped.
 - Connector/API ruff: clean.
 - Connector/API mypy: clean over 36 source/test files.

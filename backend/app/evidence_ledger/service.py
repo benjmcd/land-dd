@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from app.domain.enums import ConfidenceBand, EvidenceType
@@ -57,6 +58,7 @@ class EvidenceService:
     def create_source_failure(
         self,
         *,
+        evidence_id: UUID | None = None,
         area_id: UUID,
         source_id: UUID,
         method_code: str,
@@ -71,23 +73,23 @@ class EvidenceService:
         _require_non_empty(method_code, "method_code")
         _require_non_empty(caveat, "caveat")
         failure_observation = observation or f"Source unavailable or failed: {caveat}"
-        evidence = EvidenceContract(
-            area_id=area_id,
-            source_id=source_id,
-            method_code=method_code,
-            evidence_type=EvidenceType.SOURCE_FAILURE,
-            evidence_code=evidence_code,
-            domain=domain,
-            observation=failure_observation,
-            observed_value=observed_value or {},
-            confidence=ConfidenceBand.UNKNOWN,
-            caveat=caveat,
-            is_source_failure=True,
-        )
-        validate_observed_value(evidence)
-        created = self._repo.add(evidence)
-        self._record_created(created)
-        return created
+        evidence_data: dict[str, Any] = {
+            "area_id": area_id,
+            "source_id": source_id,
+            "method_code": method_code,
+            "evidence_type": EvidenceType.SOURCE_FAILURE,
+            "evidence_code": evidence_code,
+            "domain": domain,
+            "observation": failure_observation,
+            "observed_value": observed_value or {},
+            "confidence": ConfidenceBand.UNKNOWN,
+            "caveat": caveat,
+            "is_source_failure": True,
+        }
+        if evidence_id is not None:
+            evidence_data["evidence_id"] = evidence_id
+        evidence = EvidenceContract(**evidence_data)
+        return self._create_source_failure_evidence(evidence)
 
     def create_human_note(self, evidence: EvidenceContract) -> EvidenceContract:
         self._validate_area_registered(evidence.area_id)

@@ -21,7 +21,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, `SqlAlchemyEvidenceRepository`, `EvidenceService`, `InMemoryEvidenceAuditLog`, and `SqlAlchemyEvidenceAuditLog`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
 - `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/` test directories exist.
-- 130 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
+- 153 tests in `backend/tests/evidence_ledger/` and `backend/tests/claims_engine/`.
 
 ## Non-negotiables from AGENTS.md
 
@@ -172,6 +172,14 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 7. Record the shared-schema decision in `docs/adr/lane-c-schemas.md`.
 8. Status: COMPLETE for canonical Lane C schema/contract scope. Planning-pack evidence/claim schema copies are reconciled as documentation-packaging copies, not runtime schema truth.
 
+### TC-180: Source-failure evidence identity preservation
+1. Extend `EvidenceService.create_source_failure(...)` with an optional caller-supplied `evidence_id`.
+2. Preserve the supplied ID through the existing source-failure validation, duplicate-rejection, repository persistence, and audit-event path.
+3. Add in-memory tests proving ID preservation and duplicate rejection for source-failure evidence.
+4. Add a DB-gated persistence assertion proving the supplied source-failure ID round-trips through `SqlAlchemyEvidenceRepository`.
+5. Keep connector adapter usage out of this Lane C slice; connector-owned code can adopt the public parameter in a separately coordinated pass.
+6. Status: COMPLETE for the Lane C public evidence-service contract. Exact connector fixture source-failure ID preservation remains pending until the connector integration zone passes `evidence.evidence_id` to the public Lane C method.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -212,6 +220,7 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial precision; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
 | Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, market context, and resource context now emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run auto-injection is a Lane D handoff |
 | Planning-pack evidence/claim schema copies | Closed | `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` mirror the canonical root Lane C schemas; broader planning-pack API/source/job/report surfaces remain separate follow-ups |
+| Connector source-failure evidence ID preservation | Lane C public service side closed | `EvidenceService.create_source_failure(...)` can preserve a supplied evidence ID; connector adapter usage remains a connector-zone follow-up |
 
 ## Decision log
 
@@ -247,3 +256,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-04: TC-160 complete for Lane C-owned not-evaluated rule categories. Added unsupported-domain constants/helper, four YAML hard gates, deterministic UNKNOWN rule-engine claims from source-failure evidence, and tests for ruleset declarations, helper output, evidence-linked claims, deterministic ordering, non-failure ignore behavior, and market-context safe language. Lane C tests: 143 collected with DB smoke enabled. Full backend collection: 248 tests; full DB-gated backend pytest, direct DB smoke, targeted ruff/mypy, and default PowerShell verification pass.
 - 2026-06-04: TC-170 complete for canonical Lane C schema-contract alignment. `schemas/evidence_schema.json` and `schemas/claim_schema.json` now mirror serialized `EvidenceContract`/`ClaimContract` fields and enums; stale DB/doc fields are removed; `docs/adr/lane-c-schemas.md` records the shared-schema decision; schema parity tests were added without a new validation dependency. Lane C evidence/claims collection: 151 tests. Full backend collection after rebasing onto CON-002: 268 tests. Full PowerShell verification with DB smoke: 268 tests, ruff clean, mypy clean (96 source files), DB smoke passes.
 - 2026-06-04: Planning-pack evidence/claim schema-copy follow-up complete. `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` now mirror the canonical root Lane C schemas, and `backend/tests/test_planning_pack_schema_copies.py` prevents those copies from silently drifting.
+- 2026-06-04: TC-180 complete for Lane C public source-failure identity preservation. `EvidenceService.create_source_failure(...)` now accepts an optional `evidence_id`, preserves it through in-memory and SQLAlchemy-backed evidence storage, and still rejects duplicate IDs without overwrite. Connector adapter usage remains separate connector-zone work.

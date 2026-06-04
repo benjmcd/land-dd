@@ -19,13 +19,12 @@ Verification command(s):
 - python scripts/db_smoke_check.py
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 151 Lane C evidence/claims tests collected
-- Lane C evidence/claims tests pass with DB smoke enabled
+- 153 Lane C evidence/claims tests pass with DB smoke enabled
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full backend collection reports 283 tests after rebasing the planning-pack schema-copy branch onto CON-005 at `9228f89`
-- Full PowerShell verification passes with DB smoke enabled: 283 tests; lint clean; mypy clean (103 source files); migrations/seeds apply; DB smoke passes
+- Full PowerShell verification passes with DB smoke enabled: 326 tests; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes
 - C-001 claims ORM persistence is stable on the current main base after removing cross-schema ORM FK metadata assumptions and flushing the parent claim before child link/task rows
+- TC-180 source-failure evidence identity preservation is stable for the Lane C public service path: `EvidenceService.create_source_failure(...)` preserves a supplied evidence ID through in-memory and SQLAlchemy-backed storage while still rejecting duplicates
 Failed or blocked gates:
 - L5-001 through L5-010: PASS for DB-backed repository/service scope (`SqlAlchemyEvidenceRepository` persists source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, optional geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, and `SqlAlchemyEvidenceAuditLog` durable audit events; `docs/adr/lane-c-evidence.md` documents immutability/amendment policy)
 - L6-001: PASS for current DB-backed service/repository scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; `SqlAlchemyClaimRepository` persists claims plus `claims.claim_evidence` links via ORM models `ClaimModel`/`ClaimEvidenceLinkModel`/`VerificationTaskModel`; rule-generated claims cite evidence IDs)
@@ -56,7 +55,7 @@ Completion evidence:
 - backend/app/claims_engine/rule_engine.py (RuleEngine + constrained ruleset loader)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (6 passing)
 - backend/tests/evidence_ledger/test_evidence_schema_contract.py (schema-contract parity tests)
-- backend/tests/evidence_ledger/test_evidence_service.py (17 passing)
+- backend/tests/evidence_ledger/test_evidence_service.py (19 passing)
 - backend/tests/evidence_ledger/test_payload_validation.py (23 passing)
 - backend/tests/evidence_ledger/test_evidence_audit.py (4 passing)
 - backend/tests/evidence_ledger/test_sqlalchemy_evidence_repo.py (12 passing)
@@ -72,7 +71,8 @@ Next lowest-dependency task:
 - **C-001: DONE and DB-gated stable on current main** - `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM; ORM metadata/flush ordering repaired and verified with DB-gated claim tests.
 - **C-002: DONE for Lane C-owned rule/claim scope** - `RuleEngine.evaluate()` emits deterministic UNKNOWN claims for soil/septic, environmental hazards, resource context, and market context when provided stored source-failure evidence.
 - **TC-170: DONE for canonical Lane C schema/contract scope** - `schemas/evidence_schema.json` and `schemas/claim_schema.json` mirror serialized `EvidenceContract` and `ClaimContract` fields and enums; `docs/adr/lane-c-schemas.md` records the shared-schema decision.
-- **Next repo-wide dependency**: CON-005 fixture connector ingest workflow composition belongs to the connector integration zone, not Lane C.
+- **TC-180: DONE for Lane C public source-failure identity preservation** - `EvidenceService.create_source_failure(...)` accepts an optional `evidence_id`, preserves it through in-memory and DB-backed storage, and rejects duplicates without overwrite.
+- **Next repo-wide dependency**: connector adapter adoption of supplied source-failure evidence IDs belongs to the connector integration zone, not Lane C.
 Do not work on yet:
 - D-001 cross-lane wiring (Lane D owns `api/dependencies.py`, `main.py`, and `db/session.py`)
 - Live connectors, jurisdiction-specific rules, or UI/LLM summarization
@@ -89,6 +89,7 @@ Do not work on yet:
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial-precision fields; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
 | Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, resource context, and market context emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run source-failure injection remains Lane D integration |
 | Planning-pack evidence/claim schema copies | Closed | `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` mirror the canonical root Lane C schemas; `backend/tests/test_planning_pack_schema_copies.py` guards against silent drift |
+| Connector source-failure evidence ID preservation | Lane C public service side closed | Connector adapter usage remains a connector-zone follow-up |
 
 ## Active plan
 
