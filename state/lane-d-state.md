@@ -23,6 +23,7 @@ Verification result:
 - API DB mode now builds SQLAlchemy-backed source, area, evidence, claim, and report services per request; successful requests commit and failures roll back through the API dependency
 - `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` pass in a DB-backed API integration test and the report row stores a non-null `intent_id`
 - Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
+- Shared source/evidence/claim/job/report schema gaps are recorded in `plans/2026-06-04-l7-closeout-l8-entry.md` without editing shared schema files
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -53,7 +54,8 @@ Next lowest-dependency task:
 - **D-001 (DONE)**: DB-backed API service wiring is complete behind explicit `create_app(use_db_services=True)`. Default API dependencies remain in-memory for cheap fixture tests, while DB mode wires SQLAlchemy repositories and report artifact persistence through request-scoped services.
 - **D-000 (DONE)**: Report surfacing for unsupported categories is complete. C-002 is merged on `main`; report runs now create or inject stored unsupported-category SOURCE_FAILURE evidence and surface soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
 - **D-002 (DONE)**: Normalized report artifact regression is complete.
-- **D-003 (NEXT)**: Schema-contract alignment note before editing shared `schemas/*.json` files or moving to Level 8 fixture connector work.
+- **D-003 (DONE)**: Schema-contract alignment note is complete; future schema ownership and edit order are recorded before any shared `schemas/*.json` edits.
+- **D-004 (NEXT)**: Level 8 ownership and fixture-only connector acceptance plan before connector runtime code.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -64,7 +66,7 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Pending | Future payload changes need a coordinated contract pass |
+| Shared-schema alignment for `schemas/*.json` | Gap note complete; edits pending | Future payload changes need owner-specific schema edits after review scope is set |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |

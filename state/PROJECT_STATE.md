@@ -32,6 +32,7 @@ Verification result:
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
+- Shared schema gaps for source, evidence, claim, job, missing report schema, and planning-pack OpenAPI are recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; no shared schema files were edited
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -71,7 +72,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane D D-003: schema-contract alignment note before any `schemas/*.json` changes or Level 8 fixture connector work.
+- Lane D D-004: Level 8 connector ownership and fixture-only acceptance plan before connector runtime code.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -126,7 +127,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-252 tests pass with DB smoke enabled; lint clean; mypy clean (91 source files). C-002, D-000, D-001, and D-002 are complete on root `main`; Session 1's Lane A/B branches remain isolated and are not merged into root.
+252 tests pass with DB smoke enabled; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, and D-003 are complete on root `main`; Session 1's Lane A/B branches remain isolated and are not merged into root.
 
 ## Local repo bootstrap state
 

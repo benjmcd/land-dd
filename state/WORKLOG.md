@@ -203,6 +203,14 @@ Append concise entries. Do not rely on chat history.
 - Kept Session 2 work away from Session 1's active Lane B coordinate-validation branch and away from Lane A/C implementation surfaces.
 - Set the next Session 2 task to a schema-contract alignment note before any `schemas/*.json` changes or Level 8 connector implementation.
 
+## 2026-06-04 (Session 2 D-003 schema-contract alignment)
+
+- Audited active shared schemas against current source, evidence, claim, and report domain contracts without editing schema files.
+- Recorded schema gaps and future lane owners in `plans/2026-06-04-l7-closeout-l8-entry.md`.
+- Identified that `schemas/evidence_schema.json` still reflects older geometry/timestamp fields, `schemas/claim_schema.json` requires fields not in the current claim contract and omits ruleset metadata, and no active report-run schema exists yet.
+- Preserved shared-schema ownership boundaries: Lane A for source schema, Lane C for evidence/claim schemas, Lane D for report schema proposal, and coordinator review for cross-lane composition.
+- Set the next task to Level 8 ownership and fixture-only connector acceptance planning before connector runtime code.
+
 ## 2026-06-03 (Windows PowerShell verification wrapper)
 
 - Added PowerShell-native wrappers for verification, workspace validation, DB migration application, and bootstrap so Windows users can avoid launching Git Bash.

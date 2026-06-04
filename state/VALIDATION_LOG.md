@@ -2,6 +2,28 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-003 schema-contract alignment
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Audited active shared source/evidence/claim/job schemas against current domain contracts and report/API artifacts.
+- Recorded schema gaps and future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`.
+- No shared `schemas/*.json` files, domain contracts, migrations, or Lane A/B/C implementation files were edited.
+- Full PowerShell verification passes.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- Actual shared-schema edits remain pending and require owner-specific follow-up.
+- Level 8 connector implementation remains blocked until D-004 maps connector gates to lane owners and fixture-only acceptance criteria.
+
 ## 2026-06-04 Session 2 D-002 report artifact regression
 
 **Commands run:**

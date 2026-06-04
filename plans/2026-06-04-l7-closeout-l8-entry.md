@@ -45,6 +45,46 @@ Rejected alternatives:
 - Starting connector code in Lane D: connectors feed source/evidence layers and would conflict with Lane A/C ownership unless scoped first.
 - Advancing UI/MVP workflow: blocked by Level 8 connector and failure/idempotency requirements.
 
+## D-003 Schema-Contract Alignment Note
+
+Status: complete on 2026-06-04 as a documentation/ownership pass. No shared schemas were edited.
+
+### Contract Sources Of Truth
+
+| Surface | Current live authority | Notes |
+|---|---|---|
+| Source API/domain contract | `backend/app/domain/source_contracts.py` | Lane A owns source contract and source schema edits. |
+| Evidence API/domain contract | `backend/app/domain/evidence_contracts.py` | Lane C owns evidence contract and evidence schema edits. |
+| Claim API/domain contract | `backend/app/domain/claim_contracts.py` | Lane C owns claim contract and claim schema edits. |
+| Report API/domain contract | `backend/app/domain/report_contracts.py` | Lane D owns report contract and future report schema proposal. |
+| Active API behavior | `backend/app/api/*.py` with Pydantic response models | Planning-pack OpenAPI is reference-only until refreshed explicitly. |
+| Persisted report artifact | `backend/app/reports/report_repo.py` and `backend/tests/reports/test_report_regression.py` | Report artifact schema currently lives as Pydantic contract plus regression projection, not as `schemas/report_run_schema.json`. |
+
+### Shared-Schema Gaps
+
+| Existing schema | Gap vs current contracts/artifacts | Future owner | Required decision before edit |
+|---|---|---|---|
+| `schemas/source_schema.json` | Requires `source_type`, while `SourceContract.source_type` is optional; does not model `SourceDatasetContract`, `SourceDatasetVersionContract`, or `SourceRetrievalRunContract`; does not constrain source governance status vocabularies beyond string type. | Lane A | Decide whether source schema covers only `SourceContract` or the full source/dataset/version/retrieval family. |
+| `schemas/evidence_schema.json` | Does not include required domain fields `source_id`, `evidence_code`, `observed_at`, `superseded_by`, `geometry_geojson`, `geometry_srid`, or `spatial_precision_meters`; still exposes `geometry_wkt`, which current `EvidenceContract` does not use; `retrieved_at` differs from contract `observed_at`; `observed_value` is broad while runtime validators enforce type-specific payloads. | Lane C | Decide whether schema should mirror the API contract exactly or define persistence/ingestion payloads separately. |
+| `schemas/claim_schema.json` | Requires `intent`, which current `ClaimContract` does not carry; omits `rule_code`, `ruleset_id`, and `ruleset_version`; includes `contradiction_group_ids`, which current claim contract does not carry. | Lane C | Decide whether claim schema represents current API/domain claims or a future enriched report/export claim. |
+| `schemas/job_schema.json` | Matches the broad `JobStatus` values but there is no current `JobContract`; Level 8 connector/retrieval run statuses also use `SourceRetrievalStatus` values (`pending`, `running`, `succeeded`, `failed`, `blocked`, `skipped`) that do not fully match job status. | Coordinator with Lane A/Lane D | Decide whether connector runs reuse job schema, source retrieval run schema, or both. |
+| report schema missing | Level 7 requires a report JSON schema, but no active `schemas/report_run_schema.json` exists. Current report output is governed by `ReportRunContract`, `SqlAlchemyReportRunRepository`, and the normalized report regression test. | Lane D proposes; coordinator reviews because nested evidence/claim/source shapes cross lanes | Decide whether to add a new report-run schema that references lane-owned source/evidence/claim schemas after those schemas are aligned. |
+| planning-pack OpenAPI | `docs/planning_pack/api/openapi_stub.yaml` is not active API truth and predates the current FastAPI routers. | Lane D/docs follow-up | Decide whether to generate/update active OpenAPI docs from FastAPI instead of manually editing the planning-pack stub. |
+
+### Recommended Edit Order
+
+1. Lane C aligns evidence and claim schemas with current `EvidenceContract` and `ClaimContract`, or records an ADR explaining a separate persistence/export schema.
+2. Lane A aligns source schema scope with `SourceContract` vs source provenance family contracts.
+3. Lane D proposes `schemas/report_run_schema.json` only after nested source/evidence/claim schema scope is settled.
+4. Lane D refreshes API/OpenAPI documentation from the FastAPI app after schema scope is settled.
+5. Level 8 connector work begins with fixture-only connector contracts that reference the aligned source/evidence schemas.
+
+### Stop Conditions
+
+- Do not edit `schemas/*.json` from a single lane without owner assignment and review scope.
+- Do not start connector runtime code until source version/retrieval-run ownership and evidence output shape are explicit.
+- Do not use live network data for schema validation; fixture-only payloads are the first Level 8 path.
+
 ## Bottom-up sequence
 
 ### L7C-001: Report artifact regression fixture
@@ -60,6 +100,7 @@ Rejected alternatives:
 2. Compare them to `backend/app/domain/*_contracts.py` and persisted metadata behavior.
 3. Record gaps without changing shared schemas.
 4. Identify the lane owner for each future schema edit and whether an ADR is required.
+5. Status: COMPLETE. See "D-003 Schema-Contract Alignment Note" above.
 
 ### L7C-003: Level 8 ownership plan
 
@@ -130,3 +171,5 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ## Progress log
 
 - 2026-06-04: Plan created from root `main` after D-001 (`c3453ce`). No schema or implementation files changed in this planning slice.
+- 2026-06-04: D-002 completed from root `main` (`16c5d7f`) with a normalized report artifact regression.
+- 2026-06-04: D-003 schema-contract alignment note completed. Shared schemas were audited but not edited; future schema ownership and edit order are recorded above.
