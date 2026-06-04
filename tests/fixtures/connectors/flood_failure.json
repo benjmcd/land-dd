@@ -1,0 +1,46 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "66666666-6666-4666-8666-666666666666",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_flood_static",
+    "status": "blocked",
+    "started_at": "2026-06-04T09:05:00Z",
+    "finished_at": "2026-06-04T09:05:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/flood_failure",
+    "metrics": {
+      "fixture_only": true,
+      "failure_reason": "fixture_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "77777777-7777-4777-8777-777777777777",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "FLOOD_SOURCE_UNAVAILABLE",
+      "domain": "flood",
+      "observation": "Fixture flood source retrieval was unavailable.",
+      "observed_value": {
+        "failure_type": "source_unavailable",
+        "reason": "fixture_source_unavailable"
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_flood_static_failure",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only source failure; flood status is not evaluated.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-04T09:05:01Z",
+      "geometry_geojson": null,
+      "geometry_srid": 4326,
+      "spatial_precision_meters": null
+    }
+  ]
+}
