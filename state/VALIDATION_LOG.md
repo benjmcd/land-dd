@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-003 connector evidence-ingestion adapter
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector tests: 11 passed.
+- Connector ruff: clean.
+- Connector mypy: clean over 5 connector source/test files.
+- Full PowerShell verification: ok; 274 collected backend tests; lint clean; mypy clean over 98 source files; DB smoke skipped by default.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- DB smoke was not rerun for CON-003 because this slice does not touch DB wiring or schema.
+- `SourceRetrievalRunContract` persistence remains a connector/Lane A provenance handoff gap for CON-004.
+
 ## 2026-06-04 Session 1 Lane C TC-170 schema-contract alignment
 
 **Commands run:**

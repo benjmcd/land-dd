@@ -264,10 +264,10 @@ tasks:
 
   - id: CON-003
     title: Level 8 connector evidence-ingestion adapter
-    status: pending
+    status: done
     depends_on: [CON-002]
     lane: connector-integration
-    notes: Implement a connector-zone adapter against an injected public evidence-ingestion port. It must call create_observation for normal evidence, create_source_failure for source-failure templates, skip duplicate deterministic evidence IDs, fingerprint source failures for idempotency, and avoid claim/report shortcuts. Do not modify Lane C implementation unless separately coordinated.
+    notes: Implemented a connector-zone adapter against an injected public evidence-ingestion port. It calls create_observation for normal evidence, create_source_failure for source-failure templates, skips duplicate deterministic evidence IDs, fingerprints source failures for idempotency, and avoids claim/report shortcuts. No Lane C implementation was modified.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-002-evidence-ingestion-handoff
     files:
       - backend/app/connectors/
@@ -281,3 +281,22 @@ tasks:
       - Source failures route to create_source_failure
       - Repeated fixture ingestion is idempotent
       - No connector-to-claim/report shortcut is introduced
+
+  - id: CON-004
+    title: Level 8 connector retrieval-run provenance adapter or handoff
+    status: pending
+    depends_on: [CON-003]
+    lane: connector-integration
+    notes: Define or implement the connector-zone handoff for SourceRetrievalRunContract persistence through an injected public Lane A/source provenance port before claiming a complete connector ingest workflow. Do not modify Lane A implementation unless separately coordinated.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-003-evidence-ingestion-adapter
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Retrieval-run provenance boundary is explicit
+      - Connector workflow does not treat evidence ingestion as retrieval provenance
+      - No Lane A implementation change is made without coordination

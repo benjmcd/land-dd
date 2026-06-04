@@ -75,6 +75,7 @@ git diff --check
 
 - 2026-06-04: Plan created from root `main` after D-005 (`dc3c38e`).
 - 2026-06-04: CON-001 implemented as a fixture-only contract slice. `StaticFloodFixtureConnector` reads local JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure fixtures, and avoids claim/report imports.
+- 2026-06-04: CON-003 implemented as a connector-zone evidence-ingestion adapter. It depends on an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source-failure templates to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and avoids claim/report imports.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -134,3 +135,37 @@ CON-003 should implement a connector-zone ingestion adapter against the public e
 - duplicate deterministic evidence IDs are skipped;
 - source-failure fingerprints prevent duplicate failures on repeated fixture runs;
 - no claim/report shortcuts are introduced.
+
+## CON-003 Evidence-Ingestion Adapter
+
+Status: complete on 2026-06-04. No Lane C implementation, shared schema, migration, live connector, report/API, or claim code changed.
+
+### Implemented Design
+
+`ConnectorEvidenceIngestionAdapter` lives in the connector integration zone and accepts an injected `EvidenceIngestionPort` with only the public methods recorded in CON-002. The adapter:
+
+- skips evidence whose deterministic `evidence_id` already exists;
+- sends non-failure connector evidence to `create_observation`;
+- sends source-failure connector inputs to `create_source_failure`;
+- fingerprints source failures by area, source, method, evidence code, domain, observation, caveat, and normalized observed value so repeated fixture ingestion does not create duplicate public-API-generated failure records;
+- rejects inconsistent source-failure flags before persistence;
+- does not import claim, report, DB-session, repository, or live I/O modules.
+
+### Verification
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+Result: connector tests pass (11 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 274 collected backend tests, lint clean, mypy clean (98 source files), and DB smoke skipped by default; whitespace check clean.
+
+### Remaining Gap
+
+CON-003 does not persist `SourceRetrievalRunContract`. The next connector slice should define or implement a connector-zone retrieval-run provenance adapter against an injected public Lane A/source provenance port before claiming a complete connector ingest workflow.

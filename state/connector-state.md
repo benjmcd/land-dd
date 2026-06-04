@@ -7,7 +7,8 @@ Last verified: 2026-06-04
 Current task:
 - CON-001: DONE - Level 8 fixture-only flood connector contract slice.
 - CON-002: DONE - connector evidence-ingestion handoff plan.
-- CON-003: NEXT - connector-zone evidence ingestion adapter.
+- CON-003: DONE - connector-zone evidence ingestion adapter.
+- CON-004: NEXT - connector retrieval-run provenance adapter or handoff.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -25,6 +26,8 @@ Do not work on yet:
 - `tests/fixtures/connectors/flood_success.json`
 - `tests/fixtures/connectors/flood_failure.json`
 - `plans/connector-2026-06-04-fixture-flood.md` CON-002 evidence-ingestion handoff section
+- `backend/app/connectors/evidence_ingestion.py`
+- `backend/tests/connectors/test_evidence_ingestion_adapter.py`
 
 ## Verification
 
@@ -41,6 +44,8 @@ git diff --check
 
 Result: targeted connector tests pass (5 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default; whitespace check clean.
 
+2026-06-04 CON-003 result: targeted connector tests pass (11 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 274 collected backend tests, lint clean, mypy clean (98 source files), and DB smoke skipped by default; whitespace check clean.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -48,3 +53,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Live connector gates | Not satisfied | CON-001 must remain fixture-only |
 | Durable retrieval-run/evidence linkage | Gap recorded | Current `EvidenceContract` lacks `ingest_run_id`; coordinate Lane C/schema before claiming durable linkage |
 | Exact source-failure field preservation | Gap recorded | Current public Lane C source-failure API creates the persisted evidence record; connector-provided source-failure IDs are templates unless Lane C adds a public method |
+| Retrieval-run persistence | Not implemented in CON-003 | Connector evidence ingestion now works through an injected evidence port; full connector workflow still needs a Lane A/source provenance handoff or adapter |

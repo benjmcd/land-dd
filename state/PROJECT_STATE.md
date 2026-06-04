@@ -26,7 +26,7 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 268 tests pass with DB smoke enabled after aligning canonical Lane C evidence/claim schemas with serialized domain contracts on top of CON-001; lint clean; mypy clean (96 source files)
+- 274 tests pass in the default Windows PowerShell verification path after CON-003; lint clean; mypy clean (98 source files); DB smoke skipped by default. The latest DB-enabled verification remains the 268-test Lane C schema-contract pass before CON-003.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
@@ -39,6 +39,7 @@ Verification result:
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 - CON-001 is complete: `StaticFloodFixtureConnector` reads local flood fixture JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure source-failure fixtures, and stays before claims/reports
 - CON-002 is complete: connector evidence-ingestion handoff is defined; the connector-zone adapter must use injected public Lane C EvidenceService methods, direct Lane C repository/private-helper access is rejected, and durable retrieval-run/evidence linkage gaps are recorded for future coordination
+- CON-003 is complete: `ConnectorEvidenceIngestionAdapter` uses an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source failures to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and stays before claims/reports
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -83,7 +84,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- CON-003: Level 8 connector evidence-ingestion adapter.
+- CON-004: Level 8 connector retrieval-run provenance adapter or handoff.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -136,11 +137,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 and CON-002 complete; next is CON-003 evidence-ingestion adapter |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-003 complete; next is CON-004 retrieval-run provenance adapter or handoff |
 
 ## Last verified state
 
-268 tests pass with DB smoke enabled after rebasing the Lane C TC-170 schema-contract branch onto root `main` at `a43b3e3` (`Define CON-002 evidence ingestion handoff`); lint clean; mypy clean (96 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, Lane C TC-170, and Lane B TB-100 are complete in this worktree. CON-003 evidence-ingestion adapter remains the next lowest-dependency connector task.
+274 tests pass in the default Windows PowerShell verification path after CON-003 evidence-ingestion adapter implementation; lint clean; mypy clean (98 source files); DB smoke skipped by default. Latest DB-enabled verification remains the Lane C TC-170 pass: 268 tests with DB smoke enabled, migrations/seeds apply, and DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, Lane C TC-170, Lane B TB-100, and planning-pack schema-copy alignment are complete in this worktree. CON-004 retrieval-run provenance adapter or handoff remains the next lowest-dependency connector task.
 
 ## Local repo bootstrap state
 

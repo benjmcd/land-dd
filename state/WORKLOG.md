@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-003)
+
+- Completed CON-003 in the connector integration zone: added `ConnectorEvidenceIngestionAdapter` and `EvidenceIngestionPort` in `backend/app/connectors/evidence_ingestion.py`.
+- Added connector tests proving normal evidence routes to `create_observation`, source-failure templates route to `create_source_failure`, deterministic duplicate evidence IDs are skipped, source-failure fingerprints prevent repeated fixture duplicates, inconsistent source-failure flags fail closed, and connector ingestion stays before claims/reports/live I/O.
+- Updated connector plan/state/task records. CON-004 is now the next recorded connector task: retrieval-run provenance adapter or handoff before claiming a complete connector ingest workflow.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors`; `ruff check app/connectors tests/connectors`; `mypy app/connectors tests/connectors`; `.\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (Session 1 Lane C TC-170 schema-contract alignment)
 
 - Created isolated worktree `worktrees/session1-lane-c-schema` on branch `lane-c/session1-schema-contracts` from root `main` at `cf9897e` because Session 2 was actively editing D-004 shared plan/state files in the root checkout.
