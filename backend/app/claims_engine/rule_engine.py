@@ -55,6 +55,7 @@ class RuleSet:
     ruleset_id: str
     version: str
     hard_gates: tuple[HardGateRule, ...]
+    forbidden_language: frozenset[str] = frozenset()
 
     def hard_gate_for_condition(self, condition: str) -> HardGateRule:
         for rule in self.hard_gates:
@@ -431,7 +432,19 @@ class RuleEngine:
                 claims.append(
                     self._flood_stale_claim(area_id, flood_rule, stale_evidence)
                 )
+        for claim in claims:
+            self._check_forbidden_language(claim)
         return claims
+
+    def _check_forbidden_language(self, claim: ClaimContract) -> None:
+        for phrase in self._ruleset.forbidden_language:
+            phrase_lc = phrase.lower()
+            in_assertion = phrase_lc in claim.assertion.lower()
+            in_language = phrase_lc in claim.user_safe_language.lower()
+            if in_assertion or in_language:
+                raise ValueError(
+                    f"Claim {claim.claim_code!r} contains forbidden language: {phrase!r}"
+                )
 
     def _access_no_adjacency_claim(
         self,
@@ -1286,14 +1299,27 @@ def load_ruleset(path: Path) -> RuleSet:
     data = _parse_ruleset_yaml(path.read_text(encoding="utf-8"))
     ruleset_id = _require_key(data, "id")
     version = _require_key(data, "version")
-    hard_gate_mappings = data.get("hard_gates")
-    if not isinstance(hard_gate_mappings, list):
+    hard_gate_raw = data.get("hard_gates")
+    if not isinstance(hard_gate_raw, list):
         raise ValueError("hard_gates must be a list")
-    hard_gates = tuple(
-        _hard_gate_from_mapping(mapping)
-        for mapping in hard_gate_mappings
+    hard_gates_list: list[dict[str, str]] = []
+    for item in hard_gate_raw:
+        if not isinstance(item, dict):
+            raise ValueError(f"hard_gates entry must be a mapping, got {type(item)!r}")
+        hard_gates_list.append({str(k): str(v) for k, v in item.items()})
+    hard_gates = tuple(_hard_gate_from_mapping(mapping) for mapping in hard_gates_list)
+    forbidden_raw = data.get("forbidden_language")
+    forbidden = frozenset(
+        str(p)
+        for p in (forbidden_raw if isinstance(forbidden_raw, list) else [])
+        if isinstance(p, str) and p.strip()
     )
-    return RuleSet(ruleset_id=ruleset_id, version=version, hard_gates=hard_gates)
+    return RuleSet(
+        ruleset_id=ruleset_id,
+        version=version,
+        hard_gates=hard_gates,
+        forbidden_language=forbidden,
+    )
 
 
 def _hard_gate_from_mapping(mapping: dict[str, str]) -> HardGateRule:
@@ -1307,11 +1333,13 @@ def _hard_gate_from_mapping(mapping: dict[str, str]) -> HardGateRule:
     )
 
 
-def _parse_ruleset_yaml(text: str) -> dict[str, str | list[dict[str, str]]]:
-    ruleset: dict[str, str | list[dict[str, str]]] = {"hard_gates": []}
-    hard_gates = ruleset["hard_gates"]
-    if not isinstance(hard_gates, list):
-        raise ValueError("hard_gates must be a list")
+def _parse_ruleset_yaml(text: str) -> dict[str, object]:
+    hard_gates_list: list[dict[str, str]] = []
+    forbidden_language_list: list[str] = []
+    ruleset: dict[str, object] = {
+        "hard_gates": hard_gates_list,
+        "forbidden_language": forbidden_language_list,
+    }
 
     section = ""
     current_gate: dict[str, str] | None = None
@@ -1326,7 +1354,7 @@ def _parse_ruleset_yaml(text: str) -> dict[str, str | list[dict[str, str]]]:
 
         if raw_line.startswith("  ") and not raw_line.startswith("    "):
             if current_gate is not None:
-                hard_gates.append(current_gate)
+                hard_gates_list.append(current_gate)
                 current_gate = None
             key, value = _split_yaml_key_value(stripped)
             section = key
@@ -1334,12 +1362,18 @@ def _parse_ruleset_yaml(text: str) -> dict[str, str | list[dict[str, str]]]:
                 ruleset[key] = value
             continue
 
+        if section == "forbidden_language":
+            if raw_line.startswith("    - "):
+                phrase = stripped.removeprefix("- ").strip("'\"")
+                forbidden_language_list.append(phrase)
+            continue
+
         if section != "hard_gates":
             continue
 
         if raw_line.startswith("    - "):
             if current_gate is not None:
-                hard_gates.append(current_gate)
+                hard_gates_list.append(current_gate)
             current_gate = {}
             key, value = _split_yaml_key_value(stripped.removeprefix("- "))
             if value is None:
@@ -1354,7 +1388,7 @@ def _parse_ruleset_yaml(text: str) -> dict[str, str | list[dict[str, str]]]:
             current_gate[key] = value
 
     if current_gate is not None:
-        hard_gates.append(current_gate)
+        hard_gates_list.append(current_gate)
 
     return ruleset
 
@@ -1370,7 +1404,7 @@ def _split_yaml_key_value(line: str) -> tuple[str, str | None]:
 
 
 def _require_key(
-    mapping: dict[str, str] | dict[str, str | list[dict[str, str]]],
+    mapping: dict[str, object] | dict[str, str],
     key: str,
 ) -> str:
     value = mapping.get(key)

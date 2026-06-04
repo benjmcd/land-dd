@@ -1,7 +1,6 @@
 # Repo Audit + Forward Options (2026-06-03)
 
 Status: REVIEWED (ralplan consensus — Planner + Architect + Critic passes complete; factual corrections from both folded in and re-verified against ground truth)
-Author: Claude (ralplan)
 Scope: Full-repo state assessment since last check + Codex session direction + prioritized forward options.
 
 > **Important — this is a snapshot of a moving target.** The Codex session was **actively running during this audit**: `git status` changed mid-review (the source-provenance sub-feature `provenance_repo.py`/`provenance_service.py` + tests appeared, and `PROJECT_STATE.md`/`VALIDATION_LOG.md`/`WORKLOG.md` flipped from "Level 1 / Docker not running" to "Level 2 PASS / DB smoke passes") between the first and second `git status`. Some early reads in this audit caught stale/older file versions. All load-bearing claims below were re-verified against ground truth after the Critic pass. See F13.

@@ -141,11 +141,7 @@ class ReportRunService:
 
 
 def _unknown_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
-    return [
-        claim
-        for claim in claims
-        if "UNKNOWN" in claim.claim_code or claim.severity == SeverityBand.UNKNOWN
-    ]
+    return [claim for claim in claims if claim.severity == SeverityBand.UNKNOWN]
 
 
 def _red_flag_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
