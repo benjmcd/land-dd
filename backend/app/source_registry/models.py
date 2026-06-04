@@ -5,33 +5,19 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Text, UniqueConstraint, text
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import AuthorityLevel, JobStatus
+from app.db.base import AppBase
+from app.db.types import authority_level_enum, job_status_enum
 
-
-class SourceRegistryBase(DeclarativeBase):
-    pass
-
-
-authority_level_enum = ENUM(
-    *(level.value for level in AuthorityLevel),
-    name="authority_level",
-    schema="evidence",
-    create_type=False,
-)
-
-job_status_enum = ENUM(
-    *(status.value for status in JobStatus),
-    name="job_status",
-    schema="jobs",
-    create_type=False,
-)
+# Backward-compat alias: external code that was importing SourceRegistryBase
+# can continue to do so; new code should import AppBase from app.db.base.
+SourceRegistryBase = AppBase
 
 
-class SourceModel(SourceRegistryBase):
+class SourceModel(AppBase):
     __tablename__ = "sources"
     __table_args__ = (
         UniqueConstraint("name", "organization"),
@@ -98,7 +84,7 @@ class SourceModel(SourceRegistryBase):
     )
 
 
-class SourceDatasetModel(SourceRegistryBase):
+class SourceDatasetModel(AppBase):
     __tablename__ = "datasets"
     __table_args__ = (
         UniqueConstraint("source_id", "dataset_name"),
@@ -131,7 +117,7 @@ class SourceDatasetModel(SourceRegistryBase):
     )
 
 
-class SourceDatasetVersionModel(SourceRegistryBase):
+class SourceDatasetVersionModel(AppBase):
     __tablename__ = "dataset_versions"
     __table_args__ = (
         UniqueConstraint("dataset_id", "version_label", "retrieved_at"),
@@ -171,7 +157,7 @@ class SourceDatasetVersionModel(SourceRegistryBase):
     notes: Mapped[str | None] = mapped_column(Text)
 
 
-class SourceIngestRunModel(SourceRegistryBase):
+class SourceIngestRunModel(AppBase):
     __tablename__ = "ingest_runs"
     __table_args__ = {"schema": "source"}
 
@@ -215,9 +201,10 @@ class SourceIngestRunModel(SourceRegistryBase):
 
 
 __all__ = [
+    "AppBase",
     "SourceDatasetModel",
     "SourceDatasetVersionModel",
     "SourceIngestRunModel",
     "SourceModel",
-    "SourceRegistryBase",
+    "SourceRegistryBase",  # backward-compat alias for AppBase
 ]

@@ -5,26 +5,18 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Text, text
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import JobStatus
+from app.db.base import AppBase
+from app.db.types import job_status_enum
 
-
-class ReportBase(DeclarativeBase):
-    pass
-
-
-job_status_enum = ENUM(
-    *(status.value for status in JobStatus),
-    name="job_status",
-    schema="jobs",
-    create_type=False,
-)
+# Backward-compat alias
+ReportBase = AppBase
 
 
-class ReportRunModel(ReportBase):
+class ReportRunModel(AppBase):
     __tablename__ = "report_runs"
     __table_args__ = {"schema": "reports"}
 
@@ -91,4 +83,8 @@ class ReportRunModel(ReportBase):
     )
 
 
-__all__ = ["ReportBase", "ReportRunModel"]
+__all__ = [
+    "AppBase",
+    "ReportBase",  # backward-compat alias for AppBase
+    "ReportRunModel",
+]

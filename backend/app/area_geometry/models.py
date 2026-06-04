@@ -7,14 +7,14 @@ from uuid import UUID
 from sqlalchemy import Boolean, ForeignKey, Integer, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import UserDefinedType
 
-from app.domain.enums import ConfidenceBand
+from app.db.base import AppBase
+from app.db.types import confidence_band_enum
 
-
-class AreaGeometryBase(DeclarativeBase):
-    pass
+# Backward-compat alias
+AreaGeometryBase = AppBase
 
 
 class PostGISGeometry(UserDefinedType[str]):
@@ -28,6 +28,9 @@ class PostGISGeometry(UserDefinedType[str]):
         return f"geometry({self.geometry_type}, {self.srid})"
 
 
+# area_type values are literal strings matching the SQL enum in 0001_initial_spine.sql.
+# Note: Python AreaType enum has different values (domain representation);
+# the DB mapping is handled in SqlAlchemyAreaRepository. See TODO in area_repo.py.
 area_type_enum = ENUM(
     "parcel",
     "multi_parcel",
@@ -43,15 +46,8 @@ area_type_enum = ENUM(
     create_type=False,
 )
 
-confidence_band_enum = ENUM(
-    *(confidence.value for confidence in ConfidenceBand),
-    name="confidence_band",
-    schema="evidence",
-    create_type=False,
-)
 
-
-class AreaModel(AreaGeometryBase):
+class AreaModel(AppBase):
     __tablename__ = "areas"
     __table_args__ = {"schema": "core"}
 
@@ -92,7 +88,7 @@ class AreaModel(AreaGeometryBase):
     )
 
 
-class AreaVersionModel(AreaGeometryBase):
+class AreaVersionModel(AppBase):
     __tablename__ = "area_versions"
     __table_args__ = (
         UniqueConstraint("area_id", "version_num"),
@@ -123,8 +119,10 @@ class AreaVersionModel(AreaGeometryBase):
 
 
 __all__ = [
-    "AreaGeometryBase",
+    "AppBase",
+    "AreaGeometryBase",  # backward-compat alias for AppBase
     "AreaModel",
     "AreaVersionModel",
     "PostGISGeometry",
+    "area_type_enum",
 ]

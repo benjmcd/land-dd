@@ -5,41 +5,34 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Text, text
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import UserDefinedType
 
-from app.domain.enums import AuthorityLevel, ConfidenceBand
+from app.db.base import AppBase
+from app.db.types import authority_level_enum, confidence_band_enum
+
+# Backward-compat alias
+EvidenceLedgerBase = AppBase
 
 
 class GeometryFromGeoJSON(UserDefinedType[Any]):
+    """Minimal UserDefinedType for evidence geometry columns.
+
+    Evidence geometry is stored as PostGIS Geometry(Geometry,4326) and
+    round-tripped as GeoJSON strings by the repository layer.
+    For parameterized geometry types (e.g. MultiPolygon with SRID) see
+    PostGISGeometry in area_geometry/models.py.
+    """
+
     cache_ok = True
 
     def get_col_spec(self, **_: Any) -> str:
         return "geometry(Geometry,4326)"
 
 
-authority_level_enum = ENUM(
-    *(level.value for level in AuthorityLevel),
-    name="authority_level",
-    schema="evidence",
-    create_type=False,
-)
-
-confidence_band_enum = ENUM(
-    *(level.value for level in ConfidenceBand),
-    name="confidence_band",
-    schema="evidence",
-    create_type=False,
-)
-
-
-class EvidenceLedgerBase(DeclarativeBase):
-    pass
-
-
-class EvidenceObservationModel(EvidenceLedgerBase):
+class EvidenceObservationModel(AppBase):
     __tablename__ = "observations"
     __table_args__ = {"schema": "evidence"}
 
@@ -107,7 +100,7 @@ class EvidenceObservationModel(EvidenceLedgerBase):
     )
 
 
-class AuditEventModel(EvidenceLedgerBase):
+class AuditEventModel(AppBase):
     __tablename__ = "events"
     __table_args__ = {"schema": "audit"}
 
@@ -142,7 +135,9 @@ class AuditEventModel(EvidenceLedgerBase):
 
 
 __all__ = [
+    "AppBase",
     "AuditEventModel",
-    "EvidenceLedgerBase",
+    "EvidenceLedgerBase",  # backward-compat alias for AppBase
     "EvidenceObservationModel",
+    "GeometryFromGeoJSON",
 ]
