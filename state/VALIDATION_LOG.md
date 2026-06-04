@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-008 DB-backed fixture workflow smoke
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_public_wiring.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py
+ruff check tests/connectors/test_public_wiring.py
+mypy tests/connectors/test_public_wiring.py
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector public-wiring tests without DB smoke: 5 passed, 1 skipped.
+- Connector public-wiring tests with DB smoke: 6 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 1 test file.
+- Full DB-enabled PowerShell verification: ok; 290 collected backend tests; lint clean; mypy clean over 104 source files; migrations/seeds apply; DB smoke passes.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- CON-008 proves the fixture success workflow through DB-backed public Lane A and Lane C services only. It does not prove source-failure DB workflow behavior and does not solve durable `ingest_run_id` linkage on `evidence.observations`; both remain future scoped work.
+
 ## 2026-06-04 CON-007 Lane A public provenance identity-preservation follow-up
 
 **Commands run:**

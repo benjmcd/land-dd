@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-008)
+
+- Completed CON-008 in the connector integration zone as a DB-backed fixture success workflow smoke.
+- Added a DB-enabled public-wiring test that seeds the local fixture area/source/dataset/version, runs the fixture workflow through SQLAlchemy-backed public Lane A provenance and public Lane C evidence services, and cleans fixture-owned DB rows before and after execution.
+- Verified first-run behavior records the connector-supplied `ingest_run_id` and persists evidence through public Lane C methods; verified second-run behavior skips the existing retrieval run and deterministic evidence ID.
+- Preserved the existing boundary: no live I/O, claims, reports, schema changes, or durable `ingest_run_id` evidence-row linkage claim was introduced.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors/test_public_wiring.py`; `$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py`; `ruff check tests/connectors/test_public_wiring.py`; `mypy tests/connectors/test_public_wiring.py`; `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-007)
 
 - Completed CON-007 as a coordinated Lane A public provenance follow-up plus connector public wiring.

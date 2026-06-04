@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 import inspect
+import os
+from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
+
+import pytest
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 import app.connectors.public_wiring as public_wiring_module
+from app.area_geometry.area_repo import SqlAlchemyAreaRepository
+from app.area_geometry.service import AreaService
 from app.connectors import (
     build_fixture_workflow_with_public_lane_services,
     build_fixture_workflow_with_public_services,
 )
+from app.db.engine import build_engine
+from app.domain.area_contracts import AreaContract
 from app.domain.enums import EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import (
@@ -17,13 +27,39 @@ from app.domain.source_contracts import (
     SourceDatasetVersionContract,
     SourceRetrievalRunContract,
 )
+from app.evidence_ledger.audit_log import SqlAlchemyEvidenceAuditLog
+from app.evidence_ledger.evidence_repo import SqlAlchemyEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
-from app.source_registry.provenance_repo import InMemorySourceProvenanceRepository
+from app.source_registry.provenance_repo import (
+    InMemorySourceProvenanceRepository,
+    SqlAlchemySourceProvenanceRepository,
+)
 from app.source_registry.provenance_service import SourceProvenanceService
 from app.source_registry.service import SourceService
-from app.source_registry.source_repo import InMemorySourceRepository
+from app.source_registry.source_repo import (
+    InMemorySourceRepository,
+    SqlAlchemySourceRepository,
+)
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+FIXTURE_SOURCE_ID = UUID("55555555-5555-4555-8555-555555555555")
+FIXTURE_DATASET_ID = UUID("11111111-2222-4333-8444-555555555555")
+FIXTURE_DATASET_VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
+FIXTURE_INGEST_RUN_ID = UUID("11111111-1111-4111-8111-111111111111")
+FIXTURE_AREA_ID = UUID("44444444-4444-4444-8444-444444444444")
+FIXTURE_EVIDENCE_ID = UUID("33333333-3333-4333-8333-333333333333")
+FIXTURE_AREA_GEOMETRY: dict[str, object] = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [-120.0, 38.0],
+            [-119.9, 38.0],
+            [-119.9, 38.1],
+            [-120.0, 38.1],
+            [-120.0, 38.0],
+        ]
+    ],
+}
 
 
 class PublicWiringRetrievalPort:
@@ -121,7 +157,7 @@ def _source_provenance_service_for_fixture() -> SourceProvenanceService:
     source_service = SourceService(source_repo)
     source_service.register(
         SourceContract(
-            source_id=UUID("55555555-5555-4555-8555-555555555555"),
+            source_id=FIXTURE_SOURCE_ID,
             name="Fixture FEMA NFHL",
             organization="FEMA",
             domain="flood",
@@ -133,20 +169,128 @@ def _source_provenance_service_for_fixture() -> SourceProvenanceService:
         repo=provenance_repo,
     )
     dataset = SourceDatasetContract(
-        dataset_id=UUID("11111111-2222-4333-8444-555555555555"),
-        source_id=UUID("55555555-5555-4555-8555-555555555555"),
+        dataset_id=FIXTURE_DATASET_ID,
+        source_id=FIXTURE_SOURCE_ID,
         dataset_name="Fixture Flood Dataset",
         domain="flood",
     )
     provenance_repo.add_dataset(dataset)
     provenance_repo.add_dataset_version(
         SourceDatasetVersionContract(
-            dataset_version_id=UUID("22222222-2222-4222-8222-222222222222"),
+            dataset_version_id=FIXTURE_DATASET_VERSION_ID,
             dataset_id=dataset.dataset_id,
             version_label="fixture-2026-06-04",
         )
     )
     return provenance_service
+
+
+def _db_public_lane_services(
+    session: Session,
+) -> tuple[SourceProvenanceService, EvidenceService]:
+    source_service = SourceService(SqlAlchemySourceRepository(session))
+    area_service = AreaService(SqlAlchemyAreaRepository(session))
+    return (
+        SourceProvenanceService(
+            source_service=source_service,
+            repo=SqlAlchemySourceProvenanceRepository(session),
+        ),
+        EvidenceService(
+            SqlAlchemyEvidenceRepository(session),
+            source_service,
+            area_service,
+            SqlAlchemyEvidenceAuditLog(session),
+        ),
+    )
+
+
+def _seed_db_fixture_prerequisites(session: Session) -> None:
+    source_service = SourceService(SqlAlchemySourceRepository(session))
+    area_service = AreaService(SqlAlchemyAreaRepository(session))
+    provenance_repo = SqlAlchemySourceProvenanceRepository(session)
+
+    area_service.create(
+        AreaContract(
+            area_id=FIXTURE_AREA_ID,
+            label="Connector DB smoke fixture area",
+            geom_geojson=FIXTURE_AREA_GEOMETRY,
+            geom_source="fixture",
+            geom_validated=True,
+        )
+    )
+    source_service.register(
+        SourceContract(
+            source_id=FIXTURE_SOURCE_ID,
+            name=f"Fixture FEMA NFHL DB Smoke {uuid4()}",
+            organization="FEMA fixture",
+            domain="flood",
+            geographic_scope="fixture",
+            license_status="allowed",
+            commercial_use_status="allowed",
+            redistribution_status="allowed",
+            cache_allowed="allowed",
+            export_allowed="allowed",
+            raw_data_allowed="allowed",
+            ai_use_allowed="allowed",
+            review_status="approved",
+            metadata={"fixture_only": True},
+        )
+    )
+    provenance_repo.add_dataset(
+        SourceDatasetContract(
+            dataset_id=FIXTURE_DATASET_ID,
+            source_id=FIXTURE_SOURCE_ID,
+            dataset_name="Fixture Flood Dataset",
+            domain="flood",
+            legal_caveat="Fixture-only flood screening; not a determination.",
+        )
+    )
+    provenance_repo.add_dataset_version(
+        SourceDatasetVersionContract(
+            dataset_version_id=FIXTURE_DATASET_VERSION_ID,
+            dataset_id=FIXTURE_DATASET_ID,
+            version_label="fixture-2026-06-04",
+            retrieved_at=datetime(2026, 6, 4, 9, 0, tzinfo=UTC),
+            manifest={"fixture": "flood_success.json"},
+            is_current=True,
+        )
+    )
+    session.commit()
+
+
+def _reset_db_fixture_rows(session: Session) -> None:
+    session.execute(
+        text("DELETE FROM audit.events WHERE target_id = :evidence_id"),
+        {"evidence_id": FIXTURE_EVIDENCE_ID},
+    )
+    session.execute(
+        text("DELETE FROM evidence.observations WHERE evidence_id = :evidence_id"),
+        {"evidence_id": FIXTURE_EVIDENCE_ID},
+    )
+    session.execute(
+        text("DELETE FROM source.ingest_runs WHERE ingest_run_id = :ingest_run_id"),
+        {"ingest_run_id": FIXTURE_INGEST_RUN_ID},
+    )
+    session.execute(
+        text(
+            "DELETE FROM source.dataset_versions "
+            "WHERE dataset_version_id = :dataset_version_id"
+        ),
+        {"dataset_version_id": FIXTURE_DATASET_VERSION_ID},
+    )
+    session.execute(
+        text("DELETE FROM source.datasets WHERE dataset_id = :dataset_id"),
+        {"dataset_id": FIXTURE_DATASET_ID},
+    )
+    session.execute(
+        text("DELETE FROM source.sources WHERE source_id = :source_id"),
+        {"source_id": FIXTURE_SOURCE_ID},
+    )
+    session.execute(
+        text("DELETE FROM core.areas WHERE area_id = :area_id"),
+        {"area_id": FIXTURE_AREA_ID},
+    )
+    session.commit()
 
 
 def test_public_wiring_uses_lane_c_evidence_service_for_normal_evidence() -> None:
@@ -183,6 +327,69 @@ def test_public_lane_service_wiring_preserves_retrieval_run_identity() -> None:
     )
     assert second.retrieval_provenance.recorded_run is None
     assert second.retrieval_provenance.skipped_run == first.connector_result.retrieval_run
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_backed_public_lane_service_fixture_workflow_is_idempotent() -> None:
+    engine = build_engine()
+    try:
+        with Session(engine) as session:
+            _reset_db_fixture_rows(session)
+            _seed_db_fixture_prerequisites(session)
+            source_provenance_service, evidence_service = _db_public_lane_services(
+                session,
+            )
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=source_provenance_service,
+                evidence_service=evidence_service,
+            )
+
+            first = workflow.ingest_fixture(FIXTURE_DIR / "flood_success.json")
+
+            assert first.retrieval_provenance.recorded_run is not None
+            assert (
+                first.retrieval_provenance.recorded_run.ingest_run_id
+                == FIXTURE_INGEST_RUN_ID
+            )
+            assert len(first.evidence_ingestion.created_evidence) == 1
+            assert (
+                first.evidence_ingestion.created_evidence[0].evidence_id
+                == FIXTURE_EVIDENCE_ID
+            )
+            session.commit()
+
+        with Session(engine) as session:
+            source_provenance_service, evidence_service = _db_public_lane_services(
+                session,
+            )
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=source_provenance_service,
+                evidence_service=evidence_service,
+            )
+
+            second = workflow.ingest_fixture(FIXTURE_DIR / "flood_success.json")
+            stored_run = SqlAlchemySourceProvenanceRepository(session).get_retrieval_run(
+                FIXTURE_INGEST_RUN_ID,
+            )
+            stored_evidence = evidence_service.get(FIXTURE_EVIDENCE_ID)
+            audit_events = SqlAlchemyEvidenceAuditLog(session).list_by_evidence(
+                FIXTURE_EVIDENCE_ID,
+            )
+
+            assert stored_run is not None
+            assert stored_run.ingest_run_id == FIXTURE_INGEST_RUN_ID
+            assert stored_evidence is not None
+            assert stored_evidence.evidence_id == FIXTURE_EVIDENCE_ID
+            assert audit_events
+            assert second.retrieval_provenance.recorded_run is None
+            assert second.retrieval_provenance.skipped_run == stored_run
+            assert second.evidence_ingestion.created_evidence == ()
+            assert second.evidence_ingestion.skipped_evidence == (
+                second.connector_result.evidence_inputs[0],
+            )
+    finally:
+        with Session(engine) as session:
+            _reset_db_fixture_rows(session)
 
 
 def test_public_wiring_uses_lane_c_evidence_service_for_source_failures() -> None:
