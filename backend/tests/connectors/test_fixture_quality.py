@@ -203,6 +203,31 @@ def test_fixture_quality_flags_source_failure_payload_type_gaps() -> None:
     )
 
 
+def test_fixture_quality_flags_source_failure_reason_mismatch() -> None:
+    result = _load_failure()
+    evidence = result.evidence_inputs[0].model_copy(
+        update={
+            "observed_value": {
+                "failure_reason": "different_failure_reason",
+                "error_message": "Fixture flood source unavailable.",
+                "retryable": False,
+            },
+        },
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(evidence,),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_REASON_MISMATCH,
+    )
+
+
 def test_fixture_quality_flags_evidence_provenance_text_gaps() -> None:
     result = _load_success()
     evidence = result.evidence_inputs[0].model_copy(

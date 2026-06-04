@@ -972,6 +972,34 @@ tasks:
       - retryable must be boolean
       - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
 
+  - id: CON-029
+    title: Level 8 connector source-failure reason consistency
+    status: done
+    depends_on: [CON-028]
+    lane: connector-integration
+    notes: Tightened connector-local fixture quality so source-failure observed_value.failure_reason must match retrieval metrics.failure_reason when the retrieval metric is present. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-029-connector-source-failure-reason-consistency
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Source-failure evidence failure_reason must match retrieval metrics.failure_reason when the metric is present
+      - Missing/invalid source-failure payloads remain reported by existing incomplete/invalid issue codes before consistency comparison
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done

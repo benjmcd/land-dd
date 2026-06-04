@@ -35,6 +35,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     )
     SOURCE_FAILURE_PAYLOAD_INCOMPLETE = "source_failure_payload_incomplete"
     SOURCE_FAILURE_PAYLOAD_INVALID = "source_failure_payload_invalid"
+    SOURCE_FAILURE_REASON_MISMATCH = "source_failure_reason_mismatch"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
 
 
@@ -215,7 +216,11 @@ def evaluate_flood_fixture_quality(
                 ),
             )
         if evidence.is_source_failure:
-            _append_source_failure_issues(issues, evidence)
+            _append_source_failure_issues(
+                issues,
+                evidence,
+                retrieval_failure_reason=retrieval_run.metrics.get("failure_reason"),
+            )
 
     return ConnectorFixtureQualityProfile(
         connector_name=retrieval_run.connector_name,
@@ -263,6 +268,8 @@ def _append_evidence_provenance_issues(
 def _append_source_failure_issues(
     issues: list[ConnectorFixtureQualityIssue],
     evidence: EvidenceContract,
+    *,
+    retrieval_failure_reason: object,
 ) -> None:
     required_keys = {"failure_reason", "error_message", "retryable"}
     if not required_keys.issubset(evidence.observed_value):
@@ -283,6 +290,12 @@ def _append_source_failure_issues(
                 "source-failure fixture payload values must be typed and non-empty",
             ),
         )
+    else:
+        _append_source_failure_reason_consistency_issue(
+            issues,
+            evidence,
+            retrieval_failure_reason=retrieval_failure_reason,
+        )
     if evidence.confidence != ConfidenceBand.UNKNOWN:
         issues.append(
             _issue(
@@ -297,6 +310,30 @@ def _issue(
     message: str,
 ) -> ConnectorFixtureQualityIssue:
     return ConnectorFixtureQualityIssue(code=code, message=message)
+
+
+def _append_source_failure_reason_consistency_issue(
+    issues: list[ConnectorFixtureQualityIssue],
+    evidence: EvidenceContract,
+    *,
+    retrieval_failure_reason: object,
+) -> None:
+    if not isinstance(retrieval_failure_reason, str):
+        return
+    cleaned_retrieval_reason = retrieval_failure_reason.strip()
+    if not cleaned_retrieval_reason:
+        return
+    payload_reason = evidence.observed_value["failure_reason"]
+    if (
+        isinstance(payload_reason, str)
+        and payload_reason.strip() != cleaned_retrieval_reason
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_REASON_MISMATCH,
+                "source-failure reason must match retrieval failure metric",
+            ),
+        )
 
 
 def _non_empty_text(value: object) -> bool:

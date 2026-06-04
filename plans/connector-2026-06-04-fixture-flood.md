@@ -1153,3 +1153,36 @@ Result: pass on 2026-06-04. Focused fixture-quality tests cover 12 cases; focuse
 ### Next Slice
 
 After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
+
+## CON-029 Connector Source-Failure Reason Consistency
+
+CON-029 tightens connector-local fixture quality around source-failure reason consistency.
+
+### Implemented Checks
+
+When a source-failure fixture retrieval records `metrics.failure_reason`, the source-failure evidence payload `observed_value.failure_reason` must match it exactly after whitespace trimming.
+
+This follows the existing source-failure payload checks from CON-028. Missing or invalid payload values are still reported by the existing incomplete/invalid payload issue codes before reason-consistency comparison runs.
+
+### Boundary Preserved
+
+This is connector-local fixture-quality validation only. It does not add API routes, OpenAPI changes, DB schema changes, queue behavior, connector runtime behavior, live I/O, hook config, POSIX scripts, durable evidence-row `ingest_run_id` linkage, or Lane A/B/C/D module changes outside the connector quality evaluator.
+
+### Validation
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Focused fixture-quality tests cover 13 cases; focused ruff clean; focused mypy clean over 2 source files. Full final verification is recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
