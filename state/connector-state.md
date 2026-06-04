@@ -22,6 +22,7 @@ Current task:
 - CON-015: DONE - connector review queue API retrieval.
 - CON-016: DONE - connector review queue worker lease and finish semantics.
 - CON-017: DONE - connector queue worker-state read model.
+- CON-018: DONE - connector queue retry/requeue and cancel semantics.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -65,6 +66,7 @@ Do not work on yet:
 - `docs/adr/lane-d-0004-connector-queue-retrieval.md`
 - `docs/adr/lane-d-0005-connector-queue-worker.md`
 - `docs/adr/lane-d-0006-connector-queue-worker-read-model.md`
+- `docs/adr/lane-d-0007-connector-queue-retry-cancel.md`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -113,6 +115,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-017 result: focused queue API tests pass with DB smoke skipped by default (7 passed, 2 skipped); DB-enabled queue API tests pass (2 tests); connector/API tests pass with DB smoke skipped by default (62 passed, 7 skipped); connector/API ruff clean; connector/API mypy clean over 36 source files; full DB-enabled PowerShell verification passes with 326 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-018 result: focused queue tests pass with DB smoke skipped by default (6 passed, 3 skipped); DB-enabled queue tests pass (9 tests); connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); connector/API ruff clean; connector/API mypy clean over 36 source files; full DB-enabled PowerShell verification passes with 329 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -130,3 +134,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector review queue API retrieval | Satisfied for read-only queue item lookup | `GET /connector-runs/{ingest_run_id}/review-queue` reads stored queue items without job mutation, worker execution, claims, reports, schema edits, or live I/O |
 | Connector review queue worker lease semantics | Satisfied for repository-level lease/finish methods | `ConnectorReviewQueueRepository` implementations can lease eligible connector review jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation |
 | Connector queue worker-state read model | Satisfied for read-only API surfacing | `GET /connector-runs/{ingest_run_id}/review-queue` now surfaces attempts, lock/start/finish metadata, and last error without leasing, completing, failing, retrying, requeueing, cancelling, creating, or executing jobs |
+| Connector queue retry/requeue/cancel semantics | Satisfied for repository-level orchestration methods | `ConnectorReviewQueueRepository` implementations can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons; no API mutation route, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation was added |

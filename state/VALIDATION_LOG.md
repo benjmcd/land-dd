@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-018 connector queue retry and cancel semantics
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+ruff check app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+mypy app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = (Resolve-Path ..\..\local_artifacts).Path
+$env:PATH = "$rootArtifacts;$env:PATH"; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused queue tests with DB smoke skipped by default: 6 passed, 3 skipped.
+- DB-enabled queue tests: 9 passed.
+- Focused queue ruff: clean.
+- Focused queue mypy: clean over 3 source/test files.
+- Connector/API tests with DB smoke skipped by default: 64 passed, 8 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source files.
+- Backend collection: 329 tests.
+- Full DB-enabled PowerShell verification: ok after prepending the root `local_artifacts` Windows wrapper directory for isolated-worktree `psql` lookup; 329 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-018 is repository-level retry/requeue/cancel semantics only. It does not add API-side mutation, automatic retry policy, timeout handling, scheduler, background loop, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration changes, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+- Default connector review queue items still use `max_attempts = 1`; retry remains fail-closed unless a future planned producer/operator explicitly permits additional attempts.
+
 ## 2026-06-04 CON-017 connector queue worker read model
 
 **Commands run:**

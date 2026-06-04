@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-018)
+
+- Completed CON-018 as repository-level connector queue retry/requeue/cancel semantics.
+- Added `docs/adr/lane-d-0007-connector-queue-retry-cancel.md` to define retry and cancellation boundaries.
+- Extended connector review queue repositories with `requeue_failed(...)` and `cancel(...)`.
+- Requeue is limited to failed connector review jobs with remaining attempts, preserves attempt count, clears lock/finish metadata, schedules `not_before`, and records a reason.
+- Cancellation is limited to non-succeeded/non-cancelled connector review jobs and records a reason.
+- Preserved the existing boundary: no API-side mutation, automatic retry policy, timeout handling, scheduler, background loop, queue dashboard, live connector execution, evidence persistence, claims, reports, schema/migration edit, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
 ## 2026-06-04 (connector CON-017)
 
 - Completed CON-017 as read-only connector queue worker-state API surfacing.

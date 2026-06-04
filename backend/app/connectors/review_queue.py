@@ -25,6 +25,7 @@ class ConnectorReviewQueueItem:
     idempotency_key: str
     payload: dict[str, Any]
     created_at: datetime
+    not_before: datetime | None = None
     attempts: int = 0
     max_attempts: int = 1
     locked_by: str | None = None
@@ -51,6 +52,16 @@ class ConnectorReviewQueueRepository(Protocol):
 
     def mark_failed(self, job_id: UUID, *, error: str) -> ConnectorReviewQueueItem: ...
 
+    def requeue_failed(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        not_before: datetime | None = None,
+    ) -> ConnectorReviewQueueItem: ...
+
+    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem: ...
+
 
 class InMemoryConnectorReviewQueueRepository:
     def __init__(self) -> None:
@@ -75,6 +86,7 @@ class InMemoryConnectorReviewQueueRepository:
             idempotency_key=_idempotency_key(ingest_run_id),
             payload=_payload(review_status),
             created_at=review_status.handoff.packet.started_at,
+            not_before=review_status.handoff.packet.started_at,
         )
         self._store[ingest_run_id] = item
         return item
@@ -87,16 +99,17 @@ class InMemoryConnectorReviewQueueRepository:
 
     def lease_next(self, *, worker_id: str) -> ConnectorReviewQueueItem | None:
         worker_id = _require_worker_id(worker_id)
+        leased_at = datetime.now(UTC)
         candidates = [
             item
             for item in self._store.values()
             if item.status in {JobStatus.NEEDS_REVIEW, JobStatus.QUEUED}
             and item.attempts < item.max_attempts
+            and (item.not_before is None or item.not_before <= leased_at)
         ]
         if not candidates:
             return None
         selected = min(candidates, key=lambda item: (item.priority, item.created_at))
-        leased_at = datetime.now(UTC)
         leased = replace(
             selected,
             status=JobStatus.RUNNING,
@@ -131,11 +144,54 @@ class InMemoryConnectorReviewQueueRepository:
         self._store[failed.ingest_run_id] = failed
         return failed
 
+    def requeue_failed(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        not_before: datetime | None = None,
+    ) -> ConnectorReviewQueueItem:
+        reason = _require_reason(reason)
+        item = self._get_job(job_id)
+        if item.status != JobStatus.FAILED:
+            raise ValueError("connector review queue job is not failed")
+        if item.attempts >= item.max_attempts:
+            raise ValueError("connector review queue job has no retry attempts remaining")
+        requeued = replace(
+            item,
+            status=JobStatus.QUEUED,
+            not_before=not_before or datetime.now(UTC),
+            locked_by=None,
+            locked_at=None,
+            finished_at=None,
+            last_error=reason,
+        )
+        self._store[requeued.ingest_run_id] = requeued
+        return requeued
+
+    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem:
+        reason = _require_reason(reason)
+        item = self._get_job(job_id)
+        if item.status in {JobStatus.SUCCEEDED, JobStatus.CANCELLED}:
+            raise ValueError("connector review queue job cannot be cancelled")
+        cancelled = replace(
+            item,
+            status=JobStatus.CANCELLED,
+            finished_at=datetime.now(UTC),
+            last_error=reason,
+        )
+        self._store[cancelled.ingest_run_id] = cancelled
+        return cancelled
+
     def _get_running_job(self, job_id: UUID) -> ConnectorReviewQueueItem:
+        item = self._get_job(job_id)
+        if item.status != JobStatus.RUNNING:
+            raise ValueError("connector review queue job is not running")
+        return item
+
+    def _get_job(self, job_id: UUID) -> ConnectorReviewQueueItem:
         for item in self._store.values():
             if item.job_id == job_id:
-                if item.status != JobStatus.RUNNING:
-                    raise ValueError("connector review queue job is not running")
                 return item
         raise ValueError("connector review queue job not found")
 
@@ -206,6 +262,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                     payload,
                     idempotency_key,
                     created_at,
+                    not_before,
                     attempts,
                     max_attempts,
                     locked_by,
@@ -267,6 +324,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                     queue.payload,
                     queue.idempotency_key,
                     queue.created_at,
+                    queue.not_before,
                     queue.attempts,
                     queue.max_attempts,
                     queue.locked_by,
@@ -303,6 +361,108 @@ class SqlAlchemyConnectorReviewQueueRepository:
             error=_require_error(error),
         )
 
+    def requeue_failed(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        not_before: datetime | None = None,
+    ) -> ConnectorReviewQueueItem:
+        row = self._session.execute(
+            text(
+                """
+                UPDATE jobs.job_queue
+                SET
+                    status = CAST(:queued_status AS jobs.job_status),
+                    not_before = COALESCE(CAST(:not_before AS timestamptz), now()),
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    finished_at = NULL,
+                    last_error = :last_error
+                WHERE job_type = :job_type
+                  AND job_id = :job_id
+                  AND status = CAST(:failed_status AS jobs.job_status)
+                  AND attempts < max_attempts
+                RETURNING
+                    job_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                """
+            ),
+            {
+                "queued_status": JobStatus.QUEUED.value,
+                "not_before": not_before,
+                "last_error": _require_reason(reason),
+                "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                "job_id": str(job_id),
+                "failed_status": JobStatus.FAILED.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError(
+                "connector review queue job is not failed or has no retry attempts remaining"
+            )
+        return _item_from_row(row)
+
+    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem:
+        row = self._session.execute(
+            text(
+                """
+                UPDATE jobs.job_queue
+                SET
+                    status = CAST(:cancelled_status AS jobs.job_status),
+                    finished_at = now(),
+                    last_error = :last_error
+                WHERE job_type = :job_type
+                  AND job_id = :job_id
+                  AND status NOT IN (
+                      CAST(:succeeded_status AS jobs.job_status),
+                      CAST(:cancelled_status AS jobs.job_status)
+                  )
+                RETURNING
+                    job_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                """
+            ),
+            {
+                "cancelled_status": JobStatus.CANCELLED.value,
+                "last_error": _require_reason(reason),
+                "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                "job_id": str(job_id),
+                "succeeded_status": JobStatus.SUCCEEDED.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError("connector review queue job cannot be cancelled")
+        return _item_from_row(row)
+
     def _finish_job(
         self,
         job_id: UUID,
@@ -329,6 +489,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                     payload,
                     idempotency_key,
                     created_at,
+                    not_before,
                     attempts,
                     max_attempts,
                     locked_by,
@@ -396,6 +557,7 @@ def _item_from_row(row: Any) -> ConnectorReviewQueueItem:
         idempotency_key=str(row["idempotency_key"]),
         payload=payload,
         created_at=row["created_at"],
+        not_before=row["not_before"],
         attempts=int(row["attempts"]),
         max_attempts=int(row["max_attempts"]),
         locked_by=row["locked_by"],
@@ -417,6 +579,13 @@ def _require_error(error: str) -> str:
     cleaned = error.strip()
     if not cleaned:
         raise ValueError("connector review queue failure error is required")
+    return cleaned
+
+
+def _require_reason(reason: str) -> str:
+    cleaned = reason.strip()
+    if not cleaned:
+        raise ValueError("connector review queue reason is required")
     return cleaned
 
 

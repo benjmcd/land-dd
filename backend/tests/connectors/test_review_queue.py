@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
 
@@ -191,6 +192,53 @@ def test_in_memory_review_queue_rejects_invalid_worker_transitions() -> None:
         repo.mark_failed(leased.job_id, error="")
 
 
+def test_in_memory_review_queue_requeues_failed_jobs_with_remaining_attempts() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+    repo._store[item.ingest_run_id] = replace(item, max_attempts=2)
+
+    first_lease = repo.lease_next(worker_id="worker-1")
+    assert first_lease is not None
+    first_failure = repo.mark_failed(first_lease.job_id, error="temporary review error")
+    requeued = repo.requeue_failed(
+        first_failure.job_id,
+        reason="retry after reviewer handoff",
+    )
+
+    assert requeued.status == JobStatus.QUEUED
+    assert requeued.attempts == 1
+    assert requeued.max_attempts == 2
+    assert requeued.locked_by is None
+    assert requeued.locked_at is None
+    assert requeued.finished_at is None
+    assert requeued.last_error == "retry after reviewer handoff"
+
+    second_lease = repo.lease_next(worker_id="worker-2")
+    assert second_lease is not None
+    assert second_lease.attempts == 2
+    second_failure = repo.mark_failed(second_lease.job_id, error="permanent error")
+    with pytest.raises(ValueError, match="no retry attempts remaining"):
+        repo.requeue_failed(second_failure.job_id, reason="retry not allowed")
+
+
+def test_in_memory_review_queue_cancels_nonfinal_jobs() -> None:
+    review_status = _review_status("flood_success.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    with pytest.raises(ValueError, match="reason is required"):
+        repo.cancel(item.job_id, reason=" ")
+    cancelled = repo.cancel(item.job_id, reason="review no longer required")
+
+    assert cancelled.status == JobStatus.CANCELLED
+    assert cancelled.finished_at is not None
+    assert cancelled.last_error == "review no longer required"
+    assert repo.lease_next(worker_id="worker-1") is None
+    with pytest.raises(ValueError, match="cannot be cancelled"):
+        repo.cancel(cancelled.job_id, reason="already cancelled")
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
     engine = build_engine()
@@ -290,6 +338,81 @@ def test_sqlalchemy_review_queue_leases_and_completes_job_queue_item() -> None:
                 text(
                     "DELETE FROM jobs.job_queue WHERE job_type = :job_type"
                 ),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_requeues_and_cancels_job_queue_items() -> None:
+    engine = build_engine()
+    failure_status = _review_status("flood_failure.json")
+    success_status = _review_status("flood_success.json")
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            failed_candidate = repo.enqueue_review_status(failure_status)
+            session.execute(
+                text(
+                    "UPDATE jobs.job_queue "
+                    "SET max_attempts = 2 "
+                    "WHERE job_id = :job_id"
+                ),
+                {"job_id": str(failed_candidate.job_id)},
+            )
+            session.flush()
+
+            first_lease = repo.lease_next(worker_id="db-worker-1")
+            assert first_lease is not None
+            first_failure = repo.mark_failed(
+                first_lease.job_id,
+                error="temporary db review error",
+            )
+            requeued = repo.requeue_failed(
+                first_failure.job_id,
+                reason="retry after db reviewer handoff",
+            )
+
+            assert requeued.status == JobStatus.QUEUED
+            assert requeued.attempts == 1
+            assert requeued.max_attempts == 2
+            assert requeued.locked_by is None
+            assert requeued.locked_at is None
+            assert requeued.finished_at is None
+            assert requeued.last_error == "retry after db reviewer handoff"
+
+            second_lease = repo.lease_next(worker_id="db-worker-2")
+            assert second_lease is not None
+            assert second_lease.attempts == 2
+            second_failure = repo.mark_failed(
+                second_lease.job_id,
+                error="permanent db review error",
+            )
+            with pytest.raises(ValueError, match="no retry attempts remaining"):
+                repo.requeue_failed(
+                    second_failure.job_id,
+                    reason="retry not allowed",
+                )
+
+            cancel_candidate = repo.enqueue_review_status(success_status)
+            cancelled = repo.cancel(
+                cancel_candidate.job_id,
+                reason="connector review superseded",
+            )
+            session.commit()
+
+            assert cancelled.status == JobStatus.CANCELLED
+            assert cancelled.finished_at is not None
+            assert cancelled.last_error == "connector review superseded"
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
                 {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
             )
             session.commit()

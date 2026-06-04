@@ -38,7 +38,7 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 326 tests pass in the DB-enabled Windows PowerShell verification path after CON-017 connector queue worker read model; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
+- 329 tests pass in the DB-enabled Windows PowerShell verification path after CON-018 connector queue retry and cancel semantics; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
@@ -66,6 +66,7 @@ Verification result:
 - CON-015 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` retrieves in-memory or DB-backed connector review queue items by `ingest_run_id` without job mutation, worker execution, schema edits, live I/O, claims, reports, or DB-backed evidence linkage
 - CON-016 is complete: connector review queue repositories can lease eligible `connector_review_status` jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-017 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` exposes queue attempts, lock/start/finish metadata, and last error for in-memory and DB-backed queue rows without adding API-side job mutation, worker execution, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
+- CON-018 is complete: connector review queue repositories can requeue failed `connector_review_status` jobs only when attempts remain and cancel nonfinal jobs with reasons, without adding API-side mutation, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)

@@ -584,3 +584,26 @@ tasks:
       - In-memory and DB-backed queue API paths surface worker state consistently
       - Queue API retrieval remains read-only and does not mutate, lease, complete, fail, retry, requeue, cancel, create, or execute jobs
       - No scheduler, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
+
+  - id: CON-018
+    title: Level 8 connector queue retry and cancel semantics
+    status: done
+    depends_on: [CON-016]
+    lane: connector-integration
+    notes: Added repository-level retry/requeue and cancellation semantics for connector_review_status jobs. Failed jobs can be requeued only when attempts remain; requeue preserves attempt count, clears lock/finish metadata, schedules not_before, and records a reason. Non-succeeded/non-cancelled jobs can be cancelled with a reason. Default connector review jobs remain single-attempt because CON-014 inserts max_attempts 1. No API-side mutation, automatic retry policy, scheduler, live IO, reports, claims, schema migration, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-018-connector-queue-retry-and-cancel-semantics
+    files:
+      - backend/app/connectors/review_queue.py
+      - backend/tests/connectors/test_review_queue.py
+      - docs/adr/lane-d-0007-connector-queue-retry-cancel.md
+      - plans/connector-*.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Failed connector review queue jobs can be requeued only when attempts remain
+      - Requeued jobs preserve attempts, clear lock/finish metadata, schedule not_before, and retain an auditable reason
+      - Non-succeeded/non-cancelled connector review queue jobs can be cancelled with a reason
+      - Default single-attempt connector review jobs fail closed when requeue is requested
+      - No API mutation route, automatic retry policy, scheduler, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
