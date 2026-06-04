@@ -48,7 +48,7 @@ def test_failure_fixture_emits_blocked_retrieval_and_source_failure_input() -> N
     assert evidence.domain == "flood"
     assert evidence.is_source_failure is True
     assert evidence.confidence == ConfidenceBand.UNKNOWN
-    assert evidence.observed_value["failure_type"] == "source_unavailable"
+    assert evidence.observed_value["failure_reason"] == "fixture_source_unavailable"
 
 
 def test_fixture_output_is_idempotent_for_same_file() -> None:

@@ -24,8 +24,9 @@
       "domain": "flood",
       "observation": "Fixture flood source retrieval was unavailable.",
       "observed_value": {
-        "failure_type": "source_unavailable",
-        "reason": "fixture_source_unavailable"
+        "failure_reason": "fixture_source_unavailable",
+        "error_message": "Fixture flood source unavailable.",
+        "retryable": false
       },
       "source_id": "55555555-5555-4555-8555-555555555555",
       "dataset_version_id": "22222222-2222-4222-8222-222222222222",
