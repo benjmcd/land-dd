@@ -91,7 +91,7 @@ def test_fixture_quality_flags_success_metric_and_geometry_gaps() -> None:
 def test_fixture_quality_flags_blocked_or_failed_metric_gaps() -> None:
     result = _load_failure()
     retrieval_run = result.retrieval_run.model_copy(
-        update={"row_count": 1, "error_count": 0},
+        update={"row_count": 1, "error_count": 0, "metrics": {"fixture_only": True}},
     )
 
     profile = evaluate_flood_fixture_quality(
@@ -105,6 +105,7 @@ def test_fixture_quality_flags_blocked_or_failed_metric_gaps() -> None:
     assert tuple(issue.code for issue in profile.issues) == (
         ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO,
         ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ERROR_COUNT_MISSING,
+        ConnectorFixtureQualityIssueCode.RETRIEVAL_FAILURE_REASON_MISSING,
     )
 
 
