@@ -32,6 +32,7 @@ Verification command(s):
 - cd backend; mypy tests/reports/test_report_schema_contract.py
 - cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 Verification result:
+- Full verification passes locally with DB smoke enabled after CON-021 human-review action semantics planning: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-081 report manifest metadata schema tightening: 343 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
@@ -62,9 +63,10 @@ Verification result:
 - CON-020 is complete: connector fixture quality flags duplicate evidence IDs and evidence observed outside the retrieval-run time window without API mutation routes, persistence, live I/O, shared schema edits, claims, reports, or durable `ingest_run_id` evidence-row linkage
 - TD-081 is complete: stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with schema-contract tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`, without runtime validation, API behavior changes, DB migrations, connector behavior, live I/O, hook config, or POSIX scripts
 - TD-090 is complete: planning-pack OpenAPI now matches `create_app().openapi()`, and the planning-pack API spec distinguishes implemented routes from future roadmap routes without changing API behavior
+- CON-021 is complete as a planning-only human-review action semantics slice. Future action vocabulary is defined before any API mutation route, worker, scheduler, dashboard, connector runtime change, schema, or migration.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract. Remaining shared-schema gaps are source provenance-family schemas, job schema, and future report metadata extensions.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action semantics are planned. Remaining gaps are source provenance-family schemas, job schema, future report metadata extensions, durable `ingest_run_id` evidence-row linkage, and future API mutation/workflow implementation.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -79,6 +81,7 @@ Completion evidence:
 - docs/adr/lane-d-0008-connector-source-failure-ids.md
 - docs/adr/lane-d-0009-report-run-schema.md
 - docs/adr/lane-d-0010-report-manifest-metadata.md
+- docs/adr/lane-d-0011-connector-human-review-actions.md
 - schemas/report_run_schema.json
 - backend/app/api/dependencies.py (per-app API service wiring)
 - backend/app/api/sources.py (source router)
@@ -119,7 +122,8 @@ Next lowest-dependency task:
 - **TD-080 (DONE)**: Report-run schema contract is complete for serialized `ReportRunContract`.
 - **TD-081 (DONE)**: Report manifest metadata schema tightening is complete for stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys.
 - **TD-090 (DONE)**: Planning-pack OpenAPI refresh is complete and full DB-enabled verification passes.
-- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, future report metadata extensions, or another selected fixture category.
+- **CON-021 (DONE)**: Connector human-review action semantics are planned before API mutation or worker implementation.
+- **NEXT**: Select a coordinated Level 8 follow-up: implement a narrow human-review action API only after route semantics/reviewer identity/auth expectations are accepted, retry/cancel API surfacing only after route semantics are accepted, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, future report metadata extensions, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -130,7 +134,7 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, and future report metadata extensions remain future coordinated passes |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, future report metadata extensions, durable evidence-row retrieval lineage, and API mutation/workflow implementation remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |

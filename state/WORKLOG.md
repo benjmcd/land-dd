@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-021 human-review action semantics)
+
+- Added ADR `docs/adr/lane-d-0011-connector-human-review-actions.md` to define future connector human-review action vocabulary before any mutation API or worker workflow.
+- Recorded planned actions: `acknowledge`, `approve_for_connector_qa`, `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`.
+- Updated connector and Lane D planning/state records to keep human review as orchestration over `connector_review_status` queue rows, with `source.ingest_runs` remaining provenance authority and `jobs.job_queue` remaining review orchestration state.
+- Preserved the boundary: no connector runtime, API route, repository method, queue code, schema, migration, evidence, claim, report, live I/O, hook config, or POSIX script changed.
+- Verification passed: full DB-enabled PowerShell verification with 344 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (Lane D TD-090 planning-pack OpenAPI refresh)
 
 - Created isolated worktree `worktrees/lane-d-openapi` on branch `lane-d/openapi-refresh` from root `main` at `7ee5f8b` to avoid Session 2's active connector work.

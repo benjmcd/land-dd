@@ -89,6 +89,7 @@ Verification result:
 - CON-020 is complete: connector fixture quality now flags duplicate evidence IDs and evidence observed outside the retrieval-run time window without adding API mutation routes, persistence, live I/O, shared schema edits, claims, reports, or durable `ingest_run_id` evidence-row linkage
 - TD-081 is complete: stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with parity tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`, without adding runtime validation, API behavior changes, DB migrations, connector behavior, live I/O, hook config, or POSIX scripts
 - TD-090 is complete: the planning-pack OpenAPI reference now matches the live FastAPI-generated OpenAPI contract and the planning-pack API spec separates implemented endpoints from future roadmap endpoints.
+- CON-021 is complete as a planning-only human-review action semantics pass. Future connector review actions are named before any API mutation route, worker, scheduler, dashboard, connector runtime change, schema, or migration.
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -128,6 +129,7 @@ Completion evidence:
 - schemas/report_run_schema.json
 - backend/tests/reports/test_report_schema_contract.py
 - docs/adr/lane-d-0010-report-manifest-metadata.md
+- docs/adr/lane-d-0011-connector-human-review-actions.md
 - docs/planning_pack/api/openapi_stub.yaml
 - backend/tests/test_planning_pack_schema_copies.py
 - db/seeds/source_registry_seeds.py
@@ -139,7 +141,7 @@ Completion evidence:
 - backend/tests/source_registry/test_source_schema_contract.py
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 pass after CON-020 plus TD-081 plus TD-090 landing: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
+- Select the next Level 8 pass after CON-021: implement a narrow human-review action API only after route semantics/reviewer identity/auth expectations are accepted, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -196,7 +198,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-344 tests pass in the DB-enabled Windows PowerShell verification path after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, Lane A TA-070, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from human-review action workflow planning, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
+344 tests pass in the DB-enabled Windows PowerShell verification path after CON-021 human-review action semantics planning; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, Lane A TA-070, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should be selected from narrow human-review action API implementation only after route semantics/reviewer identity/auth expectations are accepted, retry/cancel API surfacing only after mutation-route semantics are accepted, durable `ingest_run_id` evidence linkage coordination, source provenance-family schema planning, future report metadata extensions, or broader fixture data-quality coverage for another selected fixture category.
 
 ## Local repo bootstrap state
 

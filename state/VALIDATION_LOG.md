@@ -2,6 +2,23 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-021 human-review action semantics
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Full DB-enabled PowerShell verification: ok; 344 backend tests pass; lint clean; mypy clean over 120 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 344 tests.
+
+**Residual risk:**
+
+- CON-021 is planning-only. Human-review action API routes, reviewer identity/auth handling, retry/cancel mutation surfacing, workers, dashboards, source provenance-family schemas, job schema, future report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+
 ## 2026-06-04 Combined TD-081 plus TD-090 verification
 
 **Commands run:**

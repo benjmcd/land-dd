@@ -849,3 +849,40 @@ The next Level 8 pass should choose one of:
 - propose report-run schema only after nested schema scope is settled;
 - plan source provenance-family schemas with Lane A ownership;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-021 Connector Human Review Action Semantics Plan
+
+CON-021 is complete as a planning-only action semantics slice. ADR `docs/adr/lane-d-0011-connector-human-review-actions.md` defines the future human-review action vocabulary for connector review queue rows:
+
+- `acknowledge`;
+- `approve_for_connector_qa`;
+- `request_fixture_fix`;
+- `requeue_after_fix`;
+- `cancel_review`.
+
+These are future workflow/API semantics only. No route, repository method, worker, scheduler, dashboard, migration, evidence mutation, claim/report behavior, live connector execution, schema edit, hook config, or POSIX script was added.
+
+### Boundary Preserved
+
+Human review actions operate over `connector_review_status` queue rows only. `source.ingest_runs` remains connector provenance and lifecycle authority. `jobs.job_queue` remains review orchestration state. Evidence, claims, reports, source schemas, job schemas, connector runtime, and API mutation routes remain unchanged.
+
+Any future API mutation slice must explicitly plan route names, request/response models, reviewer identity, reason requirements, idempotency, auth/security expectations, and fail-closed transition behavior before code.
+
+### Validation
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Result: full DB-enabled PowerShell verification passes with 344 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- implement a narrow human-review action API only after route semantics, reviewer identity, and auth expectations are accepted;
+- expose retry/cancel mutation routes only after route semantics are accepted;
+- coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
+- plan source provenance-family schemas with Lane A ownership;
+- define future report metadata extensions;
+- broaden fixture data-quality coverage for another selected fixture category.

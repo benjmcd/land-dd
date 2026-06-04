@@ -30,10 +30,11 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - TD-080 is complete: `schemas/report_run_schema.json` represents serialized `ReportRunContract`, references Lane C evidence/claim schemas for nested arrays, and is guarded by report schema-contract parity tests.
 - TD-081 is complete: `schemas/report_run_schema.json` now constrains stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys while preserving extension fields and avoiding runtime/API/DB behavior changes.
 - TD-090 is complete: `docs/planning_pack/api/openapi_stub.yaml` is regenerated from the live FastAPI app, and a planning-pack test guards it against drift from `create_app().openapi()`.
+- CON-021 is complete as a planning-only connector human-review action semantics slice. It defines future action vocabulary before any API mutation route, worker, scheduler, dashboard, or connector runtime change.
 
 ## Blockers at lane setup
 
-Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, and the planning-pack OpenAPI reference is aligned to the generated FastAPI contract. Source provenance-family schemas, job schema, and new report metadata extensions remain future coordinated work.
+Lane D has no blocking dependency for the fixture-backed Level 7 report/API slice. Source/evidence/claim/report root schemas are now aligned to serialized domain contracts, stable generated report manifest metadata is schema-constrained, the planning-pack OpenAPI reference is aligned to the generated FastAPI contract, and connector human-review action semantics are planned. Source provenance-family schemas, job schema, API mutation routes, and new report metadata extensions remain future coordinated work.
 
 ## Proposed design
 
@@ -142,6 +143,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `backend/tests/test_planning_pack_schema_copies.py` | Planning-pack schema/OpenAPI parity tests |
 | `docs/adr/lane-d-0009-report-run-schema.md` | Report-run schema decision |
 | `docs/adr/lane-d-0010-report-manifest-metadata.md` | Report manifest metadata schema decision |
+| `docs/adr/lane-d-0011-connector-human-review-actions.md` | Connector human-review action semantics decision |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
@@ -161,7 +163,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 
 | Blocker | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, and new report metadata extensions remain future coordinated passes |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, API mutation routes, and new report metadata extensions remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
@@ -195,3 +197,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: TD-080 complete. Added `schemas/report_run_schema.json`, report schema-contract parity tests, and ADR `lane-d-0009-report-run-schema`. Lane D report/API collection: 33 tests; full DB-enabled PowerShell verification: 339 tests, lint clean, mypy clean (120 source files), migrations/seeds apply, DB smoke passes.
 - 2026-06-04: TD-081 complete. Tightened generated report manifest metadata schema keys, added ADR `lane-d-0010-report-manifest-metadata`, and extended report schema-contract tests without changing API, DB, connector behavior, runtime validation, live I/O, hook config, or POSIX scripts.
 - 2026-06-04: TD-090 complete. Regenerated the planning-pack OpenAPI reference from `create_app().openapi()`, updated the planning-pack API spec to distinguish implemented routes from future roadmap routes, and added a parity test that fails closed on future OpenAPI drift.
+- 2026-06-04: CON-021 complete as a planning-only human-review action semantics pass. Added ADR `lane-d-0011-connector-human-review-actions` without changing API behavior, connector runtime, queue code, schemas, migrations, live I/O, hook config, or POSIX scripts.
