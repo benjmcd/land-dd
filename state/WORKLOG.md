@@ -9,6 +9,16 @@ Append concise entries. Do not rely on chat history.
 - Verified the combined branch with focused connector/API/Lane C checks, DB-enabled focused queue/API/evidence persistence checks, ruff/mypy, backend collection, and full DB-enabled Windows PowerShell verification with 331 backend tests passing.
 - Preserved root `main` during the rehearsal; root landing remains a separate clean checkpoint.
 
+## 2026-06-04 (Lane A TA-070 source schema-contract parity)
+
+- Created isolated worktree `worktrees/lane-a-source-schema` on branch `lane-a/source-schema-contract` from root `main` at `6dde79e` to avoid Session 2's connector-zone work.
+- Decided and recorded that `schemas/source_schema.json` represents serialized `SourceContract` only, not the broader source dataset/version/retrieval-run provenance family.
+- Aligned `schemas/source_schema.json` to `SourceContract.model_fields`, including optional fields that still appear in serialized contract output, and constrained `authority_level` to the Lane A enum values.
+- Added `backend/tests/source_registry/test_source_schema_contract.py` to guard schema property/required-field parity, authority-level enum parity, and exclusion of dataset/version/retrieval-run fields.
+- Updated Lane A ADR/plan/state plus the D-003 schema-contract note to close the source schema gap while leaving source provenance-family schemas, job schema, report-run schema, and OpenAPI refresh as future work.
+- Preserved the boundary: no connector implementation, connector tests, connector fixtures, Lane C evidence/claim code, Lane D API/report code, migrations, live I/O, hook config, or POSIX scripts were changed.
+- Verification passed: focused source schema-contract tests; Lane A source-registry collection/default test run; targeted ruff/mypy; `git diff --check`; full DB-enabled PowerShell verification with 330 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (Lane C TC-180 source-failure evidence ID preservation)
 
 - Created isolated worktree `worktrees/lane-c-failure-id` on branch `lane-c/failure-id-preservation` from root `main` at `e8f13fd` to avoid Session 2's connector-zone work.
