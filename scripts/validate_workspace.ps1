@@ -88,4 +88,33 @@ foreach ($path in $required) {
 
 Invoke-PythonCommand -Label 'json file check' -Arguments @('scripts/check_json_files.py')
 
+# Structural invariant checks. These must hold or a prior fix has been regressed.
+Write-Host '== structural invariants =='
+
+$backendApp = Join-Path (Join-Path $root 'backend') 'app'
+
+# Exactly one DeclarativeBase subclass -- all ORM models must use AppBase from db/base.py
+$declarativeBases = (Get-ChildItem -Path $backendApp -Recurse -Filter '*.py' |
+    Select-String -Pattern 'class\s+\w+\s*\(\s*DeclarativeBase\s*\)' |
+    Measure-Object).Count
+if ($declarativeBases -ne 1) {
+    throw "structural invariant: expected 1 DeclarativeBase subclass in backend/app/, found $declarativeBases"
+}
+
+# Zero legacy .query() API calls -- all repos must use SQLAlchemy 2.x select() style
+$legacyQuery = (Get-ChildItem -Path $backendApp -Recurse -Filter '*.py' |
+    Select-String -Pattern '\.query\(' |
+    Measure-Object).Count
+if ($legacyQuery -ne 0) {
+    throw "structural invariant: found $legacyQuery legacy .query() calls in backend/app/ -- use select() style"
+}
+
+# No agent attribution strings in tracked source files
+$agentAttrib = (git -C $root grep -l 'noreply@anthropic' -- '*.py' '*.sql' 2>$null |
+    Measure-Object).Count
+if ($agentAttrib -ne 0) {
+    throw "structural invariant: found agent attribution in $agentAttrib tracked source files"
+}
+
+Write-Host 'structural invariants: ok'
 Write-Host 'workspace validation: ok'

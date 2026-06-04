@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-03 (non-fragility audit + invariant enforcement)
+
+- Found and fixed critical non-negotiable violation: `forbidden_language` block in `ruleset_homestead_mvp.yaml` was silently discarded by the hand-rolled YAML parser (section != "hard_gates" guard). Fixed: parser now loads the 6 forbidden phrases into `RuleSet.forbidden_language`; `RuleEngine._check_forbidden_language()` raises `ValueError` if any generated claim contains a forbidden phrase. 7 tests added in `test_forbidden_language.py`.
+- Fixed fragile `_unknown_claims` filter in `service.py`: replaced `"UNKNOWN" in claim.claim_code` substring scan with `claim.severity == SeverityBand.UNKNOWN` (the correct and complete signal).
+- Added `intent_code_enum` to `db/types.py` — closes the gap for future ORM models against `core.intents` or `reports.report_runs`. Added explanatory comment for `area_type_enum` (the one known exception, pending coordinated migration).
+- Added AGENTS.md non-negotiable: no agent name, model name, or AI attribution in any file or commit message.
+- Removed `Author: Claude (ralplan)` tag from `plans/2026-06-03-repo-audit-and-forward-options.md`.
+- Rewrote all session commit messages to remove `Co-Authored-By:` trailers (17 local commits; no remote push affected).
+- Added 3 structural invariant checks to `scripts/validate_workspace.ps1` (runs as part of `verify.ps1`):
+  1. Exactly 1 `DeclarativeBase` subclass in `backend/app/` (prevents ORM base fragmentation)
+  2. Zero `.query(` calls in `backend/app/` (prevents SQLAlchemy 1.x API regression)
+  3. No `noreply@anthropic` in tracked `.py` or `.sql` files (prevents agent attribution leakage)
+- Verified: 201 tests pass (non-DB); 84 source files mypy-clean; ruff clean; structural invariants pass.
+
 ## 2026-06-03 (pre-Codex structural hardening — ralplan A-minus + deep re-audit)
 
 **Initial hardening (commit group 99cde91–3d5a9fd):**
