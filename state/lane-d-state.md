@@ -33,10 +33,12 @@ Verification command(s):
 - cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 Verification result:
 - Full verification passes locally with DB smoke enabled after TD-081 report manifest metadata schema tightening: 343 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after rebasing TD-090 planning-pack OpenAPI refresh onto TD-081 report manifest metadata schema tightening: 344 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-019 and root `ca10f85` reconciliation: 335 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-080 report schema contract: 339 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after merging CON-020 and TD-080: 341 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after TD-090 planning-pack OpenAPI refresh: 342 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
@@ -46,7 +48,8 @@ Verification result:
 - Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
 - `schemas/report_run_schema.json` is aligned to serialized `ReportRunContract`, references Lane C evidence/claim schemas for nested arrays, and is guarded by schema-contract parity tests
 - Stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with schema-contract tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`
-- Shared source provenance-family, job, OpenAPI, and future report metadata extension gaps remain recorded in `plans/2026-06-04-l7-closeout-l8-entry.md`
+- Planning-pack OpenAPI now matches the generated FastAPI contract.
+- Shared source provenance-family, job, and future report metadata extension gaps remain recorded in `plans/2026-06-04-l7-closeout-l8-entry.md`.
 - Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
 - CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
@@ -58,9 +61,10 @@ Verification result:
 - CON-019 is complete in the Session 2 integration branch: connector evidence ingestion passes supplied deterministic source-failure evidence IDs through Lane C's public service boundary and DB-backed public wiring proves persistence without Lane C implementation/schema edits, live I/O, queue API mutation, claim/report changes, or durable `ingest_run_id` evidence-row linkage
 - CON-020 is complete: connector fixture quality flags duplicate evidence IDs and evidence observed outside the retrieval-run time window without API mutation routes, persistence, live I/O, shared schema edits, claims, reports, or durable `ingest_run_id` evidence-row linkage
 - TD-081 is complete: stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys are constrained with schema-contract tests and ADR `docs/adr/lane-d-0010-report-manifest-metadata.md`, without runtime validation, API behavior changes, DB migrations, connector behavior, live I/O, hook config, or POSIX scripts
+- TD-090 is complete: planning-pack OpenAPI now matches `create_app().openapi()`, and the planning-pack API spec distinguishes implemented routes from future roadmap routes without changing API behavior
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; stable generated report manifest metadata keys are tightened. Remaining shared-schema gaps are source provenance-family schemas, job schema, future report metadata extensions, and OpenAPI refresh.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract. Remaining shared-schema gaps are source provenance-family schemas, job schema, and future report metadata extensions.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -114,7 +118,8 @@ Next lowest-dependency task:
 - **CON-020 (DONE)**: Connector fixture identity/timing quality is complete for duplicate evidence IDs and evidence observed outside the retrieval-run time window.
 - **TD-080 (DONE)**: Report-run schema contract is complete for serialized `ReportRunContract`.
 - **TD-081 (DONE)**: Report manifest metadata schema tightening is complete for stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys.
-- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, OpenAPI refresh, future report metadata extensions, or another selected fixture category.
+- **TD-090 (DONE)**: Planning-pack OpenAPI refresh is complete and full DB-enabled verification passes.
+- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, future report metadata extensions, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -125,7 +130,7 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened | Source provenance-family schemas, job schema, future report metadata extensions, and OpenAPI refresh remain future coordinated passes |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned; stable generated report manifest metadata tightened; planning-pack OpenAPI aligned to generated FastAPI contract | Source provenance-family schemas, job schema, and future report metadata extensions remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |

@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Combined TD-081 plus TD-090 verification
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/test_planning_pack_schema_copies.py
+ruff check tests/test_planning_pack_schema_copies.py
+mypy tests/test_planning_pack_schema_copies.py
+py -3.12 -m pytest --collect-only
+Set-Location ..
+```
+
+**Results:**
+
+- Planning-pack schema/OpenAPI parity tests: 2 passed.
+- Focused planning-pack ruff: clean.
+- Focused planning-pack mypy: clean over 1 source file.
+- Backend collection includes 344 tests after rebasing TD-090 onto TD-081.
+- Full DB-enabled PowerShell verification: ok; 344 backend tests pass; lint clean; mypy clean over 120 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- TD-081 and TD-090 together resolve stable generated report manifest metadata keys and planning-pack OpenAPI for the current local FastAPI app. Source provenance-family schemas, job schema, future report metadata extensions, live connectors, API mutation routes, generated clients, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+
+## 2026-06-04 Lane D TD-090 planning-pack OpenAPI refresh
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/test_planning_pack_schema_copies.py
+ruff check tests/test_planning_pack_schema_copies.py
+mypy tests/test_planning_pack_schema_copies.py
+py -3.12 -m pytest --collect-only
+Set-Location ..
+```
+
+**Results:**
+
+- Planning-pack schema/OpenAPI parity tests: 2 passed.
+- Focused planning-pack ruff: clean.
+- Focused planning-pack mypy: clean over 1 source file.
+- Backend collection includes 342 tests.
+- Full DB-enabled PowerShell verification: ok; 342 backend tests pass; lint clean; mypy clean over 120 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- TD-090 resolves the planning-pack OpenAPI reference for the current local FastAPI app only. It does not add API behavior, API mutation routes, generated clients, live connectors, schemas, migrations, source provenance-family schemas, job schema changes, new report metadata extensions, or durable `ingest_run_id` evidence-row linkage.
+
 ## 2026-06-04 Lane D TD-081 report manifest metadata schema
 
 **Commands run:**
@@ -33,7 +83,7 @@ py -3.12 -m pytest --collect-only -q
 
 **Residual risk:**
 
-- TD-081 tightens stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys only. It does not add runtime JSON Schema validation, API behavior changes, DB migrations, connector behavior, source provenance-family schemas, job schema, OpenAPI refresh, live connectors, or durable `ingest_run_id` evidence-row linkage.
+- TD-081 tightens stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys only. It does not add runtime JSON Schema validation, API behavior changes, DB migrations, connector behavior, source provenance-family schemas, job schema, live connectors, or durable `ingest_run_id` evidence-row linkage. Planning-pack OpenAPI is resolved separately by TD-090.
 - Nested report metadata maps still allow extension fields by design; future extension keys need their own decision before being treated as stable.
 
 ## 2026-06-04 Combined CON-020 plus TD-080 root verification
@@ -54,7 +104,7 @@ py -3.12 -m pytest --collect-only -q
 **Residual risk:**
 
 - CON-020 remains fixture-local connector quality coverage only.
-- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys. Source provenance-family schemas, job schema, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys, and TD-090 later resolves planning-pack OpenAPI. Source provenance-family schemas, job schema, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
 
 ## 2026-06-04 CON-020 connector fixture identity and timing quality
 
@@ -115,7 +165,7 @@ py -3.12 -m pytest --collect-only -q
 
 **Residual risk:**
 
-- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys. Source provenance-family schemas, job schema, planning-pack/OpenAPI refresh, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+- TD-080 resolves `schemas/report_run_schema.json` for serialized `ReportRunContract` only. TD-081 later tightens stable generated report manifest metadata keys, and planning-pack OpenAPI is resolved by TD-090. Source provenance-family schemas, job schema, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
 
 ## 2026-06-04 CON-019 connector source-failure evidence ID adoption
 
@@ -183,7 +233,7 @@ py -3.12 -m pytest --collect-only -q
 
 **Residual risk:**
 
-- TA-070 resolves `schemas/source_schema.json` for serialized `SourceContract` only. `SourceDatasetContract`, `SourceDatasetVersionContract`, `SourceRetrievalRunContract`, job schema, report-run schema, and OpenAPI refresh remain separate future work; connector adapter adoption of deterministic source-failure evidence IDs is completed by CON-019 in the Session 2 integration branch.
+- TA-070 resolves `schemas/source_schema.json` for serialized `SourceContract` only. `SourceDatasetContract`, `SourceDatasetVersionContract`, `SourceRetrievalRunContract`, and job schema remain separate future work; report-run schema is resolved by TD-080 and planning-pack OpenAPI is resolved by TD-090. Connector adapter adoption of deterministic source-failure evidence IDs is completed by CON-019 in the Session 2 integration branch.
 
 ## 2026-06-04 Combined TC-180 plus CON-017/CON-018 integration rehearsal
 

@@ -15,7 +15,7 @@ Add `schemas/report_run_schema.json` as the serialized `ReportRunContract` schem
 
 `source_manifest` and `artifact_metadata` remain open objects in this base report-run schema decision. Their current contents are report-runtime manifests and artifact metadata, not stable cross-lane contracts. Tightening those maps requires a separate report manifest/schema decision after connector provenance, cost metrics, and report artifact metadata semantics stabilize.
 
-ADR Lane D 0010 is that separate follow-up decision for the stable generated report artifact keys. It tightens the known `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys while keeping extension fields open and leaving source provenance-family schemas, job schema, OpenAPI refresh, runtime validation, and API behavior unchanged.
+ADR Lane D 0010 is that separate follow-up decision for the stable generated report artifact keys. It tightens the known `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys while keeping extension fields open and leaving source provenance-family schemas, job schema, runtime validation, and API behavior unchanged. TD-090 resolves the planning-pack OpenAPI refresh separately.
 
 The report-run schema does not model DB-only columns, connector queue records, source dataset/version/retrieval-run contracts, OpenAPI output envelopes, PDF output, or UI-specific report views.
 
@@ -25,7 +25,7 @@ The report-run schema does not model DB-only columns, connector queue records, s
 - Nested evidence and claim shapes remain owned by Lane C schemas rather than duplicated in Lane D.
 - Report-run schema can support the Level 7 artifact requirement without blocking on future source provenance-family schemas.
 - Source manifest and artifact metadata remain flexible for extensions; ADR Lane D 0010 constrains their stable generated report artifact keys.
-- OpenAPI refresh remains a separate future Lane D pass.
+- Planning-pack OpenAPI refresh is resolved separately by TD-090.
 
 ## Links
 

@@ -2,12 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-090 planning-pack OpenAPI refresh)
+
+- Created isolated worktree `worktrees/lane-d-openapi` on branch `lane-d/openapi-refresh` from root `main` at `7ee5f8b` to avoid Session 2's active connector work.
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml` from the live FastAPI app via `create_app().openapi()`.
+- Updated `docs/planning_pack/11_API_AND_INTEGRATION_SPEC.md` so implemented endpoints are separated from future product-roadmap endpoints.
+- Updated `docs/planning_pack/README.md`, Lane D plans, task queue, and state records to mark the OpenAPI refresh as TD-090.
+- Added `backend/tests/test_planning_pack_schema_copies.py` coverage that fails closed if the planning-pack OpenAPI reference drifts from the generated FastAPI contract.
+- Preserved the boundary: no API behavior, connector runtime, connector queue mutation, report behavior, schemas, migrations, live I/O, hook config, or POSIX scripts were changed.
+- Verification passed before TD-081 integration: planning-pack parity tests; focused ruff/mypy; backend collection; full DB-enabled PowerShell verification with 342 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+- Rebased TD-090 onto TD-081 (`ea0d69a`), preserving TD-081 report metadata schema records and TD-090 OpenAPI records. Full DB-enabled PowerShell verification passes with 344 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (Lane D TD-081 report manifest metadata schema)
 
 - Tightened `schemas/report_run_schema.json` for stable generated report metadata: `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics`.
 - Extended `backend/tests/reports/test_report_schema_contract.py` to guard nested manifest required keys, source governance detail shape, `AuthorityLevel` enum parity, artifact identity, optional persistence/output fields, and non-negative cost metrics.
 - Added ADR `docs/adr/lane-d-0010-report-manifest-metadata.md` and amended ADR `lane-d-0009-report-run-schema` to record TD-081 as the separate manifest metadata follow-up it had deferred.
-- Updated Lane D and Level 7/8 planning/state records so report manifest metadata tightening is no longer listed as an open schema gap; source provenance-family schemas, job schema, OpenAPI refresh, new report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain future work.
+- Updated Lane D and Level 7/8 planning/state records so report manifest metadata tightening is no longer listed as an open schema gap; source provenance-family schemas, job schema, new report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain future work. Planning-pack OpenAPI is resolved separately by TD-090.
 - Preserved the boundary: no API route behavior, runtime JSON Schema validation, DB migration, connector behavior, Lane A/B/C implementation, live I/O, hook config, or POSIX scripts were changed.
 - Verification passed: focused report schema/default contract tests; focused report schema ruff/mypy; broader report/API pytest/ruff/mypy; full DB-enabled PowerShell verification with 343 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
 

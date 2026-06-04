@@ -57,7 +57,7 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 | Evidence API/domain contract | `backend/app/domain/evidence_contracts.py` | Lane C owns evidence contract and evidence schema edits. |
 | Claim API/domain contract | `backend/app/domain/claim_contracts.py` | Lane C owns claim contract and claim schema edits. |
 | Report API/domain contract | `backend/app/domain/report_contracts.py` | Lane D owns report contract and future report schema proposal. |
-| Active API behavior | `backend/app/api/*.py` with Pydantic response models | Planning-pack OpenAPI is reference-only until refreshed explicitly. |
+| Active API behavior | `backend/app/api/*.py` with Pydantic response models | Planning-pack OpenAPI is generated from the local FastAPI app and guarded by a parity test. |
 | Persisted report artifact | `backend/app/reports/report_repo.py` and `backend/tests/reports/test_report_regression.py` | Report artifact schema currently lives as Pydantic contract plus regression projection, not as `schemas/report_run_schema.json`. |
 
 ### Shared-Schema Gaps
@@ -69,14 +69,14 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 | `schemas/claim_schema.json` | Requires `intent`, which current `ClaimContract` does not carry; omits `rule_code`, `ruleset_id`, and `ruleset_version`; includes `contradiction_group_ids`, which current claim contract does not carry. | Lane C | Decide whether claim schema represents current API/domain claims or a future enriched report/export claim. |
 | `schemas/job_schema.json` | Matches the broad `JobStatus` values but there is no current `JobContract`; Level 8 connector/retrieval run statuses also use `SourceRetrievalStatus` values (`pending`, `running`, `succeeded`, `failed`, `blocked`, `skipped`) that do not fully match job status. | Coordinator with Lane A/Lane D | Decide whether connector runs reuse job schema, source retrieval run schema, or both. |
 | `schemas/report_run_schema.json` | Resolved for serialized `ReportRunContract`: field set, required fields, `intent_code`, `status`, and nested evidence/claim schema references are parity-tested. Stable generated `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` keys are now constrained while extension fields remain open. | Lane D | Future edits should decide only new report metadata extensions, source provenance-family schemas, job schema, or OpenAPI output envelopes. |
-| planning-pack OpenAPI | `docs/planning_pack/api/openapi_stub.yaml` is not active API truth and predates the current FastAPI routers. | Lane D/docs follow-up | Decide whether to generate/update active OpenAPI docs from FastAPI instead of manually editing the planning-pack stub. |
+| planning-pack OpenAPI | Resolved for the current local FastAPI app: `docs/planning_pack/api/openapi_stub.yaml` is generated from `create_app().openapi()` and guarded by a parity test. | Lane D | Keep the file generated from FastAPI; future route additions must update the generated reference and the implementation docs together. |
 
 ### Recommended Edit Order
 
 1. Lane C aligns evidence and claim schemas with current `EvidenceContract` and `ClaimContract`, or records an ADR explaining a separate persistence/export schema. Status: complete for serialized domain contracts.
 2. Lane A aligns source schema scope with `SourceContract` vs source provenance family contracts. Status: complete for `SourceContract` only; dataset/version/retrieval-run schemas remain a future schema-family decision.
 3. Lane D proposes `schemas/report_run_schema.json` only after nested source/evidence/claim schema scope is settled. Status: complete for serialized `ReportRunContract` and stable generated report manifest metadata keys.
-4. Lane D refreshes API/OpenAPI documentation from the FastAPI app after schema scope is settled.
+4. Lane D refreshes API/OpenAPI documentation from the FastAPI app after schema scope is settled. Status: complete for the current local FastAPI surface.
 5. Level 8 connector work continues with fixture-only connector contracts that reference aligned source/evidence schemas and explicitly record any source provenance-family schema gaps.
 
 ### Stop Conditions
@@ -256,5 +256,6 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: D-004 Level 8 ownership and fixture-only connector acceptance plan completed after Lane B TB-100 landed on root `main` (`cf9897e`). No connector runtime, schema, migration, or lane-owned implementation files were changed.
 - 2026-06-04: Lane A TA-070 resolved `schemas/source_schema.json` for serialized `SourceContract` only and added parity tests. Source dataset, dataset-version, and retrieval-run schema coverage remains separate future Lane A/coordinator work.
 - 2026-06-04: Lane D TD-080 added `schemas/report_run_schema.json` for serialized `ReportRunContract` and parity tests.
-- 2026-06-04: Lane D TD-081 tightened stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys. Source provenance-family schemas, job schema, new report metadata extensions, and OpenAPI refresh remain future work.
+- 2026-06-04: Lane D TD-081 tightened stable generated report `source_manifest`, `source_details`, `artifact_metadata`, and `cost_metrics` schema keys. Source provenance-family schemas, job schema, and new report metadata extensions remain future work.
 - 2026-06-04: D-005 complete. `LANE_OWNERSHIP.md` now assigns a coordinator-owned connector integration zone, the ADR is accepted, source retrieval runs are connector lifecycle/provenance authority, jobs are future async orchestration, and the first fixture-only flood connector pass is assigned to the connector integration zone.
+- 2026-06-04: Lane D TD-090 refreshed `docs/planning_pack/api/openapi_stub.yaml` from the live FastAPI app and added a parity test. Source provenance-family schemas, job schema, and new report metadata extensions remain future coordinated work.
