@@ -2,6 +2,69 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 1 Lane C TC-170 schema-contract alignment
+
+**Commands run:**
+
+```powershell
+git worktree add -b lane-c/session1-schema-contracts ./worktrees/session1-lane-c-schema main
+Set-Location backend
+py -3.12 -m pytest -q tests/evidence_ledger/test_evidence_schema_contract.py tests/claims_engine/test_claim_schema_contract.py
+ruff check tests/evidence_ledger/test_evidence_schema_contract.py tests/claims_engine/test_claim_schema_contract.py
+mypy tests/evidence_ledger/test_evidence_schema_contract.py tests/claims_engine/test_claim_schema_contract.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+py -3.12 -m pytest --collect-only -q tests/evidence_ledger tests/claims_engine
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$rootArtifacts = Resolve-Path ../../local_artifacts
+$env:PATH = "$rootArtifacts;$env:PATH"
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git stash push -u -m "session1-lane-c-schema-contracts"
+git merge main --ff-only
+git stash pop
+rg -n "(<{7}|={7}|>{7})" ./state/PROJECT_STATE.md ./state/VALIDATION_LOG.md ./state/WORKLOG.md
+git diff --check
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git stash push -u -m "session1-lane-c-schema-contracts-after-d005"
+git merge main --ff-only
+git stash pop "stash@{0}"
+rg -n "(<{7}|={7}|>{7})" ./state/PROJECT_STATE.md ./state/VALIDATION_LOG.md ./state/WORKLOG.md
+git diff --check
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+git rebase main
+rg -n "(<{7}|={7}|>{7})" ./state/PROJECT_STATE.md ./state/VALIDATION_LOG.md ./state/WORKLOG.md
+git diff --check
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Work ran in isolated worktree `worktrees/session1-lane-c-schema` on branch `lane-c/session1-schema-contracts`.
+- The branch was rebased onto root `main` at `a43b3e3` (`Define CON-002 evidence ingestion handoff`) before final verification so D-004, D-005, CON-001, CON-002, connector ownership, task, and state updates were preserved.
+- `schemas/evidence_schema.json` now mirrors serialized `EvidenceContract` fields and enum values; stale DB/doc fields `retrieved_at`, `geometry_wkt`, `metadata`, and `authority_level` are removed.
+- `schemas/claim_schema.json` now mirrors serialized `ClaimContract` fields and enum values; stale fields `intent`, `contradiction_group_ids`, and `metadata` are removed.
+- `docs/adr/lane-c-schemas.md` records the shared-schema decision for root evidence/claim schemas.
+- Added Lane C schema-contract parity tests without a new JSON-schema validation dependency.
+- Focused schema-contract tests pass: 8 tests.
+- Lane C evidence/claims tests pass with DB smoke enabled: 151 tests.
+- Lane C targeted ruff passes.
+- Lane C targeted mypy passes: no issues in 29 source/test files.
+- Lane C import-isolation scan returns no matches.
+- Full backend collection after rebasing onto CON-001 reports 268 tests.
+- Full PowerShell verification passes with DB smoke enabled: 268 backend tests; lint clean; mypy clean (96 source files); migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- This aligns the canonical root schemas only. `docs/planning_pack/schemas/*.json` remains a stale documentation-packaging surface and should be handled in a separate docs/packaging pass.
+- TC-170 does not edit connector ownership files or connector runtime code. CON-003 remains responsible for evidence-ingestion adapter implementation.
+
 ## 2026-06-04 Session 2 CON-001 fixture flood connector
 
 **Commands run:**

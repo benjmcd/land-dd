@@ -16,6 +16,7 @@ Complete MILESTONE_MAP.md Levels 5-6: a durable, auditable evidence ledger and a
 - `EvidenceContract` in `backend/app/domain/evidence_contracts.py` (evidence_type, evidence_code, domain, observation, observed_value, source_id, method_code, confidence, caveat, is_source_failure, etc.).
 - `ClaimContract` in `backend/app/domain/claim_contracts.py` (evidence_ids enforced, severity + confidence separate, rule metadata fields).
 - `EvidenceType` enum in `backend/app/domain/enums.py`.
+- `schemas/evidence_schema.json` and `schemas/claim_schema.json` now mirror the serialized Lane C Pydantic domain contracts rather than DB rows or future report/export envelopes.
 - `SourceExistsProtocol`, `AreaExistsProtocol` in `backend/app/domain/protocols.py`.
 - `backend/app/evidence_ledger/` contains `EvidenceRepository`, `InMemoryEvidenceRepository`, `SqlAlchemyEvidenceRepository`, `EvidenceService`, `InMemoryEvidenceAuditLog`, and `SqlAlchemyEvidenceAuditLog`.
 - `backend/app/claims_engine/` contains `ClaimRepository`, `InMemoryClaimRepository`, `ClaimService`, and `RuleEngine`.
@@ -161,6 +162,16 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 5. Tests: ruleset declarations, source-failure evidence helper, four unknown not-evaluated claims, deterministic output, non-failure records ignored, evidence-ID ordering, and market-context safe language.
 6. Status: COMPLETE for Lane C-owned Level 6 claim/rule scope. Report-run auto-creation of unsupported-domain source-failure evidence is a Lane D integration handoff because `backend/app/reports/service.py` is Lane D-owned.
 
+### TC-170: Lane C schema-contract alignment
+1. Treat `schemas/evidence_schema.json` and `schemas/claim_schema.json` as serialized Pydantic domain-contract schemas for `EvidenceContract` and `ClaimContract`.
+2. Align evidence schema fields with `EvidenceContract.model_fields`, including `source_id`, `evidence_code`, `observed_at`, `superseded_by`, `geometry_geojson`, `geometry_srid`, and `spatial_precision_meters`.
+3. Remove stale evidence schema fields that belong to DB rows or older docs (`retrieved_at`, `geometry_wkt`, `metadata`, `authority_level`).
+4. Align claim schema fields with `ClaimContract.model_fields`, including rule metadata (`rule_code`, `ruleset_id`, `ruleset_version`).
+5. Remove stale claim schema fields not carried by the current contract (`intent`, `contradiction_group_ids`, `metadata`).
+6. Add schema-contract parity tests without adding a JSON-schema validation dependency.
+7. Record the shared-schema decision in `docs/adr/lane-c-schemas.md`.
+8. Status: COMPLETE for canonical Lane C schema/contract scope. Planning-pack schema copies remain a documentation-packaging follow-up, not runtime schema truth.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -172,6 +183,9 @@ Cross-lane isolation via constructor-injected protocols: `EvidenceService(source
 | `backend/app/claims_engine/rule_engine.py` | New: YAML rules engine |
 | `backend/app/domain/evidence_contracts.py` | Possible: add superseded_by field |
 | `config/ruleset_homestead_mvp.yaml` | Add/extend rule definitions |
+| `schemas/evidence_schema.json` | TC-170 canonical evidence contract schema alignment |
+| `schemas/claim_schema.json` | TC-170 canonical claim contract schema alignment |
+| `docs/adr/lane-c-schemas.md` | TC-170 shared-schema decision record |
 | `state/lane-c-state.md` | Update after each task |
 
 ## Tests / verification
@@ -197,6 +211,7 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 | YAML parser scope | Accepted for TC-040 | Current loader supports the checked-in ruleset shape only; broaden with an approved parser/dependency decision before complex YAML features |
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial precision; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
 | Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, market context, and resource context now emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run auto-injection is a Lane D handoff |
+| Planning-pack schema copies | Deferred | `docs/planning_pack/schemas/*.json` may be stale; do not broaden TC-170 beyond canonical `schemas/*.json` without a docs/packaging pass |
 
 ## Decision log
 
@@ -208,6 +223,8 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-04: `SqlAlchemyEvidenceAuditLog` records evidence create/supersede events in `audit.events` with `target_table='evidence.observations'`.
 - 2026-06-04: Evidence geometry remains optional and SRID 4326; spatial precision remains metadata-preserved until a coordinated schema migration promotes it.
 - 2026-06-04: `SqlAlchemyClaimRepository` stores rule metadata and evidence ordering in `claims.claims.metadata`, claim/evidence links in `claims.claim_evidence`, and verification tasks in `claims.verification_tasks`.
+- 2026-06-04: Canonical Lane C schemas represent serialized `EvidenceContract` and `ClaimContract` field sets, not DB rows, planning-pack snapshots, or future report/export envelopes.
+- 2026-06-04: `docs/adr/lane-c-schemas.md` records the shared-schema decision after D-003 assigned evidence/claim schema follow-up to Lane C.
 
 ## Progress log
 
@@ -228,3 +245,4 @@ grep -r "from app.area_geometry" backend/app/evidence_ledger/ backend/app/claims
 - 2026-06-04: TC-140 complete for evidence geometry/spatial precision mapping. Added optional GeoJSON/SRID/spatial precision fields to `EvidenceContract`, mapped geometry to `evidence.observations.geometry`, preserved precision in metadata, added DB-gated round-trip tests, and recorded the evidence persistence ADR. Lane C tests: 126 passing with DB smoke enabled. Full PowerShell verification: 231 tests, ruff clean, mypy clean (80 source files), DB smoke passes.
 - 2026-06-04: TC-150 complete for DB-backed claim persistence. Added `SqlAlchemyClaimRepository`, DB-backed claim/evidence links, verification-task persistence, durable unknown/source-failure claim tests, duplicate/rollback tests, and the rules/claim persistence ADR. Lane C tests: 130 passing with DB smoke enabled. Full PowerShell verification: 235 tests, ruff clean, mypy clean (81 source files), DB smoke passes.
 - 2026-06-04: TC-160 complete for Lane C-owned not-evaluated rule categories. Added unsupported-domain constants/helper, four YAML hard gates, deterministic UNKNOWN rule-engine claims from source-failure evidence, and tests for ruleset declarations, helper output, evidence-linked claims, deterministic ordering, non-failure ignore behavior, and market-context safe language. Lane C tests: 143 collected with DB smoke enabled. Full backend collection: 248 tests; full DB-gated backend pytest, direct DB smoke, targeted ruff/mypy, and default PowerShell verification pass.
+- 2026-06-04: TC-170 complete for canonical Lane C schema-contract alignment. `schemas/evidence_schema.json` and `schemas/claim_schema.json` now mirror serialized `EvidenceContract`/`ClaimContract` fields and enums; stale DB/doc fields are removed; `docs/adr/lane-c-schemas.md` records the shared-schema decision; schema parity tests were added without a new validation dependency. Lane C evidence/claims collection: 151 tests. Full backend collection after rebasing onto CON-001: 268 tests. Full PowerShell verification with DB smoke: 268 tests, ruff clean, mypy clean (96 source files), DB smoke passes.

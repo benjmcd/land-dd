@@ -2,6 +2,17 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 1 Lane C TC-170 schema-contract alignment)
+
+- Created isolated worktree `worktrees/session1-lane-c-schema` on branch `lane-c/session1-schema-contracts` from root `main` at `cf9897e` because Session 2 was actively editing D-004 shared plan/state files in the root checkout.
+- Rebased the Lane C branch onto root `main` at `a43b3e3` before landing so D-004, D-005, CON-001, CON-002, connector ownership, task, and state updates remain current.
+- Aligned canonical `schemas/evidence_schema.json` to serialized `EvidenceContract` fields and enums; removed stale DB/doc fields (`retrieved_at`, `geometry_wkt`, `metadata`, `authority_level`).
+- Aligned canonical `schemas/claim_schema.json` to serialized `ClaimContract` fields and enums; removed stale fields (`intent`, `contradiction_group_ids`, `metadata`) and added rule metadata fields.
+- Added schema-contract parity tests for evidence and claim schemas without adding a JSON-schema dependency.
+- Added `docs/adr/lane-c-schemas.md` to record the shared-schema contract decision required for `schemas/*.json` edits.
+- Verified focused schema-contract tests, DB-enabled Lane C tests, targeted Lane C lint/type checks, import-isolation scan, full collection, and full PowerShell verification with DB smoke enabled. Result: 268 tests pass; lint clean; mypy clean (96 source files); DB smoke passes.
+- Deferred stale `docs/planning_pack/schemas/*.json` alignment to a separate docs/packaging pass.
+
 ## 2026-06-04 (Session 2 CON-001 fixture flood connector)
 
 - Implemented `StaticFloodFixtureConnector` in the connector integration zone only.

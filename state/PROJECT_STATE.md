@@ -23,17 +23,18 @@ Verification command(s):
 - cd backend; py -3.12 -m pytest --collect-only -q
 - python scripts/db_smoke_check.py
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/area_geometry
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files)
+- 268 tests pass with DB smoke enabled after aligning canonical Lane C evidence/claim schemas with serialized domain contracts on top of CON-001; lint clean; mypy clean (96 source files)
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
-- Lane C evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, and evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories
+- Lane C evidence/claim/rule-engine/schema slices pass targeted runtime, type, lint, schema-contract, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories, and canonical evidence/claim JSON schemas aligned to serialized domain contracts
 - Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 - Lane D API DB mode now wires SQLAlchemy-backed source, area, evidence, claim, and report repositories through request-scoped services; `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` are covered by a DB-backed integration test
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
-- Shared schema gaps for source, evidence, claim, job, missing report schema, and planning-pack OpenAPI are recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; no shared schema files were edited
+- Shared schema gaps for source, job, missing report schema, and planning-pack OpenAPI remain recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; Lane C evidence/claim root schemas are now aligned by TC-170, while planning-pack schema copies remain a docs/packaging follow-up
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector runtime contract slice is implemented as a static local flood fixture with no live network, explicit idempotency, blocked/source-failure behavior, and source retrieval provenance
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 - CON-001 is complete: `StaticFloodFixtureConnector` reads local flood fixture JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure source-failure fixtures, and stays before claims/reports
@@ -50,7 +51,7 @@ Completion evidence:
 - backend/app/domain/area_contracts.py (`AreaContract`, `AreaMetricsContract`, `AreaSpatialRelationContract`, `AreaVersionContract`)
 - backend/app/area_geometry/models.py (`AreaModel`, `AreaVersionModel`)
 - backend/app/area_geometry/area_repo.py (`SqlAlchemyAreaRepository`)
-- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (143 tests)
+- backend/tests/evidence_ledger/ and backend/tests/claims_engine/ (151 tests)
 - backend/app/domain/evidence_contracts.py (`EvidenceContract` with optional GeoJSON/SRID/spatial precision fields)
 - backend/app/evidence_ledger/evidence_repo.py (`SqlAlchemyEvidenceRepository`)
 - backend/app/evidence_ledger/audit_log.py (`SqlAlchemyEvidenceAuditLog`)
@@ -58,6 +59,11 @@ Completion evidence:
 - backend/app/claims_engine/claim_repo.py (`SqlAlchemyClaimRepository`)
 - backend/app/claims_engine/not_evaluated.py
 - backend/tests/claims_engine/test_not_evaluated_claims.py
+- backend/tests/evidence_ledger/test_evidence_schema_contract.py
+- backend/tests/claims_engine/test_claim_schema_contract.py
+- schemas/evidence_schema.json
+- schemas/claim_schema.json
+- docs/adr/lane-c-schemas.md
 - docs/adr/lane-c-rules.md
 - backend/app/reports/service.py
 - backend/app/reports/models.py
@@ -134,7 +140,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-Latest CON-002 verification: `.\scripts\verify.ps1` passes on root `main` with 260 collected backend tests, lint clean, mypy clean (94 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, and Lane B TB-100 are complete on root `main`.
+268 tests pass with DB smoke enabled after rebasing the Lane C TC-170 schema-contract branch onto root `main` at `a43b3e3` (`Define CON-002 evidence ingestion handoff`); lint clean; mypy clean (96 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, Lane C TC-170, and Lane B TB-100 are complete in this worktree. CON-003 evidence-ingestion adapter remains the next lowest-dependency connector task.
 
 ## Local repo bootstrap state
 

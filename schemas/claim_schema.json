@@ -1,19 +1,23 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.com/schemas/claim.schema.json",
-  "title": "Claim",
+  "title": "ClaimContract",
   "type": "object",
   "required": [
     "claim_id",
     "area_id",
-    "intent",
     "claim_code",
     "domain",
     "assertion",
+    "user_safe_language",
     "severity",
     "confidence",
-    "user_safe_language",
-    "evidence_ids"
+    "evidence_ids",
+    "rule_code",
+    "ruleset_id",
+    "ruleset_version",
+    "verification_required",
+    "verification_task"
   ],
   "properties": {
     "claim_id": {
@@ -23,9 +27,6 @@
     "area_id": {
       "type": "string",
       "format": "uuid"
-    },
-    "intent": {
-      "type": "string"
     },
     "claim_code": {
       "type": "string"
@@ -75,15 +76,23 @@
         "format": "uuid"
       }
     },
-    "contradiction_group_ids": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "format": "uuid"
-      }
+    "rule_code": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "metadata": {
-      "type": "object"
+    "ruleset_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ruleset_version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "additionalProperties": false
