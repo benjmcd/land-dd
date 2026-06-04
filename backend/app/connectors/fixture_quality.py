@@ -13,6 +13,7 @@ from .flood_fixture import FloodFixtureConnectorResult
 class ConnectorFixtureQualityIssueCode(StrEnum):
     RETRIEVAL_FINISHED_BEFORE_STARTED = "retrieval_finished_before_started"
     RETRIEVAL_DATASET_VERSION_MISSING = "retrieval_dataset_version_missing"
+    EVIDENCE_DOMAIN_MISMATCH = "evidence_domain_mismatch"
     EVIDENCE_DATASET_VERSION_MISMATCH = "evidence_dataset_version_mismatch"
     FIXTURE_LOG_URI_NOT_LOCAL = "fixture_log_uri_not_local"
     FIXTURE_METRIC_MISSING = "fixture_metric_missing"
@@ -39,6 +40,9 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     SOURCE_FAILURE_PAYLOAD_INVALID = "source_failure_payload_invalid"
     SOURCE_FAILURE_REASON_MISMATCH = "source_failure_reason_mismatch"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
+
+
+_FLOOD_FIXTURE_DOMAIN = "flood"
 
 
 @dataclass(frozen=True)
@@ -217,6 +221,13 @@ def evaluate_flood_fixture_quality(
                 _issue(
                     ConnectorFixtureQualityIssueCode.EVIDENCE_DATASET_VERSION_MISMATCH,
                     "fixture evidence dataset_version_id must match retrieval run",
+                ),
+            )
+        if evidence.domain != _FLOOD_FIXTURE_DOMAIN:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_DOMAIN_MISMATCH,
+                    "flood fixture evidence domain must be flood",
                 ),
             )
         _append_evidence_provenance_issues(issues, evidence)

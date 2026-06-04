@@ -44,6 +44,7 @@ Verification result:
 - Full verification passes locally with DB smoke enabled after CON-029 connector source-failure reason consistency: 365 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-030 connector retrieval failure-reason metric quality: 365 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-031 connector succeeded-retrieval failure-metric quality: 365 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-032 connector fixture evidence domain quality: 366 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-024 connector review action API auth blocker decision: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-025 connector reviewer principal boundary: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
@@ -91,6 +92,7 @@ Verification result:
 - CON-029 is complete as connector-local source-failure reason consistency. Source-failure payload `failure_reason` must match retrieval `metrics.failure_reason` when present. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-030 is complete as connector-local retrieval failure-reason metric quality. Blocked/failed retrievals must carry non-empty `metrics.failure_reason`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-031 is complete as connector-local succeeded-retrieval failure-metric quality. Succeeded retrievals must not carry non-empty `metrics.failure_reason`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
+- CON-032 is complete as connector-local fixture evidence domain quality. Flood fixture evidence must use `domain == "flood"`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; review-action route subset is accepted; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, route/OpenAPI implementation, and broader API mutation/workflow implementation.
@@ -172,6 +174,7 @@ Next lowest-dependency task:
 - **CON-029 (DONE)**: Connector source-failure reason consistency now checks payload reason against retrieval metrics.
 - **CON-030 (DONE)**: Connector retrieval failure-reason metric quality now requires blocked/failed retrieval failure reasons.
 - **CON-031 (DONE)**: Connector succeeded-retrieval failure-metric quality now rejects success runs with failure reason metrics.
+- **CON-032 (DONE)**: Connector fixture evidence domain quality now rejects flood fixture evidence outside the `flood` domain.
 - **NEXT**: After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose broader fixture-quality/report metadata work if route work would conflict.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)

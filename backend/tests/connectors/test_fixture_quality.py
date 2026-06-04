@@ -64,6 +64,23 @@ def test_fixture_quality_flags_dataset_version_mismatch() -> None:
     )
 
 
+def test_fixture_quality_flags_domain_mismatch() -> None:
+    result = _load_success()
+    mismatched = result.evidence_inputs[0].model_copy(update={"domain": "zoning"})
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(mismatched,),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.EVIDENCE_DOMAIN_MISMATCH,
+    )
+
+
 def test_fixture_quality_flags_success_metric_and_geometry_gaps() -> None:
     result = _load_success()
     retrieval_run = result.retrieval_run.model_copy(

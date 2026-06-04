@@ -1185,6 +1185,39 @@ Result: pass on 2026-06-04. Focused fixture-quality tests cover 13 cases; focuse
 
 After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
 
+## CON-032 Connector Fixture Evidence Domain Quality
+
+CON-032 tightens connector-local fixture quality around flood fixture evidence domain consistency.
+
+### Implemented Checks
+
+Flood fixture evidence must use `domain == "flood"`. Evidence from any other domain is rejected by the fixture-quality evaluator before it can be treated as fixture-acceptable flood evidence.
+
+### Boundary Preserved
+
+This is connector-local fixture-quality validation only. It does not add API routes, OpenAPI changes, DB schema changes, queue behavior, connector runtime behavior, live I/O, hook config, POSIX scripts, durable evidence-row `ingest_run_id` linkage, or Lane A/B/C/D module changes outside the connector quality evaluator.
+
+### Validation
+
+```powershell
+cd backend
+python -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+cd backend
+python -m pytest --collect-only
+```
+
+Result: pass on 2026-06-04. Focused fixture-quality tests cover 14 cases; focused ruff clean; focused mypy clean over 2 source files. Full DB-enabled Windows PowerShell verification passes with 366 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+### Next Slice
+
+After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
+
 ## CON-029 Connector Source-Failure Reason Consistency
 
 CON-029 tightens connector-local fixture quality around source-failure reason consistency.
