@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import UTC, datetime
 from typing import Any, cast
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import text
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db.engine import build_engine
 from app.domain.source_contracts import (
     SourceContract,
+    SourceRetrievalRunContract,
     SourceRetrievalStatus,
 )
 from app.source_registry.provenance_repo import (
@@ -142,6 +144,56 @@ def test_source_provenance_service_exposes_stale_and_failed_states() -> None:
     assert bundle["latest_retrieval_status"] == "failed"
 
 
+def test_record_retrieval_run_contract_preserves_supplied_identity() -> None:
+    source_service = SourceService(InMemorySourceRepository())
+    provenance_service = SourceProvenanceService(
+        source_service=source_service,
+        repo=InMemorySourceProvenanceRepository(),
+    )
+    source = source_service.register(_make_source())
+    dataset = provenance_service.create_dataset(
+        source_id=source.source_id,
+        dataset_name="National Flood Hazard Layer",
+        domain="flood",
+    )
+    version = provenance_service.create_dataset_version(
+        dataset_id=dataset.dataset_id,
+        version_label="2026-06",
+    )
+    supplied_run = SourceRetrievalRunContract(
+        dataset_version_id=version.dataset_version_id,
+        connector_name="fixture_flood_static",
+        status=SourceRetrievalStatus.SUCCEEDED,
+        started_at=datetime(2026, 6, 4, 9, 0, tzinfo=UTC),
+        finished_at=datetime(2026, 6, 4, 9, 1, tzinfo=UTC),
+        row_count=1,
+    )
+
+    recorded = provenance_service.record_retrieval_run_contract(supplied_run)
+
+    assert recorded.ingest_run_id == supplied_run.ingest_run_id
+    assert recorded.dataset_version_id == version.dataset_version_id
+    assert provenance_service.retrieval_run_exists(supplied_run.ingest_run_id) is True
+
+
+def test_record_retrieval_run_contract_rejects_duplicate_identity() -> None:
+    source_service = SourceService(InMemorySourceRepository())
+    provenance_service = SourceProvenanceService(
+        source_service=source_service,
+        repo=InMemorySourceProvenanceRepository(),
+    )
+    supplied_run = SourceRetrievalRunContract(
+        dataset_version_id=None,
+        connector_name="fixture_flood_static",
+        status=SourceRetrievalStatus.SKIPPED,
+    )
+
+    provenance_service.record_retrieval_run_contract(supplied_run)
+
+    with pytest.raises(ValueError, match="already registered"):
+        provenance_service.record_retrieval_run_contract(supplied_run)
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
     engine = build_engine()
@@ -155,10 +207,7 @@ def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
         )
         source = source_service.register(
             _make_source().model_copy(
-                update={
-                    "name": "Fixture Provenance DB Test",
-                    "organization": "Test Sources",
-                }
+                update={"name": f"Fixture FEMA NFHL {uuid4()}"}
             )
         )
         dataset = provenance_service.create_dataset(
@@ -187,6 +236,17 @@ def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
             log_uri="file:///tmp/fixture.log",
             metrics={"reason": "fixture skipped"},
         )
+        supplied_run = SourceRetrievalRunContract(
+            dataset_version_id=version.dataset_version_id,
+            connector_name="fixture_flood_static",
+            status=SourceRetrievalStatus.SUCCEEDED,
+            started_at=datetime(2026, 6, 3, 9, 7, tzinfo=UTC),
+            finished_at=datetime(2026, 6, 3, 9, 8, tzinfo=UTC),
+            row_count=2,
+        )
+        supplied_recorded_run = provenance_service.record_retrieval_run_contract(
+            supplied_run,
+        )
         session.commit()
 
     with Session(engine) as session:
@@ -195,6 +255,7 @@ def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
         retrieved_dataset = repo.get_dataset(dataset.dataset_id)
         retrieved_version = repo.get_dataset_version(version.dataset_version_id)
         retrieved_run = repo.get_retrieval_run(run.ingest_run_id)
+        retrieved_supplied_run = repo.get_retrieval_run(supplied_run.ingest_run_id)
         review_service = SourceProvenanceService(
             source_service=source_service,
             repo=repo,
@@ -207,9 +268,15 @@ def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
     assert retrieved_version.checksum == "abc123"
     assert retrieved_run is not None
     assert retrieved_run.status == SourceRetrievalStatus.SKIPPED
-    assert bundle["latest_retrieval_status"] == "skipped"
+    assert retrieved_supplied_run is not None
+    assert retrieved_supplied_run.ingest_run_id == supplied_recorded_run.ingest_run_id
+    assert bundle["latest_retrieval_status"] == "succeeded"
 
     with Session(engine) as session:
+        session.execute(
+            text("DELETE FROM source.ingest_runs WHERE ingest_run_id = :ingest_run_id"),
+            {"ingest_run_id": supplied_run.ingest_run_id},
+        )
         session.execute(
             text("DELETE FROM source.ingest_runs WHERE ingest_run_id = :ingest_run_id"),
             {"ingest_run_id": run.ingest_run_id},
