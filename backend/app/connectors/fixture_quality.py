@@ -41,6 +41,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     )
     SOURCE_FAILURE_PAYLOAD_INCOMPLETE = "source_failure_payload_incomplete"
     SOURCE_FAILURE_PAYLOAD_INVALID = "source_failure_payload_invalid"
+    SOURCE_FAILURE_TYPE_MISMATCH = "source_failure_type_mismatch"
     SOURCE_FAILURE_REASON_MISMATCH = "source_failure_reason_mismatch"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
 
@@ -248,6 +249,15 @@ def evaluate_flood_fixture_quality(
                 _issue(
                     ConnectorFixtureQualityIssueCode.EVIDENCE_DATASET_VERSION_MISMATCH,
                     "fixture evidence dataset_version_id must match retrieval run",
+                ),
+            )
+        if evidence.is_source_failure != (
+            evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_TYPE_MISMATCH,
+                    "source-failure flag must match source-failure evidence type",
                 ),
             )
         if evidence.domain != _FLOOD_FIXTURE_DOMAIN:

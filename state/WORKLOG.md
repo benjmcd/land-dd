@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-036 fixture source-failure type consistency)
+
+- Tightened connector-local fixture quality for source-failure flag/type consistency.
+- Fixture evidence now fails closed when `is_source_failure` disagrees with `evidence_type == "source_failure"`.
+- Preserved boundary: no API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or lane-owned module outside connector quality changed.
+- Verification passed with DB smoke: 370 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-035 fixture evidence area consistency)
 
 - Tightened connector-local fixture quality for subject-area consistency inside flood fixture output.

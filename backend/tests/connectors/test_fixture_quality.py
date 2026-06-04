@@ -12,7 +12,7 @@ from app.connectors import (
     StaticFloodFixtureConnector,
     evaluate_flood_fixture_quality,
 )
-from app.domain.enums import ConfidenceBand
+from app.domain.enums import ConfidenceBand, EvidenceType
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
 
@@ -263,6 +263,25 @@ def test_fixture_quality_flags_source_failure_payload_and_confidence_gaps() -> N
     assert tuple(issue.code for issue in profile.issues) == (
         ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_PAYLOAD_INCOMPLETE,
         ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN,
+    )
+
+
+def test_fixture_quality_flags_source_failure_type_mismatch() -> None:
+    result = _load_failure()
+    evidence = result.evidence_inputs[0].model_copy(
+        update={"evidence_type": EvidenceType.SOURCE_OBSERVATION},
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(evidence,),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_TYPE_MISMATCH,
     )
 
 
