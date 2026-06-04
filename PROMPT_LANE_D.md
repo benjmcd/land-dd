@@ -35,9 +35,11 @@ $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
 
 Level 7 (Reproducible Report Vertical Slice): **PARTIAL** — API is in-memory backed. DB-backed pipeline not yet wired.
 
-**C-001 is DONE.** `backend/app/claims_engine/models.py` exists with `ClaimModel`. D-001 is now blocked only on C-002 completing Level 6.
+**C-001 is DONE.** `backend/app/claims_engine/models.py` exists with `ClaimModel`.
 
-**D-001 can be partially written** (create `db/session.py`, scaffold `dependencies.py` changes) but must NOT run the DB-backed integration test until C-002 is committed and Level 6 gates pass in `state/lane-c-state.md`.
+**D-000 is the next Lane D dependency after C-002.** Lane C owns the rule-engine behavior for unsupported categories; Lane D owns the report/API follow-up that creates or injects unsupported-category SOURCE_FAILURE evidence and surfaces those UNKNOWN claims in report output.
+
+**D-001 can only be partially written before C-002/D-000**: creating `db/session.py` is safe after C-001, but `dependencies.py`, `main.py`, and the DB-backed API integration test must wait until C-002 and D-000 complete.
 
 Optional early-start check (to confirm C-002 is done before running integration test):
 ```powershell
@@ -46,9 +48,9 @@ Select-String -Path state/lane-c-state.md -Pattern 'C-002.*DONE'
 
 ---
 
-## Your next task: D-001
+## Your next task: D-000, then D-001
 
-**Full spec**: `plans/2026-06-03-codex-deferred-tasks.md` — Task D-001 section.
+**Full spec**: `plans/2026-06-03-codex-deferred-tasks.md` — Task C-002 Step 3 for D-000, then Task D-001 section.
 
 Summary of work:
 1. Create `backend/app/db/session.py` with `get_db_session()` — a FastAPI dependency that delegates to `get_session()` from `app.db.engine`. **Do NOT call `build_engine()` directly** — it creates a new engine per request and destroys connection pooling.

@@ -138,7 +138,7 @@ SOURCE_FAILURE evidence record, and that evidence record cites a registered sour
 
 **Work:**
 
-### Step 1 — Register the sentinel source
+### Step 1 — Define unsupported-category constants
 
 In `backend/app/claims_engine/not_evaluated.py` (new file), define:
 ```python
@@ -183,13 +183,19 @@ MARKET_CONTEXT_CONDITION = "market_context_out_of_scope"
 
 Add 4 new `hard_gates` entries to `config/ruleset_homestead_mvp.yaml`:
 - `claim_code`: `SOIL_NOT_EVALUATED`, `ENV_HAZ_NOT_EVALUATED`, `RESOURCE_NOT_EVALUATED`, `MARKET_OUT_OF_SCOPE`
-- `severity_on_fail`: `informational` for all four
+- `severity_on_fail`: `unknown` for all four
 - `condition`: the condition constants above
 - `verification_task`: what the user should do manually (derive from caveats above)
 
-### Step 3 — Service-layer sentinel source creation
+### Step 3 — Report-service sentinel source creation (Lane D follow-up)
 
-In `backend/app/reports/service.py`, update `create_report_run()`:
+Do **not** perform this step inside Lane C. `backend/app/reports/service.py` is owned by
+Lane D. Lane C's C-002 deliverable is to emit evidence-linked UNKNOWN claims when the
+rule engine receives unsupported-category SOURCE_FAILURE evidence. Lane D owns the
+report/API follow-up that creates or injects those SOURCE_FAILURE records when a report
+run lacks category evidence.
+
+For the Lane D report/API follow-up, update `backend/app/reports/service.py`:
 
 1. Before calling `_rule_engine.evaluate(evidence)`, look up or create the sentinel source:
    ```python
@@ -260,15 +266,17 @@ Add unit tests in `backend/tests/claims_engine/test_not_evaluated_claims.py`:
 - Verify `is_source_failure=True` on the sentinel evidence records
 
 **Acceptance criteria:**
-- Level 6 gates L6-001 through L6-010 must now all be PASS (not PARTIAL) in `state/lane-c-state.md`
+- Lane C C-002 gates pass for claim/rule behavior without modifying Lane D files.
 - `RuleEngine.evaluate()` emits claims for all 4 not-evaluated domains when provided with
   the corresponding SOURCE_FAILURE evidence records
 - No assertion about property value, neighborhood desirability, or investment
   appears in any claim language (grep for "value", "price", "invest", "neighborhood")
 - `RUN_DB_SMOKE=1 py -3.12 -m pytest tests/claims_engine/` passes
 - `RUN_DB_SMOKE=1 py -3.12 -m pytest` passes (≥235+N tests where N = new tests added)
-- `ruff check app/claims_engine/ app/reports/` passes
-- `mypy app/claims_engine/ app/reports/` passes
+- `ruff check app/claims_engine/` passes
+- `mypy app/claims_engine/` passes
+- Complete Level 6/report-workflow PASS remains blocked until the Lane D report/API follow-up
+  surfaces the unsupported categories in `ReportRunContract.unknowns`.
 
 ---
 

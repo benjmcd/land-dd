@@ -202,8 +202,8 @@ Example: `archive/2026-06-10_source-registry-lane-migration/backend/app/reposito
 **ORM invariant**: All new ORM models must inherit `AppBase` from `app.db.base`. All SQLAlchemy ENUM instances must be imported from `app.db.types` — never redeclared in model files.
 
 **Current tasks** (see `plans/2026-06-03-codex-deferred-tasks.md`):
-1. C-001: Create `claims_engine/models.py` with ORM models; refactor `SqlAlchemyClaimRepository` from raw SQL to ORM.
-2. C-002: Add 4 not-evaluated rule categories using sentinel SOURCE_FAILURE evidence approach.
+1. C-001: DONE. `claims_engine/models.py` exists and `SqlAlchemyClaimRepository` is ORM-backed.
+2. C-002: Add 4 not-evaluated rule categories using sentinel SOURCE_FAILURE evidence approach. Lane C emits evidence-linked UNKNOWN claims but must not modify Lane D report files.
 
 ---
 
@@ -244,7 +244,8 @@ Example: `archive/2026-06-10_source-registry-lane-migration/backend/app/reposito
 **Import invariant**: May import from all modules' PUBLIC service APIs, but NEVER modifies other lanes' files. Implements `SourceExistsProtocol` and `AreaExistsProtocol` using real services and injects them into Lane C's evidence service.
 
 **Current tasks** (see `plans/2026-06-03-codex-deferred-tasks.md`):
-1. D-001: Create `db/session.py` with `get_db_session()`; update `api/dependencies.py` and `main.py` for DB-backed services; add DB-backed API integration test. **Blocked until C-001 is complete.**
+1. D-000: Surface C-002 unsupported-category source-failure claims in report/API output after Lane C completes C-002.
+2. D-001: Create `db/session.py` with `get_db_session()`; update `api/dependencies.py` and `main.py` for DB-backed services; add DB-backed API integration test. `db/session.py` may be prepared after C-001; full DB service wiring remains blocked until C-002 and D-000 complete.
 
 ---
 

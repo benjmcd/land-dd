@@ -44,7 +44,7 @@ Level 6 (Claims Engine): **PARTIAL** — 2 blockers remain:
 
 1. **C-001**: ✅ **DONE** — `backend/app/claims_engine/models.py` exists with `ClaimModel`, `ClaimEvidenceLinkModel`, `VerificationTaskModel`. `SqlAlchemyClaimRepository` uses ORM models. Verified: lint/mypy clean, 201 tests pass.
 
-2. **C-002**: 4 rule categories (soil/septic, env_hazard, resource_context, market_context) are not evaluated. They must emit `SeverityBand.UNKNOWN` claims backed by `SOURCE_FAILURE` evidence records so they appear in `ReportRunContract.unknowns`. This preserves the evidence-before-claim invariant.
+2. **C-002**: 4 rule categories (soil/septic, env_hazard, resource_context, market_context) are not evaluated. Lane C must emit `SeverityBand.UNKNOWN` claims backed by `SOURCE_FAILURE` evidence records when those records are provided. Lane D owns the report/API follow-up that makes these appear in report unknowns. This preserves the evidence-before-claim invariant without crossing lane ownership.
 
 ---
 
@@ -54,10 +54,11 @@ Level 6 (Claims Engine): **PARTIAL** — 2 blockers remain:
 
 Key constraints:
 - C-001 pre-condition is already met: `backend/app/claims_engine/models.py` exists
-- New not-evaluated claims must use `SeverityBand.UNKNOWN` (NOT `INFORMATIONAL`) so they appear in `ReportRunContract.unknowns`
+- New not-evaluated claims must use `SeverityBand.UNKNOWN` (NOT `INFORMATIONAL`) so Lane D can surface them in `ReportRunContract.unknowns`
 - Market context MUST NOT assert valuation, pricing, or investment advice
 - The sentinel source failure evidence approach preserves the evidence-before-claim invariant
 - Do NOT import from `app.source_registry` or `app.area_geometry`
+- Do NOT modify `backend/app/reports/`; report surfacing is Lane D's D-000 follow-up
 
 ---
 

@@ -9,8 +9,9 @@ Read this file at the start of every session. Update the `## Active sessions` ta
 
 ```
 C-001 (Lane C — claim ORM models)
-  └─> C-002 (Lane C — not-evaluated rule categories)   ─── can run in parallel with D-001 pre-work
-         └─> D-001 (Lane D — Level 7 DB wiring)
+  └─> C-002 (Lane C — not-evaluated rule claim logic)
+         └─> D-000 (Lane D — report surfacing for not-evaluated categories)
+                └─> D-001 (Lane D — Level 7 DB wiring)
 ```
 
 Lanes A and B are **DONE** (L3/L4 PASS). No new Lane A or Lane B work is needed.
@@ -21,8 +22,8 @@ Lanes A and B are **DONE** (L3/L4 PASS). No new Lane A or Lane B work is needed.
 
 | Session slot | Assigned lane | Current task | Status | File lock |
 |---|---|---|---|---|
-| Slot 1 | Lane C | C-001 → C-002 | Pending | `backend/app/claims_engine/` |
-| Slot 2 | Lane D | D-001 (wait for C-001) | Blocked | `backend/app/db/session.py`, `backend/app/api/dependencies.py`, `backend/app/main.py` |
+| Slot 1 | Lane C | C-002 | Pending | `backend/app/claims_engine/`, `config/ruleset_homestead_mvp.yaml` |
+| Slot 2 | Lane D | D-000 then D-001 | D-001 pre-work only | `backend/app/reports/`, `backend/app/api/`, `backend/app/db/session.py` |
 
 **Rules:**
 1. Check this table before starting any work. If another session owns your target files, stop and read its lane state file to see if the work is complete.
@@ -33,7 +34,7 @@ Lanes A and B are **DONE** (L3/L4 PASS). No new Lane A or Lane B work is needed.
 
 ## Parallel execution rules
 
-### C-001 and D-001 CAN run in parallel with caveats
+### C-001 and D-001 pre-work CAN run in parallel with caveats
 
 C-001 owns: `backend/app/claims_engine/models.py` (new), `backend/app/claims_engine/claim_repo.py`
 D-001 owns: `backend/app/db/session.py` (new), `backend/app/api/dependencies.py`, `backend/app/main.py`
@@ -45,15 +46,16 @@ These file sets do not overlap. However:
 
 **Safe parallel sequence:**
 1. Session 1 starts C-001.
-2. Session 2 can write D-001's `session.py`, update `dependencies.py`, and update `main.py` — but must NOT run `RUN_DB_SMOKE=1 pytest` until C-001 is committed.
-3. Session 2 polls `state/lane-c-state.md` or checks `git log` for the C-001 commit. When it exists, Session 2 runs its integration test.
+2. Session 2 can write D-001's `session.py` after C-001 is committed and verified.
+3. Session 2 must not update `dependencies.py`, update `main.py`, or run the DB-backed API integration test until C-002 and D-000 are complete.
 
-### C-002 and D-001 CAN run in parallel
+### C-002 and D-000 must stay split by lane ownership
 
-C-002 owns: `backend/app/claims_engine/not_evaluated.py` (new), `backend/app/claims_engine/rule_engine.py`, `backend/app/reports/service.py`, `config/ruleset_homestead_mvp.yaml`, `backend/tests/claims_engine/test_not_evaluated_claims.py` (new)
-D-001 owns: (see above — no overlap)
+C-002 owns: `backend/app/claims_engine/not_evaluated.py` (new), `backend/app/claims_engine/rule_engine.py`, `config/ruleset_homestead_mvp.yaml`, `backend/tests/claims_engine/test_not_evaluated_claims.py` (new)
+D-000 owns: `backend/app/reports/service.py`, report tests, and API tests needed to surface unsupported categories in report output.
+D-001 owns: `backend/app/db/session.py`, `backend/app/api/dependencies.py`, `backend/app/main.py`, and DB-backed API integration tests.
 
-These file sets do not overlap. C-002 and D-001 can run simultaneously.
+Lane C must not modify `backend/app/reports/service.py`. Lane D must wait for C-002's claim/rule behavior before implementing D-000 report surfacing.
 
 ---
 
@@ -78,8 +80,10 @@ Select-String -Path backend/app/claims_engine/models.py -Pattern 'class ClaimMod
 ```powershell
 Test-Path backend/app/claims_engine/models.py  # C-001 complete
 Select-String -Path backend/app/claims_engine/models.py -Pattern 'class ClaimModel'
-# Note: D-001 can be partially written before C-001 completes,
-# but its integration test must not run until C-001 is committed.
+Select-String -Path state/lane-c-state.md -Pattern 'C-002.*DONE'
+Select-String -Path tasks/task_queue.yaml -Pattern 'id: D-000|status: done'
+# Note: backend/app/db/session.py can be written before C-002/D-000 complete.
+# DB-backed service wiring and integration tests must wait.
 ```
 
 ---
@@ -104,8 +108,8 @@ When you complete a task:
 | `backend/app/claims_engine/claim_repo.py` | Lane C | C-001 refactors this |
 | `backend/app/claims_engine/not_evaluated.py` | Lane C (new) | C-002 creates this |
 | `backend/app/claims_engine/rule_engine.py` | Lane C | C-002 modifies this |
-| `backend/app/reports/service.py` | Lane C | C-002 modifies sentinel logic |
 | `config/ruleset_homestead_mvp.yaml` | Lane C | C-002 adds 4 new hard_gates |
+| `backend/app/reports/service.py` | Lane D | D-000 adds unsupported-category report surfacing |
 | `backend/app/db/session.py` | Lane D (new) | D-001 creates this |
 | `backend/app/api/dependencies.py` | Lane D | D-001 modifies this |
 | `backend/app/main.py` | Shared Interface Zone | D-001 modifies via plan — requires ADR |
@@ -121,8 +125,8 @@ After any Lane C task:
 ```powershell
 Set-Location backend
 $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
-ruff check app/claims_engine app/reports
-mypy app/claims_engine app/reports
+ruff check app/claims_engine
+mypy app/claims_engine
 Set-Location ..
 $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```

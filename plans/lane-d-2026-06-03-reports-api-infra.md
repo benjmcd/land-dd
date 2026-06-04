@@ -22,6 +22,8 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) now passes; report persistence can use the live local Postgres/PostGIS stack.
 - Lane D is a partial report-run harness, not a complete Level 7 vertical slice: default API wiring remains in-memory, and durable area/evidence/claim/rule-execution persistence is still lower-layer work.
+- Session 2 split the unsupported-category work by lane ownership: Lane C owns C-002 rule/claim behavior; Lane D owns D-000 report/API surfacing after C-002.
+- `backend/app/db/session.py` now provides D-001 pre-work by delegating `get_db_session()` to the shared `get_session()` factory; DB service wiring in `api/dependencies.py`/`main.py` remains blocked until C-002 and D-000 complete.
 
 ## Blockers at lane setup
 
@@ -111,6 +113,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 can use ClaimService and RuleEngine in-memory slices |
+| Lane C C-002 unsupported-category claims | Pending | D-000 report surfacing and full D-001 DB-backed API workflow must wait for this |
 | docker-compose.yml changes | Lane A owns | Request changes through Lane A |
 
 ## Decision log
@@ -127,3 +130,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: TD-030 complete for the in-memory report-run service. Added ReportRunService, populated ReportRunContract fields, API report-run service wiring, and fixture tests for evidence-linked claims/unknowns/caveats, no-evidence caveat handling, and repeatable claim reuse. Lane D tests: 11 passing. Full verification: 126 tests, ruff clean, mypy clean (67 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TD-050 complete for the in-memory protocol adapter wiring. Added `backend/app/reports/adapters.py`, wired `SourceServiceProtocolAdapter` and `AreaServiceProtocolAdapter` into `EvidenceService` construction, and added adapter-focused tests for delegation plus production-use/source-failure guardrails. Lane D tests: 15 passing. Full verification: 172 tests, ruff clean, mypy clean (69 source files); DB smoke skipped because Docker Desktop Linux engine is unavailable.
 - 2026-06-03: TD-040 complete for persisted report runs. Added `backend/app/reports/models.py`, `backend/app/reports/report_repo.py`, a SQLAlchemy-backed `reports.report_runs` round-trip test, and `docs/adr/lane-d-0001-report-persistence.md`. Lane D tests: 16 passing. Full verification: 173 tests, ruff clean, mypy clean (72 source files); DB smoke passes on the local Postgres/PostGIS container.
+- 2026-06-04: Session 2 D-001 pre-work complete for the DB session dependency. Added `backend/app/db/session.py` and `backend/tests/api/test_db_session.py`; split D-000 report surfacing from Lane C C-002 in coordination docs. Lane D tests: 17 passing. Full verification: 243 tests, ruff clean, mypy clean (87 source files); DB smoke passes.

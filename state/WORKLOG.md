@@ -2,6 +2,16 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 Lane D boundary split + DB session pre-work)
+
+- Resolved the C-002 report-surfacing ownership conflict in planning/coordination docs: Lane C owns unsupported-category claim/rule behavior; Lane D owns report/API surfacing as D-000 after C-002.
+- Corrected the C-002 spec so unsupported-category rules use `unknown` severity, not `informational`, preserving report unknowns and the source-failure pattern.
+- Added `backend/app/db/session.py` with `get_db_session()` delegating to the shared `get_session()` engine/session factory path.
+- Added `backend/tests/api/test_db_session.py` to verify `get_db_session()` delegates without creating a new engine or requiring a live DB.
+- Verified Lane D targeted checks: 17 report/API tests pass with DB smoke enabled; targeted ruff and mypy pass.
+- Verified `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`: 243 tests; lint clean; mypy clean (87 source files); migrations/seeds and DB smoke pass.
+- Re-audit note: D-001 pre-work is partially complete, but full DB-backed API wiring remains blocked until Lane C C-002 and Lane D D-000 are complete.
+
 ## 2026-06-04 (C-001 ORM FK and flush repair)
 
 - Re-verified the C-001 handoff from the external session export against live repo state and found the full DB-smoke gate failed in the four DB-backed claim repository tests.

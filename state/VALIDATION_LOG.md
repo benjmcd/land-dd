@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 Lane D boundary split and DB session pre-work
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_db_session.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
+ruff check app/api app/reports app/db tests/api tests/reports
+mypy app/api app/reports app/db tests/api tests/reports
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- `backend/app/db/session.py` exists and `get_db_session()` delegates to `get_session()` from `app.db.engine`.
+- `backend/tests/api/test_db_session.py` passes and proves the dependency delegates without opening a DB connection.
+- Lane D report/API tests pass: 17 tests with DB smoke enabled.
+- Targeted Lane D ruff passes.
+- Targeted Lane D mypy passes: no issues in 25 source/test files.
+- Full collection reports 243 tests.
+- Full PowerShell verification passes with DB smoke enabled: 243 tests; lint clean; mypy clean (87 source files); migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- D-000 report surfacing is blocked until Lane C C-002 emits UNKNOWN claims for unsupported-category SOURCE_FAILURE evidence.
+- Full D-001 DB-backed API wiring remains blocked until C-002 and D-000 complete; `api/dependencies.py`, `main.py`, and DB-backed API integration tests were intentionally not modified in this pass.
+
 ## 2026-06-04 C-001 ORM FK and flush repair
 
 **Commands run:**

@@ -11,8 +11,8 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- 16 Lane D report/API tests pass
-- Full verification passes locally with DB smoke enabled: 186 tests; lint clean; mypy clean (76 source files)
+- 17 Lane D report/API tests pass
+- Full verification passes locally with DB smoke enabled: 243 tests; lint clean; mypy clean (87 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
 Failed or blocked gates:
@@ -32,18 +32,20 @@ Completion evidence:
 - backend/app/api/evidence.py (evidence router)
 - backend/app/api/reports.py (report-run router)
 - backend/app/main.py (router registration)
+- backend/app/db/session.py (FastAPI-compatible DB session dependency; delegates to shared `get_session()`)
 - backend/tests/reports/test_report_contracts.py (contract defaults)
 - backend/tests/reports/test_report_service.py (4 report service tests)
 - backend/tests/reports/test_adapters.py (4 adapter tests)
 - backend/tests/reports/test_report_repository.py (DB-backed persistence round-trip)
 - backend/tests/api/test_api_scaffold.py (6 passing API contract tests)
+- backend/tests/api/test_db_session.py (DB session dependency delegation test)
 Next lowest-dependency task:
-- **D-001 (BLOCKED on C-001 + C-002)**: Level 7 DB wiring — `backend/app/db/session.py` (FastAPI-compatible `get_db_session()` delegating to `get_session()` from engine.py), update `api/dependencies.py` with `create_db_services()`, update `main.py` to use DB-backed services, add DB-backed API integration test. Full spec in `plans/2026-06-03-codex-deferred-tasks.md`.
-- Pre-condition check: `backend/app/claims_engine/models.py` must exist with `ClaimModel` (C-001 complete). Level 6 not-evaluated categories must be in `rule_engine.py` (C-002 complete).
+- **D-000 (BLOCKED on C-002)**: Report surfacing for unsupported categories. Once Lane C emits UNKNOWN claims for unsupported-category SOURCE_FAILURE evidence, Lane D owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
+- **D-001 (PARTIAL PRE-WORK DONE; FULL TASK BLOCKED on C-002 + D-000)**: `backend/app/db/session.py` now delegates `get_db_session()` to `get_session()` from `app.db.engine`; do not update `api/dependencies.py`, update `main.py`, or add/run the DB-backed report API integration test until C-002 and D-000 are complete.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - Any Lane A/B/C module files (read only)
-- D-001 until `backend/app/claims_engine/models.py` contains `ClaimModel`
+- D-001 DB service wiring beyond `backend/app/db/session.py` until C-002 and D-000 are complete
 ```
 
 ## Known blockers
