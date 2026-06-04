@@ -2,6 +2,29 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-005 connector ownership decision packet
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Prepared a proposed connector ownership/run-lifecycle ADR without changing runtime code.
+- Recommended a coordinator-owned connector integration zone for future `backend/app/connectors/`, `backend/tests/connectors/`, and `tests/fixtures/connectors/`.
+- Recommended source retrieval runs as connector lifecycle/provenance authority, with jobs reserved for future async orchestration.
+- No `LANE_OWNERSHIP.md`, connector runtime code, shared schemas, migrations, automatic-execution config, POSIX script command path, or Lane A/B/C implementation files were changed.
+- Full PowerShell verification passes: 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- D-005 is prepared but not fully resolved until the coordinator updates `LANE_OWNERSHIP.md`.
+- Runtime connector work remains blocked until connector integration-zone ownership is canonical.
+
 ## 2026-06-04 Session 2 D-004 Level 8 ownership and fixture acceptance
 
 **Commands run:**

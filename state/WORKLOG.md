@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 D-005 connector ownership decision packet)
+
+- Prepared D-005 without editing `LANE_OWNERSHIP.md`, because that file is canonical but reserves updates for the human coordinator.
+- Added proposed ADR `docs/adr/lane-d-0002-connector-entry-ownership.md`.
+- Recommended a coordinator-owned connector integration zone for future `backend/app/connectors/`, `backend/tests/connectors/`, and `tests/fixtures/connectors/`, instead of assigning connector ingestion to Lane A, C, or D by default.
+- Recommended `SourceRetrievalRunContract` / `source.ingest_runs` as connector lifecycle and provenance authority, with `jobs.job_queue` reserved for future async orchestration that references retrieval runs rather than replacing them.
+- Kept runtime code, shared schemas, migrations, `LANE_OWNERSHIP.md`, and Lane A/B/C implementation files unchanged.
+
 ## 2026-06-04 (Session 2 D-004 Level 8 ownership and fixture acceptance)
 
 - Completed Lane D D-004 from root `main` after Session 1 landed Lane B TB-100 at `cf9897e`.

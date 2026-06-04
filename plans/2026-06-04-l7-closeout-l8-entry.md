@@ -170,12 +170,38 @@ Proposed fixture path:
 - Stop if implementation requires live network, credentials, paid/vendor data, or selecting the MVP jurisdiction.
 - Stop if schema edits are needed before D-003 owner-specific follow-up happens.
 
+## D-005 Connector Module Ownership Decision Packet
+
+Status: prepared on 2026-06-04; coordinator action still required before D-005 can be considered complete. The proposed ADR is `docs/adr/lane-d-0002-connector-entry-ownership.md`.
+
+### Proposed Decision
+
+Create a coordinator-owned connector integration zone before any runtime connector code:
+
+- `backend/app/connectors/`
+- `backend/tests/connectors/`
+- `tests/fixtures/connectors/`
+- `plans/connector-*.md` and `state/connector-state.md` if connector work becomes a sustained lane
+
+This zone should be writable only by an explicitly assigned connector implementation pass. It may read public lane APIs and domain contracts, but any required Lane A/B/C/D implementation change remains owned by that lane.
+
+Use source retrieval runs as the connector attempt lifecycle authority. `SourceRetrievalRunContract` and `source.ingest_runs` already carry connector name, dataset version, status, timing, row/error/warning counts, log URI, metrics, and durable linkage into `evidence.observations.ingest_run_id`. `jobs.job_queue` should remain future async orchestration, not provenance authority, unless a later jobs ADR explicitly references retrieval runs instead of replacing them.
+
+### Prepared Coordinator Action
+
+To resolve D-005, update `LANE_OWNERSHIP.md` with the connector integration zone above, then assign the first fixture connector implementation pass to that zone. Do not assign it to Lane D by default; report/API should validate downstream surfacing, not own ingestion.
+
+### Remaining Stop Condition
+
+No `backend/app/connectors/` runtime code should be created until `LANE_OWNERSHIP.md` makes this ownership explicit.
+
 ## Files likely to change
 
 | File | Expected change |
 |---|---|
 | `backend/tests/reports/test_report_regression.py` | Add normalized report artifact regression test |
 | `backend/tests/reports/fixtures/*.json` | Optional committed expected fixture output |
+| `docs/adr/lane-d-0002-connector-entry-ownership.md` | Proposed connector ownership/run-lifecycle decision packet |
 | `plans/2026-06-04-l7-closeout-l8-entry.md` | Track closeout and entry sequencing |
 | `plans/lane-d-2026-06-03-reports-api-infra.md` | Record Lane D closeout progress if report regression is implemented |
 | `state/PROJECT_STATE.md` | Update only when the next executable task changes materially |
@@ -228,3 +254,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: D-002 completed from root `main` (`16c5d7f`) with a normalized report artifact regression.
 - 2026-06-04: D-003 schema-contract alignment note completed. Shared schemas were audited but not edited; future schema ownership and edit order are recorded above.
 - 2026-06-04: D-004 Level 8 ownership and fixture-only connector acceptance plan completed after Lane B TB-100 landed on root `main` (`cf9897e`). No connector runtime, schema, migration, or lane-owned implementation files were changed.
+- 2026-06-04: D-005 decision packet prepared. Proposed ADR recommends a coordinator-owned connector integration zone and source retrieval runs as connector lifecycle authority; `LANE_OWNERSHIP.md` still needs coordinator update before runtime code.

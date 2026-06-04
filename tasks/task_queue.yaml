@@ -209,7 +209,7 @@ tasks:
     status: pending
     depends_on: [D-004]
     lane: D
-    notes: Next safe step before connector runtime code: resolve who owns any future `backend/app/connectors/` module, whether connector runs use source retrieval runs/jobs/both, and which lane opens the first fixture connector implementation slice.
+    notes: Decision packet prepared in docs/adr/lane-d-0002-connector-entry-ownership.md. Coordinator still needs to update LANE_OWNERSHIP.md before runtime code: proposed owner is a coordinator-owned connector integration zone, and proposed lifecycle authority is source retrieval runs with jobs reserved for future async orchestration.
     spec: plans/2026-06-04-l7-closeout-l8-entry.md#required-pre-code-decisions
     files:
       - LANE_OWNERSHIP.md (only if coordinator approves connector ownership update)

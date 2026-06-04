@@ -35,6 +35,7 @@ Verification result:
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
 - Shared schema gaps for source, evidence, claim, job, missing report schema, and planning-pack OpenAPI are recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; no shared schema files were edited
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector acceptance path is defined as a static local flood fixture with no live network, no runtime connector code yet, and explicit idempotency/failure/source licensing stop conditions
+- D-005 connector ownership decision packet is prepared in `docs/adr/lane-d-0002-connector-entry-ownership.md`; it recommends a coordinator-owned connector integration zone and source retrieval runs as connector lifecycle authority
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -80,7 +81,7 @@ Do not work on yet:
 - UI or LLM summaries
 - Production ops/security/observability
 - New jurisdictions or intents until Level 8/Level 9 planning explicitly selects them
-- Connector runtime code until future `backend/app/connectors/` ownership and connector run lifecycle authority are decided
+- Connector runtime code until future `backend/app/connectors/` ownership is added to `LANE_OWNERSHIP.md`
 ```
 
 
@@ -127,6 +128,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
+| Connector integration zone | Proposed in ADR; not yet canonical | Do not create `backend/app/connectors/` until `LANE_OWNERSHIP.md` is updated |
 
 ## Last verified state
 
