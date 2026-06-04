@@ -35,7 +35,7 @@ Verification result:
 - Lane D report artifact semantics are now pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields while asserting source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
 - Shared schema gaps for source, evidence, claim, job, missing report schema, and planning-pack OpenAPI are recorded with future lane ownership in `plans/2026-06-04-l7-closeout-l8-entry.md`; no shared schema files were edited
 - Level 8 connector gates L8-001 through L8-010 are mapped to lane owners, and the first fixture-only connector acceptance path is defined as a static local flood fixture with no live network, no runtime connector code yet, and explicit idempotency/failure/source licensing stop conditions
-- D-005 connector ownership decision packet is prepared in `docs/adr/lane-d-0002-connector-entry-ownership.md`; it recommends a coordinator-owned connector integration zone and source retrieval runs as connector lifecycle authority
+- D-005 is complete: `LANE_OWNERSHIP.md` assigns a coordinator-owned connector integration zone, `docs/adr/lane-d-0002-connector-entry-ownership.md` is accepted, source retrieval runs are connector lifecycle/provenance authority, and jobs remain future async orchestration
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -75,13 +75,13 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane D D-005: Level 8 pre-code connector module ownership decision before connector runtime code.
+- CON-001: Level 8 fixture-only flood connector contract slice in the connector integration zone.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
 - Production ops/security/observability
 - New jurisdictions or intents until Level 8/Level 9 planning explicitly selects them
-- Connector runtime code until future `backend/app/connectors/` ownership is added to `LANE_OWNERSHIP.md`
+- Live connector behavior, credentials, browser/download steps, paid APIs, schema edits, and Lane A/B/C/D implementation changes for connector work unless explicitly coordinated with the owning lane
 ```
 
 
@@ -128,11 +128,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Proposed in ADR; not yet canonical | Do not create `backend/app/connectors/` until `LANE_OWNERSHIP.md` is updated |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | First runtime slice is CON-001 fixture-only flood connector contract work |
 
 ## Last verified state
 
-Latest D-004 verification: `.\scripts\verify.ps1` passes on root `main` with 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, and Lane B TB-100 are complete on root `main`.
+Latest D-005 verification: `.\scripts\verify.ps1` passes on root `main` with 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default. Last DB-smoke full gate: 255 tests pass with DB smoke enabled after landing Session 1 Lane B coordinate hardening on root `main`; lint clean; mypy clean (91 source files). C-002, D-000, D-001, D-002, D-003, D-004, D-005, and Lane B TB-100 are complete on root `main`.
 
 ## Local repo bootstrap state
 

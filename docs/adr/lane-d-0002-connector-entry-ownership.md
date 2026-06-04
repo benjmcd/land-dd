@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -13,7 +13,7 @@ Level 8 introduces fixture-first connectors. Connector work crosses existing lan
 - Lane C owns evidence payload validation, source-failure evidence, and claims.
 - Lane D owns report/API surfacing.
 
-`LANE_OWNERSHIP.md` does not currently assign `backend/app/connectors/`. It also states that `LANE_OWNERSHIP.md` updates are made by the human coordinator. Therefore this ADR is a decision packet for coordinator review, not a runtime implementation.
+`LANE_OWNERSHIP.md` did not assign `backend/app/connectors/` before D-005. It also states that `LANE_OWNERSHIP.md` updates are made by the human coordinator. D-005 resolves the pre-code ownership decision by adding a connector integration zone to `LANE_OWNERSHIP.md`; this ADR records the reason for that decision and is not a runtime implementation.
 
 Current repo authority favors source retrieval runs for connector provenance:
 
@@ -23,7 +23,7 @@ Current repo authority favors source retrieval runs for connector provenance:
 
 ## Decision
 
-Before any Level 8 connector runtime code, create a coordinator-owned connector integration zone in `LANE_OWNERSHIP.md`.
+Before any Level 8 connector runtime code, connector work uses a coordinator-owned connector integration zone in `LANE_OWNERSHIP.md`.
 
 Recommended ownership:
 
@@ -66,7 +66,7 @@ Use `jobs.job_queue` as connector lifecycle authority:
 
 ## Consequences
 
-- D-005 cannot be fully complete until `LANE_OWNERSHIP.md` is updated by the coordinator.
-- First connector runtime code remains blocked until ownership and run lifecycle authority are canonical.
+- D-005 resolves connector module ownership and run lifecycle authority before runtime implementation.
+- First connector runtime code should start only in the connector integration zone.
 - The next connector pass can be isolated from Session 1 Lane A/C work and Session 2 Lane D work.
 - Level 8 can prove fixture connector behavior without live network use, credentials, schema edits, or report/API broadening.

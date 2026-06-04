@@ -9,6 +9,7 @@ Append concise entries. Do not rely on chat history.
 - Recommended a coordinator-owned connector integration zone for future `backend/app/connectors/`, `backend/tests/connectors/`, and `tests/fixtures/connectors/`, instead of assigning connector ingestion to Lane A, C, or D by default.
 - Recommended `SourceRetrievalRunContract` / `source.ingest_runs` as connector lifecycle and provenance authority, with `jobs.job_queue` reserved for future async orchestration that references retrieval runs rather than replacing them.
 - Kept runtime code, shared schemas, migrations, `LANE_OWNERSHIP.md`, and Lane A/B/C implementation files unchanged.
+- Resolved D-005 by adding the connector integration zone to `LANE_OWNERSHIP.md`, accepting the connector ownership ADR, and assigning the first fixture-only flood connector pass to the connector integration zone. No runtime connector code was created.
 
 ## 2026-06-04 (Session 2 D-004 Level 8 ownership and fixture acceptance)
 

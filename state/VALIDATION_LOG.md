@@ -13,17 +13,18 @@ git diff --check
 
 **Results:**
 
-- Prepared a proposed connector ownership/run-lifecycle ADR without changing runtime code.
-- Recommended a coordinator-owned connector integration zone for future `backend/app/connectors/`, `backend/tests/connectors/`, and `tests/fixtures/connectors/`.
-- Recommended source retrieval runs as connector lifecycle/provenance authority, with jobs reserved for future async orchestration.
-- No `LANE_OWNERSHIP.md`, connector runtime code, shared schemas, migrations, automatic-execution config, POSIX script command path, or Lane A/B/C implementation files were changed.
+- Prepared and accepted the connector ownership/run-lifecycle ADR without changing runtime code.
+- Added a coordinator-owned connector integration zone to `LANE_OWNERSHIP.md` for future `backend/app/connectors/`, `backend/tests/connectors/`, and `tests/fixtures/connectors/`.
+- Selected source retrieval runs as connector lifecycle/provenance authority, with jobs reserved for future async orchestration.
+- Assigned the first fixture-only flood connector implementation pass to the connector integration zone.
+- No connector runtime code, shared schemas, migrations, automatic-execution config, POSIX script command path, or Lane A/B/C implementation files were changed.
 - Full PowerShell verification passes: 255 backend tests, lint clean, mypy clean (91 source files), and DB smoke skipped by default.
 - `git diff --check` reports no whitespace errors.
 
 **Residual risk:**
 
-- D-005 is prepared but not fully resolved until the coordinator updates `LANE_OWNERSHIP.md`.
-- Runtime connector work remains blocked until connector integration-zone ownership is canonical.
+- Runtime connector work must stay in the connector integration zone and remain fixture-only until live connector gates are explicitly satisfied.
+- Lane A/B/C/D implementation changes remain blocked unless coordinated with the owning lane.
 
 ## 2026-06-04 Session 2 D-004 Level 8 ownership and fixture acceptance
 

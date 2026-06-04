@@ -84,6 +84,35 @@ Example: `archive/2026-06-10_source-registry-lane-migration/backend/app/reposito
 
 ---
 
+## Connector Integration Zone
+
+Connector work is a coordinator-owned integration zone. It is not Lane A, B, C, or D by default.
+
+Connector implementation passes may read public lane service APIs and domain contracts, but they must not modify lane-owned implementation files unless the owning lane explicitly accepts that follow-up. Cross-lane changes still follow the cross-lane change process below.
+
+| Path | Purpose |
+|---|---|
+| `backend/app/connectors/` | Fixture-first connector interfaces, adapters, and orchestration for assigned connector passes |
+| `backend/tests/connectors/` | Connector contract and fixture behavior tests |
+| `tests/fixtures/connectors/` | Connector-specific local fixture inputs and expected normalized outputs |
+| `plans/connector-*.md` | Connector implementation plans when connector work becomes more than a one-pass handoff |
+| `state/connector-state.md` | Connector integration-zone state when connector work becomes more than a one-pass handoff |
+
+Connector run lifecycle authority:
+
+- Source retrieval runs are the provenance authority for connector attempts.
+- `source.ingest_runs` stores connector name, dataset version, status, timing, row/error/warning counts, log URI, and metrics.
+- `jobs.job_queue` is reserved for future async orchestration and must reference source retrieval provenance rather than replacing it.
+
+First assigned implementation pass:
+
+1. Build a fixture-only flood connector pass in the connector integration zone.
+2. Use local fixture JSON only; no live network, vendor credential, browser/download step, or paid API.
+3. Write connector output as evidence/source-failure inputs before claims or reports.
+4. Stop if the pass requires Lane A/B/C/D implementation changes not explicitly coordinated with the owning lane.
+
+---
+
 ## Lane A — Source Registry + DB Infrastructure
 
 **Milestone gates**: MILESTONE_MAP.md L2-*, L3-001 to L3-010

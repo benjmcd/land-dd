@@ -154,8 +154,8 @@ Proposed fixture path:
 
 | Decision | Why it matters | Owner / resolver |
 |---|---|---|
-| Who owns future `backend/app/connectors/` if created | `LANE_OWNERSHIP.md` does not currently assign connector module ownership | Coordinator before implementation |
-| Whether connector run status uses source retrieval runs, jobs, or both | D-003 identified job/source retrieval status schema divergence | Coordinator with Lane A and Lane D |
+| Who owns future `backend/app/connectors/` if created | Resolved in D-005: `LANE_OWNERSHIP.md` assigns a connector integration zone | Connector integration zone |
+| Whether connector run status uses source retrieval runs, jobs, or both | Resolved in D-005: source retrieval runs are provenance authority; jobs are future async orchestration | Connector integration zone with Lane A provenance authority |
 | Idempotency identity | Prevents duplicate evidence and unclear retry semantics | Lane A + Lane C before connector code |
 | Success fixture evidence shape | Must align with Lane C payload validation and current rule domains | Lane C, with Lane D downstream test |
 | Failure taxonomy | Determines failed retrieval vs SOURCE_FAILURE evidence behavior | Lane A + Lane C |
@@ -172,7 +172,7 @@ Proposed fixture path:
 
 ## D-005 Connector Module Ownership Decision Packet
 
-Status: prepared on 2026-06-04; coordinator action still required before D-005 can be considered complete. The proposed ADR is `docs/adr/lane-d-0002-connector-entry-ownership.md`.
+Status: complete on 2026-06-04. The accepted ADR is `docs/adr/lane-d-0002-connector-entry-ownership.md`, and `LANE_OWNERSHIP.md` now assigns the connector integration zone.
 
 ### Proposed Decision
 
@@ -187,13 +187,13 @@ This zone should be writable only by an explicitly assigned connector implementa
 
 Use source retrieval runs as the connector attempt lifecycle authority. `SourceRetrievalRunContract` and `source.ingest_runs` already carry connector name, dataset version, status, timing, row/error/warning counts, log URI, metrics, and durable linkage into `evidence.observations.ingest_run_id`. `jobs.job_queue` should remain future async orchestration, not provenance authority, unless a later jobs ADR explicitly references retrieval runs instead of replacing them.
 
-### Prepared Coordinator Action
+### Completed Coordinator Action
 
-To resolve D-005, update `LANE_OWNERSHIP.md` with the connector integration zone above, then assign the first fixture connector implementation pass to that zone. Do not assign it to Lane D by default; report/API should validate downstream surfacing, not own ingestion.
+`LANE_OWNERSHIP.md` now includes the connector integration zone above and assigns the first fixture-only flood connector implementation pass to that zone. It is not assigned to Lane D by default; report/API should validate downstream surfacing, not own ingestion.
 
 ### Remaining Stop Condition
 
-No `backend/app/connectors/` runtime code should be created until `LANE_OWNERSHIP.md` makes this ownership explicit.
+No connector runtime code should modify Lane A/B/C/D implementation files unless the owning lane explicitly accepts that follow-up.
 
 ## Files likely to change
 
@@ -254,4 +254,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: D-002 completed from root `main` (`16c5d7f`) with a normalized report artifact regression.
 - 2026-06-04: D-003 schema-contract alignment note completed. Shared schemas were audited but not edited; future schema ownership and edit order are recorded above.
 - 2026-06-04: D-004 Level 8 ownership and fixture-only connector acceptance plan completed after Lane B TB-100 landed on root `main` (`cf9897e`). No connector runtime, schema, migration, or lane-owned implementation files were changed.
-- 2026-06-04: D-005 decision packet prepared. Proposed ADR recommends a coordinator-owned connector integration zone and source retrieval runs as connector lifecycle authority; `LANE_OWNERSHIP.md` still needs coordinator update before runtime code.
+- 2026-06-04: D-005 complete. `LANE_OWNERSHIP.md` now assigns a coordinator-owned connector integration zone, the ADR is accepted, source retrieval runs are connector lifecycle/provenance authority, jobs are future async orchestration, and the first fixture-only flood connector pass is assigned to the connector integration zone.

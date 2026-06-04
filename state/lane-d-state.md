@@ -25,7 +25,7 @@ Verification result:
 - Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
 - Shared source/evidence/claim/job/report schema gaps are recorded in `plans/2026-06-04-l7-closeout-l8-entry.md` without editing shared schema files
 - Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
-- D-005 connector ownership decision packet is prepared as a proposed ADR; connector runtime code remains blocked until `LANE_OWNERSHIP.md` is updated
+- D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -58,7 +58,8 @@ Next lowest-dependency task:
 - **D-002 (DONE)**: Normalized report artifact regression is complete.
 - **D-003 (DONE)**: Schema-contract alignment note is complete; future schema ownership and edit order are recorded before any shared `schemas/*.json` edits.
 - **D-004 (DONE)**: Level 8 ownership and fixture-only connector acceptance plan is complete.
-- **D-005 (PREPARED; COORDINATOR ACTION NEEDED)**: Proposed connector integration-zone ownership and source-retrieval-run lifecycle decision are recorded in `docs/adr/lane-d-0002-connector-entry-ownership.md`; `LANE_OWNERSHIP.md` still needs coordinator update before runtime code.
+- **D-005 (DONE)**: Connector integration-zone ownership and source-retrieval-run lifecycle decision are canonical in `LANE_OWNERSHIP.md` and `docs/adr/lane-d-0002-connector-entry-ownership.md`.
+- **CON-001 (NEXT)**: Level 8 fixture-only flood connector contract slice in the connector integration zone.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -75,7 +76,7 @@ Do not work on yet:
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
 | Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 is complete; D-001 can now use report output that includes all four unsupported-category unknowns |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
-| Future `backend/app/connectors/` ownership | Decision packet prepared; pending coordinator update to `LANE_OWNERSHIP.md` | Do not create connector runtime code until ownership is assigned |
+| Future `backend/app/connectors/` ownership | Resolved in `LANE_OWNERSHIP.md` | First runtime work belongs to the connector integration zone, not Lane D report/API code |
 
 ## Active plan
 

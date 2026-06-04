@@ -206,10 +206,10 @@ tasks:
 
   - id: D-005
     title: Level 8 pre-code handoff — connector module ownership decision
-    status: pending
+    status: done
     depends_on: [D-004]
     lane: D
-    notes: Decision packet prepared in docs/adr/lane-d-0002-connector-entry-ownership.md. Coordinator still needs to update LANE_OWNERSHIP.md before runtime code: proposed owner is a coordinator-owned connector integration zone, and proposed lifecycle authority is source retrieval runs with jobs reserved for future async orchestration.
+    notes: LANE_OWNERSHIP.md now assigns a coordinator-owned connector integration zone. Source retrieval runs are connector lifecycle/provenance authority; jobs are reserved for future async orchestration. First fixture-only flood connector implementation is assigned to the connector integration zone.
     spec: plans/2026-06-04-l7-closeout-l8-entry.md#required-pre-code-decisions
     files:
       - LANE_OWNERSHIP.md (only if coordinator approves connector ownership update)
@@ -222,3 +222,24 @@ tasks:
       - Future connector module ownership is explicit
       - Connector run lifecycle surface is selected
       - First fixture connector implementation lane is assigned
+
+  - id: CON-001
+    title: Level 8 fixture-only flood connector contract slice
+    status: pending
+    depends_on: [D-005]
+    lane: connector-integration
+    notes: First runtime connector slice. Build only in the connector integration zone; use local fixture JSON, source retrieval provenance, and evidence/source-failure outputs before claims or reports. No live network, credentials, browser/download steps, paid APIs, schema edits, or Lane A/B/C/D implementation changes without explicit owner coordination.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md#l8p-001-first-fixture-only-connector-preparation
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - tests/fixtures/connectors/
+      - plans/connector-*.md (only if needed)
+      - state/connector-state.md (only if needed)
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Connector tests are fixture-only and cannot hit live services by default
+      - Connector attempts use source retrieval run provenance
+      - Successful output enters evidence inputs before claims
+      - Failure output records blocked/failed retrieval and/or SOURCE_FAILURE evidence behavior
