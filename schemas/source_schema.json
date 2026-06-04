@@ -1,22 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.com/schemas/source.schema.json",
-  "title": "Source",
+  "title": "SourceContract",
   "type": "object",
   "required": [
     "source_id",
     "name",
+    "organization",
+    "homepage_url",
     "source_type",
-    "domain",
     "authority_level",
+    "domain",
+    "geographic_scope",
+    "update_cadence",
     "license_status",
     "commercial_use_status",
     "redistribution_status",
+    "license_summary",
+    "attribution_required",
     "cache_allowed",
     "export_allowed",
     "ai_use_allowed",
+    "raw_data_allowed",
     "freshness_class",
-    "review_status"
+    "last_checked_at",
+    "review_owner",
+    "review_status",
+    "notes",
+    "metadata"
   ],
   "properties": {
     "source_id": {
@@ -49,7 +60,16 @@
       "type": "string"
     },
     "authority_level": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "official_primary",
+        "official_secondary",
+        "commercial_normalized",
+        "open_community",
+        "derived_model",
+        "user_supplied",
+        "unknown"
+      ]
     },
     "geographic_scope": {
       "type": [

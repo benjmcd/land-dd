@@ -2,6 +2,38 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane A TA-070 source schema-contract parity
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/source_registry/test_source_schema_contract.py
+py -3.12 -m pytest --collect-only -q tests/source_registry
+py -3.12 -m pytest -q tests/source_registry
+ruff check app/source_registry app/domain/source_contracts.py tests/source_registry
+mypy app/source_registry app/domain/source_contracts.py tests/source_registry
+Set-Location ..
+git diff --check
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Source schema-contract parity tests: 4 passed.
+- Lane A source-registry collection: 48 tests; default local run has 47 passed and 1 DB-gated skip.
+- Lane A source-registry ruff: clean.
+- Lane A source-registry mypy: clean over 16 source/test files.
+- Whitespace check: clean.
+- Full DB-enabled PowerShell verification: ok; 330 backend tests pass; lint clean; mypy clean over 119 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 330 tests, including 4 source schema-contract tests.
+
+**Residual risk:**
+
+- TA-070 resolves `schemas/source_schema.json` for serialized `SourceContract` only. `SourceDatasetContract`, `SourceDatasetVersionContract`, `SourceRetrievalRunContract`, job schema, report-run schema, OpenAPI refresh, and connector adapter adoption of deterministic source-failure evidence IDs remain separate future work.
+
 ## 2026-06-04 Lane C TC-180 source-failure evidence ID preservation
 
 **Commands run:**

@@ -64,7 +64,7 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 
 | Existing schema | Gap vs current contracts/artifacts | Future owner | Required decision before edit |
 |---|---|---|---|
-| `schemas/source_schema.json` | Requires `source_type`, while `SourceContract.source_type` is optional; does not model `SourceDatasetContract`, `SourceDatasetVersionContract`, or `SourceRetrievalRunContract`; does not constrain source governance status vocabularies beyond string type. | Lane A | Decide whether source schema covers only `SourceContract` or the full source/dataset/version/retrieval family. |
+| `schemas/source_schema.json` | Resolved for serialized `SourceContract`: field set and `authority_level` enum are parity-tested against Lane A contracts. Still does not model `SourceDatasetContract`, `SourceDatasetVersionContract`, or `SourceRetrievalRunContract`. | Lane A | Decide whether to add separate dataset/version/retrieval-run schemas or a broader source provenance schema family. |
 | `schemas/evidence_schema.json` | Does not include required domain fields `source_id`, `evidence_code`, `observed_at`, `superseded_by`, `geometry_geojson`, `geometry_srid`, or `spatial_precision_meters`; still exposes `geometry_wkt`, which current `EvidenceContract` does not use; `retrieved_at` differs from contract `observed_at`; `observed_value` is broad while runtime validators enforce type-specific payloads. | Lane C | Decide whether schema should mirror the API contract exactly or define persistence/ingestion payloads separately. |
 | `schemas/claim_schema.json` | Requires `intent`, which current `ClaimContract` does not carry; omits `rule_code`, `ruleset_id`, and `ruleset_version`; includes `contradiction_group_ids`, which current claim contract does not carry. | Lane C | Decide whether claim schema represents current API/domain claims or a future enriched report/export claim. |
 | `schemas/job_schema.json` | Matches the broad `JobStatus` values but there is no current `JobContract`; Level 8 connector/retrieval run statuses also use `SourceRetrievalStatus` values (`pending`, `running`, `succeeded`, `failed`, `blocked`, `skipped`) that do not fully match job status. | Coordinator with Lane A/Lane D | Decide whether connector runs reuse job schema, source retrieval run schema, or both. |
@@ -73,11 +73,11 @@ Status: complete on 2026-06-04 as a documentation/ownership pass. No shared sche
 
 ### Recommended Edit Order
 
-1. Lane C aligns evidence and claim schemas with current `EvidenceContract` and `ClaimContract`, or records an ADR explaining a separate persistence/export schema.
-2. Lane A aligns source schema scope with `SourceContract` vs source provenance family contracts.
+1. Lane C aligns evidence and claim schemas with current `EvidenceContract` and `ClaimContract`, or records an ADR explaining a separate persistence/export schema. Status: complete for serialized domain contracts.
+2. Lane A aligns source schema scope with `SourceContract` vs source provenance family contracts. Status: complete for `SourceContract` only; dataset/version/retrieval-run schemas remain a future schema-family decision.
 3. Lane D proposes `schemas/report_run_schema.json` only after nested source/evidence/claim schema scope is settled.
 4. Lane D refreshes API/OpenAPI documentation from the FastAPI app after schema scope is settled.
-5. Level 8 connector work begins with fixture-only connector contracts that reference the aligned source/evidence schemas.
+5. Level 8 connector work continues with fixture-only connector contracts that reference aligned source/evidence schemas and explicitly record any source provenance-family schema gaps.
 
 ### Stop Conditions
 
@@ -254,4 +254,5 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: D-002 completed from root `main` (`16c5d7f`) with a normalized report artifact regression.
 - 2026-06-04: D-003 schema-contract alignment note completed. Shared schemas were audited but not edited; future schema ownership and edit order are recorded above.
 - 2026-06-04: D-004 Level 8 ownership and fixture-only connector acceptance plan completed after Lane B TB-100 landed on root `main` (`cf9897e`). No connector runtime, schema, migration, or lane-owned implementation files were changed.
+- 2026-06-04: Lane A TA-070 resolved `schemas/source_schema.json` for serialized `SourceContract` only and added parity tests. Source dataset, dataset-version, and retrieval-run schema coverage remains separate future Lane A/coordinator work.
 - 2026-06-04: D-005 complete. `LANE_OWNERSHIP.md` now assigns a coordinator-owned connector integration zone, the ADR is accepted, source retrieval runs are connector lifecycle/provenance authority, jobs are future async orchestration, and the first fixture-only flood connector pass is assigned to the connector integration zone.

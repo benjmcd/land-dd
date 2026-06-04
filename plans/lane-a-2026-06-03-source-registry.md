@@ -19,7 +19,7 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - DB migration `db/migrations/0001_initial_spine.sql` exists with all core tables.
 - `SourceContract` Pydantic model in `backend/app/domain/source_contracts.py`.
 - `InMemorySourceRepository` + `SourceService` in `backend/app/source_registry/`.
-- 28 passing tests in `backend/tests/source_registry/`.
+- 48 tests collected in `backend/tests/source_registry/` after the source schema-contract parity slice; default local run has one DB-gated skip.
 - Backward-compat shims in `app/repositories/` and `app/services/` were archived under `archive/2026-06-03_source-registry-lane-migration/` (TA-010 complete).
 - `SourceModel` in `backend/app/source_registry/models.py` maps the `source.sources` table (TA-020 complete).
 - `SqlAlchemySourceRepository` in `backend/app/source_registry/source_repo.py` implements the source repository protocol for SQLAlchemy sessions (TA-030 complete).
@@ -30,6 +30,7 @@ Complete MILESTONE_MAP.md Levels 2-3:
 - `registers/data_source_registry.csv`, `schemas/source_schema.json`, and the seed loader now carry explicit license/review/freshness fields (TA-050 complete).
 - `SourceService` implements source existence and fail-closed production-use checks for `SourceExistsProtocol` wiring (TA-050 complete).
 - DB smoke now passes via the Windows PowerShell verification wrapper.
+- `schemas/source_schema.json` now explicitly represents serialized `SourceContract` only, tracks the current `SourceContract.model_fields` field set, constrains `authority_level` to the Lane A enum values, and rejects dataset/version/retrieval-run family fields (TA-070 complete).
 
 ## Proposed design
 
@@ -75,6 +76,13 @@ Build bottom-up: archive shims → SQLAlchemy ORM model → SQLAlchemy-backed re
 5. If passes: update `state/lane-a-state.md` milestone to L2/L3 candidate.
 Status: COMPLETE. DB smoke passes locally, and the PowerShell verification wrapper now owns the local `psql` shim PATH prepend.
 
+### TA-070: Source schema-contract parity (COMPLETE)
+1. Decide whether `schemas/source_schema.json` models only `SourceContract` or the full source/dataset/version/retrieval-run family.
+2. Align `schemas/source_schema.json` to the serialized `SourceContract` field set.
+3. Add schema-contract tests that fail if source schema properties or required fields drift from `SourceContract.model_fields`.
+4. Record that dataset, dataset-version, and retrieval-run schemas remain a future schema-family decision rather than hidden fields in `source_schema.json`.
+Status: COMPLETE. The source schema now covers only `SourceContract`; the provenance family contracts remain separate future work.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -86,7 +94,8 @@ Status: COMPLETE. DB smoke passes locally, and the PowerShell verification wrapp
 | `docs/adr/lane-a-0001-provenance-model.md` | New: ADR |
 | `templates/data_source_license_review.md` | Strengthen canonical license review template |
 | `registers/data_source_registry.csv` | Add explicit governance fields |
-| `schemas/source_schema.json` | Add source-governance fields |
+| `schemas/source_schema.json` | Align to serialized `SourceContract` field set |
+| `backend/tests/source_registry/test_source_schema_contract.py` | Guard source schema parity with `SourceContract` |
 | `state/lane-a-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB smoke results |
 
@@ -95,6 +104,7 @@ Status: COMPLETE. DB smoke passes locally, and the PowerShell verification wrapp
 ```bash
 pytest backend/tests/source_registry/ -v
 mypy backend/app/source_registry backend/app/domain/source_contracts.py
+pytest backend/tests/source_registry/test_source_schema_contract.py -v
 .\scripts\verify.ps1
 # When Docker available:
 $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
@@ -114,6 +124,7 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: `SourceContract` expanded to 17 fields matching DB schema + L3 requirements.
 - 2026-06-03: Backward-compat shims in `repositories/` and `services/` are Lane A's to archive (not delete) once no code imports from them.
 - 2026-06-03: `docker-compose.yml` assigned to Lane A ownership.
+- 2026-06-04: `schemas/source_schema.json` is the serialized `SourceContract` schema only. `SourceDatasetContract`, `SourceDatasetVersionContract`, and `SourceRetrievalRunContract` need separate schemas or an explicit future schema-family decision.
 
 ## Progress log
 
@@ -126,3 +137,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-03: TA-060 complete. DB smoke passes locally using the PowerShell verification wrapper, which prepends `local_artifacts` so the `psql` shim is available on Windows. Full verification: 179 tests, ruff clean, mypy clean (76 source files); DB smoke passes.
 - 2026-06-04: Source production-use gating now checks review, license, commercial, redistribution, cache, export, raw-data, and AI-use rights. Full verification: 186 tests, ruff clean, mypy clean (76 source files); strengthened DB smoke passes.
 - 2026-06-04: CON-007 coordinated Lane A public provenance follow-up complete. `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`, `retrieval_run_exists(...)` exposes public duplicate checks, and DB-enabled source provenance tests verify round-trip identity preservation. Full DB-enabled PowerShell verification: 289 tests, lint clean, mypy clean (104 source files), migrations/seeds apply, DB smoke passes.
+- 2026-06-04: TA-070 complete. Aligned `schemas/source_schema.json` with serialized `SourceContract`, added source schema-contract parity tests, and kept dataset/version/retrieval-run schemas as a future Lane A/coordinator schema-family follow-up. Lane A collection: 48 tests; full DB-enabled PowerShell verification: 330 tests, lint clean, mypy clean (119 source files), migrations/seeds apply, DB smoke passes.
