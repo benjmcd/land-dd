@@ -18,6 +18,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     EVIDENCE_SOURCE_ID_MISMATCH = "evidence_source_id_mismatch"
     EVIDENCE_DOMAIN_MISMATCH = "evidence_domain_mismatch"
     EVIDENCE_DATASET_VERSION_MISMATCH = "evidence_dataset_version_mismatch"
+    EVIDENCE_METHOD_CODE_MISMATCH = "evidence_method_code_mismatch"
     FIXTURE_LOG_URI_NOT_LOCAL = "fixture_log_uri_not_local"
     FIXTURE_METRIC_MISSING = "fixture_metric_missing"
     SUCCEEDED_ROW_COUNT_MISMATCH = "succeeded_row_count_mismatch"
@@ -48,6 +49,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
 
 _FLOOD_FIXTURE_DOMAIN = "flood"
 _FLOOD_FIXTURE_CONNECTOR_NAME = "fixture_flood_static"
+_FLOOD_FIXTURE_METHOD_PREFIX = "fixture_flood_"
 
 
 @dataclass(frozen=True)
@@ -265,6 +267,15 @@ def evaluate_flood_fixture_quality(
                 _issue(
                     ConnectorFixtureQualityIssueCode.EVIDENCE_DOMAIN_MISMATCH,
                     "flood fixture evidence domain must be flood",
+                ),
+            )
+        if evidence.method_code.strip() and not evidence.method_code.startswith(
+            _FLOOD_FIXTURE_METHOD_PREFIX,
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_METHOD_CODE_MISMATCH,
+                    "flood fixture evidence method_code must use fixture_flood prefix",
                 ),
             )
         _append_evidence_provenance_issues(issues, evidence)
