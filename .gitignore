@@ -1,0 +1,22 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.codesight/
+001-audit/
+worktrees/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+local_artifacts/
+*.log
+.DS_Store
+# Local working notes (not source artifacts)
+findings.md
+progress.md
+task_plan.md
