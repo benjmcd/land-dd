@@ -116,6 +116,12 @@ in this project use ORM models.
 **Priority:** HIGH
 **Prerequisite:** Task C-001 complete (so any new claim types use ORM models)
 
+**Session 1 completion note:** The Lane C-owned part of C-002 is complete when
+`RuleEngine.evaluate()` emits deterministic `SeverityBand.UNKNOWN` claims from stored
+source-failure evidence for the four unsupported domains. The report-run step that
+creates or registers those source-failure evidence records belongs to Lane D because
+`backend/app/reports/service.py` is Lane D-owned.
+
 **Context:**
 `rule_engine.py` implements 6 rule domains: flood, access, zoning, water, wetlands, slope.
 Four more categories are listed in MILESTONE_MAP as required for Level 6 PASS:
@@ -187,7 +193,7 @@ Add 4 new `hard_gates` entries to `config/ruleset_homestead_mvp.yaml`:
 - `condition`: the condition constants above
 - `verification_task`: what the user should do manually (derive from caveats above)
 
-### Step 3 — Report-service sentinel source creation (Lane D follow-up)
+### Step 3 - Report-service sentinel source creation (Lane D follow-up)
 
 Do **not** perform this step inside Lane C. `backend/app/reports/service.py` is owned by
 Lane D. Lane C's C-002 deliverable is to emit evidence-linked UNKNOWN claims when the

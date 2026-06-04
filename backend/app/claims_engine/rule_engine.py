@@ -5,6 +5,10 @@ from itertools import groupby
 from pathlib import Path
 from uuid import NAMESPACE_URL, UUID, uuid5
 
+from app.claims_engine.not_evaluated import (
+    NOT_EVALUATED_CAVEATS,
+    NOT_EVALUATED_DOMAINS,
+)
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import ConfidenceBand, EvidenceType, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
@@ -18,6 +22,16 @@ ZONING_INTENDED_USE_CONDITION = "intended_residential_use_prohibited_or_unknown"
 WATER_CONTEXT_CONDITION = "no_plausible_water_context_or_source_unavailable"
 WETLAND_MAPPED_CONDITION = "material_intersection_with_mapped_wetlands"
 SLOPE_INSUFFICIENT_CONDITION = "insufficient_low_slope_buildable_area"
+SOIL_SEPTIC_CONDITION = "soil_septic_unsupported"
+ENV_HAZARD_CONDITION = "env_hazard_unsupported"
+RESOURCE_CONTEXT_CONDITION = "resource_context_unsupported"
+MARKET_CONTEXT_CONDITION = "market_context_out_of_scope"
+NOT_EVALUATED_CONDITIONS_BY_DOMAIN = {
+    "soil_septic": SOIL_SEPTIC_CONDITION,
+    "env_hazard": ENV_HAZARD_CONDITION,
+    "resource_context": RESOURCE_CONTEXT_CONDITION,
+    "market_context": MARKET_CONTEXT_CONDITION,
+}
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
 ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacency")
 ACCESS_NO_ADJACENCY_KEYS = ("no_public_road_adjacency",)
@@ -87,6 +101,10 @@ class RuleEngine:
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
         slope_rule = self._ruleset.hard_gate_for_condition(SLOPE_INSUFFICIENT_CONDITION)
         wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
+        not_evaluated_rules = {
+            domain: self._ruleset.hard_gate_for_condition(condition)
+            for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
+        }
         active_evidence = sorted(
             (evidence for evidence in evidence_list if evidence.superseded_by is None),
             key=lambda evidence: (str(evidence.area_id), str(evidence.evidence_id)),
@@ -432,6 +450,20 @@ class RuleEngine:
                 claims.append(
                     self._flood_stale_claim(area_id, flood_rule, stale_evidence)
                 )
+            for domain in NOT_EVALUATED_DOMAINS:
+                not_evaluated_failures = [
+                    evidence
+                    for evidence in area_evidence
+                    if _is_not_evaluated_source_failure(evidence, domain)
+                ]
+                if not_evaluated_failures:
+                    claims.append(
+                        self._not_evaluated_claim(
+                            area_id,
+                            not_evaluated_rules[domain],
+                            not_evaluated_failures,
+                        )
+                    )
         for claim in claims:
             self._check_forbidden_language(claim)
         return claims
@@ -1274,6 +1306,40 @@ class RuleEngine:
             ),
         )
 
+    def _not_evaluated_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = NOT_EVALUATED_CAVEATS[rule.domain]
+        if caveat_text and caveat_text not in user_safe_language:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id(
+                "not-evaluated",
+                rule,
+                area_id,
+                evidence_ids,
+            ),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=f"{rule.domain} screening is not supported in this tool version.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -1686,6 +1752,15 @@ def _is_negative_flood_evidence(evidence: EvidenceContract) -> bool:
 
 def _is_flood_source_failure(evidence: EvidenceContract) -> bool:
     return evidence.domain == "flood" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_not_evaluated_source_failure(
+    evidence: EvidenceContract,
+    domain: str,
+) -> bool:
+    return evidence.domain == domain and (
         evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
     )
 

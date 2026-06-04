@@ -3,32 +3,43 @@
 ```text
 Current milestone: Level 6 - Claims Engine
 Target milestone: Level 5 (Evidence Ledger) → Level 6 (Claims Engine)
-Milestone status: PARTIAL
+Milestone status: PASS for Lane C claim/rule scope
 Last verified: 2026-06-04
 Verification command(s):
 - $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
 - $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
+- $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
+- py -3.12 -m pytest -q tests/reports tests/api
 - ruff check app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- ruff check app/claims_engine tests/claims_engine
 - mypy app/evidence_ledger app/claims_engine app/domain/evidence_contracts.py app/domain/claim_contracts.py tests/evidence_ledger tests/claims_engine
+- mypy app/claims_engine tests/claims_engine
 - rg -n "from app\.source_registry|from app\.area_geometry|import app\.source_registry|import app\.area_geometry" app/evidence_ledger app/claims_engine
+- py -3.12 -m pytest --collect-only -q
+- python scripts/db_smoke_check.py
 - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 Verification result:
-- 137 Lane C tests passing with DB smoke enabled
+- 143 Lane C evidence/claims tests collected
+- Lane C claims tests pass with DB smoke enabled
 - Lane C targeted ruff and mypy pass
 - Cross-lane import scans return 0 matches (isolation clean)
-- Full verification passes: 242 tests; lint clean; mypy clean (85 source files); DB smoke passes
+- Full backend collection reports 248 tests
+- Full DB-gated backend pytest passes
+- Direct DB smoke check passes against the currently running local Postgres/PostGIS database
+- Default PowerShell verification passes: workspace validation, structural invariants, backend tests, lint, and mypy (87 source files); DB smoke skipped by default
+- C-001 claims ORM persistence is stable on the current main base after removing cross-schema ORM FK metadata assumptions and flushing the parent claim before child link/task rows
 Failed or blocked gates:
 - L5-001 through L5-010: PASS for DB-backed repository/service scope (`SqlAlchemyEvidenceRepository` persists source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, optional geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, and `SqlAlchemyEvidenceAuditLog` durable audit events; `docs/adr/lane-c-evidence.md` documents immutability/amendment policy)
-- L6-001: PARTIAL/PASS for current DB-backed service/repository scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; `SqlAlchemyClaimRepository` persists claims plus `claims.claim_evidence` links via ORM models `ClaimModel`/`ClaimEvidenceLinkModel`/`VerificationTaskModel`; rule-generated claims cite evidence IDs)
-- L6-004: PARTIAL/PASS for current DB-backed service/repository scope (create_unknown requires source-failure evidence and persists unknown claims with evidence links)
-- L6-005: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (positive, unknown, needs-review, and stale-review claims propagate evidence caveats)
+- L6-001: PASS for current DB-backed service/repository scope (ClaimService refuses missing, empty, duplicate, mismatched, superseded, and cross-area evidence links; `SqlAlchemyClaimRepository` persists claims plus `claims.claim_evidence` links via ORM models `ClaimModel`/`ClaimEvidenceLinkModel`/`VerificationTaskModel`; rule-generated claims cite evidence IDs)
+- L6-004: PASS for current DB-backed service/repository scope (create_unknown requires source-failure evidence; not-evaluated categories emit UNKNOWN claims only from source-failure evidence; unknown claims persist with evidence links)
+- L6-005: PASS for current rule scope (positive, unknown, needs-review, stale-review, and not-evaluated claims propagate evidence caveats)
 - L6-006: PASS for current contract/service scope (severity and confidence remain separate)
-- L6-007: PARTIAL/PASS for current DB-backed service/repository scope (ClaimService requires verification_task when verification_required is true; `SqlAlchemyClaimRepository` persists verification tasks to `claims.verification_tasks`)
-- L6-002: PARTIAL/PASS for current rule-engine scope (ruleset ID/version load from `config/ruleset_homestead_mvp.yaml` and are copied into generated flood/access/zoning/water/wetlands/slope claims)
-- L6-003: PARTIAL/PASS for flood, access, zoning, water, wetlands, and slope hard-gate rules (deterministic claim IDs and deterministic output when input order changes)
-- L6-008: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (conflicting active evidence, incomplete active evidence, and positive-plus-source-failure evidence emit needs-review claims where implemented)
-- L6-009: PARTIAL/PASS for current flood/access/zoning/water/wetlands/slope rule scope (claim-service and rule-engine tests cover positive evidence-linked storage, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review, incomplete evidence, superseded evidence, deterministic order, invalid rule config, and duplicate claim rejection)
-- L6-010: PARTIAL/PASS for current rule-engine scope (business logic lives in `backend/app/claims_engine/rule_engine.py`, not an LLM prompt or UI copy)
+- L6-007: PASS for current DB-backed service/repository scope (ClaimService requires verification_task when verification_required is true; rule-generated not-evaluated claims include verification tasks; `SqlAlchemyClaimRepository` persists verification tasks to `claims.verification_tasks`)
+- L6-002: PASS for current rule-engine scope (ruleset ID/version load from `config/ruleset_homestead_mvp.yaml` and are copied into generated flood/access/zoning/water/wetlands/slope/not-evaluated claims)
+- L6-003: PASS for flood, access, zoning, water, wetlands, slope, and not-evaluated hard-gate rules (deterministic claim IDs and deterministic output when input order changes)
+- L6-008: PASS for current rule scope (conflicting active evidence, incomplete active evidence, positive-plus-source-failure evidence, and unsupported-domain source failures produce review or unknown claims where appropriate)
+- L6-009: PASS for current rule scope (claim-service and rule-engine tests cover positive evidence-linked storage, negative/no-claim, unknown/source-failure, explicit stale fixture signal, contradiction/needs-review, incomplete evidence, superseded evidence, deterministic order, invalid rule config, duplicate claim rejection, and not-evaluated unsupported-domain cases)
+- L6-010: PASS for current rule-engine scope (business logic lives in `backend/app/claims_engine/rule_engine.py` and `config/ruleset_homestead_mvp.yaml`, not an LLM prompt or UI copy)
 Completion evidence:
 - plans/lane-c-2026-06-03-evidence-claims.md
 - backend/app/evidence_ledger/evidence_repo.py (EvidenceRepository Protocol + InMemoryEvidenceRepository + SqlAlchemyEvidenceRepository)
@@ -39,6 +50,7 @@ Completion evidence:
 - backend/app/domain/claim_contracts.py (ClaimContract, with evidence_ids enforced)
 - backend/app/claims_engine/models.py (ClaimModel, ClaimEvidenceLinkModel, VerificationTaskModel — ORM models; C-001 DONE)
 - backend/app/claims_engine/claim_repo.py (ClaimRepository Protocol + InMemoryClaimRepository + SqlAlchemyClaimRepository using ORM models)
+- backend/app/claims_engine/not_evaluated.py (unsupported-domain constants and source-failure evidence helper)
 - backend/app/claims_engine/service.py (ClaimService)
 - backend/app/claims_engine/rule_engine.py (RuleEngine + constrained ruleset loader)
 - backend/tests/evidence_ledger/test_evidence_contracts.py (6 passing)
@@ -50,14 +62,16 @@ Completion evidence:
 - backend/tests/claims_engine/test_claim_contracts.py (4 passing)
 - backend/tests/claims_engine/test_claim_service.py (12 passing)
 - backend/tests/claims_engine/test_rule_engine.py (48 passing)
+- backend/tests/claims_engine/test_not_evaluated_claims.py (6 passing)
 - backend/tests/claims_engine/test_sqlalchemy_claim_repo.py (4 passing)
 - docs/adr/lane-c-rules.md (rules and claim persistence ADR)
 Next lowest-dependency task:
-- **C-001: DONE** — `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM and repaired for cross-schema FK metadata/flush ordering. Verified: Lane C DB tests pass, lint clean, mypy clean, and the full DB-smoke gate passes with 242 tests.
-- **C-002 (IMMEDIATE next)**: Add 4 not-evaluated rule categories (soil/septic, env_hazard, resource_context, market_context) using sentinel source failure evidence approach. Full spec in `plans/2026-06-03-codex-deferred-tasks.md`.
+- **C-001: DONE and DB-gated stable on current main** - `backend/app/claims_engine/models.py` created; `SqlAlchemyClaimRepository` refactored to ORM; ORM metadata/flush ordering repaired and verified with DB-gated claim tests.
+- **C-002: DONE for Lane C-owned rule/claim scope** - `RuleEngine.evaluate()` emits deterministic UNKNOWN claims for soil/septic, environmental hazards, resource context, and market context when provided stored source-failure evidence.
+- **Session 2 handoff**: Lane D should wire report-run auto-creation/registration of unsupported-domain source-failure evidence in `backend/app/reports/service.py` or D-001 integration code so report runs include these Lane C not-evaluated unknowns without Session 1 touching Lane D-owned files.
 Do not work on yet:
 - D-001 cross-lane wiring (Lane D owns `api/dependencies.py`, `main.py`, and `db/session.py`)
-- Claim Level 6 PASS before C-001 + C-002 are both complete
+- Live connectors, jurisdiction-specific rules, or UI/LLM summarization
 - Any Lane A/B/D files
 ```
 
@@ -69,7 +83,7 @@ Do not work on yet:
 | AreaExistsProtocol real impl | Available for in-memory wiring | Lane B AreaService exposes `area_is_registered`; full integration remains Lane D's job |
 | Jurisdiction for rules | Undecided | Use fixture rules only |
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial-precision fields; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
-| Minimum rule categories | Partial | Soil/septic, environmental hazards, market context, and resource context need fixture-backed rules or explicit not-evaluated report/API labels before Level 6 can pass |
+| Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, resource context, and market context emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run source-failure injection remains Lane D integration |
 
 ## Active plan
 

@@ -2,13 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 merged C-002 handoff)
+
+- Merged Session 1's clean `codex/session1-lane-c` C-002 branch into root `main` after confirming the unsupported-category ruleset metadata now uses `severity_on_fail: unknown`.
+- Resolved merge conflicts only in append-only state logs; no Lane C implementation logic was changed during conflict resolution.
+- Verified the merged tree with targeted C-002/report/API tests, targeted ruff and mypy, full DB-gated PowerShell verification, and full test collection. Result: 250 tests collected and full DB-gated verification passes with lint clean and mypy clean (89 source files).
+- Updated Lane D state and plan: C-002 is canonical, D-000 is the next Lane D task, and D-001 remains blocked until D-000 completes.
+
+## 2026-06-04 (Session 1 C-002 not-evaluated rule categories)
+
+- Implemented the Lane C-owned C-002 slice: added `backend/app/claims_engine/not_evaluated.py`, four unsupported-domain hard gates in `config/ruleset_homestead_mvp.yaml`, and rule-engine emission of deterministic `SeverityBand.UNKNOWN` claims from source-failure evidence for soil/septic, environmental hazard, resource context, and market context.
+- Preserved the evidence-before-claim invariant: not-evaluated claims are generated only from source-failure evidence IDs; non-failure records for unsupported domains do not produce claims.
+- Added `backend/tests/claims_engine/test_not_evaluated_claims.py` for ruleset declarations, helper-generated source-failure evidence, evidence-linked unknown claims, deterministic ordering, non-failure ignore behavior, and market-context safe language.
+- Updated Lane C plan/state, project state, and task queue. C-002 is complete for Lane C claim/rule scope; Session 2/Lane D should wire report-run auto-creation/registration of unsupported-domain source-failure evidence in D-000 before D-001 completion.
+- Verified before final rebase: Lane C claims tests pass with DB smoke enabled; report/API tests pass; full DB-gated backend pytest passes; direct DB smoke passes; targeted ruff/mypy pass; default PowerShell verification passes.
+
 ## 2026-06-04 (Session 2 C-002 handoff risk check)
 
-- Rechecked root `main`, Session 1's worktree, and the Session 1 log before advancing Lane D. Root `main` remains clean and does not contain C-002.
+- Rechecked root `main`, Session 1's worktree, and the Session 1 log before advancing Lane D. Root `main` remained clean and did not contain C-002 at the time of the check.
 - Found Session 1's C-002 worktree still in a detached rebase state with unresolved conflict markers in `state/VALIDATION_LOG.md`.
-- Read-only validation of the draft C-002 branch found the emitted not-evaluated claims are UNKNOWN, but the four unsupported-category ruleset entries and unit test still declare `severity_on_fail: informational`.
+- Read-only validation of the draft C-002 branch found the emitted not-evaluated claims were UNKNOWN, but the four unsupported-category ruleset entries and unit test still declared `severity_on_fail: informational`.
 - Sent Session 1 a coordination note because D-000 depends on a canonical C-002 handoff whose claim behavior and ruleset metadata both use UNKNOWN for unsupported categories.
-- Non-mutating merge simulation showed the current C-002 branch conflicts with root `main` only in state files; no report/API code conflicts were identified.
+- Non-mutating merge simulation showed the C-002 branch conflicted with root `main` only in state files; no report/API code conflicts were identified.
 
 ## 2026-06-04 (Session 2 API unknown surfacing regression)
 
@@ -28,7 +43,7 @@ Append concise entries. Do not rely on chat history.
 - Verified `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`: 243 tests; lint clean; mypy clean (87 source files); migrations/seeds and DB smoke pass.
 - Re-audit note: D-001 pre-work is partially complete, but full DB-backed API wiring remains blocked until Lane C C-002 and Lane D D-000 are complete.
 
-## 2026-06-04 (C-001 ORM FK and flush repair)
+## 2026-06-04 (Session 1 C-001 ORM stabilization)
 
 - Re-verified the C-001 handoff from the external session export against live repo state and found the full DB-smoke gate failed in the four DB-backed claim repository tests.
 - Root cause: `ClaimModel` and dependent claim models declared ORM `ForeignKey(...)` constraints to cross-schema tables that were not all present in the active SQLAlchemy metadata, then claim/evidence links could flush before the parent claim row.

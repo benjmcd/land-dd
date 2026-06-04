@@ -12,7 +12,7 @@ Verification command(s):
 - docker info --format '{{.ServerVersion}}'
 Verification result:
 - 18 Lane D report/API tests pass
-- Full verification passes locally with DB smoke enabled: 244 tests; lint clean; mypy clean (87 source files)
+- Full verification passes locally with DB smoke enabled after C-002 merge: 250 tests; lint clean; mypy clean (89 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
 Failed or blocked gates:
@@ -40,12 +40,12 @@ Completion evidence:
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 Next lowest-dependency task:
-- **D-000 (BLOCKED on canonical C-002)**: Report surfacing for unsupported categories. Once Lane C lands C-002 on `main` with unsupported-category SOURCE_FAILURE evidence producing UNKNOWN claims and the four C-002 ruleset entries using `severity_on_fail: unknown`, Lane D owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
-- **D-001 (PARTIAL PRE-WORK DONE; FULL TASK BLOCKED on C-002 + D-000)**: `backend/app/db/session.py` now delegates `get_db_session()` to `get_session()` from `app.db.engine`; do not update `api/dependencies.py`, update `main.py`, or add/run the DB-backed report API integration test until C-002 and D-000 are complete.
+- **D-000 (NEXT)**: Report surfacing for unsupported categories. C-002 is now merged on `main` with unsupported-category SOURCE_FAILURE evidence producing UNKNOWN claims and the four C-002 ruleset entries using `severity_on_fail: unknown`; Lane D now owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
+- **D-001 (PARTIAL PRE-WORK DONE; FULL TASK BLOCKED on D-000)**: `backend/app/db/session.py` now delegates `get_db_session()` to `get_session()` from `app.db.engine`; do not update `api/dependencies.py`, update `main.py`, or add/run the DB-backed report API integration test until D-000 is complete.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - Any Lane A/B/C module files (read only)
-- D-001 DB service wiring beyond `backend/app/db/session.py` until C-002 and D-000 are complete
+- D-001 DB service wiring beyond `backend/app/db/session.py` until D-000 is complete
 ```
 
 ## Known blockers
@@ -56,7 +56,7 @@ Do not work on yet:
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
-| Lane C C-002 not-evaluated severity metadata | Pending | D-000 should not start from a C-002 handoff whose four unsupported-category ruleset entries are still `informational`; Lane D requires `unknown` so the report unknown contract and ruleset metadata agree |
+| Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 can now start from UNKNOWN claim behavior and `severity_on_fail: unknown` ruleset metadata for all four unsupported categories |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
 
 ## Active plan

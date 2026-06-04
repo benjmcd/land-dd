@@ -47,7 +47,7 @@ tasks:
     title: Add claim service and rule engine (Lane C)
     status: done
     depends_on: [T040]
-    notes: Level 6 PARTIAL. Rule engine, claim service, SqlAlchemyClaimRepository (raw SQL).
+    notes: Level 6 PASS for Lane C claim/rule scope after C-001 and C-002.
   - id: T060
     title: Add report-run service and API scaffold (Lane D)
     status: done
@@ -78,7 +78,7 @@ tasks:
 
   - id: C-002
     title: Level 6 completion — not-evaluated rule categories
-    status: pending
+    status: done
     depends_on: [C-001]
     lane: C
     spec: plans/2026-06-03-codex-deferred-tasks.md#task-c-002
@@ -94,15 +94,16 @@ tasks:
       - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
     acceptance:
       - RuleEngine.evaluate() emits UNKNOWN claims for all 4 not-evaluated domains
+      - Claims are eligible for ReportRunContract.unknowns because severity == SeverityBand.UNKNOWN
       - No assertion about property value, neighborhood desirability, or investment
       - Lane C C-002 gates pass without modifying Lane D-owned report files
 
   - id: D-000
     title: Report surfacing for not-evaluated rule categories
-    status: blocked
+    status: pending
     depends_on: [C-002]
     lane: D
-    blocker: C-002 must emit UNKNOWN claims for unsupported-category source failures
+    notes: C-002 emits UNKNOWN claims for unsupported-category source failures; Lane D owns report/API surfacing.
     spec: plans/2026-06-03-codex-deferred-tasks.md#task-c-002
     files:
       - backend/app/reports/service.py
@@ -124,12 +125,13 @@ tasks:
     status: blocked
     depends_on: [C-001, C-002, D-000]
     lane: D
-    blocker: C-002 and D-000 must be complete for Level 6/7 gates to pass
+    blocker: D-000 must be complete before the final Level 7 DB-backed report/API gate can pass
     spec: plans/2026-06-03-codex-deferred-tasks.md#task-d-001
     files:
       - backend/app/db/session.py (new)
       - backend/app/api/dependencies.py
       - backend/app/main.py
+      - backend/app/reports/service.py (wire unsupported-domain source-failure evidence using Lane C helper)
       - backend/tests/api/test_report_runs_db.py (new)
     validation:
       - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api tests/reports
@@ -138,6 +140,7 @@ tasks:
       - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
     acceptance:
       - POST /report-runs uses DB repos when RUN_DB_SMOKE=1
+      - Report runs create/register unsupported-domain source-failure evidence through Lane C's not-evaluated helper before rule evaluation
       - get_db_session() delegates to get_session() (NOT build_engine())
       - DB-backed API integration test passes
       - L7-001 through L7-010 all PASS in state/lane-d-state.md
