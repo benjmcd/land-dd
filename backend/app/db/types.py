@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.dialects.postgresql import ENUM
 
-from app.domain.enums import AuthorityLevel, ConfidenceBand, JobStatus
+from app.domain.enums import AuthorityLevel, ConfidenceBand, JobStatus, SeverityBand
 
 # Canonical PostgreSQL ENUM type instances shared across all ORM model modules.
 # Each enum corresponds to a type already declared in the SQL migration
@@ -32,8 +32,16 @@ job_status_enum = ENUM(
     create_type=False,
 )
 
+severity_band_enum = ENUM(
+    *(severity.value for severity in SeverityBand),
+    name="severity_band",
+    schema="claims",
+    create_type=False,
+)
+
 __all__ = [
     "authority_level_enum",
     "confidence_band_enum",
     "job_status_enum",
+    "severity_band_enum",
 ]
