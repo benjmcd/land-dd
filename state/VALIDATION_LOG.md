@@ -2,6 +2,25 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 TA-080 plus CON-022 merge reconciliation
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+cd backend; py -3.12 -m pytest --collect-only
+```
+
+**Results:**
+
+- Pass. Full Windows PowerShell verification passed with backend tests, lint, mypy, migrations/seeds, and DB smoke.
+- Test collection confirmed 350 backend tests.
+- Mypy checked 121 source files with no issues.
+
+**Residual risk:**
+
+- Merge reconciliation preserved TA-080 and CON-022 records only. Human-review action API implementation, auth/reviewer enforcement, retry/cancel mutation surfacing, job schema, future report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+
 ## 2026-06-04 Connector CON-022 human-review API semantics
 
 **Commands run:**

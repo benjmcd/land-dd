@@ -2,6 +2,12 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (TA-080 plus CON-022 merge reconciliation)
+
+- Resolved shared state/task merge records by preserving both CON-022 connector human-review API semantics and TA-080 Lane A source provenance-family schema parity.
+- Removed source provenance-family schema planning from current future-work pointers now that TA-080 is present in root.
+- Verification passed with DB smoke after reconciliation: 350 backend tests collected/passing, lint clean, mypy clean over 121 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-022 human-review API semantics)
 
 - Added ADR `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` to accept future route, reviewer identity, auth, idempotency, request, response, and fail-closed transition semantics.
