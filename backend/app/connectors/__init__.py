@@ -14,6 +14,7 @@ from app.connectors.flood_fixture import (
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
 )
+from app.connectors.retrieval_provenance import ConnectorRetrievalProvenanceAdapter
 
 __all__ = [
     "ConnectorEvidenceIngestionAdapter",
@@ -21,6 +22,7 @@ __all__ = [
     "ConnectorEvidenceIngestionResult",
     "ConnectorFixtureQualityIssueCode",
     "ConnectorFixtureQualityProfile",
+    "ConnectorRetrievalProvenanceAdapter",
     "EvidenceIngestionPort",
     "FixtureConnectorError",
     "FloodFixtureConnectorResult",
