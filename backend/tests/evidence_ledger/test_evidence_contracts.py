@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import pytest
+from pydantic import ValidationError
+
 from app.domain.enums import ConfidenceBand, EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 
@@ -52,3 +55,52 @@ def test_evidence_type_and_confidence_are_separate_fields() -> None:
     )
     assert evidence.evidence_type == EvidenceType.DERIVED_METRIC
     assert evidence.confidence == ConfidenceBand.LOW
+
+
+def test_evidence_contract_captures_geometry_and_spatial_precision() -> None:
+    evidence = EvidenceContract(
+        area_id=uuid4(),
+        evidence_code="FLOOD_ZONE_AE",
+        domain="flood",
+        observation="Flood source geometry intersects the area.",
+        source_id=uuid4(),
+        method_code="fixture_flood_overlay",
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        geometry_geojson={
+            "type": "Point",
+            "coordinates": [-120.0, 38.0],
+        },
+        spatial_precision_meters=15.5,
+    )
+
+    assert evidence.geometry_srid == 4326
+    assert evidence.geometry_geojson is not None
+    assert evidence.geometry_geojson["type"] == "Point"
+    assert evidence.spatial_precision_meters == 15.5
+
+
+def test_evidence_contract_rejects_wrong_geometry_srid() -> None:
+    with pytest.raises(ValidationError, match="geometry SRID must be 4326"):
+        EvidenceContract(
+            area_id=uuid4(),
+            evidence_code="FLOOD_ZONE_AE",
+            domain="flood",
+            observation="Flood source geometry intersects the area.",
+            source_id=uuid4(),
+            method_code="fixture_flood_overlay",
+            geometry_geojson={"type": "Point", "coordinates": [-120.0, 38.0]},
+            geometry_srid=3857,
+        )
+
+
+def test_evidence_contract_rejects_negative_spatial_precision() -> None:
+    with pytest.raises(ValidationError, match="greater than or equal to 0"):
+        EvidenceContract(
+            area_id=uuid4(),
+            evidence_code="FLOOD_ZONE_AE",
+            domain="flood",
+            observation="Flood source geometry intersects the area.",
+            source_id=uuid4(),
+            method_code="fixture_flood_overlay",
+            spatial_precision_meters=-1,
+        )
