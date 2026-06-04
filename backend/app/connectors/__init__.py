@@ -41,12 +41,20 @@ from app.connectors.review_packet import (
     ConnectorRunReviewPacket,
     build_connector_run_review_packet,
 )
+from app.connectors.review_queue import (
+    CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+    ConnectorReviewQueueItem,
+    ConnectorReviewQueueRepository,
+    InMemoryConnectorReviewQueueRepository,
+    SqlAlchemyConnectorReviewQueueRepository,
+)
 from app.connectors.review_status import (
     ConnectorRunReviewStatus,
     build_connector_run_review_status,
 )
 
 __all__ = [
+    "CONNECTOR_REVIEW_STATUS_JOB_TYPE",
     "ConnectorEvidenceIngestionAdapter",
     "ConnectorEvidenceIngestionError",
     "ConnectorEvidenceIngestionResult",
@@ -55,6 +63,8 @@ __all__ = [
     "ConnectorFixtureQualityProfile",
     "ConnectorReviewDisposition",
     "ConnectorReviewHandoff",
+    "ConnectorReviewQueueItem",
+    "ConnectorReviewQueueRepository",
     "ConnectorReviewPriority",
     "ConnectorReviewSignal",
     "ConnectorReviewSignalCode",
@@ -67,8 +77,10 @@ __all__ = [
     "FixtureConnectorIngestWorkflow",
     "FixtureConnectorIngestWorkflowResult",
     "FloodFixtureConnectorResult",
+    "InMemoryConnectorReviewQueueRepository",
     "SourceProvenanceServiceRetrievalPort",
     "SourceRetrievalProvenancePort",
+    "SqlAlchemyConnectorReviewQueueRepository",
     "StaticFloodFixtureConnector",
     "build_connector_run_review_packet",
     "build_connector_run_review_status",

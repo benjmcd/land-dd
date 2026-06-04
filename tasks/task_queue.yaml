@@ -490,3 +490,26 @@ tasks:
       - Source-failure handoff and fixture-quality blocking issues both require review
       - Unknown connector run status returns 404
       - No durable queue persistence, connector status DB table, schema edit, live IO, report, claim, or DB-backed connector status is introduced
+
+  - id: CON-014
+    title: Level 8 durable connector review queue
+    status: done
+    depends_on: [CON-013]
+    lane: connector-integration
+    notes: Added connector-owned durable queue persistence for connector review status records using existing jobs.job_queue. Queue rows use job_type connector_review_status, idempotency key connector_review_status:<ingest_run_id>, status needs_review or queued, and payload references to source.ingest_runs.ingest_run_id. No worker, queue dashboard, API DB queue retrieval, schema migration, live IO, reports, claims, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-014-durable-connector-review-queue
+    files:
+      - backend/app/connectors/review_queue.py
+      - backend/tests/connectors/test_review_queue.py
+      - backend/app/connectors/__init__.py
+      - docs/adr/lane-d-0003-connector-review-queue.md
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Connector review status can be enqueued idempotently by ingest_run_id
+      - Human-review-required statuses use jobs.job_status needs_review and higher priority
+      - DB-backed queue repository persists to jobs.job_queue with a payload reference to source.ingest_runs.ingest_run_id
+      - jobs.job_queue does not replace source.ingest_runs as connector provenance or lifecycle authority
+      - No worker, queue dashboard, API DB queue retrieval, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced

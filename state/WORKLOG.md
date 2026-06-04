@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-014)
+
+- Completed CON-014 as durable connector review queue persistence using existing `jobs.job_queue`.
+- Added `ConnectorReviewQueueItem`, `InMemoryConnectorReviewQueueRepository`, and `SqlAlchemyConnectorReviewQueueRepository` in `backend/app/connectors/review_queue.py`.
+- Queue rows use `job_type = "connector_review_status"`, idempotency key `connector_review_status:<ingest_run_id>`, and payload references to `source.ingest_runs.ingest_run_id` so `jobs.job_queue` does not replace source retrieval provenance.
+- Added `docs/adr/lane-d-0003-connector-review-queue.md` to record queue ownership/semantics before durable queue usage.
+- Added connector tests for idempotent in-memory queueing, human-review prioritization, and DB-backed persistence into `jobs.job_queue`.
+- Preserved the existing boundary: no live I/O, worker execution, queue dashboard, API DB queue retrieval, schema/migration edit, claim/report shortcut, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
 ## 2026-06-04 (connector CON-013)
 
 - Completed CON-013 as a connector review status composition plus Lane D API status surface.

@@ -2,6 +2,33 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-014 durable connector review queue
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+ruff check app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+mypy app/connectors/review_queue.py tests/connectors/test_review_queue.py app/connectors/__init__.py
+```
+
+**Results:**
+
+- Focused queue tests with DB smoke skipped by default: 2 passed, 1 skipped.
+- DB-enabled queue tests: 3 passed.
+- Focused queue ruff: clean.
+- Focused queue mypy: clean over 3 source/test files.
+- Connector tests with DB smoke skipped by default: 45 passed, 3 skipped.
+- Connector ruff: clean.
+- Connector mypy: clean over 21 source/test files.
+- Full DB-enabled PowerShell verification: ok; 318 backend tests pass; lint clean; mypy clean over 117 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-014 is durable queue persistence only. It does not add worker execution, queue dashboards, API DB retrieval from the queue, live I/O, schema/migration changes, claims, reports, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+
 ## 2026-06-04 CON-013 connector review status API surface
 
 **Commands run:**

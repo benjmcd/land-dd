@@ -18,6 +18,7 @@ Current task:
 - CON-011: DONE - connector review handoff consumer for review packets.
 - CON-012: DONE - connector fixture quality profile for flood fixture output.
 - CON-013: DONE - connector review status composition and API status surface.
+- CON-014: DONE - durable connector review queue persistence.
 Do not work on yet:
 - Live connector behavior
 - Credentials, browser/download steps, paid APIs, or network-backed ingestion
@@ -51,8 +52,11 @@ Do not work on yet:
 - `backend/tests/connectors/test_fixture_quality.py`
 - `backend/app/connectors/review_status.py`
 - `backend/tests/connectors/test_review_status.py`
+- `backend/app/connectors/review_queue.py`
+- `backend/tests/connectors/test_review_queue.py`
 - `backend/app/api/connectors.py`
 - `backend/tests/api/test_connector_review_status.py`
+- `docs/adr/lane-d-0003-connector-review-queue.md`
 - `backend/app/source_registry/provenance_service.py`
 - `backend/tests/source_registry/test_source_provenance.py`
 
@@ -93,6 +97,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-013 result: focused review-status/API tests pass (8 tests); connector/API tests pass with DB smoke skipped by default (55 passed, 3 skipped); connector/API ruff clean; connector/API mypy clean over 33 source/test files; full DB-enabled PowerShell verification passes with 315 backend tests, lint clean, mypy clean over 115 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-014 result: focused queue tests pass with DB smoke skipped by default (2 passed, 1 skipped); DB-enabled queue tests pass (3 tests); connector tests pass with DB smoke skipped by default (45 passed, 3 skipped); connector ruff clean; connector mypy clean over 21 source/test files; full DB-enabled PowerShell verification passes with 318 backend tests, lint clean, mypy clean over 117 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -106,3 +112,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector review handoff consumer | Satisfied for connector-local projection | `build_connector_review_handoff(...)` classifies review packets into deterministic handoff dispositions without adding API, persistence, reports, claims, schema edits, or live I/O |
 | Connector fixture quality profile | Satisfied for flood fixture output | `evaluate_flood_fixture_quality(...)` flags fixture-local provenance, dataset-version, row-count, spatial evidence, and source-failure payload inconsistencies without adding API, persistence, reports, claims, schema edits, or live I/O |
 | Connector review status API | Satisfied for in-memory status surface | `build_connector_run_review_status(...)` composes handoff and quality data, and `GET /connector-runs/{ingest_run_id}/review-status` returns stored status without durable queue persistence, schema edits, reports, claims, or live I/O |
+| Durable connector review queue | Satisfied for connector review status items | `SqlAlchemyConnectorReviewQueueRepository` writes idempotent `connector_review_status` jobs to `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`; workers/API DB retrieval remain future work |
