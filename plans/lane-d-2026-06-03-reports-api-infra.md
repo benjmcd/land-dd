@@ -18,7 +18,7 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - `backend/app/reports/` and `backend/app/api/` module directories exist.
 - Thin API routers exist for sources, areas, evidence, and report runs, backed by per-app in-memory services by default and by request-scoped SQLAlchemy services when `create_app(use_db_services=True)`.
 - `backend/tests/reports/` and `backend/tests/api/` test directories exist.
-- 19 Lane D report/API tests pass with DB smoke enabled, including the persisted report-run repository round-trip, DB-backed API create/retrieve workflow, API source-failure unknown surfacing regression, and D-000 unsupported-category report surfacing.
+- 20 Lane D report/API tests pass with DB smoke enabled, including the persisted report-run repository round-trip, DB-backed API create/retrieve workflow, report artifact semantic regression, API source-failure unknown surfacing regression, and D-000 unsupported-category report surfacing.
 - `docker-compose.yml` at repo root (Lane A owns; Lane D reads).
 - Lane A's TA-060 (DB smoke) now passes; report persistence can use the live local Postgres/PostGIS stack.
 - Lane D now has a fixture-backed Level 7 report/API vertical slice: default API wiring remains in-memory for cheap scaffold tests, and explicit DB mode wires existing SQLAlchemy repositories through the API workflow.
@@ -26,6 +26,7 @@ Build toward MILESTONE_MAP.md Level 7 (reproducible report vertical slice) and l
 - `backend/app/db/session.py` provides the DB session dependency by delegating `get_db_session()` to the shared `get_session()` factory; API DB mode commits successful requests and rolls back failed requests in `api/dependencies.py`.
 - D-000 is complete: report runs create stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`.
 - D-001 is complete: `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` work through SQLAlchemy-backed API services, persisted report artifacts, and non-null seeded `intent_id` linkage.
+- D-002 is complete: a normalized Lane D regression test fixes the stable semantic shape of the generated fixture report artifact while ignoring dynamic UUID/timestamp/path fields.
 
 ## Blockers at lane setup
 
@@ -87,6 +88,12 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 5. Add a DB-backed API integration test for `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted report row, non-null `intent_id`, unsupported-category unknowns, and report artifact path.
 6. Status: COMPLETE for the fixture-backed Level 7 DB API workflow.
 
+### TD-070: Level 7 report artifact regression (COMPLETE)
+1. Add a Lane D report regression test for the generated fixture report artifact.
+2. Project out dynamic UUIDs, timestamps, and path fields.
+3. Assert stable report semantics: status, intent, source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata.
+4. Status: COMPLETE for the report artifact regression closeout slice.
+
 ## Files likely to change
 
 | File | Expected change |
@@ -102,6 +109,7 @@ Phase 2 (DB): swap in SQLAlchemy repositories; report runs persisted to `reports
 | `backend/app/reports/models.py` | New: SQLAlchemy ORM model |
 | `backend/app/reports/report_repo.py` | New: in-memory and SQLAlchemy report repositories |
 | `backend/tests/api/test_report_runs_db.py` | DB-backed report-run API integration test |
+| `backend/tests/reports/test_report_regression.py` | Normalized fixture report artifact regression |
 | `docs/adr/lane-d-0001-report-persistence.md` | New: report persistence ADR |
 | `state/lane-d-state.md` | Update after each task |
 | `state/VALIDATION_LOG.md` | DB connectivity and smoke results |
@@ -150,3 +158,4 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 - 2026-06-04: Merged Session 1 C-002 into root `main` after the severity metadata issue was corrected. Full verification with DB smoke enabled passes: 250 tests, lint clean, mypy clean (89 source files). D-000 is now the next Lane D task.
 - 2026-06-04: D-000 complete. `ReportRunService` now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, reuses the sentinel source on repeat report runs, and surfaces soil/septic, environmental hazards, resource context, and market context as UNKNOWN report/API claims. Lane D tests pass with DB smoke enabled: 18 tests; full verification passes with DB smoke enabled: 250 tests, lint clean, mypy clean (89 source files).
 - 2026-06-04: D-001 complete. Added explicit DB-backed API service wiring, request-scoped DB service construction, successful-request commit/failed-request rollback, and a DB-backed API integration test proving `POST /areas`, `POST /report-runs`, `GET /report-runs/{id}`, persisted report row, non-null `intent_id`, unsupported-category UNKNOWNs, and artifact path. Lane D tests pass with DB smoke enabled: 19 tests.
+- 2026-06-04: D-002 complete. Added `backend/tests/reports/test_report_regression.py` to assert the stable semantic shape of the generated fixture report artifact while ignoring dynamic IDs/timestamps/paths. Lane D report/API tests pass with DB smoke enabled: 20 tests.

@@ -144,3 +144,43 @@ tasks:
       - get_db_session() delegates to get_session() (NOT build_engine())
       - DB-backed API integration test passes
       - L7-001 through L7-010 all PASS in state/lane-d-state.md
+
+  - id: D-002
+    title: Level 7 closeout — report artifact regression
+    status: done
+    depends_on: [D-001]
+    lane: D
+    notes: Added a normalized Lane D report regression test that fixes the stable semantic shape of the generated fixture report artifact without comparing dynamic UUID/timestamp/path fields.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md#l7c-001-report-artifact-regression-fixture
+    files:
+      - backend/tests/reports/test_report_regression.py
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/reports/test_report_regression.py
+      - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
+      - cd backend; ruff check app/reports app/api tests/reports tests/api
+      - cd backend; mypy app/reports app/api tests/reports tests/api
+      - .\scripts\verify.ps1
+    acceptance:
+      - Regression projection covers report status, intent, source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata
+      - Dynamic report IDs, evidence IDs, claim IDs, timestamps, and paths are not brittle expected-output fields
+      - No shared schemas or Lane A/B/C implementation files changed
+
+  - id: D-003
+    title: Level 7 closeout — schema-contract alignment note
+    status: pending
+    depends_on: [D-002]
+    lane: D
+    notes: Next non-overlapping Session 2 slice: record report/evidence/claim/source schema-contract gaps and lane ownership before any shared `schemas/*.json` edit or Level 8 connector implementation.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md#l7c-002-schema-contract-alignment-note
+    files:
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Existing `schemas/*.json` files are read and mapped to current domain contracts
+      - Shared-schema gaps are recorded without editing shared schema files
+      - Future schema edits are assigned to lane owners or marked for coordinator decision

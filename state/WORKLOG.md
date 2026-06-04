@@ -196,6 +196,13 @@ Append concise entries. Do not rely on chat history.
 - Hardened Lane D's internal unsupported-category sentinel lookup to use a stable source UUID instead of scanning all source rows. This avoids coupling report generation to Lane A source-row URL normalization while keeping the change inside Lane D-owned report code.
 - Verified targeted Lane D/API checks with DB smoke enabled before full workspace verification.
 
+## 2026-06-04 (Session 2 D-002 report artifact regression)
+
+- Created `plans/2026-06-04-l7-closeout-l8-entry.md` to sequence Level 7 closeout and Level 8 entry without prematurely editing shared schemas or Lane A/B/C implementation files.
+- Added `backend/tests/reports/test_report_regression.py`, a normalized fixture report regression that asserts stable generated report semantics while ignoring dynamic UUID, timestamp, and path fields.
+- Kept Session 2 work away from Session 1's active Lane B coordinate-validation branch and away from Lane A/C implementation surfaces.
+- Set the next Session 2 task to a schema-contract alignment note before any `schemas/*.json` changes or Level 8 connector implementation.
+
 ## 2026-06-03 (Windows PowerShell verification wrapper)
 
 - Added PowerShell-native wrappers for verification, workspace validation, DB migration application, and bootstrap so Windows users can avoid launching Git Bash.

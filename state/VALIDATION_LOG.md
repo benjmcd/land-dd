@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-002 report artifact regression
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/reports/test_report_regression.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
+ruff check app/reports app/api tests/reports tests/api
+mypy app/reports app/api tests/reports tests/api
+Set-Location ..
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+git diff --check
+```
+
+**Results:**
+
+- Added a normalized report regression that pins the stable semantic shape of a generated fixture report artifact.
+- Regression covers report status, intent, source manifest, evidence, claims, unknowns, red flags, caveats, and artifact metadata.
+- Dynamic UUIDs, timestamps, and path-like fields are intentionally not expected-output fields.
+- Lane D report/API tests pass with DB smoke enabled: 20 tests.
+- Targeted Lane D/API ruff passes.
+- Targeted Lane D/API mypy passes.
+- Full PowerShell verification passes without DB smoke: lint clean, mypy clean (91 source files), DB smoke skipped.
+- Full PowerShell verification passes with DB smoke enabled: 252 backend tests, lint clean, mypy clean (91 source files), migrations/seeds apply, and DB smoke passes.
+- Full backend collection confirms 252 tests.
+
+**Residual risk:**
+
+- Shared schema-contract alignment remains D-003 and must happen before editing `schemas/*.json`.
+- Level 8 connector implementation remains blocked on lane ownership and fixture-only connector acceptance criteria.
+
 ## 2026-06-04 Session 2 D-001 DB-backed API workflow
 
 **Commands run:**

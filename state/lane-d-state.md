@@ -7,6 +7,7 @@ Milestone status: PASS
 Last verified: 2026-06-04
 Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
+- cd backend; py -3.12 -m pytest -q tests/reports/test_report_regression.py
 - cd backend; py -3.12 -m pytest -q tests/api tests/reports
 - cd backend; ruff check app/api app/main.py app/reports tests/api tests/reports
 - cd backend; mypy app/api app/main.py app/reports tests/api/test_report_runs_db.py
@@ -14,13 +15,14 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- 19 Lane D report/API tests pass with DB smoke enabled
-- Full verification passes locally with DB smoke enabled: 251 tests; lint clean; mypy clean
+- 20 Lane D report/API tests pass with DB smoke enabled
+- Full verification passes locally with DB smoke enabled: 252 tests; lint clean; mypy clean (91 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
 - API DB mode now builds SQLAlchemy-backed source, area, evidence, claim, and report services per request; successful requests commit and failures roll back through the API dependency
 - `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` pass in a DB-backed API integration test and the report row stores a non-null `intent_id`
+- Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -46,10 +48,12 @@ Completion evidence:
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_report_runs_db.py (DB-backed API create/retrieve/persistence integration test)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
+- backend/tests/reports/test_report_regression.py (normalized fixture report artifact semantic regression)
 Next lowest-dependency task:
 - **D-001 (DONE)**: DB-backed API service wiring is complete behind explicit `create_app(use_db_services=True)`. Default API dependencies remain in-memory for cheap fixture tests, while DB mode wires SQLAlchemy repositories and report artifact persistence through request-scoped services.
 - **D-000 (DONE)**: Report surfacing for unsupported categories is complete. C-002 is merged on `main`; report runs now create or inject stored unsupported-category SOURCE_FAILURE evidence and surface soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
-- **Next**: coordinated Level 7 closeout/schema-contract pass before moving to Level 8 fixture connector work.
+- **D-002 (DONE)**: Normalized report artifact regression is complete.
+- **D-003 (NEXT)**: Schema-contract alignment note before editing shared `schemas/*.json` files or moving to Level 8 fixture connector work.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
