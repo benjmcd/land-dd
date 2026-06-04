@@ -619,3 +619,45 @@ The next Level 8 pass should choose one of:
 - exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
 - worker/API retrieval behavior for queued connector review items after queue execution semantics are planned;
 - broader fixture data-quality coverage for another fixture category after that fixture is selected.
+
+## CON-015 Connector Review Queue API Retrieval
+
+CON-015 is complete. Lane D API now exposes read-only queue-item retrieval for connector review queue records through `GET /connector-runs/{ingest_run_id}/review-queue`.
+
+The endpoint uses the connector-owned queue repository already wired through `ApiServices`:
+
+- in-memory API services use `InMemoryConnectorReviewQueueRepository`;
+- DB-backed API services use `SqlAlchemyConnectorReviewQueueRepository`;
+- unknown queue items return 404;
+- successful responses expose job ID, `ingest_run_id`, job type, job status, priority, idempotency key, payload, and creation time.
+
+### Boundary Preserved
+
+This is read-only API retrieval for queued connector review items. It does not create, mutate, lock, retry, cancel, complete, or lease jobs; does not add a worker, scheduler, queue dashboard, live connector, schema/migration, claim/report shortcut, durable `ingest_run_id` evidence-row linkage, or exact source-failure evidence ID preservation. Queue state remains orchestration state; `source.ingest_runs` remains connector provenance and lifecycle authority.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
+ruff check app/api/connectors.py app/api/dependencies.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/api/connectors.py app/api/dependencies.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+git diff --check
+```
+
+Result: focused queue-retrieval API tests pass with DB smoke skipped by default (6 passed, 1 skipped); DB-enabled queue-retrieval API test passes (1 test); connector/API tests pass with DB smoke skipped by default (59 passed, 5 skipped); connector/API ruff clean; connector/API mypy clean over 36 source/test files; full DB-enabled PowerShell verification passes with 321 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- a coordinated Lane C/schema slice for durable `ingest_run_id` linkage on evidence rows;
+- exact source-failure evidence ID preservation if Lane C accepts a public exact-contract persistence method;
+- worker execution/lease semantics for connector review queue items after a worker ADR is accepted;
+- broader fixture data-quality coverage for another fixture category after that fixture is selected.

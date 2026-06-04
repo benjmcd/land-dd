@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-015)
+
+- Completed CON-015 as read-only connector review queue API retrieval.
+- Added `GET /connector-runs/{ingest_run_id}/review-queue` in `backend/app/api/connectors.py`.
+- Wired `ApiServices.connector_review_queue` to `InMemoryConnectorReviewQueueRepository` for default API services and `SqlAlchemyConnectorReviewQueueRepository` for DB-backed API services.
+- Added `docs/adr/lane-d-0004-connector-queue-retrieval.md` to define read-only retrieval semantics before exposing queue data.
+- Added API tests proving in-memory queue retrieval, unknown queue 404 behavior, and DB-backed API retrieval of persisted `jobs.job_queue` rows.
+- Preserved the existing boundary: no live I/O, worker execution, job mutation, queue dashboard, schema/migration edit, claim/report shortcut, durable `ingest_run_id` evidence-row linkage claim, or exact source-failure evidence ID preservation claim was introduced.
+
 ## 2026-06-04 (connector CON-014)
 
 - Completed CON-014 as durable connector review queue persistence using existing `jobs.job_queue`.

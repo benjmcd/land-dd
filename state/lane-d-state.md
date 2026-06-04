@@ -15,6 +15,8 @@ Verification command(s):
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+- cd backend; py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
 - cd backend; py -3.12 -m pytest -q tests/connectors tests/api -rA
 - cd backend; ruff check app/connectors app/api app/main.py tests/connectors tests/api
 - cd backend; mypy app/connectors app/api app/main.py tests/connectors tests/api
@@ -22,7 +24,7 @@ Verification command(s):
 - docker info --format '{{.ServerVersion}}'
 Verification result:
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
-- Full verification passes locally with DB smoke enabled: 318 tests; lint clean; mypy clean (117 source files)
+- Full verification passes locally with DB smoke enabled: 321 tests; lint clean; mypy clean (118 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
@@ -34,6 +36,7 @@ Verification result:
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
 - CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
 - CON-014 is complete: connector review status can now be persisted as idempotent `connector_review_status` jobs in `jobs.job_queue`, referencing `source.ingest_runs.ingest_run_id` without replacing source retrieval provenance or adding worker/API queue retrieval behavior
+- CON-015 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` retrieves queued connector review items from in-memory or DB-backed API services without mutating, locking, retrying, cancelling, completing, or leasing jobs
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -61,6 +64,7 @@ Completion evidence:
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_report_runs_db.py (DB-backed API create/retrieve/persistence integration test)
 - backend/tests/api/test_connector_review_status.py (connector review-status API tests)
+- backend/tests/api/test_connector_review_queue_db.py (DB-backed connector review queue API retrieval test)
 - backend/tests/connectors/test_review_queue.py (connector review queue tests)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 - backend/tests/reports/test_report_regression.py (normalized fixture report artifact semantic regression)
@@ -73,7 +77,8 @@ Next lowest-dependency task:
 - **D-005 (DONE)**: Connector integration-zone ownership and source-retrieval-run lifecycle decision are canonical in `LANE_OWNERSHIP.md` and `docs/adr/lane-d-0002-connector-entry-ownership.md`.
 - **CON-013 (DONE)**: Connector review-status API surface is complete for in-memory status records that consume connector handoff and fixture quality profile data.
 - **CON-014 (DONE)**: Durable connector review queue persistence is complete using existing `jobs.job_queue`.
-- **NEXT**: Select a coordinated Level 8 follow-up: durable `ingest_run_id` evidence linkage, exact source-failure evidence ID preservation, worker/API retrieval behavior for queued connector review items after execution semantics are planned, or another selected fixture category.
+- **CON-015 (DONE)**: Connector review queue API retrieval is complete for read-only in-memory and DB-backed queued item lookup.
+- **NEXT**: Select a coordinated Level 8 follow-up: durable `ingest_run_id` evidence linkage, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

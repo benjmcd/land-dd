@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-015 connector review queue API retrieval
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
+ruff check app/api/connectors.py app/api/dependencies.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/api/connectors.py app/api/dependencies.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+```
+
+**Results:**
+
+- Focused queue-retrieval API tests with DB smoke skipped by default: 6 passed, 1 skipped.
+- DB-enabled queue-retrieval API test: 1 passed.
+- Focused queue-retrieval ruff: clean.
+- Focused queue-retrieval mypy: clean over 4 source/test files.
+- Connector/API tests with DB smoke skipped by default: 59 passed, 5 skipped.
+- Connector/API ruff: clean.
+- Connector/API mypy: clean over 36 source/test files.
+- Full DB-enabled PowerShell verification: ok; 321 backend tests pass; lint clean; mypy clean over 118 source files; migrations/seeds apply; DB smoke passes.
+
+**Residual risk:**
+
+- CON-015 is read-only queue API retrieval only. It does not add worker execution, job mutation, leasing, retries, queue dashboards, live I/O, schema/migration changes, claims, reports, durable `ingest_run_id` evidence-row linkage, exact source-failure evidence ID preservation, or broader fixture-category coverage.
+
 ## 2026-06-04 CON-014 durable connector review queue
 
 **Commands run:**

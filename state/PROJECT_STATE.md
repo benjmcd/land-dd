@@ -23,6 +23,8 @@ Verification command(s):
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_review_queue.py
+- cd backend; py -3.12 -m pytest -q tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_connector_review_queue_db.py
 - cd backend; py -3.12 -m pytest -q tests/connectors
 - cd backend; py -3.12 -m pytest -q tests/connectors tests/api -rA
 - cd backend; ruff check app/connectors tests/connectors
@@ -36,7 +38,7 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 318 tests pass in the DB-enabled Windows PowerShell verification path after CON-014 durable connector review queue; lint clean; mypy clean (117 source files); migrations/seeds apply; DB smoke passes.
+- 321 tests pass in the DB-enabled Windows PowerShell verification path after CON-015 connector review queue API retrieval; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
@@ -61,6 +63,7 @@ Verification result:
 - CON-012 is complete: connector fixture quality profiles now flag fixture-local provenance, dataset-version, row-count, spatial evidence, retrieval-status/evidence consistency, and source-failure payload/confidence gaps without API, durable queue persistence, claims, reports, schema edits, live I/O, or Lane A/B/C/D implementation changes
 - CON-013 is complete: connector review status now composes handoff and fixture-quality data, and `GET /connector-runs/{ingest_run_id}/review-status` exposes stored in-memory status without durable queue persistence, connector status tables, claims, reports, schema edits, live I/O, or DB-backed connector status
 - CON-014 is complete: connector review status can now be persisted as idempotent `connector_review_status` jobs in `jobs.job_queue` with payload references to `source.ingest_runs.ingest_run_id`, preserving source retrieval runs as connector provenance and lifecycle authority
+- CON-015 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` retrieves in-memory or DB-backed connector review queue items by `ingest_run_id` without job mutation, worker execution, schema edits, live I/O, claims, reports, or DB-backed evidence linkage
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -105,7 +108,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Select the next Level 8 connector pass: durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker/API retrieval behavior for queued connector review items after queue execution semantics are planned, or broader fixture data-quality coverage for another selected fixture category.
+- Select the next Level 8 connector pass: durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -158,11 +161,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-014 complete; next Level 8 connector pass needs selection |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-015 complete; next Level 8 connector pass needs selection |
 
 ## Last verified state
 
-318 tests pass in the DB-enabled Windows PowerShell verification path after CON-014 durable connector review queue; lint clean; mypy clean (117 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, Lane C TC-170, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker/API retrieval behavior for queued connector review items after queue execution semantics are planned, or broader fixture data-quality coverage for another selected fixture category.
+321 tests pass in the DB-enabled Windows PowerShell verification path after CON-015 connector review queue API retrieval; lint clean; mypy clean (118 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, Lane C TC-170, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, exact source-failure evidence ID preservation, worker execution/lease semantics for queued connector review items after a worker ADR is accepted, or broader fixture data-quality coverage for another selected fixture category.
 
 ## Local repo bootstrap state
 

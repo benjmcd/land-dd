@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -46,6 +47,17 @@ class ConnectorRunReviewStatusResponse(BaseModel):
     quality: ConnectorFixtureQualityResponse
 
 
+class ConnectorReviewQueueItemResponse(BaseModel):
+    job_id: UUID
+    ingest_run_id: UUID
+    job_type: str
+    status: str
+    priority: int
+    idempotency_key: str
+    payload: dict[str, Any]
+    created_at: datetime
+
+
 @router.get(
     "/{ingest_run_id}/review-status",
     response_model=ConnectorRunReviewStatusResponse,
@@ -61,3 +73,29 @@ def get_connector_run_review_status(
             detail="connector run review status not found",
         )
     return review_status.to_status_record()
+
+
+@router.get(
+    "/{ingest_run_id}/review-queue",
+    response_model=ConnectorReviewQueueItemResponse,
+)
+def get_connector_review_queue_item(
+    ingest_run_id: UUID,
+    services: ServicesDep,
+) -> dict[str, object]:
+    queue_item = services.connector_review_queue.get_by_ingest_run_id(ingest_run_id)
+    if queue_item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector review queue item not found",
+        )
+    return {
+        "job_id": queue_item.job_id,
+        "ingest_run_id": queue_item.ingest_run_id,
+        "job_type": queue_item.job_type,
+        "status": queue_item.status.value,
+        "priority": queue_item.priority,
+        "idempotency_key": queue_item.idempotency_key,
+        "payload": queue_item.payload,
+        "created_at": queue_item.created_at,
+    }

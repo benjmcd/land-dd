@@ -513,3 +513,27 @@ tasks:
       - DB-backed queue repository persists to jobs.job_queue with a payload reference to source.ingest_runs.ingest_run_id
       - jobs.job_queue does not replace source.ingest_runs as connector provenance or lifecycle authority
       - No worker, queue dashboard, API DB queue retrieval, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
+
+  - id: CON-015
+    title: Level 8 connector review queue API retrieval
+    status: done
+    depends_on: [CON-014]
+    lane: connector-integration
+    notes: Added read-only API retrieval for connector review queue items by ingest_run_id. Default API services read from the in-memory connector review queue repository; DB-backed API services read from jobs.job_queue through SqlAlchemyConnectorReviewQueueRepository. Unknown queue items return 404. No worker, job mutation, leases, retries, queue dashboard, schema migration, live IO, reports, claims, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-015-connector-review-queue-api-retrieval
+    files:
+      - backend/app/api/connectors.py
+      - backend/app/api/dependencies.py
+      - backend/tests/api/test_connector_review_status.py
+      - backend/tests/api/test_connector_review_queue_db.py
+      - docs/adr/lane-d-0004-connector-queue-retrieval.md
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - API can retrieve an in-memory queued connector review item by ingest_run_id
+      - DB-backed API can retrieve a persisted jobs.job_queue connector review item by ingest_run_id
+      - Unknown queued connector review items return 404
+      - Queue retrieval is read-only and does not mutate, lock, retry, cancel, complete, or lease jobs
+      - No worker, queue dashboard, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced

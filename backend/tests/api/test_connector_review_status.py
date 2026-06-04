@@ -124,6 +124,23 @@ def _store_review_status(
     return str(packet.ingest_run_id)
 
 
+def _enqueue_review_status(
+    app: FastAPI,
+    *,
+    fixture_name: str,
+) -> str:
+    result = _workflow().ingest_fixture(FIXTURE_DIR / fixture_name)
+    packet = build_connector_run_review_packet(result)
+    handoff = build_connector_review_handoff(packet)
+    status = build_connector_run_review_status(
+        handoff,
+        evaluate_flood_fixture_quality(result.connector_result),
+    )
+    services = cast(ApiServices, app.state.services)
+    services.connector_review_queue.enqueue_review_status(status)
+    return str(packet.ingest_run_id)
+
+
 def test_connector_review_status_endpoint_returns_handoff_and_quality() -> None:
     app = create_app()
     client = TestClient(app)
@@ -210,3 +227,30 @@ def test_connector_review_status_endpoint_returns_404_for_unknown_run() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "connector run review status not found"
+
+
+def test_connector_review_queue_endpoint_returns_in_memory_queue_item() -> None:
+    app = create_app()
+    client = TestClient(app)
+    ingest_run_id = _enqueue_review_status(app, fixture_name="flood_failure.json")
+
+    response = client.get(f"/connector-runs/{ingest_run_id}/review-queue")
+
+    assert response.status_code == 200
+    record = response.json()
+    assert record["ingest_run_id"] == ingest_run_id
+    assert record["job_type"] == "connector_review_status"
+    assert record["status"] == "needs_review"
+    assert record["priority"] == 10
+    assert record["idempotency_key"] == f"connector_review_status:{ingest_run_id}"
+    assert record["payload"]["ingest_run_id"] == ingest_run_id
+    assert record["payload"]["kind"] == "connector_review_status"
+
+
+def test_connector_review_queue_endpoint_returns_404_for_unknown_run() -> None:
+    client = TestClient(create_app())
+
+    response = client.get(f"/connector-runs/{uuid4()}/review-queue")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connector review queue item not found"
