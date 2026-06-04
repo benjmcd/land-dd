@@ -886,3 +886,54 @@ The next Level 8 pass should choose one of:
 - plan source provenance-family schemas with Lane A ownership;
 - define future report metadata extensions;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-022 Connector Human Review API Semantics Plan
+
+CON-022 is complete as a planning-only route/reviewer/auth semantics slice. ADR `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` accepts a future narrow route:
+
+- `POST /connector-runs/{ingest_run_id}/review-actions`
+
+Accepted future request fields:
+
+- `action`;
+- `reviewer_id`;
+- `reason`;
+- `idempotency_key`;
+- `expected_status`.
+
+Accepted future response fields:
+
+- `ingest_run_id`;
+- `job_id`;
+- `action`;
+- `status`;
+- `reviewer_id`;
+- `reason`;
+- `idempotency_key`;
+- `created_at`;
+- `queue_item`.
+
+### Boundary Preserved
+
+This is route semantics only. It does not add a route, repository method, queue code, auth code, OpenAPI change, connector runtime, evidence mutation, claim/report behavior, schema, migration, live I/O, hook config, or POSIX script.
+
+Future implementation must require an authenticated reviewer/operator boundary, reject empty or mismatched reviewer identity, fail closed for missing queue rows and invalid transitions, preserve `source.ingest_runs` as provenance authority, and preserve `jobs.job_queue` as review orchestration state.
+
+### Validation
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Full Windows PowerShell verification passed with 344 backend tests collected/passing, lint clean, mypy clean over 120 source files, migrations/seeds applied, and DB smoke passed.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- implement the narrow human-review action API only after auth/reviewer identity enforcement and required queue transition substrate are accepted;
+- expose retry/cancel mutation behavior through the accepted action route or a separate accepted route;
+- coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
+- plan source provenance-family schemas with Lane A ownership;
+- define future report metadata extensions;
+- broaden fixture data-quality coverage for another selected fixture category.

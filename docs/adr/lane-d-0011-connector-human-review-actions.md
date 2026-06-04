@@ -33,10 +33,12 @@ Any future API mutation route must be a separate planned slice and must:
 - remain idempotent for repeated equivalent reviewer actions where possible;
 - avoid mutating evidence, claims, reports, schemas, or connector runtime behavior.
 
+ADR Lane D 0012 accepts the route, reviewer identity, auth, idempotency, and transition semantics for a future narrow action API. It does not implement that API.
+
 ## Consequences
 
 - Future review workflow/API work can target known action semantics instead of inventing behavior inside route handlers.
 - Existing repository-level queue transitions remain the only accepted mutation substrate until an API mutation slice is explicitly planned.
 - Human review remains orchestration over connector review status, not legal approval, source truth, claim interpretation, or report approval.
-- Retry/cancel API surfacing remains blocked until mutation route semantics and auth/reviewer identity handling are explicitly accepted.
-
+- Retry/cancel API surfacing remains a separate implementation slice after ADR Lane D 0012 route/reviewer/auth semantics.
+- Route/reviewer/auth semantics are accepted by ADR Lane D 0012; implementation remains a separate planned slice.

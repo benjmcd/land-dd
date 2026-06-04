@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-022 human-review API semantics)
+
+- Added ADR `docs/adr/lane-d-0012-connector-human-review-api-semantics.md` to accept future route, reviewer identity, auth, idempotency, request, response, and fail-closed transition semantics.
+- Accepted future route shape: `POST /connector-runs/{ingest_run_id}/review-actions`.
+- Recorded that implementation remains separate because auth/reviewer identity enforcement and any needed queue transition or reviewer-ownership persistence must be planned before code.
+- Preserved the boundary: no API route, OpenAPI change, connector runtime, repository method, queue code, schema, migration, evidence, claim, report, live I/O, hook config, or POSIX script changed.
+- Verification passed with DB smoke: 344 backend tests collected/passing, lint clean, mypy clean over 120 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-021 human-review action semantics)
 
 - Added ADR `docs/adr/lane-d-0011-connector-human-review-actions.md` to define future connector human-review action vocabulary before any mutation API or worker workflow.

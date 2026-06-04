@@ -737,3 +737,30 @@ tasks:
       - jobs.job_queue remains review orchestration state
       - Future API mutation implementation is explicitly left as a separate planned slice
       - No connector runtime, API route, repository method, queue code, schema, migration, live IO, hook config, POSIX script, evidence, claim, or report behavior is introduced
+
+  - id: CON-022
+    title: Level 8 connector human-review API semantics
+    status: done
+    depends_on: [CON-021]
+    lane: connector-integration
+    notes: Accepted future route, reviewer identity, auth, idempotency, request, response, and fail-closed transition semantics for a narrow connector human-review action API. No API route, OpenAPI change, connector runtime, repository method, queue code, schema, migration, live IO, hook config, POSIX script, evidence, claim, or report behavior changed.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-022-connector-human-review-api-semantics-plan
+    files:
+      - docs/adr/lane-d-0012-connector-human-review-api-semantics.md
+      - docs/adr/lane-d-0011-connector-human-review-actions.md
+      - plans/connector-2026-06-04-fixture-flood.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Future route shape is accepted before API mutation implementation
+      - Reviewer identity and auth expectations are accepted before implementation
+      - Request, response, idempotency, and fail-closed transition expectations are recorded
+      - source.ingest_runs remains connector provenance and lifecycle authority
+      - jobs.job_queue remains review orchestration state
+      - API implementation remains separate until auth/reviewer enforcement and needed queue transition substrate are accepted
+      - No API route, OpenAPI change, connector runtime, repository method, queue code, schema, migration, live IO, hook config, POSIX script, evidence, claim, or report behavior is introduced

@@ -2,6 +2,25 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Connector CON-022 human-review API semantics
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1
+cd backend; python -m pytest --collect-only
+```
+
+**Results:**
+
+- Pass. Full Windows PowerShell verification passed with backend tests, lint, mypy, migrations/seeds, and DB smoke.
+- Test collection confirmed 344 backend tests.
+- Mypy checked 120 source files with no issues.
+
+**Residual risk:**
+
+- CON-022 is planning-only. Human-review action API implementation, auth/reviewer enforcement, reviewer-ownership persistence, new queue transition substrate, retry/cancel mutation surfacing, workers, dashboards, source provenance-family schemas, job schema, future report metadata extensions, live connectors, and durable `ingest_run_id` evidence-row linkage remain separate future work.
+
 ## 2026-06-04 Connector CON-021 human-review action semantics
 
 **Commands run:**
