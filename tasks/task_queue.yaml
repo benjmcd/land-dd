@@ -1001,3 +1001,30 @@ tasks:
       - Regression tests cover the emitted validation metadata in fixture report artifacts
       - Validation metadata does not claim command execution, command success, legal conclusions, or evidence-row ingest_run_id lineage
       - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C module change is introduced
+
+  - id: TD-084
+    title: Level 8 job schema boundary
+    status: done
+    depends_on: [TD-083, CON-027]
+    lane: D
+    notes: Accepted the job-schema boundary before any shared schema edit. schemas/job_schema.json is not promoted to a live connector-run or API contract until a future planned schema/test slice chooses whether it mirrors jobs.job_queue, ConnectorReviewQueueItem, or a new JobContract. Source retrieval runs remain connector provenance authority; jobs remain orchestration state.
+    spec: plans/2026-06-04-l7-closeout-l8-entry.md
+    files:
+      - docs/adr/lane-d-0018-job-schema-boundary.md
+      - plans/2026-06-04-l7-closeout-l8-entry.md
+      - plans/lane-d-2026-06-03-reports-api-infra.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+      - tasks/task_queue.yaml
+    validation:
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Job schema authority boundary is recorded before schema edits
+      - schemas/job_schema.json remains unedited
+      - Future job schema work must choose jobs.job_queue, ConnectorReviewQueueItem, or a new JobContract as source of truth
+      - Source retrieval runs remain connector provenance authority
+      - No API route, OpenAPI change, queue code, schema edit, migration, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C module change is introduced

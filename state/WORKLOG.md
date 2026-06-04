@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-084 job schema boundary)
+
+- Added ADR `docs/adr/lane-d-0018-job-schema-boundary.md` before any shared job schema edit.
+- Recorded that `schemas/job_schema.json` is not a live connector-run/API contract until future schema/test work chooses `jobs.job_queue`, `ConnectorReviewQueueItem`, or a new `JobContract` as authority.
+- Preserved source retrieval runs as connector provenance authority and jobs as orchestration state.
+- Preserved boundary: no schema edit, API route, OpenAPI change, queue code, migration, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or Lane A/B/C module changed.
+- Verification passed with DB smoke: 363 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-027 fixture retrieval metric quality)
 
 - Tightened connector-local fixture quality around retrieval-run metric consistency.

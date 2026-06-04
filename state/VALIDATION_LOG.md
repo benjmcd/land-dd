@@ -2,6 +2,26 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Lane D TD-084 job schema boundary
+
+**Commands run:**
+
+```powershell
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Whitespace check: clean.
+- Default Windows PowerShell verification passed with 363 backend tests collected, lint clean, mypy clean over 123 source files, and DB smoke skipped by default.
+- DB-enabled Windows PowerShell verification passed with 363 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
+**Residual risk:**
+
+- TD-084 is a boundary decision only. It does not edit `schemas/job_schema.json`, add schema parity tests, add API routes, change OpenAPI, change queue code, add migrations, change connector runtime behavior, use live I/O, alter hook config, invoke POSIX scripts, add durable evidence-row `ingest_run_id` linkage, or change Lane A/B/C modules. Future job schema work still must choose `jobs.job_queue`, `ConnectorReviewQueueItem`, or a new `JobContract` as authority before schema/runtime changes.
+
 ## 2026-06-04 Connector CON-027 fixture retrieval metric quality
 
 **Commands run:**

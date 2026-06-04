@@ -39,6 +39,7 @@ Verification command(s):
 Verification result:
 - Full verification passes locally with DB smoke enabled after TD-083 report validation metadata: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-027 connector fixture retrieval metric quality: 363 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after TD-084 job-schema boundary: 363 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-024 connector review action API auth blocker decision: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-025 connector reviewer principal boundary: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
@@ -81,6 +82,7 @@ Verification result:
 - CON-026 is complete as a review-action route-subset decision for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred.
 - TD-083 is complete as the first report metadata extension implementation. Optional `artifact_metadata.validation` records report contract/profile and ruleset identity with schema/regression coverage, without claiming verification-command execution or changing routes, OpenAPI, DB schema, connector runtime, queue behavior, live I/O, hook config, POSIX scripts, or Lane A/B/C modules.
 - CON-027 is complete as connector-local fixture retrieval metric quality. Succeeded retrievals must have matching row counts and zero errors; blocked/failed retrievals must have explicit zero row count and positive error count. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
+- TD-084 is complete as a job-schema boundary decision. `schemas/job_schema.json` remains unedited and is not a live connector-run/API contract until a future schema/test slice chooses `jobs.job_queue`, `ConnectorReviewQueueItem`, or a new `JobContract` as authority; source retrieval runs remain connector provenance authority.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; review-action route subset is accepted; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, route/OpenAPI implementation, and broader API mutation/workflow implementation.
@@ -104,6 +106,7 @@ Completion evidence:
 - docs/adr/lane-d-0015-connector-reviewer-principal.md
 - docs/adr/lane-d-0016-connector-review-action-route-subset.md
 - docs/adr/lane-d-0017-report-validation-metadata.md
+- docs/adr/lane-d-0018-job-schema-boundary.md
 - backend/app/api/reviewer_auth.py
 - backend/tests/api/test_reviewer_auth.py
 - schemas/report_run_schema.json
@@ -156,6 +159,7 @@ Next lowest-dependency task:
 - **CON-026 (DONE)**: Connector review action route subset is accepted for `request_fixture_fix`, `requeue_after_fix`, and `cancel_review`; route/OpenAPI implementation remains deferred.
 - **TD-083 (DONE)**: Report validation metadata is implemented as optional `artifact_metadata.validation` for contract/profile/ruleset identity.
 - **CON-027 (DONE)**: Connector fixture retrieval metric quality now checks success/failure row and error count consistency.
+- **TD-084 (DONE)**: Job schema boundary is accepted before any shared job schema edit.
 - **NEXT**: After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose broader fixture-quality/report metadata work if route work would conflict.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
