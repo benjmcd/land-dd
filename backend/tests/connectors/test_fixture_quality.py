@@ -67,7 +67,11 @@ def test_fixture_quality_flags_dataset_version_mismatch() -> None:
 def test_fixture_quality_flags_success_metric_and_geometry_gaps() -> None:
     result = _load_success()
     retrieval_run = result.retrieval_run.model_copy(
-        update={"row_count": 2, "error_count": 1},
+        update={
+            "row_count": 2,
+            "error_count": 1,
+            "metrics": {"fixture_only": True, "failure_reason": "should_not_exist"},
+        },
     )
     evidence = result.evidence_inputs[0].model_copy(
         update={"geometry_geojson": None, "spatial_precision_meters": None},
@@ -84,6 +88,7 @@ def test_fixture_quality_flags_success_metric_and_geometry_gaps() -> None:
     assert tuple(issue.code for issue in profile.issues) == (
         ConnectorFixtureQualityIssueCode.SUCCEEDED_ROW_COUNT_MISMATCH,
         ConnectorFixtureQualityIssueCode.SUCCEEDED_ERROR_COUNT_NONZERO,
+        ConnectorFixtureQualityIssueCode.SUCCEEDED_HAS_FAILURE_REASON,
         ConnectorFixtureQualityIssueCode.SPATIAL_EVIDENCE_GEOMETRY_MISSING,
     )
 

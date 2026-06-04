@@ -18,6 +18,7 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     FIXTURE_METRIC_MISSING = "fixture_metric_missing"
     SUCCEEDED_ROW_COUNT_MISMATCH = "succeeded_row_count_mismatch"
     SUCCEEDED_ERROR_COUNT_NONZERO = "succeeded_error_count_nonzero"
+    SUCCEEDED_HAS_FAILURE_REASON = "succeeded_has_failure_reason"
     BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO = "blocked_or_failed_row_count_not_zero"
     BLOCKED_OR_FAILED_ERROR_COUNT_MISSING = "blocked_or_failed_error_count_missing"
     RETRIEVAL_FAILURE_REASON_MISSING = "retrieval_failure_reason_missing"
@@ -127,6 +128,16 @@ def evaluate_flood_fixture_quality(
             _issue(
                 ConnectorFixtureQualityIssueCode.SUCCEEDED_ERROR_COUNT_NONZERO,
                 "succeeded fixture error_count must be zero",
+            ),
+        )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and _non_empty_text(retrieval_run.metrics.get("failure_reason"))
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_HAS_FAILURE_REASON,
+                "succeeded fixture must not record a failure reason metric",
             ),
         )
     if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED and source_failure_count:

@@ -1028,6 +1028,34 @@ tasks:
       - Retrieval-level failure reason remains the connector attempt failure-reason authority for fixture quality
       - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
 
+  - id: CON-031
+    title: Level 8 connector succeeded-retrieval failure-metric quality
+    status: done
+    depends_on: [CON-030]
+    lane: connector-integration
+    notes: Tightened connector-local fixture quality so succeeded retrievals must not record a non-empty metrics.failure_reason. Failure reasons remain reserved for blocked/failed retrievals and source-failure evidence. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality was introduced.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-031-connector-succeeded-retrieval-failure-metric-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-2026-06-04-fixture-flood.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+      - state/PROJECT_STATE.md
+      - state/VALIDATION_LOG.md
+      - state/WORKLOG.md
+    validation:
+      - cd backend; py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+      - cd backend; ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - cd backend; mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+      - git diff --check
+      - .\scripts\verify.ps1
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Succeeded fixture retrievals must not record non-empty metrics.failure_reason
+      - Failure reasons remain reserved for blocked/failed retrievals and source-failure evidence
+      - No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality is introduced
+
   - id: TD-082
     title: Level 7 report metadata extension boundary
     status: done

@@ -1154,6 +1154,37 @@ Result: pass on 2026-06-04. Focused fixture-quality tests cover 12 cases; focuse
 
 After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
 
+## CON-031 Connector Succeeded-Retrieval Failure-Metric Quality
+
+CON-031 tightens connector-local fixture quality around success/failure metric separation.
+
+### Implemented Checks
+
+Succeeded fixture retrievals must not record a non-empty `metrics.failure_reason` value. Failure reasons are reserved for blocked or failed retrievals and source-failure evidence.
+
+### Boundary Preserved
+
+This is connector-local fixture-quality validation only. It does not add API routes, OpenAPI changes, DB schema changes, queue behavior, connector runtime behavior, live I/O, hook config, POSIX scripts, durable evidence-row `ingest_run_id` linkage, or Lane A/B/C/D module changes outside the connector quality evaluator.
+
+### Validation
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+cd ..
+git diff --check
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+Result: pass on 2026-06-04. Focused fixture-quality tests cover 13 cases; focused ruff clean; focused mypy clean over 2 source files. Full final verification is recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+After Session 1's Lane C evidence-linkage/OpenAPI branch lands or a clean merge point is coordinated, implement `POST /connector-runs/{ingest_run_id}/review-actions` for the accepted subset above and refresh OpenAPI parity in the same route implementation slice. If that branch remains parked, continue with non-OpenAPI connector fixture-quality, report metadata, or schema-boundary work.
+
 ## CON-029 Connector Source-Failure Reason Consistency
 
 CON-029 tightens connector-local fixture quality around source-failure reason consistency.
