@@ -444,6 +444,14 @@ Append concise entries. Do not rely on chat history.
 - Verification passed after reconciliation: focused connector adoption tests, DB-backed public wiring source-failure ID test, targeted/broader connector/API ruff and mypy, connector/API tests, full DB-enabled PowerShell verification with 335 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
 - Preserved boundaries: no Lane C implementation/schema edits, no database migration, no live I/O, no queue API mutation, no claims/reports shortcut, and no durable `ingest_run_id` evidence-row linkage.
 
+## 2026-06-04 (Session 2 CON-020 connector fixture quality)
+
+- Extended `evaluate_flood_fixture_quality(...)` with fixture-local identity and timing checks.
+- Added blocking quality issues for duplicate evidence IDs within one fixture connector run.
+- Added blocking quality issues for evidence `observed_at` timestamps before retrieval start or after retrieval finish.
+- Added focused fixture-quality tests for the new issue categories.
+- Preserved boundaries: no Lane A/B/C implementation changes, no shared schema edits, no API mutation route, no persistence change, no live I/O, no claims/reports shortcut, and no durable `ingest_run_id` evidence-row linkage.
+
 ## 2026-06-03 (Windows PowerShell verification wrapper)
 
 - Added PowerShell-native wrappers for verification, workspace validation, DB migration application, and bootstrap so Windows users can avoid launching Git Bash.

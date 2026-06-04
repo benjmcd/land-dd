@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -81,6 +82,53 @@ def test_fixture_quality_flags_success_row_count_and_geometry_gaps() -> None:
     assert tuple(issue.code for issue in profile.issues) == (
         ConnectorFixtureQualityIssueCode.SUCCEEDED_ROW_COUNT_MISMATCH,
         ConnectorFixtureQualityIssueCode.SPATIAL_EVIDENCE_GEOMETRY_MISSING,
+    )
+
+
+def test_fixture_quality_flags_duplicate_evidence_ids() -> None:
+    result = _load_success()
+    retrieval_run = result.retrieval_run.model_copy(update={"row_count": 2})
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=(result.evidence_inputs[0], result.evidence_inputs[0]),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.DUPLICATE_EVIDENCE_ID,
+    )
+
+
+def test_fixture_quality_flags_evidence_observed_outside_retrieval_window() -> None:
+    result = _load_success()
+    before_retrieval = result.evidence_inputs[0].model_copy(
+        update={
+            "evidence_id": UUID("88888888-8888-4888-8888-888888888888"),
+            "observed_at": datetime(2026, 6, 4, 8, 59, 59, tzinfo=UTC),
+        },
+    )
+    after_retrieval = result.evidence_inputs[0].model_copy(
+        update={
+            "evidence_id": UUID("99999999-9999-4999-8999-999999999999"),
+            "observed_at": datetime(2026, 6, 4, 9, 0, 2, tzinfo=UTC),
+        },
+    )
+    retrieval_run = result.retrieval_run.model_copy(update={"row_count": 2})
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=(before_retrieval, after_retrieval),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_BEFORE_RETRIEVAL,
+        ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED,
     )
 
 

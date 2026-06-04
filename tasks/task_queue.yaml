@@ -638,3 +638,24 @@ tasks:
       - DB-backed public wiring persists and returns the supplied source-failure evidence ID
       - Connector adoption does not edit Lane C implementation or shared schemas
       - No migration, live IO, queue API mutation, report, claim, or durable ingest_run_id evidence linkage is introduced
+
+  - id: CON-020
+    title: Level 8 connector fixture identity and timing quality
+    status: done
+    depends_on: [CON-012]
+    lane: connector-integration
+    notes: Extended the connector fixture quality profile with fixture-local identity and timing checks. It now flags duplicate evidence IDs within one fixture connector run and evidence observed_at timestamps outside the retrieval-run start/finish window. No API mutation route, persistence, live IO, schema edit, claims, reports, or durable ingest_run_id evidence-row linkage was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-020-connector-fixture-identity-and-timing-quality
+    files:
+      - backend/app/connectors/fixture_quality.py
+      - backend/tests/connectors/test_fixture_quality.py
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Duplicate evidence IDs within one fixture connector run produce a blocking quality issue
+      - Evidence observed before retrieval start produces a blocking quality issue
+      - Evidence observed after retrieval finish produces a blocking quality issue
+      - Fixture identity/timing quality remains connector-owned and fixture-only
+      - No API mutation route, persistence, live IO, schema edit, claim, report, or durable ingest_run_id evidence linkage is introduced

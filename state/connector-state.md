@@ -24,6 +24,7 @@ Current task:
 - CON-017: DONE - connector queue worker-state read model.
 - CON-018: DONE - connector queue retry/requeue and cancel semantics.
 - CON-019: DONE - connector adapter adoption of supplied source-failure evidence IDs.
+- CON-020: DONE - connector fixture identity and timing quality checks.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -121,13 +122,15 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-019 result: focused connector adoption tests pass with DB smoke skipped by default (15 passed, 2 skipped); DB-backed public wiring source-failure ID test passes (1 test); targeted ruff clean; targeted mypy clean over 10 source/test files; connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); connector/API ruff clean; connector/API mypy clean over 36 source/test files; full DB-enabled PowerShell verification passes after merging root `ca10f85` with 335 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
 
+2026-06-04 CON-020 result: focused fixture-quality tests pass (9 tests); connector tests pass with DB smoke skipped by default (51 passed, 5 skipped); targeted and connector ruff clean; targeted mypy clean over 2 source/test files; connector mypy clean over 21 source/test files; full DB-enabled PowerShell verification passes with 337 backend tests, lint clean, mypy clean over 119 source files, migrations/seeds apply, and DB smoke passes.
+
 ## Known blockers
 
 | Item | Status | Impact |
 |---|---|---|
 | Live connector gates | Not satisfied | CON-001 must remain fixture-only |
 | Durable retrieval-run/evidence linkage | Gap recorded | Current `EvidenceContract` lacks `ingest_run_id`; coordinate Lane C/schema before claiming durable linkage |
-| Exact source-failure field preservation | Gap recorded | Current public Lane C source-failure API creates the persisted evidence record; connector-provided source-failure IDs are templates unless Lane C adds a public method |
+| Exact source-failure field preservation | Satisfied for connector adapter/public service scope | Lane C TC-180 plus CON-019 preserve connector-supplied source-failure evidence IDs through public service wiring; durable `ingest_run_id` evidence-row linkage remains separate |
 | Lane A concrete retrieval-run wiring | Satisfied for public service | `SourceProvenanceService.record_retrieval_run_contract(...)` preserves supplied `SourceRetrievalRunContract.ingest_run_id`; connector wiring uses it through a public-service adapter |
 | DB-backed workflow wiring | Satisfied for fixture success and source-failure smoke | Fixture workflow now records retrieval provenance and persists normal/source-failure evidence through DB-backed public Lane A and Lane C services; broader production ingestion remains unclaimed |
 | Connector run/status review handoff | Satisfied for fixture workflow projection | `build_connector_run_review_packet(...)` summarizes workflow status and review signals without adding API, claims, reports, schema edits, or persistence changes |
@@ -140,3 +143,4 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector queue worker-state read model | Satisfied for read-only API surfacing | `GET /connector-runs/{ingest_run_id}/review-queue` now surfaces attempts, lock/start/finish metadata, and last error without leasing, completing, failing, retrying, requeueing, cancelling, creating, or executing jobs |
 | Connector queue retry/requeue/cancel semantics | Satisfied for repository-level orchestration methods | `ConnectorReviewQueueRepository` implementations can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons; no API mutation route, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation was added |
 | Connector source-failure evidence ID adoption | Satisfied for connector adapter/public wiring scope | `ConnectorEvidenceIngestionAdapter` passes deterministic source-failure `EvidenceContract.evidence_id` values into Lane C's public source-failure creation method and DB-backed public wiring proves the ID persists; durable `ingest_run_id` evidence-row linkage remains a future coordinated schema/service pass |
+| Connector fixture identity/timing quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now flags duplicate evidence IDs and evidence observations outside the retrieval-run time window without adding API, persistence, schema edits, live I/O, claims, or reports |

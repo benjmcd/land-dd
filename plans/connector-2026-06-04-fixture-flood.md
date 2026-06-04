@@ -814,3 +814,38 @@ The next Level 8 pass should choose one of:
 - expose retry/cancel state or mutation routes through API only after route semantics are accepted;
 - coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-020 Connector Fixture Identity And Timing Quality
+
+CON-020 is complete. The connector fixture quality profile now checks two additional fixture-local data-quality categories:
+
+- duplicate evidence IDs within one fixture connector run;
+- evidence `observed_at` timestamps that precede retrieval start or follow retrieval finish.
+
+These checks strengthen fixture review before ingestion without adding schema changes or cross-lane service dependencies.
+
+### Boundary Preserved
+
+This is a connector-local fixture-quality extension only. It does not add live I/O, API mutation routes, queue behavior, persistence, claims, reports, shared schema edits, Lane A/B/C implementation changes, or durable `ingest_run_id` evidence-row linkage. The source-retrieval run remains connector provenance/lifecycle authority; this pass only validates fixture evidence identity uniqueness and observation timing against that run.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+```
+
+Result: focused fixture-quality tests pass (9 tests); targeted ruff clean; targeted mypy clean over 2 source/test files. Full workspace verification results are recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- add an explicit human-review action workflow after API mutation semantics are planned;
+- expose retry/cancel state or mutation routes through API only after route semantics are accepted;
+- coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
+- propose report-run schema only after nested schema scope is settled;
+- plan source provenance-family schemas with Lane A ownership;
+- broaden fixture data-quality coverage for another selected fixture category.

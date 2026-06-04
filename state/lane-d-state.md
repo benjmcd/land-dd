@@ -23,7 +23,7 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- Full verification passes locally with DB smoke enabled after CON-019 and root `ca10f85` reconciliation: 335 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-020: 337 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
@@ -41,6 +41,7 @@ Verification result:
 - CON-017 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` now surfaces queue worker-state metadata without adding API-side job mutation, worker execution, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-018 is complete: connector review queue repositories can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons, without adding API-side mutation, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-019 is complete in the Session 2 integration branch: connector evidence ingestion passes supplied deterministic source-failure evidence IDs through Lane C's public service boundary and DB-backed public wiring proves persistence without Lane C implementation/schema edits, live I/O, queue API mutation, claim/report changes, or durable `ingest_run_id` evidence-row linkage
+- CON-020 is complete: connector fixture quality flags duplicate evidence IDs and evidence observed outside the retrieval-run time window without API mutation routes, persistence, live I/O, shared schema edits, claims, reports, or durable `ingest_run_id` evidence-row linkage
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -90,7 +91,8 @@ Next lowest-dependency task:
 - **CON-017 (DONE)**: Connector queue worker-state read model is complete for read-only API surfacing of attempts, lock/start/finish metadata, and last error.
 - **CON-018 (DONE)**: Connector queue retry/requeue/cancel semantics are complete at repository level; default connector review jobs remain single-attempt unless a future planned producer/operator permits additional attempts.
 - **CON-019 (DONE)**: Connector adapter adoption of supplied source-failure evidence IDs is complete in the Session 2 integration branch; DB-backed public wiring proves deterministic source-failure IDs persist through Lane C public service calls.
-- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, or another selected fixture category.
+- **CON-020 (DONE)**: Connector fixture identity/timing quality is complete for duplicate evidence IDs and evidence observed outside the retrieval-run time window.
+- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, source/report schema planning, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

@@ -20,6 +20,11 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     SUCCEEDED_HAS_SOURCE_FAILURE = "succeeded_has_source_failure"
     BLOCKED_HAS_NON_FAILURE_EVIDENCE = "blocked_has_non_failure_evidence"
     SPATIAL_EVIDENCE_GEOMETRY_MISSING = "spatial_evidence_geometry_missing"
+    DUPLICATE_EVIDENCE_ID = "duplicate_evidence_id"
+    EVIDENCE_OBSERVED_BEFORE_RETRIEVAL = "evidence_observed_before_retrieval"
+    EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED = (
+        "evidence_observed_after_retrieval_finished"
+    )
     SOURCE_FAILURE_PAYLOAD_INCOMPLETE = "source_failure_payload_incomplete"
     SOURCE_FAILURE_CONFIDENCE_NOT_UNKNOWN = "source_failure_confidence_not_unknown"
 
@@ -122,7 +127,35 @@ def evaluate_flood_fixture_quality(
             ),
         )
 
+    evidence_ids = set()
     for evidence in evidence_inputs:
+        if evidence.evidence_id in evidence_ids:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.DUPLICATE_EVIDENCE_ID,
+                    "fixture evidence IDs must be unique within one connector run",
+                ),
+            )
+        evidence_ids.add(evidence.evidence_id)
+
+        if evidence.observed_at < retrieval_run.started_at:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_BEFORE_RETRIEVAL,
+                    "fixture evidence observed_at must not precede retrieval start",
+                ),
+            )
+        if (
+            retrieval_run.finished_at is not None
+            and evidence.observed_at > retrieval_run.finished_at
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED,
+                    "fixture evidence observed_at must not follow retrieval finish",
+                ),
+            )
+
         if (
             retrieval_run.dataset_version_id is not None
             and evidence.dataset_version_id != retrieval_run.dataset_version_id

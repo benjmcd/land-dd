@@ -2,6 +2,39 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-020 connector fixture identity and timing quality
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_fixture_quality.py
+ruff check app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+mypy app/connectors/fixture_quality.py tests/connectors/test_fixture_quality.py
+py -3.12 -m pytest -q tests/connectors -rA
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+```
+
+**Results:**
+
+- Focused fixture-quality tests: 9 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 2 source/test files.
+- Broader connector tests with DB smoke skipped by default: 51 passed, 5 skipped.
+- Connector ruff: clean.
+- Connector mypy: clean over 21 source/test files.
+- Full DB-enabled PowerShell verification: ok; 337 backend tests pass; lint clean; mypy clean over 119 source files; migrations/seeds apply; DB smoke passes.
+- Backend collection includes 337 tests.
+
+**Residual risk:**
+
+- CON-020 is fixture-local quality coverage only. Durable `ingest_run_id` evidence-row linkage, source provenance-family schemas, report-run schema, API mutation routes, and live connector behavior remain separate planned work.
+
 ## 2026-06-04 CON-019 connector source-failure evidence ID adoption
 
 **Commands run:**
