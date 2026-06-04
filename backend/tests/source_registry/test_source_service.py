@@ -24,6 +24,21 @@ def _make_source(
     )
 
 
+def _reviewed_source() -> SourceContract:
+    return _make_source().model_copy(
+        update={
+            "review_status": "approved",
+            "license_status": "approved",
+            "commercial_use_status": "yes",
+            "redistribution_status": "restricted",
+            "cache_allowed": "yes",
+            "export_allowed": "approved-with-restrictions",
+            "raw_data_allowed": "allowed",
+            "ai_use_allowed": "restricted",
+        }
+    )
+
+
 @pytest.fixture()
 def service() -> SourceService:
     return SourceService(InMemorySourceRepository())
@@ -94,13 +109,7 @@ def test_source_production_use_fails_closed_for_unknown_review(
 
 
 def test_source_production_use_allows_reviewed_source(service: SourceService) -> None:
-    source = _make_source().model_copy(
-        update={
-            "review_status": "approved",
-            "license_status": "approved",
-            "commercial_use_status": "yes",
-        }
-    )
+    source = _reviewed_source()
     registered = service.register(source)
 
     assert service.source_production_use_allowed(registered.source_id) is True
@@ -118,3 +127,27 @@ def test_source_production_use_rejects_blocked_source(service: SourceService) ->
 
     assert service.source_production_use_allowed(registered.source_id) is False
     assert service.source_production_use_allowed(uuid.uuid4()) is False
+
+
+@pytest.mark.parametrize(
+    ("field_name", "blocked_value"),
+    [
+        ("license_status", "unknown"),
+        ("commercial_use_status", "blocked"),
+        ("redistribution_status", "unknown"),
+        ("cache_allowed", "blocked"),
+        ("export_allowed", "unknown"),
+        ("raw_data_allowed", "blocked"),
+        ("ai_use_allowed", "unknown"),
+    ],
+)
+def test_source_production_use_rejects_unknown_or_blocked_usage_rights(
+    service: SourceService,
+    field_name: str,
+    blocked_value: str,
+) -> None:
+    registered = service.register(
+        _reviewed_source().model_copy(update={field_name: blocked_value})
+    )
+
+    assert service.source_production_use_allowed(registered.source_id) is False

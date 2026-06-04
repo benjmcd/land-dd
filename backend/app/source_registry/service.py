@@ -8,7 +8,6 @@ from app.source_registry.source_repo import SourceRepository
 _ALLOWED_REVIEW_STATUSES = {"approved", "approved-with-restrictions"}
 _ALLOWED_USAGE_STATUSES = {"yes", "allowed", "approved", "approved-with-restrictions", "restricted"}
 
-
 class SourceService:
     def __init__(self, repo: SourceRepository) -> None:
         self._repo = repo
@@ -33,10 +32,21 @@ class SourceService:
         source = self._repo.get(source_id)
         if source is None:
             return False
+        usage_statuses = (
+            source.license_status,
+            source.commercial_use_status,
+            source.redistribution_status,
+            source.cache_allowed,
+            source.export_allowed,
+            source.raw_data_allowed,
+            source.ai_use_allowed,
+        )
         return (
             _status_allows(source.review_status, _ALLOWED_REVIEW_STATUSES)
-            and _status_allows(source.license_status, _ALLOWED_USAGE_STATUSES)
-            and _status_allows(source.commercial_use_status, _ALLOWED_USAGE_STATUSES)
+            and all(
+                _status_allows(status, _ALLOWED_USAGE_STATUSES)
+                for status in usage_statuses
+            )
         )
 
 
