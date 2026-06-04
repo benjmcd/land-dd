@@ -39,6 +39,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Shared domain | `backend/app/domain/` | Shared enums, protocols, per-lane contracts; see LANE_OWNERSHIP.md for ownership |
 | Data/source strategy | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `schemas/source_schema.json` | Source metadata, licensing, provenance |
 | Evidence/claims | `schemas/evidence_schema.json`, `schemas/claim_schema.json`, `config/ruleset_homestead_mvp.yaml` | Claim-first semantics |
+| Reports | `backend/app/domain/report_contracts.py`, `schemas/report_run_schema.json`, `backend/tests/reports/test_report_regression.py` | Report-run contract, JSON schema, and stable artifact semantics |
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |
 | Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `.github/workflows/ci.yml` | Executable gates |
 | Comprehensive reference | `docs/planning_pack/**` | Read only when needed for ambiguity or major changes |

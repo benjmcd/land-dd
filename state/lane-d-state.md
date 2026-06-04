@@ -9,7 +9,10 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
 - cd backend; py -3.12 -m pytest -q tests/reports/test_report_regression.py
 - cd backend; py -3.12 -m pytest -q tests/api tests/reports
+- cd backend; py -3.12 -m pytest -q tests/reports/test_report_schema_contract.py tests/reports/test_report_contracts.py
 - cd backend; ruff check app/api app/main.py app/reports tests/api tests/reports
+- cd backend; ruff check tests/reports/test_report_schema_contract.py
+- cd backend; mypy tests/reports/test_report_schema_contract.py
 - cd backend; mypy app/api app/main.py app/reports tests/api/test_report_runs_db.py
 - .\scripts\verify.ps1
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_review_status.py tests/api/test_connector_review_status.py
@@ -24,6 +27,7 @@ Verification command(s):
 - docker info --format '{{.ServerVersion}}'
 Verification result:
 - Full verification passes locally with DB smoke enabled after CON-019 and root `ca10f85` reconciliation: 335 tests; lint clean; mypy clean (119 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after TD-080 report schema contract: 339 tests; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes
 - Connector/API review-status tests pass with 55 connector/API tests passing and 3 DB-gated skips when DB smoke is disabled
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
 - ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
@@ -31,7 +35,8 @@ Verification result:
 - API DB mode now builds SQLAlchemy-backed source, area, evidence, claim, and report services per request; successful requests commit and failures roll back through the API dependency
 - `POST /areas`, `POST /report-runs`, and `GET /report-runs/{id}` pass in a DB-backed API integration test and the report row stores a non-null `intent_id`
 - Generated fixture report artifact semantics are pinned by a normalized regression test that ignores dynamic UUID/timestamp/path fields
-- Shared source/evidence/claim/job/report schema gaps are recorded in `plans/2026-06-04-l7-closeout-l8-entry.md` without editing shared schema files
+- `schemas/report_run_schema.json` is aligned to serialized `ReportRunContract`, references Lane C evidence/claim schemas for nested arrays, and is guarded by schema-contract parity tests
+- Shared source provenance-family, job, report manifest metadata, and OpenAPI gaps remain recorded in `plans/2026-06-04-l7-closeout-l8-entry.md`
 - Level 8 connector gates are mapped to lane owners, and a fixture-only flood connector acceptance path is recorded before connector runtime code
 - D-005 is complete: `LANE_OWNERSHIP.md` assigns the connector integration zone, the connector ownership ADR is accepted, and source retrieval runs are connector lifecycle/provenance authority
 - CON-013 is complete: `GET /connector-runs/{ingest_run_id}/review-status` exposes in-memory connector review status that combines connector handoff and fixture quality profile data without durable queue persistence, connector status tables, schema edits, live I/O, claims, reports, or DB-backed connector status
@@ -43,7 +48,7 @@ Verification result:
 - CON-019 is complete in the Session 2 integration branch: connector evidence ingestion passes supplied deterministic source-failure evidence IDs through Lane C's public service boundary and DB-backed public wiring proves persistence without Lane C implementation/schema edits, live I/O, queue API mutation, claim/report changes, or durable `ingest_run_id` evidence-row linkage
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
-- Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
+- Source/evidence/claim/report root schemas are aligned to serialized domain contracts; remaining shared-schema gaps are source provenance-family schemas, job schema, report manifest metadata, and OpenAPI refresh.
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
 - backend/app/domain/report_contracts.py (ReportRunContract with evidence, claims, unknowns, red flags, verification tasks, and artifact metadata)
@@ -56,6 +61,8 @@ Completion evidence:
 - docs/adr/lane-d-0006-connector-queue-worker-read-model.md
 - docs/adr/lane-d-0007-connector-queue-retry-cancel.md
 - docs/adr/lane-d-0008-connector-source-failure-ids.md
+- docs/adr/lane-d-0009-report-run-schema.md
+- schemas/report_run_schema.json
 - backend/app/api/dependencies.py (per-app API service wiring)
 - backend/app/api/sources.py (source router)
 - backend/app/api/areas.py (area router)
@@ -66,6 +73,7 @@ Completion evidence:
 - backend/app/main.py (router registration)
 - backend/app/db/session.py (FastAPI-compatible DB session dependency; delegates to shared `get_session()`)
 - backend/tests/reports/test_report_contracts.py (contract defaults)
+- backend/tests/reports/test_report_schema_contract.py (report schema-contract parity)
 - backend/tests/reports/test_report_service.py (4 report service tests)
 - backend/tests/reports/test_adapters.py (4 adapter tests)
 - backend/tests/reports/test_report_repository.py (DB-backed persistence round-trip)
@@ -90,7 +98,8 @@ Next lowest-dependency task:
 - **CON-017 (DONE)**: Connector queue worker-state read model is complete for read-only API surfacing of attempts, lock/start/finish metadata, and last error.
 - **CON-018 (DONE)**: Connector queue retry/requeue/cancel semantics are complete at repository level; default connector review jobs remain single-attempt unless a future planned producer/operator permits additional attempts.
 - **CON-019 (DONE)**: Connector adapter adoption of supplied source-failure evidence IDs is complete in the Session 2 integration branch; DB-backed public wiring proves deterministic source-failure IDs persist through Lane C public service calls.
-- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, or another selected fixture category.
+- **TD-080 (DONE)**: Report-run schema contract is complete for serialized `ReportRunContract`.
+- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, source provenance-family schema planning, report manifest metadata tightening, OpenAPI refresh, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes
@@ -101,7 +110,7 @@ Do not work on yet:
 
 | Item | Status | Impact |
 |---|---|---|
-| Shared-schema alignment for `schemas/*.json` | Gap note complete; edits pending | Future payload changes need owner-specific schema edits after review scope is set |
+| Shared-schema alignment for `schemas/*.json` | Source/evidence/claim/report root schemas aligned | Source provenance-family schemas, job schema, report manifest metadata, and OpenAPI refresh remain future coordinated passes |
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |

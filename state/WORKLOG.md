@@ -2,6 +2,16 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Lane D TD-080 report-run schema contract)
+
+- Created isolated worktree `worktrees/lane-d-report-schema` on branch `lane-d/report-schema` from root `main` at `3001c65` to avoid Session 2's active connector fixture-quality work.
+- Added `schemas/report_run_schema.json` as the serialized `ReportRunContract` schema, with `intent_code`/`status` enum constraints and Lane C evidence/claim schema references for nested arrays.
+- Added `backend/tests/reports/test_report_schema_contract.py` to guard field/required parity, enum parity, nested schema references, and serialized contract field set.
+- Added ADR `docs/adr/lane-d-0009-report-run-schema.md` to record that `source_manifest` and `artifact_metadata` remain open objects pending future manifest metadata decisions.
+- Updated Lane D plan/state, D-003 schema-contract note, manifest routing, project state, validation log, and worklog.
+- Preserved the boundary: no connector implementation/tests/fixtures, Lane A/B/C module files, migrations, API route behavior, live I/O, hook config, or POSIX scripts were changed.
+- Verification passed: focused report schema/default contract tests; Lane D report/API collection; focused report schema ruff/mypy; `git diff --check`; full DB-enabled PowerShell verification with 339 backend tests, lint clean, mypy clean over 120 source files, migrations/seeds apply, and DB smoke passes.
+
 ## 2026-06-04 (integration rehearsal TC-180 plus CON-017/CON-018)
 
 - Created isolated branch `codex/session2-lane-c-con018-rehearsal` from rebased Lane C TC-180 at `6dde79e` and merged Session 2 branch `codex/con-017-queue-read-model`.
