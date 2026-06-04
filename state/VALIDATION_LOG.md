@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-004 connector retrieval-run provenance adapter
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector tests: 15 passed.
+- Connector ruff: clean.
+- Connector mypy: clean over 7 connector source/test files.
+- Full PowerShell verification: ok; 278 collected backend tests; lint clean; mypy clean over 100 source files; DB smoke skipped by default.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- DB smoke was not rerun for CON-004 because this slice does not touch DB wiring or schema.
+- Concrete production wiring needs a Lane A public method or Lane A-owned adapter that preserves supplied `SourceRetrievalRunContract.ingest_run_id`.
+
 ## 2026-06-04 CON-003 connector evidence-ingestion adapter
 
 **Commands run:**

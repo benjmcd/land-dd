@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-004)
+
+- Completed CON-004 in the connector integration zone: added `ConnectorRetrievalProvenanceAdapter` and `SourceRetrievalProvenancePort` in `backend/app/connectors/retrieval_provenance.py`.
+- Added connector tests proving retrieval runs are recorded with supplied `ingest_run_id`/`dataset_version_id`, duplicate retrieval runs are skipped, provenance recording can run before evidence ingestion, and the adapter does not import Lane A services/repositories, evidence, claims, reports, or live I/O modules.
+- Recorded the remaining concrete wiring gap: current Lane A `SourceProvenanceService.record_retrieval_run(...)` creates a new retrieval run and does not accept a supplied `SourceRetrievalRunContract`, so production wiring needs a Lane A public method or Lane A-owned adapter that preserves connector run identity.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors`; `ruff check app/connectors tests/connectors`; `mypy app/connectors tests/connectors`; `.\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-003)
 
 - Completed CON-003 in the connector integration zone: added `ConnectorEvidenceIngestionAdapter` and `EvidenceIngestionPort` in `backend/app/connectors/evidence_ingestion.py`.

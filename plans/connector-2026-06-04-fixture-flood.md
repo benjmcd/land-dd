@@ -76,6 +76,7 @@ git diff --check
 - 2026-06-04: Plan created from root `main` after D-005 (`dc3c38e`).
 - 2026-06-04: CON-001 implemented as a fixture-only contract slice. `StaticFloodFixtureConnector` reads local JSON, rejects URI-like paths, emits `SourceRetrievalRunContract` plus `EvidenceContract` inputs, covers success/failure fixtures, and avoids claim/report imports.
 - 2026-06-04: CON-003 implemented as a connector-zone evidence-ingestion adapter. It depends on an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source-failure templates to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and avoids claim/report imports.
+- 2026-06-04: CON-004 implemented as a connector-zone retrieval-run provenance adapter. It depends on an injected source retrieval provenance port, records deterministic `SourceRetrievalRunContract` values without Lane A repository imports, skips duplicate `ingest_run_id` values, and keeps evidence ingestion separate from retrieval provenance.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -169,3 +170,42 @@ Result: connector tests pass (11 tests); connector ruff clean; connector mypy cl
 ### Remaining Gap
 
 CON-003 does not persist `SourceRetrievalRunContract`. The next connector slice should define or implement a connector-zone retrieval-run provenance adapter against an injected public Lane A/source provenance port before claiming a complete connector ingest workflow.
+
+## CON-004 Retrieval-Run Provenance Adapter
+
+Status: complete on 2026-06-04. No Lane A implementation, repository, shared schema, migration, live connector, report/API, evidence/claim, or DB-session code changed.
+
+### Implemented Design
+
+`ConnectorRetrievalProvenanceAdapter` lives in the connector integration zone and accepts an injected `SourceRetrievalProvenancePort`. The port intentionally preserves `SourceRetrievalRunContract` as the authority value so fixture connector `ingest_run_id` and `dataset_version_id` are not lost before evidence ingestion.
+
+The adapter:
+
+- records connector retrieval runs before evidence ingestion;
+- skips duplicate deterministic `ingest_run_id` values;
+- returns recorded/skipped run state explicitly;
+- does not import Lane A source registry services or repositories;
+- does not import evidence, claim, report, DB-session, or live I/O modules.
+
+### Boundary Note
+
+Current Lane A `SourceProvenanceService.record_retrieval_run(...)` is a public service, but its current signature creates a new `SourceRetrievalRunContract` and does not accept a connector-provided `ingest_run_id`. The connector adapter therefore defines the required injected port shape without modifying Lane A. Concrete production wiring needs either a Lane A public method that records a supplied `SourceRetrievalRunContract` or a Lane A-owned adapter that preserves the contract identity.
+
+### Verification
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+Result: connector tests pass (15 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 278 collected backend tests, lint clean, mypy clean (100 source files), and DB smoke skipped by default; whitespace check clean.
+
+### Next Slice
+
+CON-005 should compose the fixture connector, retrieval provenance adapter, and evidence ingestion adapter into one fixture-only workflow. It must record retrieval provenance before evidence ingestion, preserve fixture-only/no-live-IO behavior, stay before claims/reports, and continue to use injected ports rather than Lane A/Lane C repositories.

@@ -284,10 +284,10 @@ tasks:
 
   - id: CON-004
     title: Level 8 connector retrieval-run provenance adapter or handoff
-    status: pending
+    status: done
     depends_on: [CON-003]
     lane: connector-integration
-    notes: Define or implement the connector-zone handoff for SourceRetrievalRunContract persistence through an injected public Lane A/source provenance port before claiming a complete connector ingest workflow. Do not modify Lane A implementation unless separately coordinated.
+    notes: Implemented the connector-zone handoff adapter for SourceRetrievalRunContract persistence through an injected source retrieval provenance port. The adapter preserves supplied ingest_run_id values, skips duplicates, does not import Lane A repositories/services, and records the concrete Lane A public wiring gap.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-003-evidence-ingestion-adapter
     files:
       - backend/app/connectors/
@@ -300,3 +300,23 @@ tasks:
       - Retrieval-run provenance boundary is explicit
       - Connector workflow does not treat evidence ingestion as retrieval provenance
       - No Lane A implementation change is made without coordination
+
+  - id: CON-005
+    title: Level 8 fixture connector ingest workflow composition
+    status: pending
+    depends_on: [CON-004]
+    lane: connector-integration
+    notes: Compose the fixture connector, retrieval provenance adapter, and evidence ingestion adapter into one fixture-only workflow. Retrieval provenance must be recorded before evidence ingestion; the workflow must remain fixture-only, injected-port based, and before claims/reports.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-004-retrieval-run-provenance-adapter
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - plans/connector-*.md
+      - state/connector-state.md
+    validation:
+      - .\scripts\verify.ps1
+    acceptance:
+      - Fixture workflow records retrieval provenance before evidence ingestion
+      - Fixture workflow routes evidence through the evidence ingestion adapter
+      - Repeated fixture workflow runs are idempotent
+      - No live IO, claim/report shortcut, schema edit, or Lane A/C repository import is introduced
