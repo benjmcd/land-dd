@@ -39,6 +39,7 @@ Current task:
 - CON-032: DONE - connector fixture evidence domain quality checks.
 - CON-033: DONE - connector fixture retrieval name quality checks.
 - CON-034: DONE - connector fixture evidence source consistency checks.
+- CON-035: DONE - connector fixture evidence area consistency checks.
 Do not work on yet:
 - Live connector behavior
 - Long-running worker/scheduler/background loops
@@ -168,6 +169,8 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 
 2026-06-04 CON-034 result: focused fixture-quality tests pass (16 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local evidence-source consistency validation; no route/OpenAPI/runtime/schema/queue mutation.
 
+2026-06-04 CON-035 result: focused fixture-quality tests pass (17 tests); focused ruff clean; focused mypy clean over 2 source files. Full final Windows PowerShell verification is recorded in `state/VALIDATION_LOG.md`. Scope is connector-local evidence-area consistency validation; no route/OpenAPI/runtime/schema/queue mutation.
+
 ## Known blockers
 
 | Item | Status | Impact |
@@ -195,6 +198,7 @@ Result: targeted connector tests pass (5 tests); connector ruff clean; connector
 | Connector fixture evidence domain quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now rejects flood fixture evidence whose domain is not `flood` without adding API, persistence, schema edits, live I/O, claims, or reports |
 | Connector fixture retrieval name quality | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now rejects flood fixture retrievals whose `connector_name` is not `fixture_flood_static` without adding API, persistence, schema edits, live I/O, claims, or reports |
 | Connector fixture evidence source consistency | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now rejects one flood fixture run emitting evidence with mixed `source_id` values without adding API, persistence, schema edits, live I/O, claims, or reports |
+| Connector fixture evidence area consistency | Satisfied for fixture-local review scope | `evaluate_flood_fixture_quality(...)` now rejects one flood fixture run emitting evidence with mixed `area_id` values without adding API, persistence, schema edits, live I/O, claims, or reports |
 | Connector review action API auth boundary | Satisfied for local service-account substrate | ADR Lane D 0015 adds the tested reviewer principal dependency required by ADR Lane D 0014; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
 | Connector reviewer principal dependency | Satisfied for local service-account fixture/developer substrate | `LocalServiceAccountReviewerAuth` validates configured reviewer IDs and tokens, fails closed when unconfigured, and returns `ReviewerPrincipal`; production auth, route wiring, reviewer ownership persistence, and action history remain separate |
 | Connector review action route subset | Satisfied for implementation planning | ADR Lane D 0016 accepts only `request_fixture_fix`, `requeue_after_fix`, and `cancel_review` for the next route implementation; route/OpenAPI changes remain future coordinated work |

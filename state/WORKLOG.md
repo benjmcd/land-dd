@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Connector CON-035 fixture evidence area consistency)
+
+- Tightened connector-local fixture quality for subject-area consistency inside flood fixture output.
+- Flood fixture evidence now fails closed when one retrieval emits evidence with mixed `area_id` values.
+- Preserved boundary: no API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live I/O, hook config, POSIX script, durable evidence-row lineage, or lane-owned module outside connector quality changed.
+- Verification passed with DB smoke: 369 backend tests collected/passing, lint clean, mypy clean over 123 source files, migrations/seeds applied, and DB smoke passed.
+
 ## 2026-06-04 (Connector CON-034 fixture evidence source consistency)
 
 - Tightened connector-local fixture quality for source identity consistency inside flood fixture output.

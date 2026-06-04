@@ -47,6 +47,7 @@ Verification result:
 - Full verification passes locally with DB smoke enabled after CON-032 connector fixture evidence domain quality: 366 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-033 connector fixture retrieval name quality: 367 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-034 connector fixture evidence source consistency: 368 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
+- Full verification passes locally with DB smoke enabled after CON-035 connector fixture evidence area consistency: 369 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after TD-082 report metadata extension boundary planning: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-024 connector review action API auth blocker decision: 351 tests; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes
 - Full verification passes locally with DB smoke enabled after CON-025 connector reviewer principal boundary: 362 tests; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes
@@ -97,6 +98,7 @@ Verification result:
 - CON-032 is complete as connector-local fixture evidence domain quality. Flood fixture evidence must use `domain == "flood"`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-033 is complete as connector-local fixture retrieval name quality. Flood fixture retrievals must use `connector_name == "fixture_flood_static"`. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 - CON-034 is complete as connector-local fixture evidence source consistency. One flood fixture retrieval must not emit evidence with mixed `source_id` values. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
+- CON-035 is complete as connector-local fixture evidence area consistency. One flood fixture retrieval must not emit evidence with mixed `area_id` values. No routes, OpenAPI, DB schema, queue behavior, connector runtime, live I/O, hook config, POSIX scripts, durable evidence-row lineage, or lane-owned modules outside connector quality changed.
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Source/evidence/claim/report root schemas are aligned to serialized domain contracts; source provenance-family schemas are aligned to serialized Lane A provenance contracts; stable generated report manifest metadata keys are tightened; planning-pack OpenAPI is aligned to the generated FastAPI contract; connector human-review action and route/reviewer/auth semantics are planned; local reviewer principal dependency is tested; review-action route subset is accepted; report metadata extension boundaries are accepted. Remaining gaps are job schema, durable `ingest_run_id` evidence-row linkage, production auth, reviewer ownership/action history, route/OpenAPI implementation, and broader API mutation/workflow implementation.
@@ -181,6 +183,7 @@ Next lowest-dependency task:
 - **CON-032 (DONE)**: Connector fixture evidence domain quality now rejects flood fixture evidence outside the `flood` domain.
 - **CON-033 (DONE)**: Connector fixture retrieval name quality now rejects flood fixture retrievals outside the `fixture_flood_static` connector.
 - **CON-034 (DONE)**: Connector fixture evidence source consistency now rejects mixed `source_id` values inside one flood fixture run.
+- **CON-035 (DONE)**: Connector fixture evidence area consistency now rejects mixed `area_id` values inside one flood fixture run.
 - **NEXT**: After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose broader fixture-quality/report metadata work if route work would conflict.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)

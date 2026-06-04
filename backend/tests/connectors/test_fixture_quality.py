@@ -83,6 +83,29 @@ def test_fixture_quality_flags_dataset_version_mismatch() -> None:
     )
 
 
+def test_fixture_quality_flags_area_id_mismatch() -> None:
+    result = _load_success()
+    retrieval_run = result.retrieval_run.model_copy(update={"row_count": 2})
+    different_area = result.evidence_inputs[0].model_copy(
+        update={
+            "evidence_id": UUID("99999999-9999-4999-8999-999999999999"),
+            "area_id": UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+        },
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=(result.evidence_inputs[0], different_area),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.EVIDENCE_AREA_ID_MISMATCH,
+    )
+
+
 def test_fixture_quality_flags_source_id_mismatch() -> None:
     result = _load_success()
     retrieval_run = result.retrieval_run.model_copy(update={"row_count": 2})
