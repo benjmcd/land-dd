@@ -323,10 +323,10 @@ tasks:
 
   - id: CON-006
     title: Level 8 concrete public-service workflow wiring handoff
-    status: pending
+    status: done
     depends_on: [CON-005]
     lane: connector-integration
-    notes: Define or implement concrete public-service wiring for the fixture workflow. The retrieval provenance port must preserve supplied SourceRetrievalRunContract.ingest_run_id, and evidence ingestion must use the public Lane C evidence port. Do not import Lane A/C repositories or modify Lane A/C implementation without explicit coordination.
+    notes: Implemented the connector-owned public-service wiring path that is currently possible without crossing ownership boundaries. Fixture workflow wiring now accepts an identity-preserving retrieval provenance port and a public Lane C EvidenceService; source-failure fixture payloads are aligned to Lane C validation. Lane A public provenance identity preservation remains a coordinated follow-up.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-005-fixture-connector-ingest-workflow
     files:
       - backend/app/connectors/
@@ -340,3 +340,24 @@ tasks:
       - Retrieval-run identity preservation is handled before DB-backed claims
       - Evidence ingestion uses public Lane C service methods
       - Any required Lane A/C implementation change is separately coordinated
+
+  - id: CON-007
+    title: Level 8 Lane A public provenance identity-preservation follow-up
+    status: pending
+    depends_on: [CON-006]
+    lane: connector-integration
+    notes: Coordinate or implement the Lane A-owned public provenance method/adapter that can record a supplied SourceRetrievalRunContract while preserving ingest_run_id. Do not claim DB-backed connector workflow ingestion until this is wired and DB-smoke verified.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-006-public-service-workflow-wiring-handoff
+    files:
+      - backend/app/connectors/
+      - backend/tests/connectors/
+      - plans/connector-*.md
+      - state/connector-state.md
+      - Lane A files only if explicitly coordinated
+    validation:
+      - .\scripts\verify.ps1
+      - DB smoke if DB-backed provenance wiring changes
+    acceptance:
+      - Supplied SourceRetrievalRunContract.ingest_run_id is preserved through public provenance wiring
+      - Connector workflow can use the public provenance wiring without Lane A repository imports
+      - DB-backed connector workflow claim is backed by DB-smoke verification

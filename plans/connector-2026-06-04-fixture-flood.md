@@ -78,6 +78,7 @@ git diff --check
 - 2026-06-04: CON-003 implemented as a connector-zone evidence-ingestion adapter. It depends on an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source-failure templates to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and avoids claim/report imports.
 - 2026-06-04: CON-004 implemented as a connector-zone retrieval-run provenance adapter. It depends on an injected source retrieval provenance port, records deterministic `SourceRetrievalRunContract` values without Lane A repository imports, skips duplicate `ingest_run_id` values, and keeps evidence ingestion separate from retrieval provenance.
 - 2026-06-04: CON-005 implemented as a fixture-only connector ingest workflow. It composes the static flood fixture connector, retrieval provenance adapter, and evidence ingestion adapter; records retrieval provenance before evidence ingestion; proves repeated fixture workflow idempotency; and keeps live I/O, Lane A/C repository imports, claims, reports, schemas, and DB sessions out of scope.
+- 2026-06-04: CON-006 implemented the connector-owned public-service wiring path that is currently possible without Lane A/C repository imports. `build_fixture_workflow_with_public_services` wires the fixture workflow to public Lane C `EvidenceService` methods through the evidence adapter and requires an identity-preserving retrieval provenance port. The flood source-failure fixture now uses Lane C's controlled source-failure payload keys.
 
 ## CON-002 Evidence-Ingestion Handoff
 
@@ -250,3 +251,56 @@ Result: connector tests pass (19 tests); connector ruff clean; connector mypy cl
 ### Remaining Gap
 
 CON-005 proves the connector workflow boundary with injected ports only. Concrete production wiring still needs a Lane A-compatible public provenance port that preserves supplied `SourceRetrievalRunContract.ingest_run_id`, plus wiring to a public Lane C evidence-ingestion port. No connector workflow should claim durable DB-backed production ingestion until that wiring is implemented and DB-smoke verified.
+
+## CON-006 Public-Service Workflow Wiring Handoff
+
+Status: complete on 2026-06-04 as the connector-owned wiring path plus explicit Lane A handoff. No Lane A/C implementation, repository, shared schema, migration, live connector, report/API, claim, or DB-session code changed.
+
+### Implemented Design
+
+`build_fixture_workflow_with_public_services` composes a fixture workflow from:
+
+- an identity-preserving `SourceRetrievalProvenancePort`;
+- the public Lane C `EvidenceService`;
+- an optional `StaticFloodFixtureConnector`.
+
+This is the concrete public-service wiring path available today without crossing ownership boundaries. Lane C evidence ingestion is real public-service wiring: normal evidence calls `EvidenceService.create_observation`, source failures call `EvidenceService.create_source_failure`, duplicate checks call `EvidenceService.evidence_exists`, and source-failure fingerprinting uses `EvidenceService.list_by_area`.
+
+The connector still does not wire directly to Lane A's current `SourceProvenanceService.record_retrieval_run(...)`, because that public method creates a fresh `SourceRetrievalRunContract` and cannot preserve connector-supplied `ingest_run_id`. CON-006 therefore keeps retrieval provenance behind the identity-preserving port and records the Lane A public-service follow-up explicitly.
+
+### Fixture Alignment
+
+`tests/fixtures/connectors/flood_failure.json` now uses Lane C's controlled source-failure payload keys:
+
+- `failure_reason`
+- `error_message`
+- `retryable`
+
+This lets the fixture workflow pass through the public `EvidenceService` validator without relaxing Lane C validation or adding schema changes.
+
+### Verification
+
+Tests prove:
+
+- fixture workflow public wiring uses the public Lane C `EvidenceService` for normal evidence;
+- fixture workflow public wiring uses the public Lane C `EvidenceService` for source failures;
+- repeated public-service fixture workflow runs are idempotent across retrieval and evidence stages;
+- the public wiring surface requires an identity-preserving retrieval provenance port;
+- connector public wiring imports the public Lane C evidence service but does not import Lane C repositories, Lane A source registry modules, claims, reports, live I/O, schemas, or DB sessions.
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+Result: connector tests pass (23 tests); connector ruff clean; connector mypy clean; full PowerShell verification passes with 286 collected backend tests, lint clean, mypy clean (104 source files), and DB smoke skipped by default; whitespace check clean.
+
+### Remaining Gap
+
+The next connector task must coordinate or implement the Lane A public provenance method/adapter that can record a supplied `SourceRetrievalRunContract` while preserving `ingest_run_id`. Only after that is wired and DB-smoke verified should the project claim durable DB-backed connector workflow ingestion.

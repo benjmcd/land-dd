@@ -26,7 +26,7 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 282 tests pass in the default Windows PowerShell verification path after CON-005; lint clean; mypy clean (102 source files); DB smoke skipped by default. The latest DB-enabled verification remains the 268-test Lane C schema-contract pass before connector workflow work.
+- 286 tests pass in the default Windows PowerShell verification path after CON-006; lint clean; mypy clean (104 source files); DB smoke skipped by default. The latest DB-enabled verification remains the 268-test Lane C schema-contract pass before connector workflow work.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
@@ -42,6 +42,7 @@ Verification result:
 - CON-003 is complete: `ConnectorEvidenceIngestionAdapter` uses an injected public evidence-ingestion port, routes normal evidence to `create_observation`, routes source failures to `create_source_failure`, skips duplicate deterministic evidence IDs, fingerprints source failures for repeated fixture idempotency, and stays before claims/reports
 - CON-004 is complete: `ConnectorRetrievalProvenanceAdapter` uses an injected source retrieval provenance port, preserves connector-supplied retrieval-run identity, skips duplicate `ingest_run_id` values, and records the Lane A concrete wiring gap without importing Lane A repositories/services
 - CON-005 is complete: `FixtureConnectorIngestWorkflow` composes the fixture connector, retrieval provenance adapter, and evidence ingestion adapter so retrieval provenance is recorded before evidence ingestion, repeated fixture workflow runs are idempotent, and the workflow remains fixture-only/injected-port based before claims/reports
+- CON-006 is complete: connector-owned public-service wiring now composes the fixture workflow with public Lane C `EvidenceService` methods while preserving the Lane A retrieval-run identity requirement behind an explicit provenance port; flood source-failure fixture payloads are aligned to Lane C validation
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
@@ -86,7 +87,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- CON-006: Level 8 concrete public-service workflow wiring handoff.
+- CON-007: Level 8 Lane A public provenance identity-preservation follow-up.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -139,11 +140,11 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
 | Live connector credentials | Unavailable | No live API/vendor integrations |
 | Docker availability | Available | DB smoke now passes locally |
-| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-005 complete; next is CON-006 concrete public-service workflow wiring handoff |
+| Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-006 complete; next is CON-007 Lane A public provenance identity-preservation follow-up |
 
 ## Last verified state
 
-282 tests pass in the default Windows PowerShell verification path after CON-005 fixture connector ingest workflow composition; lint clean; mypy clean (102 source files); DB smoke skipped by default. Latest DB-enabled verification remains the Lane C TC-170 pass: 268 tests with DB smoke enabled, migrations/seeds apply, and DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, Lane C TC-170, and Lane B TB-100 are complete in this worktree. Planning-pack schema-copy alignment remains separate Session 1 branch work. CON-006 concrete public-service workflow wiring handoff remains the next lowest-dependency connector task.
+286 tests pass in the default Windows PowerShell verification path after CON-006 concrete public-service workflow wiring handoff; lint clean; mypy clean (104 source files); DB smoke skipped by default. Latest DB-enabled verification remains the Lane C TC-170 pass: 268 tests with DB smoke enabled, migrations/seeds apply, and DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, Lane C TC-170, and Lane B TB-100 are complete in this worktree. Planning-pack schema-copy alignment remains separate Session 1 branch work. CON-007 Lane A public provenance identity-preservation follow-up remains the next lowest-dependency connector task.
 
 ## Local repo bootstrap state
 

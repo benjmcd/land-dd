@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (connector CON-006)
+
+- Completed CON-006 in the connector integration zone: added `build_fixture_workflow_with_public_services` in `backend/app/connectors/public_wiring.py`.
+- Public-service wiring now composes fixture workflows with public Lane C `EvidenceService` methods for normal evidence, source failures, duplicate checks, and source-failure fingerprinting, while still requiring an identity-preserving retrieval provenance port.
+- Aligned `tests/fixtures/connectors/flood_failure.json` to Lane C's controlled source-failure payload keys (`failure_reason`, `error_message`, `retryable`) so fixture failures pass public evidence validation without relaxing Lane C rules.
+- Recorded the remaining Lane A follow-up: current `SourceProvenanceService.record_retrieval_run(...)` cannot preserve a supplied `SourceRetrievalRunContract.ingest_run_id`, so DB-backed connector workflow ingestion is still not claimed until a Lane A-compatible public provenance method/adapter is coordinated and DB-smoke verified.
+- Verification passed: `py -3.12 -m pytest -q tests/connectors`; `ruff check app/connectors tests/connectors`; `mypy app/connectors tests/connectors`; `.\scripts\verify.ps1`; `git diff --check`.
+
 ## 2026-06-04 (connector CON-005)
 
 - Completed CON-005 in the connector integration zone: added `FixtureConnectorIngestWorkflow` in `backend/app/connectors/fixture_workflow.py`.

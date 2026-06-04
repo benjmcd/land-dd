@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-006 concrete public-service workflow wiring handoff
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors
+ruff check app/connectors tests/connectors
+mypy app/connectors tests/connectors
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+.\scripts\verify.ps1
+git diff --check
+```
+
+**Results:**
+
+- Connector tests: 23 passed.
+- Connector ruff: clean.
+- Connector mypy: clean over 11 connector source/test files.
+- Full PowerShell verification: ok; 286 collected backend tests; lint clean; mypy clean over 104 source files; DB smoke skipped by default.
+- Whitespace check: clean.
+
+**Residual risk:**
+
+- DB smoke was not rerun for CON-006 because this slice does not touch DB wiring or schema.
+- Lane C public evidence-service wiring is implemented, but durable DB-backed connector workflow ingestion is not claimed. The next required follow-up is a Lane A-compatible public provenance method/adapter that preserves supplied `SourceRetrievalRunContract.ingest_run_id`, followed by DB-smoke verification.
+
 ## 2026-06-04 CON-005 fixture connector ingest workflow composition
 
 **Commands run:**
