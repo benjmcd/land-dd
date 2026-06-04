@@ -49,6 +49,7 @@ FIXTURE_INGEST_RUN_ID = UUID("11111111-1111-4111-8111-111111111111")
 FIXTURE_FAILURE_INGEST_RUN_ID = UUID("66666666-6666-4666-8666-666666666666")
 FIXTURE_AREA_ID = UUID("44444444-4444-4444-8444-444444444444")
 FIXTURE_EVIDENCE_ID = UUID("33333333-3333-4333-8333-333333333333")
+FIXTURE_FAILURE_EVIDENCE_ID = UUID("77777777-7777-4777-8777-777777777777")
 FIXTURE_AREA_GEOMETRY: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -434,6 +435,7 @@ def test_db_backed_public_lane_service_fixture_source_failure_is_idempotent() ->
             )
             assert len(first.evidence_ingestion.created_evidence) == 1
             created_failure = first.evidence_ingestion.created_evidence[0]
+            assert created_failure.evidence_id == FIXTURE_FAILURE_EVIDENCE_ID
             assert created_failure.is_source_failure is True
             assert created_failure.evidence_type == EvidenceType.SOURCE_FAILURE
             assert created_failure.evidence_code == "FLOOD_SOURCE_UNAVAILABLE"
@@ -467,6 +469,7 @@ def test_db_backed_public_lane_service_fixture_source_failure_is_idempotent() ->
             assert stored_run.ingest_run_id == FIXTURE_FAILURE_INGEST_RUN_ID
             assert stored_run.status == "blocked"
             assert len(source_failures) == 1
+            assert source_failures[0].evidence_id == FIXTURE_FAILURE_EVIDENCE_ID
             assert source_failures[0].evidence_code == "FLOOD_SOURCE_UNAVAILABLE"
             assert source_failures[0].observed_value["failure_reason"] == (
                 "fixture_source_unavailable"

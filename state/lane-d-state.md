@@ -40,6 +40,7 @@ Verification result:
 - CON-016 is complete: connector review queue repositories can lease eligible connector review jobs, mark running jobs succeeded, and mark running jobs failed without adding a scheduler, API mutation route, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-017 is complete: `GET /connector-runs/{ingest_run_id}/review-queue` now surfaces queue worker-state metadata without adding API-side job mutation, worker execution, retry/requeue policy, live I/O, claims, reports, schema edits, or provenance mutation
 - CON-018 is complete: connector review queue repositories can requeue failed jobs only when attempts remain and cancel nonfinal jobs with reasons, without adding API-side mutation, automatic retry policy, scheduler, live I/O, claims, reports, schema edits, or provenance mutation
+- CON-019 is complete in the Session 2 integration branch: connector evidence ingestion passes supplied deterministic source-failure evidence IDs through Lane C's public service boundary and DB-backed public wiring proves persistence without Lane C implementation/schema edits, live I/O, queue API mutation, claim/report changes, or durable `ingest_run_id` evidence-row linkage
 Failed or blocked gates:
 - No Level 7 blockers remain for the fixture-backed report/API vertical slice.
 - Shared-schema alignment for `schemas/*.json` remains a future coordinated contract pass before schema edits.
@@ -54,6 +55,7 @@ Completion evidence:
 - docs/adr/lane-d-0005-connector-queue-worker.md
 - docs/adr/lane-d-0006-connector-queue-worker-read-model.md
 - docs/adr/lane-d-0007-connector-queue-retry-cancel.md
+- docs/adr/lane-d-0008-connector-source-failure-ids.md
 - backend/app/api/dependencies.py (per-app API service wiring)
 - backend/app/api/sources.py (source router)
 - backend/app/api/areas.py (area router)
@@ -87,7 +89,8 @@ Next lowest-dependency task:
 - **CON-016 (DONE)**: Connector review queue worker lease semantics are complete at repository level; no API mutation route, scheduler, retry/requeue policy, or live connector execution was added.
 - **CON-017 (DONE)**: Connector queue worker-state read model is complete for read-only API surfacing of attempts, lock/start/finish metadata, and last error.
 - **CON-018 (DONE)**: Connector queue retry/requeue/cancel semantics are complete at repository level; default connector review jobs remain single-attempt unless a future planned producer/operator permits additional attempts.
-- **NEXT**: Select a coordinated Level 8 follow-up: preserve/integrate Session 1's Lane C source-failure identity branch after rebase, explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, or another selected fixture category.
+- **CON-019 (DONE)**: Connector adapter adoption of supplied source-failure evidence IDs is complete in the Session 2 integration branch; DB-backed public wiring proves deterministic source-failure IDs persist through Lane C public service calls.
+- **NEXT**: Select a coordinated Level 8 follow-up: explicit human-review action workflow after mutation semantics are planned, retry/cancel API surfacing only after mutation routes are accepted, durable `ingest_run_id` evidence-row linkage coordination, or another selected fixture category.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
 - UI and production workflow expansion before D-001 passes

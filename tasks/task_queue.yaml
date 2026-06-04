@@ -607,3 +607,34 @@ tasks:
       - Non-succeeded/non-cancelled connector review queue jobs can be cancelled with a reason
       - Default single-attempt connector review jobs fail closed when requeue is requested
       - No API mutation route, automatic retry policy, scheduler, schema edit, live IO, report, claim, or DB-backed evidence linkage is introduced
+
+  - id: CON-019
+    title: Level 8 connector source-failure evidence ID adoption
+    status: done
+    depends_on: [CON-002, TC-180]
+    lane: connector-integration
+    notes: Adopted Lane C public source-failure ID preservation from the connector side. Connector evidence ingestion now passes deterministic source-failure EvidenceContract.evidence_id values into create_source_failure, repeated source-failure fixture runs prefer stored fingerprint authority before deterministic-ID fallback, and DB-backed public wiring proves the ID persists. No Lane C implementation/schema edits, migration, live IO, queue API mutation, claims, reports, or durable ingest_run_id evidence-row linkage was added.
+    spec: plans/connector-2026-06-04-fixture-flood.md#con-019-connector-source-failure-evidence-id-adoption
+    files:
+      - backend/app/connectors/evidence_ingestion.py
+      - backend/tests/connectors/test_evidence_ingestion_adapter.py
+      - backend/tests/connectors/test_fixture_workflow.py
+      - backend/tests/connectors/test_public_wiring.py
+      - backend/tests/connectors/test_review_packet.py
+      - backend/tests/connectors/test_review_handoff.py
+      - backend/tests/connectors/test_review_queue.py
+      - backend/tests/connectors/test_review_status.py
+      - backend/tests/api/test_connector_review_status.py
+      - backend/tests/api/test_connector_review_queue_db.py
+      - docs/adr/lane-d-0008-connector-source-failure-ids.md
+      - plans/connector-*.md
+      - state/connector-state.md
+      - state/lane-d-state.md
+    validation:
+      - $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+    acceptance:
+      - Connector source-failure evidence passes its deterministic evidence_id into Lane C public create_source_failure
+      - Repeated source-failure fixture ingestion returns stored fingerprint authority when already persisted
+      - DB-backed public wiring persists and returns the supplied source-failure evidence ID
+      - Connector adoption does not edit Lane C implementation or shared schemas
+      - No migration, live IO, queue API mutation, report, claim, or durable ingest_run_id evidence linkage is introduced

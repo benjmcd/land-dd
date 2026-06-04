@@ -15,7 +15,7 @@ Append concise entries. Do not rely on chat history.
 - Extended `EvidenceService.create_source_failure(...)` with optional `evidence_id` support so Lane C's public service can preserve caller-supplied source-failure evidence identity.
 - Added in-memory evidence-service tests proving supplied source-failure IDs are preserved and duplicate supplied IDs are rejected without overwrite.
 - Updated the DB-gated SQLAlchemy evidence-service persistence test to prove a supplied source-failure ID round-trips through `evidence.observations`.
-- Preserved the boundary: no connector implementation, connector tests, connector fixtures, API queue/status code, migrations, shared schemas, live I/O, claims, or reports were changed. Connector adapter usage remains a connector-zone follow-up.
+- Preserved the boundary: no connector implementation, connector tests, connector fixtures, API queue/status code, migrations, shared schemas, live I/O, claims, or reports were changed in TC-180. CON-019 later completes connector-zone adapter adoption in the Session 2 integration branch.
 - Rebased onto root `main` at `6777134` after CON-016 landed, preserving connector queue worker state, task, validation, and worklog records.
 - Verification passed: focused evidence-service tests; DB-gated source-failure persistence assertion; targeted ruff/mypy; Lane C evidence/claims tests with DB smoke; Lane C ruff/mypy; import-isolation scan; `git diff --check`; full DB-enabled PowerShell verification with 326 backend tests, lint clean, mypy clean over 118 source files, migrations/seeds apply, and DB smoke passes.
 
@@ -423,6 +423,14 @@ Append concise entries. Do not rely on chat history.
 - Identified that `schemas/evidence_schema.json` still reflects older geometry/timestamp fields, `schemas/claim_schema.json` requires fields not in the current claim contract and omits ruleset metadata, and no active report-run schema exists yet.
 - Preserved shared-schema ownership boundaries: Lane A for source schema, Lane C for evidence/claim schemas, Lane D for report schema proposal, and coordinator review for cross-lane composition.
 - Set the next task to Level 8 ownership and fixture-only connector acceptance planning before connector runtime code.
+
+## 2026-06-04 (Session 2 CON-019 connector source-failure IDs)
+
+- Adopted Lane C TC-180 source-failure ID preservation from the connector side by passing deterministic source-failure `EvidenceContract.evidence_id` values into the public `create_source_failure(...)` method.
+- Adjusted connector source-failure idempotency to check existing stored source-failure fingerprints before deterministic-ID duplicate fallback, preserving stored authority for repeated fixture runs.
+- Updated connector/API fake evidence ports and DB-backed public wiring assertions so supplied source-failure IDs are preserved in tests.
+- Added `docs/adr/lane-d-0008-connector-source-failure-ids.md`.
+- Preserved boundaries: no Lane C implementation/schema edits, no database migration, no live I/O, no queue API mutation, no claims/reports shortcut, and no durable `ingest_run_id` evidence-row linkage.
 
 ## 2026-06-03 (Windows PowerShell verification wrapper)
 

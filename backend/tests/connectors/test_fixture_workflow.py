@@ -55,6 +55,7 @@ class WorkflowEvidencePort:
     def create_source_failure(
         self,
         *,
+        evidence_id: UUID | None = None,
         area_id: UUID,
         source_id: UUID,
         method_code: str,
@@ -67,6 +68,7 @@ class WorkflowEvidencePort:
         self.events.append("create_source_failure")
         self.source_failure_calls.append(
             {
+                "evidence_id": evidence_id,
                 "area_id": area_id,
                 "source_id": source_id,
                 "method_code": method_code,
@@ -78,7 +80,7 @@ class WorkflowEvidencePort:
             }
         )
         created = EvidenceContract(
-            evidence_id=UUID(int=self._source_failure_counter),
+            evidence_id=evidence_id or UUID(int=self._source_failure_counter),
             area_id=area_id,
             source_id=source_id,
             method_code=method_code,
@@ -159,8 +161,8 @@ def test_fixture_workflow_routes_source_failure_after_blocked_retrieval() -> Non
     assert events == [
         "retrieval_run_exists",
         "record_retrieval_run",
-        "evidence_exists",
         "list_by_area",
+        "evidence_exists",
         "create_source_failure",
     ]
     assert result.retrieval_provenance.recorded_run == result.connector_result.retrieval_run

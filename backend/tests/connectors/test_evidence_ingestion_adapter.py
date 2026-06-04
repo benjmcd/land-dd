@@ -34,6 +34,7 @@ class RecordingEvidencePort:
     def create_source_failure(
         self,
         *,
+        evidence_id: UUID | None = None,
         area_id: UUID,
         source_id: UUID,
         method_code: str,
@@ -43,7 +44,8 @@ class RecordingEvidencePort:
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
     ) -> EvidenceContract:
-        call = {
+        call: dict[str, object] = {
+            "evidence_id": evidence_id,
             "area_id": area_id,
             "source_id": source_id,
             "method_code": method_code,
@@ -55,7 +57,7 @@ class RecordingEvidencePort:
         }
         self.source_failure_calls.append(call)
         created = EvidenceContract(
-            evidence_id=UUID(int=self._source_failure_counter),
+            evidence_id=evidence_id or UUID(int=self._source_failure_counter),
             area_id=area_id,
             source_id=source_id,
             method_code=method_code,
@@ -112,6 +114,7 @@ def test_ingestion_adapter_routes_source_failure_to_public_failure_method() -> N
     assert port.created_observations == []
     assert len(port.source_failure_calls) == 1
     call = port.source_failure_calls[0]
+    assert call["evidence_id"] == failure_input.evidence_id
     assert call["area_id"] == failure_input.area_id
     assert call["source_id"] == failure_input.source_id
     assert call["method_code"] == failure_input.method_code
@@ -120,6 +123,7 @@ def test_ingestion_adapter_routes_source_failure_to_public_failure_method() -> N
     assert call["domain"] == failure_input.domain
     assert call["observation"] == failure_input.observation
     assert call["observed_value"] == failure_input.observed_value
+    assert result.created_evidence[0].evidence_id == failure_input.evidence_id
     assert result.created_evidence[0].is_source_failure is True
     assert result.skipped_evidence == ()
 

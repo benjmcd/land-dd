@@ -72,7 +72,7 @@ Next lowest-dependency task:
 - **C-002: DONE for Lane C-owned rule/claim scope** - `RuleEngine.evaluate()` emits deterministic UNKNOWN claims for soil/septic, environmental hazards, resource context, and market context when provided stored source-failure evidence.
 - **TC-170: DONE for canonical Lane C schema/contract scope** - `schemas/evidence_schema.json` and `schemas/claim_schema.json` mirror serialized `EvidenceContract` and `ClaimContract` fields and enums; `docs/adr/lane-c-schemas.md` records the shared-schema decision.
 - **TC-180: DONE for Lane C public source-failure identity preservation** - `EvidenceService.create_source_failure(...)` accepts an optional `evidence_id`, preserves it through in-memory and DB-backed storage, and rejects duplicates without overwrite.
-- **Next repo-wide dependency**: connector adapter adoption of supplied source-failure evidence IDs belongs to the connector integration zone, not Lane C.
+- **Next repo-wide dependency**: durable `ingest_run_id` evidence-row linkage remains a future coordinated connector/Lane C/schema pass after CON-019 connector-zone source-failure ID adoption.
 Do not work on yet:
 - D-001 cross-lane wiring (Lane D owns `api/dependencies.py`, `main.py`, and `db/session.py`)
 - Live connectors, jurisdiction-specific rules, or UI/LLM summarization
@@ -89,7 +89,7 @@ Do not work on yet:
 | Evidence geometry/spatial precision | Closed for Level 5 | `EvidenceContract` exposes optional GeoJSON/SRID/spatial-precision fields; `SqlAlchemyEvidenceRepository` maps geometry to `evidence.observations.geometry` and precision to metadata |
 | Minimum rule categories | Closed for Lane C | Soil/septic, environmental hazards, resource context, and market context emit evidence-backed not-evaluated UNKNOWN claims when source-failure evidence is supplied; report-run source-failure injection remains Lane D integration |
 | Planning-pack evidence/claim schema copies | Closed | `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` mirror the canonical root Lane C schemas; `backend/tests/test_planning_pack_schema_copies.py` guards against silent drift |
-| Connector source-failure evidence ID preservation | Lane C public service side closed | Connector adapter usage remains a connector-zone follow-up |
+| Connector source-failure evidence ID preservation | Lane C public service side closed; CON-019 connector adoption complete in Session 2 integration branch | Durable `ingest_run_id` evidence-row linkage remains a future coordinated connector/Lane C/schema pass |
 
 ## Active plan
 

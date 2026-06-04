@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 CON-019 connector source-failure evidence ID adoption
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py::test_db_backed_public_lane_service_fixture_source_failure_is_idempotent
+ruff check app/connectors/evidence_ingestion.py tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py tests/connectors/test_review_packet.py tests/connectors/test_review_handoff.py tests/connectors/test_review_queue.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/connectors/evidence_ingestion.py tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py tests/connectors/test_review_packet.py tests/connectors/test_review_handoff.py tests/connectors/test_review_queue.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+```
+
+**Results:**
+
+- Focused connector adoption tests with DB smoke skipped by default: 15 passed, 2 skipped.
+- DB-backed public wiring source-failure ID test: 1 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 10 source/test files.
+- Broader connector/API tests with DB smoke skipped by default: 64 passed, 8 skipped.
+- Broader connector/API ruff: clean.
+- Broader connector/API mypy: clean over 36 source/test files.
+
+**Residual risk:**
+
+- Full DB-enabled workspace verification remains to be rerun after CON-019 docs/state updates and after merging current root `ca10f85` Lane A source schema-contract records into this integration branch.
+- CON-019 preserves deterministic source-failure evidence IDs through connector ingestion/public Lane C service wiring only. Durable `ingest_run_id` evidence-row linkage remains a future coordinated Lane C/schema pass.
+
 ## 2026-06-04 Combined TC-180 plus CON-017/CON-018 integration rehearsal
 
 **Commands run:**
@@ -69,7 +99,7 @@ py -3.12 -m pytest --collect-only -q
 
 **Residual risk:**
 
-- TC-180 closes the Lane C public service side of source-failure evidence ID preservation only. Connector-owned adapters still need a coordinated pass before fixture source-failure inputs preserve their deterministic `EvidenceContract.evidence_id` through connector ingestion.
+- TC-180 closes the Lane C public service side of source-failure evidence ID preservation only. CON-019 later completes connector-owned adapter adoption in the Session 2 integration branch.
 
 ## 2026-06-04 CON-018 connector queue retry and cancel semantics
 

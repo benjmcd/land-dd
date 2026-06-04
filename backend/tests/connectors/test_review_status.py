@@ -53,6 +53,7 @@ class ReviewStatusEvidencePort:
     def create_source_failure(
         self,
         *,
+        evidence_id: UUID | None = None,
         area_id: UUID,
         source_id: UUID,
         method_code: str,
@@ -63,7 +64,7 @@ class ReviewStatusEvidencePort:
         observed_value: dict[str, object] | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
-            evidence_id=UUID(int=self._source_failure_counter),
+            evidence_id=evidence_id or UUID(int=self._source_failure_counter),
             area_id=area_id,
             source_id=source_id,
             method_code=method_code,

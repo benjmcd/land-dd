@@ -776,3 +776,41 @@ The next Level 8 pass should choose one of:
 - add an explicit human-review action workflow after API mutation semantics are planned;
 - expose retry/cancel state through API after deciding whether mutation routes are in scope;
 - broaden fixture data-quality coverage for another selected fixture category.
+
+## CON-019 Connector Source-Failure Evidence ID Adoption
+
+CON-019 is complete. The connector evidence-ingestion adapter now adopts Lane C TC-180's public source-failure ID preservation boundary:
+
+- `EvidenceIngestionPort.create_source_failure(...)` accepts an optional `evidence_id`;
+- connector source-failure evidence passes its deterministic `EvidenceContract.evidence_id` into the public Lane C source-failure creation method;
+- repeated source-failure fixture runs check existing stored source-failure fingerprints before deterministic-ID duplicate fallback, so idempotent repeats return stored authority;
+- connector/API test fake evidence ports preserve supplied source-failure IDs, matching the public service boundary;
+- DB-backed public wiring proves the fixture source-failure evidence ID is persisted and returned unchanged.
+
+### Boundary Preserved
+
+This is connector-side adoption of an already-landed Lane C public service capability. It does not edit Lane C evidence service or schemas, add a migration, add live connector behavior, add claim/report shortcuts, mutate queue APIs, change worker semantics, or add durable `ingest_run_id` evidence-row linkage. Source retrieval runs remain connector provenance and lifecycle authority; evidence rows now preserve connector-supplied source-failure IDs but still do not carry retrieval-run lineage.
+
+### Validation
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/connectors/test_public_wiring.py::test_db_backed_public_lane_service_fixture_source_failure_is_idempotent
+ruff check app/connectors/evidence_ingestion.py tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py tests/connectors/test_review_packet.py tests/connectors/test_review_handoff.py tests/connectors/test_review_queue.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+mypy app/connectors/evidence_ingestion.py tests/connectors/test_evidence_ingestion_adapter.py tests/connectors/test_fixture_workflow.py tests/connectors/test_public_wiring.py tests/connectors/test_review_packet.py tests/connectors/test_review_handoff.py tests/connectors/test_review_queue.py tests/connectors/test_review_status.py tests/api/test_connector_review_status.py tests/api/test_connector_review_queue_db.py
+py -3.12 -m pytest -q tests/connectors tests/api -rA
+ruff check app/connectors app/api app/main.py tests/connectors tests/api
+mypy app/connectors app/api app/main.py tests/connectors tests/api
+```
+
+Result: focused connector adoption tests pass with DB smoke skipped by default (15 passed, 2 skipped); DB-backed public wiring source-failure ID test passes (1 test); targeted ruff clean; targeted mypy clean over 10 source/test files; broader connector/API tests pass with DB smoke skipped by default (64 passed, 8 skipped); broader connector/API ruff clean; broader connector/API mypy clean over 36 source/test files. Full workspace verification results are recorded in `state/VALIDATION_LOG.md`.
+
+### Next Slice
+
+The next Level 8 pass should choose one of:
+
+- add an explicit human-review action workflow after API mutation semantics are planned;
+- expose retry/cancel state or mutation routes through API only after route semantics are accepted;
+- coordinate durable `ingest_run_id` evidence-row linkage with Lane C/schema ownership;
+- broaden fixture data-quality coverage for another selected fixture category.
