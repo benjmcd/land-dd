@@ -10,6 +10,12 @@ import pytest
 from app.area_geometry.area_repo import InMemoryAreaRepository
 from app.area_geometry.service import AreaService
 from app.claims_engine.claim_repo import InMemoryClaimRepository
+from app.claims_engine.not_evaluated import (
+    NOT_EVALUATED_CAVEATS,
+    NOT_EVALUATED_CLAIM_CODES,
+    NOT_EVALUATED_DOMAINS,
+    NOT_EVALUATED_SOURCE_NAME,
+)
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.area_contracts import AreaContract
@@ -121,47 +127,51 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
 
     assert report_run.status == JobStatus.SUCCEEDED
     assert report_run.finished_at is not None
-    assert report_run.evidence == [observation, failure]
+    assert report_run.evidence[:2] == [observation, failure]
+    assert [record.domain for record in report_run.evidence[2:]] == list(NOT_EVALUATED_DOMAINS)
     assert [claim.claim_code for claim in report_run.claims] == [
         "FLOOD_001",
         "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
         "FLOOD_EVIDENCE_NEEDS_REVIEW",
+        *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS],
     ]
     assert [claim.claim_code for claim in report_run.unknowns] == [
         "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
         "FLOOD_EVIDENCE_NEEDS_REVIEW",
+        *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS],
     ]
     assert [claim.claim_code for claim in report_run.red_flags] == ["FLOOD_001"]
     assert report_run.source_manifest["ruleset_id"] == "homestead_mvp_v0_1"
     assert report_run.source_manifest["ruleset_version"] == "0.1"
-    assert report_run.source_manifest["source_ids"] == [str(source.source_id)]
-    assert report_run.source_manifest["evidence_count"] == 2
-    assert report_run.source_manifest["claim_count"] == 3
-    source_details = cast(
-        list[dict[str, Any]], report_run.source_manifest["source_details"]
-    )
-    assert source_details[0]["freshness_class"] == "unknown"
-    assert source_details[0]["review_status"] == "approved"
-    assert report_run.caveats == [
+    assert str(source.source_id) in cast(list[str], report_run.source_manifest["source_ids"])
+    assert report_run.source_manifest["evidence_count"] == 6
+    assert report_run.source_manifest["claim_count"] == 7
+    assert report_run.source_manifest["source_count"] == 2
+    assert NOT_EVALUATED_SOURCE_NAME in cast(list[str], report_run.source_manifest["source_names"])
+    source_details = cast(list[dict[str, Any]], report_run.source_manifest["source_details"])
+    assert len(source_details) == 2
+    details_by_name = {str(detail["name"]): detail for detail in source_details}
+    assert details_by_name["Fixture FEMA Flood Map"]["freshness_class"] == "unknown"
+    assert details_by_name["Fixture FEMA Flood Map"]["review_status"] == "approved"
+    assert set(report_run.caveats) == {
         "FEMA fixture endpoint returned 503.",
         "Screening fixture only; confirm locally.",
-    ]
-    assert any(
-        "local floodplain administrator" in task
-        for task in report_run.verification_tasks
-    )
+        *[NOT_EVALUATED_CAVEATS[domain] for domain in NOT_EVALUATED_DOMAINS],
+    }
+    assert any("local floodplain administrator" in task for task in report_run.verification_tasks)
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     assert report_run.artifact_metadata["report_schema"] == "report_run_contract_v1"
     assert report_run.artifact_metadata["persistence"] == "memory"
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
-    assert cost_metrics["evidence_count"] == 2
+    assert cost_metrics["evidence_count"] == 6
+    assert cost_metrics["claim_count"] == 7
+    assert cost_metrics["unknown_count"] == 6
+    assert cost_metrics["red_flag_count"] == 1
     assert report_service.get_report_run(report_run.report_run_id) == report_run
 
 
 def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:
-    source_service, area_service, evidence_service, claim_service, report_service = (
-        make_service()
-    )
+    source_service, area_service, evidence_service, claim_service, report_service = make_service()
     source = register_source(source_service)
     area = register_area(area_service)
     evidence_service.create_observation(flood_evidence(area, source))
@@ -180,10 +190,17 @@ def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:
         claim.claim_id for claim in first_run.claims
     ]
     assert claim_service.list_by_area(area.area_id) == first_run.claims
+    assert len(evidence_service.list_by_area(area.area_id)) == 5
+    assert [record.domain for record in evidence_service.list_by_area(area.area_id)[1:]] == list(
+        NOT_EVALUATED_DOMAINS
+    )
+    assert [source.name for source in source_service.list_all()].count(
+        NOT_EVALUATED_SOURCE_NAME
+    ) == 1
 
 
-def test_create_report_run_without_evidence_carries_explicit_caveat() -> None:
-    _, area_service, _, _, report_service = make_service()
+def test_create_report_run_without_source_evidence_surfaces_not_evaluated_unknowns() -> None:
+    source_service, area_service, evidence_service, _, report_service = make_service()
     area = register_area(area_service)
 
     report_run = report_service.create_report_run(
@@ -192,15 +209,27 @@ def test_create_report_run_without_evidence_carries_explicit_caveat() -> None:
     )
 
     assert report_run.status == JobStatus.SUCCEEDED
-    assert report_run.evidence == []
-    assert report_run.claims == []
-    assert report_run.unknowns == []
-    assert report_run.caveats == [
-        "No evidence records were available for this area; report contains no "
-        "due-diligence findings."
+    assert [record.domain for record in report_run.evidence] == list(NOT_EVALUATED_DOMAINS)
+    assert all(record.is_source_failure for record in report_run.evidence)
+    assert evidence_service.list_by_area(area.area_id) == report_run.evidence
+    assert [claim.claim_code for claim in report_run.claims] == [
+        NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
     ]
-    assert report_run.source_manifest["evidence_count"] == 0
-    assert report_run.source_manifest["claim_count"] == 0
+    assert report_run.claims == report_run.unknowns
+    assert report_run.red_flags == []
+    assert set(report_run.caveats) == {
+        NOT_EVALUATED_CAVEATS[domain] for domain in NOT_EVALUATED_DOMAINS
+    }
+    assert report_run.source_manifest["evidence_count"] == 4
+    assert report_run.source_manifest["claim_count"] == 4
+    assert report_run.source_manifest["source_count"] == 1
+    assert report_run.source_manifest["source_names"] == [NOT_EVALUATED_SOURCE_NAME]
+    assert [source.name for source in source_service.list_all()] == [NOT_EVALUATED_SOURCE_NAME]
+    cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
+    assert cost_metrics["evidence_count"] == 4
+    assert cost_metrics["claim_count"] == 4
+    assert cost_metrics["unknown_count"] == 4
+    assert cost_metrics["red_flag_count"] == 0
 
 
 def test_create_report_run_rejects_unregistered_area() -> None:

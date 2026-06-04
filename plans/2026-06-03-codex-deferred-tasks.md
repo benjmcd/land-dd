@@ -201,6 +201,10 @@ rule engine receives unsupported-category SOURCE_FAILURE evidence. Lane D owns t
 report/API follow-up that creates or injects those SOURCE_FAILURE records when a report
 run lacks category evidence.
 
+Status: complete as D-000 on 2026-06-04. `ReportRunService` now creates stored
+unsupported-category SOURCE_FAILURE evidence before rule evaluation and report/API
+responses surface those claims in `unknowns`.
+
 For the Lane D report/API follow-up, update `backend/app/reports/service.py`:
 
 1. Before calling `_rule_engine.evaluate(evidence)`, look up or create the sentinel source:
@@ -281,15 +285,14 @@ Add unit tests in `backend/tests/claims_engine/test_not_evaluated_claims.py`:
 - `RUN_DB_SMOKE=1 py -3.12 -m pytest` passes (≥235+N tests where N = new tests added)
 - `ruff check app/claims_engine/` passes
 - `mypy app/claims_engine/` passes
-- Complete Level 6/report-workflow PASS remains blocked until the Lane D report/API follow-up
-  surfaces the unsupported categories in `ReportRunContract.unknowns`.
+- Lane D D-000 now surfaces the unsupported categories in `ReportRunContract.unknowns`.
 
 ---
 
 ## Task D-001: Level 7 DB wiring — full report-run pipeline through DB (Phase 7)
 
 **Priority:** MEDIUM
-**Prerequisite:** Tasks C-001 + C-002 complete (claims ORM models must exist; Level 6 must pass)
+**Prerequisite:** Tasks C-001 + C-002 + D-000 complete (claims ORM models, Level 6 rule behavior, and unsupported-category report surfacing must exist)
 
 **Context:**
 The API `POST /report-runs` endpoint currently uses in-memory repositories injected from

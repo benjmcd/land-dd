@@ -11,12 +11,13 @@ Verification command(s):
 - cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest --collect-only -q
 - docker info --format '{{.ServerVersion}}'
 Verification result:
-- 18 Lane D report/API tests pass
+- 18 Lane D report/API tests pass with DB smoke enabled
 - Full verification passes locally with DB smoke enabled after C-002 merge: 250 tests; lint clean; mypy clean (89 source files)
 - ReportRunService composes source, area, evidence, claim, and rule services behind the report-run API scaffold
+- ReportRunService now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation, and report/API output surfaces those claims in `unknowns`
 - SqlAlchemyReportRunRepository persists report runs to `reports.report_runs`, writes a machine-readable artifact under `OBJECT_STORE_ROOT`, and round-trips through a fresh DB session
 Failed or blocked gates:
-- L7 is partial until Lane B area persistence, Lane C durable evidence/claim/rule-execution persistence, and DB-backed API workflow are wired underneath report runs
+- L7 is partial until DB-backed API workflow is wired underneath report runs
 - Default API dependencies remain in-memory; DB report persistence is exercised through repository injection and DB-backed tests
 Completion evidence:
 - plans/lane-d-2026-06-03-reports-api-infra.md
@@ -40,12 +41,12 @@ Completion evidence:
 - backend/tests/api/test_api_scaffold.py (7 passing API contract tests, including source-failure unknown surfacing through report-run API)
 - backend/tests/api/test_db_session.py (DB session dependency delegation test)
 Next lowest-dependency task:
-- **D-000 (NEXT)**: Report surfacing for unsupported categories. C-002 is now merged on `main` with unsupported-category SOURCE_FAILURE evidence producing UNKNOWN claims and the four C-002 ruleset entries using `severity_on_fail: unknown`; Lane D now owns the report/API follow-up that creates or injects those source failures and surfaces soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
-- **D-001 (PARTIAL PRE-WORK DONE; FULL TASK BLOCKED on D-000)**: `backend/app/db/session.py` now delegates `get_db_session()` to `get_session()` from `app.db.engine`; do not update `api/dependencies.py`, update `main.py`, or add/run the DB-backed report API integration test until D-000 is complete.
+- **D-001 (NEXT; DB session pre-work done)**: `backend/app/db/session.py` already delegates `get_db_session()` to `get_session()` from `app.db.engine`; next work is DB-backed API service wiring in `api/dependencies.py`/`main.py` plus a DB-backed report-run API integration test.
+- **D-000 (DONE)**: Report surfacing for unsupported categories is complete. C-002 is merged on `main`; report runs now create or inject stored unsupported-category SOURCE_FAILURE evidence and surface soil/septic, environmental hazards, market context, and resource context in `ReportRunContract.unknowns`.
 Do not work on yet:
 - Live connectors (Level 8 - out of scope for this lane plan)
+- UI and production workflow expansion before D-001 passes
 - Any Lane A/B/C module files (read only)
-- D-001 DB service wiring beyond `backend/app/db/session.py` until D-000 is complete
 ```
 
 ## Known blockers
@@ -56,7 +57,7 @@ Do not work on yet:
 | Lane A SourceExistsProtocol | Available for in-memory wiring | TD-030/TD-050 can adapt SourceService production-use checks |
 | Lane B TB-010 AreaService | Available for in-memory wiring | TD-030 can use AreaService after Lane C ClaimService exists |
 | Lane C TC-030 ClaimService | Available | TD-030 integration can use ClaimService and RuleEngine in-memory slices |
-| Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 can now start from UNKNOWN claim behavior and `severity_on_fail: unknown` ruleset metadata for all four unsupported categories |
+| Lane C C-002 not-evaluated severity metadata | Resolved in merged C-002 handoff | D-000 is complete; D-001 can now use report output that includes all four unsupported-category unknowns |
 | docker-compose.yml changes | Lane A owns | Request via Lane A blocker process |
 
 ## Active plan

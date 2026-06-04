@@ -8,6 +8,11 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
+from app.claims_engine.not_evaluated import (
+    NOT_EVALUATED_CLAIM_CODES,
+    NOT_EVALUATED_DOMAINS,
+    NOT_EVALUATED_SOURCE_NAME,
+)
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
@@ -17,6 +22,10 @@ def load_geometry(name: str) -> dict[str, object]:
     data = json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
     assert isinstance(data, dict)
     return cast(dict[str, object], data)
+
+
+def not_evaluated_claim_codes() -> list[str]:
+    return [NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS]
 
 
 def test_api_scaffold_exposes_health_endpoint() -> None:
@@ -98,10 +107,18 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     report_run = create_response.json()
     assert report_run["area_id"] == area_id
     assert report_run["status"] == "succeeded"
-    assert report_run["claims"] == []
+    assert [record["domain"] for record in report_run["evidence"]] == list(NOT_EVALUATED_DOMAINS)
+    assert [claim["claim_code"] for claim in report_run["claims"]] == (not_evaluated_claim_codes())
+    assert [claim["claim_code"] for claim in report_run["unknowns"]] == (
+        not_evaluated_claim_codes()
+    )
+    assert report_run["source_manifest"]["source_names"] == [NOT_EVALUATED_SOURCE_NAME]
+    assert report_run["source_manifest"]["evidence_count"] == 4
+    assert report_run["source_manifest"]["claim_count"] == 4
     assert report_run["artifact_metadata"]["artifact_kind"] == "report_run"
     assert report_run["artifact_metadata"]["report_schema"] == "report_run_contract_v1"
     assert report_run["artifact_metadata"]["persistence"] == "memory"
+    assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 4
 
     get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
     assert get_response.status_code == 200
@@ -153,18 +170,22 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
     assert create_response.status_code == 201
     report_run = create_response.json()
     assert [claim["claim_code"] for claim in report_run["unknowns"]] == [
-        "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN"
+        "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
+        *not_evaluated_claim_codes(),
     ]
-    assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 1
+    assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 5
 
 
 def test_api_scaffold_returns_422_for_bad_input() -> None:
     client = TestClient(create_app())
 
     assert client.post("/sources", json={"name": "Missing domain"}).status_code == 422
-    assert client.post(
-        "/areas",
-        json={"geom_geojson": load_geometry("wrong_type.geojson")},
-    ).status_code == 422
+    assert (
+        client.post(
+            "/areas",
+            json={"geom_geojson": load_geometry("wrong_type.geojson")},
+        ).status_code
+        == 422
+    )
     assert client.post("/report-runs", json={"intent_code": "missing area"}).status_code == 422
     assert client.get("/evidence").status_code == 422

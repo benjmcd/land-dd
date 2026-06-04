@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-04 (Session 2 D-000 report surfacing)
+
+- Completed Lane D D-000 by updating `ReportRunService` to create stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation.
+- Preserved Lane C ownership: no Lane C implementation or state files were modified. The report service uses Lane C's not-evaluated helper, then normalizes the helper payload to the evidence ledger's controlled source-failure payload shape before storage.
+- Updated report service, API scaffold, and DB-backed report repository tests so unsupported soil/septic, environmental hazards, resource context, and market context appear in report/API `unknowns`, source manifests, caveats, and cost metrics.
+- Verified Lane D targeted checks: report/API tests pass with DB smoke enabled; targeted ruff and mypy pass.
+- Verified full gate: `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` passes with 250 backend tests, lint clean, mypy clean (89 source files), migrations/seeds, and DB smoke.
+- Updated Lane D plan/state, project state, deferred task plan, and task queue. D-000 is done; D-001 DB-backed API workflow wiring is now the next Lane D task.
+
 ## 2026-06-04 (Session 2 merged C-002 handoff)
 
 - Merged Session 1's clean `codex/session1-lane-c` C-002 branch into root `main` after confirming the unsupported-category ruleset metadata now uses `severity_on_fail: unknown`.

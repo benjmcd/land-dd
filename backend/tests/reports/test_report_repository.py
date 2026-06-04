@@ -13,6 +13,11 @@ from sqlalchemy.orm import Session
 from app.area_geometry.area_repo import InMemoryAreaRepository
 from app.area_geometry.service import AreaService
 from app.claims_engine.claim_repo import InMemoryClaimRepository
+from app.claims_engine.not_evaluated import (
+    NOT_EVALUATED_CLAIM_CODES,
+    NOT_EVALUATED_DOMAINS,
+    NOT_EVALUATED_SOURCE_NAME,
+)
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.db.engine import build_engine
@@ -162,15 +167,24 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert report_run.artifact_metadata["persistence"] == "postgres+object_store"
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
-    assert cost_metrics["evidence_count"] == 2
+    assert cost_metrics["evidence_count"] == 6
+    assert cost_metrics["claim_count"] == 7
+    assert cost_metrics["unknown_count"] == 6
+    assert report_run.source_manifest["source_names"] == [
+        "Fixture FEMA Flood Map",
+        NOT_EVALUATED_SOURCE_NAME,
+    ]
+    assert [record.domain for record in report_run.evidence[2:]] == list(NOT_EVALUATED_DOMAINS)
+    assert [claim.claim_code for claim in report_run.unknowns][-4:] == [
+        NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
+    ]
 
     # Verify intent_id is populated in the DB row (not NULL), confirming the
     # intent_code → intent_id lookup in SqlAlchemyReportRunRepository works.
     with Session(engine) as session:
         row = session.execute(
             text(
-                "SELECT intent_id FROM reports.report_runs "
-                "WHERE report_run_id = :report_run_id"
+                "SELECT intent_id FROM reports.report_runs " "WHERE report_run_id = :report_run_id"
             ),
             {"report_run_id": report_run.report_run_id},
         ).one_or_none()

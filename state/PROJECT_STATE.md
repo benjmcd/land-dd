@@ -25,12 +25,12 @@ Verification result:
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, and stores immutable prior-geometry rows in `core.area_versions` on geometry replacement
 - Lane C evidence/claim/rule-engine slices pass targeted runtime, type, lint, and import-isolation checks; the evidence ledger now has a SQLAlchemy/Postgres repository for `evidence.observations`, durable evidence audit events in `audit.events`, first-class optional evidence geometry mapped to `evidence.observations.geometry`, spatial precision preserved in evidence metadata, DB-backed claim/evidence/verification-task persistence, and evidence-backed not-evaluated UNKNOWN claims for unsupported soil/septic, environmental hazard, resource-context, and market-context categories
-- Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`
+- Lane D report runs now persist through `reports.report_runs` and a machine-readable JSON artifact under `OBJECT_STORE_ROOT`; report/API output now surfaces stored not-evaluated unsupported-category source failures as UNKNOWN claims
 Failed or blocked gates:
 - No Level 5 blockers remain in the fixture-backed DB repository path verified on 2026-06-04.
 - L5-001 through L5-010: PASS for the DB-backed evidence repository/service scope (source observations, source failures, spatial intersections, derived metrics, document extracts, human verification notes, geometry/SRID/spatial precision, invalid payload rejection, supersession, deterministic retrieval, rollback behavior, durable audit events, and the evidence-ledger persistence ADR are tested or documented)
 - L6-001 through L6-010: PASS for Lane C claim/rule scope (claims require evidence links, unknowns require source-failure evidence, severity/confidence stay separate, verification tasks persist, rules are versioned/deterministic, caveats propagate, contradiction/stale/incomplete/source-failure/not-evaluated cases are tested, and rule logic lives in code/config rather than an LLM/UI prompt)
-- Level 7 remains PARTIAL until Lane D wires DB-backed API/report-run services and report-run auto-creation of unsupported-domain source-failure evidence.
+- Level 7 remains PARTIAL until Lane D wires DB-backed API/report-run services.
 Completion evidence:
 - state/VALIDATION_LOG.md
 - backend/tests/source_registry/ (41 tests)
@@ -63,7 +63,7 @@ Completion evidence:
 - schemas/source_schema.json
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- Lane D D-000: surface Lane C's not-evaluated unsupported categories in report/API unknowns using stored source-failure evidence; then D-001 can complete DB-backed report/API wiring.
+- Lane D D-001: complete DB-backed report/API wiring now that C-002 and D-000 are complete.
 Do not work on yet:
 - Live connectors
 - UI or LLM summaries
@@ -118,7 +118,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-250 tests pass with DB smoke enabled; lint clean; mypy clean (89 source files). C-002 is merged onto root `main`; D-000 is the next Lane D task.
+250 tests pass with DB smoke enabled; lint clean; mypy clean (89 source files). C-002 and D-000 are complete on root `main`; D-001 is the next Lane D task.
 
 ## Local repo bootstrap state
 

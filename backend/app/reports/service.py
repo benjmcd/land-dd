@@ -5,12 +5,19 @@ from typing import cast
 from uuid import UUID
 
 from app.area_geometry.service import AreaService
+from app.claims_engine.not_evaluated import (
+    NOT_EVALUATED_DOMAINS,
+    NOT_EVALUATED_SOURCE_NAME,
+    NOT_EVALUATED_SOURCE_ORG,
+    make_not_evaluated_source_failure,
+)
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
+from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.service import EvidenceService
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
@@ -59,10 +66,12 @@ class ReportRunService:
         if not self._area_service.area_is_registered(area_id):
             raise ValueError(f"Area '{area_id}' is not registered")
 
-        evidence = self._evidence_service.list_by_area(area_id)
+        evidence = self._with_not_evaluated_source_failures(
+            area_id,
+            self._evidence_service.list_by_area(area_id),
+        )
         stored_claims = [
-            self._store_claim_if_needed(claim)
-            for claim in self._rule_engine.evaluate(evidence)
+            self._store_claim_if_needed(claim) for claim in self._rule_engine.evaluate(evidence)
         ]
         report_run = ReportRunContract(
             area_id=area_id,
@@ -88,6 +97,70 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def _with_not_evaluated_source_failures(
+        self,
+        area_id: UUID,
+        evidence: list[EvidenceContract],
+    ) -> list[EvidenceContract]:
+        missing_domains = [
+            domain
+            for domain in NOT_EVALUATED_DOMAINS
+            if not any(record.domain == domain for record in evidence)
+        ]
+        if not missing_domains:
+            return evidence
+
+        source = self._ensure_not_evaluated_source()
+        enriched_evidence = list(evidence)
+        for domain in missing_domains:
+            failure = make_not_evaluated_source_failure(
+                area_id=area_id,
+                source_id=source.source_id,
+                domain=domain,
+            )
+            enriched_evidence.append(
+                self._evidence_service.create_source_failure(
+                    area_id=failure.area_id,
+                    source_id=failure.source_id,
+                    method_code=failure.method_code,
+                    caveat=failure.caveat or "",
+                    evidence_code=failure.evidence_code,
+                    domain=failure.domain,
+                    observation=failure.observation,
+                    observed_value=_not_evaluated_failure_payload(failure),
+                )
+            )
+        return enriched_evidence
+
+    def _ensure_not_evaluated_source(self) -> SourceContract:
+        for source in self._source_service.list_all():
+            if (
+                source.name == NOT_EVALUATED_SOURCE_NAME
+                and source.organization == NOT_EVALUATED_SOURCE_ORG
+            ):
+                return source
+        return self._source_service.register(
+            SourceContract(
+                name=NOT_EVALUATED_SOURCE_NAME,
+                organization=NOT_EVALUATED_SOURCE_ORG,
+                source_type="internal_sentinel",
+                domain="unsupported_screening_categories",
+                license_status="approved",
+                commercial_use_status="approved",
+                redistribution_status="approved",
+                cache_allowed="approved",
+                export_allowed="approved",
+                raw_data_allowed="approved",
+                ai_use_allowed="approved",
+                review_status="approved",
+                notes=(
+                    "Internal sentinel source for MVP screening categories that "
+                    "are intentionally not evaluated."
+                ),
+                metadata={"source_role": "unsupported_category_sentinel"},
+            )
+        )
+
     def _store_claim_if_needed(self, claim: ClaimContract) -> ClaimContract:
         existing = self._claim_service.get(claim.claim_id)
         if existing is not None:
@@ -100,10 +173,10 @@ class ReportRunService:
         claims: list[ClaimContract],
     ) -> dict[str, object]:
         source_ids = sorted({str(record.source_id) for record in evidence})
-        registered_sources = [
-            self._source_service.get(record.source_id)
-            for record in evidence
-        ]
+        registered_sources = [self._source_service.get(record.source_id) for record in evidence]
+        registered_sources_by_id = {
+            source.source_id: source for source in registered_sources if source is not None
+        }
         source_details = sorted(
             [
                 {
@@ -117,8 +190,7 @@ class ReportRunService:
                     "review_owner": source.review_owner,
                     "last_checked_at": source.last_checked_at,
                 }
-                for source in registered_sources
-                if source is not None
+                for source in registered_sources_by_id.values()
             ],
             key=lambda detail: cast(str, detail["source_id"]),
         )
@@ -129,13 +201,7 @@ class ReportRunService:
             "claim_count": len(claims),
             "ruleset_id": self._rule_engine.ruleset_id,
             "ruleset_version": self._rule_engine.ruleset_version,
-            "source_names": sorted(
-                {
-                    source.name
-                    for source in registered_sources
-                    if source is not None
-                }
-            ),
+            "source_names": sorted({source.name for source in registered_sources_by_id.values()}),
             "source_details": source_details,
         }
 
@@ -146,9 +212,7 @@ def _unknown_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
 
 def _red_flag_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
     return [
-        claim
-        for claim in claims
-        if claim.severity in {SeverityBand.CRITICAL, SeverityBand.HIGH}
+        claim for claim in claims if claim.severity in {SeverityBand.CRITICAL, SeverityBand.HIGH}
     ]
 
 
@@ -192,6 +256,13 @@ def _cost_metrics(
         "red_flag_count": len(_red_flag_claims(claims)),
         "verification_task_count": len(_verification_tasks(claims)),
     }
+
+
+def _not_evaluated_failure_payload(evidence: EvidenceContract) -> dict[str, object]:
+    reason = evidence.observed_value.get("failure_reason") or evidence.observed_value.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        reason = "unsupported_screening_domain"
+    return {"failure_reason": reason.strip()}
 
 
 def _require_non_empty(value: str, field_name: str) -> None:

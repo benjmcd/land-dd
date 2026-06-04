@@ -2,6 +2,45 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-04 Session 2 D-000 report surfacing
+
+**Commands run:**
+
+```powershell
+Set-Location backend
+py -3.12 -m pytest -q tests/reports/test_report_service.py tests/api/test_api_scaffold.py
+ruff check app/reports/service.py tests/reports/test_report_service.py tests/api/test_api_scaffold.py
+mypy app/reports/service.py tests/reports/test_report_service.py tests/api/test_api_scaffold.py
+$env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports tests/api
+ruff check app/reports app/api app/db tests/reports tests/api
+mypy app/reports app/api app/db tests/reports tests/api
+Set-Location ..
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+Set-Location backend
+py -3.12 -m pytest --collect-only -q
+Set-Location ..
+git diff --check
+```
+
+**Results:**
+
+- `ReportRunService` now creates stored unsupported-category SOURCE_FAILURE evidence for missing not-evaluated domains before rule evaluation.
+- Report/API output includes all four unsupported categories in `unknowns`: soil/septic, environmental hazards, resource context, and market context.
+- Repeat report runs reuse the existing unsupported-category source failures and sentinel source instead of duplicating them.
+- The DB-backed report repository round-trip now verifies the persisted report artifact includes the not-evaluated unknowns and sentinel source manifest entry.
+- Targeted report/API tests pass: 11 tests.
+- Lane D report/API tests pass with DB smoke enabled: 18 tests.
+- Targeted Lane D ruff passes.
+- Targeted Lane D mypy passes: no issues in 25 source/test files.
+- Full PowerShell verification passes with DB smoke enabled: 250 backend tests, lint clean, mypy clean (89 source files), migrations/seeds apply, and DB smoke passes.
+- Full backend collection confirms 250 tests.
+- `git diff --check` reports no whitespace errors.
+
+**Residual risk:**
+
+- Level 7 remains partial until D-001 wires the API workflow to DB-backed repositories and proves `POST /report-runs` can create/retrieve a DB-backed report run end to end.
+- Default API dependencies still use in-memory repositories outside the DB-gated repository tests.
+
 ## 2026-06-04 Session 2 C-002 merge and root verification
 
 **Commands run:**
