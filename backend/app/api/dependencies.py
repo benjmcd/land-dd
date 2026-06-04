@@ -13,6 +13,11 @@ from app.area_geometry.service import AreaService
 from app.claims_engine.claim_repo import InMemoryClaimRepository, SqlAlchemyClaimRepository
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
+from app.connectors import (
+    ConnectorReviewQueueRepository,
+    InMemoryConnectorReviewQueueRepository,
+    SqlAlchemyConnectorReviewQueueRepository,
+)
 from app.db.session import get_db_session
 from app.evidence_ledger.evidence_repo import (
     InMemoryEvidenceRepository,
@@ -32,6 +37,7 @@ class ApiServices:
     area_service: AreaService
     evidence_service: EvidenceService
     report_service: ReportRunService
+    connector_review_queue_repo: ConnectorReviewQueueRepository
 
 
 def create_api_services() -> ApiServices:
@@ -56,6 +62,7 @@ def create_api_services() -> ApiServices:
         area_service=area_service,
         evidence_service=evidence_service,
         report_service=report_service,
+        connector_review_queue_repo=InMemoryConnectorReviewQueueRepository(),
     )
 
 
@@ -86,6 +93,7 @@ def create_db_api_services(
         area_service=area_service,
         evidence_service=evidence_service,
         report_service=report_service,
+        connector_review_queue_repo=SqlAlchemyConnectorReviewQueueRepository(session),
     )
 
 

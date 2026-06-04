@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from app.api.areas import router as areas_router
+from app.api.connectors import router as connectors_router
 from app.api.dependencies import create_api_services, get_db_services, get_services
 from app.api.evidence import router as evidence_router
 from app.api.health import router as health_router
@@ -30,6 +31,7 @@ def create_app(
     app.include_router(health_router)
     app.include_router(sources_router)
     app.include_router(areas_router)
+    app.include_router(connectors_router)
     app.include_router(evidence_router)
     app.include_router(reports_router)
     return app
