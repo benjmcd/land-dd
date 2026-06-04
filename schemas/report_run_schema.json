@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/report-run.schema.json",
+  "title": "ReportRunContract",
+  "type": "object",
+  "required": [
+    "report_run_id",
+    "area_id",
+    "intent_code",
+    "status",
+    "source_manifest",
+    "assumptions",
+    "caveats",
+    "evidence",
+    "claims",
+    "unknowns",
+    "red_flags",
+    "verification_tasks",
+    "artifact_metadata",
+    "started_at",
+    "finished_at",
+    "output_uri"
+  ],
+  "properties": {
+    "report_run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "area_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "intent_code": {
+      "type": "string",
+      "enum": [
+        "rural_land_purchase",
+        "homestead_feasibility",
+        "farmland",
+        "development",
+        "solar",
+        "data_center",
+        "conservation",
+        "mineral_resource_screen",
+        "speculative_hold"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "needs_review"
+      ]
+    },
+    "source_manifest": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "caveats": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "https://example.com/schemas/evidence.schema.json"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "https://example.com/schemas/claim.schema.json"
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "$ref": "https://example.com/schemas/claim.schema.json"
+      }
+    },
+    "red_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "https://example.com/schemas/claim.schema.json"
+      }
+    },
+    "verification_tasks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifact_metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "output_uri": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri-reference"
+    }
+  },
+  "additionalProperties": false
+}
