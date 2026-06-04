@@ -26,8 +26,7 @@ Verification command(s):
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - .\scripts\verify.ps1
 Verification result:
-- 291 tests pass in the DB-enabled Windows PowerShell verification path after CON-009; lint clean; mypy clean (104 source files); migrations/seeds apply; DB smoke passes.
-- Planning-pack evidence/claim schema-copy alignment is rebased onto CON-009 at `56d53c8`; post-rebase verification is recorded in `state/VALIDATION_LOG.md`.
+- 292 tests pass in the DB-enabled Windows PowerShell verification path after rebasing planning-pack evidence/claim schema-copy alignment onto CON-009; lint clean; mypy clean (105 source files); migrations/seeds apply; DB smoke passes.
 - Local Postgres/PostGIS migrations and seeds apply cleanly, and DB smoke validates required schemas, tables, columns, enums, foreign keys, and seeds
 - Source versioning, retrieval lifecycle, caveats, freshness, authority, and license/review/usage-right metadata are implemented and surfaced downstream
 - Lane B area/geometry slice now includes a SQLAlchemy/PostGIS `core.areas` repository that round-trips Polygon/MultiPolygon GeoJSON as SRID 4326 MultiPolygon geometry, supports all six Level 4 domain area types with explicit metadata-preserved domain type mapping, preserves source/confidence/validated fields, reads PostGIS-derived area/centroid/bbox metrics, queries fixture spatial relations through PostGIS, stores immutable prior-geometry rows in `core.area_versions` on geometry replacement, and rejects non-finite or out-of-range EPSG:4326 lon/lat positions
@@ -148,7 +147,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-291 tests pass in the DB-enabled Windows PowerShell verification path after CON-009 DB-backed source-failure fixture workflow smoke; lint clean; mypy clean (104 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, Lane C TC-170, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, connector run/status review workflow planning, or broader fixture data-quality coverage.
+292 tests pass in the DB-enabled Windows PowerShell verification path after rebasing Lane C planning-pack schema-copy alignment onto CON-009; lint clean; mypy clean (105 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, Lane C TC-170, Lane C planning-pack schema-copy alignment, and Lane B TB-100 are complete in this worktree. The next Level 8 connector pass should be selected from durable `ingest_run_id` evidence linkage coordination, connector run/status review workflow planning, or broader fixture data-quality coverage.
 
 ## Local repo bootstrap state
 

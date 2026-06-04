@@ -9,6 +9,7 @@ Append concise entries. Do not rely on chat history.
 - Synced `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` to the canonical root Lane C schemas.
 - Added `backend/tests/test_planning_pack_schema_copies.py` so the planning-pack evidence/claim schema copies cannot silently drift from the root contract schemas.
 - Updated Lane C schema ADR/plan/state wording to close the docs-packaging follow-up while keeping source/job/report/OpenAPI schema work out of scope.
+- Verified focused planning-pack schema-copy parity, targeted ruff/mypy, full backend collection from `backend`, exact schema-copy equality, whitespace, and full DB-enabled PowerShell verification. Result: 292 backend tests; lint clean; mypy clean over 105 source files; migrations/seeds apply; DB smoke passes.
 
 ## 2026-06-04 (connector CON-009)
 

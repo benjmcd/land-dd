@@ -18,6 +18,7 @@ Set-Location ..
 git diff --no-index --quiet ./schemas/evidence_schema.json ./docs/planning_pack/schemas/evidence_schema.json
 git diff --no-index --quiet ./schemas/claim_schema.json ./docs/planning_pack/schemas/claim_schema.json
 git diff --check
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
 **Results:**
@@ -25,7 +26,13 @@ git diff --check
 - Preserved CON-009 state/task records from root `main` at `56d53c8`.
 - `docs/planning_pack/schemas/evidence_schema.json` and `docs/planning_pack/schemas/claim_schema.json` parse-match their canonical root schema files in the isolated branch.
 - Added a planning-pack schema-copy parity test for the evidence and claim schema copies.
-- Post-rebase focused checks are recorded in this entry after execution.
+- Focused planning-pack schema-copy parity test: 1 passed.
+- Targeted ruff: clean.
+- Targeted mypy: clean over 1 test file.
+- Backend collection includes the planning-pack schema-copy parity test.
+- Exact schema-copy equality checks: clean.
+- Whitespace check: clean.
+- Full DB-enabled PowerShell verification: ok; 292 backend tests pass; lint clean; mypy clean over 105 source files; migrations/seeds apply; DB smoke passes.
 
 **Residual risk:**
 
