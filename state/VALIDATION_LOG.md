@@ -160,6 +160,35 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report API Authorization Pass
+
+- `get_request_auth_context`: added trusted `X-Workspace-Id` and `X-User-Id`
+  request identity parsing for report API routes; missing headers fail with
+  `401`, and malformed UUID headers fail with `422`.
+- Report create and report-job submit routes now bind `workspace_id` and
+  `requested_by` to the authenticated request headers; body mismatches fail
+  closed with `403`.
+- Report list, report read, review actions, job access, job requeue, workspace
+  job execution, and dossier delivery now enforce the authenticated workspace
+  boundary. Cross-workspace reads return not found rather than exposing report
+  or job existence.
+- Report review actions require `reviewer_id` to match `X-User-Id`.
+- Report job leasing now accepts a workspace filter so the API worker endpoint
+  only leases jobs in the authenticated workspace.
+- `db/seeds/003_seed_demo_identity.sql` seeds deterministic local demo
+  workspace/user IDs used by `scripts/demo_mvp.py` for Postgres-backed demos.
+- `python -m pytest backend\tests\reports\test_report_service.py
+  backend\tests\api\test_api_scaffold.py
+  backend\tests\api\test_ingest_report_integration.py
+  backend\tests\api\test_report_runs_db.py
+  backend\tests\api\test_openapi_contract.py -q`: passed with one DB smoke
+  skip.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

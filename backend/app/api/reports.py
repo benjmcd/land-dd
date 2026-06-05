@@ -7,12 +7,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
-from app.api.dependencies import ApiServices, get_services
+from app.api.dependencies import (
+    ApiServices,
+    RequestAuthContext,
+    get_request_auth_context,
+    get_services,
+)
 from app.domain.enums import IntentCode
 from app.domain.report_contracts import ReportRunContract, ReportRunJobContract
 
 router = APIRouter(prefix="/report-runs", tags=["report-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
+AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]
 
 
 class ReportRunCreateRequest(BaseModel):
@@ -48,13 +54,19 @@ class ReportReviewActionRequest(BaseModel):
 def create_report_run(
     request: ReportRunCreateRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunContract:
     try:
+        _enforce_request_scope(
+            auth,
+            workspace_id=request.workspace_id,
+            requested_by=request.requested_by,
+        )
         return services.report_service.create_report_run(
             area_id=request.area_id,
             intent_code=request.intent_code,
-            workspace_id=request.workspace_id,
-            requested_by=request.requested_by,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
             idempotency_key=request.idempotency_key,
         )
     except ValueError as exc:
@@ -67,14 +79,16 @@ def create_report_run(
 @router.get("", response_model=list[ReportRunContract])
 def list_report_runs(
     services: ServicesDep,
+    auth: AuthDep,
     workspace_id: UUID | None = None,
     area_id: UUID | None = None,
     intent_code: IntentCode | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> list[ReportRunContract]:
+    scoped_workspace_id = _authorized_workspace_filter(auth, workspace_id)
     return services.report_service.list_report_runs(
-        workspace_id=workspace_id,
+        workspace_id=scoped_workspace_id,
         area_id=area_id,
         intent_code=intent_code,
         limit=limit,
@@ -86,18 +100,18 @@ def list_report_runs(
 def get_report_run(
     report_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunContract:
-    report_run = services.report_service.get_report_run(report_run_id)
-    if report_run is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
-    return report_run
+    return _get_authorized_report_run(report_run_id, services, auth)
 
 
 @router.get("/{report_run_id}/dossier")
 def get_report_run_dossier(
     report_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> Response:
+    _get_authorized_report_run(report_run_id, services, auth)
     try:
         dossier = services.report_service.render_approved_dossier(report_run_id)
     except ValueError as exc:
@@ -114,14 +128,20 @@ def get_report_run_dossier(
 def submit_report_run_job(
     request: ReportRunJobCreateRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunJobContract:
     try:
+        _enforce_request_scope(
+            auth,
+            workspace_id=request.workspace_id,
+            requested_by=request.requested_by,
+        )
         return services.report_service.submit_report_run_job(
             area_id=request.area_id,
             intent_code=request.intent_code,
             idempotency_key=request.idempotency_key,
-            workspace_id=request.workspace_id,
-            requested_by=request.requested_by,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -134,10 +154,12 @@ def submit_report_run_job(
 def execute_next_report_run_job(
     request: ReportRunJobExecuteRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunJobContract:
     try:
         job = services.report_service.execute_next_report_run_job(
             worker_id=request.worker_id,
+            workspace_id=auth.workspace_id,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -156,9 +178,10 @@ def execute_next_report_run_job(
 def get_report_run_job(
     job_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunJobContract:
     job = services.report_service.get_report_run_job(job_id)
-    if job is None:
+    if job is None or job.workspace_id != auth.workspace_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report job not found")
     return job
 
@@ -168,7 +191,11 @@ def requeue_report_run_job(
     job_id: UUID,
     request: ReportRunJobRequeueRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunJobContract:
+    job = services.report_service.get_report_run_job(job_id)
+    if job is None or job.workspace_id != auth.workspace_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report job not found")
     try:
         return services.report_service.requeue_report_run_job(
             job_id,
@@ -186,11 +213,13 @@ def approve_report_run(
     report_run_id: UUID,
     request: ReportReviewActionRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunContract:
+    _get_authorized_report_run(report_run_id, services, auth)
     return _run_report_action(
         lambda: services.report_service.approve_report_run(
             report_run_id,
-            reviewer_id=request.reviewer_id,
+            reviewer_id=_reviewer_id(auth, request.reviewer_id),
             reason=request.reason,
         )
     )
@@ -201,11 +230,13 @@ def reject_report_run(
     report_run_id: UUID,
     request: ReportReviewActionRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunContract:
+    _get_authorized_report_run(report_run_id, services, auth)
     return _run_report_action(
         lambda: services.report_service.reject_report_run(
             report_run_id,
-            reviewer_id=request.reviewer_id,
+            reviewer_id=_reviewer_id(auth, request.reviewer_id),
             reason=_required_action_reason(request.reason),
         )
     )
@@ -216,14 +247,72 @@ def supersede_report_run(
     report_run_id: UUID,
     request: ReportReviewActionRequest,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> ReportRunContract:
+    _get_authorized_report_run(report_run_id, services, auth)
     return _run_report_action(
         lambda: services.report_service.supersede_report_run(
             report_run_id,
-            reviewer_id=request.reviewer_id,
+            reviewer_id=_reviewer_id(auth, request.reviewer_id),
             reason=_required_action_reason(request.reason),
         )
     )
+
+
+def _enforce_request_scope(
+    auth: RequestAuthContext,
+    *,
+    workspace_id: UUID | None,
+    requested_by: UUID | None,
+) -> None:
+    if workspace_id is not None and workspace_id != auth.workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="request workspace does not match authenticated workspace",
+        )
+    if requested_by is not None and requested_by != auth.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="request user does not match authenticated user",
+        )
+
+
+def _authorized_workspace_filter(
+    auth: RequestAuthContext,
+    workspace_id: UUID | None,
+) -> UUID:
+    if workspace_id is not None and workspace_id != auth.workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="workspace filter does not match authenticated workspace",
+        )
+    return auth.workspace_id
+
+
+def _get_authorized_report_run(
+    report_run_id: UUID,
+    services: ApiServices,
+    auth: RequestAuthContext,
+) -> ReportRunContract:
+    report_run = services.report_service.get_report_run(report_run_id)
+    if report_run is None or report_run.workspace_id != auth.workspace_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+    return report_run
+
+
+def _reviewer_id(auth: RequestAuthContext, reviewer_id: str) -> str:
+    reviewer = reviewer_id.strip()
+    if not reviewer:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="reviewer_id is required",
+        )
+    if reviewer != str(auth.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="reviewer_id does not match authenticated user",
+        )
+    return reviewer
 
 
 def _run_report_action(action: Callable[[], ReportRunContract]) -> ReportRunContract:

@@ -8,6 +8,8 @@ from urllib.request import Request, urlopen
 
 FIXTURE_SOURCE_ID = "55555555-5555-4555-8555-555555555555"
 FIXTURE_AREA_ID = "44444444-4444-4444-8444-444444444444"
+DEMO_WORKSPACE_ID = "11111111-1111-4111-8111-111111111111"
+DEMO_USER_ID = "22222222-2222-4222-8222-222222222222"
 FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -28,9 +30,15 @@ def main() -> None:
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--reviewer-id", default="demo-reviewer")
+    parser.add_argument("--workspace-id", default=DEMO_WORKSPACE_ID)
+    parser.add_argument("--user-id", default=DEMO_USER_ID)
     args = parser.parse_args()
 
     client = ApiClient(args.base_url)
+    report_headers = {
+        "X-Workspace-Id": args.workspace_id,
+        "X-User-Id": args.user_id,
+    }
     health = client.request("GET", "/health")
     print(f"health: {health['status']} ({health['environment']})")
 
@@ -53,6 +61,7 @@ def main() -> None:
             "area_id": FIXTURE_AREA_ID,
             "intent_code": "homestead_feasibility",
         },
+        headers=report_headers,
     )
     print(
         "report: "
@@ -81,6 +90,7 @@ def main() -> None:
     report_runs = client.request(
         "GET",
         f"/report-runs?area_id={FIXTURE_AREA_ID}&intent_code=homestead_feasibility",
+        headers=report_headers,
     )
     print(f"listed report runs: {len(report_runs)}")
 
@@ -95,17 +105,18 @@ class ApiClient:
         path: str,
         payload: dict[str, object] | None = None,
         *,
+        headers: dict[str, str] | None = None,
         ok_statuses: tuple[int, ...] = (200, 201),
     ) -> Any:
         data = None
-        headers = {"Accept": "application/json"}
+        request_headers = {"Accept": "application/json", **(headers or {})}
         if payload is not None:
             data = json.dumps(payload).encode("utf-8")
-            headers["Content-Type"] = "application/json"
+            request_headers["Content-Type"] = "application/json"
         request = Request(
             f"{self.base_url}{path}",
             data=data,
-            headers=headers,
+            headers=request_headers,
             method=method,
         )
         try:

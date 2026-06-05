@@ -7,6 +7,8 @@ This directory contains the Postgres/PostGIS database spine.
 - `migrations/0001_initial_spine.sql`: initial schema from the planning pack.
 - `seeds/001_seed_intents.sql`: seed intents.
 - `seeds/002_seed_source_registry.sql`: seed source registry.
+- `seeds/003_seed_demo_identity.sql`: seed the deterministic fixture workspace
+  and user used by the local authenticated API demo.
 - `fixtures/`: small deterministic fixtures to be added by implementation tasks.
 
 ## Local usage

@@ -435,6 +435,37 @@ def test_execute_next_report_run_job_creates_report_and_finishes_job() -> None:
     assert report_service.execute_next_report_run_job(worker_id="report-worker-1") is None
 
 
+def test_execute_next_report_run_job_respects_workspace_filter() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    workspace_id = uuid4()
+    other_workspace_id = uuid4()
+    job = report_service.submit_report_run_job(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_id,
+        idempotency_key="workspace-execute-key-1",
+    )
+
+    assert (
+        report_service.execute_next_report_run_job(
+            worker_id="report-worker-1",
+            workspace_id=other_workspace_id,
+        )
+        is None
+    )
+
+    executed = report_service.execute_next_report_run_job(
+        worker_id="report-worker-1",
+        workspace_id=workspace_id,
+    )
+
+    assert executed is not None
+    assert executed.job_id == job.job_id
+    assert executed.workspace_id == workspace_id
+    assert executed.status == JobStatus.SUCCEEDED
+
+
 def test_execute_next_report_run_job_marks_failed_and_allows_requeue() -> None:
     report_job_repo = InMemoryReportRunJobRepository()
     _, _, _, _, report_service = make_service(report_job_repo=report_job_repo)

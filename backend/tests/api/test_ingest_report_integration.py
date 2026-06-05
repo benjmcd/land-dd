@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
@@ -24,6 +24,10 @@ _FIXTURE_AREA_GEOJSON: dict[str, object] = {
         ]
     ],
 }
+
+
+def _auth_headers() -> dict[str, str]:
+    return {"X-Workspace-Id": str(uuid4()), "X-User-Id": str(uuid4())}
 
 
 def _seed(services: ApiServices) -> None:
@@ -64,6 +68,7 @@ def test_flood_ingest_then_report_produces_flood_high_risk_claim() -> None:
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()
@@ -90,6 +95,7 @@ def test_flood_failure_ingest_then_report_produces_flood_unknown_claim() -> None
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()
@@ -120,6 +126,7 @@ def test_zoning_prohibited_ingest_then_report_produces_zoning_red_flag() -> None
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()
@@ -149,6 +156,7 @@ def test_zoning_allowed_ingest_then_report_has_no_zoning_red_flag() -> None:
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()
@@ -176,6 +184,7 @@ def test_access_no_road_ingest_then_report_produces_access_red_flag() -> None:
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()
@@ -205,6 +214,7 @@ def test_access_road_ingest_then_report_has_no_access_red_flag() -> None:
     report = client.post(
         "/report-runs",
         json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
     )
     assert report.status_code == 201
     body = report.json()

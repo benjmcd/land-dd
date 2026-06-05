@@ -28,6 +28,9 @@
   workspace-scoped idempotency keys. `POST /report-runs/jobs` queues
   idempotent report job requests, and `POST /report-runs/jobs/execute-next`
   leases one queued job and turns it into a persisted report run.
+- Report API creation, listing, retrieval, review, job access, job execution,
+  and dossier delivery require `X-Workspace-Id` and `X-User-Id` request headers;
+  body/query workspace and reviewer fields must match the request identity.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
@@ -47,14 +50,15 @@
 - Live connectors are not enabled and should remain blocked.
 - Most source registry rows other than DS-002 still have unresolved
   production-use status.
-- Public API contract still lacks authenticated workspace/user enforcement.
+- The report API has trusted-header workspace/user enforcement, but no full
+  token validation, session management, or external identity-provider
+  integration yet.
 - Report jobs can be executed through the explicit worker endpoint, but no
   autonomous scheduler/daemon runs them yet.
 - Broader dossier product surfaces such as PDF, web pages, dashboards, or
   operator UI are not yet implemented.
 - Report generation is synchronous in the current API route.
-- Workspace/user access control is represented in schema but not enforced as a
-  public API contract.
+- Non-report resources are not yet fully workspace-scoped at the API boundary.
 - The rural land dossier template is compiled into the approved Markdown
   delivery endpoint, but not yet into PDF or web dashboard output.
 

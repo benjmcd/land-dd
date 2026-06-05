@@ -28,7 +28,12 @@ class ReportRunJobRepository(Protocol):
         workspace_id: UUID | None = None,
     ) -> ReportRunJobContract | None: ...
 
-    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None: ...
+    def lease_next(
+        self,
+        *,
+        worker_id: str,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunJobContract | None: ...
 
     def mark_succeeded(
         self,
@@ -88,7 +93,12 @@ class InMemoryReportRunJobRepository:
             return None
         return self.get(job_id)
 
-    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None:
+    def lease_next(
+        self,
+        *,
+        worker_id: str,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunJobContract | None:
         worker_id = _require_worker_id(worker_id)
         leased_at = datetime.now(UTC)
         candidates = [
@@ -97,6 +107,7 @@ class InMemoryReportRunJobRepository:
             if job.status == JobStatus.QUEUED
             and job.attempts < job.max_attempts
             and (job.not_before is None or job.not_before <= leased_at)
+            and (workspace_id is None or job.workspace_id == workspace_id)
         ]
         if not candidates:
             return None
@@ -251,7 +262,12 @@ class SqlAlchemyReportRunJobRepository:
             return None
         return _row_to_job(row)
 
-    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None:
+    def lease_next(
+        self,
+        *,
+        worker_id: str,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunJobContract | None:
         worker_id = _require_worker_id(worker_id)
         row = self._session.execute(
             text(
@@ -263,6 +279,10 @@ class SqlAlchemyReportRunJobRepository:
                       AND status = CAST(:queued_status AS jobs.job_status)
                       AND not_before <= now()
                       AND attempts < max_attempts
+                      AND (
+                        CAST(:workspace_id AS uuid) IS NULL
+                        OR workspace_id = CAST(:workspace_id AS uuid)
+                      )
                     ORDER BY created_at ASC, job_id ASC
                     FOR UPDATE SKIP LOCKED
                     LIMIT 1
@@ -284,6 +304,7 @@ class SqlAlchemyReportRunJobRepository:
                 "queued_status": JobStatus.QUEUED.value,
                 "running_status": JobStatus.RUNNING.value,
                 "worker_id": worker_id,
+                "workspace_id": str(workspace_id) if workspace_id is not None else None,
             },
         ).mappings().one_or_none()
         self._session.flush()

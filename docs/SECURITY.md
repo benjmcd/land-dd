@@ -33,3 +33,12 @@ Unknown license means blocked for live/commercial use. Record cache/export/AI-us
 ## External access
 
 Default agent network access is off. Enable only with approval and task-specific justification.
+
+## Report API Identity Boundary
+
+- Report API routes require `X-Workspace-Id` and `X-User-Id` headers.
+- The backend treats these as trusted request identity headers and rejects
+  report body/query/reviewer mismatches.
+- Exposed beta deployments must put these headers behind a trusted gateway or
+  replace them with token/session/identity-provider validation before accepting
+  untrusted network traffic.

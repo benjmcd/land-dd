@@ -5,8 +5,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. How should workspace/user identity be authenticated and enforced beyond the
-   current explicit API fields?
+2. Which token/session/identity-provider boundary should back the current
+   trusted-header report authorization contract before exposed beta deployment?
 
 ## Decided
 
@@ -27,6 +27,11 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 5. Dossier delivery gate: approved report runs can be served as Markdown rural
    land dossiers. Reports still in review, rejected reports, and superseded
    reports are not served as deliverable dossiers.
+6. Report authorization contract: report routes require trusted
+   `X-Workspace-Id` and `X-User-Id` headers. Report creation/job submission bind
+   workspace/requester to those headers; report/job reads, review actions,
+   workspace filters, job execution, and dossier delivery fail closed across
+   workspace boundaries.
 
 ## High
 

@@ -228,8 +228,12 @@ class ReportRunService:
         self,
         *,
         worker_id: str,
+        workspace_id: UUID | None = None,
     ) -> ReportRunJobContract | None:
-        leased = self._report_job_repo.lease_next(worker_id=worker_id)
+        leased = self._report_job_repo.lease_next(
+            worker_id=worker_id,
+            workspace_id=workspace_id,
+        )
         if leased is None:
             return None
         try:

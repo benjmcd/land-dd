@@ -65,6 +65,8 @@ paths:
     get:
       summary: List report runs
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: area_id
           in: query
           required: false
@@ -87,6 +89,8 @@ paths:
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
         '200': { description: Report run list }
+        '401': { description: Missing request identity headers }
+        '403': { description: Workspace filter does not match request identity }
     post:
       summary: Create a report run
       operationId: createReportRun
@@ -105,10 +109,15 @@ paths:
                 idempotency_key: { type: [string, "null"] }
       responses:
         '201': { description: Report run created }
+        '401': { description: Missing request identity headers }
+        '403': { description: Request scope does not match request identity }
         '422': { description: Invalid report request }
   /report-runs/jobs:
     post:
       summary: Queue an idempotent report run job
+      parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       requestBody:
         required: true
         content:
@@ -124,11 +133,15 @@ paths:
                 requested_by: { type: [string, "null"], format: uuid }
       responses:
         '202': { description: Report run job queued }
+        '401': { description: Missing request identity headers }
+        '403': { description: Request scope does not match request identity }
         '422': { description: Invalid report job request }
   /report-runs/jobs/{job_id}:
     get:
       summary: Get report run job
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: job_id
           in: path
           required: true
@@ -136,10 +149,14 @@ paths:
       responses:
         '200': { description: Report run job }
         '404': { description: Report run job not found }
+        '401': { description: Missing request identity headers }
         '422': { description: Invalid report run job id }
   /report-runs/jobs/execute-next:
     post:
       summary: Execute the next queued report run job
+      parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       requestBody:
         required: true
         content:
@@ -151,12 +168,15 @@ paths:
                 worker_id: { type: string }
       responses:
         '200': { description: Executed report run job }
+        '401': { description: Missing request identity headers }
         '404': { description: No queued report job available }
         '422': { description: Invalid worker request }
   /report-runs/jobs/{job_id}/requeue:
     post:
       summary: Requeue a failed report run job
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: job_id
           in: path
           required: true
@@ -172,26 +192,34 @@ paths:
                 reason: { type: string }
       responses:
         '200': { description: Requeued report run job }
+        '401': { description: Missing request identity headers }
+        '404': { description: Report run job not found }
         '422': { description: Invalid requeue request }
   /report-runs/{report_run_id}:
     get:
       summary: Get report run
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: report_run_id
           in: path
           required: true
           schema: { type: string, format: uuid }
       responses:
         '200': { description: Report run }
+        '401': { description: Missing request identity headers }
         '404': { description: Report run not found }
         '422': { description: Invalid report run id }
   /report-runs/{report_run_id}/dossier:
     get:
       summary: Get approved Markdown dossier
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
       responses:
         '200': { description: Approved report dossier as Markdown }
+        '401': { description: Missing request identity headers }
         '404': { description: Report run not found }
         '409': { description: Report run is not approved for delivery }
         '422': { description: Invalid report run id }
@@ -199,33 +227,45 @@ paths:
     post:
       summary: Approve report run for delivery
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
       requestBody:
         $ref: '#/components/requestBodies/ReportReviewAction'
       responses:
         '200': { description: Updated report run }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Report run not found }
         '422': { description: Invalid report review action }
   /report-runs/{report_run_id}/reject:
     post:
       summary: Reject report run
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
       requestBody:
         $ref: '#/components/requestBodies/ReportReviewAction'
       responses:
         '200': { description: Updated report run }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Report run not found }
         '422': { description: Invalid report review action }
   /report-runs/{report_run_id}/supersede:
     post:
       summary: Supersede approved report run
       parameters:
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
       requestBody:
         $ref: '#/components/requestBodies/ReportReviewAction'
       responses:
         '200': { description: Updated report run }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Report run not found }
         '422': { description: Invalid report review action }
   /connector-runs:
@@ -329,6 +369,16 @@ paths:
         '422': { description: Invalid action request }
 components:
   parameters:
+    RequestWorkspaceId:
+      name: X-Workspace-Id
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    RequestUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
     IngestRunId:
       name: ingest_run_id
       in: path

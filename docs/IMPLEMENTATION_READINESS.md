@@ -24,6 +24,8 @@ start without re-litigating basic authority.
 - Report creation accepts optional workspace/requester metadata and
   workspace-scoped idempotency keys; queued report jobs require an idempotency
   key and can be explicitly leased/executed into persisted report runs.
+- Report API routes require trusted `X-Workspace-Id` and `X-User-Id` headers
+  and reject body/query/reviewer identity mismatches.
 
 ## Do Not Start Impact-Heavy Work Until
 
@@ -31,7 +33,7 @@ start without re-litigating basic authority.
 |---|---|---|
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
-| API enforcement | Decide authentication/authorization for workspace and user identity. | Explicit workspace/requester fields exist, but they are not yet enforced by an auth boundary. |
+| Full identity integration | Decide token/session/IdP validation beyond trusted request identity headers. | Report routes enforce workspace/user headers, but beta deployment still needs a real identity boundary. |
 | Report job scheduling | Decide whether report jobs should be run by explicit operator/API calls or an autonomous scheduler/daemon. | The worker endpoint exists, but automatic processing is not yet part of the runtime. |
 | Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
@@ -54,7 +56,8 @@ start without re-litigating basic authority.
 3. **API contract pass**
    - Use generated FastAPI OpenAPI as runtime authority.
    - Keep `api/openapi_stub.yaml` as a curated path/method-checked companion.
-   - Add authentication/enforcement around workspace and requester metadata.
+   - Keep trusted-header workspace/user enforcement around report routes.
+   - Add real token/session/IdP validation before any exposed beta deployment.
    - Decide and implement automatic report-job scheduling if beta needs it.
    - Keep explicit false/unknown/missing/source-failed response semantics visible.
 

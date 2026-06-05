@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 from typing import cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -38,6 +38,11 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
     settings = Settings(OBJECT_STORE_ROOT=str(tmp_path / "object-store"))
     app = create_app(settings=settings, use_db_services=True)
     client = TestClient(app)
+    workspace_id, user_id = _seed_workspace_and_user()
+    headers = {
+        "X-Workspace-Id": str(workspace_id),
+        "X-User-Id": str(user_id),
+    }
 
     area_response = client.post(
         "/areas",
@@ -63,6 +68,7 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
                 "area_id": area_id,
                 "intent_code": "homestead_feasibility",
             },
+            headers=headers,
         )
 
         assert create_response.status_code == 201
@@ -81,32 +87,37 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
             NOT_EVALUATED_SOURCE_NAME
         ]
 
-        get_response = client.get(f"/report-runs/{report_run_id}")
+        get_response = client.get(f"/report-runs/{report_run_id}", headers=headers)
         assert get_response.status_code == 200
         assert get_response.json() == report_run
 
-        blocked_dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+        blocked_dossier_response = client.get(
+            f"/report-runs/{report_run_id}/dossier",
+            headers=headers,
+        )
         assert blocked_dossier_response.status_code == 409
 
         approve_response = client.post(
             f"/report-runs/{report_run_id}/approve",
-            json={"reviewer_id": "db-reviewer-1", "reason": "ready for delivery"},
+            json={"reviewer_id": str(user_id), "reason": "ready for delivery"},
+            headers=headers,
         )
         assert approve_response.status_code == 200
 
-        dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+        dossier_response = client.get(f"/report-runs/{report_run_id}/dossier", headers=headers)
         assert dossier_response.status_code == 200
         assert "# Rural Land Dossier" in dossier_response.text
         assert "- Review status: approved" in dossier_response.text
 
         list_response = client.get(
-            f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility"
+            f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility",
+            headers=headers,
         )
         assert list_response.status_code == 200
         assert [run["report_run_id"] for run in list_response.json()] == [
             str(report_run_id)
         ]
-        assert client.get(f"/report-runs?area_id={UUID(int=0)}").json() == []
+        assert client.get(f"/report-runs?area_id={UUID(int=0)}", headers=headers).json() == []
 
         with Session(engine) as session:
             row = session.execute(
@@ -128,6 +139,8 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
         _cleanup_db_api_report(
             area_id=UUID(area_id),
             report_run_id=report_run_id,
+            user_id=user_id,
+            workspace_id=workspace_id,
             delete_sentinel_source=not sentinel_preexisting,
         )
 
@@ -155,10 +168,43 @@ def _sentinel_source_exists() -> bool:
         )
 
 
+def _seed_workspace_and_user() -> tuple[UUID, UUID]:
+    workspace_id = uuid4()
+    user_id = uuid4()
+    engine = build_engine()
+    with Session(engine) as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO core.workspaces (workspace_id, name)
+                VALUES (:workspace_id, 'db api auth workspace')
+                """
+            ),
+            {"workspace_id": workspace_id},
+        )
+        session.execute(
+            text(
+                """
+                INSERT INTO core.users (user_id, workspace_id, email)
+                VALUES (:user_id, :workspace_id, :email)
+                """
+            ),
+            {
+                "user_id": user_id,
+                "workspace_id": workspace_id,
+                "email": f"db-api-auth-{user_id}@example.test",
+            },
+        )
+        session.commit()
+    return workspace_id, user_id
+
+
 def _cleanup_db_api_report(
     *,
     area_id: UUID,
     report_run_id: UUID | None,
+    user_id: UUID,
+    workspace_id: UUID,
     delete_sentinel_source: bool,
 ) -> None:
     engine = build_engine()
@@ -183,6 +229,14 @@ def _cleanup_db_api_report(
         session.execute(
             text("DELETE FROM core.areas WHERE area_id = :area_id"),
             {"area_id": area_id},
+        )
+        session.execute(
+            text("DELETE FROM core.users WHERE user_id = :user_id"),
+            {"user_id": user_id},
+        )
+        session.execute(
+            text("DELETE FROM core.workspaces WHERE workspace_id = :workspace_id"),
+            {"workspace_id": workspace_id},
         )
         if delete_sentinel_source:
             session.execute(

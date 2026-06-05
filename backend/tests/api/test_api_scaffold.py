@@ -29,6 +29,16 @@ def not_evaluated_claim_codes() -> list[str]:
     return [NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS]
 
 
+def auth_headers(
+    workspace_id: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, str]:
+    return {
+        "X-Workspace-Id": workspace_id or str(uuid4()),
+        "X-User-Id": user_id or str(uuid4()),
+    }
+
+
 def test_api_scaffold_exposes_health_endpoint() -> None:
     client = TestClient(create_app())
 
@@ -107,6 +117,7 @@ def test_api_scaffold_creates_and_lists_areas() -> None:
 
 def test_api_scaffold_creates_and_gets_report_run() -> None:
     client = TestClient(create_app())
+    headers = auth_headers()
     area_response = client.post(
         "/areas",
         json={
@@ -120,11 +131,14 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     create_response = client.post(
         "/report-runs",
         json={"area_id": area_id, "intent_code": "homestead_feasibility"},
+        headers=headers,
     )
 
     assert create_response.status_code == 201
     report_run = create_response.json()
     assert report_run["area_id"] == area_id
+    assert report_run["workspace_id"] == headers["X-Workspace-Id"]
+    assert report_run["requested_by"] == headers["X-User-Id"]
     assert report_run["status"] == "succeeded"
     assert report_run["review_status"] == "needs_review"
     assert [record["domain"] for record in report_run["evidence"]] == list(NOT_EVALUATED_DOMAINS)
@@ -140,19 +154,27 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert report_run["artifact_metadata"]["persistence"] == "memory"
     assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 4
 
-    get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
+    get_response = client.get(f"/report-runs/{report_run['report_run_id']}", headers=headers)
     assert get_response.status_code == 200
     assert get_response.json()["report_run_id"] == report_run["report_run_id"]
+    assert (
+        client.get(
+            f"/report-runs/{report_run['report_run_id']}",
+            headers=auth_headers(),
+        ).status_code
+        == 404
+    )
 
     list_response = client.get(
-        f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility"
+        f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility",
+        headers=headers,
     )
     assert list_response.status_code == 200
     assert [run["report_run_id"] for run in list_response.json()] == [
         report_run["report_run_id"]
     ]
-    assert client.get(f"/report-runs?area_id={uuid4()}").json() == []
-    assert client.get("/report-runs?limit=0").status_code == 422
+    assert client.get(f"/report-runs?area_id={uuid4()}", headers=headers).json() == []
+    assert client.get("/report-runs?limit=0", headers=headers).status_code == 422
 
 
 def test_api_report_run_create_supports_scope_and_idempotency() -> None:
@@ -160,6 +182,7 @@ def test_api_report_run_create_supports_scope_and_idempotency() -> None:
     workspace_id = str(uuid4())
     requested_by = str(uuid4())
     other_workspace_id = str(uuid4())
+    headers = auth_headers(workspace_id, requested_by)
     area_response = client.post(
         "/areas",
         json={
@@ -177,26 +200,39 @@ def test_api_report_run_create_supports_scope_and_idempotency() -> None:
     }
 
     first_response = client.post("/report-runs", json=payload)
-    second_response = client.post("/report-runs", json=payload)
+    second_response = client.post("/report-runs", json=payload, headers=headers)
 
-    assert first_response.status_code == 201
+    assert first_response.status_code == 401
     assert second_response.status_code == 201
+    first_response = client.post("/report-runs", json=payload, headers=headers)
+    assert first_response.status_code == 201
     first = first_response.json()
     second = second_response.json()
     assert second["report_run_id"] == first["report_run_id"]
     assert first["workspace_id"] == workspace_id
     assert first["requested_by"] == requested_by
     assert first["idempotency_key"] == "sync-report-key-1"
-    list_response = client.get(f"/report-runs?workspace_id={workspace_id}")
+    list_response = client.get(f"/report-runs?workspace_id={workspace_id}", headers=headers)
     assert [run["report_run_id"] for run in list_response.json()] == [
         first["report_run_id"]
     ]
-    assert client.get(f"/report-runs?workspace_id={other_workspace_id}").json() == []
+    assert (
+        client.get(f"/report-runs?workspace_id={other_workspace_id}", headers=headers).status_code
+        == 403
+    )
+    mismatch_response = client.post(
+        "/report-runs",
+        json={**payload, "workspace_id": other_workspace_id},
+        headers=headers,
+    )
+    assert mismatch_response.status_code == 403
 
 
 def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     client = TestClient(create_app())
     workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = auth_headers(workspace_id, user_id)
     area_response = client.post(
         "/areas",
         json={
@@ -213,8 +249,10 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     }
 
     first_response = client.post("/report-runs/jobs", json=payload)
-    second_response = client.post("/report-runs/jobs", json=payload)
+    second_response = client.post("/report-runs/jobs", json=payload, headers=headers)
 
+    assert first_response.status_code == 401
+    first_response = client.post("/report-runs/jobs", json=payload, headers=headers)
     assert first_response.status_code == 202
     assert second_response.status_code == 202
     first = first_response.json()
@@ -223,12 +261,13 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     assert first["status"] == "queued"
     assert first["workspace_id"] == workspace_id
     assert first["idempotency_key"] == "queued-report-key-1"
-    get_response = client.get(f"/report-runs/jobs/{first['job_id']}")
+    get_response = client.get(f"/report-runs/jobs/{first['job_id']}", headers=headers)
     assert get_response.status_code == 200
     assert get_response.json()["job_id"] == first["job_id"]
     execute_response = client.post(
         "/report-runs/jobs/execute-next",
         json={"worker_id": "api-report-worker-1"},
+        headers=headers,
     )
     assert execute_response.status_code == 200
     executed = execute_response.json()
@@ -237,15 +276,23 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     assert executed["attempts"] == 1
     assert executed["locked_by"] is None
     assert executed["report_run_id"] is not None
-    report_response = client.get(f"/report-runs/{executed['report_run_id']}")
+    report_response = client.get(f"/report-runs/{executed['report_run_id']}", headers=headers)
     assert report_response.status_code == 200
     assert report_response.json()["idempotency_key"] == "queued-report-key-1"
     assert (
         client.post(
             "/report-runs/jobs/execute-next",
             json={"worker_id": "api-report-worker-1"},
+            headers=headers,
         ).status_code
         == 404
+    )
+    assert (
+        client.post(
+            "/report-runs/jobs/execute-next",
+            json={"worker_id": "api-report-worker-1"},
+        ).status_code
+        == 401
     )
     assert (
         client.post(
@@ -255,6 +302,7 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
                 "intent_code": "homestead_feasibility",
                 "idempotency_key": " ",
             },
+            headers=headers,
         ).status_code
         == 422
     )
@@ -262,6 +310,9 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
 
 def test_api_report_run_review_actions_update_review_status() -> None:
     client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = auth_headers(workspace_id, user_id)
     area_response = client.post(
         "/areas",
         json={
@@ -276,24 +327,27 @@ def test_api_report_run_review_actions_update_review_status() -> None:
             "area_id": area_response.json()["area_id"],
             "intent_code": "homestead_feasibility",
         },
+        headers=headers,
     )
     report_run_id = create_response.json()["report_run_id"]
 
     approve_response = client.post(
         f"/report-runs/{report_run_id}/approve",
-        json={"reviewer_id": "reviewer-1", "reason": "ready"},
+        json={"reviewer_id": user_id, "reason": "ready"},
+        headers=headers,
     )
 
     assert approve_response.status_code == 200
     approved = approve_response.json()
     assert approved["review_status"] == "approved"
-    assert approved["reviewed_by"] == "reviewer-1"
+    assert approved["reviewed_by"] == user_id
     assert approved["review_actions"][0]["from_status"] == "needs_review"
     assert approved["review_actions"][0]["to_status"] == "approved"
 
     supersede_response = client.post(
         f"/report-runs/{report_run_id}/supersede",
-        json={"reviewer_id": "reviewer-2", "reason": "new evidence"},
+        json={"reviewer_id": user_id, "reason": "new evidence"},
+        headers=headers,
     )
 
     assert supersede_response.status_code == 200
@@ -303,6 +357,9 @@ def test_api_report_run_review_actions_update_review_status() -> None:
 
 def test_api_report_run_dossier_is_gated_on_approved_review() -> None:
     client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = auth_headers(workspace_id, user_id)
     area_response = client.post(
         "/areas",
         json={
@@ -317,19 +374,21 @@ def test_api_report_run_dossier_is_gated_on_approved_review() -> None:
             "area_id": area_response.json()["area_id"],
             "intent_code": "homestead_feasibility",
         },
+        headers=headers,
     )
     report_run_id = create_response.json()["report_run_id"]
 
-    blocked_response = client.get(f"/report-runs/{report_run_id}/dossier")
+    blocked_response = client.get(f"/report-runs/{report_run_id}/dossier", headers=headers)
 
     assert blocked_response.status_code == 409
     assert "requires approved review status" in blocked_response.json()["detail"]
 
     client.post(
         f"/report-runs/{report_run_id}/approve",
-        json={"reviewer_id": "reviewer-1", "reason": "ready"},
+        json={"reviewer_id": user_id, "reason": "ready"},
+        headers=headers,
     )
-    dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+    dossier_response = client.get(f"/report-runs/{report_run_id}/dossier", headers=headers)
 
     assert dossier_response.status_code == 200
     assert dossier_response.headers["content-type"].startswith("text/markdown")
@@ -339,6 +398,9 @@ def test_api_report_run_dossier_is_gated_on_approved_review() -> None:
 
 def test_api_report_run_review_actions_validate_transitions() -> None:
     client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = auth_headers(workspace_id, user_id)
     area_response = client.post(
         "/areas",
         json={
@@ -353,28 +415,40 @@ def test_api_report_run_review_actions_validate_transitions() -> None:
             "area_id": area_response.json()["area_id"],
             "intent_code": "homestead_feasibility",
         },
+        headers=headers,
     )
     report_run_id = create_response.json()["report_run_id"]
 
     assert (
         client.post(
             f"/report-runs/{report_run_id}/reject",
-            json={"reviewer_id": "reviewer-1"},
+            json={"reviewer_id": user_id},
+            headers=headers,
         ).status_code
         == 422
     )
     assert (
         client.post(
             f"/report-runs/{uuid4()}/approve",
-            json={"reviewer_id": "reviewer-1"},
+            json={"reviewer_id": user_id},
+            headers=headers,
         ).status_code
         == 404
+    )
+    assert (
+        client.post(
+            f"/report-runs/{report_run_id}/approve",
+            json={"reviewer_id": str(uuid4())},
+            headers=headers,
+        ).status_code
+        == 403
     )
 
 
 def test_api_report_run_surfaces_source_failure_unknowns() -> None:
     app = create_app()
     client = TestClient(app)
+    headers = auth_headers()
     source_response = client.post(
         "/sources",
         json={
@@ -412,6 +486,7 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
             "area_id": str(area_id),
             "intent_code": "homestead_feasibility",
         },
+        headers=headers,
     )
 
     assert create_response.status_code == 201
@@ -434,5 +509,13 @@ def test_api_scaffold_returns_422_for_bad_input() -> None:
         ).status_code
         == 422
     )
-    assert client.post("/report-runs", json={"intent_code": "missing area"}).status_code == 422
+    assert client.post("/report-runs", json={"intent_code": "missing area"}).status_code == 401
+    assert (
+        client.post(
+            "/report-runs",
+            json={"intent_code": "missing area"},
+            headers=auth_headers(),
+        ).status_code
+        == 422
+    )
     assert client.get("/evidence").status_code == 422
