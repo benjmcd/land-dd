@@ -24,13 +24,16 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    workspace, requester, and idempotency metadata. Queued report jobs require an
    idempotency key, are workspace-scoped, and can be explicitly leased/executed
    into persisted report runs.
+5. Dossier delivery gate: approved report runs can be served as Markdown rural
+   land dossiers. Reports still in review, rejected reports, and superseded
+   reports are not served as deliverable dossiers.
 
 ## High
 
 1. Which golden parcels should represent flood, wetlands, access, zoning,
    slope/buildability, and source-failure regressions?
-2. What is the minimum served dossier surface: machine JSON, Markdown, PDF, web
-   page, or a combination?
+2. Beyond the approved Markdown endpoint, does beta need PDF, web page,
+   dashboard, or operator UI dossier surfaces?
 3. Which source/license fields are required in API responses versus internal
    metadata?
 4. What cost metrics need to be measured during the first real source pass?

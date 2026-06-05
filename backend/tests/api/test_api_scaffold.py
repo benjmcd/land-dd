@@ -301,6 +301,42 @@ def test_api_report_run_review_actions_update_review_status() -> None:
     assert len(supersede_response.json()["review_actions"]) == 2
 
 
+def test_api_report_run_dossier_is_gated_on_approved_review() -> None:
+    client = TestClient(create_app())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    create_response = client.post(
+        "/report-runs",
+        json={
+            "area_id": area_response.json()["area_id"],
+            "intent_code": "homestead_feasibility",
+        },
+    )
+    report_run_id = create_response.json()["report_run_id"]
+
+    blocked_response = client.get(f"/report-runs/{report_run_id}/dossier")
+
+    assert blocked_response.status_code == 409
+    assert "requires approved review status" in blocked_response.json()["detail"]
+
+    client.post(
+        f"/report-runs/{report_run_id}/approve",
+        json={"reviewer_id": "reviewer-1", "reason": "ready"},
+    )
+    dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+
+    assert dossier_response.status_code == 200
+    assert dossier_response.headers["content-type"].startswith("text/markdown")
+    assert "# Rural Land Dossier" in dossier_response.text
+    assert "- Review status: approved" in dossier_response.text
+
+
 def test_api_report_run_review_actions_validate_transitions() -> None:
     client = TestClient(create_app())
     area_response = client.post(

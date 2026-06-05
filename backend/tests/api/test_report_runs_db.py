@@ -85,6 +85,20 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
         assert get_response.status_code == 200
         assert get_response.json() == report_run
 
+        blocked_dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+        assert blocked_dossier_response.status_code == 409
+
+        approve_response = client.post(
+            f"/report-runs/{report_run_id}/approve",
+            json={"reviewer_id": "db-reviewer-1", "reason": "ready for delivery"},
+        )
+        assert approve_response.status_code == 200
+
+        dossier_response = client.get(f"/report-runs/{report_run_id}/dossier")
+        assert dossier_response.status_code == 200
+        assert "# Rural Land Dossier" in dossier_response.text
+        assert "- Review status: approved" in dossier_response.text
+
         list_response = client.get(
             f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility"
         )

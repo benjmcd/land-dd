@@ -133,6 +133,33 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Approved Dossier Delivery Gate Pass
+
+- `ReportRunService.render_approved_dossier`: serves the rural-land Markdown
+  dossier only when the report review status is `approved`; reports still in
+  review, rejected reports, and superseded reports fail closed for served
+  dossier delivery.
+- `GET /report-runs/{report_run_id}/dossier`: added a Markdown delivery
+  endpoint for approved report runs and documented it in the curated OpenAPI
+  companion.
+- `backend/app/reports/dossier.py`: compiles the report contract into the
+  rural-land dossier sections, preserving source appendix, red flags, unknowns,
+  verification tasks, caveats, and required screening/legal-access caution
+  language.
+- `backend/tests/api/test_report_runs_db.py`: DB smoke now checks that the
+  dossier endpoint blocks unapproved persisted reports and serves approved
+  persisted reports. This remains CI-backed locally unless Postgres is
+  available.
+- `python -m pytest backend\tests\reports\test_report_service.py
+  backend\tests\api\test_api_scaffold.py backend\tests\api\test_openapi_contract.py
+  backend\tests\api\test_report_runs_db.py -q`: passed with one DB smoke skip.
+- `python -m ruff check` on affected backend and test files: passed.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

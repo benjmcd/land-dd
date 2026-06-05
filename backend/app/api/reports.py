@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from app.api.dependencies import ApiServices, get_services
@@ -91,6 +91,23 @@ def get_report_run(
     if report_run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report_run
+
+
+@router.get("/{report_run_id}/dossier")
+def get_report_run_dossier(
+    report_run_id: UUID,
+    services: ServicesDep,
+) -> Response:
+    try:
+        dossier = services.report_service.render_approved_dossier(report_run_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    if dossier is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+    return Response(content=dossier, media_type="text/markdown; charset=utf-8")
 
 
 @router.post("/jobs", response_model=ReportRunJobContract, status_code=status.HTTP_202_ACCEPTED)

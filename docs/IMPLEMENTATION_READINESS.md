@@ -16,8 +16,8 @@ start without re-litigating basic authority.
   still fail closed until reviewed.
 - FastAPI's generated OpenAPI schema is the runtime API authority;
   `api/openapi_stub.yaml` is a curated companion checked for path/method drift.
-- Report runs return a machine-readable JSON contract; the dossier template is
-  not yet the served report product.
+- Report runs return a machine-readable JSON contract; approved report runs can
+  also be delivered as a Markdown rural-land dossier.
 - Report runs now have a human-review lifecycle: `needs_review`, `approved`,
   `rejected`, and `superseded` transitions with reviewer, reason, and timestamp
   audit history.
@@ -33,7 +33,7 @@ start without re-litigating basic authority.
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
 | API enforcement | Decide authentication/authorization for workspace and user identity. | Explicit workspace/requester fields exist, but they are not yet enforced by an auth boundary. |
 | Report job scheduling | Decide whether report jobs should be run by explicit operator/API calls or an autonomous scheduler/daemon. | The worker endpoint exists, but automatic processing is not yet part of the runtime. |
-| Report lifecycle delivery gate | Decide how approved review status gates served dossier delivery and any human/operator UI. | The backend lifecycle exists, but product delivery still needs an explicit approval gate. |
+| Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
 
 ## Recommended Next Passes
@@ -65,10 +65,10 @@ start without re-litigating basic authority.
    - Add regression fixtures before widening data coverage.
 
 5. **Report productization pass**
-   - Compile `templates/report_template_rural_land_dossier.md` from the report
-     contract.
+   - Keep `templates/report_template_rural_land_dossier.md` aligned with the
+     approved Markdown dossier endpoint.
    - Add safe-language lint around generated report text.
-   - Gate served/beta dossier delivery on the report review workflow.
+   - Keep served/beta dossier delivery gated on the report review workflow.
 
 ## Stop Rules
 

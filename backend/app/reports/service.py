@@ -23,6 +23,7 @@ from app.domain.report_contracts import (
 )
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.service import EvidenceService
+from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_repo import InMemoryReportRunJobRepository, ReportRunJobRepository
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
@@ -165,6 +166,17 @@ class ReportRunService:
 
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
+
+    def render_approved_dossier(self, report_run_id: UUID) -> str | None:
+        report_run = self.get_report_run(report_run_id)
+        if report_run is None:
+            return None
+        if report_run.review_status != ReportReviewStatus.APPROVED:
+            raise ValueError(
+                "report dossier delivery requires approved review status; "
+                f"current status is {report_run.review_status.value}"
+            )
+        return build_rural_land_dossier(report_run)
 
     def submit_report_run_job(
         self,

@@ -21,6 +21,9 @@
   unknowns, red flags, verification tasks, and machine JSON metadata.
 - Report run review actions support approval, rejection, and supersession with
   reviewer identity, reason, transition, and timestamp history.
+- Approved report runs can be served as a Markdown rural-land dossier through a
+  delivery endpoint; unapproved, rejected, or superseded runs are blocked from
+  served dossier delivery.
 - Report creation accepts optional workspace/requester metadata and
   workspace-scoped idempotency keys. `POST /report-runs/jobs` queues
   idempotent report job requests, and `POST /report-runs/jobs/execute-next`
@@ -47,12 +50,13 @@
 - Public API contract still lacks authenticated workspace/user enforcement.
 - Report jobs can be executed through the explicit worker endpoint, but no
   autonomous scheduler/daemon runs them yet.
-- Served dossier delivery is not yet explicitly gated on approved report
-  review status.
+- Broader dossier product surfaces such as PDF, web pages, dashboards, or
+  operator UI are not yet implemented.
 - Report generation is synchronous in the current API route.
 - Workspace/user access control is represented in schema but not enforced as a
   public API contract.
-- The rural land dossier template is not yet compiled as a served report.
+- The rural land dossier template is compiled into the approved Markdown
+  delivery endpoint, but not yet into PDF or web dashboard output.
 
 ## Current Source Of Truth
 

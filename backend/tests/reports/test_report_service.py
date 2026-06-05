@@ -218,6 +218,36 @@ def test_report_review_lifecycle_approves_and_supersedes_report() -> None:
     assert report_service.get_report_run(report_run.report_run_id) == superseded
 
 
+def test_render_approved_dossier_requires_approved_report_and_preserves_caveats() -> None:
+    source_service, area_service, evidence_service, _, report_service = make_service()
+    source = register_source(source_service)
+    area = register_area(area_service)
+    evidence_service.create_observation(flood_evidence(area, source))
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    with pytest.raises(ValueError, match="requires approved review status"):
+        report_service.render_approved_dossier(report_run.report_run_id)
+
+    approved = report_service.approve_report_run(
+        report_run.report_run_id,
+        reviewer_id="reviewer-1",
+        reason="ready for dossier delivery",
+    )
+    dossier = report_service.render_approved_dossier(approved.report_run_id)
+
+    assert dossier is not None
+    assert "# Rural Land Dossier" in dossier
+    assert f"- Report run ID: {approved.report_run_id}" in dossier
+    assert "- Review status: approved" in dossier
+    assert "Fixture FEMA Flood Map" in dossier
+    assert "Screening fixture only; confirm locally." in dossier
+    assert "Road proximity is a physical proxy only" in dossier
+    assert "not legal, title, water-rights, insurance, lending, appraisal" in dossier
+
+
 def test_report_review_lifecycle_rejects_report_with_required_reason() -> None:
     _, area_service, _, _, report_service = make_service()
     area = register_area(area_service)
