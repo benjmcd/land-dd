@@ -39,6 +39,21 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 API Authority Pass
+
+- `scripts/export_openapi.py`: added runtime OpenAPI export to
+  `local_artifacts/openapi.generated.json`.
+- `backend/tests/api/test_openapi_contract.py`: added path/method parity check
+  between FastAPI runtime OpenAPI and `api/openapi_stub.yaml`.
+- `api/openapi_stub.yaml`: documented as a curated companion, not the runtime
+  authority.
+- `python -m pytest backend\tests\api\test_openapi_contract.py -q`: passed.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, source registry,
+  and structural invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

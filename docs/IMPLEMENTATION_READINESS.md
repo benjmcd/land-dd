@@ -14,6 +14,8 @@ start without re-litigating basic authority.
 - Current connector runtime is fixture-only for access, flood, and zoning.
 - DS-002 FEMA NFHL has a reviewed federal source row; local/county source rows
   still fail closed until reviewed.
+- FastAPI's generated OpenAPI schema is the runtime API authority;
+  `api/openapi_stub.yaml` is a curated companion checked for path/method drift.
 - Report runs return a machine-readable JSON contract; the dossier template is
   not yet the served report product.
 
@@ -23,7 +25,7 @@ start without re-litigating basic authority.
 |---|---|---|
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
-| API contract | Decide report job semantics, idempotency key, workspace scope, and response status fields. | Current OpenAPI is a compact draft and the runtime report route is synchronous. |
+| API contract | Decide report job semantics, idempotency key, workspace scope, and response status fields. | API authority mode is settled, but the runtime report route is synchronous and lacks those semantics. |
 | Report lifecycle | Decide report review states and approval/rejection workflow. | Requirements say beta reports need human review before delivery. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
 
@@ -43,8 +45,8 @@ start without re-litigating basic authority.
    - Define source caveats and source-failure behavior before runtime work.
 
 3. **API contract pass**
-   - Promote `api/openapi_stub.yaml` from compact draft to current API authority
-     or generate it from FastAPI and document what is authoritative.
+   - Use generated FastAPI OpenAPI as runtime authority.
+   - Keep `api/openapi_stub.yaml` as a curated path/method-checked companion.
    - Add workspace scope, idempotency, async report job status, report review,
      and explicit false/unknown/missing/source-failed response semantics.
 

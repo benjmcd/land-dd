@@ -20,6 +20,7 @@ required=(
   scripts/check_json_files.py
   scripts/check_csv_files.py
   scripts/check_source_registry.py
+  scripts/export_openapi.py
   backend/pyproject.toml
   db/migrations/0001_initial_spine.sql
 )

@@ -5,11 +5,10 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. Should `api/openapi_stub.yaml` remain manually curated, or should generated
-   FastAPI OpenAPI become the API authority?
-3. What is the report review lifecycle before beta delivery: draft, needs
+2. What is the report review lifecycle before beta delivery: draft, needs
    review, approved, rejected, superseded, or another state model?
-4. What workspace/user identity mechanism should scope API queries?
+3. What workspace/user identity mechanism should scope API queries?
+4. What are the idempotency and async job semantics for report creation?
 
 ## Decided
 
@@ -17,6 +16,9 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    for the federal-first flood path. Live connector code remains gated by
    fixture-backed success/failure tests, source-failure behavior, and API/report
    caveat surfacing.
+2. API authority mode: generated FastAPI OpenAPI is the runtime authority.
+   `api/openapi_stub.yaml` remains a curated companion and is path/method
+   drift-checked against the runtime schema.
 
 ## High
 

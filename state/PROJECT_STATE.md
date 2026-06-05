@@ -27,6 +27,8 @@
   as DS-FIXTURE-001.
 - DS-002 FEMA NFHL has an approved source-governance review for the
   federal-first flood path.
+- Generated FastAPI OpenAPI is the runtime API authority; the curated stub is
+  checked for path/method drift.
 - Local orchestration folders such as `.omc/` and `.omx/` are workflow state,
   not source-of-truth project artifacts.
 
@@ -36,7 +38,8 @@
 - Live connectors are not enabled and should remain blocked.
 - Most source registry rows other than DS-002 still have unresolved
   production-use status.
-- Public API contract is still a compact draft.
+- Public API contract still lacks workspace, idempotency, async job, and report
+  review semantics.
 - Report generation is synchronous in the current API route.
 - Workspace/user access control is represented in schema but not enforced as a
   public API contract.

@@ -58,6 +58,16 @@ python scripts/demo_mvp.py
 python scripts\demo_mvp.py
 ```
 
+Export the runtime OpenAPI authority for inspection:
+
+```bash
+python scripts/export_openapi.py
+```
+
+```powershell
+python scripts\export_openapi.py
+```
+
 For the full Postgres verification gate, run `RUN_DB_SMOKE=1 ./scripts/verify.sh`
 or `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` after the local database is up
 and migrations have been applied.

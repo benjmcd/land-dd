@@ -2,7 +2,9 @@ openapi: 3.1.0
 info:
   title: Area Due-Diligence Compiler API
   version: 0.1.0
-  description: Compact draft for the current MVP routes exposed by the FastAPI app.
+  description: Curated companion for the current MVP routes. FastAPI's generated
+    OpenAPI schema is the runtime authority; this file is path/method drift-checked
+    against it.
 servers:
   - url: http://localhost:8000
 paths:
