@@ -112,7 +112,7 @@ class SqlAlchemyReportRunRepository:
                 SELECT report_run_id
                 FROM reports.report_runs
                 WHERE (
-                    :area_id IS NULL
+                    CAST(:area_id AS uuid) IS NULL
                     OR area_id = CAST(:area_id AS uuid)
                 )
                 ORDER BY started_at DESC, report_run_id DESC

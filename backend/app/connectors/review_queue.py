@@ -17,7 +17,7 @@ CONNECTOR_REVIEW_STATUS_JOB_TYPE = "connector_review_status"
 
 _REVIEW_ACTION_PAYLOAD_SQL = """
 CASE
-    WHEN :review_action IS NULL THEN payload
+    WHEN CAST(:review_action AS jsonb) IS NULL THEN payload
     ELSE jsonb_set(
         jsonb_set(
             payload,
