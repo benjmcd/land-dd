@@ -7,12 +7,13 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import ApiServices
+from app.api.dependencies import ApiServices, get_db_services, get_services
 from app.claims_engine.not_evaluated import (
     NOT_EVALUATED_CLAIM_CODES,
     NOT_EVALUATED_DOMAINS,
     NOT_EVALUATED_SOURCE_NAME,
 )
+from app.core.config import Settings
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
@@ -43,6 +44,24 @@ def test_api_scaffold_lists_empty_in_memory_resources() -> None:
     assert client.get("/sources").json() == []
     assert client.get("/areas").json() == []
     assert client.get(f"/evidence?area_id={area_id}").json() == []
+
+
+def test_api_runtime_uses_memory_backend_by_default_for_isolated_tests() -> None:
+    app = create_app(settings=Settings(APP_STORAGE_BACKEND="postgres"))
+
+    assert app.state.storage_backend == "memory"
+    assert get_services not in app.dependency_overrides
+    assert hasattr(app.state, "services")
+
+
+def test_api_runtime_can_use_configured_postgres_backend() -> None:
+    app = create_app(
+        settings=Settings(APP_STORAGE_BACKEND="postgres"),
+        use_db_services=None,
+    )
+
+    assert app.state.storage_backend == "postgres"
+    assert app.dependency_overrides[get_services] is get_db_services
 
 
 def test_api_scaffold_creates_and_lists_sources() -> None:

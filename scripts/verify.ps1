@@ -92,19 +92,11 @@ try {
     $env:PYTHONPATH = '.'
     Invoke-PythonCommand -Label 'backend tests' -Arguments @('-m', 'pytest', '-q')
 
-    if (Get-Command ruff -ErrorAction SilentlyContinue) {
-        Write-Host '== backend lint =='
-        Invoke-NativeCommand -Label 'backend lint' -Command { ruff check . }
-    } else {
-        Write-Host 'ruff not installed; skipping lint'
-    }
+    Write-Host '== backend lint =='
+    Invoke-PythonCommand -Label 'backend lint' -Arguments @('-m', 'ruff', 'check', '.')
 
-    if (Get-Command mypy -ErrorAction SilentlyContinue) {
-        Write-Host '== backend typecheck =='
-        Invoke-NativeCommand -Label 'backend typecheck' -Command { mypy app tests }
-    } else {
-        Write-Host 'mypy not installed; skipping typecheck'
-    }
+    Write-Host '== backend typecheck =='
+    Invoke-PythonCommand -Label 'backend typecheck' -Arguments @('-m', 'mypy', 'app', 'tests')
 }
 finally {
     Pop-Location

@@ -29,19 +29,11 @@ echo "== backend tests =="
   PYTHONPATH=. "$PYTHON_BIN" -m pytest -q
 )
 
-if command -v ruff >/dev/null 2>&1; then
-  echo "== backend lint =="
-  (cd backend && ruff check .)
-else
-  echo "ruff not installed; skipping lint"
-fi
+echo "== backend lint =="
+(cd backend && "$PYTHON_BIN" -m ruff check .)
 
-if command -v mypy >/dev/null 2>&1; then
-  echo "== backend typecheck =="
-  (cd backend && mypy app tests)
-else
-  echo "mypy not installed; skipping typecheck"
-fi
+echo "== backend typecheck =="
+(cd backend && "$PYTHON_BIN" -m mypy app tests)
 
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db smoke =="
