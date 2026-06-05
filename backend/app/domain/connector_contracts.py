@@ -26,4 +26,14 @@ class ConnectorReviewQueueItemContract(BaseModel):
     last_error: str | None = None
 
 
-__all__ = ["ConnectorReviewQueueItemContract"]
+class ConnectorRunResultContract(BaseModel):
+    ingest_run_id: UUID
+    connector_name: str
+    retrieval_status: str
+    evidence_created: int
+    evidence_skipped: int
+    review_required: bool
+    queue_job_id: UUID | None = None
+
+
+__all__ = ["ConnectorReviewQueueItemContract", "ConnectorRunResultContract"]

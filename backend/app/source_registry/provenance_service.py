@@ -97,6 +97,26 @@ class SourceProvenanceService:
         version = SourceDatasetVersionContract.model_validate(version_kwargs)
         return self._repo.add_dataset_version(version)
 
+    def ensure_dataset(
+        self,
+        dataset: SourceDatasetContract,
+    ) -> SourceDatasetContract:
+        existing = self._repo.get_dataset(dataset.dataset_id)
+        if existing is not None:
+            return existing
+        self._require_source(dataset.source_id)
+        return self._repo.add_dataset(dataset)
+
+    def ensure_dataset_version(
+        self,
+        version: SourceDatasetVersionContract,
+    ) -> SourceDatasetVersionContract:
+        existing = self._repo.get_dataset_version(version.dataset_version_id)
+        if existing is not None:
+            return existing
+        self._require_dataset(version.dataset_id)
+        return self._repo.add_dataset_version(version)
+
     def record_retrieval_run(
         self,
         *,
@@ -148,6 +168,12 @@ class SourceProvenanceService:
 
     def retrieval_run_exists(self, ingest_run_id: UUID) -> bool:
         return self._repo.get_retrieval_run(ingest_run_id) is not None
+
+    def record_retrieval_run_unchecked(
+        self,
+        retrieval_run: SourceRetrievalRunContract,
+    ) -> SourceRetrievalRunContract:
+        return self._repo.add_retrieval_run(retrieval_run)
 
     def export_review_bundle(self, source_id: UUID) -> dict[str, object]:
         source = self._require_source(source_id)

@@ -27,6 +27,11 @@ from app.evidence_ledger.service import EvidenceService
 from app.reports.adapters import AreaServiceProtocolAdapter, SourceServiceProtocolAdapter
 from app.reports.report_repo import SqlAlchemyReportRunRepository
 from app.reports.service import ReportRunService
+from app.source_registry.provenance_repo import (
+    InMemorySourceProvenanceRepository,
+    SqlAlchemySourceProvenanceRepository,
+)
+from app.source_registry.provenance_service import SourceProvenanceService
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository, SqlAlchemySourceRepository
 
@@ -38,10 +43,15 @@ class ApiServices:
     evidence_service: EvidenceService
     report_service: ReportRunService
     connector_review_queue_repo: ConnectorReviewQueueRepository
+    source_provenance_service: SourceProvenanceService
 
 
 def create_api_services() -> ApiServices:
     source_service = SourceService(InMemorySourceRepository())
+    source_provenance_service = SourceProvenanceService(
+        source_service=source_service,
+        repo=InMemorySourceProvenanceRepository(),
+    )
     area_service = AreaService(InMemoryAreaRepository())
     evidence_repo = InMemoryEvidenceRepository()
     evidence_service = EvidenceService(
@@ -63,6 +73,7 @@ def create_api_services() -> ApiServices:
         evidence_service=evidence_service,
         report_service=report_service,
         connector_review_queue_repo=InMemoryConnectorReviewQueueRepository(),
+        source_provenance_service=source_provenance_service,
     )
 
 
@@ -72,6 +83,10 @@ def create_db_api_services(
     object_store_root: str | Path,
 ) -> ApiServices:
     source_service = SourceService(SqlAlchemySourceRepository(session))
+    source_provenance_service = SourceProvenanceService(
+        source_service=source_service,
+        repo=SqlAlchemySourceProvenanceRepository(session),
+    )
     area_service = AreaService(SqlAlchemyAreaRepository(session))
     evidence_repo = SqlAlchemyEvidenceRepository(session)
     evidence_service = EvidenceService(
@@ -94,6 +109,7 @@ def create_db_api_services(
         evidence_service=evidence_service,
         report_service=report_service,
         connector_review_queue_repo=SqlAlchemyConnectorReviewQueueRepository(session),
+        source_provenance_service=source_provenance_service,
     )
 
 
