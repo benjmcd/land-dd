@@ -193,6 +193,55 @@ def test_in_memory_review_queue_rejects_invalid_worker_transitions() -> None:
         repo.mark_failed(leased.job_id, error="")
 
 
+def test_in_memory_review_queue_reviewer_approval_records_action() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    with pytest.raises(ValueError, match="reviewer_id is required"):
+        repo.approve_review(item.job_id, reviewer_id=" ")
+    approved = repo.approve_review(
+        item.job_id,
+        reviewer_id=" reviewer-1 ",
+        reason="checked packet",
+    )
+
+    assert approved.status == JobStatus.SUCCEEDED
+    assert approved.last_error is None
+    action = approved.payload["last_review_action"]
+    assert action["action"] == "approve"
+    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reason"] == "checked packet"
+    assert approved.payload["review_actions"] == [action]
+
+
+def test_in_memory_review_queue_reviewer_rejects_and_requeues() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    with pytest.raises(ValueError, match="reason is required"):
+        repo.reject_review(item.job_id, reviewer_id="reviewer-1", reason=" ")
+    rejected = repo.reject_review(
+        item.job_id,
+        reviewer_id="reviewer-1",
+        reason="temporary source issue",
+    )
+    requeued = repo.requeue_failed(
+        rejected.job_id,
+        reviewer_id="reviewer-2",
+        reason="retry source",
+    )
+
+    assert rejected.status == JobStatus.FAILED
+    assert rejected.last_error == "temporary source issue"
+    assert requeued.status == JobStatus.QUEUED
+    assert requeued.last_error == "retry source"
+    actions = requeued.payload["review_actions"]
+    assert [action["action"] for action in actions] == ["reject", "requeue"]
+    assert actions[-1]["reviewer_id"] == "reviewer-2"
+
+
 def test_in_memory_review_queue_requeues_failed_jobs_with_remaining_attempts() -> None:
     review_status = _review_status("flood_failure.json")
     repo = InMemoryConnectorReviewQueueRepository()
@@ -238,6 +287,24 @@ def test_in_memory_review_queue_cancels_nonfinal_jobs() -> None:
     assert repo.lease_next(worker_id="worker-1") is None
     with pytest.raises(ValueError, match="cannot be cancelled"):
         repo.cancel(cancelled.job_id, reason="already cancelled")
+
+
+def test_in_memory_review_queue_reviewer_cancel_records_action() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    cancelled = repo.cancel(
+        item.job_id,
+        reviewer_id="reviewer-1",
+        reason="duplicate packet",
+    )
+
+    assert cancelled.status == JobStatus.CANCELLED
+    assert cancelled.last_error == "duplicate packet"
+    action = cancelled.payload["last_review_action"]
+    assert action["action"] == "cancel"
+    assert action["reviewer_id"] == "reviewer-1"
 
 
 def test_in_memory_review_queue_rejects_invalid_status_filter() -> None:
@@ -428,6 +495,46 @@ def test_sqlalchemy_review_queue_requeues_and_cancels_job_queue_items() -> None:
             assert cancelled.status == JobStatus.CANCELLED
             assert cancelled.finished_at is not None
             assert cancelled.last_error == "connector review superseded"
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_reviewer_actions_update_payload() -> None:
+    engine = build_engine()
+    review_status = _review_status("flood_failure.json")
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            item = repo.enqueue_review_status(review_status)
+            rejected = repo.reject_review(
+                item.job_id,
+                reviewer_id="reviewer-1",
+                reason="temporary source issue",
+            )
+            requeued = repo.requeue_failed(
+                rejected.job_id,
+                reviewer_id="reviewer-2",
+                reason="retry source",
+            )
+            session.commit()
+
+            assert rejected.status == JobStatus.FAILED
+            assert requeued.status == JobStatus.QUEUED
+            assert requeued.last_error == "retry source"
+            actions = requeued.payload["review_actions"]
+            assert [action["action"] for action in actions] == ["reject", "requeue"]
+            assert actions[-1]["reviewer_id"] == "reviewer-2"
     finally:
         with Session(engine) as session:
             session.execute(

@@ -107,6 +107,12 @@ def _build_review_status(fixture_name: str) -> ConnectorRunReviewStatus:
     return build_connector_run_review_status(handoff, quality)
 
 
+def _enqueue_review_item(app: object, fixture_name: str) -> object:
+    services = cast(ApiServices, app.state.services)
+    review_status = _build_review_status(fixture_name)
+    return services.connector_review_queue_repo.enqueue_review_status(review_status)
+
+
 def test_list_connector_review_queue_returns_empty_list_when_no_items() -> None:
     client = TestClient(create_app())
 
@@ -264,3 +270,115 @@ def test_get_connector_review_queue_item_returns_422_for_non_uuid_path_segment()
     response = client.get("/connector-review-queue/not-a-uuid")
 
     assert response.status_code == 422
+
+
+def test_approve_connector_review_queue_item_records_reviewer_action() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/approve",
+        json={"reviewer_id": " reviewer-1 ", "reason": "checked source packet"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == JobStatus.SUCCEEDED.value
+    assert body["last_error"] is None
+    action = body["payload"]["last_review_action"]
+    assert action["action"] == "approve"
+    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reason"] == "checked source packet"
+    assert body["payload"]["review_actions"] == [action]
+
+
+def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/reject",
+        json={"reviewer_id": "reviewer-1", "reason": "source packet rejected"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == JobStatus.FAILED.value
+    assert body["last_error"] == "source packet rejected"
+    action = body["payload"]["last_review_action"]
+    assert action["action"] == "reject"
+    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reason"] == "source packet rejected"
+
+
+def test_requeue_connector_review_queue_item_appends_second_reviewer_action() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    rejected = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/reject",
+        json={"reviewer_id": "reviewer-1", "reason": "temporary source issue"},
+    )
+    assert rejected.status_code == 200
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/requeue",
+        json={"reviewer_id": "reviewer-2", "reason": "retry source packet"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == JobStatus.QUEUED.value
+    assert body["last_error"] == "retry source packet"
+    actions = body["payload"]["review_actions"]
+    assert [action["action"] for action in actions] == ["reject", "requeue"]
+    assert actions[-1]["reviewer_id"] == "reviewer-2"
+
+
+def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/cancel",
+        json={"reviewer_id": "reviewer-1", "reason": "duplicate packet"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == JobStatus.CANCELLED.value
+    assert body["last_error"] == "duplicate packet"
+    action = body["payload"]["last_review_action"]
+    assert action["action"] == "cancel"
+    assert action["reviewer_id"] == "reviewer-1"
+
+
+def test_connector_review_action_rejects_missing_reviewer_identity() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/approve",
+        json={"reviewer_id": " "},
+    )
+
+    assert response.status_code == 422
+    assert "reviewer_id" in response.json()["detail"]
+
+
+def test_connector_review_action_rejects_missing_reason_when_required() -> None:
+    app = create_app()
+    client = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/reject",
+        json={"reviewer_id": "reviewer-1"},
+    )
+
+    assert response.status_code == 422
+    assert "reason is required" in response.json()["detail"]
