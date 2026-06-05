@@ -8,9 +8,28 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.api.dependencies import ApiServices, get_services
+from app.api.reviewer_auth import LocalServiceAccountReviewerAuth, ReviewerPrincipal
+from app.connectors.review_queue import ConnectorReviewQueueItem
 
 router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
+
+_FIXTURE_REVIEWER_AUTH = LocalServiceAccountReviewerAuth(
+    {"fixture-reviewer": "fixture-token-123"}
+)
+
+
+def _get_queue_item_or_404(
+    services: ApiServices,
+    ingest_run_id: UUID,
+) -> ConnectorReviewQueueItem:
+    item = services.connector_review_queue.get_by_ingest_run_id(ingest_run_id)
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector review queue item not found",
+        )
+    return item
 
 
 class ConnectorFixtureQualityIssueResponse(BaseModel):
@@ -112,4 +131,69 @@ def get_connector_review_queue_item(
         "started_at": queue_item.started_at,
         "finished_at": queue_item.finished_at,
         "last_error": queue_item.last_error,
+    }
+
+
+@router.post("/{ingest_run_id}/review-actions/request_fixture_fix")
+def request_fixture_fix(
+    ingest_run_id: UUID,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(_FIXTURE_REVIEWER_AUTH)],
+) -> dict[str, object]:
+    item = _get_queue_item_or_404(services, ingest_run_id)
+    return {
+        "action": "request_fixture_fix",
+        "ingest_run_id": str(ingest_run_id),
+        "reviewer_id": principal.reviewer_id,
+        "queue_item_status": item.status.value,
+    }
+
+
+@router.post("/{ingest_run_id}/review-actions/requeue_after_fix")
+def requeue_after_fix(
+    ingest_run_id: UUID,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(_FIXTURE_REVIEWER_AUTH)],
+) -> dict[str, object]:
+    item = _get_queue_item_or_404(services, ingest_run_id)
+    try:
+        updated_item = services.connector_review_queue.requeue_failed(
+            item.job_id,
+            reason=f"requeued by reviewer {principal.reviewer_id}",
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="queue item cannot be requeued",
+        ) from None
+    return {
+        "action": "requeue_after_fix",
+        "ingest_run_id": str(ingest_run_id),
+        "reviewer_id": principal.reviewer_id,
+        "new_status": updated_item.status.value,
+    }
+
+
+@router.post("/{ingest_run_id}/review-actions/cancel_review")
+def cancel_review(
+    ingest_run_id: UUID,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(_FIXTURE_REVIEWER_AUTH)],
+) -> dict[str, object]:
+    item = _get_queue_item_or_404(services, ingest_run_id)
+    try:
+        updated_item = services.connector_review_queue.cancel(
+            item.job_id,
+            reason=f"cancelled by reviewer {principal.reviewer_id}",
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="queue item cannot be cancelled",
+        ) from None
+    return {
+        "action": "cancel_review",
+        "ingest_run_id": str(ingest_run_id),
+        "reviewer_id": principal.reviewer_id,
+        "new_status": updated_item.status.value,
     }

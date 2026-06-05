@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from hmac import compare_digest
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Header, HTTPException, status
 

@@ -7,8 +7,10 @@ from app.api.connectors import router as connectors_router
 from app.api.dependencies import create_api_services, get_db_services, get_services
 from app.api.evidence import router as evidence_router
 from app.api.health import router as health_router
+from app.api.intake import router as intake_router
 from app.api.reports import router as reports_router
 from app.api.sources import router as sources_router
+from app.api.ui import router as ui_router
 from app.core.config import Settings, get_settings
 
 
@@ -33,7 +35,9 @@ def create_app(
     app.include_router(areas_router)
     app.include_router(evidence_router)
     app.include_router(reports_router)
+    app.include_router(intake_router)
     app.include_router(connectors_router)
+    app.include_router(ui_router)
     return app
 
 
