@@ -29,3 +29,7 @@ E12,B-027,Add billing/report credits,Backend/Product,Could,Phase 7,B-024,Pay-per
 E15,B-028,Define jurisdiction adapter interface,Architecture,Should,Phase 2,B-002,Adapter contract documented
 E14,B-029,Legal review of disclaimers and output language,Legal/Product,Must,Pre-beta,B-018,Approved language
 E14,B-030,Data-license review workflow,Legal/Data,Must,Phase 1,B-001,License checklist complete
+E16,B-031,Maintain implementation authority map,Architecture,Must,Readiness,None,"MILESTONE_MAP.md, LANE_OWNERSHIP.md, and state docs exist and are validate-gated"
+E16,B-032,Select MVP state and target counties,Product/Data,Must,Readiness,B-030,Selected state/counties recorded with source coverage and caveats
+E16,B-033,Promote API contract for workspace-scoped async reports,Backend/Architecture,Must,Readiness,B-024,OpenAPI/API docs define idempotency key workspace scope report review status and source-failure semantics
+E16,B-034,Define report approval lifecycle,Backend/Ops,Must,Readiness,B-018,Report review states and reviewer actions are documented before beta delivery

@@ -63,11 +63,19 @@ Write-Host '== workspace structure =='
 
 $required = @(
     'README.md'
+    'MILESTONE_MAP.md'
+    'LANE_OWNERSHIP.md'
     'docs/ARCHITECTURE.md'
     'docs/PRODUCT_SPEC.md'
     'docs/POSTGRES_FIRST_STORAGE.md'
     'docs/DATA_SOURCE_STRATEGY.md'
+    'docs/IMPLEMENTATION_READINESS.md'
     'docs/TESTING.md'
+    'state/PROJECT_STATE.md'
+    'state/OPEN_QUESTIONS.md'
+    'state/VALIDATION_LOG.md'
+    'scripts/check_json_files.py'
+    'scripts/check_csv_files.py'
     'backend/pyproject.toml'
     'db/migrations/0001_initial_spine.sql'
 )
@@ -79,6 +87,7 @@ foreach ($path in $required) {
 }
 
 Invoke-PythonCommand -Label 'json file check' -Arguments @('scripts/check_json_files.py')
+Invoke-PythonCommand -Label 'csv register check' -Arguments @('scripts/check_csv_files.py')
 
 # Structural invariant checks. These must hold or a prior fix has been regressed.
 Write-Host '== structural invariants =='

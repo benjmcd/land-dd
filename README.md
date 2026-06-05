@@ -82,14 +82,24 @@ Core storage: PostgreSQL + PostGIS
 Core workflow: source registry -> area -> evidence -> claim -> report run -> API
 ```
 
+Before starting live-source, user-facing, or other impact-heavy implementation,
+read `docs/IMPLEMENTATION_READINESS.md` and resolve the gates that apply to the
+planned slice.
+
 ## Primary docs
 
+- `MILESTONE_MAP.md`: current milestone status and readiness gates.
+- `LANE_OWNERSHIP.md`: lane boundaries and connector integration ownership.
 - `docs/ARCHITECTURE.md`: durable design and invariants.
 - `docs/PRODUCT_SPEC.md`: product scope and non-goals.
 - `docs/POSTGRES_FIRST_STORAGE.md`: storage policy and schema direction.
 - `docs/DATA_SOURCE_STRATEGY.md`: data source, licensing, and provenance direction.
+- `docs/IMPLEMENTATION_READINESS.md`: next-pass gates before high-impact work.
 - `docs/TESTING.md`: verification and test guidance.
 - `docs/DEMO.md`: public API fixture-to-report demo flow.
+- `state/PROJECT_STATE.md`: current working state and known limits.
+- `state/OPEN_QUESTIONS.md`: decisions that block heavier implementation.
+- `state/VALIDATION_LOG.md`: recent verification evidence and local caveats.
 
 ## Non-goals
 
