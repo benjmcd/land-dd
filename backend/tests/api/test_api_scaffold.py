@@ -226,6 +226,27 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     get_response = client.get(f"/report-runs/jobs/{first['job_id']}")
     assert get_response.status_code == 200
     assert get_response.json()["job_id"] == first["job_id"]
+    execute_response = client.post(
+        "/report-runs/jobs/execute-next",
+        json={"worker_id": "api-report-worker-1"},
+    )
+    assert execute_response.status_code == 200
+    executed = execute_response.json()
+    assert executed["job_id"] == first["job_id"]
+    assert executed["status"] == "succeeded"
+    assert executed["attempts"] == 1
+    assert executed["locked_by"] is None
+    assert executed["report_run_id"] is not None
+    report_response = client.get(f"/report-runs/{executed['report_run_id']}")
+    assert report_response.status_code == 200
+    assert report_response.json()["idempotency_key"] == "queued-report-key-1"
+    assert (
+        client.post(
+            "/report-runs/jobs/execute-next",
+            json={"worker_id": "api-report-worker-1"},
+        ).status_code
+        == 404
+    )
     assert (
         client.post(
             "/report-runs/jobs",

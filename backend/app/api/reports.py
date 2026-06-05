@@ -31,6 +31,14 @@ class ReportRunJobCreateRequest(BaseModel):
     requested_by: UUID | None = None
 
 
+class ReportRunJobExecuteRequest(BaseModel):
+    worker_id: str
+
+
+class ReportRunJobRequeueRequest(BaseModel):
+    reason: str
+
+
 class ReportReviewActionRequest(BaseModel):
     reviewer_id: str
     reason: str | None = None
@@ -105,6 +113,28 @@ def submit_report_run_job(
         ) from exc
 
 
+@router.post("/jobs/execute-next", response_model=ReportRunJobContract)
+def execute_next_report_run_job(
+    request: ReportRunJobExecuteRequest,
+    services: ServicesDep,
+) -> ReportRunJobContract:
+    try:
+        job = services.report_service.execute_next_report_run_job(
+            worker_id=request.worker_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no queued report job available",
+        )
+    return job
+
+
 @router.get("/jobs/{job_id}", response_model=ReportRunJobContract)
 def get_report_run_job(
     job_id: UUID,
@@ -114,6 +144,24 @@ def get_report_run_job(
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report job not found")
     return job
+
+
+@router.post("/jobs/{job_id}/requeue", response_model=ReportRunJobContract)
+def requeue_report_run_job(
+    job_id: UUID,
+    request: ReportRunJobRequeueRequest,
+    services: ServicesDep,
+) -> ReportRunJobContract:
+    try:
+        return services.report_service.requeue_report_run_job(
+            job_id,
+            reason=request.reason,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/{report_run_id}/approve", response_model=ReportRunContract)

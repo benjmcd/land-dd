@@ -27,9 +27,11 @@ from app.domain.enums import (
     ReportReviewStatus,
 )
 from app.domain.evidence_contracts import EvidenceContract
+from app.domain.report_contracts import ReportRunJobContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.job_repo import InMemoryReportRunJobRepository
 from app.reports.report_repo import ReportRunRepository
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
@@ -46,6 +48,7 @@ def load_geometry(name: str) -> dict[str, object]:
 
 def make_service(
     report_repo: ReportRunRepository | None = None,
+    report_job_repo: InMemoryReportRunJobRepository | None = None,
 ) -> tuple[
     SourceService,
     AreaService,
@@ -65,6 +68,7 @@ def make_service(
         claim_service=claim_service,
         rule_engine=RuleEngine.from_file(),
         report_repo=report_repo,
+        report_job_repo=report_job_repo,
     )
     return source_service, area_service, evidence_service, claim_service, report_service
 
@@ -375,6 +379,56 @@ def test_submit_report_run_job_is_idempotent_and_requires_key() -> None:
             intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
             idempotency_key=" ",
         )
+
+
+def test_execute_next_report_run_job_creates_report_and_finishes_job() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    job = report_service.submit_report_run_job(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        idempotency_key="execute-key-1",
+    )
+
+    executed = report_service.execute_next_report_run_job(worker_id=" report-worker-1 ")
+
+    assert executed is not None
+    assert executed.job_id == job.job_id
+    assert executed.status == JobStatus.SUCCEEDED
+    assert executed.attempts == 1
+    assert executed.locked_by is None
+    assert executed.report_run_id is not None
+    report_run = report_service.get_report_run(executed.report_run_id)
+    assert report_run is not None
+    assert report_run.idempotency_key == "execute-key-1"
+    assert report_run.review_status == ReportReviewStatus.NEEDS_REVIEW
+    assert report_service.execute_next_report_run_job(worker_id="report-worker-1") is None
+
+
+def test_execute_next_report_run_job_marks_failed_and_allows_requeue() -> None:
+    report_job_repo = InMemoryReportRunJobRepository()
+    _, _, _, _, report_service = make_service(report_job_repo=report_job_repo)
+    missing_area_id = uuid4()
+    report_job_repo.enqueue(
+        ReportRunJobContract(
+            area_id=missing_area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            idempotency_key="failing-job-key-1",
+        )
+    )
+
+    failed = report_service.execute_next_report_run_job(worker_id="report-worker-1")
+
+    assert failed is not None
+    assert failed.status == JobStatus.FAILED
+    assert failed.last_error is not None
+    assert "is not registered" in failed.last_error
+    requeued = report_service.requeue_report_run_job(
+        failed.job_id,
+        reason="retry after area registration",
+    )
+    assert requeued.status == JobStatus.QUEUED
+    assert requeued.attempts == 1
 
 
 def test_create_report_run_without_source_evidence_surfaces_not_evaluated_unknowns() -> None:

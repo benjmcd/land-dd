@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -26,6 +27,19 @@ class ReportRunJobRepository(Protocol):
         *,
         workspace_id: UUID | None = None,
     ) -> ReportRunJobContract | None: ...
+
+    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None: ...
+
+    def mark_succeeded(
+        self,
+        job_id: UUID,
+        *,
+        report_run_id: UUID,
+    ) -> ReportRunJobContract: ...
+
+    def mark_failed(self, job_id: UUID, *, error: str) -> ReportRunJobContract: ...
+
+    def requeue_failed(self, job_id: UUID, *, reason: str) -> ReportRunJobContract: ...
 
 
 class InMemoryReportRunJobRepository:
@@ -74,6 +88,92 @@ class InMemoryReportRunJobRepository:
             return None
         return self.get(job_id)
 
+    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None:
+        worker_id = _require_worker_id(worker_id)
+        leased_at = datetime.now(UTC)
+        candidates = [
+            job
+            for job in self._by_id.values()
+            if job.status == JobStatus.QUEUED
+            and job.attempts < job.max_attempts
+            and (job.not_before is None or job.not_before <= leased_at)
+        ]
+        if not candidates:
+            return None
+        selected = min(candidates, key=lambda job: (job.created_at, str(job.job_id)))
+        leased = selected.model_copy(
+            update={
+                "status": JobStatus.RUNNING,
+                "attempts": selected.attempts + 1,
+                "locked_by": worker_id,
+                "locked_at": leased_at,
+                "started_at": selected.started_at or leased_at,
+            }
+        )
+        self._by_id[leased.job_id] = leased
+        return leased
+
+    def mark_succeeded(
+        self,
+        job_id: UUID,
+        *,
+        report_run_id: UUID,
+    ) -> ReportRunJobContract:
+        job = self._get_running_job(job_id)
+        finished = job.model_copy(
+            update={
+                "status": JobStatus.SUCCEEDED,
+                "report_run_id": report_run_id,
+                "locked_by": None,
+                "locked_at": None,
+                "finished_at": datetime.now(UTC),
+                "last_error": None,
+            }
+        )
+        self._by_id[job_id] = finished
+        return finished
+
+    def mark_failed(self, job_id: UUID, *, error: str) -> ReportRunJobContract:
+        error = _require_error(error)
+        job = self._get_running_job(job_id)
+        failed = job.model_copy(
+            update={
+                "status": JobStatus.FAILED,
+                "locked_by": None,
+                "locked_at": None,
+                "finished_at": datetime.now(UTC),
+                "last_error": error,
+            }
+        )
+        self._by_id[job_id] = failed
+        return failed
+
+    def requeue_failed(self, job_id: UUID, *, reason: str) -> ReportRunJobContract:
+        reason = _require_error(reason)
+        job = self.get(job_id)
+        if job is None or job.status != JobStatus.FAILED:
+            raise ValueError("report run job is not failed")
+        if job.attempts >= job.max_attempts:
+            raise ValueError("report run job has no retry attempts remaining")
+        requeued = job.model_copy(
+            update={
+                "status": JobStatus.QUEUED,
+                "not_before": datetime.now(UTC),
+                "locked_by": None,
+                "locked_at": None,
+                "finished_at": None,
+                "last_error": reason,
+            }
+        )
+        self._by_id[job_id] = requeued
+        return requeued
+
+    def _get_running_job(self, job_id: UUID) -> ReportRunJobContract:
+        job = self.get(job_id)
+        if job is None or job.status != JobStatus.RUNNING:
+            raise ValueError("report run job is not running")
+        return job
+
 
 class SqlAlchemyReportRunJobRepository:
     def __init__(self, session: Session) -> None:
@@ -104,6 +204,7 @@ class SqlAlchemyReportRunJobRepository:
                     payload,
                     idempotency_key,
                     max_attempts,
+                    attempts,
                     not_before
                 )
                 VALUES (
@@ -113,7 +214,8 @@ class SqlAlchemyReportRunJobRepository:
                     :status,
                     CAST(:payload AS jsonb),
                     :idempotency_key,
-                    1,
+                    :max_attempts,
+                    :attempts,
                     :not_before
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING
@@ -126,6 +228,8 @@ class SqlAlchemyReportRunJobRepository:
                 "status": JobStatus.QUEUED.value,
                 "payload": _json_payload(job, idempotency_key=normalized_key),
                 "idempotency_key": storage_key,
+                "max_attempts": job.max_attempts,
+                "attempts": job.attempts,
                 "not_before": job.not_before or job.created_at,
             },
         )
@@ -145,6 +249,153 @@ class SqlAlchemyReportRunJobRepository:
         ).mappings().one_or_none()
         if row is None:
             return None
+        return _row_to_job(row)
+
+    def lease_next(self, *, worker_id: str) -> ReportRunJobContract | None:
+        worker_id = _require_worker_id(worker_id)
+        row = self._session.execute(
+            text(
+                f"""
+                WITH candidate AS (
+                    SELECT job_id
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                      AND status = CAST(:queued_status AS jobs.job_status)
+                      AND not_before <= now()
+                      AND attempts < max_attempts
+                    ORDER BY created_at ASC, job_id ASC
+                    FOR UPDATE SKIP LOCKED
+                    LIMIT 1
+                )
+                UPDATE jobs.job_queue AS queue
+                SET
+                    status = CAST(:running_status AS jobs.job_status),
+                    attempts = queue.attempts + 1,
+                    locked_by = :worker_id,
+                    locked_at = now(),
+                    started_at = COALESCE(queue.started_at, now())
+                FROM candidate
+                WHERE queue.job_id = candidate.job_id
+                RETURNING {_RETURNING_QUEUE_COLUMNS}
+                """
+            ),
+            {
+                "job_type": REPORT_RUN_JOB_TYPE,
+                "queued_status": JobStatus.QUEUED.value,
+                "running_status": JobStatus.RUNNING.value,
+                "worker_id": worker_id,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            return None
+        return _row_to_job(row)
+
+    def mark_succeeded(
+        self,
+        job_id: UUID,
+        *,
+        report_run_id: UUID,
+    ) -> ReportRunJobContract:
+        row = self._session.execute(
+            text(
+                f"""
+                UPDATE jobs.job_queue AS queue
+                SET
+                    status = CAST(:succeeded_status AS jobs.job_status),
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    finished_at = now(),
+                    last_error = NULL,
+                    payload = jsonb_set(
+                        payload,
+                        '{{report_run_id}}',
+                        to_jsonb(CAST(:report_run_id AS text)),
+                        true
+                    )
+                WHERE queue.job_type = :job_type
+                  AND queue.job_id = :job_id
+                  AND queue.status = CAST(:running_status AS jobs.job_status)
+                RETURNING {_RETURNING_QUEUE_COLUMNS}
+                """
+            ),
+            {
+                "succeeded_status": JobStatus.SUCCEEDED.value,
+                "report_run_id": str(report_run_id),
+                "job_type": REPORT_RUN_JOB_TYPE,
+                "job_id": str(job_id),
+                "running_status": JobStatus.RUNNING.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError("report run job is not running")
+        return _row_to_job(row)
+
+    def mark_failed(self, job_id: UUID, *, error: str) -> ReportRunJobContract:
+        error = _require_error(error)
+        row = self._session.execute(
+            text(
+                f"""
+                UPDATE jobs.job_queue AS queue
+                SET
+                    status = CAST(:failed_status AS jobs.job_status),
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    finished_at = now(),
+                    last_error = :last_error
+                WHERE queue.job_type = :job_type
+                  AND queue.job_id = :job_id
+                  AND queue.status = CAST(:running_status AS jobs.job_status)
+                RETURNING {_RETURNING_QUEUE_COLUMNS}
+                """
+            ),
+            {
+                "failed_status": JobStatus.FAILED.value,
+                "last_error": error,
+                "job_type": REPORT_RUN_JOB_TYPE,
+                "job_id": str(job_id),
+                "running_status": JobStatus.RUNNING.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError("report run job is not running")
+        return _row_to_job(row)
+
+    def requeue_failed(self, job_id: UUID, *, reason: str) -> ReportRunJobContract:
+        reason = _require_error(reason)
+        row = self._session.execute(
+            text(
+                f"""
+                UPDATE jobs.job_queue AS queue
+                SET
+                    status = CAST(:queued_status AS jobs.job_status),
+                    not_before = now(),
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    finished_at = NULL,
+                    last_error = :last_error
+                WHERE queue.job_type = :job_type
+                  AND queue.job_id = :job_id
+                  AND queue.status = CAST(:failed_status AS jobs.job_status)
+                  AND queue.attempts < queue.max_attempts
+                RETURNING {_RETURNING_QUEUE_COLUMNS}
+                """
+            ),
+            {
+                "queued_status": JobStatus.QUEUED.value,
+                "last_error": reason,
+                "job_type": REPORT_RUN_JOB_TYPE,
+                "job_id": str(job_id),
+                "failed_status": JobStatus.FAILED.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError(
+                "report run job is not failed or has no retry attempts remaining"
+            )
         return _row_to_job(row)
 
     def get_by_idempotency_key(
@@ -170,21 +421,48 @@ class SqlAlchemyReportRunJobRepository:
         return _row_to_job(row)
 
 
+_RETURNING_COLUMNS = """
+job_id,
+workspace_id,
+job_type,
+status,
+payload,
+idempotency_key,
+created_at,
+not_before,
+attempts,
+max_attempts,
+locked_by,
+locked_at,
+started_at,
+finished_at,
+last_error
+"""
+
+_RETURNING_QUEUE_COLUMNS = """
+queue.job_id,
+queue.workspace_id,
+queue.job_type,
+queue.status,
+queue.payload,
+queue.idempotency_key,
+queue.created_at,
+queue.not_before,
+queue.attempts,
+queue.max_attempts,
+queue.locked_by,
+queue.locked_at,
+queue.started_at,
+queue.finished_at,
+queue.last_error
+"""
+
+
 def _select_job_sql(where_clause: str) -> TextClause:
     return text(
         f"""
         SELECT
-            job_id,
-            workspace_id,
-            job_type,
-            status,
-            payload,
-            idempotency_key,
-            created_at,
-            not_before,
-            started_at,
-            finished_at,
-            last_error
+            {_RETURNING_COLUMNS}
         FROM jobs.job_queue
         {where_clause}
         LIMIT 1
@@ -231,6 +509,10 @@ def _row_to_job(row: Any) -> ReportRunJobContract:
         else None,
         created_at=row["created_at"],
         not_before=row["not_before"],
+        attempts=int(row["attempts"]),
+        max_attempts=int(row["max_attempts"]),
+        locked_by=row["locked_by"],
+        locked_at=row["locked_at"],
         started_at=row["started_at"],
         finished_at=row["finished_at"],
         last_error=row["last_error"],
@@ -242,6 +524,20 @@ def _normalize_idempotency_key(idempotency_key: str) -> str:
     if not normalized:
         raise ValueError("idempotency_key is required")
     return normalized
+
+
+def _require_worker_id(worker_id: str) -> str:
+    cleaned = worker_id.strip()
+    if not cleaned:
+        raise ValueError("report run job worker_id is required")
+    return cleaned
+
+
+def _require_error(error: str) -> str:
+    cleaned = error.strip()
+    if not cleaned:
+        raise ValueError("error is required")
+    return cleaned
 
 
 def _storage_idempotency_key(

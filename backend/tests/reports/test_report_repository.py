@@ -222,6 +222,12 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         )
         assert duplicate_report_run.report_run_id == report_run.report_run_id
         assert duplicate_report_job.job_id == report_job.job_id
+        executed_report_job = report_service.execute_next_report_run_job(
+            worker_id="db-report-worker-1"
+        )
+        assert executed_report_job is not None
+        assert executed_report_job.job_id == report_job.job_id
+        assert executed_report_job.report_run_id is not None
         report_run = report_service.approve_report_run(
             report_run.report_run_id,
             reviewer_id="db-reviewer",
@@ -290,23 +296,31 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
 
     with Session(engine) as session:
         job_repo = SqlAlchemyReportRunJobRepository(session)
-        retrieved_job = job_repo.get(report_job.job_id)
+        retrieved_job = job_repo.get(executed_report_job.job_id)
 
-    assert retrieved_job == report_job
-    assert report_job.status == JobStatus.QUEUED
-    assert report_job.workspace_id == workspace_id
-    assert report_job.requested_by == user_id
+    assert retrieved_job == executed_report_job
+    assert executed_report_job.status == JobStatus.SUCCEEDED
+    assert executed_report_job.attempts == 1
+    assert executed_report_job.workspace_id == workspace_id
+    assert executed_report_job.requested_by == user_id
 
     with Session(engine) as session:
         repo = SqlAlchemyReportRunRepository(session, report_store)
         retrieved = repo.get(report_run.report_run_id)
+        retrieved_worker_report = repo.get(executed_report_job.report_run_id)
 
     assert retrieved == report_run
+    assert retrieved_worker_report is not None
+    assert retrieved_worker_report.idempotency_key == "db-report-job-key-1"
 
     with Session(engine) as session:
         session.execute(
             text("DELETE FROM jobs.job_queue WHERE job_id = :job_id"),
-            {"job_id": report_job.job_id},
+            {"job_id": executed_report_job.job_id},
+        )
+        session.execute(
+            text("DELETE FROM reports.report_runs WHERE report_run_id = :report_run_id"),
+            {"report_run_id": executed_report_job.report_run_id},
         )
         session.execute(
             text("DELETE FROM reports.report_runs WHERE report_run_id = :report_run_id"),

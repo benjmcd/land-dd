@@ -137,6 +137,42 @@ paths:
         '200': { description: Report run job }
         '404': { description: Report run job not found }
         '422': { description: Invalid report run job id }
+  /report-runs/jobs/execute-next:
+    post:
+      summary: Execute the next queued report run job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [worker_id]
+              properties:
+                worker_id: { type: string }
+      responses:
+        '200': { description: Executed report run job }
+        '404': { description: No queued report job available }
+        '422': { description: Invalid worker request }
+  /report-runs/jobs/{job_id}/requeue:
+    post:
+      summary: Requeue a failed report run job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: Requeued report run job }
+        '422': { description: Invalid requeue request }
   /report-runs/{report_run_id}:
     get:
       summary: Get report run

@@ -104,6 +104,32 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report Job Worker Pass
+
+- `ReportRunJobContract`: added attempts, max attempts, lock owner, lock time,
+  and execution timestamps for worker lifecycle visibility.
+- `ReportRunJobRepository`: added lease, succeed, fail, and requeue operations
+  for in-memory and Postgres-backed report jobs.
+- `ReportRunService.execute_next_report_run_job`: leases one queued report job,
+  runs the existing report creation path, and records the produced
+  `report_run_id`; execution failures mark the job failed with `last_error`.
+- `POST /report-runs/jobs/execute-next` and
+  `POST /report-runs/jobs/{job_id}/requeue`: added explicit worker/operator
+  endpoints. No autonomous scheduler/daemon is claimed.
+- `python -m pytest backend\tests\reports\test_report_service.py
+  backend\tests\reports\test_report_repository.py
+  backend\tests\api\test_api_scaffold.py
+  backend\tests\api\test_openapi_contract.py -q`: passed with one DB smoke
+  skip.
+- `python -m ruff check` on affected backend and test files: passed.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, source registry,
+  and structural invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

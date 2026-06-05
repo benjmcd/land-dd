@@ -22,8 +22,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    actions record reviewer identity, reason, transition, and timestamp.
 4. Report request contract: synchronous report creation accepts optional
    workspace, requester, and idempotency metadata. Queued report jobs require an
-   idempotency key, are workspace-scoped, and start in `queued` status until a
-   worker runtime is introduced.
+   idempotency key, are workspace-scoped, and can be explicitly leased/executed
+   into persisted report runs.
 
 ## High
 
@@ -39,6 +39,6 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 
 1. Should source-specific observed-value payloads become JSON Schemas or remain
    runtime-validator-only for now?
-2. What worker lease/execute/retry path should turn queued report jobs into
-   persisted report runs?
+2. Should report job execution run only through explicit operator/API calls, or
+   should a scheduler/daemon be introduced for automatic processing?
 3. Which UI/dashboard scope is worth doing before live county data exists?

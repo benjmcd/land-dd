@@ -57,6 +57,10 @@ class ReportRunJobContract(BaseModel):
     report_run_id: UUID | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     not_before: datetime | None = None
+    attempts: int = Field(default=0, ge=0)
+    max_attempts: int = Field(default=3, ge=1)
+    locked_by: str | None = None
+    locked_at: datetime | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
     last_error: str | None = None

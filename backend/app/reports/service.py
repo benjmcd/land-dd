@@ -204,6 +204,37 @@ class ReportRunService:
     def get_report_run_job(self, job_id: UUID) -> ReportRunJobContract | None:
         return self._report_job_repo.get(job_id)
 
+    def requeue_report_run_job(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+    ) -> ReportRunJobContract:
+        return self._report_job_repo.requeue_failed(job_id, reason=reason)
+
+    def execute_next_report_run_job(
+        self,
+        *,
+        worker_id: str,
+    ) -> ReportRunJobContract | None:
+        leased = self._report_job_repo.lease_next(worker_id=worker_id)
+        if leased is None:
+            return None
+        try:
+            report_run = self.create_report_run(
+                area_id=leased.area_id,
+                intent_code=leased.intent_code,
+                workspace_id=leased.workspace_id,
+                requested_by=leased.requested_by,
+                idempotency_key=leased.idempotency_key,
+            )
+        except Exception as exc:
+            return self._report_job_repo.mark_failed(leased.job_id, error=str(exc))
+        return self._report_job_repo.mark_succeeded(
+            leased.job_id,
+            report_run_id=report_run.report_run_id,
+        )
+
     def list_report_runs(
         self,
         *,
