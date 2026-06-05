@@ -13,7 +13,9 @@ On Windows PowerShell, use:
 ```
 
 Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
-`python` on `PATH` points at an older interpreter.
+`python` on `PATH` points at an older interpreter. The gate invokes Ruff and
+Mypy through the selected Python interpreter, so run `scripts/bootstrap.*` first
+to install the backend dev extras.
 
 ## Test layers
 
@@ -23,9 +25,9 @@ Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
 | domain contract tests | evidence/claim/source invariants | current |
 | API smoke tests | health/version and future report endpoints | current/future |
 | DB migration smoke | PostGIS schema applies and core tables exist | current optional Docker |
-| connector fixture tests | source success/failure behavior | future |
-| rule-engine tests | evidence-to-claim semantics | future |
-| report reproducibility tests | run versions and outputs stable | future |
+| connector fixture tests | source success/failure behavior | current |
+| rule-engine tests | evidence-to-claim semantics | current |
+| report reproducibility tests | run versions and outputs stable | current |
 
 ## Test-first expectations
 
@@ -38,7 +40,6 @@ Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
 ## Local commands
 
 ```bash
-./scripts/agent-context-check.sh
 ./scripts/validate_workspace.sh
 cd backend && PYTHONPATH=. python -m pytest -q
 ```
@@ -62,3 +63,15 @@ $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 
 CI has a separate PostGIS-backed job that runs the full gate with
 `RUN_DB_SMOKE=1`. The default CI job remains the fast non-DB gate.
+
+## Runtime demo
+
+After starting the API with `scripts/run_api.*`, run:
+
+```bash
+python scripts/demo_mvp.py
+```
+
+The demo uses only public HTTP endpoints. It seeds the fixture source and area,
+runs static connector fixtures, creates a report run, demonstrates a connector
+review action, and lists report runs for the fixture area.

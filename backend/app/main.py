@@ -16,16 +16,22 @@ from app.core.config import Settings, get_settings
 def create_app(
     settings: Settings | None = None,
     *,
-    use_db_services: bool = False,
+    use_db_services: bool | None = False,
 ) -> FastAPI:
     resolved = settings or get_settings()
+    db_services_enabled = (
+        resolved.storage_backend == "postgres"
+        if use_db_services is None
+        else use_db_services
+    )
     app = FastAPI(
         title=resolved.app_name,
         version="0.1.0",
         description="Intent-aware land/locality due-diligence backend scaffold.",
     )
     app.state.object_store_root = resolved.object_store_root
-    if use_db_services:
+    app.state.storage_backend = "postgres" if db_services_enabled else "memory"
+    if db_services_enabled:
         app.dependency_overrides[get_services] = get_db_services
     else:
         app.state.services = create_api_services()
@@ -39,4 +45,4 @@ def create_app(
     return app
 
 
-app = create_app()
+app = create_app(use_db_services=None)

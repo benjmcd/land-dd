@@ -1,4 +1,4 @@
-.PHONY: bootstrap verify test context-check db-up db-down db-migrate db-smoke
+.PHONY: bootstrap verify test context-check db-up db-down db-migrate db-smoke api api-postgres demo
 
 bootstrap:
 	./scripts/bootstrap.sh
@@ -10,7 +10,7 @@ test:
 	cd backend && PYTHONPATH=. python -m pytest -q
 
 context-check:
-	./scripts/agent-context-check.sh
+	./scripts/validate_workspace.sh
 
 db-up:
 	docker compose up -d db
@@ -23,3 +23,12 @@ db-migrate:
 
 db-smoke:
 	python scripts/db_smoke_check.py
+
+api:
+	./scripts/run_api.sh --memory
+
+api-postgres:
+	./scripts/run_api.sh --postgres
+
+demo:
+	python scripts/demo_mvp.py

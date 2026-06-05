@@ -8,23 +8,70 @@ The product target is a Postgres/PostGIS-first backend that accepts an area and 
 
 ## Start here
 
+Install backend dev dependencies and run the fast local gate:
+
 ```bash
 ./scripts/bootstrap.sh
 ./scripts/verify.sh
-docker compose up -d db
-./scripts/db_apply_migrations.sh
-python scripts/db_smoke_check.py
 ```
 
-Windows PowerShell equivalents avoid launching a separate Git Bash window:
+Windows PowerShell:
+
 ```powershell
 .\scripts\bootstrap.ps1
 .\scripts\verify.ps1
+```
+
+Run the API with isolated in-memory state:
+
+```bash
+./scripts/run_api.sh --memory
+```
+
+```powershell
+.\scripts\run_api.ps1 -StorageBackend memory
+```
+
+Run the intended Postgres-backed local API:
+
+```bash
+docker compose up -d db
+./scripts/db_apply_migrations.sh
+python scripts/db_smoke_check.py
+APP_STORAGE_BACKEND=postgres ./scripts/run_api.sh --postgres
+```
+
+```powershell
 docker compose up -d db
 .\scripts\db_apply_migrations.ps1
 python scripts\db_smoke_check.py
-$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+.\scripts\run_api.ps1 -StorageBackend postgres
 ```
+
+Exercise the MVP fixture-to-report workflow against a running API:
+
+```bash
+python scripts/demo_mvp.py
+```
+
+```powershell
+python scripts\demo_mvp.py
+```
+
+For the full Postgres verification gate, run `RUN_DB_SMOKE=1 ./scripts/verify.sh`
+or `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` after the local database is up
+and migrations have been applied.
+
+## Runtime storage modes
+
+- `memory`: isolated process-local state for quick API demos and tests.
+- `postgres`: database-backed services using `DATABASE_URL` and report artifacts under
+  `OBJECT_STORE_ROOT`.
+
+The exported `app.main:app` runtime reads `APP_STORAGE_BACKEND`. Tests that call
+`create_app()` directly stay in memory mode unless they explicitly opt into DB services.
+Migration and DB-smoke scripts use `DATABASE_URL_SYNC`, because `psql` expects a
+synchronous PostgreSQL URL.
 
 ## Current locked scope
 
@@ -42,6 +89,7 @@ Core workflow: source registry -> area -> evidence -> claim -> report run -> API
 - `docs/POSTGRES_FIRST_STORAGE.md`: storage policy and schema direction.
 - `docs/DATA_SOURCE_STRATEGY.md`: data source, licensing, and provenance direction.
 - `docs/TESTING.md`: verification and test guidance.
+- `docs/DEMO.md`: public API fixture-to-report demo flow.
 
 ## Non-goals
 
