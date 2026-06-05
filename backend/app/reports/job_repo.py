@@ -216,7 +216,7 @@ class SqlAlchemyReportRunJobRepository:
                     :idempotency_key,
                     :max_attempts,
                     :attempts,
-                    :not_before
+                    COALESCE(CAST(:not_before AS timestamptz), now())
                 )
                 ON CONFLICT (idempotency_key) DO NOTHING
                 """
@@ -230,7 +230,7 @@ class SqlAlchemyReportRunJobRepository:
                 "idempotency_key": storage_key,
                 "max_attempts": job.max_attempts,
                 "attempts": job.attempts,
-                "not_before": job.not_before or job.created_at,
+                "not_before": job.not_before,
             },
         )
         self._session.flush()

@@ -110,6 +110,9 @@
   and execution timestamps for worker lifecycle visibility.
 - `ReportRunJobRepository`: added lease, succeed, fail, and requeue operations
   for in-memory and Postgres-backed report jobs.
+- `SqlAlchemyReportRunJobRepository.enqueue`: defaults `not_before` with
+  Postgres `now()` when no explicit delay is requested, so newly queued DB jobs
+  are immediately eligible for worker leasing under CI DB smoke timing.
 - `ReportRunService.execute_next_report_run_job`: leases one queued report job,
   runs the existing report creation path, and records the produced
   `report_run_id`; execution failures mark the job failed with `last_error`.
