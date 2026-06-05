@@ -44,7 +44,12 @@ class ReviewPacketEvidencePort:
         self._stored: dict[UUID, EvidenceContract] = {}
         self._source_failure_counter = 1
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
         self.events.append("create_observation")
         self._stored[evidence.evidence_id] = evidence
         return evidence
@@ -61,6 +66,7 @@ class ReviewPacketEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         self.events.append("create_source_failure")
         created = EvidenceContract(

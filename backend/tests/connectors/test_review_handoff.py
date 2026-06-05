@@ -42,7 +42,12 @@ class HandoffEvidencePort:
         self._stored: dict[UUID, EvidenceContract] = {}
         self._source_failure_counter = 1
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
         self._stored[evidence.evidence_id] = evidence
         return evidence
 
@@ -58,6 +63,7 @@ class HandoffEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._source_failure_counter),

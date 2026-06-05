@@ -10,6 +10,7 @@ from app.domain.enums import JobStatus
 
 class ConnectorReviewQueueItemContract(BaseModel):
     job_id: UUID
+    workspace_id: UUID | None = None
     ingest_run_id: UUID
     job_type: str
     status: JobStatus

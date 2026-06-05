@@ -27,6 +27,23 @@ from app.domain.source_contracts import SourceRetrievalRunContract
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+_WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+_USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+_OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+_OTHER_USER_ID = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+
+
+def _auth_headers(
+    workspace_id: UUID = _WORKSPACE_ID,
+    user_id: UUID = _USER_ID,
+) -> dict[str, str]:
+    return {"X-Workspace-Id": str(workspace_id), "X-User-Id": str(user_id)}
+
+
+def _client(app: FastAPI | None = None) -> TestClient:
+    client = TestClient(app or create_app())
+    client.headers.update(_auth_headers())
+    return client
 
 
 class _RetrievalProvenancePort:
@@ -49,7 +66,12 @@ class _EvidencePort:
         self._stored: dict[UUID, EvidenceContract] = {}
         self._counter: int = 1
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
         self._stored[evidence.evidence_id] = evidence
         return evidence
 
@@ -65,6 +87,7 @@ class _EvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._counter),
@@ -109,14 +132,24 @@ def _build_review_status(fixture_name: str) -> ConnectorRunReviewStatus:
     return build_connector_run_review_status(handoff, quality)
 
 
-def _enqueue_review_item(app: FastAPI, fixture_name: str) -> ConnectorReviewQueueItem:
+def _enqueue_review_item(
+    app: FastAPI,
+    fixture_name: str,
+    *,
+    workspace_id: UUID = _WORKSPACE_ID,
+    requested_by: UUID = _USER_ID,
+) -> ConnectorReviewQueueItem:
     services = cast(ApiServices, app.state.services)
     review_status = _build_review_status(fixture_name)
-    return services.connector_review_queue_repo.enqueue_review_status(review_status)
+    return services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
+    )
 
 
 def test_list_connector_review_queue_returns_empty_list_when_no_items() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     response = client.get("/connector-review-queue")
 
@@ -124,31 +157,70 @@ def test_list_connector_review_queue_returns_empty_list_when_no_items() -> None:
     assert response.json() == []
 
 
+def test_list_connector_review_queue_requires_identity() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/connector-review-queue")
+
+    assert response.status_code == 401
+
+
 def test_list_connector_review_queue_returns_enqueued_items() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     review_status = _build_review_status("flood_success.json")
-    services.connector_review_queue_repo.enqueue_review_status(review_status)
+    services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+    )
 
     response = client.get("/connector-review-queue")
 
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
+    assert body[0]["workspace_id"] == str(_WORKSPACE_ID)
     assert body[0]["job_type"] == "connector_review_status"
     assert body[0]["status"] == "queued"
+    assert body[0]["payload"]["workspace_id"] == str(_WORKSPACE_ID)
+    assert body[0]["payload"]["requested_by"] == str(_USER_ID)
+
+
+def test_connector_review_queue_hides_items_from_other_workspace() -> None:
+    app = create_app()
+    client = _client(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    other_headers = _auth_headers(
+        workspace_id=_OTHER_WORKSPACE_ID,
+        user_id=_OTHER_USER_ID,
+    )
+
+    listed = client.get("/connector-review-queue", headers=other_headers)
+    fetched = client.get(
+        f"/connector-review-queue/{item.ingest_run_id}",
+        headers=other_headers,
+    )
+
+    assert listed.status_code == 200
+    assert listed.json() == []
+    assert fetched.status_code == 404
 
 
 def test_list_connector_review_queue_filters_by_status() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     services.connector_review_queue_repo.enqueue_review_status(
-        _build_review_status("flood_success.json")
+        _build_review_status("flood_success.json"),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
     )
     services.connector_review_queue_repo.enqueue_review_status(
-        _build_review_status("flood_failure.json")
+        _build_review_status("flood_failure.json"),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
     )
 
     queued = client.get("/connector-review-queue?status=queued")
@@ -164,10 +236,12 @@ def test_list_connector_review_queue_filters_by_status() -> None:
 
 def test_list_connector_review_queue_filters_by_connector_name() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     services.connector_review_queue_repo.enqueue_review_status(
-        _build_review_status("flood_success.json")
+        _build_review_status("flood_success.json"),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
     )
 
     match = client.get(
@@ -185,13 +259,17 @@ def test_list_connector_review_queue_filters_by_connector_name() -> None:
 
 def test_list_connector_review_queue_respects_limit_and_offset() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     services.connector_review_queue_repo.enqueue_review_status(
-        _build_review_status("flood_success.json")
+        _build_review_status("flood_success.json"),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
     )
     services.connector_review_queue_repo.enqueue_review_status(
-        _build_review_status("flood_failure.json")
+        _build_review_status("flood_failure.json"),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
     )
 
     first = client.get("/connector-review-queue?limit=1&offset=0")
@@ -207,7 +285,7 @@ def test_list_connector_review_queue_respects_limit_and_offset() -> None:
 
 
 def test_list_connector_review_queue_rejects_invalid_status() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     response = client.get("/connector-review-queue?status=not_a_status")
 
@@ -215,7 +293,7 @@ def test_list_connector_review_queue_rejects_invalid_status() -> None:
 
 
 def test_list_connector_review_queue_rejects_invalid_pagination() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     bad_limit = client.get("/connector-review-queue?limit=0")
     bad_offset = client.get("/connector-review-queue?offset=-1")
@@ -226,10 +304,14 @@ def test_list_connector_review_queue_rejects_invalid_pagination() -> None:
 
 def test_get_connector_review_queue_item_returns_queued_status() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     review_status = _build_review_status("flood_success.json")
-    item = services.connector_review_queue_repo.enqueue_review_status(review_status)
+    item = services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+    )
 
     response = client.get(f"/connector-review-queue/{item.ingest_run_id}")
 
@@ -243,10 +325,14 @@ def test_get_connector_review_queue_item_returns_queued_status() -> None:
 
 def test_get_connector_review_queue_item_returns_needs_review_for_failure_fixture() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     services = cast(ApiServices, app.state.services)
     review_status = _build_review_status("flood_failure.json")
-    item = services.connector_review_queue_repo.enqueue_review_status(review_status)
+    item = services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+    )
 
     response = client.get(f"/connector-review-queue/{item.ingest_run_id}")
 
@@ -258,7 +344,7 @@ def test_get_connector_review_queue_item_returns_needs_review_for_failure_fixtur
 
 
 def test_get_connector_review_queue_item_returns_404_for_unknown_ingest_run_id() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     response = client.get(f"/connector-review-queue/{uuid4()}")
 
@@ -267,7 +353,7 @@ def test_get_connector_review_queue_item_returns_404_for_unknown_ingest_run_id()
 
 
 def test_get_connector_review_queue_item_returns_422_for_non_uuid_path_segment() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     response = client.get("/connector-review-queue/not-a-uuid")
 
@@ -276,12 +362,12 @@ def test_get_connector_review_queue_item_returns_422_for_non_uuid_path_segment()
 
 def test_approve_connector_review_queue_item_records_reviewer_action() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/approve",
-        json={"reviewer_id": " reviewer-1 ", "reason": "checked source packet"},
+        json={"reviewer_id": f" {str(_USER_ID)} ", "reason": "checked source packet"},
     )
 
     assert response.status_code == 200
@@ -290,19 +376,19 @@ def test_approve_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] is None
     action = body["payload"]["last_review_action"]
     assert action["action"] == "approve"
-    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reviewer_id"] == str(_USER_ID)
     assert action["reason"] == "checked source packet"
     assert body["payload"]["review_actions"] == [action]
 
 
 def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": "reviewer-1", "reason": "source packet rejected"},
+        json={"reviewer_id": str(_USER_ID), "reason": "source packet rejected"},
     )
 
     assert response.status_code == 200
@@ -311,23 +397,23 @@ def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] == "source packet rejected"
     action = body["payload"]["last_review_action"]
     assert action["action"] == "reject"
-    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reviewer_id"] == str(_USER_ID)
     assert action["reason"] == "source packet rejected"
 
 
 def test_requeue_connector_review_queue_item_appends_second_reviewer_action() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
     rejected = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": "reviewer-1", "reason": "temporary source issue"},
+        json={"reviewer_id": str(_USER_ID), "reason": "temporary source issue"},
     )
     assert rejected.status_code == 200
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/requeue",
-        json={"reviewer_id": "reviewer-2", "reason": "retry source packet"},
+        json={"reviewer_id": str(_USER_ID), "reason": "retry source packet"},
     )
 
     assert response.status_code == 200
@@ -336,17 +422,17 @@ def test_requeue_connector_review_queue_item_appends_second_reviewer_action() ->
     assert body["last_error"] == "retry source packet"
     actions = body["payload"]["review_actions"]
     assert [action["action"] for action in actions] == ["reject", "requeue"]
-    assert actions[-1]["reviewer_id"] == "reviewer-2"
+    assert actions[-1]["reviewer_id"] == str(_USER_ID)
 
 
 def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/cancel",
-        json={"reviewer_id": "reviewer-1", "reason": "duplicate packet"},
+        json={"reviewer_id": str(_USER_ID), "reason": "duplicate packet"},
     )
 
     assert response.status_code == 200
@@ -355,12 +441,12 @@ def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] == "duplicate packet"
     action = body["payload"]["last_review_action"]
     assert action["action"] == "cancel"
-    assert action["reviewer_id"] == "reviewer-1"
+    assert action["reviewer_id"] == str(_USER_ID)
 
 
 def test_connector_review_action_rejects_missing_reviewer_identity() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
 
     response = client.post(
@@ -372,14 +458,28 @@ def test_connector_review_action_rejects_missing_reviewer_identity() -> None:
     assert "reviewer_id" in response.json()["detail"]
 
 
+def test_connector_review_action_rejects_reviewer_identity_mismatch() -> None:
+    app = create_app()
+    client = _client(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/approve",
+        json={"reviewer_id": str(_OTHER_USER_ID)},
+    )
+
+    assert response.status_code == 403
+    assert "reviewer_id" in response.json()["detail"]
+
+
 def test_connector_review_action_rejects_missing_reason_when_required() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     item = _enqueue_review_item(app, "flood_failure.json")
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": "reviewer-1"},
+        json={"reviewer_id": str(_USER_ID)},
     )
 
     assert response.status_code == 422

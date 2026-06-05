@@ -36,7 +36,8 @@ Default agent network access is off. Enable only with approval and task-specific
 
 ## Request Identity Boundary
 
-- Area, evidence, and report API routes support two explicit identity modes:
+- Area, evidence, report, connector-run, and connector review queue API routes
+  support two explicit identity modes:
   - `REPORT_AUTH_MODE=trusted_headers`: local/dev or trusted-gateway mode. The
     backend requires `X-Workspace-Id` and `X-User-Id` headers. Area creation
     binds stored owner fields to those headers, evidence reads are limited to
@@ -50,8 +51,14 @@ Default agent network access is off. Enable only with approval and task-specific
 - In signed-token mode, optional `X-Workspace-Id` and `X-User-Id` headers may be
   supplied by a gateway/operator only when they match the bearer token claims.
   Mismatches fail closed.
-- Report creation and report-job submission also verify that the requested
-  `area_id` belongs to the authenticated workspace.
+- Report creation, report-job submission, and fixture connector runs also
+  verify that the requested or fixture-referenced `area_id` belongs to the
+  authenticated workspace before creating durable report, evidence, provenance,
+  or review queue work.
+- Connector review queue rows are stored and listed by workspace. Review queue
+  actions require `reviewer_id` to match the authenticated user.
+- Source registry routes remain governance/admin scaffolding, not public
+  multi-tenant product APIs.
 - Operators can mint short-lived local/beta tokens with
   `scripts/mint_report_token.py`; do not expose that script as a public token
   issuance API.

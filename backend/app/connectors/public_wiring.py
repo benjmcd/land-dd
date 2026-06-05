@@ -36,6 +36,7 @@ def build_fixture_workflow_with_public_services(
     retrieval_provenance_port: SourceRetrievalProvenancePort,
     evidence_service: EvidenceService,
     connector: FixtureConnectorProtocol | None = None,
+    workspace_id: UUID | None = None,
 ) -> FixtureConnectorIngestWorkflow:
     _default: FixtureConnectorProtocol = StaticFloodFixtureConnector()
     resolved = connector if connector is not None else _default
@@ -44,7 +45,10 @@ def build_fixture_workflow_with_public_services(
         retrieval_provenance_adapter=ConnectorRetrievalProvenanceAdapter(
             retrieval_provenance_port,
         ),
-        evidence_ingestion_adapter=ConnectorEvidenceIngestionAdapter(evidence_service),
+        evidence_ingestion_adapter=ConnectorEvidenceIngestionAdapter(
+            evidence_service,
+            workspace_id=workspace_id,
+        ),
     )
 
 
@@ -53,6 +57,7 @@ def build_fixture_workflow_with_public_lane_services(
     source_provenance_service: SourceProvenanceService,
     evidence_service: EvidenceService,
     connector: FixtureConnectorProtocol | None = None,
+    workspace_id: UUID | None = None,
 ) -> FixtureConnectorIngestWorkflow:
     return build_fixture_workflow_with_public_services(
         retrieval_provenance_port=SourceProvenanceServiceRetrievalPort(
@@ -60,6 +65,7 @@ def build_fixture_workflow_with_public_lane_services(
         ),
         evidence_service=evidence_service,
         connector=connector,
+        workspace_id=workspace_id,
     )
 
 

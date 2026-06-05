@@ -40,6 +40,11 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    claims, evidence reads are filtered through area ownership, and report
    creation/job submission rejects area IDs outside the authenticated workspace
    at both the API route and report-service boundary.
+10. Fixture connector workspace boundary: connector fixture runs and connector
+    review queue routes require request identity. Fixture evidence area IDs are
+    preflighted against the authenticated workspace before durable writes;
+    queue rows are workspace-scoped; review actions require `reviewer_id` to
+    match the authenticated user.
 
 ## High
 
@@ -52,9 +57,9 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 4. What cost metrics need to be measured during the first real source pass?
 5. Should a public beta use an external IdP/session issuer, or is the signed
    report identity token boundary sufficient behind a trusted product gateway?
-6. What workspace payload, reviewer identity, and source-authority contract
-   should connector runs, connector review queue items, and future
-   source-management routes use?
+6. What source-authority and tenancy contract should source-management routes
+   and future live connector ingestion use once packaged deterministic fixtures
+   are no longer the only connector path?
 7. Do any pre-existing or direct-service null-owned area rows need a one-time
    ownership backfill before beta data is preserved behind authenticated APIs?
 

@@ -302,6 +302,10 @@ paths:
   /connector-runs:
     post:
       summary: Run a static fixture connector
+      parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       requestBody:
         required: true
         content:
@@ -318,11 +322,16 @@ paths:
                 fixture_key: { type: string }
       responses:
         '201': { description: Connector run result }
+        '401': { description: Missing request identity headers }
+        '404': { description: Fixture area not found in authenticated workspace }
         '422': { description: Unsupported connector, fixture, or fixture provenance }
   /connector-review-queue:
     get:
       summary: List connector review queue items
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: status
           in: query
           required: false
@@ -340,62 +349,113 @@ paths:
           required: false
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
-        '200': { description: Connector review queue item list }
+        '200':
+          description: Connector review queue item list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
         '422': { description: Invalid queue filter }
   /connector-review-queue/{ingest_run_id}:
     get:
       summary: Get connector review queue item
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: ingest_run_id
           in: path
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200': { description: Connector review queue item }
+        '200':
+          description: Connector review queue item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
         '404': { description: Connector review queue item not found }
         '422': { description: Invalid ingest run id }
   /connector-review-queue/{ingest_run_id}/approve:
     post:
       summary: Approve connector review queue item
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/IngestRunId'
       requestBody:
         $ref: '#/components/requestBodies/ConnectorReviewAction'
       responses:
-        '200': { description: Updated connector review queue item }
+        '200':
+          description: Updated connector review queue item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Connector review queue item not found }
         '422': { description: Invalid action request }
   /connector-review-queue/{ingest_run_id}/reject:
     post:
       summary: Reject connector review queue item
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/IngestRunId'
       requestBody:
         $ref: '#/components/requestBodies/ConnectorReviewAction'
       responses:
-        '200': { description: Updated connector review queue item }
+        '200':
+          description: Updated connector review queue item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Connector review queue item not found }
         '422': { description: Invalid action request }
   /connector-review-queue/{ingest_run_id}/requeue:
     post:
       summary: Requeue connector review queue item
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/IngestRunId'
       requestBody:
         $ref: '#/components/requestBodies/ConnectorReviewAction'
       responses:
-        '200': { description: Updated connector review queue item }
+        '200':
+          description: Updated connector review queue item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Connector review queue item not found }
         '422': { description: Invalid action request }
   /connector-review-queue/{ingest_run_id}/cancel:
     post:
       summary: Cancel connector review queue item
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/IngestRunId'
       requestBody:
         $ref: '#/components/requestBodies/ConnectorReviewAction'
       responses:
-        '200': { description: Updated connector review queue item }
+        '200':
+          description: Updated connector review queue item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConnectorReviewQueueItem' }
+        '401': { description: Missing request identity headers }
+        '403': { description: Reviewer does not match request identity }
         '404': { description: Connector review queue item not found }
         '422': { description: Invalid action request }
 components:
@@ -447,7 +507,9 @@ components:
             type: object
             required: [reviewer_id]
             properties:
-              reviewer_id: { type: string }
+              reviewer_id:
+                type: string
+                description: Must match the authenticated request user.
               reason: { type: [string, "null"] }
               not_before: { type: [string, "null"], format: date-time }
   schemas:
@@ -510,3 +572,30 @@ components:
         - failed
         - cancelled
         - needs_review
+    ConnectorReviewQueueItem:
+      type: object
+      required:
+        - job_id
+        - ingest_run_id
+        - job_type
+        - status
+        - priority
+        - payload
+        - created_at
+      properties:
+        job_id: { type: string, format: uuid }
+        workspace_id: { type: [string, "null"], format: uuid }
+        ingest_run_id: { type: string, format: uuid }
+        job_type: { type: string }
+        status: { $ref: '#/components/schemas/JobStatus' }
+        priority: { type: integer }
+        payload: { type: object }
+        created_at: { type: string, format: date-time }
+        not_before: { type: [string, "null"], format: date-time }
+        attempts: { type: integer }
+        max_attempts: { type: integer }
+        locked_by: { type: [string, "null"] }
+        locked_at: { type: [string, "null"], format: date-time }
+        started_at: { type: [string, "null"], format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }
+        last_error: { type: [string, "null"] }

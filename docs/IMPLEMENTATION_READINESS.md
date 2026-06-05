@@ -44,6 +44,12 @@ start without re-litigating basic authority.
   authenticated workspace at both the API route and report-service boundary.
   Evidence writes also accept an optional workspace scope for callers that have
   workspace authority.
+- Fixture connector runs require request identity, preflight fixture area IDs
+  against the authenticated workspace before durable provenance/evidence/queue
+  writes, and create connector review queue rows scoped to that workspace.
+- Connector review queue list/read/action routes require request identity,
+  return only authenticated-workspace rows, and require review actions to use
+  the authenticated user as `reviewer_id`.
 
 ## Do Not Start Impact-Heavy Work Until
 
@@ -52,7 +58,7 @@ start without re-litigating basic authority.
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
 | External identity integration | Decide whether beta needs an external IdP/session issuer beyond signed report identity tokens. | The backend now has a signed beta token boundary, but a public multi-user deployment may still need a product IdP/session layer. |
-| Connector/source API scoping | Decide workspace payload and reviewer authority for connector runs, connector review queue items, and any future source-management API. | Area/evidence/report routes are now workspace-scoped; connector queue and source surfaces still need a deliberate tenancy contract. |
+| Source-management and live connector tenancy | Decide whether source-management routes are admin-only or workspace-scoped, and define non-fixture live connector run identifiers/payload tenancy before live multi-user ingestion. | Fixture connector run/review queue routes are now workspace-scoped, but source registry routes are still governance/admin scaffolding and fixture connectors still use deterministic packaged IDs. |
 | Legacy/null area ownership | Decide whether any pre-existing `core.areas.workspace_id IS NULL` rows need a one-time backfill. | Authenticated public APIs intentionally fail closed for null-owned areas rather than exposing them across workspaces. |
 | Report job scheduling | Decide whether bounded operator/API execution is enough or an autonomous scheduler/daemon is needed. | The worker endpoint and bounded operator script exist, but automatic processing is not yet part of the runtime. |
 | Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
@@ -81,8 +87,9 @@ start without re-litigating basic authority.
      workspace-owned areas.
    - Use `REPORT_AUTH_MODE=signed_token` before exposed beta deployment unless a
      stronger external IdP/session integration replaces it.
-   - Design connector/source workspace authority before exposing those routes
-     beyond fixture/operator use.
+   - Keep fixture connector run/review queue routes behind request identity.
+   - Design source-management and live connector workspace authority before
+     exposing source governance or live ingestion beyond fixture/operator use.
    - Use the bounded report worker script for operator-driven job execution.
    - Decide and implement automatic report-job scheduling only if beta needs it.
    - Keep explicit false/unknown/missing/source-failed response semantics visible.

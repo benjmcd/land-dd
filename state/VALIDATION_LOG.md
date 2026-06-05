@@ -1,5 +1,43 @@
 # Validation Log
 
+## 2026-06-05 Connector Workspace Boundary Pass
+
+- `POST /connector-runs`: now requires request identity, preflights all fixture
+  evidence area IDs against the authenticated workspace before provenance,
+  evidence, or review queue writes, and passes workspace scope into connector
+  evidence ingestion.
+- Connector review queue rows now carry `workspace_id`; list, get, and lease
+  operations accept workspace filters, and queue item API responses expose the
+  row workspace.
+- Connector review queue API list/read/action routes now require request
+  identity, hide other-workspace rows, and require `reviewer_id` to match the
+  authenticated user.
+- Connector queue payloads record `workspace_id` and `requested_by` when
+  available for audit context; authorization uses the queue row workspace.
+- `scripts/demo_mvp.py`: now sends request identity through connector runs and
+  connector review queue actions, and defaults reviewer ID to the demo user.
+- Connector route tests include trusted-header identity, signed-token identity,
+  missing identity, and cross-workspace fixture area rejection.
+- Remaining deliberate gap: source-management routes and future live connector
+  ingestion still need a source-authority/non-fixture tenancy contract before
+  broad exposure; packaged fixture connectors still use deterministic IDs.
+- `python -m pytest ./tests/api/test_connector_ingest_api.py
+  ./tests/api/test_connector_review_queue_api.py
+  ./tests/api/test_ingest_report_integration.py
+  ./tests/connectors/test_evidence_ingestion_adapter.py
+  ./tests/connectors/test_review_queue.py -q` from `backend/`: passed with DB
+  smoke skips.
+- `python -m pytest ./tests/api/test_openapi_contract.py -q` from `backend/`:
+  passed.
+- `python -m ruff check` on affected connector, API, script, and test files:
+  passed.
+- `python .\scripts\render_project_status.py`: passed and printed updated
+  state documents.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, source registry,
+  and structural invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Area/Evidence Workspace Boundary Pass
 
 - `AreaContract`: added optional `workspace_id` and `created_by` fields to carry

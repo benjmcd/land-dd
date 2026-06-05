@@ -17,17 +17,25 @@ from app.domain.enums import ConfidenceBand, EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+_WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 
 
 class RecordingEvidencePort:
     def __init__(self, initial: tuple[EvidenceContract, ...] = ()) -> None:
         self.created_observations: list[EvidenceContract] = []
+        self.observation_workspace_ids: list[UUID | None] = []
         self.source_failure_calls: list[dict[str, object]] = []
         self._stored = {evidence.evidence_id: evidence for evidence in initial}
         self._source_failure_counter = 1
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
         self.created_observations.append(evidence)
+        self.observation_workspace_ids.append(workspace_id)
         self._stored[evidence.evidence_id] = evidence
         return evidence
 
@@ -43,6 +51,7 @@ class RecordingEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         call: dict[str, object] = {
             "evidence_id": evidence_id,
@@ -54,6 +63,7 @@ class RecordingEvidencePort:
             "domain": domain,
             "observation": observation,
             "observed_value": observed_value,
+            "workspace_id": workspace_id,
         }
         self.source_failure_calls.append(call)
         created = EvidenceContract(
@@ -99,6 +109,7 @@ def test_ingestion_adapter_routes_normal_evidence_to_create_observation() -> Non
 
     expected = _load_success_result().evidence_inputs[0]
     assert port.created_observations == [expected]
+    assert port.observation_workspace_ids == [None]
     assert port.source_failure_calls == []
     assert result.created_evidence == (expected,)
     assert result.skipped_evidence == ()
@@ -123,9 +134,22 @@ def test_ingestion_adapter_routes_source_failure_to_public_failure_method() -> N
     assert call["domain"] == failure_input.domain
     assert call["observation"] == failure_input.observation
     assert call["observed_value"] == failure_input.observed_value
+    assert call["workspace_id"] is None
     assert result.created_evidence[0].evidence_id == failure_input.evidence_id
     assert result.created_evidence[0].is_source_failure is True
     assert result.skipped_evidence == ()
+
+
+def test_ingestion_adapter_forwards_workspace_scope_to_evidence_port() -> None:
+    failure_result = _load_failure_result()
+    port = RecordingEvidencePort()
+
+    ConnectorEvidenceIngestionAdapter(
+        port,
+        workspace_id=_WORKSPACE_ID,
+    ).ingest(failure_result)
+
+    assert port.source_failure_calls[0]["workspace_id"] == _WORKSPACE_ID
 
 
 def test_ingestion_adapter_skips_duplicate_deterministic_evidence_ids() -> None:

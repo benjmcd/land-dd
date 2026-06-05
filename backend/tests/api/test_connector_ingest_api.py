@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import ApiServices
+from app.api.report_auth import create_report_identity_token
 from app.area_geometry.area_repo import SqlAlchemyAreaRepository
 from app.area_geometry.service import AreaService
 from app.core.config import Settings
@@ -30,6 +31,10 @@ _FIXTURE_DATASET_VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
 _FIXTURE_INGEST_RUN_ID = UUID("11111111-1111-4111-8111-111111111111")
 _FIXTURE_FAILURE_INGEST_RUN_ID = UUID("66666666-6666-4666-8666-666666666666")
 _FIXTURE_ACCESS_INGEST_RUN_ID = UUID("12121212-1212-4212-8212-121212121212")
+_WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+_USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+_OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+_OTHER_USER_ID = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
 _FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -42,6 +47,13 @@ _FIXTURE_AREA_GEOJSON: dict[str, object] = {
         ]
     ],
 }
+
+
+def _auth_headers(
+    workspace_id: UUID = _WORKSPACE_ID,
+    user_id: UUID = _USER_ID,
+) -> dict[str, str]:
+    return {"X-Workspace-Id": str(workspace_id), "X-User-Id": str(user_id)}
 
 
 def _seed(services: ApiServices) -> None:
@@ -63,6 +75,8 @@ def _seed(services: ApiServices) -> None:
     services.area_service.create(
         AreaContract(
             area_id=_FIXTURE_AREA_ID,
+            workspace_id=_WORKSPACE_ID,
+            created_by=_USER_ID,
             geom_geojson=_FIXTURE_AREA_GEOJSON,
         )
     )
@@ -72,9 +86,12 @@ def _seed_db(session: Session) -> None:
     source_service = SourceService(SqlAlchemySourceRepository(session))
     area_service = AreaService(SqlAlchemyAreaRepository(session))
 
+    _seed_workspace_and_user(session, workspace_id=_WORKSPACE_ID, user_id=_USER_ID)
     area_service.create(
         AreaContract(
             area_id=_FIXTURE_AREA_ID,
+            workspace_id=_WORKSPACE_ID,
+            created_by=_USER_ID,
             geom_geojson=_FIXTURE_AREA_GEOJSON,
         )
     )
@@ -95,6 +112,38 @@ def _seed_db(session: Session) -> None:
         )
     )
     session.commit()
+
+
+def _seed_workspace_and_user(
+    session: Session,
+    *,
+    workspace_id: UUID,
+    user_id: UUID,
+) -> None:
+    session.execute(
+        text(
+            """
+            INSERT INTO core.workspaces (workspace_id, name)
+            VALUES (:workspace_id, 'connector ingest api workspace')
+            ON CONFLICT (workspace_id) DO NOTHING
+            """
+        ),
+        {"workspace_id": workspace_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO core.users (user_id, workspace_id, email)
+            VALUES (:user_id, :workspace_id, :email)
+            ON CONFLICT (user_id) DO NOTHING
+            """
+        ),
+        {
+            "user_id": user_id,
+            "workspace_id": workspace_id,
+            "email": f"{user_id}@example.test",
+        },
+    )
 
 
 def _cleanup_db(session: Session) -> None:
@@ -161,6 +210,14 @@ def _cleanup_db(session: Session) -> None:
         text("DELETE FROM core.areas WHERE area_id = :id"),
         {"id": _FIXTURE_AREA_ID},
     )
+    session.execute(
+        text("DELETE FROM core.users WHERE user_id = :id"),
+        {"id": _USER_ID},
+    )
+    session.execute(
+        text("DELETE FROM core.workspaces WHERE workspace_id = :id"),
+        {"id": _WORKSPACE_ID},
+    )
     session.commit()
 
 
@@ -172,6 +229,7 @@ def test_run_flood_connector_success_creates_evidence() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -193,6 +251,7 @@ def test_run_flood_connector_failure_sets_review_required() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_failure"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -214,6 +273,7 @@ def test_run_zoning_connector_allowed_creates_evidence() -> None:
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_allowed",
         },
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -237,6 +297,7 @@ def test_run_zoning_connector_failure_sets_review_required() -> None:
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_failure",
         },
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -257,6 +318,7 @@ def test_run_access_connector_no_road_creates_evidence() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_no_road",
         },
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -279,6 +341,7 @@ def test_run_access_connector_failure_sets_review_required() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_failure",
         },
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 201
@@ -288,12 +351,67 @@ def test_run_access_connector_failure_sets_review_required() -> None:
     assert body["review_required"] is True
 
 
+def test_run_connector_requires_identity() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_run_connector_rejects_area_outside_authenticated_workspace() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(
+            workspace_id=_OTHER_WORKSPACE_ID,
+            user_id=_OTHER_USER_ID,
+        ),
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "area not found"
+
+
+def test_run_connector_accepts_signed_identity_token() -> None:
+    secret = "connector-test-secret-with-at-least-32-characters"
+    settings = Settings(
+        REPORT_AUTH_MODE="signed_token",
+        REPORT_IDENTITY_TOKEN_SECRET=secret,
+    )
+    app = create_app(settings=settings)
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+    token = create_report_identity_token(
+        workspace_id=_WORKSPACE_ID,
+        user_id=_USER_ID,
+        secret=secret,
+    )
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["ingest_run_id"] == str(_FIXTURE_INGEST_RUN_ID)
+
+
 def test_run_connector_returns_422_for_unsupported_connector_name() -> None:
     client = TestClient(create_app())
 
     response = client.post(
         "/connector-runs",
         json={"connector_name": "unknown_connector", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 422
@@ -308,6 +426,7 @@ def test_run_connector_returns_422_for_unknown_fixture_key() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "does_not_exist"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 422
@@ -320,6 +439,7 @@ def test_run_connector_returns_422_for_invalid_fixture_key_characters() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "../etc/passwd"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 422
@@ -333,6 +453,8 @@ def test_run_connector_returns_422_when_fixture_source_is_missing() -> None:
     services.area_service.create(
         AreaContract(
             area_id=_FIXTURE_AREA_ID,
+            workspace_id=_WORKSPACE_ID,
+            created_by=_USER_ID,
             geom_geojson=_FIXTURE_AREA_GEOJSON,
         )
     )
@@ -340,6 +462,7 @@ def test_run_connector_returns_422_when_fixture_source_is_missing() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
     )
 
     assert response.status_code == 422
@@ -366,6 +489,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
                 "connector_name": "fixture_flood_static",
                 "fixture_key": "flood_success",
             },
+            headers=_auth_headers(),
         )
 
         assert response.status_code == 201
@@ -383,6 +507,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
                 "connector_name": "fixture_access_static",
                 "fixture_key": "access_no_road",
             },
+            headers=_auth_headers(),
         )
 
         assert access_response.status_code == 201
@@ -431,7 +556,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
 
             job_row = session.execute(
                 text(
-                    "SELECT status FROM jobs.job_queue "
+                    "SELECT status, workspace_id FROM jobs.job_queue "
                     "WHERE job_type = 'connector_review_status' "
                     "  AND idempotency_key = :key"
                 ),
@@ -439,10 +564,11 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
             ).one_or_none()
             assert job_row is not None
             assert job_row[0] == "queued"
+            assert job_row[1] == _WORKSPACE_ID
 
             access_job_row = session.execute(
                 text(
-                    "SELECT status FROM jobs.job_queue "
+                    "SELECT status, workspace_id FROM jobs.job_queue "
                     "WHERE job_type = 'connector_review_status' "
                     "  AND idempotency_key = :key"
                 ),
@@ -450,6 +576,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
             ).one_or_none()
             assert access_job_row is not None
             assert access_job_row[0] == "queued"
+            assert access_job_row[1] == _WORKSPACE_ID
     finally:
         with Session(engine) as session:
             _cleanup_db(session)

@@ -96,10 +96,12 @@ scheduler or daemon.
 
 1. Checks `/health`.
 2. Creates the packaged fixture source and an authenticated workspace-bound area.
-3. Runs static flood, zoning, and access connector fixtures.
+3. Runs static flood, zoning, and access connector fixtures using the same
+   authenticated workspace/user identity as the demo area.
 4. Creates a `homestead_feasibility` report run using the demo
    `X-Workspace-Id` and `X-User-Id` identity headers.
-5. Runs one source-failure fixture and approves its review queue item.
+5. Runs one source-failure fixture and approves its review queue item with
+   `reviewer_id` set to the authenticated demo user.
 6. Lists report runs for the fixture area.
 
 The demo is intentionally fixture-only. Live connectors remain disabled until a

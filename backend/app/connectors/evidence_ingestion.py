@@ -17,7 +17,12 @@ class ConnectorEvidenceIngestionError(ValueError):
 
 
 class EvidenceIngestionPort(Protocol):
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract: ...
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract: ...
 
     def create_source_failure(
         self,
@@ -27,6 +32,7 @@ class EvidenceIngestionPort(Protocol):
         source_id: UUID,
         method_code: str,
         caveat: str,
+        workspace_id: UUID | None = None,
         evidence_code: str = "SOURCE_FAILURE",
         domain: str = "unknown",
         observation: str | None = None,
@@ -45,8 +51,14 @@ class ConnectorEvidenceIngestionResult:
 
 
 class ConnectorEvidenceIngestionAdapter:
-    def __init__(self, evidence_port: EvidenceIngestionPort) -> None:
+    def __init__(
+        self,
+        evidence_port: EvidenceIngestionPort,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> None:
         self._evidence_port = evidence_port
+        self._workspace_id = workspace_id
 
     def ingest(
         self,
@@ -81,7 +93,12 @@ class ConnectorEvidenceIngestionAdapter:
                 raise ConnectorEvidenceIngestionError(
                     "source-failure connector evidence must set is_source_failure",
                 )
-            created.append(self._evidence_port.create_observation(evidence))
+            created.append(
+                self._evidence_port.create_observation(
+                    evidence,
+                    workspace_id=self._workspace_id,
+                )
+            )
 
         return ConnectorEvidenceIngestionResult(
             created_evidence=tuple(created),
@@ -103,6 +120,7 @@ class ConnectorEvidenceIngestionAdapter:
             source_id=evidence.source_id,
             method_code=evidence.method_code,
             caveat=evidence.caveat,
+            workspace_id=self._workspace_id,
             evidence_code=evidence.evidence_code,
             domain=evidence.domain,
             observation=evidence.observation,

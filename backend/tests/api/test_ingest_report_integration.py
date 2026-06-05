@@ -66,6 +66,7 @@ def test_flood_ingest_then_report_produces_flood_high_risk_claim() -> None:
     ingest = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 
@@ -93,6 +94,7 @@ def test_flood_failure_ingest_then_report_produces_flood_unknown_claim() -> None
     ingest = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_failure"},
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 
@@ -124,6 +126,7 @@ def test_zoning_prohibited_ingest_then_report_produces_zoning_red_flag() -> None
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_prohibited",
         },
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 
@@ -154,6 +157,7 @@ def test_zoning_allowed_ingest_then_report_has_no_zoning_red_flag() -> None:
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_allowed",
         },
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 
@@ -182,6 +186,7 @@ def test_access_no_road_ingest_then_report_produces_access_red_flag() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_no_road",
         },
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 
@@ -212,6 +217,7 @@ def test_access_road_ingest_then_report_has_no_access_red_flag() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_road",
         },
+        headers=_auth_headers(),
     )
     assert ingest.status_code == 201
 

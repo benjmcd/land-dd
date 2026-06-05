@@ -29,6 +29,8 @@ from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceRetrievalRunContract
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+_WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+_OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 
 
 class QueueRetrievalProvenancePort:
@@ -51,7 +53,12 @@ class QueueEvidencePort:
         self._stored: dict[UUID, EvidenceContract] = {}
         self._source_failure_counter = 1
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
         self._stored[evidence.evidence_id] = evidence
         return evidence
 
@@ -67,6 +74,7 @@ class QueueEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._source_failure_counter),
@@ -144,6 +152,33 @@ def test_in_memory_review_queue_prioritizes_human_review_status() -> None:
     assert item.payload["review_required"] is True
     assert item.payload["disposition"] == "needs_human_review"
     assert item.payload["kind"] == CONNECTOR_REVIEW_STATUS_JOB_TYPE
+
+
+def test_in_memory_review_queue_scopes_get_list_and_lease_by_workspace() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+
+    item = repo.enqueue_review_status(
+        review_status,
+        workspace_id=_WORKSPACE_ID,
+    )
+
+    assert item.workspace_id == _WORKSPACE_ID
+    assert item.payload["workspace_id"] == str(_WORKSPACE_ID)
+    assert repo.get_by_ingest_run_id(
+        item.ingest_run_id,
+        workspace_id=_OTHER_WORKSPACE_ID,
+    ) is None
+    assert repo.list_connector_runs(workspace_id=_OTHER_WORKSPACE_ID) == []
+    assert repo.lease_next(
+        worker_id="worker-1",
+        workspace_id=_OTHER_WORKSPACE_ID,
+    ) is None
+
+    leased = repo.lease_next(worker_id="worker-1", workspace_id=_WORKSPACE_ID)
+
+    assert leased is not None
+    assert leased.job_id == item.job_id
 
 
 def test_in_memory_review_queue_leases_and_finishes_items() -> None:

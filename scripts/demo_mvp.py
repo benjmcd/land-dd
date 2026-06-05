@@ -29,7 +29,7 @@ def main() -> None:
         description="Run the public API fixture-to-report MVP demo."
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--reviewer-id", default="demo-reviewer")
+    parser.add_argument("--reviewer-id", default=DEMO_USER_ID)
     parser.add_argument("--workspace-id", default=DEMO_WORKSPACE_ID)
     parser.add_argument("--user-id", default=DEMO_USER_ID)
     parser.add_argument("--identity-token")
@@ -49,9 +49,24 @@ def main() -> None:
     seed_fixture_area(client, identity_headers)
 
     connector_results = [
-        run_connector(client, "fixture_flood_static", "flood_success"),
-        run_connector(client, "fixture_zoning_static", "zoning_allowed"),
-        run_connector(client, "fixture_access_static", "access_no_road"),
+        run_connector(
+            client,
+            "fixture_flood_static",
+            "flood_success",
+            identity_headers,
+        ),
+        run_connector(
+            client,
+            "fixture_zoning_static",
+            "zoning_allowed",
+            identity_headers,
+        ),
+        run_connector(
+            client,
+            "fixture_access_static",
+            "access_no_road",
+            identity_headers,
+        ),
     ]
     created = sum(_int_field(result, "evidence_created") for result in connector_results)
     skipped = sum(_int_field(result, "evidence_skipped") for result in connector_results)
@@ -72,10 +87,16 @@ def main() -> None:
         f"red_flags={len(report['red_flags'])} unknowns={len(report['unknowns'])}"
     )
 
-    failure_result = run_connector(client, "fixture_access_static", "access_failure")
+    failure_result = run_connector(
+        client,
+        "fixture_access_static",
+        "access_failure",
+        identity_headers,
+    )
     queue_item = client.request(
         "GET",
         f"/connector-review-queue/{failure_result['ingest_run_id']}",
+        headers=identity_headers,
     )
     if queue_item["status"] == "needs_review":
         approved = client.request(
@@ -85,6 +106,7 @@ def main() -> None:
                 "reviewer_id": args.reviewer_id,
                 "reason": "demo review approval",
             },
+            headers=identity_headers,
         )
         print(f"review action: {approved['status']} by {args.reviewer_id}")
     else:
@@ -183,11 +205,13 @@ def run_connector(
     client: ApiClient,
     connector_name: str,
     fixture_key: str,
+    headers: dict[str, str],
 ) -> dict[str, object]:
     result = client.request(
         "POST",
         "/connector-runs",
         {"connector_name": connector_name, "fixture_key": fixture_key},
+        headers=headers,
     )
     print(
         "connector: "

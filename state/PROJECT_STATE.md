@@ -14,9 +14,11 @@
   in-memory API use.
 - Postgres-backed repositories and DB smoke are covered by CI.
 - Static access, flood, and zoning connector fixtures can produce evidence via
-  `POST /connector-runs`.
-- Connector review queue supports enqueue, list, get, approve, reject, requeue,
-  and cancel with reviewer identity recorded in the payload action history.
+  authenticated `POST /connector-runs`; fixture area IDs are checked against the
+  request workspace before durable connector work is created.
+- Connector review queue supports workspace-scoped enqueue, list, get, approve,
+  reject, requeue, and cancel with reviewer identity recorded in the payload
+  action history.
 - Report runs expose source manifest, assumptions, caveats, evidence, claims,
   unknowns, red flags, verification tasks, and machine JSON metadata.
 - Report run review actions support approval, rejection, and supersession with
@@ -47,6 +49,9 @@
   requested area belongs to the authenticated workspace.
 - Report creation and report-job submission reject area IDs outside the
   authenticated workspace at both the API route and report-service boundary.
+- Connector run and connector review queue API routes require request identity,
+  hide queue rows outside the authenticated workspace, and reject review actions
+  whose `reviewer_id` does not match the authenticated user.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
@@ -73,8 +78,9 @@
 - Broader dossier product surfaces such as PDF, web pages, dashboards, or
   operator UI are not yet implemented.
 - Report generation is synchronous in the current API route.
-- Connector review/source-management API surfaces are not yet fully
-  workspace-scoped at the API boundary.
+- Source-management API surfaces are not yet a production multi-tenant product
+  API, and future live connector ingestion still needs a non-fixture tenancy and
+  identifier contract before broad exposure.
 - Any legacy or direct-service `core.areas` rows with null workspace ownership
   are intentionally hidden from authenticated public area/evidence/report APIs
   unless a future migration assigns ownership.
