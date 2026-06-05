@@ -32,6 +32,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    workspace/requester to those headers; report/job reads, review actions,
    workspace filters, job execution, and dossier delivery fail closed across
    workspace boundaries.
+7. Report operator worker: `scripts/run_report_worker.py` can execute a bounded
+   number of queued report jobs through the authenticated public API.
 
 ## High
 
@@ -47,6 +49,6 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 
 1. Should source-specific observed-value payloads become JSON Schemas or remain
    runtime-validator-only for now?
-2. Should report job execution run only through explicit operator/API calls, or
-   should a scheduler/daemon be introduced for automatic processing?
+2. Is bounded operator/API report-job execution sufficient for beta, or should a
+   scheduler/daemon be introduced for automatic processing?
 3. Which UI/dashboard scope is worth doing before live county data exists?

@@ -31,6 +31,13 @@ In another PowerShell:
 python scripts\demo_mvp.py
 ```
 
+Queued report jobs can be processed through the public API with the bounded
+operator worker:
+
+```powershell
+python scripts\run_report_worker.py --workspace-id 11111111-1111-4111-8111-111111111111 --user-id 22222222-2222-4222-8222-222222222222 --max-jobs 5
+```
+
 ## Postgres-Backed Demo
 
 Use this path for the intended persistent local runtime:
@@ -62,6 +69,10 @@ In another PowerShell:
 ```powershell
 python scripts\demo_mvp.py
 ```
+
+The same bounded report worker command can be used after queueing report jobs
+against the Postgres-backed API. It is an operator command, not an autonomous
+scheduler or daemon.
 
 ## What The Demo Does
 

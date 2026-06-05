@@ -208,6 +208,26 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Bounded Report Worker Pass
+
+- `scripts/run_report_worker.py`: added a bounded operator command that executes
+  queued report jobs through the authenticated public API using
+  `X-Workspace-Id` and `X-User-Id`; it stops after `--max-jobs` or when the
+  queue is empty.
+- The worker script is not an autonomous scheduler or daemon. The scheduler
+  decision remains open for beta.
+- `backend/tests/scripts/test_run_report_worker.py`: verifies authenticated
+  execute requests, empty-queue stopping, and positive job bounds without
+  network access.
+- `python -m pytest backend\tests\scripts\test_run_report_worker.py -q`:
+  passed.
+- `python -m ruff check scripts\run_report_worker.py
+  backend\tests\scripts\test_run_report_worker.py`: passed.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

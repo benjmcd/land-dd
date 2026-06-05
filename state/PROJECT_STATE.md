@@ -30,6 +30,8 @@
   workspace-scoped idempotency keys. `POST /report-runs/jobs` queues
   idempotent report job requests, and `POST /report-runs/jobs/execute-next`
   leases one queued job and turns it into a persisted report run.
+- `scripts/run_report_worker.py` can execute a bounded number of queued report
+  jobs through the authenticated public API for operator-driven processing.
 - Report API creation, listing, retrieval, review, job access, job execution,
   and dossier delivery require `X-Workspace-Id` and `X-User-Id` request headers;
   body/query workspace and reviewer fields must match the request identity.
@@ -55,8 +57,8 @@
 - The report API has trusted-header workspace/user enforcement, but no full
   token validation, session management, or external identity-provider
   integration yet.
-- Report jobs can be executed through the explicit worker endpoint, but no
-  autonomous scheduler/daemon runs them yet.
+- Report jobs can be executed through the explicit worker endpoint or bounded
+  operator script, but no autonomous scheduler/daemon runs them yet.
 - Broader dossier product surfaces such as PDF, web pages, dashboards, or
   operator UI are not yet implemented.
 - Report generation is synchronous in the current API route.
