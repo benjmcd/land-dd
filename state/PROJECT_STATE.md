@@ -38,6 +38,8 @@
 - Report routes can alternatively run with `REPORT_AUTH_MODE=signed_token`,
   requiring signed bearer report identity tokens whose workspace/user claims
   become the request authority.
+- `scripts/mint_report_token.py` can mint short-lived operator tokens for
+  signed-token report API mode from `REPORT_IDENTITY_TOKEN_SECRET`.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than

@@ -48,6 +48,9 @@ Default agent network access is off. Enable only with approval and task-specific
 - In signed-token mode, optional `X-Workspace-Id` and `X-User-Id` headers may be
   supplied by a gateway/operator only when they match the bearer token claims.
   Mismatches fail closed.
+- Operators can mint short-lived local/beta tokens with
+  `scripts/mint_report_token.py`; do not expose that script as a public token
+  issuance API.
 - External identity-provider/session integration may later mint or replace these
   signed report identity tokens, but untrusted exposed deployments should not run
   in `trusted_headers` mode.

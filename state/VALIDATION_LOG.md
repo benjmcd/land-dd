@@ -208,6 +208,20 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report Token Minting Pass
+
+- `scripts/mint_report_token.py`: added a repo-root operator utility that mints
+  short-lived report identity bearer tokens from `REPORT_IDENTITY_TOKEN_SECRET`
+  without exposing a public token-issuer API.
+- `backend/tests/scripts/test_mint_report_token.py`: verifies minted tokens are
+  accepted by the backend verifier, expire on schedule, support JSON output, and
+  fail closed when the secret or TTL is invalid.
+- `python -m pytest ./tests/scripts/test_mint_report_token.py
+  ./tests/api/test_report_auth.py -q` from `backend/`: passed.
+- `python -m ruff check ./scripts/mint_report_token.py
+  ./backend/tests/scripts/test_mint_report_token.py ./backend/app/api/report_auth.py`:
+  passed.
+
 ## 2026-06-05 Signed Report Identity Token Pass
 
 - Fresh worktree `prod-wt` was created from `origin/main` at `ccd7389` on

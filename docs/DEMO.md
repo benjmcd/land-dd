@@ -41,6 +41,14 @@ python scripts\run_report_worker.py --workspace-id 11111111-1111-4111-8111-11111
 When the API runs with `REPORT_AUTH_MODE=signed_token`, include the gateway- or
 operator-issued token with `--identity-token`.
 
+For local operator testing, mint a short-lived token from
+`REPORT_IDENTITY_TOKEN_SECRET`:
+
+```powershell
+$env:REPORT_IDENTITY_TOKEN_SECRET="replace-with-at-least-32-characters"
+python scripts\mint_report_token.py --workspace-id 11111111-1111-4111-8111-111111111111 --user-id 22222222-2222-4222-8222-222222222222 --expires-minutes 60
+```
+
 ## Postgres-Backed Demo
 
 Use this path for the intended persistent local runtime:

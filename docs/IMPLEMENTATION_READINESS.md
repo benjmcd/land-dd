@@ -33,6 +33,8 @@ start without re-litigating basic authority.
 - Report API routes can run in `REPORT_AUTH_MODE=signed_token`, where a signed
   bearer report identity token supplies the workspace/user authority and
   mismatched identity headers fail closed.
+- `scripts/mint_report_token.py` can mint short-lived operator tokens for
+  `REPORT_AUTH_MODE=signed_token` from `REPORT_IDENTITY_TOKEN_SECRET`.
 
 ## Do Not Start Impact-Heavy Work Until
 
