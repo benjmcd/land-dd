@@ -1,5 +1,24 @@
 # Validation Log
 
+## 2026-06-05 Session Continuation Audit
+
+- `git fetch origin`: completed. Local `main` HEAD `53efb49` matches
+  `origin/main`.
+- `gh pr list --state all --limit 30`: confirmed PRs #12, #13, #14, #15, and
+  #16 are merged, and superseded PR #10 is closed.
+- `gh run list --branch main --limit 8`: latest `main` run for commit
+  `53efb49` passed.
+- `git check-ignore -v .omc .omx`: confirmed both local orchestration folders
+  are ignored by repo `.gitignore`.
+- `python .\scripts\render_project_status.py`: passed and printed all state
+  documents after the baseline sync.
+- `python .\scripts\check_csv_files.py`: passed across all five register CSV
+  files.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, and structural
+  invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

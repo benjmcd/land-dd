@@ -3,7 +3,8 @@
 ## Current Branch State
 
 - `main` is expected to track `origin/main`.
-- Last confirmed baseline: commit `937b033`.
+- Last confirmed baseline: commit `53efb49` (matches `origin/main` as of
+  2026-06-05).
 - The working baseline is a fixture-backed backend MVP scaffold, not a live
   production diligence product.
 
@@ -24,6 +25,8 @@
   silently treated as safe.
 - Fixture source UUID is registered in `registers/data_source_registry.csv`
   as DS-FIXTURE-001.
+- Local orchestration folders such as `.omc/` and `.omx/` are workflow state,
+  not source-of-truth project artifacts.
 
 ## What Is Not Yet Ready
 

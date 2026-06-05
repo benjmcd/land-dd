@@ -4,6 +4,8 @@
 __pycache__/
 *.py[cod]
 .codesight/
+.omc/
+.omx/
 001-audit/
 worktrees/
 .pytest_cache/
