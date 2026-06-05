@@ -2,119 +2,36 @@ openapi: 3.1.0
 info:
   title: Area Due-Diligence Compiler API
   version: 0.1.0
-  description: Draft API for areas, sources, evidence, claims, report runs, and review workflow.
+  description: Compact draft for the current MVP routes exposed by the FastAPI app.
 servers:
-  - url: https://api.example.com/v1
+  - url: http://localhost:8000
 paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: Service status }
+  /version:
+    get:
+      summary: API version
+      responses:
+        '200': { description: Version payload }
   /areas:
+    get:
+      summary: List areas
+      responses:
+        '200': { description: Area list }
     post:
-      summary: Create an area from parcel/address/polygon input
+      summary: Create an area
       operationId: createArea
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [area_type]
-              properties:
-                area_type:
-                  enum: [parcel, polygon, address, locality, watershed, corridor, generated_candidate]
-                input_reference: { type: string }
-                geometry_geojson: { type: object }
-                metadata: { type: object }
+            schema: { $ref: '#/components/schemas/Area' }
       responses:
-        '202':
-          description: Area accepted or created
-  /areas/{area_id}:
-    get:
-      summary: Get area metadata and geometry
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Area }
-  /areas/{area_id}/evidence:
-    get:
-      summary: List evidence for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Evidence list }
-  /areas/{area_id}/claims:
-    get:
-      summary: List claims for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Claim list }
-  /reports:
-    post:
-      summary: Create a report run
-      operationId: createReportRun
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [area_id, intent]
-              properties:
-                area_id: { type: string, format: uuid }
-                intent: { type: string }
-                ruleset_version: { type: string }
-                options: { type: object }
-      responses:
-        '202':
-          description: Report run queued
-  /reports/{report_run_id}:
-    get:
-      summary: Get report run metadata
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Report run }
-  /reports/{report_run_id}/machine-json:
-    get:
-      summary: Get machine-readable report output
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Machine JSON }
-  /reports/{report_run_id}/approve:
-    post:
-      summary: Approve report after human review
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Approved }
+        '201': { description: Area created }
+        '422': { description: Invalid area contract }
   /sources:
     get:
       summary: List source registry entries
@@ -122,5 +39,241 @@ paths:
         '200': { description: Source list }
     post:
       summary: Create source registry entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Source' }
       responses:
         '201': { description: Source created }
+        '409': { description: Source already exists or conflicts }
+        '422': { description: Invalid source contract }
+  /evidence:
+    get:
+      summary: List evidence for an area
+      parameters:
+        - name: area_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Evidence list }
+        '422': { description: Invalid area id }
+  /report-runs:
+    get:
+      summary: List report runs
+      parameters:
+        - name: area_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: intent_code
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/IntentCode' }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: Report run list }
+    post:
+      summary: Create a report run
+      operationId: createReportRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [area_id, intent_code]
+              properties:
+                area_id: { type: string, format: uuid }
+                intent_code: { $ref: '#/components/schemas/IntentCode' }
+      responses:
+        '201': { description: Report run created }
+        '422': { description: Invalid report request }
+  /report-runs/{report_run_id}:
+    get:
+      summary: Get report run
+      parameters:
+        - name: report_run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Report run }
+        '404': { description: Report run not found }
+        '422': { description: Invalid report run id }
+  /connector-runs:
+    post:
+      summary: Run a static fixture connector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [connector_name, fixture_key]
+              properties:
+                connector_name:
+                  enum:
+                    - fixture_access_static
+                    - fixture_flood_static
+                    - fixture_zoning_static
+                fixture_key: { type: string }
+      responses:
+        '201': { description: Connector run result }
+        '422': { description: Unsupported connector, fixture, or fixture provenance }
+  /connector-review-queue:
+    get:
+      summary: List connector review queue items
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/JobStatus' }
+        - name: connector_name
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: Connector review queue item list }
+        '422': { description: Invalid queue filter }
+  /connector-review-queue/{ingest_run_id}:
+    get:
+      summary: Get connector review queue item
+      parameters:
+        - name: ingest_run_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Connector review queue item }
+        '404': { description: Connector review queue item not found }
+        '422': { description: Invalid ingest run id }
+  /connector-review-queue/{ingest_run_id}/approve:
+    post:
+      summary: Approve connector review queue item
+      parameters:
+        - $ref: '#/components/parameters/IngestRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ConnectorReviewAction'
+      responses:
+        '200': { description: Updated connector review queue item }
+        '404': { description: Connector review queue item not found }
+        '422': { description: Invalid action request }
+  /connector-review-queue/{ingest_run_id}/reject:
+    post:
+      summary: Reject connector review queue item
+      parameters:
+        - $ref: '#/components/parameters/IngestRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ConnectorReviewAction'
+      responses:
+        '200': { description: Updated connector review queue item }
+        '404': { description: Connector review queue item not found }
+        '422': { description: Invalid action request }
+  /connector-review-queue/{ingest_run_id}/requeue:
+    post:
+      summary: Requeue connector review queue item
+      parameters:
+        - $ref: '#/components/parameters/IngestRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ConnectorReviewAction'
+      responses:
+        '200': { description: Updated connector review queue item }
+        '404': { description: Connector review queue item not found }
+        '422': { description: Invalid action request }
+  /connector-review-queue/{ingest_run_id}/cancel:
+    post:
+      summary: Cancel connector review queue item
+      parameters:
+        - $ref: '#/components/parameters/IngestRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ConnectorReviewAction'
+      responses:
+        '200': { description: Updated connector review queue item }
+        '404': { description: Connector review queue item not found }
+        '422': { description: Invalid action request }
+components:
+  parameters:
+    IngestRunId:
+      name: ingest_run_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  requestBodies:
+    ConnectorReviewAction:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reviewer_id]
+            properties:
+              reviewer_id: { type: string }
+              reason: { type: [string, "null"] }
+              not_before: { type: [string, "null"], format: date-time }
+  schemas:
+    Area:
+      type: object
+      required: [geom_geojson]
+      properties:
+        area_id: { type: string, format: uuid }
+        area_type:
+          enum:
+            - parcel_like
+            - drawn_polygon
+            - multi_polygon
+            - locality
+            - buffer
+            - generated_candidate
+        label: { type: [string, "null"] }
+        geom_geojson: { type: object }
+        geom_srid: { type: integer, default: 4326 }
+        geom_source: { type: [string, "null"] }
+        geom_validated: { type: boolean, default: false }
+    Source:
+      type: object
+      required: [name, domain]
+      properties:
+        source_id: { type: string, format: uuid }
+        name: { type: string }
+        organization: { type: [string, "null"] }
+        homepage_url: { type: [string, "null"], format: uri }
+        domain: { type: string }
+        authority_level: { type: string, default: unknown }
+        review_status: { type: string, default: pending }
+        metadata: { type: object }
+    IntentCode:
+      enum:
+        - rural_land_purchase
+        - homestead_feasibility
+        - farmland
+        - development
+        - solar
+        - data_center
+        - conservation
+        - mineral_resource_screen
+        - speculative_hold
+    JobStatus:
+      enum:
+        - queued
+        - running
+        - succeeded
+        - failed
+        - cancelled
+        - needs_review

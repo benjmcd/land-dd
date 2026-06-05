@@ -29,6 +29,7 @@ _FIXTURE_DATASET_ID = UUID("11111111-2222-4333-8444-555555555555")
 _FIXTURE_DATASET_VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
 _FIXTURE_INGEST_RUN_ID = UUID("11111111-1111-4111-8111-111111111111")
 _FIXTURE_FAILURE_INGEST_RUN_ID = UUID("66666666-6666-4666-8666-666666666666")
+_FIXTURE_ACCESS_INGEST_RUN_ID = UUID("12121212-1212-4212-8212-121212121212")
 _FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -103,12 +104,13 @@ def _cleanup_db(session: Session) -> None:
             """
             DELETE FROM jobs.job_queue
             WHERE job_type = 'connector_review_status'
-              AND idempotency_key IN (:success_key, :failure_key)
+              AND idempotency_key IN (:success_key, :failure_key, :access_key)
             """
         ),
         {
             "success_key": _idempotency_key.format(_FIXTURE_INGEST_RUN_ID),
             "failure_key": _idempotency_key.format(_FIXTURE_FAILURE_INGEST_RUN_ID),
+            "access_key": _idempotency_key.format(_FIXTURE_ACCESS_INGEST_RUN_ID),
         },
     )
     session.execute(
@@ -132,12 +134,13 @@ def _cleanup_db(session: Session) -> None:
         text(
             """
             DELETE FROM source.ingest_runs
-            WHERE ingest_run_id IN (:success_run_id, :failure_run_id)
+            WHERE ingest_run_id IN (:success_run_id, :failure_run_id, :access_run_id)
             """
         ),
         {
             "success_run_id": _FIXTURE_INGEST_RUN_ID,
             "failure_run_id": _FIXTURE_FAILURE_INGEST_RUN_ID,
+            "access_run_id": _FIXTURE_ACCESS_INGEST_RUN_ID,
         },
     )
     session.execute(
@@ -374,6 +377,24 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
         assert body["review_required"] is False
         assert body["queue_job_id"] is not None
 
+        access_response = client.post(
+            "/connector-runs",
+            json={
+                "connector_name": "fixture_access_static",
+                "fixture_key": "access_no_road",
+            },
+        )
+
+        assert access_response.status_code == 201
+        access_body = access_response.json()
+        assert access_body["ingest_run_id"] == str(_FIXTURE_ACCESS_INGEST_RUN_ID)
+        assert access_body["connector_name"] == "fixture_access_static"
+        assert access_body["retrieval_status"] == "succeeded"
+        assert access_body["evidence_created"] == 1
+        assert access_body["evidence_skipped"] == 0
+        assert access_body["review_required"] is False
+        assert access_body["queue_job_id"] is not None
+
         with Session(engine) as session:
             run_row = session.execute(
                 text(
@@ -387,14 +408,26 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
             assert run_row[1] == "succeeded"
             assert run_row[2] == _FIXTURE_DATASET_VERSION_ID
 
+            access_run_row = session.execute(
+                text(
+                    "SELECT connector_name, status, dataset_version_id "
+                    "FROM source.ingest_runs WHERE ingest_run_id = :id"
+                ),
+                {"id": _FIXTURE_ACCESS_INGEST_RUN_ID},
+            ).one_or_none()
+            assert access_run_row is not None
+            assert access_run_row[0] == "fixture_access_static"
+            assert access_run_row[1] == "succeeded"
+            assert access_run_row[2] == _FIXTURE_DATASET_VERSION_ID
+
             ev_rows = session.execute(
                 text(
-                    "SELECT evidence_id FROM evidence.observations "
-                    "WHERE area_id = :area_id"
+                    "SELECT domain FROM evidence.observations "
+                    "WHERE area_id = :area_id ORDER BY domain"
                 ),
                 {"area_id": _FIXTURE_AREA_ID},
             ).fetchall()
-            assert len(ev_rows) == 1
+            assert [row[0] for row in ev_rows] == ["access", "flood"]
 
             job_row = session.execute(
                 text(
@@ -406,6 +439,17 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
             ).one_or_none()
             assert job_row is not None
             assert job_row[0] == "queued"
+
+            access_job_row = session.execute(
+                text(
+                    "SELECT status FROM jobs.job_queue "
+                    "WHERE job_type = 'connector_review_status' "
+                    "  AND idempotency_key = :key"
+                ),
+                {"key": f"connector_review_status:{_FIXTURE_ACCESS_INGEST_RUN_ID}"},
+            ).one_or_none()
+            assert access_job_row is not None
+            assert access_job_row[0] == "queued"
     finally:
         with Session(engine) as session:
             _cleanup_db(session)

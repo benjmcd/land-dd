@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid4
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
@@ -11,6 +12,7 @@ from app.connectors import (
     CONNECTOR_REVIEW_STATUS_JOB_TYPE,
     ConnectorEvidenceIngestionAdapter,
     ConnectorRetrievalProvenanceAdapter,
+    ConnectorReviewQueueItem,
     ConnectorRunReviewStatus,
     FixtureConnectorIngestWorkflow,
     StaticFloodFixtureConnector,
@@ -107,7 +109,7 @@ def _build_review_status(fixture_name: str) -> ConnectorRunReviewStatus:
     return build_connector_run_review_status(handoff, quality)
 
 
-def _enqueue_review_item(app: object, fixture_name: str) -> object:
+def _enqueue_review_item(app: FastAPI, fixture_name: str) -> ConnectorReviewQueueItem:
     services = cast(ApiServices, app.state.services)
     review_status = _build_review_status(fixture_name)
     return services.connector_review_queue_repo.enqueue_review_status(review_status)
