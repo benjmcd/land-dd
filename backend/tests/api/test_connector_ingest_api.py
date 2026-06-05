@@ -48,8 +48,8 @@ def _seed(services: ApiServices) -> None:
     services.source_service.register(
         SourceContract(
             source_id=_FIXTURE_SOURCE_ID,
-            name="Fixture Flood Source",
-            domain="flood",
+            name="Fixture Source",
+            domain="fixture",
             license_status="approved",
             commercial_use_status="approved",
             redistribution_status="approved",
@@ -81,9 +81,9 @@ def _seed_db(session: Session) -> None:
     source_service.register(
         SourceContract(
             source_id=_FIXTURE_SOURCE_ID,
-            name="Fixture Flood Source",
+            name="Fixture Source",
             organization="fixture-connector-ingest-smoke",
-            domain="flood",
+            domain="fixture",
             license_status="approved",
             commercial_use_status="approved",
             redistribution_status="approved",
@@ -176,7 +176,7 @@ def test_run_flood_connector_success_creates_evidence() -> None:
 
     assert response.status_code == 201
     body = response.json()
-    assert body["ingest_run_id"] == "11111111-1111-4111-8111-111111111111"
+    assert body["ingest_run_id"] == str(_FIXTURE_INGEST_RUN_ID)
     assert body["connector_name"] == "fixture_flood_static"
     assert body["retrieval_status"] == "succeeded"
     assert body["evidence_created"] == 1

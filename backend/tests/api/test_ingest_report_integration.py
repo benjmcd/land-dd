@@ -31,7 +31,7 @@ def _seed(services: ApiServices) -> None:
         SourceContract(
             source_id=_FIXTURE_SOURCE_ID,
             name="Fixture Source",
-            domain="flood",
+            domain="fixture",
             license_status="approved",
             commercial_use_status="approved",
             redistribution_status="approved",

@@ -734,6 +734,16 @@ def evaluate_access_fixture_quality(
                 "succeeded fixture error_count must be zero",
             ),
         )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and _non_empty_text(retrieval_run.metrics.get("failure_reason"))
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_HAS_FAILURE_REASON,
+                "succeeded fixture must not record a failure reason metric",
+            ),
+        )
     if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED and source_failure_count:
         issues.append(
             _issue(
@@ -774,7 +784,23 @@ def evaluate_access_fixture_quality(
                 ),
             )
 
-    evidence_ids = set()
+    evidence_ids: set[object] = set()
+    area_ids = {evidence.area_id for evidence in evidence_inputs}
+    if len(area_ids) > 1:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_AREA_ID_MISMATCH,
+                "fixture evidence area_id values must match within one run",
+            ),
+        )
+    source_ids = {evidence.source_id for evidence in evidence_inputs}
+    if len(source_ids) > 1:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_SOURCE_ID_MISMATCH,
+                "fixture evidence source_id values must match within one run",
+            ),
+        )
     for evidence in evidence_inputs:
         if evidence.evidence_id in evidence_ids:
             issues.append(
@@ -784,6 +810,23 @@ def evaluate_access_fixture_quality(
                 ),
             )
         evidence_ids.add(evidence.evidence_id)
+        if evidence.observed_at < retrieval_run.started_at:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_BEFORE_RETRIEVAL,
+                    "fixture evidence observed_at must not precede retrieval start",
+                ),
+            )
+        if (
+            retrieval_run.finished_at is not None
+            and evidence.observed_at > retrieval_run.finished_at
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED,
+                    "fixture evidence observed_at must not follow retrieval finish",
+                ),
+            )
         if evidence.domain != _ACCESS_FIXTURE_DOMAIN:
             issues.append(
                 _issue(

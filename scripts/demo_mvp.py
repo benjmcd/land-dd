@@ -128,9 +128,9 @@ class ApiClient:
 def seed_fixture_source(client: ApiClient) -> None:
     payload: dict[str, object] = {
         "source_id": FIXTURE_SOURCE_ID,
-        "name": "Fixture Flood Source",
+        "name": "Fixture Source",
         "organization": "fixture-mvp-demo",
-        "domain": "flood",
+        "domain": "fixture",
         "license_status": "approved",
         "commercial_use_status": "approved",
         "redistribution_status": "approved",

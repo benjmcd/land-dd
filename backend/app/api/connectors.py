@@ -17,6 +17,7 @@ from app.connectors import (
     FixtureConnectorResultProtocol,
     StaticAccessFixtureConnector,
     StaticFloodFixtureConnector,
+    StaticZoningFixtureConnector,
     build_connector_review_handoff,
     build_connector_run_review_packet,
     build_connector_run_review_status,
@@ -30,7 +31,6 @@ from app.connectors.fixture_resources import (
     fixture_dataset_contract,
     fixture_dataset_version_contract,
 )
-from app.connectors.zoning_fixture import StaticZoningFixtureConnector
 from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
@@ -204,7 +204,7 @@ def _run_queue_action(
         return _queue_item_contract(action())
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -212,7 +212,7 @@ def _run_queue_action(
 def _required_action_reason(reason: str | None) -> str:
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="connector review queue reason is required",
         )
     return reason
@@ -232,18 +232,18 @@ def run_connector_fixture(
 ) -> ConnectorRunResultContract:
     if request.connector_name not in _SUPPORTED_CONNECTOR_NAMES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"unsupported connector: {request.connector_name!r}",
         )
     if not _is_safe_fixture_key(request.fixture_key):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="fixture_key must be non-empty alphanumeric with underscores or hyphens",
         )
     fixture_resource = connector_fixture_resource(request.fixture_key)
     if fixture_resource is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"fixture not found: {request.fixture_key!r}",
         )
     _ensure_fixture_provenance(services)
@@ -258,7 +258,7 @@ def run_connector_fixture(
             result = workflow.ingest_fixture(fixture_path)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     packet = build_connector_run_review_packet(result)
@@ -285,6 +285,6 @@ def _ensure_fixture_provenance(services: ApiServices) -> None:
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
