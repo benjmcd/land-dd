@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +18,11 @@ ServicesDep = Annotated[ApiServices, Depends(get_services)]
 class ReportRunCreateRequest(BaseModel):
     area_id: UUID
     intent_code: IntentCode
+
+
+class ReportReviewActionRequest(BaseModel):
+    reviewer_id: str
+    reason: str | None = None
 
 
 @router.post("", response_model=ReportRunContract, status_code=status.HTTP_201_CREATED)
@@ -61,3 +67,70 @@ def get_report_run(
     if report_run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report_run
+
+
+@router.post("/{report_run_id}/approve", response_model=ReportRunContract)
+def approve_report_run(
+    report_run_id: UUID,
+    request: ReportReviewActionRequest,
+    services: ServicesDep,
+) -> ReportRunContract:
+    return _run_report_action(
+        lambda: services.report_service.approve_report_run(
+            report_run_id,
+            reviewer_id=request.reviewer_id,
+            reason=request.reason,
+        )
+    )
+
+
+@router.post("/{report_run_id}/reject", response_model=ReportRunContract)
+def reject_report_run(
+    report_run_id: UUID,
+    request: ReportReviewActionRequest,
+    services: ServicesDep,
+) -> ReportRunContract:
+    return _run_report_action(
+        lambda: services.report_service.reject_report_run(
+            report_run_id,
+            reviewer_id=request.reviewer_id,
+            reason=_required_action_reason(request.reason),
+        )
+    )
+
+
+@router.post("/{report_run_id}/supersede", response_model=ReportRunContract)
+def supersede_report_run(
+    report_run_id: UUID,
+    request: ReportReviewActionRequest,
+    services: ServicesDep,
+) -> ReportRunContract:
+    return _run_report_action(
+        lambda: services.report_service.supersede_report_run(
+            report_run_id,
+            reviewer_id=request.reviewer_id,
+            reason=_required_action_reason(request.reason),
+        )
+    )
+
+
+def _run_report_action(action: Callable[[], ReportRunContract]) -> ReportRunContract:
+    try:
+        return action()
+    except ValueError as exc:
+        message = str(exc)
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if "was not found" in message
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
+        )
+        raise HTTPException(status_code=status_code, detail=message) from exc
+
+
+def _required_action_reason(reason: str | None) -> str:
+    if reason is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="report review reason is required",
+        )
+    return reason

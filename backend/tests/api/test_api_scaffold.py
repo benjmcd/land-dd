@@ -126,6 +126,7 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     report_run = create_response.json()
     assert report_run["area_id"] == area_id
     assert report_run["status"] == "succeeded"
+    assert report_run["review_status"] == "needs_review"
     assert [record["domain"] for record in report_run["evidence"]] == list(NOT_EVALUATED_DOMAINS)
     assert [claim["claim_code"] for claim in report_run["claims"]] == (not_evaluated_claim_codes())
     assert [claim["claim_code"] for claim in report_run["unknowns"]] == (
@@ -152,6 +153,82 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     ]
     assert client.get(f"/report-runs?area_id={uuid4()}").json() == []
     assert client.get("/report-runs?limit=0").status_code == 422
+
+
+def test_api_report_run_review_actions_update_review_status() -> None:
+    client = TestClient(create_app())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    create_response = client.post(
+        "/report-runs",
+        json={
+            "area_id": area_response.json()["area_id"],
+            "intent_code": "homestead_feasibility",
+        },
+    )
+    report_run_id = create_response.json()["report_run_id"]
+
+    approve_response = client.post(
+        f"/report-runs/{report_run_id}/approve",
+        json={"reviewer_id": "reviewer-1", "reason": "ready"},
+    )
+
+    assert approve_response.status_code == 200
+    approved = approve_response.json()
+    assert approved["review_status"] == "approved"
+    assert approved["reviewed_by"] == "reviewer-1"
+    assert approved["review_actions"][0]["from_status"] == "needs_review"
+    assert approved["review_actions"][0]["to_status"] == "approved"
+
+    supersede_response = client.post(
+        f"/report-runs/{report_run_id}/supersede",
+        json={"reviewer_id": "reviewer-2", "reason": "new evidence"},
+    )
+
+    assert supersede_response.status_code == 200
+    assert supersede_response.json()["review_status"] == "superseded"
+    assert len(supersede_response.json()["review_actions"]) == 2
+
+
+def test_api_report_run_review_actions_validate_transitions() -> None:
+    client = TestClient(create_app())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    create_response = client.post(
+        "/report-runs",
+        json={
+            "area_id": area_response.json()["area_id"],
+            "intent_code": "homestead_feasibility",
+        },
+    )
+    report_run_id = create_response.json()["report_run_id"]
+
+    assert (
+        client.post(
+            f"/report-runs/{report_run_id}/reject",
+            json={"reviewer_id": "reviewer-1"},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            f"/report-runs/{uuid4()}/approve",
+            json={"reviewer_id": "reviewer-1"},
+        ).status_code
+        == 404
+    )
 
 
 def test_api_report_run_surfaces_source_failure_unknowns() -> None:

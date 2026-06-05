@@ -5,10 +5,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. What is the report review lifecycle before beta delivery: draft, needs
-   review, approved, rejected, superseded, or another state model?
-3. What workspace/user identity mechanism should scope API queries?
-4. What are the idempotency and async job semantics for report creation?
+2. What workspace/user identity mechanism should scope API queries?
+3. What are the idempotency and async job semantics for report creation?
 
 ## Decided
 
@@ -19,6 +17,9 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 2. API authority mode: generated FastAPI OpenAPI is the runtime authority.
    `api/openapi_stub.yaml` remains a curated companion and is path/method
    drift-checked against the runtime schema.
+3. Report review lifecycle: new report runs default to `needs_review`; reviewers
+   can approve or reject them; approved reports can later be superseded. Review
+   actions record reviewer identity, reason, transition, and timestamp.
 
 ## High
 

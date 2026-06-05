@@ -14,9 +14,9 @@ from app.claims_engine.not_evaluated import (
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import IntentCode, JobStatus, SeverityBand
+from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
-from app.domain.report_contracts import ReportRunContract
+from app.domain.report_contracts import ReportReviewActionContract, ReportRunContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.service import EvidenceService
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
@@ -78,6 +78,7 @@ class ReportRunService:
             area_id=area_id,
             intent_code=intent_code,
             status=JobStatus.SUCCEEDED,
+            review_status=ReportReviewStatus.NEEDS_REVIEW,
             source_manifest=self._source_manifest(evidence, stored_claims),
             assumptions=list(_REPORT_ASSUMPTIONS),
             caveats=_report_caveats(evidence),
@@ -94,6 +95,48 @@ class ReportRunService:
             finished_at=datetime.now(UTC),
         )
         return self._report_repo.add(report_run)
+
+    def approve_report_run(
+        self,
+        report_run_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ReportRunContract:
+        return self._transition_review(
+            report_run_id,
+            action=ReportReviewStatus.APPROVED,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+
+    def reject_report_run(
+        self,
+        report_run_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str,
+    ) -> ReportRunContract:
+        return self._transition_review(
+            report_run_id,
+            action=ReportReviewStatus.REJECTED,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+
+    def supersede_report_run(
+        self,
+        report_run_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str,
+    ) -> ReportRunContract:
+        return self._transition_review(
+            report_run_id,
+            action=ReportReviewStatus.SUPERSEDED,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
 
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
@@ -112,6 +155,42 @@ class ReportRunService:
             limit=limit,
             offset=offset,
         )
+
+    def _transition_review(
+        self,
+        report_run_id: UUID,
+        *,
+        action: ReportReviewStatus,
+        reviewer_id: str,
+        reason: str | None,
+    ) -> ReportRunContract:
+        reviewer = reviewer_id.strip()
+        if not reviewer:
+            raise ValueError("reviewer_id is required")
+        if action in {ReportReviewStatus.REJECTED, ReportReviewStatus.SUPERSEDED}:
+            _require_non_empty(reason or "", "reason")
+        report_run = self.get_report_run(report_run_id)
+        if report_run is None:
+            raise ValueError(f"Report run '{report_run_id}' was not found")
+        _require_review_transition(report_run.review_status, action)
+        reviewed_at = datetime.now(UTC)
+        review_action = ReportReviewActionContract(
+            action=action,
+            from_status=report_run.review_status,
+            to_status=action,
+            reviewer_id=reviewer,
+            reason=reason,
+            reviewed_at=reviewed_at,
+        )
+        updated = report_run.model_copy(
+            update={
+                "review_status": action,
+                "reviewed_by": reviewer,
+                "reviewed_at": reviewed_at,
+                "review_actions": [*report_run.review_actions, review_action],
+            }
+        )
+        return self._report_repo.update(updated)
 
     def _with_not_evaluated_source_failures(
         self,
@@ -277,6 +356,21 @@ def _not_evaluated_failure_payload(evidence: EvidenceContract) -> dict[str, obje
     if not isinstance(reason, str) or not reason.strip():
         reason = "unsupported_screening_domain"
     return {"failure_reason": reason.strip()}
+
+
+def _require_review_transition(
+    current: ReportReviewStatus,
+    action: ReportReviewStatus,
+) -> None:
+    allowed = {
+        ReportReviewStatus.NEEDS_REVIEW: {
+            ReportReviewStatus.APPROVED,
+            ReportReviewStatus.REJECTED,
+        },
+        ReportReviewStatus.APPROVED: {ReportReviewStatus.SUPERSEDED},
+    }
+    if action not in allowed.get(current, set()):
+        raise ValueError(f"cannot mark report review {action.value} from {current.value}")
 
 
 def _require_non_empty(value: str, field_name: str) -> None:

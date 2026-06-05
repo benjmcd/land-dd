@@ -111,6 +111,39 @@ paths:
         '200': { description: Report run }
         '404': { description: Report run not found }
         '422': { description: Invalid report run id }
+  /report-runs/{report_run_id}/approve:
+    post:
+      summary: Approve report run for delivery
+      parameters:
+        - $ref: '#/components/parameters/ReportRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ReportReviewAction'
+      responses:
+        '200': { description: Updated report run }
+        '404': { description: Report run not found }
+        '422': { description: Invalid report review action }
+  /report-runs/{report_run_id}/reject:
+    post:
+      summary: Reject report run
+      parameters:
+        - $ref: '#/components/parameters/ReportRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ReportReviewAction'
+      responses:
+        '200': { description: Updated report run }
+        '404': { description: Report run not found }
+        '422': { description: Invalid report review action }
+  /report-runs/{report_run_id}/supersede:
+    post:
+      summary: Supersede approved report run
+      parameters:
+        - $ref: '#/components/parameters/ReportRunId'
+      requestBody:
+        $ref: '#/components/requestBodies/ReportReviewAction'
+      responses:
+        '200': { description: Updated report run }
+        '404': { description: Report run not found }
+        '422': { description: Invalid report review action }
   /connector-runs:
     post:
       summary: Run a static fixture connector
@@ -217,7 +250,22 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    ReportRunId:
+      name: report_run_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   requestBodies:
+    ReportReviewAction:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reviewer_id]
+            properties:
+              reviewer_id: { type: string }
+              reason: { type: [string, "null"] }
     ConnectorReviewAction:
       required: true
       content:

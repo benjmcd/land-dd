@@ -16,6 +16,8 @@ from app.reports.models import ReportRunModel
 class ReportRunRepository(Protocol):
     def add(self, report_run: ReportRunContract) -> ReportRunContract: ...
 
+    def update(self, report_run: ReportRunContract) -> ReportRunContract: ...
+
     def get(self, report_run_id: UUID) -> ReportRunContract | None: ...
 
     def list(
@@ -33,6 +35,20 @@ class InMemoryReportRunRepository:
         self._store: dict[UUID, ReportRunContract] = {}
 
     def add(self, report_run: ReportRunContract) -> ReportRunContract:
+        stored = report_run.model_copy(
+            update={
+                "artifact_metadata": _with_persistence(
+                    report_run.artifact_metadata,
+                    persistence="memory",
+                )
+            }
+        )
+        self._store[stored.report_run_id] = stored
+        return stored
+
+    def update(self, report_run: ReportRunContract) -> ReportRunContract:
+        if report_run.report_run_id not in self._store:
+            raise ValueError(f"Report run '{report_run.report_run_id}' was not found")
         stored = report_run.model_copy(
             update={
                 "artifact_metadata": _with_persistence(
@@ -84,6 +100,37 @@ class SqlAlchemyReportRunRepository:
         )
         model = self._contract_to_model(persisted, artifact_path)
         self._session.add(model)
+        self._session.flush()
+        return persisted
+
+    def update(self, report_run: ReportRunContract) -> ReportRunContract:
+        model = self._session.get(ReportRunModel, report_run.report_run_id)
+        if model is None:
+            raise ValueError(f"Report run '{report_run.report_run_id}' was not found")
+        artifact_path = self._artifact_path_from_model(model)
+        persisted = report_run.model_copy(
+            update={
+                "output_uri": str(artifact_path),
+                "artifact_metadata": _with_persistence(
+                    report_run.artifact_metadata,
+                    persistence="postgres+object_store",
+                    output_uri=str(artifact_path),
+                    machine_json_uri=str(artifact_path),
+                    cost_metrics=_report_cost_metrics(report_run),
+                ),
+            }
+        )
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text(
+            json.dumps(persisted.model_dump(mode="json"), indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        model.review_status = persisted.review_status.value
+        model.reviewed_by = persisted.reviewed_by
+        model.reviewed_at = persisted.reviewed_at
+        model.review_actions = [
+            action.model_dump(mode="json") for action in persisted.review_actions
+        ]
         self._session.flush()
         return persisted
 
@@ -189,6 +236,12 @@ class SqlAlchemyReportRunRepository:
             area_id=report_run.area_id,
             intent_id=intent_id,
             status=report_run.status.value,
+            review_status=report_run.review_status.value,
+            reviewed_by=report_run.reviewed_by,
+            reviewed_at=report_run.reviewed_at,
+            review_actions=[
+                action.model_dump(mode="json") for action in report_run.review_actions
+            ],
             started_at=report_run.started_at,
             finished_at=report_run.finished_at,
             output_uri=str(artifact_path),

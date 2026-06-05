@@ -54,6 +54,18 @@ class ReportRunModel(AppBase):
         nullable=False,
         server_default=text("'queued'"),
     )
+    review_status: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        server_default=text("'needs_review'"),
+    )
+    reviewed_by: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column()
+    review_actions: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+    )
     started_at: Mapped[datetime] = mapped_column(
         nullable=False,
         server_default=text("now()"),

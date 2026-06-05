@@ -22,7 +22,7 @@ from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode
+from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode, ReportReviewStatus
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
@@ -159,6 +159,11 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
             area_id=area.area_id,
             intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
         )
+        report_run = report_service.approve_report_run(
+            report_run.report_run_id,
+            reviewer_id="db-reviewer",
+            reason="DB smoke approval",
+        )
         session.commit()
 
     report_uri = report_run.output_uri
@@ -178,22 +183,38 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert [claim.claim_code for claim in report_run.unknowns][-4:] == [
         NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
     ]
+    assert report_run.review_status == ReportReviewStatus.APPROVED
+    assert report_run.reviewed_by == "db-reviewer"
+    assert len(report_run.review_actions) == 1
+    assert report_run.review_actions[0].from_status == ReportReviewStatus.NEEDS_REVIEW
+    assert report_run.review_actions[0].to_status == ReportReviewStatus.APPROVED
 
-    # Verify intent_id is populated in the DB row (not NULL), confirming the
-    # intent_code → intent_id lookup in SqlAlchemyReportRunRepository works.
+    # Verify intent_id and review fields are populated in the DB row.
     with Session(engine) as session:
         row = session.execute(
             text(
-                "SELECT intent_id FROM reports.report_runs " "WHERE report_run_id = :report_run_id"
+                """
+                SELECT
+                    intent_id,
+                    review_status,
+                    reviewed_by,
+                    jsonb_array_length(review_actions)
+                FROM reports.report_runs
+                WHERE report_run_id = :report_run_id
+                """
             ),
             {"report_run_id": report_run.report_run_id},
         ).one_or_none()
     assert row is not None, "report run row not found in DB"
     db_intent_id = row[0]
     assert db_intent_id is not None, (
-        "intent_id is NULL in reports.report_runs — "
+        "intent_id is NULL in reports.report_runs; "
         "_resolve_intent_id did not find 'homestead_feasibility' in core.intents"
     )
+
+    assert row[1] == ReportReviewStatus.APPROVED.value
+    assert row[2] == "db-reviewer"
+    assert row[3] == 1
 
     with Session(engine) as session:
         repo = SqlAlchemyReportRunRepository(session, report_store)

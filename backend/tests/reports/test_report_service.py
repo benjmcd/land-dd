@@ -19,7 +19,13 @@ from app.claims_engine.not_evaluated import (
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode, JobStatus
+from app.domain.enums import (
+    ConfidenceBand,
+    EvidenceType,
+    IntentCode,
+    JobStatus,
+    ReportReviewStatus,
+)
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
@@ -126,6 +132,8 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     )
 
     assert report_run.status == JobStatus.SUCCEEDED
+    assert report_run.review_status == ReportReviewStatus.NEEDS_REVIEW
+    assert report_run.review_actions == []
     assert report_run.finished_at is not None
     assert report_run.evidence[:2] == [observation, failure]
     assert [record.domain for record in report_run.evidence[2:]] == list(NOT_EVALUATED_DOMAINS)
@@ -168,6 +176,86 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     assert cost_metrics["unknown_count"] == 6
     assert cost_metrics["red_flag_count"] == 1
     assert report_service.get_report_run(report_run.report_run_id) == report_run
+
+
+def test_report_review_lifecycle_approves_and_supersedes_report() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    approved = report_service.approve_report_run(
+        report_run.report_run_id,
+        reviewer_id="reviewer-1",
+        reason="ready for beta handoff",
+    )
+
+    assert approved.review_status == ReportReviewStatus.APPROVED
+    assert approved.reviewed_by == "reviewer-1"
+    assert approved.reviewed_at is not None
+    assert len(approved.review_actions) == 1
+    assert approved.review_actions[0].from_status == ReportReviewStatus.NEEDS_REVIEW
+    assert approved.review_actions[0].to_status == ReportReviewStatus.APPROVED
+    assert approved.review_actions[0].reason == "ready for beta handoff"
+
+    superseded = report_service.supersede_report_run(
+        report_run.report_run_id,
+        reviewer_id="reviewer-2",
+        reason="new source evidence available",
+    )
+
+    assert superseded.review_status == ReportReviewStatus.SUPERSEDED
+    assert superseded.reviewed_by == "reviewer-2"
+    assert len(superseded.review_actions) == 2
+    assert superseded.review_actions[-1].from_status == ReportReviewStatus.APPROVED
+    assert superseded.review_actions[-1].to_status == ReportReviewStatus.SUPERSEDED
+    assert report_service.get_report_run(report_run.report_run_id) == superseded
+
+
+def test_report_review_lifecycle_rejects_report_with_required_reason() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    with pytest.raises(ValueError, match="reason is required"):
+        report_service.reject_report_run(
+            report_run.report_run_id,
+            reviewer_id="reviewer-1",
+            reason="",
+        )
+
+    rejected = report_service.reject_report_run(
+        report_run.report_run_id,
+        reviewer_id="reviewer-1",
+        reason="missing source caveat",
+    )
+
+    assert rejected.review_status == ReportReviewStatus.REJECTED
+    assert rejected.review_actions[-1].to_status == ReportReviewStatus.REJECTED
+    with pytest.raises(ValueError, match="cannot mark report review approved from rejected"):
+        report_service.approve_report_run(
+            report_run.report_run_id,
+            reviewer_id="reviewer-2",
+        )
+
+
+def test_report_review_lifecycle_requires_known_report_and_reviewer() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    with pytest.raises(ValueError, match="reviewer_id is required"):
+        report_service.approve_report_run(report_run.report_run_id, reviewer_id=" ")
+    with pytest.raises(ValueError, match="was not found"):
+        report_service.approve_report_run(uuid4(), reviewer_id="reviewer-1")
 
 
 def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:

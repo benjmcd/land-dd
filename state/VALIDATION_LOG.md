@@ -54,6 +54,32 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report Review Lifecycle Pass
+
+- `ReportRunContract`: added review status, reviewer, reviewed timestamp, and
+  review action audit history.
+- `ReportRunService`: added approve, reject, and supersede transitions. New
+  report runs default to `needs_review`; rejection and supersession require a
+  reason; invalid transitions fail closed.
+- `POST /report-runs/{report_run_id}/approve`, `/reject`, and `/supersede`:
+  added public API review actions and documented them in the curated OpenAPI
+  companion.
+- `db/migrations/0002_d_report_review_lifecycle.sql`: added persisted review
+  status/action columns and a status check constraint.
+- `python -m pytest backend\tests\reports\test_report_service.py
+  backend\tests\reports\test_report_repository.py
+  backend\tests\api\test_api_scaffold.py
+  backend\tests\api\test_openapi_contract.py -q`: passed with one DB smoke
+  skip.
+- `python -m ruff check` on affected backend and test files: passed.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, source registry,
+  and structural invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.
