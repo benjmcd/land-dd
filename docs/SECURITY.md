@@ -36,9 +36,18 @@ Default agent network access is off. Enable only with approval and task-specific
 
 ## Report API Identity Boundary
 
-- Report API routes require `X-Workspace-Id` and `X-User-Id` headers.
-- The backend treats these as trusted request identity headers and rejects
-  report body/query/reviewer mismatches.
-- Exposed beta deployments must put these headers behind a trusted gateway or
-  replace them with token/session/identity-provider validation before accepting
-  untrusted network traffic.
+- Report API routes support two explicit identity modes:
+  - `REPORT_AUTH_MODE=trusted_headers`: local/dev or trusted-gateway mode. The
+    backend requires `X-Workspace-Id` and `X-User-Id` headers and rejects report
+    body/query/reviewer mismatches.
+  - `REPORT_AUTH_MODE=signed_token`: beta deployment mode. The backend requires
+    an `Authorization: Bearer ...` report identity token signed with
+    `REPORT_IDENTITY_TOKEN_SECRET`; token claims are the workspace/user
+    authority. The secret must be at least 32 characters, and tokens must carry
+    an expiration.
+- In signed-token mode, optional `X-Workspace-Id` and `X-User-Id` headers may be
+  supplied by a gateway/operator only when they match the bearer token claims.
+  Mismatches fail closed.
+- External identity-provider/session integration may later mint or replace these
+  signed report identity tokens, but untrusted exposed deployments should not run
+  in `trusted_headers` mode.

@@ -7,6 +7,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 StorageBackend = Literal["memory", "postgres"]
+ReportAuthMode = Literal["trusted_headers", "signed_token"]
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,12 @@ class Settings(BaseSettings):
         default="./local_artifacts/object_store", alias="OBJECT_STORE_ROOT"
     )
     enable_live_connectors: bool = Field(default=False, alias="ENABLE_LIVE_CONNECTORS")
+    report_auth_mode: ReportAuthMode = Field(
+        default="trusted_headers", alias="REPORT_AUTH_MODE"
+    )
+    report_identity_token_secret: str | None = Field(
+        default=None, alias="REPORT_IDENTITY_TOKEN_SECRET"
+    )
 
 
 @lru_cache

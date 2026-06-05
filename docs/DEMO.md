@@ -38,6 +38,9 @@ operator worker:
 python scripts\run_report_worker.py --workspace-id 11111111-1111-4111-8111-111111111111 --user-id 22222222-2222-4222-8222-222222222222 --max-jobs 5
 ```
 
+When the API runs with `REPORT_AUTH_MODE=signed_token`, include the gateway- or
+operator-issued token with `--identity-token`.
+
 ## Postgres-Backed Demo
 
 Use this path for the intended persistent local runtime:

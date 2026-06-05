@@ -33,11 +33,13 @@ class ApiClient:
         *,
         workspace_id: str,
         user_id: str,
+        identity_token: str | None = None,
         opener: UrlOpener = urlopen,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.workspace_id = workspace_id
         self.user_id = user_id
+        self.identity_token = identity_token
         self._opener = opener
 
     def execute_next_report_job(self, worker_id: str) -> WorkerResult | None:
@@ -65,15 +67,18 @@ class ApiClient:
         *,
         ok_statuses: tuple[int, ...],
     ) -> dict[str, object] | None:
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Workspace-Id": self.workspace_id,
+            "X-User-Id": self.user_id,
+        }
+        if self.identity_token is not None and self.identity_token.strip():
+            headers["Authorization"] = f"Bearer {self.identity_token.strip()}"
         request = Request(
             f"{self.base_url}{path}",
             data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Workspace-Id": self.workspace_id,
-                "X-User-Id": self.user_id,
-            },
+            headers=headers,
             method=method,
         )
         try:
@@ -123,6 +128,7 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--user-id", required=True)
+    parser.add_argument("--identity-token")
     parser.add_argument("--worker-id", default="report-worker-operator")
     parser.add_argument("--max-jobs", type=int, default=1)
     args = parser.parse_args()
@@ -131,6 +137,7 @@ def main() -> None:
         args.base_url,
         workspace_id=args.workspace_id,
         user_id=args.user_id,
+        identity_token=args.identity_token,
     )
     summary = execute_bounded_report_jobs(
         client,

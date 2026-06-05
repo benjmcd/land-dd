@@ -29,6 +29,7 @@ def create_app(
         version="0.1.0",
         description="Intent-aware land/locality due-diligence backend scaffold.",
     )
+    app.state.settings = resolved
     app.state.object_store_root = resolved.object_store_root
     app.state.storage_backend = "postgres" if db_services_enabled else "memory"
     if db_services_enabled:

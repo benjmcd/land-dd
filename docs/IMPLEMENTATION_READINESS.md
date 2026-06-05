@@ -30,6 +30,9 @@ start without re-litigating basic authority.
   jobs through the authenticated public API for operator-driven processing.
 - Report API routes require trusted `X-Workspace-Id` and `X-User-Id` headers
   and reject body/query/reviewer identity mismatches.
+- Report API routes can run in `REPORT_AUTH_MODE=signed_token`, where a signed
+  bearer report identity token supplies the workspace/user authority and
+  mismatched identity headers fail closed.
 
 ## Do Not Start Impact-Heavy Work Until
 
@@ -37,7 +40,7 @@ start without re-litigating basic authority.
 |---|---|---|
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
-| Full identity integration | Decide token/session/IdP validation beyond trusted request identity headers. | Report routes enforce workspace/user headers, but beta deployment still needs a real identity boundary. |
+| External identity integration | Decide whether beta needs an external IdP/session issuer beyond signed report identity tokens. | The backend now has a signed beta token boundary, but a public multi-user deployment may still need a product IdP/session layer. |
 | Report job scheduling | Decide whether bounded operator/API execution is enough or an autonomous scheduler/daemon is needed. | The worker endpoint and bounded operator script exist, but automatic processing is not yet part of the runtime. |
 | Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
@@ -61,7 +64,8 @@ start without re-litigating basic authority.
    - Use generated FastAPI OpenAPI as runtime authority.
    - Keep `api/openapi_stub.yaml` as a curated path/method-checked companion.
    - Keep trusted-header workspace/user enforcement around report routes.
-   - Add real token/session/IdP validation before any exposed beta deployment.
+   - Use `REPORT_AUTH_MODE=signed_token` before exposed beta deployment unless a
+     stronger external IdP/session integration replaces it.
    - Use the bounded report worker script for operator-driven job execution.
    - Decide and implement automatic report-job scheduling only if beta needs it.
    - Keep explicit false/unknown/missing/source-failed response semantics visible.

@@ -65,6 +65,7 @@ paths:
     get:
       summary: List report runs
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - name: area_id
@@ -94,6 +95,10 @@ paths:
     post:
       summary: Create a report run
       operationId: createReportRun
+      parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       requestBody:
         required: true
         content:
@@ -116,6 +121,7 @@ paths:
     post:
       summary: Queue an idempotent report run job
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
       requestBody:
@@ -140,6 +146,7 @@ paths:
     get:
       summary: Get report run job
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - name: job_id
@@ -155,6 +162,7 @@ paths:
     post:
       summary: Execute the next queued report run job
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
       requestBody:
@@ -175,6 +183,7 @@ paths:
     post:
       summary: Requeue a failed report run job
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - name: job_id
@@ -199,6 +208,7 @@ paths:
     get:
       summary: Get report run
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - name: report_run_id
@@ -214,6 +224,7 @@ paths:
     get:
       summary: Get approved Markdown dossier
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
@@ -227,6 +238,7 @@ paths:
     post:
       summary: Approve report run for delivery
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
@@ -242,6 +254,7 @@ paths:
     post:
       summary: Reject report run
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
@@ -257,6 +270,7 @@ paths:
     post:
       summary: Supersede approved report run
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
         - $ref: '#/components/parameters/RequestWorkspaceId'
         - $ref: '#/components/parameters/RequestUserId'
         - $ref: '#/components/parameters/ReportRunId'
@@ -369,15 +383,23 @@ paths:
         '422': { description: Invalid action request }
 components:
   parameters:
+    ReportBearerToken:
+      name: Authorization
+      in: header
+      required: false
+      description: Required as `Bearer <token>` when `REPORT_AUTH_MODE=signed_token`.
+      schema: { type: string }
     RequestWorkspaceId:
       name: X-Workspace-Id
       in: header
-      required: true
+      required: false
+      description: Required in `trusted_headers` mode; optional in signed-token mode when it matches the token claims.
       schema: { type: string, format: uuid }
     RequestUserId:
       name: X-User-Id
       in: header
-      required: true
+      required: false
+      description: Required in `trusted_headers` mode; optional in signed-token mode when it matches the token claims.
       schema: { type: string, format: uuid }
     IngestRunId:
       name: ingest_run_id

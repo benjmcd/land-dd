@@ -48,6 +48,7 @@ def test_worker_client_posts_authenticated_execute_request() -> None:
         "http://api.test",
         workspace_id="workspace-1",
         user_id="user-1",
+        identity_token="signed-token-1",
         opener=opener,
     )
 
@@ -62,6 +63,7 @@ def test_worker_client_posts_authenticated_execute_request() -> None:
     assert request.get_method() == "POST"
     assert request.headers["X-workspace-id"] == "workspace-1"
     assert request.headers["X-user-id"] == "user-1"
+    assert request.headers["Authorization"] == "Bearer signed-token-1"
     request_data = cast(bytes, request.data or b"")
     assert json.loads(request_data.decode("utf-8")) == {"worker_id": "worker-1"}
 

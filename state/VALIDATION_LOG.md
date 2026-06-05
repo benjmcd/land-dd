@@ -208,6 +208,38 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Signed Report Identity Token Pass
+
+- Fresh worktree `prod-wt` was created from `origin/main` at `ccd7389` on
+  branch `prod-fast`.
+- `backend/app/api/report_auth.py`: added signed report identity token creation
+  and verification using HMAC-SHA256, workspace/user UUID claims, required
+  expiration with a one-hour default for issued tokens, and constant-time
+  signature comparison.
+- `backend/app/api/dependencies.py`: report auth now supports
+  `REPORT_AUTH_MODE=trusted_headers` for local/trusted-gateway use and
+  `REPORT_AUTH_MODE=signed_token` for beta deployment use. Signed-token mode
+  requires `Authorization: Bearer ...`, rejects mismatched identity headers, and
+  fails closed when the signing secret is missing or too short.
+- `scripts/run_report_worker.py`: accepts `--identity-token` for signed-token
+  deployments while retaining bounded operator execution.
+- `api/openapi_stub.yaml`: documents the optional report bearer token header and
+  mode-dependent identity header requirements in the curated companion spec.
+- Independent code review requested two fixes: require token expiration and add
+  trusted-header parameters to `POST /report-runs` in the curated OpenAPI
+  companion. Both were fixed; follow-up review approved the corrected diff.
+- `backend/tests/api/test_report_auth.py`: verifies signed-token report scope,
+  missing/invalid token failures, mismatched header rejection, missing/short
+  secret fail-closed behavior, signature checks, required expiration, and
+  expiration checks.
+- `python -m pytest ./tests/api/test_report_auth.py
+  ./tests/api/test_openapi_contract.py ./tests/scripts/test_run_report_worker.py
+  -q` from `backend/`: passed.
+- `python -m ruff check` on affected auth, config, worker, and test files:
+  passed.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Bounded Report Worker Pass
 
 - `scripts/run_report_worker.py`: added a bounded operator command that executes

@@ -35,6 +35,9 @@
 - Report API creation, listing, retrieval, review, job access, job execution,
   and dossier delivery require `X-Workspace-Id` and `X-User-Id` request headers;
   body/query workspace and reviewer fields must match the request identity.
+- Report routes can alternatively run with `REPORT_AUTH_MODE=signed_token`,
+  requiring signed bearer report identity tokens whose workspace/user claims
+  become the request authority.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
@@ -54,9 +57,8 @@
 - Live connectors are not enabled and should remain blocked.
 - Most source registry rows other than DS-002 still have unresolved
   production-use status.
-- The report API has trusted-header workspace/user enforcement, but no full
-  token validation, session management, or external identity-provider
-  integration yet.
+- The report API has signed-token beta identity enforcement, but no external
+  identity-provider or session-management integration yet.
 - Report jobs can be executed through the explicit worker endpoint or bounded
   operator script, but no autonomous scheduler/daemon runs them yet.
 - Broader dossier product surfaces such as PDF, web pages, dashboards, or

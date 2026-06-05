@@ -5,8 +5,6 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. Which token/session/identity-provider boundary should back the current
-   trusted-header report authorization contract before exposed beta deployment?
 
 ## Decided
 
@@ -34,6 +32,9 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
    workspace boundaries.
 7. Report operator worker: `scripts/run_report_worker.py` can execute a bounded
    number of queued report jobs through the authenticated public API.
+8. Beta report identity boundary: report routes can run with
+   `REPORT_AUTH_MODE=signed_token`, where a signed bearer token supplies
+   workspace/user authority and mismatched identity headers fail closed.
 
 ## High
 
@@ -44,6 +45,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 3. Which source/license fields are required in API responses versus internal
    metadata?
 4. What cost metrics need to be measured during the first real source pass?
+5. Should a public beta use an external IdP/session issuer, or is the signed
+   report identity token boundary sufficient behind a trusted product gateway?
 
 ## Medium
 
