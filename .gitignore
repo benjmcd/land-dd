@@ -13,6 +13,7 @@ worktrees/
 htmlcov/
 .venv/
 venv/
+*.egg-info/
 local_artifacts/
 *.log
 .DS_Store
