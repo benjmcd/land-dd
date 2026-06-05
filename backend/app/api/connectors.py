@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from importlib.resources import as_file
 from typing import Annotated
 from uuid import UUID
 
@@ -15,6 +15,11 @@ from app.connectors import (
     build_fixture_workflow_with_public_lane_services,
     evaluate_flood_fixture_quality,
 )
+from app.connectors.fixture_resources import (
+    connector_fixture_resource,
+    fixture_dataset_contract,
+    fixture_dataset_version_contract,
+)
 from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
@@ -24,9 +29,6 @@ router = APIRouter(prefix="/connector-review-queue", tags=["connector-review-que
 runs_router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
-_CONNECTOR_FIXTURE_DIR = (
-    Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
-)
 _SUPPORTED_CONNECTOR_NAMES: frozenset[str] = frozenset({"fixture_flood_static"})
 
 
@@ -86,18 +88,20 @@ def run_connector_fixture(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="fixture_key must be non-empty alphanumeric with underscores or hyphens",
         )
-    fixture_path = _CONNECTOR_FIXTURE_DIR / f"{request.fixture_key}.json"
-    if not fixture_path.is_file():
+    fixture_resource = connector_fixture_resource(request.fixture_key)
+    if fixture_resource is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"fixture not found: {request.fixture_key!r}",
         )
+    _ensure_fixture_provenance(services)
     workflow = build_fixture_workflow_with_public_lane_services(
         source_provenance_service=services.source_provenance_service,
         evidence_service=services.evidence_service,
     )
     try:
-        result = workflow.ingest_fixture(fixture_path)
+        with as_file(fixture_resource) as fixture_path:
+            result = workflow.ingest_fixture(fixture_path)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -117,3 +121,16 @@ def run_connector_fixture(
         review_required=review_status.review_required,
         queue_job_id=queue_item.job_id,
     )
+
+
+def _ensure_fixture_provenance(services: ApiServices) -> None:
+    try:
+        services.source_provenance_service.ensure_dataset(fixture_dataset_contract())
+        services.source_provenance_service.ensure_dataset_version(
+            fixture_dataset_version_contract()
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc

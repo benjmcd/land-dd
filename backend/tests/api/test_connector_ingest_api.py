@@ -18,11 +18,8 @@ from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
 from app.domain.source_contracts import (
     SourceContract,
-    SourceDatasetContract,
-    SourceDatasetVersionContract,
 )
 from app.main import create_app
-from app.source_registry.provenance_repo import SqlAlchemySourceProvenanceRepository
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import SqlAlchemySourceRepository
 
@@ -73,7 +70,6 @@ def _seed(services: ApiServices) -> None:
 def _seed_db(session: Session) -> None:
     source_service = SourceService(SqlAlchemySourceRepository(session))
     area_service = AreaService(SqlAlchemyAreaRepository(session))
-    provenance_repo = SqlAlchemySourceProvenanceRepository(session)
 
     area_service.create(
         AreaContract(
@@ -95,21 +91,6 @@ def _seed_db(session: Session) -> None:
             raw_data_allowed="approved",
             ai_use_allowed="approved",
             review_status="approved",
-        )
-    )
-    provenance_repo.add_dataset(
-        SourceDatasetContract(
-            dataset_id=_FIXTURE_DATASET_ID,
-            source_id=_FIXTURE_SOURCE_ID,
-            dataset_name="Fixture Flood Dataset",
-            domain="flood",
-        )
-    )
-    provenance_repo.add_dataset_version(
-        SourceDatasetVersionContract(
-            dataset_version_id=_FIXTURE_DATASET_VERSION_ID,
-            dataset_id=_FIXTURE_DATASET_ID,
-            version_label="fixture-2026-06-04",
         )
     )
     session.commit()
@@ -257,6 +238,26 @@ def test_run_connector_returns_422_for_invalid_fixture_key_characters() -> None:
     assert "fixture_key" in response.json()["detail"]
 
 
+def test_run_connector_returns_422_when_fixture_source_is_missing() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    services.area_service.create(
+        AreaContract(
+            area_id=_FIXTURE_AREA_ID,
+            geom_geojson=_FIXTURE_AREA_GEOJSON,
+        )
+    )
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+    )
+
+    assert response.status_code == 422
+    assert "is not registered" in response.json()["detail"]
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
     tmp_path: Path,
@@ -291,7 +292,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
         with Session(engine) as session:
             run_row = session.execute(
                 text(
-                    "SELECT connector_name, status "
+                    "SELECT connector_name, status, dataset_version_id "
                     "FROM source.ingest_runs WHERE ingest_run_id = :id"
                 ),
                 {"id": _FIXTURE_INGEST_RUN_ID},
@@ -299,6 +300,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
             assert run_row is not None
             assert run_row[0] == "fixture_flood_static"
             assert run_row[1] == "succeeded"
+            assert run_row[2] == _FIXTURE_DATASET_VERSION_ID
 
             ev_rows = session.execute(
                 text(

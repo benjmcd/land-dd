@@ -26,7 +26,7 @@ class SourceProvenanceServiceRetrievalPort:
         self,
         retrieval_run: SourceRetrievalRunContract,
     ) -> SourceRetrievalRunContract:
-        return self._source_provenance_service.record_retrieval_run_unchecked(
+        return self._source_provenance_service.record_retrieval_run_contract(
             retrieval_run,
         )
 
