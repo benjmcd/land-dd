@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "14141414-1414-4414-8414-141414141414",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_access_static",
+    "status": "blocked",
+    "started_at": "2026-06-04T09:00:00Z",
+    "finished_at": "2026-06-04T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/access_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_access_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "17171717-1717-4717-8717-171717171717",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "ACCESS_SOURCE_UNAVAILABLE",
+      "domain": "access",
+      "observation": "Fixture access source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_access_source_unavailable",
+        "error_message": "Fixture access source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_access_road_adjacency_overlay",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only road-adjacency screening; does not determine recorded legal access or easements.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-04T09:00:01Z"
+    }
+  ]
+}

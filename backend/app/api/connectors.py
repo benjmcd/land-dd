@@ -15,11 +15,13 @@ from app.connectors import (
     ConnectorReviewQueueItem,
     FixtureConnectorProtocol,
     FixtureConnectorResultProtocol,
+    StaticAccessFixtureConnector,
     StaticFloodFixtureConnector,
     build_connector_review_handoff,
     build_connector_run_review_packet,
     build_connector_run_review_status,
     build_fixture_workflow_with_public_lane_services,
+    evaluate_access_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -40,10 +42,11 @@ runs_router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
 _SUPPORTED_CONNECTOR_NAMES: frozenset[str] = frozenset(
-    {"fixture_flood_static", "fixture_zoning_static"}
+    {"fixture_access_static", "fixture_flood_static", "fixture_zoning_static"}
 )
 
 _CONNECTOR_INSTANCES: dict[str, FixtureConnectorProtocol] = {
+    "fixture_access_static": StaticAccessFixtureConnector(),
     "fixture_flood_static": StaticFloodFixtureConnector(),
     "fixture_zoning_static": StaticZoningFixtureConnector(),
 }
@@ -52,6 +55,7 @@ _QUALITY_EVALUATORS: dict[
     str,
     Callable[[FixtureConnectorResultProtocol], ConnectorFixtureQualityProfile],
 ] = {
+    "fixture_access_static": evaluate_access_fixture_quality,
     "fixture_flood_static": evaluate_flood_fixture_quality,
     "fixture_zoning_static": evaluate_zoning_fixture_quality,
 }

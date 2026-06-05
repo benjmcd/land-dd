@@ -243,6 +243,48 @@ def test_run_zoning_connector_failure_sets_review_required() -> None:
     assert body["review_required"] is True
 
 
+def test_run_access_connector_no_road_creates_evidence() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    response = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_access_static",
+            "fixture_key": "access_no_road",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["connector_name"] == "fixture_access_static"
+    assert body["retrieval_status"] == "succeeded"
+    assert body["evidence_created"] == 1
+    assert body["evidence_skipped"] == 0
+    assert body["review_required"] is False
+
+
+def test_run_access_connector_failure_sets_review_required() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    response = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_access_static",
+            "fixture_key": "access_failure",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["retrieval_status"] == "blocked"
+    assert body["evidence_created"] == 1
+    assert body["review_required"] is True
+
+
 def test_run_connector_returns_422_for_unsupported_connector_name() -> None:
     client = TestClient(create_app())
 

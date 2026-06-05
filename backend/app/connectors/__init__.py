@@ -1,3 +1,7 @@
+from app.connectors.access_fixture import (
+    AccessFixtureConnectorResult,
+    StaticAccessFixtureConnector,
+)
 from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionError,
@@ -8,6 +12,7 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssue,
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
+    evaluate_access_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -53,6 +58,7 @@ from app.connectors.review_status import (
 from app.connectors.zoning_fixture import StaticZoningFixtureConnector, ZoningFixtureConnectorResult
 
 __all__ = [
+    "AccessFixtureConnectorResult",
     "ConnectorEvidenceIngestionAdapter",
     "ConnectorEvidenceIngestionError",
     "ConnectorEvidenceIngestionResult",
@@ -78,6 +84,7 @@ __all__ = [
     "FixtureConnectorResultProtocol",
     "FloodFixtureConnectorResult",
     "InMemoryConnectorReviewQueueRepository",
+    "StaticAccessFixtureConnector",
     "StaticZoningFixtureConnector",
     "ZoningFixtureConnectorResult",
     "SqlAlchemyConnectorReviewQueueRepository",
@@ -87,6 +94,7 @@ __all__ = [
     "build_connector_run_review_status",
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
+    "evaluate_access_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]
