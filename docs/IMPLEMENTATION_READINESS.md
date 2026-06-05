@@ -18,6 +18,8 @@ start without re-litigating basic authority.
   `api/openapi_stub.yaml` is a curated companion checked for path/method drift.
 - Report runs return a machine-readable JSON contract; approved report runs can
   also be delivered as a Markdown rural-land dossier.
+- Served Markdown dossier text is checked against the active ruleset's
+  forbidden-language list before delivery.
 - Report runs now have a human-review lifecycle: `needs_review`, `approved`,
   `rejected`, and `superseded` transitions with reviewer, reason, and timestamp
   audit history.
@@ -70,7 +72,7 @@ start without re-litigating basic authority.
 5. **Report productization pass**
    - Keep `templates/report_template_rural_land_dossier.md` aligned with the
      approved Markdown dossier endpoint.
-   - Add safe-language lint around generated report text.
+   - Keep safe-language lint around generated report text.
    - Keep served/beta dossier delivery gated on the report review workflow.
 
 ## Stop Rules

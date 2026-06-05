@@ -94,6 +94,10 @@ class RuleEngine:
     def ruleset_version(self) -> str:
         return self._ruleset.version
 
+    @property
+    def forbidden_language(self) -> frozenset[str]:
+        return self._ruleset.forbidden_language
+
     def evaluate(self, evidence_list: list[EvidenceContract]) -> list[ClaimContract]:
         access_rule = self._ruleset.hard_gate_for_condition(ACCESS_NO_PUBLIC_ROAD_CONDITION)
         zoning_rule = self._ruleset.hard_gate_for_condition(ZONING_INTENDED_USE_CONDITION)

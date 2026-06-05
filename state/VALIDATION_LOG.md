@@ -189,6 +189,25 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report Safe-Language Gate Pass
+
+- `RuleEngine.forbidden_language`: exposes the active ruleset's
+  forbidden-language list as a read-only policy input for report delivery.
+- `assert_safe_report_text`: added a report-owned safe-language guard that
+  fails closed when generated report text contains active ruleset forbidden
+  phrases.
+- `ReportRunService.render_approved_dossier`: now checks the exact Markdown
+  dossier text against the active ruleset before serving an approved report.
+- `python -m pytest backend\tests\reports\test_safe_language.py
+  backend\tests\reports\test_report_service.py
+  backend\tests\api\test_api_scaffold.py
+  backend\tests\api\test_openapi_contract.py -q`: passed.
+- `python -m ruff check` on affected report/ruleset files and tests: passed.
+- `python scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

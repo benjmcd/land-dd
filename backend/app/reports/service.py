@@ -26,6 +26,7 @@ from app.evidence_ledger.service import EvidenceService
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_repo import InMemoryReportRunJobRepository, ReportRunJobRepository
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
+from app.reports.safe_language import assert_safe_report_text
 from app.source_registry.service import SourceService
 
 _REPORT_ASSUMPTIONS = [
@@ -176,7 +177,9 @@ class ReportRunService:
                 "report dossier delivery requires approved review status; "
                 f"current status is {report_run.review_status.value}"
             )
-        return build_rural_land_dossier(report_run)
+        dossier = build_rural_land_dossier(report_run)
+        assert_safe_report_text(dossier, self._rule_engine.forbidden_language)
+        return dossier
 
     def submit_report_run_job(
         self,

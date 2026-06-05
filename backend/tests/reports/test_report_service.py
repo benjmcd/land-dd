@@ -31,6 +31,7 @@ from app.domain.report_contracts import ReportRunJobContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports import service as report_service_module
 from app.reports.job_repo import InMemoryReportRunJobRepository
 from app.reports.report_repo import ReportRunRepository
 from app.reports.service import ReportRunService
@@ -246,6 +247,30 @@ def test_render_approved_dossier_requires_approved_report_and_preserves_caveats(
     assert "Screening fixture only; confirm locally." in dossier
     assert "Road proximity is a physical proxy only" in dossier
     assert "not legal, title, water-rights, insurance, lending, appraisal" in dossier
+
+
+def test_render_approved_dossier_blocks_forbidden_report_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    approved = report_service.approve_report_run(
+        report_run.report_run_id,
+        reviewer_id="reviewer-1",
+        reason="ready for dossier delivery",
+    )
+    monkeypatch.setattr(
+        report_service_module,
+        "build_rural_land_dossier",
+        lambda _report_run: "This parcel has legal access.",
+    )
+
+    with pytest.raises(ValueError, match="forbidden language"):
+        report_service.render_approved_dossier(approved.report_run_id)
 
 
 def test_report_review_lifecycle_rejects_report_with_required_reason() -> None:

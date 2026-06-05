@@ -24,6 +24,8 @@
 - Approved report runs can be served as a Markdown rural-land dossier through a
   delivery endpoint; unapproved, rejected, or superseded runs are blocked from
   served dossier delivery.
+- Served report dossier text is checked against the active ruleset's forbidden
+  language before delivery.
 - Report creation accepts optional workspace/requester metadata and
   workspace-scoped idempotency keys. `POST /report-runs/jobs` queues
   idempotent report job requests, and `POST /report-runs/jobs/execute-next`
