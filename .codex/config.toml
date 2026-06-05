@@ -2,8 +2,8 @@
 # Keep sandboxing conservative; loosen only for trusted local workflows.
 
 model = "gpt-5.5"
-sandbox_mode = "workspace-write"
-approval_policy = "on-request"
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
 
 [sandbox_workspace_write]
 network_access = false

@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-paths = [p for p in ROOT.rglob("*.json") if ".venv" not in p.parts]
+SKIP_DIRS = {".git", ".venv", "local_artifacts"}
+paths = [p for p in ROOT.rglob("*.json") if not SKIP_DIRS.intersection(p.parts)]
 for path in paths:
     with path.open("r", encoding="utf-8") as handle:
         json.load(handle)

@@ -45,6 +45,112 @@ py -c "from app.main import create_app; import yaml; yaml.dump(create_app().open
 - Background tasks run synchronously in TestClient; production behavior (true async) is covered by design but not integration-tested against a real async server. Acceptable at this level.
 - DB-backed full verification (RUN_DB_SMOKE=1) carries forward from the prior L8 baseline.
 
+## 2026-06-05 Global Claude /ipc promotion
+
+**Scope:** global Claude skill/command installation plus repo state logging. No Codex IPC
+prompt/write send.
+
+**Commands run:**
+
+```powershell
+Get-ChildItem -Force C:/Users/benny/.claude/skills
+Get-ChildItem -Force C:/Users/benny/.claude/commands
+Test-Path C:/Users/benny/.claude/skills/ipc
+Test-Path C:/Users/benny/.claude/commands/ipc.md
+Get-Content C:/Users/benny/.claude/commands/ipc.md
+Get-Content C:/Users/benny/.claude/skills/ipc/SKILL.md -TotalCount 70
+Select-String -Path C:/Users/benny/.claude/skills/ipc/SKILL.md -Pattern "IPC_TOOLKIT_ROOT|codex_ipc_write_proof|allow-any-thread|land_diligence_dual_agent_workspace|project6_REPO_MCP_FOLDER"
+Test-Path C:/Users/benny/.claude/skills/ipc/SKILL.md
+Test-Path C:/Users/benny/.claude/commands/ipc.md
+Test-Path C:/Users/benny/OneDrive/Desktop/land_diligence_dual_agent_workspace/scripts/codex_ipc_client.mjs
+Select-String -Path C:/Users/benny/.claude/commands/ipc.md -SimpleMatch 'C:\Users\benny\.claude\skills\ipc\SKILL.md'
+Select-String -Path C:/Users/benny/.claude/commands/ipc.md -SimpleMatch '$ARGUMENTS'
+Select-String -Path C:/Users/benny/.claude/skills/ipc/SKILL.md -SimpleMatch 'IPC_TOOLKIT_ROOT'
+Select-String -Path C:/Users/benny/.claude/skills/ipc/SKILL.md -SimpleMatch 'codex_ipc_write_proof.mjs'
+py -3.12 .\scripts\check_json_files.py
+.\scripts\agent-context-check.ps1
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- No pre-existing global `ipc` skill or root-level `/ipc` command was present.
+- Added `C:\Users\benny\.claude\skills\ipc\SKILL.md`.
+- Added `C:\Users\benny\.claude\commands\ipc.md`.
+- The global command points to the global skill and passes `$ARGUMENTS` as the `/ipc` invocation.
+- The global skill includes toolkit-root resolution, known project paths, inspect-before-send,
+  `--allow-any-thread`, post-update revalidation, and controlled write-proof harness instructions.
+- The global skill, global command, and IPC toolkit script root all exist.
+- Literal checks confirmed the global command points at the global skill and passes `$ARGUMENTS`;
+  the global skill includes `IPC_TOOLKIT_ROOT` and `codex_ipc_write_proof.mjs`.
+- `py -3.12 .\scripts\check_json_files.py`, `.\scripts\agent-context-check.ps1`, and
+  `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation ok, backend tests passed with skips,
+  ruff passed, mypy passed over 123 source files, DB smoke skipped by default.
+
+**Residual risk:**
+
+- An already-running Claude Code process may need a command/skill refresh or restart before the new
+  global `/ipc` command appears in its slash-command index.
+
+## 2026-06-05 Codex IPC controlled re-proof harness
+
+**Scope:** agent-coordination tooling/docs only. No product/backend, DB schema, API, report
+behavior, or live Desktop IPC prompt/write send. The new proof harness was exercised in dry-run and
+fail-closed modes only.
+
+**Commands run:**
+
+```powershell
+node --check .\scripts\codex_ipc_write_proof.mjs
+node --check .\scripts\codex_ipc_contract_audit.mjs
+node .\scripts\codex_ipc_contract_audit.mjs
+node .\scripts\codex_ipc_write_proof.mjs --thread 019e932e-385b-7ee3-ad58-3157c9accaf5 --marker CODEX_IPC_DRYRUN_PROOF_2026_06_05
+node .\scripts\codex_ipc_write_proof.mjs --thread 019e0000-0000-0000-0000-000000000000 --marker CODEX_IPC_FAIL_CLOSED_2026_06_05 --send --ack-live-write
+node --check .\scripts\codex_ipc_revalidate.mjs
+node .\scripts\codex_ipc_revalidate.mjs --thread 019e932e-385b-7ee3-ad58-3157c9accaf5 --allow-live-ipc-read --timeout-ms 1500
+node -e "JSON.parse(require('fs').readFileSync('.\\.omc\\prd.json','utf8')); console.log('prd ok')"
+rg -n "10/10|ten IPC|all ten|Still open:|Remaining: controlled|PARTIALLY DONE.*Phase 6|future Desktop update write re-proof" .\plans\2026-06-04-codex-ipc-injection.md .\state\agent-inbox\README.md .\.claude\skills\ipc\SKILL.md .\.omc\progress.txt .\.omc\prd.json .\scripts\codex_ipc_contract_audit.mjs
+py -3.12 .\scripts\check_json_files.py
+.\scripts\agent-context-check.ps1
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `codex_ipc_write_proof.mjs` and `codex_ipc_contract_audit.mjs` passed Node syntax checks.
+- The static IPC contract audit passed and now reports 11/11 requirements evidenced from repo
+  artifacts, including the controlled write re-proof harness.
+- The post-update revalidation wrapper now includes `codex_ipc_write_proof.mjs` in required-file
+  and Node syntax checks. Runtime-read-probe mode passed, sending only router `initialize` and no
+  prompt or `thread-follower-start-turn`.
+- The proof harness dry-run inspected target thread `019e932e-385b-7ee3-ad58-3157c9accaf5` and
+  reported `maybeMidTurn:false`, model `gpt-5.5`, reasoning `xhigh`, rollout line 147, and a
+  proof sequence of inspect -> revalidate -> before snapshot -> one live send -> rollout poll ->
+  after snapshot -> compare. It did not send a prompt.
+- The non-test live proof command without `--allow-any-thread` exited non-zero before any live
+  operation with the expected error requiring `--allow-any-thread` for another explicit
+  conversationId.
+- `.omc/prd.json` parsed as JSON.
+- Stale-count/status search returned no remaining current references to the old 10/10 audit count
+  or Phase 6 remaining-open wording in the active IPC docs/state files.
+- `py -3.12 .\scripts\check_json_files.py` passed: 594 source JSON files.
+- Agent context check passed.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed after the revalidation-wrapper update: workspace validation ok, backend tests passed with skips,
+  ruff passed, mypy passed over 123 source files, DB smoke skipped by default.
+- No live IPC prompt/write send was attempted.
+
+**Residual risk:**
+
+- `--ipc` remains experimental because it depends on undocumented Codex Desktop IPC internals.
+- A future Desktop update may still require an explicitly approved live re-proof; the new harness
+  makes that proof dry-run-first, target-inspected, runtime-revalidated, marker-backed, and
+  isolation-compared.
+- File-drop remains the default and fallback.
+
 ## 2026-06-05 Level 8 PASS — Connector + Operational Hardening (worktree ralph/production-advance)
 
 **L8 gate evidence:**

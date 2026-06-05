@@ -2,6 +2,113 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-05 (Global Claude /ipc promotion)
+
+- Promoted the repo-local `/ipc` workflow into the global Claude setup by adding
+  `C:\Users\benny\.claude\skills\ipc\SKILL.md` and `C:\Users\benny\.claude\commands\ipc.md`.
+- The global skill keeps the same inspect-before-send, explicit UUID, file-drop fallback,
+  `--allow-any-thread`, post-update revalidation, and controlled proof-harness rules.
+- Added a global toolkit-root resolution rule: prefer `IPC_TOOLKIT_ROOT`, then current working
+  directory if it contains the IPC scripts, then
+  `C:\Users\benny\OneDrive\Desktop\land_diligence_dual_agent_workspace`.
+- No Codex IPC prompt/write send was attempted.
+
+## 2026-06-05 (Codex IPC controlled re-proof harness)
+
+- Added `scripts/codex_ipc_write_proof.mjs` as a dry-run-first controlled live-write re-proof
+  harness for future Codex Desktop update/drift events.
+- The harness inspects the explicit target thread, fails closed on missing/archived/mid-turn
+  evidence unless explicitly allowed, runs read-only runtime revalidation, captures before/after
+  snapshots in memory, sends one marker task only with `--send --ack-live-write`, polls the rollout
+  for marker acknowledgement plus `task_complete`, and compares config/thread isolation.
+- Updated the `/ipc` Claude skill and `state/agent-inbox/README.md` so future operators use the
+  harness instead of ad hoc live IPC probes after a Desktop update.
+- Updated the IPC plan, `.omc` acceptance state, and static contract audit. The audit now tracks
+  11/11 IPC contract requirements, including the controlled re-proof harness.
+- Added the proof harness to `scripts/codex_ipc_revalidate.mjs` so post-update revalidation checks
+  its file presence and Node syntax.
+- Dry-run validation inspected the authorized test thread and emitted the proof sequence without
+  sending a prompt. A non-test live proof without `--allow-any-thread` failed closed before any
+  send. No live IPC prompt/write send was attempted in this pass.
+
+## 2026-06-04 (Codex IPC state reconciliation)
+
+- Reconciled IPC docs and state against the full Claude session export and current workspace files.
+- Confirmed the latest authority is the post-breakthrough state: file-drop remains default; `--ipc`
+  is wired as an experimental opt-in path with file-drop fallback; owner-renderer handling, model
+  replies, config invariance, no unexpected non-target thread-row changes, and user-confirmed
+  Windows GUI visibility were recorded for the authorized path.
+- Corrected stale documentation that still described `--ipc` as only a future capability.
+- Corrected the IPC plan to mark Phase 0-5 implementation as done/experimental/gui-confirmed while
+  preserving Desktop-update revalidation and new `/ipc` operational hardening requirements.
+- Corrected the model/effort subgoal: external model/effort overrides are not honored by the
+  owner-renderer route; this is a safety finding, not a completed model-pinning feature.
+- Corrected owner-probe wording to match the fixed synthetic sentinel UUID used by the code.
+- Added a read-only Codex session inspection helper and a Claude `/ipc` skill/command so existing
+  session IDs are inspected before sending, and no-session invocations open/resolve a project
+  before requiring a concrete conversationId.
+- Added `scripts/codex_ipc_revalidate.mjs` as a validate-only post-update IPC gate. It checks
+  required files, Node syntax, Git Bash shell syntax, `node:sqlite`, Codex state files, named-pipe
+  presence, optional target inspection, and optional read-only router `initialize`.
+- Added `scripts/codex_ipc_thread_locator.mjs` as a read-only candidate conversationId locator for
+  no-UUID `/ipc` flows. It can list projects or filter by cwd/project/title/time, but the selected
+  id still has to be inspected before any send.
+- Added `scripts/codex_ipc_contract_audit.mjs` as a static external audit command. It reads repo
+  artifacts only and emits a requirement matrix; current run reports 10/10 IPC contract
+  requirements evidenced.
+- Narrowed `scripts/check_json_files.py` to skip ignored `local_artifacts/` evidence so the full
+  repo verification gate does not fail on generated IPC snapshots that are intentionally outside
+  source control.
+- No live IPC prompt/write send was attempted in this reconciliation pass; the revalidation wrapper
+  did run one read-only router `initialize` probe.
+
+## 2026-06-04 (Codex IPC Phase 3 quiescence gate)
+
+- Hardened `scripts/codex_ipc_snapshot.mjs` compare mode before any live follower write.
+- Compare mode now reads UTF-8, UTF-8 BOM, and PowerShell UTF-16LE snapshot files.
+- Added `--allow-thread-change <uuid>` so explicitly predeclared operator/background thread rows can be reported separately from unexpected non-target changes.
+- Added `--expect-target-change` and `--expect-marker-increase` so no-op snapshots cannot pass a future live-write proof.
+- Ran a no-write full snapshot compare; it failed with unexpected non-target thread `019e91e6-ebed-74a2-8575-48a6170d8e95`, a separate active project6 thread.
+- Rerunning compare with that background thread explicitly allowed passed; rerunning with live-write expectations failed as intended because no target row or marker changed.
+- Deferred the live follower write because the current Desktop state is not quiescent enough to prove cross-thread isolation without a quiet window or predeclared allowance set.
+
+## 2026-06-04 (Codex IPC read-only snapshot helper)
+
+- Added `scripts/codex_ipc_snapshot.mjs` as a read-only preflight/compare helper for IPC isolation proof.
+- The helper reads `~/.codex/config.toml`, opens `~/.codex/state_5.sqlite` with `readOnly:true`, verifies a target thread exists, records stable-read status, computes config/DB/thread hashes, counts optional marker bytes, and can compare before/after snapshots.
+- Added `--summary` mode to omit the full thread hash map for concise preflight checks; full snapshots retain row hashes for future before/after comparison.
+- Validation confirmed authorized target thread `019e932e-385b-7ee3-ad58-3157c9accaf5` exists in the state DB, config keys are captured, DB `quick_check` is `ok`, the validation marker count is `0`, and config/DB reads were stable.
+- Failure-path validation confirmed a nonexistent UUID target exits non-zero with `target.exists=false`.
+- No IPC connection and no live follower write were attempted in this pass.
+
+## 2026-06-04 (Codex IPC dry-run client scaffold)
+
+- Added `scripts/codex_ipc_client.mjs` as a dry-run-first Desktop IPC router client scaffold for the owner-gated follower route.
+- The client builds a router `initialize` request and `thread-follower-start-turn` request with explicit `conversationId`, version `1`, minimal text `UserInput`, and optional model/effort/cwd overrides.
+- Live sends remain disabled by default and fail closed unless both `--send` and `--ack-live-write` are present.
+- Live sends are currently restricted to the authorized test thread `019e932e-385b-7ee3-ad58-3157c9accaf5`.
+- Live-mode output now includes the exact sent request JSON and byte counts for auditability.
+- Updated `plans/2026-06-04-codex-ipc-injection.md` to record Phase 2 scaffold status, dry-run verification commands, and the remaining owner-proof/isolation gaps.
+- Validation was static/dry-run only; no follower write and no client live pipe connection were attempted in this pass.
+
+## 2026-06-04 (Codex IPC router transport proof)
+
+- Re-checked the packaged Desktop resource and confirmed `\\.\pipe\codex-ipc` is an IPC router using 4-byte little-endian length-prefixed JSON frames.
+- Updated `scripts/codex_ipc_probe.mjs` to default to explicit `ipc-router` mode, preserve raw generated app-server JSON as `--protocol app-server-json`, parse/write `uint32le` frames, close as soon as a response frame is parsed, and fail closed for generic app-server methods on the proven router path.
+- Ran a single live read-only router `initialize` against `\\.\pipe\codex-ipc`; it returned a success response with a temporary `clientId`.
+- Confirmed global Codex config was unchanged before/after the live initialize probe.
+- Static route inspection found Desktop webcontents expose owner-gated `thread-follower-*` router handlers, not generic `thread/list`, `thread/read`, or `turn/start` handlers.
+- Static owner-proof inspection found no external read-only owner query; for a real target, owner discovery appears coupled to the first forwarded `thread-follower-start-turn` write unless another direct read surface is found.
+- Updated `plans/2026-06-04-codex-ipc-injection.md`: transport framing/router initialize is proven; generic app-server routing through this pipe is rejected; `thread-follower-start-turn` is the candidate write route; explicit target/owner authorization and first write payload remain open.
+
+## 2026-06-04 (Codex IPC plan hardening and read-only probe)
+
+- Re-audited the Codex IPC plan against generated local protocol evidence.
+- Added `scripts/codex_ipc_probe.mjs` as a read-only, allowlisted, timeout-bound named-pipe probe.
+- Corrected the IPC plan to treat `thread/inject_items` as provisional until raw Responses item payload proof exists.
+- Recorded live-config drift risk: current recheck shows `model_reasoning_effort=xhigh`, so historical `low` snapshots must not be treated as current authority.
+- Verified the probe non-live; initialize-only live probe connected but closed with zero response bytes for all tested framings, with config unchanged.
+
 ## 2026-06-04 (Connector CON-038 fixture source-failure geometry absence)
 
 - Tightened connector-local fixture quality for source-failure evidence shape.

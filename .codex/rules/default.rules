@@ -1,1 +1,1 @@
-This file is a human-readable placeholder for additional Codex rules. Do not assume Codex loads this file automatically. Put canonical always-on instructions in AGENTS.md.
+# Project exec policy rules (Starlark). See AGENTS.md for canonical instructions.
