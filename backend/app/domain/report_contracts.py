@@ -21,8 +21,11 @@ class ReportReviewActionContract(BaseModel):
 
 class ReportRunContract(BaseModel):
     report_run_id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID | None = None
     area_id: UUID
     intent_code: IntentCode
+    requested_by: UUID | None = None
+    idempotency_key: str | None = None
     status: JobStatus = JobStatus.QUEUED
     review_status: ReportReviewStatus = ReportReviewStatus.NEEDS_REVIEW
     reviewed_by: str | None = None
@@ -40,3 +43,20 @@ class ReportRunContract(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
     output_uri: str | None = None
+
+
+class ReportRunJobContract(BaseModel):
+    job_id: UUID = Field(default_factory=uuid4)
+    job_type: str = "report_run"
+    status: JobStatus = JobStatus.QUEUED
+    workspace_id: UUID | None = None
+    requested_by: UUID | None = None
+    area_id: UUID
+    intent_code: IntentCode
+    idempotency_key: str
+    report_run_id: UUID | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    not_before: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    last_error: str | None = None

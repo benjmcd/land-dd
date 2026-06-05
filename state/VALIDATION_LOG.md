@@ -80,6 +80,30 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 Report Request Contract Pass
+
+- `ReportRunContract`: added optional `workspace_id`, `requested_by`, and
+  `idempotency_key` request metadata.
+- `ReportRunService`: synchronous report creation now reuses an existing report
+  for the same workspace-scoped idempotency key; `requested_by` requires an
+  explicit workspace.
+- `POST /report-runs/jobs` and `GET /report-runs/jobs/{job_id}`: added queued
+  report job contract. Queued jobs require idempotency keys and start in
+  `queued` status; no worker execution is claimed.
+- `db/migrations/0003_d_report_request_scope.sql`: added report-run
+  idempotency storage with a workspace-scoped unique index.
+- DB-backed report and report-job writes validate workspace/user references
+  before flush so invalid scope metadata fails closed.
+- `python -m pytest backend\tests\reports\test_report_service.py
+  backend\tests\reports\test_report_repository.py
+  backend\tests\api\test_api_scaffold.py
+  backend\tests\api\test_openapi_contract.py -q`: passed with one DB smoke
+  skip.
+- `python -m ruff check` on affected backend and test files: passed.
+- `python scripts\export_openapi.py`: passed and wrote the ignored local export.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

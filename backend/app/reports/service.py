@@ -16,9 +16,14 @@ from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
-from app.domain.report_contracts import ReportReviewActionContract, ReportRunContract
+from app.domain.report_contracts import (
+    ReportReviewActionContract,
+    ReportRunContract,
+    ReportRunJobContract,
+)
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.service import EvidenceService
+from app.reports.job_repo import InMemoryReportRunJobRepository, ReportRunJobRepository
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
 
@@ -49,6 +54,7 @@ class ReportRunService:
         claim_service: ClaimService,
         rule_engine: RuleEngine,
         report_repo: ReportRunRepository | None = None,
+        report_job_repo: ReportRunJobRepository | None = None,
     ) -> None:
         self._source_service = source_service
         self._area_service = area_service
@@ -56,16 +62,32 @@ class ReportRunService:
         self._claim_service = claim_service
         self._rule_engine = rule_engine
         self._report_repo = report_repo or InMemoryReportRunRepository()
+        self._report_job_repo = report_job_repo or InMemoryReportRunJobRepository()
 
     def create_report_run(
         self,
         *,
         area_id: UUID,
         intent_code: IntentCode,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
+        idempotency_key: str | None = None,
     ) -> ReportRunContract:
         _require_non_empty(intent_code, "intent_code")
         if not self._area_service.area_is_registered(area_id):
             raise ValueError(f"Area '{area_id}' is not registered")
+        _require_workspace_for_requester(workspace_id, requested_by)
+        normalized_idempotency_key = _optional_non_empty(
+            idempotency_key,
+            "idempotency_key",
+        )
+        if normalized_idempotency_key is not None:
+            existing = self._report_repo.get_by_idempotency_key(
+                normalized_idempotency_key,
+                workspace_id=workspace_id,
+            )
+            if existing is not None:
+                return existing
 
         evidence = self._with_not_evaluated_source_failures(
             area_id,
@@ -75,8 +97,11 @@ class ReportRunService:
             self._store_claim_if_needed(claim) for claim in self._rule_engine.evaluate(evidence)
         ]
         report_run = ReportRunContract(
+            workspace_id=workspace_id,
             area_id=area_id,
             intent_code=intent_code,
+            requested_by=requested_by,
+            idempotency_key=normalized_idempotency_key,
             status=JobStatus.SUCCEEDED,
             review_status=ReportReviewStatus.NEEDS_REVIEW,
             source_manifest=self._source_manifest(evidence, stored_claims),
@@ -141,15 +166,55 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def submit_report_run_job(
+        self,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+        idempotency_key: str,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
+    ) -> ReportRunJobContract:
+        _require_non_empty(intent_code, "intent_code")
+        normalized_idempotency_key = _optional_non_empty(
+            idempotency_key,
+            "idempotency_key",
+        )
+        if normalized_idempotency_key is None:
+            raise ValueError("idempotency_key is required")
+        if not self._area_service.area_is_registered(area_id):
+            raise ValueError(f"Area '{area_id}' is not registered")
+        _require_workspace_for_requester(workspace_id, requested_by)
+        existing = self._report_job_repo.get_by_idempotency_key(
+            normalized_idempotency_key,
+            workspace_id=workspace_id,
+        )
+        if existing is not None:
+            return existing
+        return self._report_job_repo.enqueue(
+            ReportRunJobContract(
+                workspace_id=workspace_id,
+                requested_by=requested_by,
+                area_id=area_id,
+                intent_code=intent_code,
+                idempotency_key=normalized_idempotency_key,
+            )
+        )
+
+    def get_report_run_job(self, job_id: UUID) -> ReportRunJobContract | None:
+        return self._report_job_repo.get(job_id)
+
     def list_report_runs(
         self,
         *,
+        workspace_id: UUID | None = None,
         area_id: UUID | None = None,
         intent_code: IntentCode | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[ReportRunContract]:
         return self._report_repo.list(
+            workspace_id=workspace_id,
             area_id=area_id,
             intent_code=intent_code,
             limit=limit,
@@ -376,6 +441,23 @@ def _require_review_transition(
 def _require_non_empty(value: str, field_name: str) -> None:
     if not value.strip():
         raise ValueError(f"{field_name} is required")
+
+
+def _optional_non_empty(value: str | None, field_name: str) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} is required")
+    return normalized
+
+
+def _require_workspace_for_requester(
+    workspace_id: UUID | None,
+    requested_by: UUID | None,
+) -> None:
+    if requested_by is not None and workspace_id is None:
+        raise ValueError("workspace_id is required when requested_by is provided")
 
 
 __all__ = ["ReportRunService"]

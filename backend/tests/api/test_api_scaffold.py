@@ -155,6 +155,90 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert client.get("/report-runs?limit=0").status_code == 422
 
 
+def test_api_report_run_create_supports_scope_and_idempotency() -> None:
+    client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    requested_by = str(uuid4())
+    other_workspace_id = str(uuid4())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    payload = {
+        "area_id": area_response.json()["area_id"],
+        "intent_code": "homestead_feasibility",
+        "workspace_id": workspace_id,
+        "requested_by": requested_by,
+        "idempotency_key": "sync-report-key-1",
+    }
+
+    first_response = client.post("/report-runs", json=payload)
+    second_response = client.post("/report-runs", json=payload)
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    first = first_response.json()
+    second = second_response.json()
+    assert second["report_run_id"] == first["report_run_id"]
+    assert first["workspace_id"] == workspace_id
+    assert first["requested_by"] == requested_by
+    assert first["idempotency_key"] == "sync-report-key-1"
+    list_response = client.get(f"/report-runs?workspace_id={workspace_id}")
+    assert [run["report_run_id"] for run in list_response.json()] == [
+        first["report_run_id"]
+    ]
+    assert client.get(f"/report-runs?workspace_id={other_workspace_id}").json() == []
+
+
+def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
+    client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    area_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    payload = {
+        "area_id": area_response.json()["area_id"],
+        "intent_code": "homestead_feasibility",
+        "workspace_id": workspace_id,
+        "idempotency_key": "queued-report-key-1",
+    }
+
+    first_response = client.post("/report-runs/jobs", json=payload)
+    second_response = client.post("/report-runs/jobs", json=payload)
+
+    assert first_response.status_code == 202
+    assert second_response.status_code == 202
+    first = first_response.json()
+    second = second_response.json()
+    assert second["job_id"] == first["job_id"]
+    assert first["status"] == "queued"
+    assert first["workspace_id"] == workspace_id
+    assert first["idempotency_key"] == "queued-report-key-1"
+    get_response = client.get(f"/report-runs/jobs/{first['job_id']}")
+    assert get_response.status_code == 200
+    assert get_response.json()["job_id"] == first["job_id"]
+    assert (
+        client.post(
+            "/report-runs/jobs",
+            json={
+                "area_id": area_response.json()["area_id"],
+                "intent_code": "homestead_feasibility",
+                "idempotency_key": " ",
+            },
+        ).status_code
+        == 422
+    )
+
+
 def test_api_report_run_review_actions_update_review_status() -> None:
     client = TestClient(create_app())
     area_response = client.post(

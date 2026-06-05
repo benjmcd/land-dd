@@ -21,6 +21,9 @@ start without re-litigating basic authority.
 - Report runs now have a human-review lifecycle: `needs_review`, `approved`,
   `rejected`, and `superseded` transitions with reviewer, reason, and timestamp
   audit history.
+- Report creation accepts optional workspace/requester metadata and
+  workspace-scoped idempotency keys; queued report jobs require an idempotency
+  key and remain queued until a worker runtime is added.
 
 ## Do Not Start Impact-Heavy Work Until
 
@@ -28,7 +31,8 @@ start without re-litigating basic authority.
 |---|---|---|
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
-| API contract | Decide report job semantics, idempotency key, workspace scope, and response status fields. | API authority mode is settled, but the runtime report route is synchronous and lacks those semantics. |
+| API enforcement | Decide authentication/authorization for workspace and user identity. | Explicit workspace/requester fields exist, but they are not yet enforced by an auth boundary. |
+| Report job runtime | Add worker lease/execute/retry behavior for queued report jobs. | The queued API contract exists, but queued jobs are not yet executed asynchronously. |
 | Report lifecycle delivery gate | Decide how approved review status gates served dossier delivery and any human/operator UI. | The backend lifecycle exists, but product delivery still needs an explicit approval gate. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
 
@@ -50,8 +54,9 @@ start without re-litigating basic authority.
 3. **API contract pass**
    - Use generated FastAPI OpenAPI as runtime authority.
    - Keep `api/openapi_stub.yaml` as a curated path/method-checked companion.
-   - Add workspace scope, idempotency, async report job status,
-     and explicit false/unknown/missing/source-failed response semantics.
+   - Add authentication/enforcement around workspace and requester metadata.
+   - Add worker execution for queued report jobs.
+   - Keep explicit false/unknown/missing/source-failed response semantics visible.
 
 4. **First high-ROI implementation pass**
    - Choose one vertical slice, preferably one selected-county fixture-backed

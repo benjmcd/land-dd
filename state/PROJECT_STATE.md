@@ -21,6 +21,9 @@
   unknowns, red flags, verification tasks, and machine JSON metadata.
 - Report run review actions support approval, rejection, and supersession with
   reviewer identity, reason, transition, and timestamp history.
+- Report creation accepts optional workspace/requester metadata and
+  workspace-scoped idempotency keys. `POST /report-runs/jobs` queues
+  idempotent report job requests for a future worker runtime.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
@@ -40,8 +43,9 @@
 - Live connectors are not enabled and should remain blocked.
 - Most source registry rows other than DS-002 still have unresolved
   production-use status.
-- Public API contract still lacks workspace and idempotent/async report job
-  semantics.
+- Public API contract still lacks authenticated workspace/user enforcement.
+- Queued report jobs are accepted and persisted, but no report worker executes
+  them asynchronously yet.
 - Served dossier delivery is not yet explicitly gated on approved report
   review status.
 - Report generation is synchronous in the current API route.

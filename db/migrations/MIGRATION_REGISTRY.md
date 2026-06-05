@@ -25,12 +25,13 @@ This prevents sequence collisions across lanes.
 |---|---|---|---|
 | 0001 | `0001_initial_spine.sql` | Core schema: all tables, enums, intents | 2026-06-03 (generated) |
 | 0002 | `0002_d_report_review_lifecycle.sql` | Report review status and action audit fields | 2026-06-05 |
+| 0003 | `0003_d_report_request_scope.sql` | Report workspace and idempotency fields | 2026-06-05 |
 
 ## Claimed (not yet applied)
 
 | Number | Lane | Description | Claimed on |
 |---|---|---|---|
-| _(next: 0003)_ | - | - | - |
+| _(next: 0004)_ | - | - | - |
 
 ## Notes
 

@@ -5,8 +5,8 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. What workspace/user identity mechanism should scope API queries?
-3. What are the idempotency and async job semantics for report creation?
+2. How should workspace/user identity be authenticated and enforced beyond the
+   current explicit API fields?
 
 ## Decided
 
@@ -20,6 +20,10 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 3. Report review lifecycle: new report runs default to `needs_review`; reviewers
    can approve or reject them; approved reports can later be superseded. Review
    actions record reviewer identity, reason, transition, and timestamp.
+4. Report request contract: synchronous report creation accepts optional
+   workspace, requester, and idempotency metadata. Queued report jobs require an
+   idempotency key, are workspace-scoped, and start in `queued` status until a
+   worker runtime is introduced.
 
 ## High
 
@@ -35,5 +39,6 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 
 1. Should source-specific observed-value payloads become JSON Schemas or remain
    runtime-validator-only for now?
-2. When should async jobs move from report planning into report runtime?
+2. What worker lease/execute/retry path should turn queued report jobs into
+   persisted report runs?
 3. Which UI/dashboard scope is worth doing before live county data exists?

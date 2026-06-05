@@ -49,6 +49,7 @@ class ReportRunModel(AppBase):
         PG_UUID(as_uuid=True),
         nullable=True,
     )
+    idempotency_key: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(
         job_status_enum,
         nullable=False,

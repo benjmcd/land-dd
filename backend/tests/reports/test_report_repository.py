@@ -22,11 +22,18 @@ from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import ConfidenceBand, EvidenceType, IntentCode, ReportReviewStatus
+from app.domain.enums import (
+    ConfidenceBand,
+    EvidenceType,
+    IntentCode,
+    JobStatus,
+    ReportReviewStatus,
+)
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.job_repo import SqlAlchemyReportRunJobRepository
 from app.reports.report_repo import SqlAlchemyReportRunRepository
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
@@ -119,6 +126,34 @@ def _seed_area_row(session: Session, area: AreaContract) -> None:
     )
 
 
+def _seed_workspace_and_user(session: Session) -> tuple[UUID, UUID]:
+    workspace_id = uuid4()
+    user_id = uuid4()
+    session.execute(
+        text(
+            """
+            INSERT INTO core.workspaces (workspace_id, name)
+            VALUES (:workspace_id, 'report db smoke workspace')
+            """
+        ),
+        {"workspace_id": workspace_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO core.users (user_id, workspace_id, email)
+            VALUES (:user_id, :workspace_id, :email)
+            """
+        ),
+        {
+            "user_id": user_id,
+            "workspace_id": workspace_id,
+            "email": f"{user_id}@example.test",
+        },
+    )
+    return workspace_id, user_id
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     tmp_path: Path,
@@ -145,6 +180,7 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
 
     with Session(engine) as session:
         _seed_area_row(session, area)
+        workspace_id, user_id = _seed_workspace_and_user(session)
         repo = SqlAlchemyReportRunRepository(session, report_store)
         report_service = ReportRunService(
             source_service=source_service,
@@ -153,12 +189,39 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
             claim_service=claim_service,
             rule_engine=RuleEngine.from_file(),
             report_repo=repo,
+            report_job_repo=SqlAlchemyReportRunJobRepository(session),
         )
 
         report_run = report_service.create_report_run(
             area_id=area.area_id,
             intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            workspace_id=workspace_id,
+            requested_by=user_id,
+            idempotency_key="db-report-key-1",
         )
+        duplicate_report_run = report_service.create_report_run(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            workspace_id=workspace_id,
+            requested_by=user_id,
+            idempotency_key="db-report-key-1",
+        )
+        report_job = report_service.submit_report_run_job(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            workspace_id=workspace_id,
+            requested_by=user_id,
+            idempotency_key="db-report-job-key-1",
+        )
+        duplicate_report_job = report_service.submit_report_run_job(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            workspace_id=workspace_id,
+            requested_by=user_id,
+            idempotency_key="db-report-job-key-1",
+        )
+        assert duplicate_report_run.report_run_id == report_run.report_run_id
+        assert duplicate_report_job.job_id == report_job.job_id
         report_run = report_service.approve_report_run(
             report_run.report_run_id,
             reviewer_id="db-reviewer",
@@ -184,6 +247,9 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
     ]
     assert report_run.review_status == ReportReviewStatus.APPROVED
+    assert report_run.workspace_id == workspace_id
+    assert report_run.requested_by == user_id
+    assert report_run.idempotency_key == "db-report-key-1"
     assert report_run.reviewed_by == "db-reviewer"
     assert len(report_run.review_actions) == 1
     assert report_run.review_actions[0].from_status == ReportReviewStatus.NEEDS_REVIEW
@@ -196,6 +262,9 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
                 """
                 SELECT
                     intent_id,
+                    workspace_id,
+                    requested_by,
+                    idempotency_key,
                     review_status,
                     reviewed_by,
                     jsonb_array_length(review_actions)
@@ -212,9 +281,21 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         "_resolve_intent_id did not find 'homestead_feasibility' in core.intents"
     )
 
-    assert row[1] == ReportReviewStatus.APPROVED.value
-    assert row[2] == "db-reviewer"
-    assert row[3] == 1
+    assert row[1] == workspace_id
+    assert row[2] == user_id
+    assert row[3] == "db-report-key-1"
+    assert row[4] == ReportReviewStatus.APPROVED.value
+    assert row[5] == "db-reviewer"
+    assert row[6] == 1
+
+    with Session(engine) as session:
+        job_repo = SqlAlchemyReportRunJobRepository(session)
+        retrieved_job = job_repo.get(report_job.job_id)
+
+    assert retrieved_job == report_job
+    assert report_job.status == JobStatus.QUEUED
+    assert report_job.workspace_id == workspace_id
+    assert report_job.requested_by == user_id
 
     with Session(engine) as session:
         repo = SqlAlchemyReportRunRepository(session, report_store)
@@ -224,11 +305,23 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
 
     with Session(engine) as session:
         session.execute(
+            text("DELETE FROM jobs.job_queue WHERE job_id = :job_id"),
+            {"job_id": report_job.job_id},
+        )
+        session.execute(
             text("DELETE FROM reports.report_runs WHERE report_run_id = :report_run_id"),
             {"report_run_id": report_run.report_run_id},
         )
         session.execute(
             text("DELETE FROM core.areas WHERE area_id = :area_id"),
             {"area_id": area.area_id},
+        )
+        session.execute(
+            text("DELETE FROM core.users WHERE user_id = :user_id"),
+            {"user_id": user_id},
+        )
+        session.execute(
+            text("DELETE FROM core.workspaces WHERE workspace_id = :workspace_id"),
+            {"workspace_id": workspace_id},
         )
         session.commit()

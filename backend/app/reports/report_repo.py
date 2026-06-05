@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.domain.enums import IntentCode
 from app.domain.report_contracts import ReportRunContract
 from app.reports.models import ReportRunModel
+from app.reports.scope import validate_scope_refs
 
 
 class ReportRunRepository(Protocol):
@@ -20,9 +21,17 @@ class ReportRunRepository(Protocol):
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None: ...
 
+    def get_by_idempotency_key(
+        self,
+        idempotency_key: str,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunContract | None: ...
+
     def list(
         self,
         *,
+        workspace_id: UUID | None = None,
         area_id: UUID | None = None,
         intent_code: IntentCode | None = None,
         limit: int = 50,
@@ -63,15 +72,30 @@ class InMemoryReportRunRepository:
     def get(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._store.get(report_run_id)
 
+    def get_by_idempotency_key(
+        self,
+        idempotency_key: str,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunContract | None:
+        normalized = _normalize_idempotency_key(idempotency_key)
+        for report in self._store.values():
+            if report.idempotency_key == normalized and report.workspace_id == workspace_id:
+                return report
+        return None
+
     def list(
         self,
         *,
+        workspace_id: UUID | None = None,
         area_id: UUID | None = None,
         intent_code: IntentCode | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[ReportRunContract]:
         reports = list(self._store.values())
+        if workspace_id is not None:
+            reports = [report for report in reports if report.workspace_id == workspace_id]
         if area_id is not None:
             reports = [report for report in reports if report.area_id == area_id]
         if intent_code is not None:
@@ -91,6 +115,11 @@ class SqlAlchemyReportRunRepository:
         self._object_store_root = Path(object_store_root)
 
     def add(self, report_run: ReportRunContract) -> ReportRunContract:
+        validate_scope_refs(
+            self._session,
+            workspace_id=report_run.workspace_id,
+            requested_by=report_run.requested_by,
+        )
         persisted = self._prepare_persisted_report(report_run)
         artifact_path = self._artifact_path(persisted.report_run_id).resolve()
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
@@ -145,9 +174,41 @@ class SqlAlchemyReportRunRepository:
             json.loads(artifact_path.read_text(encoding="utf-8"))
         )
 
+    def get_by_idempotency_key(
+        self,
+        idempotency_key: str,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> ReportRunContract | None:
+        row = self._session.execute(
+            sql_text(
+                """
+                SELECT report_run_id
+                FROM reports.report_runs
+                WHERE idempotency_key = :idempotency_key
+                  AND (
+                    (
+                        CAST(:workspace_id AS uuid) IS NULL
+                        AND workspace_id IS NULL
+                    )
+                    OR workspace_id = CAST(:workspace_id AS uuid)
+                  )
+                LIMIT 1
+                """
+            ),
+            {
+                "idempotency_key": _normalize_idempotency_key(idempotency_key),
+                "workspace_id": str(workspace_id) if workspace_id is not None else None,
+            },
+        ).one_or_none()
+        if row is None:
+            return None
+        return self.get(UUID(str(row[0])))
+
     def list(
         self,
         *,
+        workspace_id: UUID | None = None,
         area_id: UUID | None = None,
         intent_code: IntentCode | None = None,
         limit: int = 50,
@@ -159,13 +220,20 @@ class SqlAlchemyReportRunRepository:
                 SELECT report_run_id
                 FROM reports.report_runs
                 WHERE (
+                    CAST(:workspace_id AS uuid) IS NULL
+                    OR workspace_id = CAST(:workspace_id AS uuid)
+                )
+                AND (
                     CAST(:area_id AS uuid) IS NULL
                     OR area_id = CAST(:area_id AS uuid)
                 )
                 ORDER BY started_at DESC, report_run_id DESC
                 """
             ),
-            {"area_id": str(area_id) if area_id is not None else None},
+            {
+                "workspace_id": str(workspace_id) if workspace_id is not None else None,
+                "area_id": str(area_id) if area_id is not None else None,
+            },
         ).all()
         reports: list[ReportRunContract] = []
         for row in rows:
@@ -233,8 +301,11 @@ class SqlAlchemyReportRunRepository:
         intent_id = self._resolve_intent_id(report_run.intent_code)
         return ReportRunModel(
             report_run_id=report_run.report_run_id,
+            workspace_id=report_run.workspace_id,
             area_id=report_run.area_id,
             intent_id=intent_id,
+            requested_by=report_run.requested_by,
+            idempotency_key=report_run.idempotency_key,
             status=report_run.status.value,
             review_status=report_run.review_status.value,
             reviewed_by=report_run.reviewed_by,
@@ -272,6 +343,10 @@ def _with_persistence(
     if cost_metrics is not None:
         merged["cost_metrics"] = cost_metrics
     return merged
+
+
+def _normalize_idempotency_key(idempotency_key: str) -> str:
+    return idempotency_key.strip()
 
 
 def _report_cost_metrics(report_run: ReportRunContract) -> dict[str, Any]:

@@ -28,7 +28,7 @@ blocked by product/data/legal decisions.
 | 6 | Rule and claim engine | Fixture-ready | `docs/adr/lane-c-rules.md`, `config/ruleset_homestead_mvp.yaml`, `schemas/claim_schema.json` | Rulepack is not a production jurisdictional rulepack. |
 | 7 | Report run persistence | Fixture-ready | `docs/adr/lane-d-0001-report-persistence.md`, `backend/app/reports/` | Machine JSON and review lifecycle exist; served dossier compilation is later. |
 | 8 | Fixture connector runtime | Fixture-ready | `docs/adr/lane-d-0002-connector-entry-ownership.md`, `backend/app/connectors/` | Static access, flood, and zoning fixtures only. |
-| 9 | Public API contract | Contract-ready | `api/openapi_stub.yaml`, `backend/app/api/`, `scripts/export_openapi.py` | Runtime OpenAPI authority, path/method drift guard, and report review endpoints exist; needs workspace and async/idempotent report semantics. |
+| 9 | Public API contract | Contract-ready | `api/openapi_stub.yaml`, `backend/app/api/`, `scripts/export_openapi.py` | Runtime OpenAPI authority, path/method drift guard, report review endpoints, workspace metadata, scoped idempotency, and queued report job contract exist; needs auth enforcement and worker runtime. |
 | 10 | MVP geography and live-source path | Blocked | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `state/OPEN_QUESTIONS.md` | Federal DS-002 source review is complete; selected geography and local source rows remain unresolved. |
 | 11 | User-facing dossier/dashboard | Later | `templates/report_template_rural_land_dossier.md` | Wait for API and source gates before productizing. |
 
@@ -39,8 +39,8 @@ Before live-source or user-facing implementation, resolve Level 9 and Level 10:
 1. Select the MVP state and target counties.
 2. Record source license/review decisions for the first live data slice; DS-002
    is reviewed for the federal flood path.
-3. Extend the API contract for workspace scope, async/idempotent report
-   generation, delivery gating, and source-failure semantics.
+3. Add workspace auth enforcement, queued report job execution, delivery
+   gating, and source-failure semantics where still missing.
 4. Choose the first implementation slice from `docs/IMPLEMENTATION_READINESS.md`.
 
 ## Verification Caveat

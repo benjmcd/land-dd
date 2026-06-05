@@ -25,6 +25,10 @@ from app.evidence_ledger.evidence_repo import (
 )
 from app.evidence_ledger.service import EvidenceService
 from app.reports.adapters import AreaServiceProtocolAdapter, SourceServiceProtocolAdapter
+from app.reports.job_repo import (
+    InMemoryReportRunJobRepository,
+    SqlAlchemyReportRunJobRepository,
+)
 from app.reports.report_repo import SqlAlchemyReportRunRepository
 from app.reports.service import ReportRunService
 from app.source_registry.provenance_repo import (
@@ -66,6 +70,7 @@ def create_api_services() -> ApiServices:
         evidence_service=evidence_service,
         claim_service=claim_service,
         rule_engine=RuleEngine.from_file(),
+        report_job_repo=InMemoryReportRunJobRepository(),
     )
     return ApiServices(
         source_service=source_service,
@@ -102,6 +107,7 @@ def create_db_api_services(
         claim_service=claim_service,
         rule_engine=RuleEngine.from_file(),
         report_repo=SqlAlchemyReportRunRepository(session, object_store_root),
+        report_job_repo=SqlAlchemyReportRunJobRepository(session),
     )
     return ApiServices(
         source_service=source_service,

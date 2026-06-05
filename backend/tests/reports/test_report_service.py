@@ -287,6 +287,96 @@ def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:
     ) == 1
 
 
+def test_create_report_run_reuses_matching_idempotency_key() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    workspace_id = uuid4()
+    requested_by = uuid4()
+
+    first_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
+        idempotency_key=" report-key-1 ",
+    )
+    second_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
+        idempotency_key="report-key-1",
+    )
+
+    assert second_run == first_run
+    assert first_run.workspace_id == workspace_id
+    assert first_run.requested_by == requested_by
+    assert first_run.idempotency_key == "report-key-1"
+    assert report_service.list_report_runs(workspace_id=workspace_id) == [first_run]
+
+    other_workspace_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=uuid4(),
+        requested_by=requested_by,
+        idempotency_key="report-key-1",
+    )
+
+    assert other_workspace_run.report_run_id != first_run.report_run_id
+    with pytest.raises(ValueError, match="workspace_id is required"):
+        report_service.create_report_run(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            requested_by=requested_by,
+            idempotency_key="report-key-2",
+        )
+
+
+def test_submit_report_run_job_is_idempotent_and_requires_key() -> None:
+    _, area_service, _, _, report_service = make_service()
+    area = register_area(area_service)
+    workspace_id = uuid4()
+
+    first_job = report_service.submit_report_run_job(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_id,
+        idempotency_key=" async-key-1 ",
+    )
+    second_job = report_service.submit_report_run_job(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_id,
+        idempotency_key="async-key-1",
+    )
+
+    assert second_job == first_job
+    assert first_job.status == JobStatus.QUEUED
+    assert first_job.workspace_id == workspace_id
+    assert first_job.idempotency_key == "async-key-1"
+    assert report_service.get_report_run_job(first_job.job_id) == first_job
+    other_workspace_job = report_service.submit_report_run_job(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=uuid4(),
+        idempotency_key="async-key-1",
+    )
+    assert other_workspace_job.job_id != first_job.job_id
+    with pytest.raises(ValueError, match="workspace_id is required"):
+        report_service.submit_report_run_job(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            requested_by=uuid4(),
+            idempotency_key="async-key-2",
+        )
+    with pytest.raises(ValueError, match="idempotency_key is required"):
+        report_service.submit_report_run_job(
+            area_id=area.area_id,
+            intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            idempotency_key=" ",
+        )
+
+
 def test_create_report_run_without_source_evidence_surfaces_not_evaluated_unknowns() -> None:
     source_service, area_service, evidence_service, _, report_service = make_service()
     area = register_area(area_service)

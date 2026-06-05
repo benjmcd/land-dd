@@ -69,6 +69,10 @@ paths:
           in: query
           required: false
           schema: { type: string, format: uuid }
+        - name: workspace_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
         - name: intent_code
           in: query
           required: false
@@ -96,9 +100,43 @@ paths:
               properties:
                 area_id: { type: string, format: uuid }
                 intent_code: { $ref: '#/components/schemas/IntentCode' }
+                workspace_id: { type: [string, "null"], format: uuid }
+                requested_by: { type: [string, "null"], format: uuid }
+                idempotency_key: { type: [string, "null"] }
       responses:
         '201': { description: Report run created }
         '422': { description: Invalid report request }
+  /report-runs/jobs:
+    post:
+      summary: Queue an idempotent report run job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [area_id, intent_code, idempotency_key]
+              properties:
+                area_id: { type: string, format: uuid }
+                intent_code: { $ref: '#/components/schemas/IntentCode' }
+                idempotency_key: { type: string }
+                workspace_id: { type: [string, "null"], format: uuid }
+                requested_by: { type: [string, "null"], format: uuid }
+      responses:
+        '202': { description: Report run job queued }
+        '422': { description: Invalid report job request }
+  /report-runs/jobs/{job_id}:
+    get:
+      summary: Get report run job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Report run job }
+        '404': { description: Report run job not found }
+        '422': { description: Invalid report run job id }
   /report-runs/{report_run_id}:
     get:
       summary: Get report run
