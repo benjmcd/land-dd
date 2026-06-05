@@ -42,6 +42,8 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Reports | `backend/app/domain/report_contracts.py`, `schemas/report_run_schema.json`, `backend/tests/reports/test_report_regression.py` | Report-run contract, JSON schema, and stable artifact semantics |
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |
 | Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `.github/workflows/ci.yml` | Executable gates |
+| Connector runbook | `docs/connectors/connector_runbook.md` | Connector interface, run lifecycle, failure taxonomy, quality gates |
+| MVP operator runbook | `docs/runbooks/mvp_operator.md` | Startup, API workflow, configuration, known limitations |
 | Comprehensive reference | `docs/planning_pack/**` | Read only when needed for ambiguity or major changes |
 
 ## Protected files

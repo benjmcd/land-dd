@@ -27,6 +27,7 @@ from app.evidence_ledger.evidence_repo import (
 )
 from app.evidence_ledger.service import EvidenceService
 from app.reports.adapters import AreaServiceProtocolAdapter, SourceServiceProtocolAdapter
+from app.reports.job_store import AsyncReportJobStore
 from app.reports.report_repo import SqlAlchemyReportRunRepository
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
@@ -41,6 +42,7 @@ class ApiServices:
     report_service: ReportRunService
     connector_review_statuses: dict[UUID, ConnectorRunReviewStatus]
     connector_review_queue: ConnectorReviewQueueRepository
+    async_report_jobs: AsyncReportJobStore
 
 
 def create_api_services() -> ApiServices:
@@ -67,6 +69,7 @@ def create_api_services() -> ApiServices:
         report_service=report_service,
         connector_review_statuses={},
         connector_review_queue=InMemoryConnectorReviewQueueRepository(),
+        async_report_jobs=AsyncReportJobStore(),
     )
 
 
@@ -99,6 +102,7 @@ def create_db_api_services(
         report_service=report_service,
         connector_review_statuses={},
         connector_review_queue=SqlAlchemyConnectorReviewQueueRepository(session),
+        async_report_jobs=AsyncReportJobStore(),
     )
 
 

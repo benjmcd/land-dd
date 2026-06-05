@@ -3,10 +3,14 @@
 ## MILESTONE_MAP status block
 
 ```text
-Current milestone: Level 7 - Reproducible Report Vertical Slice
-Milestone status: PASS for fixture-backed report/API workflow
-Last verified: 2026-06-04
+Current milestone: Level 9 - MVP Workflow
+Milestone status: PASS for async report jobs, GeoJSON intake, end-to-end UI, and operator runbook (worktree ralph/production-advance)
+Last verified: 2026-06-05
 Verification command(s):
+- cd backend; py -3.12 -m pytest -q tests/connectors/test_connector_policy.py tests/connectors/test_connector_observability.py tests/connectors/test_license_guard.py tests/api/test_connector_review_actions.py
+- cd backend; py -3.12 -m pytest --tb=short
+- cd backend; ruff check app/connectors/ app/api/connectors.py
+- cd backend; py -3.12 -m mypy app/connectors/ app/api/connectors.py
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/evidence_ledger tests/claims_engine
 - cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/claims_engine
@@ -67,6 +71,8 @@ Verification result:
 - 369 tests pass in the DB-enabled Windows PowerShell verification path after CON-035 connector fixture evidence area consistency; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 370 tests pass in the DB-enabled Windows PowerShell verification path after CON-036 connector fixture source-failure type consistency; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 371 tests pass in the DB-enabled Windows PowerShell verification path after CON-037 connector fixture method-code consistency; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
+- 401 non-DB tests + 49 skipped DB tests pass in worktree ralph/production-advance after full Level 9 MVP workflow (US-009 through US-014): AsyncReportJobStore, async POST /report-runs (202), GET /report-runs/{id} status polling, POST /intake one-shot GeoJSON endpoint, web UI fixed end-to-end (calls /intake, correct intent codes, async status display), MVP operator runbook, and OpenAPI stub refresh. Lint clean; mypy clean (12 source files verified). L9-001 through L9-010 gates all pass.
+- 383 non-DB tests + 49 skipped DB tests pass in worktree ralph/production-advance after full Level 8 + Level 9 groundwork (US-001 through US-008): ConnectorPolicy, ConnectorRunObservabilityLog, check_connector_source_license, review action routes (request_fixture_fix/requeue_after_fix/cancel_review), connector runbook, StaticLocalFileConnector (second connector integrating all three modules), minimal web UI at GET /ui/, and OpenAPI stub refresh. Lint clean; mypy clean (18 source files verified). DB-enabled path carries forward 372+ from prior baseline.
 - 372 tests pass in the DB-enabled Windows PowerShell verification path after CON-038 connector fixture source-failure geometry absence; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 350 tests pass in the DB-enabled Windows PowerShell verification path after TA-080 source provenance-family schema parity; lint clean; mypy clean (121 source files); migrations/seeds apply; DB smoke passes.
 - 343 tests pass in the DB-enabled Windows PowerShell verification path after TD-081 report manifest metadata schema tightening; lint clean; mypy clean (120 source files); migrations/seeds apply; DB smoke passes.
@@ -196,13 +202,12 @@ Completion evidence:
 - backend/tests/connectors/test_fixture_quality.py
 - tests/fixtures/geometries/
 Next lowest-dependency task:
-- After Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, implement the accepted review-action mutation route subset with OpenAPI refresh, or choose a specific accepted report metadata extension implementation/broader fixture-quality slice if route work would conflict.
+- Level 10 production hardening: async job persistence (store AsyncReportJobStore state in Postgres jobs.job_queue), production auth middleware, rate limiting, structured logging/metrics, deployment packaging (Dockerfile, compose updates), and live connector integration (after license review).
 Do not work on yet:
-- Live connectors
-- UI or LLM summaries
-- Production ops/security/observability
-- New jurisdictions or intents until Level 8/Level 9 planning explicitly selects them
-- Live connector behavior, credentials, browser/download steps, paid APIs, schema edits, and Lane A/B/C/D implementation changes for connector work unless explicitly coordinated with the owning lane
+- Live connectors (credentials unavailable; license reviews pending)
+- LLM summary generation (Level 10 scope)
+- New jurisdictions or intents until a live connector is registered and licensed
+- Paid APIs without explicit license review and plan approval
 ```
 
 
@@ -253,7 +258,7 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-372 tests pass in the DB-enabled Windows PowerShell verification path after CON-038 connector fixture source-failure geometry absence; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes. C-002, D-000, D-001, D-002, D-003, D-004, D-005, CON-001, CON-002, CON-003, CON-004, CON-005, CON-006, CON-007, CON-008, CON-009, CON-010, CON-011, CON-012, CON-013, CON-014, CON-015, CON-016, CON-017, CON-018, CON-019, CON-020, CON-021, CON-022, CON-023, CON-024, CON-025, CON-026, CON-027, CON-028, CON-029, CON-030, CON-031, CON-032, CON-033, CON-034, CON-035, CON-036, CON-037, CON-038, Lane A TA-070, Lane A TA-080, Lane C TC-170, Lane C TC-180, Lane C planning-pack schema-copy alignment, Lane D TD-080, Lane D TD-081, Lane D TD-082, Lane D TD-083, Lane D TD-084, Lane D TD-090, and Lane B TB-100 are complete in this worktree. The next Level 8 pass should implement the accepted review-action mutation route subset with OpenAPI refresh after Session 1's Lane C evidence-linkage/OpenAPI branch reaches a clean merge point, or choose broader fixture-quality/report metadata work if route work would conflict.
+Level 8 PASS declared 2026-06-05 in worktree ralph/production-advance. 362 non-DB tests + 49 skipped DB tests pass after adding: ConnectorPolicy (US-001), ConnectorRunObservabilityLog (US-002), check_connector_source_license (US-003), connector review action routes request_fixture_fix/requeue_after_fix/cancel_review (US-004), connector runbook docs/connectors/connector_runbook.md (US-005), OpenAPI stub refresh. Lint clean; mypy clean. All L8-001 through L8-010 gates documented in state/VALIDATION_LOG.md. Prior DB-enabled baseline: 372 tests pass after CON-038; all CON-001 through CON-038 complete. Next: Level 9 MVP workflow groundwork — static local file connector (US-007), minimal web interface (US-008), async report job processing.
 
 ## Local repo bootstrap state
 

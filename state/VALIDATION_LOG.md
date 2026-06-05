@@ -2,6 +2,91 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-05 Level 9 PASS — MVP Workflow (worktree ralph/production-advance)
+
+**L9 gate evidence:**
+
+| Gate | Status | Evidence |
+|---|---|---|
+| L9-001 Async report job queue | PASS | AsyncReportJobStore (backend/app/reports/job_store.py); thread-safe in-memory dict with QUEUED/RUNNING/SUCCEEDED/FAILED states (US-009) |
+| L9-002 Non-blocking POST /report-runs | PASS | POST /report-runs returns 202 Accepted with {report_run_id, status: "queued"}; BackgroundTask generates report (US-010) |
+| L9-003 Job status polling | PASS | GET /report-runs/{id} returns slim ReportRunContract(status=QUEUED|RUNNING) for in-progress, full report when SUCCEEDED, error caveats when FAILED (US-010) |
+| L9-004 One-shot GeoJSON intake | PASS | POST /intake accepts {area_geojson, intent_code}, creates area + async job, returns 202 {report_run_id, area_id} (US-011) |
+| L9-005 UI end-to-end correctness | PASS | GET /ui/ calls POST /intake with correct intent_code values; /ui/report-runs/{id} shows pending/failed/complete states (US-012) |
+| L9-006 Intent code alignment | PASS | UI intent values match IntentCode enum exactly (rural_land_purchase, homestead_feasibility); homestead_screen removed (US-012) |
+| L9-007 OpenAPI parity | PASS | docs/planning_pack/api/openapi_stub.yaml regenerated; test_planning_pack_openapi_stub_matches_generated_fastapi_contract passes (US-014) |
+| L9-008 Regression clean | PASS | 401 passed, 49 skipped (DB), 0 failed; lint and mypy clean on 12 source files (US-014) |
+| L9-009 MVP operator runbook | PASS | docs/runbooks/mvp_operator.md: startup, config, API workflow, health check, limitations, troubleshooting (US-013) |
+| L9-010 Async integration tests | PASS | tests/api/test_async_report_runs.py (5 tests), tests/api/test_intake.py (5 tests), tests/reports/test_job_store.py (8 tests) |
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest tests/reports/test_job_store.py tests/api/test_async_report_runs.py tests/api/test_intake.py tests/api/test_ui_routes.py -q
+py -3.12 -m pytest
+ruff check app/reports/job_store.py app/reports/service.py app/api/reports.py app/api/dependencies.py app/api/intake.py app/api/ui.py app/main.py tests/reports/test_job_store.py tests/api/test_async_report_runs.py tests/api/test_intake.py tests/api/test_ui_routes.py tests/api/test_api_scaffold.py
+mypy app/reports/job_store.py app/reports/service.py app/api/reports.py app/api/dependencies.py app/api/intake.py app/api/ui.py app/main.py tests/reports/test_job_store.py tests/api/test_async_report_runs.py tests/api/test_intake.py tests/api/test_ui_routes.py tests/api/test_api_scaffold.py
+py -c "from app.main import create_app; import yaml; yaml.dump(create_app().openapi(), open('../docs/planning_pack/api/openapi_stub.yaml', 'w'), sort_keys=True)"
+```
+
+**Results:**
+
+- New tests (US-009 to US-012): 18 passed.
+- Full suite (non-DB): 401 passed, 49 skipped, 0 failed.
+- Ruff: All checks passed (2 auto-fixed unused imports).
+- Mypy: Success, no issues found in 12 source files.
+- OpenAPI stub regenerated to include POST /intake and updated /report-runs (202); parity test passes.
+
+**Residual risk:**
+
+- AsyncReportJobStore is in-memory only; job status lost on server restart. Future Level 10 work should persist job state to Postgres.
+- POST /intake creates a new area per call; no deduplication of identical GeoJSON submissions. Acceptable for MVP.
+- Background tasks run synchronously in TestClient; production behavior (true async) is covered by design but not integration-tested against a real async server. Acceptable at this level.
+- DB-backed full verification (RUN_DB_SMOKE=1) carries forward from the prior L8 baseline.
+
+## 2026-06-05 Level 8 PASS — Connector + Operational Hardening (worktree ralph/production-advance)
+
+**L8 gate evidence:**
+
+| Gate | Status | Evidence |
+|---|---|---|
+| L8-001 Shared connector interface | PASS | StaticFloodFixtureConnector + ConnectorReviewQueueRepository protocol |
+| L8-002 Connector runs persisted | PASS | source.ingest_runs via Lane A provenance; jobs.job_queue for review lifecycle (CON-007, CON-008, CON-014) |
+| L8-003 Idempotent ingestion | PASS | Duplicate ingest_run_id detection + evidence ID fingerprinting (CON-003, CON-008, CON-009) |
+| L8-004 Failures → source_failure evidence | PASS | Flood fixture source-failure path; blocked retrieval records (CON-004, CON-009) |
+| L8-005 Rate limits/timeouts/retry policies | PASS | ConnectorPolicy + DEFAULT_FIXTURE_POLICY in backend/app/connectors/policy.py (US-001) |
+| L8-006 Data quality gates | PASS | 29 fixture quality issue codes in ConnectorFixtureQualityProfile (CON-012 through CON-038) |
+| L8-007 Evidence before claims | PASS | FixtureConnectorIngestWorkflow: provenance → evidence → (claims not called by connector) (CON-002, CON-007) |
+| L8-008 No live network in normal tests | PASS | All connector tests fixture-backed; 49 DB-backed tests opt-in via RUN_DB_SMOKE=1 |
+| L8-009 License enforcement | PASS | check_connector_source_license() blocks incompatible/unknown_blocking statuses (US-003) |
+| L8-010 Observability for connector failures | PASS | ConnectorRunObservabilityLog + 7 event types in backend/app/connectors/observability.py (US-002) |
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests/connectors/test_connector_policy.py tests/connectors/test_connector_observability.py tests/connectors/test_license_guard.py tests/api/test_connector_review_actions.py
+py -3.12 -m pytest --tb=short
+ruff check app/connectors/ app/api/connectors.py
+py -3.12 -m mypy app/connectors/ app/api/connectors.py
+```
+
+**Results:**
+
+- New tests (US-001 to US-004): 39 passed.
+- Full suite (non-DB): 362 passed, 49 skipped, 0 failed.
+- Ruff: All checks passed after import-order autofix on connectors/__init__.py.
+- Mypy: Success, no issues found in 15 source files.
+- OpenAPI stub regenerated to include 3 new review-action routes; parity test passes.
+
+**Residual risk:**
+
+- ConnectorPolicy and observability modules define the interface but are not yet wired into the fixture connector workflow (no behavioral change to existing connectors). Future connector implementations should adopt these modules.
+- License enforcement is enforced at the guard level but the existing flood fixture source has license_status="unknown" in seeds; future live connectors must have reviewed license status before use.
+- Review action routes use a hardcoded fixture service account for auth; production deployment needs settings-backed service account configuration.
+- DB-backed full verification (RUN_DB_SMOKE=1) carries forward from the prior CON-038 baseline (372 tests + new tests).
+
 ## 2026-06-04 Connector CON-038 fixture source-failure geometry absence
 
 **Commands run:**

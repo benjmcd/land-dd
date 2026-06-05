@@ -103,8 +103,15 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
         json={"area_id": area_id, "intent_code": "homestead_feasibility"},
     )
 
-    assert create_response.status_code == 201
-    report_run = create_response.json()
+    # POST now returns 202 with job ID; BackgroundTask runs synchronously in TestClient
+    assert create_response.status_code == 202
+    job = create_response.json()
+    assert "report_run_id" in job
+
+    get_response = client.get(f"/report-runs/{job['report_run_id']}")
+    assert get_response.status_code == 200
+    report_run = get_response.json()
+    assert report_run["report_run_id"] == job["report_run_id"]
     assert report_run["area_id"] == area_id
     assert report_run["status"] == "succeeded"
     assert [record["domain"] for record in report_run["evidence"]] == list(NOT_EVALUATED_DOMAINS)
@@ -119,10 +126,6 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert report_run["artifact_metadata"]["report_schema"] == "report_run_contract_v1"
     assert report_run["artifact_metadata"]["persistence"] == "memory"
     assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 4
-
-    get_response = client.get(f"/report-runs/{report_run['report_run_id']}")
-    assert get_response.status_code == 200
-    assert get_response.json()["report_run_id"] == report_run["report_run_id"]
 
 
 def test_api_report_run_surfaces_source_failure_unknowns() -> None:
@@ -167,8 +170,12 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
         },
     )
 
-    assert create_response.status_code == 201
-    report_run = create_response.json()
+    assert create_response.status_code == 202
+    job = create_response.json()
+    get_response = client.get(f"/report-runs/{job['report_run_id']}")
+    assert get_response.status_code == 200
+    report_run = get_response.json()
+    assert report_run["status"] == "succeeded"
     assert [claim["claim_code"] for claim in report_run["unknowns"]] == [
         "FLOOD_SOURCE_UNAVAILABLE_UNKNOWN",
         *not_evaluated_claim_codes(),
