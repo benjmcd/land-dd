@@ -7,7 +7,7 @@ from .evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionResult,
 )
-from .flood_fixture import FloodFixtureConnectorResult, StaticFloodFixtureConnector
+from .flood_fixture import FixtureConnectorProtocol, FixtureConnectorResultProtocol
 from .retrieval_provenance import (
     ConnectorRetrievalProvenanceAdapter,
     ConnectorRetrievalProvenanceResult,
@@ -16,7 +16,7 @@ from .retrieval_provenance import (
 
 @dataclass(frozen=True)
 class FixtureConnectorIngestWorkflowResult:
-    connector_result: FloodFixtureConnectorResult
+    connector_result: FixtureConnectorResultProtocol
     retrieval_provenance: ConnectorRetrievalProvenanceResult
     evidence_ingestion: ConnectorEvidenceIngestionResult
 
@@ -25,7 +25,7 @@ class FixtureConnectorIngestWorkflow:
     def __init__(
         self,
         *,
-        connector: StaticFloodFixtureConnector,
+        connector: FixtureConnectorProtocol,
         retrieval_provenance_adapter: ConnectorRetrievalProvenanceAdapter,
         evidence_ingestion_adapter: ConnectorEvidenceIngestionAdapter,
     ) -> None:

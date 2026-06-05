@@ -200,6 +200,49 @@ def test_run_flood_connector_failure_sets_review_required() -> None:
     assert body["queue_job_id"] is not None
 
 
+def test_run_zoning_connector_allowed_creates_evidence() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    response = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_zoning_static",
+            "fixture_key": "zoning_allowed",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["connector_name"] == "fixture_zoning_static"
+    assert body["retrieval_status"] == "succeeded"
+    assert body["evidence_created"] == 1
+    assert body["evidence_skipped"] == 0
+    assert body["review_required"] is False
+    assert body["queue_job_id"] is not None
+
+
+def test_run_zoning_connector_failure_sets_review_required() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    response = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_zoning_static",
+            "fixture_key": "zoning_failure",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["retrieval_status"] == "blocked"
+    assert body["evidence_created"] == 1
+    assert body["review_required"] is True
+
+
 def test_run_connector_returns_422_for_unsupported_connector_name() -> None:
     client = TestClient(create_app())
 

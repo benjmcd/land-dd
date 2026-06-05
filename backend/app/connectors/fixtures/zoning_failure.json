@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_zoning_static",
+    "status": "blocked",
+    "started_at": "2026-06-04T09:00:00Z",
+    "finished_at": "2026-06-04T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/zoning_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_zoning_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "00000000-0000-4000-8000-000000000001",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "ZONING_SOURCE_UNAVAILABLE",
+      "domain": "zoning",
+      "observation": "Fixture zoning source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_zoning_source_unavailable",
+        "error_message": "Fixture zoning source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_zoning_classification_lookup",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only zoning screening; not a legal use determination, zoning compliance verification, or building permit eligibility assessment.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-04T09:00:01Z"
+    }
+  ]
+}

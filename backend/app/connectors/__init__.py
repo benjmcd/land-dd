@@ -9,6 +9,7 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
     evaluate_flood_fixture_quality,
+    evaluate_zoning_fixture_quality,
 )
 from app.connectors.fixture_workflow import (
     FixtureConnectorIngestWorkflow,
@@ -16,6 +17,8 @@ from app.connectors.fixture_workflow import (
 )
 from app.connectors.flood_fixture import (
     FixtureConnectorError,
+    FixtureConnectorProtocol,
+    FixtureConnectorResultProtocol,
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
 )
@@ -47,6 +50,7 @@ from app.connectors.review_status import (
     ConnectorRunReviewStatus,
     build_connector_run_review_status,
 )
+from app.connectors.zoning_fixture import StaticZoningFixtureConnector, ZoningFixtureConnectorResult
 
 __all__ = [
     "ConnectorEvidenceIngestionAdapter",
@@ -70,8 +74,12 @@ __all__ = [
     "FixtureConnectorError",
     "FixtureConnectorIngestWorkflow",
     "FixtureConnectorIngestWorkflowResult",
+    "FixtureConnectorProtocol",
+    "FixtureConnectorResultProtocol",
     "FloodFixtureConnectorResult",
     "InMemoryConnectorReviewQueueRepository",
+    "StaticZoningFixtureConnector",
+    "ZoningFixtureConnectorResult",
     "SqlAlchemyConnectorReviewQueueRepository",
     "StaticFloodFixtureConnector",
     "build_connector_review_handoff",
@@ -80,4 +88,5 @@ __all__ = [
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
     "evaluate_flood_fixture_quality",
+    "evaluate_zoning_fixture_quality",
 ]

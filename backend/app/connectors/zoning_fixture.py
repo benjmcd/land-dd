@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, cast
 
 from app.domain.enums import EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
@@ -12,36 +12,20 @@ from app.domain.source_contracts import (
     SourceRetrievalStatus,
 )
 
-
-class FixtureConnectorResultProtocol(Protocol):
-    @property
-    def retrieval_run(self) -> SourceRetrievalRunContract: ...
-    @property
-    def evidence_inputs(self) -> tuple[EvidenceContract, ...]: ...
-
-
-class FixtureConnectorProtocol(Protocol):
-    def load_fixture(
-        self,
-        fixture_path: str | Path,
-    ) -> FixtureConnectorResultProtocol: ...
-
-
-class FixtureConnectorError(ValueError):
-    """Raised when a connector fixture violates the connector contract."""
+from .flood_fixture import FixtureConnectorError
 
 
 @dataclass(frozen=True)
-class FloodFixtureConnectorResult:
+class ZoningFixtureConnectorResult:
     retrieval_run: SourceRetrievalRunContract
     evidence_inputs: tuple[EvidenceContract, ...]
 
 
-class StaticFloodFixtureConnector:
-    connector_name = "fixture_flood_static"
-    domain = "flood"
+class StaticZoningFixtureConnector:
+    connector_name = "fixture_zoning_static"
+    domain = "zoning"
 
-    def load_fixture(self, fixture_path: str | Path) -> FloodFixtureConnectorResult:
+    def load_fixture(self, fixture_path: str | Path) -> ZoningFixtureConnectorResult:
         path = self._local_fixture_path(fixture_path)
         payload = cast(
             dict[str, Any],
@@ -57,7 +41,7 @@ class StaticFloodFixtureConnector:
         )
 
         self._validate_result(retrieval_run, evidence_inputs)
-        return FloodFixtureConnectorResult(
+        return ZoningFixtureConnectorResult(
             retrieval_run=retrieval_run,
             evidence_inputs=evidence_inputs,
         )
@@ -84,16 +68,14 @@ class StaticFloodFixtureConnector:
 
         for evidence in evidence_inputs:
             if evidence.domain != self.domain:
-                raise FixtureConnectorError("flood connector emitted non-flood evidence")
+                raise FixtureConnectorError("zoning connector emitted non-zoning evidence")
 
         if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED:
             if not any(
-                evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
-                and not evidence.is_source_failure
-                for evidence in evidence_inputs
+                not evidence.is_source_failure for evidence in evidence_inputs
             ):
                 raise FixtureConnectorError(
-                    "successful flood fixture must emit spatial evidence",
+                    "successful zoning fixture must emit non-failure evidence",
                 )
             return
 
@@ -107,10 +89,16 @@ class StaticFloodFixtureConnector:
                 for evidence in evidence_inputs
             ):
                 raise FixtureConnectorError(
-                    "failed or blocked flood fixture must emit source-failure evidence",
+                    "failed or blocked zoning fixture must emit source-failure evidence",
                 )
             return
 
         raise FixtureConnectorError(
-            "flood fixture retrieval status must be succeeded, failed, or blocked",
+            "zoning fixture retrieval status must be succeeded, failed, or blocked",
         )
+
+
+__all__ = [
+    "StaticZoningFixtureConnector",
+    "ZoningFixtureConnectorResult",
+]

@@ -8,7 +8,7 @@ from app.source_registry.provenance_service import SourceProvenanceService
 
 from .evidence_ingestion import ConnectorEvidenceIngestionAdapter
 from .fixture_workflow import FixtureConnectorIngestWorkflow
-from .flood_fixture import StaticFloodFixtureConnector
+from .flood_fixture import FixtureConnectorProtocol, StaticFloodFixtureConnector
 from .retrieval_provenance import (
     ConnectorRetrievalProvenanceAdapter,
     SourceRetrievalProvenancePort,
@@ -35,10 +35,12 @@ def build_fixture_workflow_with_public_services(
     *,
     retrieval_provenance_port: SourceRetrievalProvenancePort,
     evidence_service: EvidenceService,
-    connector: StaticFloodFixtureConnector | None = None,
+    connector: FixtureConnectorProtocol | None = None,
 ) -> FixtureConnectorIngestWorkflow:
+    _default: FixtureConnectorProtocol = StaticFloodFixtureConnector()
+    resolved = connector if connector is not None else _default
     return FixtureConnectorIngestWorkflow(
-        connector=connector or StaticFloodFixtureConnector(),
+        connector=resolved,
         retrieval_provenance_adapter=ConnectorRetrievalProvenanceAdapter(
             retrieval_provenance_port,
         ),
@@ -50,7 +52,7 @@ def build_fixture_workflow_with_public_lane_services(
     *,
     source_provenance_service: SourceProvenanceService,
     evidence_service: EvidenceService,
-    connector: StaticFloodFixtureConnector | None = None,
+    connector: FixtureConnectorProtocol | None = None,
 ) -> FixtureConnectorIngestWorkflow:
     return build_fixture_workflow_with_public_services(
         retrieval_provenance_port=SourceProvenanceServiceRetrievalPort(

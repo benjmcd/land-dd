@@ -41,11 +41,20 @@ def fixture_dataset_version_contract() -> SourceDatasetVersionContract:
         version_label="fixture-2026-06-04",
         storage_uri=f"package://{_FIXTURE_PACKAGE}",
         manifest={
-            "fixtures": ("flood_success", "flood_failure"),
-            "connector_names": ("fixture_flood_static",),
+            "fixtures": (
+                "flood_success",
+                "flood_failure",
+                "zoning_allowed",
+                "zoning_failure",
+                "zoning_prohibited",
+            ),
+            "connector_names": (
+                "fixture_flood_static",
+                "fixture_zoning_static",
+            ),
         },
         is_current=True,
-        notes="Packaged static fixtures for connector API smoke coverage.",
+        notes="Packaged static fixtures for connector API smoke and zoning coverage.",
     )
 
 
