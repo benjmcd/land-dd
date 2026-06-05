@@ -107,6 +107,115 @@ def _build_review_status(fixture_name: str) -> ConnectorRunReviewStatus:
     return build_connector_run_review_status(handoff, quality)
 
 
+def test_list_connector_review_queue_returns_empty_list_when_no_items() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/connector-review-queue")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_connector_review_queue_returns_enqueued_items() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    review_status = _build_review_status("flood_success.json")
+    services.connector_review_queue_repo.enqueue_review_status(review_status)
+
+    response = client.get("/connector-review-queue")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["job_type"] == "connector_review_status"
+    assert body[0]["status"] == "queued"
+
+
+def test_list_connector_review_queue_filters_by_status() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    services.connector_review_queue_repo.enqueue_review_status(
+        _build_review_status("flood_success.json")
+    )
+    services.connector_review_queue_repo.enqueue_review_status(
+        _build_review_status("flood_failure.json")
+    )
+
+    queued = client.get("/connector-review-queue?status=queued")
+    needs_review = client.get("/connector-review-queue?status=needs_review")
+
+    assert queued.status_code == 200
+    assert len(queued.json()) == 1
+    assert queued.json()[0]["status"] == "queued"
+    assert needs_review.status_code == 200
+    assert len(needs_review.json()) == 1
+    assert needs_review.json()[0]["status"] == "needs_review"
+
+
+def test_list_connector_review_queue_filters_by_connector_name() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    services.connector_review_queue_repo.enqueue_review_status(
+        _build_review_status("flood_success.json")
+    )
+
+    match = client.get(
+        "/connector-review-queue?connector_name=fixture_flood_static"
+    )
+    no_match = client.get(
+        "/connector-review-queue?connector_name=other_connector"
+    )
+
+    assert match.status_code == 200
+    assert len(match.json()) == 1
+    assert no_match.status_code == 200
+    assert no_match.json() == []
+
+
+def test_list_connector_review_queue_respects_limit_and_offset() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    services.connector_review_queue_repo.enqueue_review_status(
+        _build_review_status("flood_success.json")
+    )
+    services.connector_review_queue_repo.enqueue_review_status(
+        _build_review_status("flood_failure.json")
+    )
+
+    first = client.get("/connector-review-queue?limit=1&offset=0")
+    second = client.get("/connector-review-queue?limit=1&offset=1")
+    all_items = client.get("/connector-review-queue")
+
+    assert first.status_code == 200
+    assert len(first.json()) == 1
+    assert second.status_code == 200
+    assert len(second.json()) == 1
+    assert first.json()[0]["ingest_run_id"] != second.json()[0]["ingest_run_id"]
+    assert len(all_items.json()) == 2
+
+
+def test_list_connector_review_queue_rejects_invalid_status() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/connector-review-queue?status=not_a_status")
+
+    assert response.status_code == 422
+
+
+def test_list_connector_review_queue_rejects_invalid_pagination() -> None:
+    client = TestClient(create_app())
+
+    bad_limit = client.get("/connector-review-queue?limit=0")
+    bad_offset = client.get("/connector-review-queue?offset=-1")
+
+    assert bad_limit.status_code == 422
+    assert bad_offset.status_code == 422
+
+
 def test_get_connector_review_queue_item_returns_queued_status() -> None:
     app = create_app()
     client = TestClient(app)

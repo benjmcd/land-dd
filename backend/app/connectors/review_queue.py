@@ -62,6 +62,24 @@ class ConnectorReviewQueueRepository(Protocol):
 
     def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem: ...
 
+    def list_connector_runs(
+        self,
+        *,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]: ...
+
+
+def _status_filter(status: str | None) -> str | None:
+    if status is None:
+        return None
+    try:
+        return JobStatus(status).value
+    except ValueError as exc:
+        raise ValueError("unsupported connector review queue status") from exc
+
 
 class InMemoryConnectorReviewQueueRepository:
     def __init__(self) -> None:
@@ -182,6 +200,27 @@ class InMemoryConnectorReviewQueueRepository:
         )
         self._store[cancelled.ingest_run_id] = cancelled
         return cancelled
+
+    def list_connector_runs(
+        self,
+        *,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]:
+        status_filter = _status_filter(status)
+        items = list(self._store.values())
+        if status_filter is not None:
+            items = [i for i in items if i.status.value == status_filter]
+        if connector_name is not None:
+            items = [
+                i
+                for i in items
+                if i.payload.get("connector_name") == connector_name
+            ]
+        items.sort(key=lambda i: (i.priority, i.created_at))
+        return items[offset : offset + limit]
 
     def _get_running_job(self, job_id: UUID) -> ConnectorReviewQueueItem:
         item = self._get_job(job_id)
@@ -462,6 +501,58 @@ class SqlAlchemyConnectorReviewQueueRepository:
         if row is None:
             raise ValueError("connector review queue job cannot be cancelled")
         return _item_from_row(row)
+
+    def list_connector_runs(
+        self,
+        *,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]:
+        status_filter = _status_filter(status)
+        rows = self._session.execute(
+            text(
+                """
+                SELECT
+                    job_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                FROM jobs.job_queue
+                WHERE job_type = :job_type
+                  AND (
+                      :status IS NULL
+                      OR status = CAST(:status AS jobs.job_status)
+                  )
+                  AND (
+                      :connector_name IS NULL
+                      OR payload->>'connector_name' = :connector_name
+                  )
+                ORDER BY priority ASC, created_at ASC
+                LIMIT :limit OFFSET :offset
+                """
+            ),
+            {
+                "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                "status": status_filter,
+                "connector_name": connector_name,
+                "limit": limit,
+                "offset": offset,
+            },
+        ).mappings().all()
+        return [_item_from_row(row) for row in rows]
 
     def _finish_job(
         self,
