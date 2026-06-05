@@ -43,8 +43,42 @@ def test_seed_sources_are_valid_source_contracts() -> None:
 
     assert all(isinstance(source, SourceContract) for source in seeds)
     assert all(source.metadata["mvp_priority"] == "Must" for source in seeds)
-    assert all(source.review_status == "pending" for source in seeds)
-    assert all(source.freshness_class == "unreviewed" for source in seeds)
+
+    by_registry_id = {
+        str(source.metadata["source_registry_id"]): source for source in seeds
+    }
+    assert by_registry_id["DS-002"].review_status == "approved"
+    assert by_registry_id["DS-002"].freshness_class == "reviewed"
+    assert all(
+        source.review_status == "pending"
+        for source_id, source in by_registry_id.items()
+        if source_id != "DS-002"
+    )
+    assert all(
+        source.freshness_class == "unreviewed"
+        for source_id, source in by_registry_id.items()
+        if source_id != "DS-002"
+    )
+
+
+def test_fema_nfhl_seed_preserves_reviewed_usage_status() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    fema = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-002"
+    )
+
+    assert fema.license_status == "approved"
+    assert fema.commercial_use_status == "approved"
+    assert fema.redistribution_status == "approved"
+    assert fema.cache_allowed == "approved"
+    assert fema.export_allowed == "approved"
+    assert fema.ai_use_allowed == "approved"
+    assert fema.raw_data_allowed == "approved"
+    assert fema.attribution_required is True
+    assert fema.last_checked_at == "2026-06-05"
+    assert fema.review_owner == "data-governance"
 
 
 def test_seed_metadata_preserves_registry_context() -> None:

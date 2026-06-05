@@ -19,6 +19,7 @@ required=(
   state/VALIDATION_LOG.md
   scripts/check_json_files.py
   scripts/check_csv_files.py
+  scripts/check_source_registry.py
   backend/pyproject.toml
   db/migrations/0001_initial_spine.sql
 )
@@ -28,5 +29,6 @@ done
 
 "$PYTHON_BIN" scripts/check_json_files.py
 "$PYTHON_BIN" scripts/check_csv_files.py
+"$PYTHON_BIN" scripts/check_source_registry.py
 
 echo "workspace validation: ok"

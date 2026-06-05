@@ -5,13 +5,18 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 ## Critical
 
 1. Which U.S. state and 3-5 counties are the MVP geography?
-2. Which first source should graduate from fixture-only development toward live
-   ingestion after license review?
-3. Should `api/openapi_stub.yaml` remain manually curated, or should generated
+2. Should `api/openapi_stub.yaml` remain manually curated, or should generated
    FastAPI OpenAPI become the API authority?
-4. What is the report review lifecycle before beta delivery: draft, needs
+3. What is the report review lifecycle before beta delivery: draft, needs
    review, approved, rejected, superseded, or another state model?
-5. What workspace/user identity mechanism should scope API queries?
+4. What workspace/user identity mechanism should scope API queries?
+
+## Decided
+
+1. First federal source candidate: FEMA NFHL (`DS-002`) is the reviewed source
+   for the federal-first flood path. Live connector code remains gated by
+   fixture-backed success/failure tests, source-failure behavior, and API/report
+   caveat surfacing.
 
 ## High
 

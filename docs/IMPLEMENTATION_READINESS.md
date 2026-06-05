@@ -12,6 +12,8 @@ start without re-litigating basic authority.
 - CI runs both the fast verification job and the PostGIS-backed DB verification
   job on `main`.
 - Current connector runtime is fixture-only for access, flood, and zoning.
+- DS-002 FEMA NFHL has a reviewed federal source row; local/county source rows
+  still fail closed until reviewed.
 - Report runs return a machine-readable JSON contract; the dossier template is
   not yet the served report product.
 
@@ -36,8 +38,8 @@ start without re-litigating basic authority.
    - Pick the state/counties.
    - Update `registers/data_source_registry.csv` with county-specific rows or
      narrowed source records.
-   - Complete `templates/data_source_license_review.md` for the first source
-     candidates.
+   - Complete source reviews under `registers/license-reviews/` for the first
+     source candidates.
    - Define source caveats and source-failure behavior before runtime work.
 
 3. **API contract pass**

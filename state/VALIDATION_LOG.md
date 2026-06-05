@@ -19,6 +19,26 @@
 - `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
   skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
 
+## 2026-06-05 DS-002 Source Governance Pass
+
+- `registers/license-reviews/ds-002-fema-nfhl.md`: added a source-governance
+  review for FEMA NFHL with federal-work, attribution, caveat, and connector
+  gate notes.
+- `registers/data_source_registry.csv`: DS-002 changed from unknown/pending to
+  approved/reviewed with usage fields populated.
+- `db/seeds/002_seed_source_registry.sql`: DS-002 source seed aligned with the
+  reviewed registry status so DB bootstrap does not reintroduce unknown values.
+- `python .\scripts\check_csv_files.py`: passed across all five register CSV
+  files.
+- `python .\scripts\check_source_registry.py`: passed across 26 source rows and
+  verifies approved registry rows against the SQL source seed.
+- `python -m pytest backend\tests\source_registry\test_source_seeds.py -q`:
+  passed.
+- `.\scripts\validate_workspace.ps1`: passed with JSON, CSV, source registry,
+  and structural invariant checks.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Baseline
 
 - `git fetch origin`: completed.

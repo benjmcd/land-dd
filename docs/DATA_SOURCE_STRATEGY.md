@@ -18,7 +18,7 @@ Data sources are not truth. They are evidence inputs with authority, freshness, 
 Every connector must have:
 
 - source registry entry;
-- license/terms review stub;
+- license/terms review file;
 - fixture data;
 - tests for success and failure cases;
 - source freshness/caveat mapping;

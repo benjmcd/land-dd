@@ -3,8 +3,8 @@
 ## Current Branch State
 
 - `main` is expected to track `origin/main`.
-- Last confirmed baseline: commit `53efb49` (matches `origin/main` as of
-  2026-06-05).
+- Exact baseline hashes and verification evidence are recorded in
+  `state/VALIDATION_LOG.md`.
 - The working baseline is a fixture-backed backend MVP scaffold, not a live
   production diligence product.
 
@@ -25,6 +25,8 @@
   silently treated as safe.
 - Fixture source UUID is registered in `registers/data_source_registry.csv`
   as DS-FIXTURE-001.
+- DS-002 FEMA NFHL has an approved source-governance review for the
+  federal-first flood path.
 - Local orchestration folders such as `.omc/` and `.omx/` are workflow state,
   not source-of-truth project artifacts.
 
@@ -32,7 +34,8 @@
 
 - MVP state/counties are not selected.
 - Live connectors are not enabled and should remain blocked.
-- Most source registry rows still have unresolved production-use status.
+- Most source registry rows other than DS-002 still have unresolved
+  production-use status.
 - Public API contract is still a compact draft.
 - Report generation is synchronous in the current API route.
 - Workspace/user access control is represented in schema but not enforced as a
