@@ -4,7 +4,7 @@ from importlib.resources import as_file
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.api.dependencies import ApiServices, get_services
@@ -24,6 +24,7 @@ from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
 )
+from app.domain.enums import JobStatus
 
 router = APIRouter(prefix="/connector-review-queue", tags=["connector-review-queue"])
 runs_router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
@@ -34,6 +35,42 @@ _SUPPORTED_CONNECTOR_NAMES: frozenset[str] = frozenset({"fixture_flood_static"})
 
 def _is_safe_fixture_key(key: str) -> bool:
     return bool(key) and all(c.isalnum() or c in ("_", "-") for c in key)
+
+
+@router.get("", response_model=list[ConnectorReviewQueueItemContract])
+def list_connector_review_queue(
+    services: ServicesDep,
+    status: JobStatus | None = None,
+    connector_name: str | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[ConnectorReviewQueueItemContract]:
+    items = services.connector_review_queue_repo.list_connector_runs(
+        status=status.value if status is not None else None,
+        connector_name=connector_name,
+        limit=limit,
+        offset=offset,
+    )
+    return [
+        ConnectorReviewQueueItemContract(
+            job_id=item.job_id,
+            ingest_run_id=item.ingest_run_id,
+            job_type=item.job_type,
+            status=item.status,
+            priority=item.priority,
+            payload=dict(item.payload),
+            created_at=item.created_at,
+            not_before=item.not_before,
+            attempts=item.attempts,
+            max_attempts=item.max_attempts,
+            locked_by=item.locked_by,
+            locked_at=item.locked_at,
+            started_at=item.started_at,
+            finished_at=item.finished_at,
+            last_error=item.last_error,
+        )
+        for item in items
+    ]
 
 
 @router.get("/{ingest_run_id}", response_model=ConnectorReviewQueueItemContract)

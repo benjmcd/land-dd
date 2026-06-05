@@ -240,6 +240,13 @@ def test_in_memory_review_queue_cancels_nonfinal_jobs() -> None:
         repo.cancel(cancelled.job_id, reason="already cancelled")
 
 
+def test_in_memory_review_queue_rejects_invalid_status_filter() -> None:
+    repo = InMemoryConnectorReviewQueueRepository()
+
+    with pytest.raises(ValueError, match="unsupported connector review queue status"):
+        repo.list_connector_runs(status="not_a_status")
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
     engine = build_engine()
@@ -287,6 +294,17 @@ def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
                 {"idempotency_key": idempotency_key},
             )
             session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_rejects_invalid_status_filter() -> None:
+    engine = build_engine()
+
+    with Session(engine) as session:
+        repo = SqlAlchemyConnectorReviewQueueRepository(session)
+
+        with pytest.raises(ValueError, match="unsupported connector review queue status"):
+            repo.list_connector_runs(status="not_a_status")
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
