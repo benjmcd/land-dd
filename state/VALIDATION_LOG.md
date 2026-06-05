@@ -41,3 +41,16 @@ installed locally.
   workspace gate.
 - All requested fixes were applied. Verifier re-check approved the corrected
   state and found no remaining required fixes.
+
+## 2026-06-04 Sync and Registry Gap Pass
+
+- `git fetch origin`: completed. Local `main` HEAD `937b033` matches `origin/main`.
+- `git status --short`: clean on `main`.
+- `.\scripts\verify.ps1`: passed — all tests green, lint clean, typecheck clean.
+- `python scripts/check_csv_files.py`: passed across all five register CSV files.
+- Gap addressed: `registers/data_source_registry.csv` lacked a row for the
+  fixture source UUID (`55555555-5555-4555-8555-555555555555`). Added
+  DS-FIXTURE-001 row with approved internal fixture status.
+- `state/PROJECT_STATE.md` baseline updated to current HEAD `937b033` and What
+  Works section updated to reflect connector review actions, report list endpoint,
+  and fixture registry entry.

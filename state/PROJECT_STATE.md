@@ -3,7 +3,7 @@
 ## Current Branch State
 
 - `main` is expected to track `origin/main`.
-- Last confirmed baseline: commit `c752a3b`.
+- Last confirmed baseline: commit `937b033`.
 - The working baseline is a fixture-backed backend MVP scaffold, not a live
   production diligence product.
 
@@ -12,11 +12,18 @@
 - Source, area, evidence, claim, connector, and report services are wired for
   in-memory API use.
 - Postgres-backed repositories and DB smoke are covered by CI.
-- Static access, flood, and zoning connector fixtures can produce evidence.
+- Static access, flood, and zoning connector fixtures can produce evidence via
+  `POST /connector-runs`.
+- Connector review queue supports enqueue, list, get, approve, reject, requeue,
+  and cancel with reviewer identity recorded in the payload action history.
 - Report runs expose source manifest, assumptions, caveats, evidence, claims,
   unknowns, red flags, verification tasks, and machine JSON metadata.
+- `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
+  and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
   silently treated as safe.
+- Fixture source UUID is registered in `registers/data_source_registry.csv`
+  as DS-FIXTURE-001.
 
 ## What Is Not Yet Ready
 
