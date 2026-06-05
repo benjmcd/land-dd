@@ -100,6 +100,39 @@ def test_sqlalchemy_area_repository_persists_geometry_as_postgis_multipolygon(
         _delete_area(session, area.area_id)
 
 
+def test_sqlalchemy_area_repository_filters_by_workspace(
+    session: Session,
+) -> None:
+    repo = SqlAlchemyAreaRepository(session)
+    workspace_id, user_id = _seed_workspace_and_user(session)
+    other_workspace_id, other_user_id = _seed_workspace_and_user(session)
+    area = AreaContract(
+        workspace_id=workspace_id,
+        created_by=user_id,
+        area_type=AreaType.DRAWN_POLYGON,
+        label="workspace fixture polygon",
+        geom_geojson=load_geometry("valid_polygon.geojson"),
+        geom_source="Lane B workspace fixture",
+    )
+
+    created = repo.add(area)
+    session.commit()
+
+    try:
+        assert created.workspace_id == workspace_id
+        assert created.created_by == user_id
+        assert repo.get(area.area_id, workspace_id=workspace_id) == created
+        assert repo.get(area.area_id, workspace_id=other_workspace_id) is None
+        assert repo.list_all(workspace_id=workspace_id) == [created]
+        assert repo.list_all(workspace_id=other_workspace_id) == []
+        assert repo.exists(area.area_id, workspace_id=workspace_id) is True
+        assert repo.exists(area.area_id, workspace_id=other_workspace_id) is False
+    finally:
+        _delete_area(session, area.area_id)
+        _delete_workspace_and_user(session, other_workspace_id, other_user_id)
+        _delete_workspace_and_user(session, workspace_id, user_id)
+
+
 def test_area_service_can_use_sqlalchemy_area_repository(session: Session) -> None:
     service = AreaService(SqlAlchemyAreaRepository(session))
     area = AreaContract(
@@ -474,6 +507,54 @@ def _delete_area(session: Session, area_id: UUID) -> None:
     session.execute(
         text("DELETE FROM core.areas WHERE area_id = :area_id"),
         {"area_id": area_id},
+    )
+    session.commit()
+
+
+def _seed_workspace_and_user(session: Session) -> tuple[UUID, UUID]:
+    workspace_id = uuid4()
+    user_id = uuid4()
+    session.execute(
+        text(
+            """
+            INSERT INTO core.workspaces (workspace_id, name)
+            VALUES (:workspace_id, :name)
+            """
+        ),
+        {
+            "workspace_id": workspace_id,
+            "name": f"area repo workspace {workspace_id}",
+        },
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO core.users (user_id, workspace_id, email)
+            VALUES (:user_id, :workspace_id, :email)
+            """
+        ),
+        {
+            "user_id": user_id,
+            "workspace_id": workspace_id,
+            "email": f"area-repo-{user_id}@example.test",
+        },
+    )
+    session.commit()
+    return workspace_id, user_id
+
+
+def _delete_workspace_and_user(
+    session: Session,
+    workspace_id: UUID,
+    user_id: UUID,
+) -> None:
+    session.execute(
+        text("DELETE FROM core.users WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    session.execute(
+        text("DELETE FROM core.workspaces WHERE workspace_id = :workspace_id"),
+        {"workspace_id": workspace_id},
     )
     session.commit()
 

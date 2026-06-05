@@ -62,6 +62,11 @@ def create_report_run(
             workspace_id=request.workspace_id,
             requested_by=request.requested_by,
         )
+        _enforce_area_scope(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         return services.report_service.create_report_run(
             area_id=request.area_id,
             intent_code=request.intent_code,
@@ -135,6 +140,11 @@ def submit_report_run_job(
             auth,
             workspace_id=request.workspace_id,
             requested_by=request.requested_by,
+        )
+        _enforce_area_scope(
+            request.area_id,
+            services=services,
+            auth=auth,
         )
         return services.report_service.submit_report_run_job(
             area_id=request.area_id,
@@ -287,6 +297,19 @@ def _authorized_workspace_filter(
             detail="workspace filter does not match authenticated workspace",
         )
     return auth.workspace_id
+
+
+def _enforce_area_scope(
+    area_id: UUID,
+    *,
+    services: ApiServices,
+    auth: RequestAuthContext,
+) -> None:
+    if not services.area_service.area_is_registered(
+        area_id,
+        workspace_id=auth.workspace_id,
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="area not found")
 
 
 def _get_authorized_report_run(

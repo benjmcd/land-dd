@@ -20,8 +20,16 @@ class AreaServiceProtocolAdapter:
     def __init__(self, area_service: AreaExistsProtocol) -> None:
         self._area_service = area_service
 
-    def area_is_registered(self, area_id: UUID) -> bool:
-        return self._area_service.area_is_registered(area_id)
+    def area_is_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
+        return self._area_service.area_is_registered(
+            area_id,
+            workspace_id=workspace_id,
+        )
 
 
 __all__ = ["AreaServiceProtocolAdapter", "SourceServiceProtocolAdapter"]

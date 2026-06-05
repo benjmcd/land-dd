@@ -21,11 +21,20 @@ paths:
   /areas:
     get:
       summary: List areas
+      parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       responses:
         '200': { description: Area list }
+        '401': { description: Missing request identity headers }
     post:
       summary: Create an area
       operationId: createArea
+      parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
       requestBody:
         required: true
         content:
@@ -33,6 +42,8 @@ paths:
             schema: { $ref: '#/components/schemas/Area' }
       responses:
         '201': { description: Area created }
+        '401': { description: Missing request identity headers }
+        '403': { description: Area owner fields do not match request identity }
         '422': { description: Invalid area contract }
   /sources:
     get:
@@ -54,12 +65,16 @@ paths:
     get:
       summary: List evidence for an area
       parameters:
+        - $ref: '#/components/parameters/ReportBearerToken'
+        - $ref: '#/components/parameters/RequestWorkspaceId'
+        - $ref: '#/components/parameters/RequestUserId'
         - name: area_id
           in: query
           required: true
           schema: { type: string, format: uuid }
       responses:
         '200': { description: Evidence list }
+        '401': { description: Missing request identity headers }
         '422': { description: Invalid area id }
   /report-runs:
     get:
@@ -116,6 +131,7 @@ paths:
         '201': { description: Report run created }
         '401': { description: Missing request identity headers }
         '403': { description: Request scope does not match request identity }
+        '404': { description: Area not found in authenticated workspace }
         '422': { description: Invalid report request }
   /report-runs/jobs:
     post:
@@ -141,6 +157,7 @@ paths:
         '202': { description: Report run job queued }
         '401': { description: Missing request identity headers }
         '403': { description: Request scope does not match request identity }
+        '404': { description: Area not found in authenticated workspace }
         '422': { description: Invalid report job request }
   /report-runs/jobs/{job_id}:
     get:
@@ -451,7 +468,17 @@ components:
         geom_geojson: { type: object }
         geom_srid: { type: integer, default: 4326 }
         geom_source: { type: [string, "null"] }
+        geom_confidence:
+          enum:
+            - very_low
+            - low
+            - medium
+            - high
+            - very_high
+            - unknown
         geom_validated: { type: boolean, default: false }
+        workspace_id: { type: [string, "null"], format: uuid }
+        created_by: { type: [string, "null"], format: uuid }
     Source:
       type: object
       required: [name, domain]

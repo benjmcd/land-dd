@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import cast
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 
@@ -12,6 +12,8 @@ from app.main import create_app
 
 _FIXTURE_SOURCE_ID = UUID("55555555-5555-4555-8555-555555555555")
 _FIXTURE_AREA_ID = UUID("44444444-4444-4444-8444-444444444444")
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
 _FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -27,7 +29,7 @@ _FIXTURE_AREA_GEOJSON: dict[str, object] = {
 
 
 def _auth_headers() -> dict[str, str]:
-    return {"X-Workspace-Id": str(uuid4()), "X-User-Id": str(uuid4())}
+    return {"X-Workspace-Id": str(_WORKSPACE_ID), "X-User-Id": str(_USER_ID)}
 
 
 def _seed(services: ApiServices) -> None:
@@ -49,6 +51,8 @@ def _seed(services: ApiServices) -> None:
     services.area_service.create(
         AreaContract(
             area_id=_FIXTURE_AREA_ID,
+            workspace_id=_WORKSPACE_ID,
+            created_by=_USER_ID,
             geom_geojson=_FIXTURE_AREA_GEOJSON,
         )
     )

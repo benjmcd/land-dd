@@ -39,8 +39,13 @@ class EvidenceService:
         self._area_checker = area_checker
         self._audit_log = audit_log
 
-    def create_observation(self, evidence: EvidenceContract) -> EvidenceContract:
-        self._validate_area_registered(evidence.area_id)
+    def create_observation(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
+        self._validate_area_registered(evidence.area_id, workspace_id=workspace_id)
         self._validate_source_registered(evidence.source_id)
         if not self._source_checker.source_production_use_allowed(evidence.source_id):
             raise ValueError(f"Source '{evidence.source_id}' is not allowed for production use")
@@ -63,12 +68,13 @@ class EvidenceService:
         source_id: UUID,
         method_code: str,
         caveat: str,
+        workspace_id: UUID | None = None,
         evidence_code: str = "SOURCE_FAILURE",
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
     ) -> EvidenceContract:
-        self._validate_area_registered(area_id)
+        self._validate_area_registered(area_id, workspace_id=workspace_id)
         self._validate_source_registered(source_id)
         _require_non_empty(method_code, "method_code")
         _require_non_empty(caveat, "caveat")
@@ -89,10 +95,18 @@ class EvidenceService:
         if evidence_id is not None:
             evidence_data["evidence_id"] = evidence_id
         evidence = EvidenceContract(**evidence_data)
-        return self._create_source_failure_evidence(evidence)
+        return self._create_source_failure_evidence(
+            evidence,
+            workspace_id=workspace_id,
+        )
 
-    def create_human_note(self, evidence: EvidenceContract) -> EvidenceContract:
-        self._validate_area_registered(evidence.area_id)
+    def create_human_note(
+        self,
+        evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> EvidenceContract:
+        self._validate_area_registered(evidence.area_id, workspace_id=workspace_id)
         if evidence.evidence_type not in HUMAN_EVIDENCE_TYPES:
             raise ValueError("human notes must use manual_note or human_verification")
         if evidence.is_source_failure:
@@ -108,10 +122,13 @@ class EvidenceService:
         self,
         evidence_id: UUID,
         replacement: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         original = self._repo.get(evidence_id)
         if original is None:
             raise ValueError(f"Evidence '{evidence_id}' is not registered")
+        self._validate_area_registered(original.area_id, workspace_id=workspace_id)
         if original.superseded_by is not None:
             raise ValueError(f"Evidence '{evidence_id}' is already superseded")
         if replacement.evidence_id == evidence_id:
@@ -121,7 +138,10 @@ class EvidenceService:
         if replacement.area_id != original.area_id:
             raise ValueError("replacement evidence must reference the same area")
 
-        created = self._create_validated_replacement(replacement)
+        created = self._create_validated_replacement(
+            replacement,
+            workspace_id=workspace_id,
+        )
         superseded_original = self._repo.mark_superseded(evidence_id, created.evidence_id)
         self._record_superseded(superseded_original)
         return created
@@ -141,8 +161,16 @@ class EvidenceService:
     def evidence_exists(self, evidence_id: UUID) -> bool:
         return self._repo.exists(evidence_id)
 
-    def _validate_area_registered(self, area_id: UUID) -> None:
-        if not self._area_checker.area_is_registered(area_id):
+    def _validate_area_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> None:
+        if not self._area_checker.area_is_registered(
+            area_id,
+            workspace_id=workspace_id,
+        ):
             raise ValueError(f"Area '{area_id}' is not registered")
 
     def _validate_source_registered(self, source_id: UUID) -> None:
@@ -152,18 +180,25 @@ class EvidenceService:
     def _create_validated_replacement(
         self,
         evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
         if evidence.evidence_type in HUMAN_EVIDENCE_TYPES:
-            return self.create_human_note(evidence)
+            return self.create_human_note(evidence, workspace_id=workspace_id)
         if evidence.evidence_type == EvidenceType.SOURCE_FAILURE:
-            return self._create_source_failure_evidence(evidence)
-        return self.create_observation(evidence)
+            return self._create_source_failure_evidence(
+                evidence,
+                workspace_id=workspace_id,
+            )
+        return self.create_observation(evidence, workspace_id=workspace_id)
 
     def _create_source_failure_evidence(
         self,
         evidence: EvidenceContract,
+        *,
+        workspace_id: UUID | None = None,
     ) -> EvidenceContract:
-        self._validate_area_registered(evidence.area_id)
+        self._validate_area_registered(evidence.area_id, workspace_id=workspace_id)
         self._validate_source_registered(evidence.source_id)
         if not evidence.is_source_failure:
             raise ValueError("source failure evidence must set is_source_failure")

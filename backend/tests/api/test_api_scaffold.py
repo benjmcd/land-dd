@@ -39,6 +39,25 @@ def auth_headers(
     }
 
 
+def create_fixture_area(
+    client: TestClient,
+    headers: dict[str, str],
+    *,
+    label: str = "fixture polygon",
+) -> dict[str, object]:
+    response = client.post(
+        "/areas",
+        json={
+            "label": label,
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 201
+    return cast(dict[str, object], response.json())
+
+
 def test_api_scaffold_exposes_health_endpoint() -> None:
     client = TestClient(create_app())
 
@@ -49,11 +68,14 @@ def test_api_scaffold_exposes_health_endpoint() -> None:
 
 def test_api_scaffold_lists_empty_in_memory_resources() -> None:
     client = TestClient(create_app())
+    headers = auth_headers()
     area_id = uuid4()
 
     assert client.get("/sources").json() == []
-    assert client.get("/areas").json() == []
-    assert client.get(f"/evidence?area_id={area_id}").json() == []
+    assert client.get("/areas").status_code == 401
+    assert client.get("/areas", headers=headers).json() == []
+    assert client.get(f"/evidence?area_id={area_id}").status_code == 401
+    assert client.get(f"/evidence?area_id={area_id}", headers=headers).json() == []
 
 
 def test_api_runtime_uses_memory_backend_by_default_for_isolated_tests() -> None:
@@ -98,6 +120,10 @@ def test_api_scaffold_creates_and_lists_sources() -> None:
 
 def test_api_scaffold_creates_and_lists_areas() -> None:
     client = TestClient(create_app())
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = auth_headers(workspace_id, user_id)
+    other_headers = auth_headers(str(uuid4()), user_id)
 
     create_response = client.post(
         "/areas",
@@ -106,27 +132,44 @@ def test_api_scaffold_creates_and_lists_areas() -> None:
             "geom_geojson": load_geometry("valid_polygon.geojson"),
             "geom_source": "api fixture",
         },
+        headers=headers,
     )
 
     assert create_response.status_code == 201
-    area_id = create_response.json()["area_id"]
-    list_response = client.get("/areas")
+    area = create_response.json()
+    area_id = area["area_id"]
+    assert area["workspace_id"] == workspace_id
+    assert area["created_by"] == user_id
+    list_response = client.get("/areas", headers=headers)
     assert list_response.status_code == 200
     assert [area["area_id"] for area in list_response.json()] == [area_id]
+    assert client.get("/areas", headers=other_headers).json() == []
+    mismatch_response = client.post(
+        "/areas",
+        json={
+            "workspace_id": str(uuid4()),
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+        },
+        headers=headers,
+    )
+    assert mismatch_response.status_code == 403
+    creator_mismatch_response = client.post(
+        "/areas",
+        json={
+            "created_by": str(uuid4()),
+            "label": "fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+        },
+        headers=headers,
+    )
+    assert creator_mismatch_response.status_code == 403
 
 
 def test_api_scaffold_creates_and_gets_report_run() -> None:
     client = TestClient(create_app())
     headers = auth_headers()
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
-    area_id = area_response.json()["area_id"]
+    area_id = create_fixture_area(client, headers)["area_id"]
 
     create_response = client.post(
         "/report-runs",
@@ -183,16 +226,9 @@ def test_api_report_run_create_supports_scope_and_idempotency() -> None:
     requested_by = str(uuid4())
     other_workspace_id = str(uuid4())
     headers = auth_headers(workspace_id, requested_by)
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     payload = {
-        "area_id": area_response.json()["area_id"],
+        "area_id": area["area_id"],
         "intent_code": "homestead_feasibility",
         "workspace_id": workspace_id,
         "requested_by": requested_by,
@@ -226,6 +262,22 @@ def test_api_report_run_create_supports_scope_and_idempotency() -> None:
         headers=headers,
     )
     assert mismatch_response.status_code == 403
+    assert (
+        client.post(
+            "/report-runs",
+            json={
+                **payload,
+                "workspace_id": None,
+                "area_id": create_fixture_area(
+                    client,
+                    auth_headers(other_workspace_id, requested_by),
+                    label="other workspace polygon",
+                )["area_id"],
+            },
+            headers=headers,
+        ).status_code
+        == 404
+    )
 
 
 def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
@@ -233,16 +285,9 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
     workspace_id = str(uuid4())
     user_id = str(uuid4())
     headers = auth_headers(workspace_id, user_id)
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     payload = {
-        "area_id": area_response.json()["area_id"],
+        "area_id": area["area_id"],
         "intent_code": "homestead_feasibility",
         "workspace_id": workspace_id,
         "idempotency_key": "queued-report-key-1",
@@ -298,7 +343,7 @@ def test_api_report_run_jobs_are_queued_and_idempotent() -> None:
         client.post(
             "/report-runs/jobs",
             json={
-                "area_id": area_response.json()["area_id"],
+                "area_id": area["area_id"],
                 "intent_code": "homestead_feasibility",
                 "idempotency_key": " ",
             },
@@ -313,18 +358,11 @@ def test_api_report_run_review_actions_update_review_status() -> None:
     workspace_id = str(uuid4())
     user_id = str(uuid4())
     headers = auth_headers(workspace_id, user_id)
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     create_response = client.post(
         "/report-runs",
         json={
-            "area_id": area_response.json()["area_id"],
+            "area_id": area["area_id"],
             "intent_code": "homestead_feasibility",
         },
         headers=headers,
@@ -360,18 +398,11 @@ def test_api_report_run_dossier_is_gated_on_approved_review() -> None:
     workspace_id = str(uuid4())
     user_id = str(uuid4())
     headers = auth_headers(workspace_id, user_id)
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     create_response = client.post(
         "/report-runs",
         json={
-            "area_id": area_response.json()["area_id"],
+            "area_id": area["area_id"],
             "intent_code": "homestead_feasibility",
         },
         headers=headers,
@@ -401,18 +432,11 @@ def test_api_report_run_review_actions_validate_transitions() -> None:
     workspace_id = str(uuid4())
     user_id = str(uuid4())
     headers = auth_headers(workspace_id, user_id)
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     create_response = client.post(
         "/report-runs",
         json={
-            "area_id": area_response.json()["area_id"],
+            "area_id": area["area_id"],
             "intent_code": "homestead_feasibility",
         },
         headers=headers,
@@ -460,16 +484,9 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
             "review_status": "approved",
         },
     )
-    area_response = client.post(
-        "/areas",
-        json={
-            "label": "fixture polygon",
-            "geom_geojson": load_geometry("valid_polygon.geojson"),
-            "geom_source": "api fixture",
-        },
-    )
+    area = create_fixture_area(client, headers)
     source_id = UUID(source_response.json()["source_id"])
-    area_id = UUID(area_response.json()["area_id"])
+    area_id = UUID(str(area["area_id"]))
     services = cast(ApiServices, app.state.services)
     services.evidence_service.create_source_failure(
         area_id=area_id,
@@ -498,14 +515,52 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
     assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 5
 
 
+def test_api_evidence_lists_only_authenticated_workspace_area_records() -> None:
+    app = create_app()
+    client = TestClient(app)
+    headers = auth_headers()
+    other_headers = auth_headers()
+    source_response = client.post(
+        "/sources",
+        json={
+            "name": "Fixture evidence source",
+            "organization": "FEMA",
+            "domain": "flood",
+            "license_status": "approved",
+            "commercial_use_status": "approved",
+            "review_status": "approved",
+        },
+    )
+    area = create_fixture_area(client, headers)
+    source_id = UUID(source_response.json()["source_id"])
+    area_id = UUID(str(area["area_id"]))
+    services = cast(ApiServices, app.state.services)
+    services.evidence_service.create_source_failure(
+        area_id=area_id,
+        source_id=source_id,
+        method_code="fixture_flood_overlay",
+        evidence_code="FLOOD_SOURCE_FAILURE",
+        domain="flood",
+        caveat="FEMA fixture endpoint returned 503.",
+    )
+
+    response = client.get(f"/evidence?area_id={area_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert [record["area_id"] for record in response.json()] == [str(area_id)]
+    assert client.get(f"/evidence?area_id={area_id}", headers=other_headers).json() == []
+
+
 def test_api_scaffold_returns_422_for_bad_input() -> None:
     client = TestClient(create_app())
+    headers = auth_headers()
 
     assert client.post("/sources", json={"name": "Missing domain"}).status_code == 422
     assert (
         client.post(
             "/areas",
             json={"geom_geojson": load_geometry("wrong_type.geojson")},
+            headers=headers,
         ).status_code
         == 422
     )
@@ -518,4 +573,4 @@ def test_api_scaffold_returns_422_for_bad_input() -> None:
         ).status_code
         == 422
     )
-    assert client.get("/evidence").status_code == 422
+    assert client.get("/evidence", headers=headers).status_code == 422

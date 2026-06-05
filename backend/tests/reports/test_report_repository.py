@@ -66,10 +66,18 @@ def register_source(source_service: SourceService) -> SourceContract:
     )
 
 
-def register_area(area_service: AreaService, area_id: UUID) -> AreaContract:
+def register_area(
+    area_service: AreaService,
+    area_id: UUID,
+    *,
+    workspace_id: UUID | None = None,
+    created_by: UUID | None = None,
+) -> AreaContract:
     return area_service.create(
         AreaContract(
             area_id=area_id,
+            workspace_id=workspace_id,
+            created_by=created_by,
             label="fixture polygon",
             geom_geojson=load_geometry("valid_polygon.geojson"),
             geom_source="report repository fixture",
@@ -98,20 +106,24 @@ def _seed_area_row(session: Session, area: AreaContract) -> None:
             """
             INSERT INTO core.areas (
                 area_id,
+                workspace_id,
                 area_type,
                 label,
                 geom,
                 geom_validated,
                 geom_source,
+                created_by,
                 metadata
             )
             VALUES (
                 :area_id,
+                :workspace_id,
                 'polygon',
                 :label,
                 ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geom_geojson), 4326)),
                 :geom_validated,
                 :geom_source,
+                :created_by,
                 '{}'::jsonb
             )
             """
@@ -122,13 +134,18 @@ def _seed_area_row(session: Session, area: AreaContract) -> None:
             "geom_geojson": json.dumps(area.geom_geojson),
             "geom_validated": area.geom_validated,
             "geom_source": area.geom_source,
+            "workspace_id": area.workspace_id,
+            "created_by": area.created_by,
         },
     )
 
 
-def _seed_workspace_and_user(session: Session) -> tuple[UUID, UUID]:
-    workspace_id = uuid4()
-    user_id = uuid4()
+def _seed_workspace_and_user(
+    session: Session,
+    *,
+    workspace_id: UUID,
+    user_id: UUID,
+) -> None:
     session.execute(
         text(
             """
@@ -151,8 +168,6 @@ def _seed_workspace_and_user(session: Session) -> tuple[UUID, UUID]:
             "email": f"{user_id}@example.test",
         },
     )
-    return workspace_id, user_id
-
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_report_run_repository_persists_and_round_trips(
@@ -166,9 +181,16 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     evidence_service = EvidenceService(evidence_repo, source_service, area_service)
     claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
     report_store = tmp_path / "object-store"
+    workspace_id = uuid4()
+    user_id = uuid4()
 
     source = register_source(source_service)
-    area = register_area(area_service, area_id)
+    area = register_area(
+        area_service,
+        area_id,
+        workspace_id=workspace_id,
+        created_by=user_id,
+    )
     evidence_service.create_observation(flood_evidence(area, source))
     evidence_service.create_source_failure(
         area_id=area.area_id,
@@ -179,8 +201,12 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     )
 
     with Session(engine) as session:
+        _seed_workspace_and_user(
+            session,
+            workspace_id=workspace_id,
+            user_id=user_id,
+        )
         _seed_area_row(session, area)
-        workspace_id, user_id = _seed_workspace_and_user(session)
         repo = SqlAlchemyReportRunRepository(session, report_store)
         report_service = ReportRunService(
             source_service=source_service,

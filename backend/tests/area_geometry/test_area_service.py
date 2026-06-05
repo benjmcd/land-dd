@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import cast
+from uuid import uuid4
 
 import pytest
 
@@ -44,6 +45,25 @@ def test_area_service_returns_none_for_missing_area() -> None:
 
     assert service.get(area.area_id) is None
     assert service.area_is_registered(area.area_id) is False
+
+
+def test_area_service_filters_by_workspace_when_requested() -> None:
+    service = AreaService(InMemoryAreaRepository())
+    workspace_id = uuid4()
+    other_workspace_id = uuid4()
+    area = AreaContract(
+        workspace_id=workspace_id,
+        geom_geojson=load_geometry("valid_polygon.geojson"),
+    )
+
+    created = service.create(area)
+
+    assert service.get(area.area_id, workspace_id=workspace_id) == created
+    assert service.get(area.area_id, workspace_id=other_workspace_id) is None
+    assert service.list_all(workspace_id=workspace_id) == [created]
+    assert service.list_all(workspace_id=other_workspace_id) == []
+    assert service.area_is_registered(area.area_id, workspace_id=workspace_id) is True
+    assert service.area_is_registered(area.area_id, workspace_id=other_workspace_id) is False
 
 
 def test_area_service_rejects_invalid_geometry() -> None:

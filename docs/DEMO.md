@@ -39,7 +39,8 @@ python scripts\run_report_worker.py --workspace-id 11111111-1111-4111-8111-11111
 ```
 
 When the API runs with `REPORT_AUTH_MODE=signed_token`, include the gateway- or
-operator-issued token with `--identity-token`.
+operator-issued token with `--identity-token` for both the demo script and
+bounded report worker.
 
 For local operator testing, mint a short-lived token from
 `REPORT_IDENTITY_TOKEN_SECRET`:
@@ -47,6 +48,12 @@ For local operator testing, mint a short-lived token from
 ```powershell
 $env:REPORT_IDENTITY_TOKEN_SECRET="replace-with-at-least-32-characters"
 python scripts\mint_report_token.py --workspace-id 11111111-1111-4111-8111-111111111111 --user-id 22222222-2222-4222-8222-222222222222 --expires-minutes 60
+```
+
+Then pass the printed token to the demo when using signed-token mode:
+
+```powershell
+python scripts\demo_mvp.py --identity-token <printed-token>
 ```
 
 ## Postgres-Backed Demo
@@ -88,7 +95,7 @@ scheduler or daemon.
 ## What The Demo Does
 
 1. Checks `/health`.
-2. Creates the packaged fixture source and area.
+2. Creates the packaged fixture source and an authenticated workspace-bound area.
 3. Runs static flood, zoning, and access connector fixtures.
 4. Creates a `homestead_feasibility` report run using the demo
    `X-Workspace-Id` and `X-User-Id` identity headers.

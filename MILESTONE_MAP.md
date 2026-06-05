@@ -28,7 +28,7 @@ blocked by product/data/legal decisions.
 | 6 | Rule and claim engine | Fixture-ready | `docs/adr/lane-c-rules.md`, `config/ruleset_homestead_mvp.yaml`, `schemas/claim_schema.json` | Rulepack is not a production jurisdictional rulepack. |
 | 7 | Report run persistence | Fixture-ready | `docs/adr/lane-d-0001-report-persistence.md`, `backend/app/reports/` | Machine JSON, review lifecycle, and approved Markdown dossier delivery exist; broader report product surfaces are later. |
 | 8 | Fixture connector runtime | Fixture-ready | `docs/adr/lane-d-0002-connector-entry-ownership.md`, `backend/app/connectors/` | Static access, flood, and zoning fixtures only. |
-| 9 | Public API contract | Contract-ready | `api/openapi_stub.yaml`, `backend/app/api/`, `scripts/export_openapi.py` | Runtime OpenAPI authority, path/method drift guard, report review endpoints, trusted-header and signed-token report authorization, workspace metadata, scoped idempotency, queued report jobs, explicit worker execution, and bounded operator worker script exist; needs any external IdP/session integration and automatic scheduling decision. |
+| 9 | Public API contract | Contract-ready | `api/openapi_stub.yaml`, `backend/app/api/`, `scripts/export_openapi.py` | Runtime OpenAPI authority, path/method drift guard, area/evidence/report workspace scoping, report review endpoints, trusted-header and signed-token request authorization, workspace metadata, scoped idempotency, queued report jobs, explicit worker execution, and bounded operator worker script exist; needs connector/source API scoping, any null-owned area backfill decision, any external IdP/session integration, and automatic scheduling decision. |
 | 10 | MVP geography and live-source path | Blocked | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `state/OPEN_QUESTIONS.md` | Federal DS-002 source review is complete; selected geography and local source rows remain unresolved. |
 | 11 | User-facing dossier/dashboard | Later | `templates/report_template_rural_land_dossier.md` | Approved Markdown delivery exists; PDF, dashboard, and operator UI should wait for API and source gates. |
 
@@ -39,7 +39,8 @@ Before live-source or user-facing implementation, resolve Level 9 and Level 10:
 1. Select the MVP state and target counties.
 2. Record source license/review decisions for the first live data slice; DS-002
    is reviewed for the federal flood path.
-3. Decide any external IdP/session integration and automatic report-job
+3. Decide connector/source API workspace authority, any null-owned area backfill
+   need, any external IdP/session integration, and automatic report-job
    scheduling, and keep source-failure semantics visible where still missing.
 4. Choose the first implementation slice from `docs/IMPLEMENTATION_READINESS.md`.
 

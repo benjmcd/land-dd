@@ -25,14 +25,28 @@ class AreaService:
             stored_area = area.model_copy(update={"geom_validated": False})
         return self._repo.add(stored_area)
 
-    def get(self, area_id: UUID) -> AreaContract | None:
-        return self._repo.get(area_id)
+    def get(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> AreaContract | None:
+        return self._repo.get(area_id, workspace_id=workspace_id)
 
-    def list_all(self) -> list[AreaContract]:
-        return self._repo.list_all()
+    def list_all(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> list[AreaContract]:
+        return self._repo.list_all(workspace_id=workspace_id)
 
-    def area_is_registered(self, area_id: UUID) -> bool:
-        return self._repo.exists(area_id)
+    def area_is_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
+        return self._repo.exists(area_id, workspace_id=workspace_id)
 
 
 __all__ = ["AreaService"]

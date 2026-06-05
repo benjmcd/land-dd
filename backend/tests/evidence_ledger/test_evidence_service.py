@@ -27,10 +27,23 @@ class StubSourceChecker:
 
 
 class StubAreaChecker:
-    def __init__(self, registered: set[UUID]) -> None:
+    def __init__(
+        self,
+        registered: set[UUID],
+        *,
+        workspace_by_area: dict[UUID, UUID] | None = None,
+    ) -> None:
         self._registered = registered
+        self._workspace_by_area = workspace_by_area or {}
 
-    def area_is_registered(self, area_id: UUID) -> bool:
+    def area_is_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
+        if workspace_id is not None:
+            return self._workspace_by_area.get(area_id) == workspace_id
         return area_id in self._registered
 
 
@@ -115,6 +128,32 @@ def test_create_observation_rejects_unknown_area() -> None:
 
     with pytest.raises(ValueError, match="Area .* is not registered"):
         service.create_observation(make_observation(area_id, source_id))
+
+
+def test_create_observation_rejects_area_outside_workspace() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    workspace_id = uuid4()
+    service = EvidenceService(
+        InMemoryEvidenceRepository(),
+        StubSourceChecker({source_id}),
+        StubAreaChecker(
+            {area_id},
+            workspace_by_area={area_id: workspace_id},
+        ),
+    )
+
+    created = service.create_observation(
+        make_observation(area_id, source_id),
+        workspace_id=workspace_id,
+    )
+
+    assert created.area_id == area_id
+    with pytest.raises(ValueError, match="Area .* is not registered"):
+        service.create_observation(
+            make_observation(area_id, source_id),
+            workspace_id=uuid4(),
+        )
 
 
 def test_create_observation_rejects_source_failure_type() -> None:

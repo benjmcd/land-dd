@@ -34,11 +34,13 @@ Unknown license means blocked for live/commercial use. Record cache/export/AI-us
 
 Default agent network access is off. Enable only with approval and task-specific justification.
 
-## Report API Identity Boundary
+## Request Identity Boundary
 
-- Report API routes support two explicit identity modes:
+- Area, evidence, and report API routes support two explicit identity modes:
   - `REPORT_AUTH_MODE=trusted_headers`: local/dev or trusted-gateway mode. The
-    backend requires `X-Workspace-Id` and `X-User-Id` headers and rejects report
+    backend requires `X-Workspace-Id` and `X-User-Id` headers. Area creation
+    binds stored owner fields to those headers, evidence reads are limited to
+    areas in the authenticated workspace, and report routes reject
     body/query/reviewer mismatches.
   - `REPORT_AUTH_MODE=signed_token`: beta deployment mode. The backend requires
     an `Authorization: Bearer ...` report identity token signed with
@@ -48,6 +50,8 @@ Default agent network access is off. Enable only with approval and task-specific
 - In signed-token mode, optional `X-Workspace-Id` and `X-User-Id` headers may be
   supplied by a gateway/operator only when they match the bearer token claims.
   Mismatches fail closed.
+- Report creation and report-job submission also verify that the requested
+  `area_id` belongs to the authenticated workspace.
 - Operators can mint short-lived local/beta tokens with
   `scripts/mint_report_token.py`; do not expose that script as a public token
   issuance API.

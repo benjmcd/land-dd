@@ -35,6 +35,11 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 8. Beta report identity boundary: report routes can run with
    `REPORT_AUTH_MODE=signed_token`, where a signed bearer token supplies
    workspace/user authority and mismatched identity headers fail closed.
+9. Area/evidence workspace boundary: area creation/listing and evidence reads
+   require request identity. Areas are bound to authenticated workspace/user
+   claims, evidence reads are filtered through area ownership, and report
+   creation/job submission rejects area IDs outside the authenticated workspace
+   at both the API route and report-service boundary.
 
 ## High
 
@@ -47,6 +52,11 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 4. What cost metrics need to be measured during the first real source pass?
 5. Should a public beta use an external IdP/session issuer, or is the signed
    report identity token boundary sufficient behind a trusted product gateway?
+6. What workspace payload, reviewer identity, and source-authority contract
+   should connector runs, connector review queue items, and future
+   source-management routes use?
+7. Do any pre-existing or direct-service null-owned area rows need a one-time
+   ownership backfill before beta data is preserved behind authenticated APIs?
 
 ## Medium
 

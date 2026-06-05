@@ -40,6 +40,13 @@
   become the request authority.
 - `scripts/mint_report_token.py` can mint short-lived operator tokens for
   signed-token report API mode from `REPORT_IDENTITY_TOKEN_SECRET`.
+- Area API creation/listing now uses the same request identity boundary: created
+  areas are bound to the authenticated workspace/user, and area lists are
+  workspace-filtered.
+- Evidence API reads require request identity and hide records unless the
+  requested area belongs to the authenticated workspace.
+- Report creation and report-job submission reject area IDs outside the
+  authenticated workspace at both the API route and report-service boundary.
 - `GET /report-runs` list endpoint is wired with area_id, intent_code, limit,
   and offset filters for both in-memory and Postgres backends.
 - Source-failure and unsupported-category unknowns are surfaced rather than
@@ -66,7 +73,11 @@
 - Broader dossier product surfaces such as PDF, web pages, dashboards, or
   operator UI are not yet implemented.
 - Report generation is synchronous in the current API route.
-- Non-report resources are not yet fully workspace-scoped at the API boundary.
+- Connector review/source-management API surfaces are not yet fully
+  workspace-scoped at the API boundary.
+- Any legacy or direct-service `core.areas` rows with null workspace ownership
+  are intentionally hidden from authenticated public area/evidence/report APIs
+  unless a future migration assigns ownership.
 - The rural land dossier template is compiled into the approved Markdown
   delivery endpoint, but not yet into PDF or web dashboard output.
 

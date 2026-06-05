@@ -21,11 +21,25 @@ from app.domain.enums import AreaType, ConfidenceBand
 class AreaRepository(Protocol):
     def add(self, area: AreaContract) -> AreaContract: ...
 
-    def get(self, area_id: UUID) -> AreaContract | None: ...
+    def get(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> AreaContract | None: ...
 
-    def list_all(self) -> list[AreaContract]: ...
+    def list_all(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> list[AreaContract]: ...
 
-    def exists(self, area_id: UUID) -> bool: ...
+    def exists(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool: ...
 
 
 class InMemoryAreaRepository:
@@ -36,14 +50,36 @@ class InMemoryAreaRepository:
         self._store[area.area_id] = area
         return area
 
-    def get(self, area_id: UUID) -> AreaContract | None:
-        return self._store.get(area_id)
+    def get(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> AreaContract | None:
+        area = self._store.get(area_id)
+        if area is None:
+            return None
+        if workspace_id is not None and area.workspace_id != workspace_id:
+            return None
+        return area
 
-    def list_all(self) -> list[AreaContract]:
-        return list(self._store.values())
+    def list_all(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> list[AreaContract]:
+        areas = list(self._store.values())
+        if workspace_id is None:
+            return areas
+        return [area for area in areas if area.workspace_id == workspace_id]
 
-    def exists(self, area_id: UUID) -> bool:
-        return area_id in self._store
+    def exists(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
+        return self.get(area_id, workspace_id=workspace_id) is not None
 
 
 class SqlAlchemyAreaRepository:
@@ -59,26 +95,31 @@ class SqlAlchemyAreaRepository:
                 """
                 INSERT INTO core.areas (
                     area_id,
+                    workspace_id,
                     area_type,
                     label,
                     geom,
                     geom_validated,
                     geom_source,
                     geom_confidence,
+                    created_by,
                     metadata
                 )
                 VALUES (
                     :area_id,
+                    :workspace_id,
                     CAST(:area_type AS core.area_type),
                     :label,
                     ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geom_geojson), :geom_srid)),
                     :geom_validated,
                     :geom_source,
                     CAST(:geom_confidence AS evidence.confidence_band),
+                    :created_by,
                     CAST(:area_metadata AS jsonb)
                 )
                 RETURNING
                     area_id,
+                    workspace_id,
                     area_type::text AS area_type,
                     label,
                     ST_AsGeoJSON(geom) AS geom_geojson,
@@ -86,11 +127,13 @@ class SqlAlchemyAreaRepository:
                     geom_source,
                     geom_confidence::text AS geom_confidence,
                     geom_validated,
+                    created_by,
                     metadata AS area_metadata
                 """
             ),
             {
                 "area_id": area.area_id,
+                "workspace_id": area.workspace_id,
                 "area_type": _area_type_to_db(area.area_type),
                 "area_metadata": json.dumps(_area_metadata_for(area.area_type)),
                 "label": area.label,
@@ -99,31 +142,62 @@ class SqlAlchemyAreaRepository:
                 "geom_validated": area.geom_validated,
                 "geom_source": area.geom_source,
                 "geom_confidence": area.geom_confidence.value,
+                "created_by": area.created_by,
             },
         ).mappings().one()
         self._session.flush()
         return _row_to_area(row)
 
-    def get(self, area_id: UUID) -> AreaContract | None:
+    def get(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> AreaContract | None:
+        where_clause = "WHERE area_id = :area_id"
+        params: dict[str, object] = {"area_id": area_id}
+        if workspace_id is not None:
+            where_clause += " AND workspace_id = :workspace_id"
+            params["workspace_id"] = workspace_id
         row = self._session.execute(
-            _select_area_statement("WHERE area_id = :area_id"),
-            {"area_id": area_id},
+            _select_area_statement(where_clause),
+            params,
         ).mappings().one_or_none()
         if row is None:
             return None
         return _row_to_area(row)
 
-    def list_all(self) -> list[AreaContract]:
+    def list_all(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> list[AreaContract]:
+        suffix = "ORDER BY created_at, area_id"
+        params: dict[str, object] = {}
+        if workspace_id is not None:
+            suffix = "WHERE workspace_id = :workspace_id ORDER BY created_at, area_id"
+            params["workspace_id"] = workspace_id
         rows = self._session.execute(
-            _select_area_statement("ORDER BY created_at, area_id")
+            _select_area_statement(suffix),
+            params,
         ).mappings().all()
         return [_row_to_area(row) for row in rows]
 
-    def exists(self, area_id: UUID) -> bool:
+    def exists(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
+        where_clause = "WHERE area_id = :area_id"
+        params: dict[str, object] = {"area_id": area_id}
+        if workspace_id is not None:
+            where_clause += " AND workspace_id = :workspace_id"
+            params["workspace_id"] = workspace_id
         return (
             self._session.execute(
-                text("SELECT 1 FROM core.areas WHERE area_id = :area_id LIMIT 1"),
-                {"area_id": area_id},
+                text(f"SELECT 1 FROM core.areas {where_clause} LIMIT 1"),
+                params,
             ).first()
             is not None
         )
@@ -257,6 +331,7 @@ class SqlAlchemyAreaRepository:
                     AND EXISTS (SELECT 1 FROM inserted_version)
                 RETURNING
                     area_id,
+                    workspace_id,
                     area_type::text AS area_type,
                     label,
                     ST_AsGeoJSON(geom) AS geom_geojson,
@@ -264,6 +339,7 @@ class SqlAlchemyAreaRepository:
                     geom_source,
                     geom_confidence::text AS geom_confidence,
                     geom_validated,
+                    created_by,
                     metadata AS area_metadata
                 """
             ),
@@ -308,6 +384,7 @@ def _select_area_statement(suffix: str) -> TextClause:
         f"""
         SELECT
             area_id,
+            workspace_id,
             area_type::text AS area_type,
             label,
             ST_AsGeoJSON(geom) AS geom_geojson,
@@ -315,6 +392,7 @@ def _select_area_statement(suffix: str) -> TextClause:
             geom_source,
             geom_confidence::text AS geom_confidence,
             geom_validated,
+            created_by,
             metadata AS area_metadata,
             created_at
         FROM core.areas
@@ -387,6 +465,7 @@ def _row_to_area(row: Any) -> AreaContract:
 
     return AreaContract(
         area_id=row["area_id"],
+        workspace_id=row["workspace_id"],
         area_type=_db_area_type_to_domain(
             row["area_type"],
             _json_object(row["area_metadata"], "area metadata"),
@@ -397,6 +476,7 @@ def _row_to_area(row: Any) -> AreaContract:
         geom_source=row["geom_source"],
         geom_confidence=ConfidenceBand(row["geom_confidence"]),
         geom_validated=row["geom_validated"],
+        created_by=row["created_by"],
     )
 
 

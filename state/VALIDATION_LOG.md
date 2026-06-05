@@ -1,5 +1,43 @@
 # Validation Log
 
+## 2026-06-05 Area/Evidence Workspace Boundary Pass
+
+- `AreaContract`: added optional `workspace_id` and `created_by` fields to carry
+  the existing `core.areas` ownership columns through the domain/API boundary.
+- `AreaService` and area repositories now support optional workspace-filtered
+  `get`, `list_all`, and `exists` checks while preserving unscoped internal
+  service validation where appropriate.
+- `GET/POST /areas`: now require request identity. Created areas are bound to
+  the authenticated workspace/user, mismatched body owner fields fail closed, and
+  area lists are workspace-filtered.
+- `GET /evidence`: now requires request identity and returns records only when
+  the requested area belongs to the authenticated workspace.
+- `POST /report-runs` and `POST /report-runs/jobs`: now reject area IDs outside
+  the authenticated workspace before creating report work at both the API route
+  and report-service boundary.
+- `EvidenceService`: evidence writes and supersession now accept an optional
+  workspace scope for callers that have workspace authority.
+- Null-owned area rows intentionally remain hidden from authenticated public
+  area/evidence/report APIs; any required preservation of legacy rows is now
+  tracked as a backfill decision.
+- `scripts/demo_mvp.py`: now sends request identity when seeding the demo area
+  and accepts `--identity-token` for signed-token mode.
+- `python -m pytest .\tests\api\test_api_scaffold.py
+  .\tests\api\test_report_auth.py .\tests\api\test_report_runs_db.py
+  .\tests\api\test_openapi_contract.py
+  .\tests\area_geometry\test_area_service.py
+  .\tests\area_geometry\test_sqlalchemy_area_repo.py
+  .\tests\reports\test_adapters.py -q` from `backend/`: passed with DB smoke
+  skips.
+- `python -m pytest .\tests\api\test_ingest_report_integration.py -q` from
+  `backend/`: passed after aligning the direct service fixture area with the
+  authenticated workspace.
+- `python -m ruff check` on affected backend, script, and test files: passed.
+- `python .\scripts\render_project_status.py`: passed and printed updated state
+  documents.
+- `.\scripts\verify.ps1`: passed on Python 3.12.10; DB smoke remains locally
+  skipped unless `RUN_DB_SMOKE=1` is set after Postgres is available.
+
 ## 2026-06-05 Session Continuation Audit
 
 - `git fetch origin`: completed. Local `main` HEAD `53efb49` matches

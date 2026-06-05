@@ -25,7 +25,12 @@ class StubAreaChecker:
     def __init__(self, registered: set[UUID]) -> None:
         self._registered = registered
 
-    def area_is_registered(self, area_id: UUID) -> bool:
+    def area_is_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
         return area_id in self._registered
 
 

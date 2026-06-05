@@ -76,7 +76,10 @@ class ReportRunService:
         idempotency_key: str | None = None,
     ) -> ReportRunContract:
         _require_non_empty(intent_code, "intent_code")
-        if not self._area_service.area_is_registered(area_id):
+        if not self._area_service.area_is_registered(
+            area_id,
+            workspace_id=workspace_id,
+        ):
             raise ValueError(f"Area '{area_id}' is not registered")
         _require_workspace_for_requester(workspace_id, requested_by)
         normalized_idempotency_key = _optional_non_empty(
@@ -94,6 +97,7 @@ class ReportRunService:
         evidence = self._with_not_evaluated_source_failures(
             area_id,
             self._evidence_service.list_by_area(area_id),
+            workspace_id=workspace_id,
         )
         stored_claims = [
             self._store_claim_if_needed(claim) for claim in self._rule_engine.evaluate(evidence)
@@ -197,7 +201,10 @@ class ReportRunService:
         )
         if normalized_idempotency_key is None:
             raise ValueError("idempotency_key is required")
-        if not self._area_service.area_is_registered(area_id):
+        if not self._area_service.area_is_registered(
+            area_id,
+            workspace_id=workspace_id,
+        ):
             raise ValueError(f"Area '{area_id}' is not registered")
         _require_workspace_for_requester(workspace_id, requested_by)
         existing = self._report_job_repo.get_by_idempotency_key(
@@ -311,6 +318,8 @@ class ReportRunService:
         self,
         area_id: UUID,
         evidence: list[EvidenceContract],
+        *,
+        workspace_id: UUID | None = None,
     ) -> list[EvidenceContract]:
         missing_domains = [
             domain
@@ -336,6 +345,7 @@ class ReportRunService:
                     caveat=failure.caveat or "",
                     evidence_code=failure.evidence_code,
                     domain=failure.domain,
+                    workspace_id=workspace_id,
                     observation=failure.observation,
                     observed_value=_not_evaluated_failure_payload(failure),
                 )

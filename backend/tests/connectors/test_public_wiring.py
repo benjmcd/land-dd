@@ -142,7 +142,12 @@ class PublicWiringSourceChecker:
 
 
 class PublicWiringAreaChecker:
-    def area_is_registered(self, area_id: UUID) -> bool:
+    def area_is_registered(
+        self,
+        area_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> bool:
         return True
 
 

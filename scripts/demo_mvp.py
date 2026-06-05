@@ -32,18 +32,21 @@ def main() -> None:
     parser.add_argument("--reviewer-id", default="demo-reviewer")
     parser.add_argument("--workspace-id", default=DEMO_WORKSPACE_ID)
     parser.add_argument("--user-id", default=DEMO_USER_ID)
+    parser.add_argument("--identity-token")
     args = parser.parse_args()
 
     client = ApiClient(args.base_url)
-    report_headers = {
+    identity_headers = {
         "X-Workspace-Id": args.workspace_id,
         "X-User-Id": args.user_id,
     }
+    if args.identity_token is not None:
+        identity_headers["Authorization"] = f"Bearer {args.identity_token}"
     health = client.request("GET", "/health")
     print(f"health: {health['status']} ({health['environment']})")
 
     seed_fixture_source(client)
-    seed_fixture_area(client)
+    seed_fixture_area(client, identity_headers)
 
     connector_results = [
         run_connector(client, "fixture_flood_static", "flood_success"),
@@ -61,7 +64,7 @@ def main() -> None:
             "area_id": FIXTURE_AREA_ID,
             "intent_code": "homestead_feasibility",
         },
-        headers=report_headers,
+        headers=identity_headers,
     )
     print(
         "report: "
@@ -90,7 +93,7 @@ def main() -> None:
     report_runs = client.request(
         "GET",
         f"/report-runs?area_id={FIXTURE_AREA_ID}&intent_code=homestead_feasibility",
-        headers=report_headers,
+        headers=identity_headers,
     )
     print(f"listed report runs: {len(report_runs)}")
 
@@ -160,7 +163,7 @@ def seed_fixture_source(client: ApiClient) -> None:
         print("source: already registered")
 
 
-def seed_fixture_area(client: ApiClient) -> None:
+def seed_fixture_area(client: ApiClient, headers: dict[str, str]) -> None:
     payload: dict[str, object] = {
         "area_id": FIXTURE_AREA_ID,
         "label": "Fixture MVP demo area",
@@ -168,7 +171,7 @@ def seed_fixture_area(client: ApiClient) -> None:
         "geom_source": "demo fixture",
     }
     try:
-        client.request("POST", "/areas", payload)
+        client.request("POST", "/areas", payload, headers=headers)
         print("area: created")
     except RuntimeError as exc:
         if "already registered" not in str(exc):

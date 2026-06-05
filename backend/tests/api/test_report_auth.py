@@ -26,7 +26,7 @@ def load_geometry(name: str) -> dict[str, object]:
     return cast(dict[str, object], data)
 
 
-def create_area(client: TestClient) -> str:
+def create_area(client: TestClient, headers: dict[str, str]) -> str:
     response = client.post(
         "/areas",
         json={
@@ -34,6 +34,7 @@ def create_area(client: TestClient) -> str:
             "geom_geojson": load_geometry("valid_polygon.geojson"),
             "geom_source": "api fixture",
         },
+        headers=headers,
     )
     assert response.status_code == 201
     return str(response.json()["area_id"])
@@ -64,7 +65,7 @@ def test_signed_report_identity_token_binds_report_scope() -> None:
     client = signed_token_client()
     workspace_id = str(uuid4())
     user_id = str(uuid4())
-    area_id = create_area(client)
+    area_id = create_area(client, bearer_headers(workspace_id, user_id))
 
     response = client.post(
         "/report-runs",
@@ -89,7 +90,7 @@ def test_signed_report_identity_token_rejects_missing_invalid_and_mismatch() -> 
     client = signed_token_client()
     workspace_id = str(uuid4())
     user_id = str(uuid4())
-    area_id = create_area(client)
+    area_id = create_area(client, bearer_headers(workspace_id, user_id))
     payload = {"area_id": area_id, "intent_code": "homestead_feasibility"}
     headers = bearer_headers(workspace_id, user_id)
 
@@ -129,11 +130,10 @@ def test_signed_report_identity_token_fails_closed_without_valid_secret(
     secret: str | None,
 ) -> None:
     client = signed_token_client(secret=secret)
-    area_id = create_area(client)
 
     response = client.post(
         "/report-runs",
-        json={"area_id": area_id, "intent_code": "homestead_feasibility"},
+        json={"area_id": str(uuid4()), "intent_code": "homestead_feasibility"},
         headers={"Authorization": "Bearer token"},
     )
 

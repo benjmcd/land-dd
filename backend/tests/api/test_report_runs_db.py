@@ -51,6 +51,7 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
             "geom_geojson": load_geometry("valid_polygon.geojson"),
             "geom_source": "db api fixture",
         },
+        headers=headers,
     )
     assert area_response.status_code == 201
     area_id = area_response.json()["area_id"]
@@ -58,7 +59,7 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
     sentinel_preexisting = _sentinel_source_exists()
 
     try:
-        list_response = client.get("/areas")
+        list_response = client.get("/areas", headers=headers)
         assert list_response.status_code == 200
         assert area_id in {area["area_id"] for area in list_response.json()}
 

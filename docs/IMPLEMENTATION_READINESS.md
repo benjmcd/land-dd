@@ -35,6 +35,15 @@ start without re-litigating basic authority.
   mismatched identity headers fail closed.
 - `scripts/mint_report_token.py` can mint short-lived operator tokens for
   `REPORT_AUTH_MODE=signed_token` from `REPORT_IDENTITY_TOKEN_SECRET`.
+- Area API routes now require the same request identity boundary, bind
+  `core.areas.workspace_id` and `created_by` on creation, and list only areas in
+  the authenticated workspace.
+- Evidence API reads require request identity and return records only when the
+  requested `area_id` belongs to the authenticated workspace.
+- Report creation and report-job submission reject area IDs outside the
+  authenticated workspace at both the API route and report-service boundary.
+  Evidence writes also accept an optional workspace scope for callers that have
+  workspace authority.
 
 ## Do Not Start Impact-Heavy Work Until
 
@@ -43,6 +52,8 @@ start without re-litigating basic authority.
 | MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
 | Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
 | External identity integration | Decide whether beta needs an external IdP/session issuer beyond signed report identity tokens. | The backend now has a signed beta token boundary, but a public multi-user deployment may still need a product IdP/session layer. |
+| Connector/source API scoping | Decide workspace payload and reviewer authority for connector runs, connector review queue items, and any future source-management API. | Area/evidence/report routes are now workspace-scoped; connector queue and source surfaces still need a deliberate tenancy contract. |
+| Legacy/null area ownership | Decide whether any pre-existing `core.areas.workspace_id IS NULL` rows need a one-time backfill. | Authenticated public APIs intentionally fail closed for null-owned areas rather than exposing them across workspaces. |
 | Report job scheduling | Decide whether bounded operator/API execution is enough or an autonomous scheduler/daemon is needed. | The worker endpoint and bounded operator script exist, but automatic processing is not yet part of the runtime. |
 | Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
 | Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
@@ -66,8 +77,12 @@ start without re-litigating basic authority.
    - Use generated FastAPI OpenAPI as runtime authority.
    - Keep `api/openapi_stub.yaml` as a curated path/method-checked companion.
    - Keep trusted-header workspace/user enforcement around report routes.
+   - Keep area/evidence reads and report creation bound to authenticated
+     workspace-owned areas.
    - Use `REPORT_AUTH_MODE=signed_token` before exposed beta deployment unless a
      stronger external IdP/session integration replaces it.
+   - Design connector/source workspace authority before exposing those routes
+     beyond fixture/operator use.
    - Use the bounded report worker script for operator-driven job execution.
    - Decide and implement automatic report-job scheduling only if beta needs it.
    - Keep explicit false/unknown/missing/source-failed response semantics visible.
