@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from importlib.resources import as_file
 from typing import Annotated
 from uuid import UUID
@@ -11,13 +12,16 @@ from pydantic import BaseModel
 from app.api.dependencies import ApiServices, get_services
 from app.connectors import (
     ConnectorFixtureQualityProfile,
+    ConnectorReviewQueueItem,
     FixtureConnectorProtocol,
     FixtureConnectorResultProtocol,
+    StaticAccessFixtureConnector,
     StaticFloodFixtureConnector,
     build_connector_review_handoff,
     build_connector_run_review_packet,
     build_connector_run_review_status,
     build_fixture_workflow_with_public_lane_services,
+    evaluate_access_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -38,10 +42,11 @@ runs_router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
 _SUPPORTED_CONNECTOR_NAMES: frozenset[str] = frozenset(
-    {"fixture_flood_static", "fixture_zoning_static"}
+    {"fixture_access_static", "fixture_flood_static", "fixture_zoning_static"}
 )
 
 _CONNECTOR_INSTANCES: dict[str, FixtureConnectorProtocol] = {
+    "fixture_access_static": StaticAccessFixtureConnector(),
     "fixture_flood_static": StaticFloodFixtureConnector(),
     "fixture_zoning_static": StaticZoningFixtureConnector(),
 }
@@ -50,6 +55,7 @@ _QUALITY_EVALUATORS: dict[
     str,
     Callable[[FixtureConnectorResultProtocol], ConnectorFixtureQualityProfile],
 ] = {
+    "fixture_access_static": evaluate_access_fixture_quality,
     "fixture_flood_static": evaluate_flood_fixture_quality,
     "fixture_zoning_static": evaluate_zoning_fixture_quality,
 }
@@ -73,26 +79,7 @@ def list_connector_review_queue(
         limit=limit,
         offset=offset,
     )
-    return [
-        ConnectorReviewQueueItemContract(
-            job_id=item.job_id,
-            ingest_run_id=item.ingest_run_id,
-            job_type=item.job_type,
-            status=item.status,
-            priority=item.priority,
-            payload=dict(item.payload),
-            created_at=item.created_at,
-            not_before=item.not_before,
-            attempts=item.attempts,
-            max_attempts=item.max_attempts,
-            locked_by=item.locked_by,
-            locked_at=item.locked_at,
-            started_at=item.started_at,
-            finished_at=item.finished_at,
-            last_error=item.last_error,
-        )
-        for item in items
-    ]
+    return [_queue_item_contract(item) for item in items]
 
 
 @router.get("/{ingest_run_id}", response_model=ConnectorReviewQueueItemContract)
@@ -100,12 +87,13 @@ def get_connector_review_queue_item(
     ingest_run_id: UUID,
     services: ServicesDep,
 ) -> ConnectorReviewQueueItemContract:
-    item = services.connector_review_queue_repo.get_by_ingest_run_id(ingest_run_id)
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="connector review queue item not found",
-        )
+    item = _get_queue_item_or_404(ingest_run_id, services)
+    return _queue_item_contract(item)
+
+
+def _queue_item_contract(
+    item: ConnectorReviewQueueItem,
+) -> ConnectorReviewQueueItemContract:
     return ConnectorReviewQueueItemContract(
         job_id=item.job_id,
         ingest_run_id=item.ingest_run_id,
@@ -123,6 +111,111 @@ def get_connector_review_queue_item(
         finished_at=item.finished_at,
         last_error=item.last_error,
     )
+
+
+def _get_queue_item_or_404(
+    ingest_run_id: UUID,
+    services: ApiServices,
+) -> ConnectorReviewQueueItem:
+    item = services.connector_review_queue_repo.get_by_ingest_run_id(ingest_run_id)
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector review queue item not found",
+        )
+    return item
+
+
+class ConnectorReviewActionRequest(BaseModel):
+    reviewer_id: str
+    reason: str | None = None
+    not_before: datetime | None = None
+
+
+@router.post("/{ingest_run_id}/approve", response_model=ConnectorReviewQueueItemContract)
+def approve_connector_review_queue_item(
+    ingest_run_id: UUID,
+    request: ConnectorReviewActionRequest,
+    services: ServicesDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_queue_item_or_404(ingest_run_id, services)
+    return _run_queue_action(
+        lambda: services.connector_review_queue_repo.approve_review(
+            item.job_id,
+            reviewer_id=request.reviewer_id,
+            reason=request.reason,
+        )
+    )
+
+
+@router.post("/{ingest_run_id}/reject", response_model=ConnectorReviewQueueItemContract)
+def reject_connector_review_queue_item(
+    ingest_run_id: UUID,
+    request: ConnectorReviewActionRequest,
+    services: ServicesDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_queue_item_or_404(ingest_run_id, services)
+    return _run_queue_action(
+        lambda: services.connector_review_queue_repo.reject_review(
+            item.job_id,
+            reviewer_id=request.reviewer_id,
+            reason=_required_action_reason(request.reason),
+        )
+    )
+
+
+@router.post("/{ingest_run_id}/requeue", response_model=ConnectorReviewQueueItemContract)
+def requeue_connector_review_queue_item(
+    ingest_run_id: UUID,
+    request: ConnectorReviewActionRequest,
+    services: ServicesDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_queue_item_or_404(ingest_run_id, services)
+    return _run_queue_action(
+        lambda: services.connector_review_queue_repo.requeue_failed(
+            item.job_id,
+            reason=_required_action_reason(request.reason),
+            not_before=request.not_before,
+            reviewer_id=request.reviewer_id,
+        )
+    )
+
+
+@router.post("/{ingest_run_id}/cancel", response_model=ConnectorReviewQueueItemContract)
+def cancel_connector_review_queue_item(
+    ingest_run_id: UUID,
+    request: ConnectorReviewActionRequest,
+    services: ServicesDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_queue_item_or_404(ingest_run_id, services)
+    return _run_queue_action(
+        lambda: services.connector_review_queue_repo.cancel(
+            item.job_id,
+            reason=_required_action_reason(request.reason),
+            reviewer_id=request.reviewer_id,
+        )
+    )
+
+
+def _run_queue_action(
+    action: Callable[[], ConnectorReviewQueueItem],
+) -> ConnectorReviewQueueItemContract:
+    try:
+        return _queue_item_contract(action())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+
+def _required_action_reason(reason: str | None) -> str:
+    if reason is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="connector review queue reason is required",
+        )
+    return reason
 
 
 class ConnectorRunRequest(BaseModel):

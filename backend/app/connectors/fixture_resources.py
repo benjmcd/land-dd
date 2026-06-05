@@ -42,6 +42,9 @@ def fixture_dataset_version_contract() -> SourceDatasetVersionContract:
         storage_uri=f"package://{_FIXTURE_PACKAGE}",
         manifest={
             "fixtures": (
+                "access_failure",
+                "access_no_road",
+                "access_road",
                 "flood_success",
                 "flood_failure",
                 "zoning_allowed",
@@ -49,6 +52,7 @@ def fixture_dataset_version_contract() -> SourceDatasetVersionContract:
                 "zoning_prohibited",
             ),
             "connector_names": (
+                "fixture_access_static",
                 "fixture_flood_static",
                 "fixture_zoning_static",
             ),

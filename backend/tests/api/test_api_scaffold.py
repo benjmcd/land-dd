@@ -124,6 +124,16 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert get_response.status_code == 200
     assert get_response.json()["report_run_id"] == report_run["report_run_id"]
 
+    list_response = client.get(
+        f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility"
+    )
+    assert list_response.status_code == 200
+    assert [run["report_run_id"] for run in list_response.json()] == [
+        report_run["report_run_id"]
+    ]
+    assert client.get(f"/report-runs?area_id={uuid4()}").json() == []
+    assert client.get("/report-runs?limit=0").status_code == 422
+
 
 def test_api_report_run_surfaces_source_failure_unknowns() -> None:
     app = create_app()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.api.dependencies import ApiServices, get_services
@@ -34,6 +34,22 @@ def create_report_run(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
+
+
+@router.get("", response_model=list[ReportRunContract])
+def list_report_runs(
+    services: ServicesDep,
+    area_id: UUID | None = None,
+    intent_code: IntentCode | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[ReportRunContract]:
+    return services.report_service.list_report_runs(
+        area_id=area_id,
+        intent_code=intent_code,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{report_run_id}", response_model=ReportRunContract)

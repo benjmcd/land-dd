@@ -157,3 +157,59 @@ def test_zoning_allowed_ingest_then_report_has_no_zoning_red_flag() -> None:
     assert len(zoning_red_flags) == 0, (
         "expected no zoning red-flag claim when use is allowed"
     )
+
+
+def test_access_no_road_ingest_then_report_produces_access_red_flag() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    ingest = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_access_static",
+            "fixture_key": "access_no_road",
+        },
+    )
+    assert ingest.status_code == 201
+
+    report = client.post(
+        "/report-runs",
+        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+    )
+    assert report.status_code == 201
+    body = report.json()
+
+    access_red_flags = [c for c in body["red_flags"] if c["domain"] == "access"]
+    assert len(access_red_flags) >= 1, (
+        "expected an access red-flag claim after no-road-adjacency evidence"
+    )
+    assert access_red_flags[0]["claim_code"] == "ACCESS_001"
+    assert access_red_flags[0]["severity"] == "critical"
+
+
+def test_access_road_ingest_then_report_has_no_access_red_flag() -> None:
+    app = create_app()
+    client = TestClient(app)
+    _seed(cast(ApiServices, app.state.services))
+
+    ingest = client.post(
+        "/connector-runs",
+        json={
+            "connector_name": "fixture_access_static",
+            "fixture_key": "access_road",
+        },
+    )
+    assert ingest.status_code == 201
+
+    report = client.post(
+        "/report-runs",
+        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+    )
+    assert report.status_code == 201
+    body = report.json()
+
+    access_red_flags = [c for c in body["red_flags"] if c["domain"] == "access"]
+    assert len(access_red_flags) == 0, (
+        "expected no access red-flag claim when road adjacency is present"
+    )
