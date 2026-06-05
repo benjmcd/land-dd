@@ -143,8 +143,8 @@
 - In-memory API demo: passed through health, fixture source/area seed, flood,
   zoning, access connector runs, report creation, connector review approval, and
   report listing.
-- GitHub Actions latest `main` run for commit `c752a3b`: passed for both `verify`
-  and `db-verify`.
+- GitHub Actions `main` run `27004780227` for commit `0745917`: passed for
+  both `verify` and `db-verify`.
 
 ## Local Caveat
 
