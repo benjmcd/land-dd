@@ -9,7 +9,7 @@ from uuid import UUID
 from app.domain.enums import EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 
-from .flood_fixture import FloodFixtureConnectorResult
+from .flood_fixture import FixtureConnectorResultProtocol
 
 
 class ConnectorEvidenceIngestionError(ValueError):
@@ -50,7 +50,7 @@ class ConnectorEvidenceIngestionAdapter:
 
     def ingest(
         self,
-        connector_result: FloodFixtureConnectorResult,
+        connector_result: FixtureConnectorResultProtocol,
     ) -> ConnectorEvidenceIngestionResult:
         return self.ingest_evidence(connector_result.evidence_inputs)
 
