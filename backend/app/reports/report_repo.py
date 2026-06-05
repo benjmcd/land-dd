@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
+from app.domain.enums import IntentCode
 from app.domain.report_contracts import ReportRunContract
 from app.reports.models import ReportRunModel
 
@@ -16,6 +17,15 @@ class ReportRunRepository(Protocol):
     def add(self, report_run: ReportRunContract) -> ReportRunContract: ...
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None: ...
+
+    def list(
+        self,
+        *,
+        area_id: UUID | None = None,
+        intent_code: IntentCode | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReportRunContract]: ...
 
 
 class InMemoryReportRunRepository:
@@ -36,6 +46,27 @@ class InMemoryReportRunRepository:
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._store.get(report_run_id)
+
+    def list(
+        self,
+        *,
+        area_id: UUID | None = None,
+        intent_code: IntentCode | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReportRunContract]:
+        reports = list(self._store.values())
+        if area_id is not None:
+            reports = [report for report in reports if report.area_id == area_id]
+        if intent_code is not None:
+            reports = [
+                report for report in reports if report.intent_code == intent_code
+            ]
+        reports.sort(
+            key=lambda report: (report.started_at, str(report.report_run_id)),
+            reverse=True,
+        )
+        return reports[offset : offset + limit]
 
 
 class SqlAlchemyReportRunRepository:
@@ -66,6 +97,38 @@ class SqlAlchemyReportRunRepository:
         return ReportRunContract.model_validate(
             json.loads(artifact_path.read_text(encoding="utf-8"))
         )
+
+    def list(
+        self,
+        *,
+        area_id: UUID | None = None,
+        intent_code: IntentCode | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReportRunContract]:
+        rows = self._session.execute(
+            sql_text(
+                """
+                SELECT report_run_id
+                FROM reports.report_runs
+                WHERE (
+                    :area_id IS NULL
+                    OR area_id = CAST(:area_id AS uuid)
+                )
+                ORDER BY started_at DESC, report_run_id DESC
+                """
+            ),
+            {"area_id": str(area_id) if area_id is not None else None},
+        ).all()
+        reports: list[ReportRunContract] = []
+        for row in rows:
+            report = self.get(UUID(str(row[0])))
+            if report is None:
+                continue
+            if intent_code is not None and report.intent_code != intent_code:
+                continue
+            reports.append(report)
+        return reports[offset : offset + limit]
 
     def _prepare_persisted_report(
         self,

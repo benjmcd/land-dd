@@ -98,6 +98,21 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def list_report_runs(
+        self,
+        *,
+        area_id: UUID | None = None,
+        intent_code: IntentCode | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReportRunContract]:
+        return self._report_repo.list(
+            area_id=area_id,
+            intent_code=intent_code,
+            limit=limit,
+            offset=offset,
+        )
+
     def _with_not_evaluated_source_failures(
         self,
         area_id: UUID,

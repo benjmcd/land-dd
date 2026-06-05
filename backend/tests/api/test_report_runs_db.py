@@ -85,6 +85,15 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
         assert get_response.status_code == 200
         assert get_response.json() == report_run
 
+        list_response = client.get(
+            f"/report-runs?area_id={area_id}&intent_code=homestead_feasibility"
+        )
+        assert list_response.status_code == 200
+        assert [run["report_run_id"] for run in list_response.json()] == [
+            str(report_run_id)
+        ]
+        assert client.get(f"/report-runs?area_id={UUID(int=0)}").json() == []
+
         with Session(engine) as session:
             row = session.execute(
                 text(
