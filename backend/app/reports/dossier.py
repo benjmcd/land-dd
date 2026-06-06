@@ -70,10 +70,9 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 6. Buildability Screen",
         "",
-        "- Slope metrics: not evaluated unless listed in evidence appendix",
-        "- Usable area proxy: unknown",
-        "- Terrain constraints: not determined",
-        f"- Required verification: {_domain_verification(report_run, 'slope')}",
+        f"- Terrain / slope screening: {_buildability_summary(report_run)}",
+        f"- Terrain constraints: {_buildability_constraint(report_run)}",
+        f"- Required verification: {_domain_verification(report_run, 'buildability')}",
         "",
         "## 7. Flood and Wetlands Screen",
         "",
@@ -347,6 +346,57 @@ def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
         if edge is True:
             return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
     return "not determined"
+
+
+def _buildability_summary(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "buildability" and not r.is_source_failure
+    ]
+    if not records:
+        return "not evaluated"
+    parts: list[str] = []
+    for record in records:
+        relief = record.observed_value.get("relief_m")
+        mean_slope = record.observed_value.get("mean_slope_pct")
+        ratio = record.observed_value.get("low_slope_area_ratio")
+        elev = record.observed_value.get("mean_elevation_m")
+        metric_val = record.observed_value.get("value")
+        metric_unit = record.observed_value.get("unit")
+        metric_code = record.observed_value.get("metric_code")
+        if relief is not None:
+            parts.append(f"terrain relief ~{float(relief):.0f}m")  # type: ignore[arg-type]
+        if mean_slope is not None:
+            parts.append(f"mean slope ~{float(mean_slope):.0f}%")  # type: ignore[arg-type]
+        if ratio is not None:
+            parts.append(f"{float(ratio):.0%} low-slope buildable area")  # type: ignore[arg-type]
+        if elev is not None:
+            parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
+        if metric_code and metric_val is not None and metric_unit:
+            parts.append(f"{metric_code}: {float(metric_val):.1f} {metric_unit}")  # type: ignore[arg-type]
+    return "; ".join(parts) if parts else "; ".join(r.observation for r in records)
+
+
+def _buildability_constraint(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "buildability" and not r.is_source_failure
+    ]
+    if not records:
+        return "not determined"
+    for record in records:
+        insufficient = record.observed_value.get("insufficient_low_slope_buildable_area")
+        if insufficient is True:
+            return "insufficient low-slope buildable area detected (screening only; confirm with survey)"  # noqa: E501
+        if insufficient is False:
+            return "no slope constraint detected in screening (confirm with survey before construction)"  # noqa: E501
+    failures = [
+        r for r in report_run.evidence
+        if r.domain == "buildability" and r.is_source_failure
+    ]
+    if failures:
+        return "terrain data unavailable — source failure recorded; manual verification required"
+    return "screening data available; interpret with caveat"
 
 
 def _unknown_rows(report_run: ReportRunContract) -> list[str]:
