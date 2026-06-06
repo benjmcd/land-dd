@@ -1,0 +1,29 @@
+schema_version: image_publication_v1
+image:
+  name: land-diligence-backend
+  dockerfile: backend/Dockerfile
+  context: .
+  local_tag_template: land-diligence-backend:{git_sha}
+  registry_image_env: REGISTRY_IMAGE
+required_gates:
+  - scripts/verify.ps1
+  - scripts/run_deployment_smoke.ps1
+  - scripts/run_container_scan_check.ps1
+  - scripts/run_release_package_check.ps1
+  - scripts/run_release_readiness_check.ps1
+required_attestations:
+  - image_digest
+  - registry_image_ref
+  - vulnerability_scan
+  - dependency_sbom
+  - provenance
+blocked_until:
+  - registry_repository_authority
+  - hosted_deployment_authority
+  - registry_image_attestation_authority
+  - signed_image_sbom_authority
+limits:
+  validate_only: true
+  pushes_registry_image: false
+  creates_hosted_deployment: false
+  signs_or_publishes_attestations: false

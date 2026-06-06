@@ -65,17 +65,9 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
             },
         )
 
-        # POST now returns 202 Accepted (async); the background task generates the report.
-        # In DB mode (use_db_services=True) the request-scoped SQLAlchemy session closes
-        # before BackgroundTasks run, so the background task cannot persist the report.
-        # Full async-DB wiring is Level 10 work; this path is xfail until then.
         assert create_response.status_code == 202
         job = create_response.json()
         report_run_id = UUID(job["report_run_id"])
-        pytest.xfail(
-            "Async report generation in DB mode requires a persistent job store "
-            "(Level 10); the request-scoped session closes before BackgroundTasks run."
-        )
 
         get_response = client.get(f"/report-runs/{report_run_id}")
         assert get_response.status_code == 200
@@ -83,6 +75,9 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
         assert report_run["artifact_metadata"]["persistence"] == "postgres+object_store"
         assert report_run["artifact_metadata"]["cost_metrics"]["evidence_count"] == 4
         assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 4
+        assert report_run["artifact_metadata"]["cost_metrics"]["estimated_total_usd_cents"] == 0
+        assert report_run["artifact_metadata"]["cost_metrics"]["paid_data_usd_cents"] == 0
+        assert report_run["artifact_metadata"]["cost_metrics"]["human_review_minutes"] == 0
         assert [record["domain"] for record in report_run["evidence"]] == list(
             NOT_EVALUATED_DOMAINS
         )
@@ -149,6 +144,10 @@ def _cleanup_db_api_report(
     engine = build_engine()
     with Session(engine) as session:
         if report_run_id is not None:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_id = :report_run_id"),
+                {"report_run_id": report_run_id},
+            )
             session.execute(
                 text("DELETE FROM reports.report_runs WHERE report_run_id = :report_run_id"),
                 {"report_run_id": report_run_id},

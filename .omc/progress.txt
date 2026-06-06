@@ -1,0 +1,49 @@
+# Ralph progress - Codex Live IPC Injection
+
+## OUTCOME: WORKING (proven end-to-end on test thread 019e932e)
+Live IPC GUI injection works and is isolated. handoff_to_codex.sh --ipc <cid> "task" injects
+straight into a live Desktop thread; file-drop stays default + fallback.
+
+## Proven this run
+- Transport (prior): \\.\pipe\codex-ipc router, uint32le(len)+JSON, initialize{clientType}->clientId.
+- US-001 scaffold + fail-closed gates verified (node --check; --send needs ack + (test thread | --allow-any-thread)).
+- US-002 negative owner-discovery probe (sentinel 00000000-0000-4000-8000-00000000c0de, verified absent):
+  router returned {resultType:error, error:no-client-found} -> external follower route VIABLE, conversation-scoped.
+- US-003 controlled write on 019e932e: router resultType:success, handledByClientId = owning renderer,
+  real turn.id, model replied "IPCINJECTMARKER7F3A9 ACK". Isolation: config sha unchanged,
+  unexpectedNonTargetChangedIds=[]. Override test: turn ran at thread xhigh, NOT requested medium ->
+  renderer DERIVES params -> external input cannot change model/reasoning (ideal).
+- US-004 productionized: --ipc mode (writes file-drop, injects pickup line, falls back). End-to-end:
+  model read for-codex.md and replied IPCPRODTEST ACK; config unchanged; error paths exit 1.
+
+## Storage note
+Turn content lives in rollout JSONL; state_5.sqlite holds thread metadata (row hash changes).
+DB byte-marker scan won't see injected text -> use JSONL marker + row-change + GUI observation.
+
+## Status: ALL 5 STORIES PASS. code-reviewer verdict APPROVE (medium/low findings fixed).
+
+## Confirmed after Claude run
+- USER GUI-VISUAL CONFIRMATION was provided: the Codex Windows app showed the session and messages
+  sent by Claude during testing. --ipc remains experimental only because it depends on undocumented
+  Desktop IPC internals and should be revalidated after Codex Desktop updates.
+- Long-term production sends may use --allow-any-thread for explicit UUID targets. The target must
+  be inspected first; no cwd/title/newest-thread heuristic is approved for writes.
+
+## Remaining hardening
+- Claude /ipc command/skill now inspects existing Codex sessions before sending, and requires a
+  concrete conversationId before injecting into any new/fresh GUI session.
+- scripts/codex_ipc_revalidate.mjs now provides a validate-only post-update gate. Current
+  runtime-read-probe mode passed with router initialize only; no prompt was sent.
+- scripts/codex_ipc_thread_locator.mjs now provides read-only candidate conversationId discovery
+  for no-UUID /ipc flows. The selected id still must be inspected before sending.
+- scripts/codex_ipc_contract_audit.mjs now emits a static requirement matrix; current run reports
+  11/11 IPC contract requirements evidenced from repo artifacts.
+- scripts/codex_ipc_write_proof.mjs now provides the future controlled-write re-proof harness:
+  dry-run/read-only by default, live mode gated by --send --ack-live-write, target inspection,
+  runtime revalidation, before/after in-memory snapshots, rollout marker polling, and isolation
+  compare. A live re-proof remains contingent on a future Desktop update/drift and explicit
+  operator approval.
+
+## Safety ledger (held all run)
+No forbidden methods. Global config byte-identical across every live op. No non-target thread changed.
+Single-connection, hard-timeout, serial. No swarm against the live router.

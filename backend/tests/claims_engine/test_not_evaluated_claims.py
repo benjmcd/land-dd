@@ -111,6 +111,43 @@ def test_not_evaluated_claims_ignore_non_failure_records() -> None:
     assert RuleEngine.from_file().evaluate([evidence]) == []
 
 
+def test_rule_engine_emits_unknown_soil_review_claim_from_ssurgo_screening() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+        domain="soil_septic",
+        observation="SSURGO mapunit intersects the query area.",
+        observed_value={
+            "intersects_soil_mapunit": True,
+            "soil_mapunit_key": "1912968",
+            "soil_component_name": "Codorus",
+        },
+        method_code="live_usda_ssurgo_soil_mapunit_query",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="SSURGO screening only.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    assert len(claims) == 1
+    claim = claims[0]
+    assert claim.claim_code == "SOIL_NOT_EVALUATED"
+    assert claim.domain == "soil_septic"
+    assert claim.severity == SeverityBand.UNKNOWN
+    assert claim.confidence == ConfidenceBand.UNKNOWN
+    assert claim.evidence_ids == [evidence.evidence_id]
+    assert claim.verification_required is True
+    assert claim.verification_task is not None
+    combined_language = f"{claim.assertion} {claim.user_safe_language}".lower()
+    assert "screening only" in combined_language
+    assert "does not determine septic approval" in combined_language
+    assert "or buildability" in combined_language
+
+
 def test_market_context_not_evaluated_language_avoids_unsafe_market_terms() -> None:
     area_id = uuid4()
     source_id = uuid4()

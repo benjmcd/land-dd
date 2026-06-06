@@ -1,0 +1,41 @@
+schema_version: release_package_v1
+package_name: land-diligence
+output_dir: local_artifacts/releases
+manifest_filename: release-manifest.json
+include_paths:
+  - .env.example
+  - .github/workflows/ci.yml
+  - AGENTS.md
+  - MANIFEST.md
+  - README.md
+  - backend/app
+  - backend/Dockerfile
+  - backend/pyproject.toml
+  - backend/requirements-prod.lock
+  - config
+  - db
+  - docker-compose.yml
+  - docs/adr
+  - docs/runbooks
+  - docs/sbom
+  - docs/source-reviews
+  - registers
+  - schemas
+  - scripts
+exclude_path_parts:
+  - .git
+  - .mypy_cache
+  - .pytest_cache
+  - .ruff_cache
+  - __pycache__
+  - local_artifacts
+  - worktrees
+exclude_suffixes:
+  - .pyc
+  - .pyo
+  - .tmp
+  - .bak
+required_release_gates:
+  - scripts/run_release_package_check.ps1
+  - scripts/run_release_readiness_check.ps1
+  - scripts/verify.ps1

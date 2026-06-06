@@ -28,6 +28,7 @@ class EvidenceContract(BaseModel):
     observed_value: dict[str, object] = Field(default_factory=dict)
     source_id: UUID
     dataset_version_id: UUID | None = None
+    source_ingest_run_id: UUID | None = None
     method_code: str
     method_version: str = "0.1.0"
     confidence: ConfidenceBand = ConfidenceBand.UNKNOWN

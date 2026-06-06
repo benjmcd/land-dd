@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
@@ -52,15 +53,38 @@ class ConnectorReviewQueueRepository(Protocol):
 
     def mark_failed(self, job_id: UUID, *, error: str) -> ConnectorReviewQueueItem: ...
 
+    def approve_for_connector_qa(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ConnectorReviewQueueItem: ...
+
+    def request_fixture_fix(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str,
+    ) -> ConnectorReviewQueueItem: ...
+
     def requeue_failed(
         self,
         job_id: UUID,
         *,
         reason: str,
+        reviewer_id: str | None = None,
         not_before: datetime | None = None,
     ) -> ConnectorReviewQueueItem: ...
 
-    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem: ...
+    def cancel(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        reviewer_id: str | None = None,
+    ) -> ConnectorReviewQueueItem: ...
 
 
 class InMemoryConnectorReviewQueueRepository:
@@ -144,41 +168,126 @@ class InMemoryConnectorReviewQueueRepository:
         self._store[failed.ingest_run_id] = failed
         return failed
 
+    def approve_for_connector_qa(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ConnectorReviewQueueItem:
+        reviewer_id = _require_reviewer_id(reviewer_id)
+        reason = _optional_reason(reason)
+        item = self._get_open_review_job(job_id, action="approved")
+        decided_at = datetime.now(UTC)
+        approved = replace(
+            item,
+            status=JobStatus.SUCCEEDED,
+            locked_by=reviewer_id,
+            locked_at=item.locked_at or decided_at,
+            started_at=item.started_at or decided_at,
+            finished_at=decided_at,
+            last_error=None,
+            payload=_payload_with_review_decision(
+                item.payload,
+                action="approve_for_connector_qa",
+                reviewer_id=reviewer_id,
+                reason=reason,
+                decided_at=decided_at,
+            ),
+        )
+        self._store[approved.ingest_run_id] = approved
+        return approved
+
+    def request_fixture_fix(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str,
+    ) -> ConnectorReviewQueueItem:
+        reviewer_id = _require_reviewer_id(reviewer_id)
+        reason = _require_reason(reason)
+        item = self._get_open_review_job(job_id, action="failed")
+        decided_at = datetime.now(UTC)
+        failed = replace(
+            item,
+            status=JobStatus.FAILED,
+            locked_by=reviewer_id,
+            locked_at=item.locked_at or decided_at,
+            started_at=item.started_at or decided_at,
+            finished_at=decided_at,
+            last_error=reason,
+            payload=_payload_with_review_decision(
+                item.payload,
+                action="request_fixture_fix",
+                reviewer_id=reviewer_id,
+                reason=reason,
+                decided_at=decided_at,
+            ),
+        )
+        self._store[failed.ingest_run_id] = failed
+        return failed
+
     def requeue_failed(
         self,
         job_id: UUID,
         *,
         reason: str,
+        reviewer_id: str | None = None,
         not_before: datetime | None = None,
     ) -> ConnectorReviewQueueItem:
         reason = _require_reason(reason)
+        reviewer_id = _optional_reviewer_id(reviewer_id)
         item = self._get_job(job_id)
         if item.status != JobStatus.FAILED:
             raise ValueError("connector review queue job is not failed")
         if item.attempts >= item.max_attempts:
             raise ValueError("connector review queue job has no retry attempts remaining")
+        decided_at = datetime.now(UTC)
         requeued = replace(
             item,
             status=JobStatus.QUEUED,
-            not_before=not_before or datetime.now(UTC),
+            not_before=not_before or decided_at,
             locked_by=None,
             locked_at=None,
             finished_at=None,
             last_error=reason,
+            payload=_payload_with_review_action(
+                item.payload,
+                action="requeue_after_fix",
+                reviewer_id=reviewer_id,
+                reason=reason,
+                decided_at=decided_at,
+            ),
         )
         self._store[requeued.ingest_run_id] = requeued
         return requeued
 
-    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem:
+    def cancel(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        reviewer_id: str | None = None,
+    ) -> ConnectorReviewQueueItem:
         reason = _require_reason(reason)
+        reviewer_id = _optional_reviewer_id(reviewer_id)
         item = self._get_job(job_id)
         if item.status in {JobStatus.SUCCEEDED, JobStatus.CANCELLED}:
             raise ValueError("connector review queue job cannot be cancelled")
+        decided_at = datetime.now(UTC)
         cancelled = replace(
             item,
             status=JobStatus.CANCELLED,
-            finished_at=datetime.now(UTC),
+            finished_at=decided_at,
             last_error=reason,
+            payload=_payload_with_review_action(
+                item.payload,
+                action="cancel_review",
+                reviewer_id=reviewer_id,
+                reason=reason,
+                decided_at=decided_at,
+            ),
         )
         self._store[cancelled.ingest_run_id] = cancelled
         return cancelled
@@ -187,6 +296,17 @@ class InMemoryConnectorReviewQueueRepository:
         item = self._get_job(job_id)
         if item.status != JobStatus.RUNNING:
             raise ValueError("connector review queue job is not running")
+        return item
+
+    def _get_open_review_job(
+        self,
+        job_id: UUID,
+        *,
+        action: str,
+    ) -> ConnectorReviewQueueItem:
+        item = self._get_job(job_id)
+        if item.status not in {JobStatus.NEEDS_REVIEW, JobStatus.QUEUED, JobStatus.RUNNING}:
+            raise ValueError(f"connector review queue job cannot be {action}")
         return item
 
     def _get_job(self, job_id: UUID) -> ConnectorReviewQueueItem:
@@ -361,13 +481,49 @@ class SqlAlchemyConnectorReviewQueueRepository:
             error=_require_error(error),
         )
 
+    def approve_for_connector_qa(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ConnectorReviewQueueItem:
+        return self._manual_closeout_job(
+            job_id,
+            status=JobStatus.SUCCEEDED,
+            reviewer_id=_require_reviewer_id(reviewer_id),
+            action="approve_for_connector_qa",
+            reason=_optional_reason(reason),
+            error=None,
+        )
+
+    def request_fixture_fix(
+        self,
+        job_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str,
+    ) -> ConnectorReviewQueueItem:
+        reason = _require_reason(reason)
+        return self._manual_closeout_job(
+            job_id,
+            status=JobStatus.FAILED,
+            reviewer_id=_require_reviewer_id(reviewer_id),
+            action="request_fixture_fix",
+            reason=reason,
+            error=reason,
+        )
+
     def requeue_failed(
         self,
         job_id: UUID,
         *,
         reason: str,
+        reviewer_id: str | None = None,
         not_before: datetime | None = None,
     ) -> ConnectorReviewQueueItem:
+        reviewer_id = _optional_reviewer_id(reviewer_id)
+        decided_at = datetime.now(UTC)
         row = self._session.execute(
             text(
                 """
@@ -378,7 +534,14 @@ class SqlAlchemyConnectorReviewQueueRepository:
                     locked_by = NULL,
                     locked_at = NULL,
                     finished_at = NULL,
-                    last_error = :last_error
+                    last_error = :last_error,
+                    payload = jsonb_set(
+                        payload,
+                        '{review_action_history}',
+                        COALESCE(payload->'review_action_history', '[]'::jsonb)
+                            || jsonb_build_array(CAST(:review_action AS jsonb)),
+                        true
+                    )
                 WHERE job_type = :job_type
                   AND job_id = :job_id
                   AND status = CAST(:failed_status AS jobs.job_status)
@@ -405,6 +568,12 @@ class SqlAlchemyConnectorReviewQueueRepository:
                 "queued_status": JobStatus.QUEUED.value,
                 "not_before": not_before,
                 "last_error": _require_reason(reason),
+                "review_action": _review_action_json(
+                    action="requeue_after_fix",
+                    reviewer_id=reviewer_id,
+                    reason=reason,
+                    decided_at=decided_at,
+                ),
                 "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
                 "job_id": str(job_id),
                 "failed_status": JobStatus.FAILED.value,
@@ -417,7 +586,15 @@ class SqlAlchemyConnectorReviewQueueRepository:
             )
         return _item_from_row(row)
 
-    def cancel(self, job_id: UUID, *, reason: str) -> ConnectorReviewQueueItem:
+    def cancel(
+        self,
+        job_id: UUID,
+        *,
+        reason: str,
+        reviewer_id: str | None = None,
+    ) -> ConnectorReviewQueueItem:
+        reviewer_id = _optional_reviewer_id(reviewer_id)
+        decided_at = datetime.now(UTC)
         row = self._session.execute(
             text(
                 """
@@ -425,7 +602,14 @@ class SqlAlchemyConnectorReviewQueueRepository:
                 SET
                     status = CAST(:cancelled_status AS jobs.job_status),
                     finished_at = now(),
-                    last_error = :last_error
+                    last_error = :last_error,
+                    payload = jsonb_set(
+                        payload,
+                        '{review_action_history}',
+                        COALESCE(payload->'review_action_history', '[]'::jsonb)
+                            || jsonb_build_array(CAST(:review_action AS jsonb)),
+                        true
+                    )
                 WHERE job_type = :job_type
                   AND job_id = :job_id
                   AND status NOT IN (
@@ -453,6 +637,12 @@ class SqlAlchemyConnectorReviewQueueRepository:
             {
                 "cancelled_status": JobStatus.CANCELLED.value,
                 "last_error": _require_reason(reason),
+                "review_action": _review_action_json(
+                    action="cancel_review",
+                    reviewer_id=reviewer_id,
+                    reason=reason,
+                    decided_at=decided_at,
+                ),
                 "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
                 "job_id": str(job_id),
                 "succeeded_status": JobStatus.SUCCEEDED.value,
@@ -512,6 +702,88 @@ class SqlAlchemyConnectorReviewQueueRepository:
             raise ValueError("connector review queue job is not running")
         return _item_from_row(row)
 
+    def _manual_closeout_job(
+        self,
+        job_id: UUID,
+        *,
+        status: JobStatus,
+        reviewer_id: str,
+        action: str,
+        reason: str | None,
+        error: str | None,
+    ) -> ConnectorReviewQueueItem:
+        decided_at = datetime.now(UTC)
+        review_decision = _review_action_json(
+            action=action,
+            reviewer_id=reviewer_id,
+            reason=reason,
+            decided_at=decided_at,
+        )
+        row = self._session.execute(
+            text(
+                """
+                UPDATE jobs.job_queue
+                SET
+                    status = CAST(:finished_status AS jobs.job_status),
+                    locked_by = :reviewer_id,
+                    locked_at = COALESCE(locked_at, now()),
+                    started_at = COALESCE(started_at, now()),
+                    finished_at = now(),
+                    last_error = :last_error,
+                    payload = jsonb_set(
+                        jsonb_set(
+                            payload,
+                            '{review_decision}',
+                            CAST(:review_decision AS jsonb),
+                            true
+                        ),
+                        '{review_action_history}',
+                        COALESCE(payload->'review_action_history', '[]'::jsonb)
+                            || jsonb_build_array(CAST(:review_decision AS jsonb)),
+                        true
+                    )
+                WHERE job_type = :job_type
+                  AND job_id = :job_id
+                  AND status IN (
+                      CAST(:needs_review_status AS jobs.job_status),
+                      CAST(:queued_status AS jobs.job_status),
+                      CAST(:running_status AS jobs.job_status)
+                  )
+                RETURNING
+                    job_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                """
+            ),
+            {
+                "finished_status": status.value,
+                "reviewer_id": reviewer_id,
+                "last_error": error,
+                "review_decision": review_decision,
+                "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                "job_id": str(job_id),
+                "needs_review_status": JobStatus.NEEDS_REVIEW.value,
+                "queued_status": JobStatus.QUEUED.value,
+                "running_status": JobStatus.RUNNING.value,
+            },
+        ).mappings().one_or_none()
+        self._session.flush()
+        if row is None:
+            raise ValueError(f"connector review queue job cannot be {action}")
+        return _item_from_row(row)
+
 
 def _priority(review_status: ConnectorRunReviewStatus) -> int:
     if review_status.review_required:
@@ -529,6 +801,7 @@ def _payload(review_status: ConnectorRunReviewStatus) -> dict[str, Any]:
         "kind": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
         "connector_name": record["connector_name"],
         "ingest_run_id": record["ingest_run_id"],
+        "area_id": record["area_id"],
         "dataset_version_id": record["dataset_version_id"],
         "retrieval_status": record["retrieval_status"],
         "review_required": record["review_required"],
@@ -582,11 +855,120 @@ def _require_error(error: str) -> str:
     return cleaned
 
 
+def _require_reviewer_id(reviewer_id: str) -> str:
+    cleaned = reviewer_id.strip()
+    if not cleaned:
+        raise ValueError("connector review queue reviewer_id is required")
+    return cleaned
+
+
+def _optional_reviewer_id(reviewer_id: str | None) -> str | None:
+    if reviewer_id is None:
+        return None
+    return _require_reviewer_id(reviewer_id)
+
+
 def _require_reason(reason: str) -> str:
     cleaned = reason.strip()
     if not cleaned:
         raise ValueError("connector review queue reason is required")
     return cleaned
+
+
+def _optional_reason(reason: str | None) -> str | None:
+    if reason is None:
+        return None
+    return _require_reason(reason)
+
+
+def _payload_with_review_decision(
+    payload: dict[str, Any],
+    *,
+    action: str,
+    reviewer_id: str,
+    reason: str | None,
+    decided_at: datetime,
+) -> dict[str, Any]:
+    review_decision = _review_action_entry(
+        action=action,
+        reviewer_id=reviewer_id,
+        reason=reason,
+        decided_at=decided_at,
+    )
+    return {
+        **payload,
+        "review_decision": review_decision,
+        "review_action_history": _append_review_action_history(
+            payload,
+            review_decision,
+        ),
+    }
+
+
+def _payload_with_review_action(
+    payload: dict[str, Any],
+    *,
+    action: str,
+    reviewer_id: str | None,
+    reason: str | None,
+    decided_at: datetime,
+) -> dict[str, Any]:
+    review_action = _review_action_entry(
+        action=action,
+        reviewer_id=reviewer_id,
+        reason=reason,
+        decided_at=decided_at,
+    )
+    return {
+        **payload,
+        "review_action_history": _append_review_action_history(
+            payload,
+            review_action,
+        ),
+    }
+
+
+def _append_review_action_history(
+    payload: dict[str, Any],
+    review_action: dict[str, object],
+) -> list[object]:
+    current = payload.get("review_action_history")
+    if isinstance(current, list):
+        return [*current, review_action]
+    return [review_action]
+
+
+def _review_action_entry(
+    *,
+    action: str,
+    reviewer_id: str | None,
+    reason: str | None,
+    decided_at: datetime,
+) -> dict[str, object]:
+    return {
+        "action": action,
+        "reviewer_id": reviewer_id,
+        "reason": reason,
+        "decided_at": decided_at.isoformat(),
+    }
+
+
+def _review_action_json(
+    *,
+    action: str,
+    reviewer_id: str | None,
+    reason: str | None,
+    decided_at: datetime,
+) -> str:
+    return json.dumps(
+        _review_action_entry(
+            action=action,
+            reviewer_id=reviewer_id,
+            reason=reason,
+            decided_at=decided_at,
+        ),
+        sort_keys=True,
+    )
 
 
 __all__ = [

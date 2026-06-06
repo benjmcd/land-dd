@@ -67,6 +67,7 @@ class QueueEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._source_failure_counter),
@@ -81,6 +82,7 @@ class QueueEvidencePort:
             confidence=ConfidenceBand.UNKNOWN,
             caveat=caveat,
             is_source_failure=True,
+            source_ingest_run_id=source_ingest_run_id,
         )
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created
@@ -130,6 +132,7 @@ def test_in_memory_review_queue_enqueues_idempotent_success_status() -> None:
     assert first.priority == 100
     assert first.ingest_run_id == review_status.handoff.packet.ingest_run_id
     assert first.payload["ingest_run_id"] == str(review_status.handoff.packet.ingest_run_id)
+    assert first.payload["area_id"] == str(review_status.handoff.packet.area_id)
     assert first.payload["review_required"] is False
 
 
@@ -205,6 +208,7 @@ def test_in_memory_review_queue_requeues_failed_jobs_with_remaining_attempts() -
     requeued = repo.requeue_failed(
         first_failure.job_id,
         reason="retry after reviewer handoff",
+        reviewer_id="reviewer-1",
     )
 
     assert requeued.status == JobStatus.QUEUED
@@ -214,6 +218,8 @@ def test_in_memory_review_queue_requeues_failed_jobs_with_remaining_attempts() -
     assert requeued.locked_at is None
     assert requeued.finished_at is None
     assert requeued.last_error == "retry after reviewer handoff"
+    assert requeued.payload["review_action_history"][0]["action"] == "requeue_after_fix"
+    assert requeued.payload["review_action_history"][0]["reviewer_id"] == "reviewer-1"
 
     second_lease = repo.lease_next(worker_id="worker-2")
     assert second_lease is not None
@@ -230,14 +236,107 @@ def test_in_memory_review_queue_cancels_nonfinal_jobs() -> None:
 
     with pytest.raises(ValueError, match="reason is required"):
         repo.cancel(item.job_id, reason=" ")
-    cancelled = repo.cancel(item.job_id, reason="review no longer required")
+    cancelled = repo.cancel(
+        item.job_id,
+        reason="review no longer required",
+        reviewer_id="reviewer-1",
+    )
 
     assert cancelled.status == JobStatus.CANCELLED
     assert cancelled.finished_at is not None
     assert cancelled.last_error == "review no longer required"
+    assert cancelled.payload["review_action_history"][0]["action"] == "cancel_review"
+    assert cancelled.payload["review_action_history"][0]["reviewer_id"] == "reviewer-1"
     assert repo.lease_next(worker_id="worker-1") is None
     with pytest.raises(ValueError, match="cannot be cancelled"):
         repo.cancel(cancelled.job_id, reason="already cancelled")
+
+
+def test_in_memory_review_queue_manual_closeout_records_reviewer_decision() -> None:
+    success_status = _review_status("flood_success.json")
+    failure_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    approve_candidate = repo.enqueue_review_status(success_status)
+    fix_candidate = repo.enqueue_review_status(failure_status)
+
+    approved = repo.approve_for_connector_qa(
+        approve_candidate.job_id,
+        reviewer_id=" reviewer-1 ",
+        reason="connector output is acceptable",
+    )
+    fix_requested = repo.request_fixture_fix(
+        fix_candidate.job_id,
+        reviewer_id="reviewer-2",
+        reason="source-failure payload needs correction",
+    )
+
+    assert approved.status == JobStatus.SUCCEEDED
+    assert approved.locked_by == "reviewer-1"
+    assert approved.payload["review_decision"]["action"] == "approve_for_connector_qa"
+    assert approved.payload["review_decision"]["reason"] == "connector output is acceptable"
+    assert approved.payload["review_action_history"][0] == approved.payload[
+        "review_decision"
+    ]
+    assert fix_requested.status == JobStatus.FAILED
+    assert fix_requested.locked_by == "reviewer-2"
+    assert fix_requested.last_error == "source-failure payload needs correction"
+    assert fix_requested.payload["review_decision"]["action"] == "request_fixture_fix"
+    assert fix_requested.payload["review_action_history"][0] == fix_requested.payload[
+        "review_decision"
+    ]
+
+    with pytest.raises(ValueError, match="cannot be approved"):
+        repo.approve_for_connector_qa(
+            approved.job_id,
+            reviewer_id="reviewer-1",
+        )
+    with pytest.raises(ValueError, match="reason is required"):
+        repo.request_fixture_fix(
+            fix_requested.job_id,
+            reviewer_id="reviewer-2",
+            reason=" ",
+        )
+
+
+def test_in_memory_review_queue_preserves_reviewer_action_history_sequence() -> None:
+    review_status = _review_status("flood_failure.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    item = repo.enqueue_review_status(review_status)
+
+    fix_requested = repo.request_fixture_fix(
+        item.job_id,
+        reviewer_id="reviewer-1",
+        reason="source response needs fixture correction",
+    )
+    requeued = repo.requeue_failed(
+        fix_requested.job_id,
+        reason="fixture correction applied",
+        reviewer_id="reviewer-2",
+    )
+    approved = repo.approve_for_connector_qa(
+        requeued.job_id,
+        reviewer_id="reviewer-3",
+        reason="corrected connector output is acceptable",
+    )
+
+    assert approved.status == JobStatus.SUCCEEDED
+    assert approved.payload["review_decision"]["action"] == "approve_for_connector_qa"
+    assert [
+        entry["action"]
+        for entry in approved.payload["review_action_history"]
+    ] == [
+        "request_fixture_fix",
+        "requeue_after_fix",
+        "approve_for_connector_qa",
+    ]
+    assert [
+        entry["reviewer_id"]
+        for entry in approved.payload["review_action_history"]
+    ] == [
+        "reviewer-1",
+        "reviewer-2",
+        "reviewer-3",
+    ]
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
@@ -267,6 +366,7 @@ def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
             assert first.priority == 10
             assert first.payload["kind"] == CONNECTOR_REVIEW_STATUS_JOB_TYPE
             assert first.payload["ingest_run_id"] == str(ingest_run_id)
+            assert first.payload["area_id"] == str(review_status.handoff.packet.area_id)
             assert first.payload["review_required"] is True
 
         with Session(engine) as session:
@@ -285,6 +385,153 @@ def test_sqlalchemy_review_queue_persists_status_in_job_queue() -> None:
                     "WHERE idempotency_key = :idempotency_key"
                 ),
                 {"idempotency_key": idempotency_key},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_manual_closeout_records_reviewer_decision() -> None:
+    engine = build_engine()
+    success_status = _review_status("flood_success.json")
+    failure_status = _review_status("flood_failure.json")
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            approve_candidate = repo.enqueue_review_status(success_status)
+            fix_candidate = repo.enqueue_review_status(failure_status)
+
+            approved = repo.approve_for_connector_qa(
+                approve_candidate.job_id,
+                reviewer_id="db-reviewer-1",
+                reason="db connector output accepted",
+            )
+            fix_requested = repo.request_fixture_fix(
+                fix_candidate.job_id,
+                reviewer_id="db-reviewer-2",
+                reason="db connector output needs correction",
+            )
+            session.commit()
+
+            assert approved.status == JobStatus.SUCCEEDED
+            assert approved.locked_by == "db-reviewer-1"
+            assert approved.payload["review_decision"]["action"] == (
+                "approve_for_connector_qa"
+            )
+            assert approved.payload["review_action_history"][0] == (
+                approved.payload["review_decision"]
+            )
+            assert fix_requested.status == JobStatus.FAILED
+            assert fix_requested.locked_by == "db-reviewer-2"
+            assert fix_requested.last_error == "db connector output needs correction"
+            assert fix_requested.payload["review_decision"]["action"] == (
+                "request_fixture_fix"
+            )
+            assert fix_requested.payload["review_action_history"][0] == (
+                fix_requested.payload["review_decision"]
+            )
+
+        with Session(engine) as session:
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            stored_approved = repo.get_by_ingest_run_id(
+                success_status.handoff.packet.ingest_run_id
+            )
+            stored_fix = repo.get_by_ingest_run_id(
+                failure_status.handoff.packet.ingest_run_id
+            )
+
+            assert stored_approved is not None
+            assert stored_approved.status == JobStatus.SUCCEEDED
+            assert stored_approved.payload["review_decision"]["reviewer_id"] == (
+                "db-reviewer-1"
+            )
+            assert stored_approved.payload["review_action_history"][0] == (
+                stored_approved.payload["review_decision"]
+            )
+            assert stored_fix is not None
+            assert stored_fix.status == JobStatus.FAILED
+            assert stored_fix.payload["review_decision"]["reason"] == (
+                "db connector output needs correction"
+            )
+            assert stored_fix.payload["review_action_history"][0] == (
+                stored_fix.payload["review_decision"]
+            )
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_preserves_reviewer_action_history_sequence() -> None:
+    engine = build_engine()
+    review_status = _review_status("flood_failure.json")
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            item = repo.enqueue_review_status(review_status)
+
+            fix_requested = repo.request_fixture_fix(
+                item.job_id,
+                reviewer_id="db-reviewer-1",
+                reason="source response needs fixture correction",
+            )
+            requeued = repo.requeue_failed(
+                fix_requested.job_id,
+                reason="fixture correction applied",
+                reviewer_id="db-reviewer-2",
+            )
+            approved = repo.approve_for_connector_qa(
+                requeued.job_id,
+                reviewer_id="db-reviewer-3",
+                reason="corrected connector output is acceptable",
+            )
+            session.commit()
+
+            assert approved.status == JobStatus.SUCCEEDED
+            assert [
+                entry["action"]
+                for entry in approved.payload["review_action_history"]
+            ] == [
+                "request_fixture_fix",
+                "requeue_after_fix",
+                "approve_for_connector_qa",
+            ]
+
+        with Session(engine) as session:
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            stored = repo.get_by_ingest_run_id(review_status.handoff.packet.ingest_run_id)
+
+            assert stored is not None
+            assert stored.status == JobStatus.SUCCEEDED
+            assert [
+                entry["reviewer_id"]
+                for entry in stored.payload["review_action_history"]
+            ] == [
+                "db-reviewer-1",
+                "db-reviewer-2",
+                "db-reviewer-3",
+            ]
+            assert stored.payload["review_decision"] == (
+                stored.payload["review_action_history"][-1]
+            )
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
             )
             session.commit()
 
@@ -377,6 +624,7 @@ def test_sqlalchemy_review_queue_requeues_and_cancels_job_queue_items() -> None:
             requeued = repo.requeue_failed(
                 first_failure.job_id,
                 reason="retry after db reviewer handoff",
+                reviewer_id="db-reviewer-1",
             )
 
             assert requeued.status == JobStatus.QUEUED
@@ -386,6 +634,12 @@ def test_sqlalchemy_review_queue_requeues_and_cancels_job_queue_items() -> None:
             assert requeued.locked_at is None
             assert requeued.finished_at is None
             assert requeued.last_error == "retry after db reviewer handoff"
+            assert requeued.payload["review_action_history"][0]["action"] == (
+                "requeue_after_fix"
+            )
+            assert requeued.payload["review_action_history"][0]["reviewer_id"] == (
+                "db-reviewer-1"
+            )
 
             second_lease = repo.lease_next(worker_id="db-worker-2")
             assert second_lease is not None
@@ -404,12 +658,19 @@ def test_sqlalchemy_review_queue_requeues_and_cancels_job_queue_items() -> None:
             cancelled = repo.cancel(
                 cancel_candidate.job_id,
                 reason="connector review superseded",
+                reviewer_id="db-reviewer-3",
             )
             session.commit()
 
             assert cancelled.status == JobStatus.CANCELLED
             assert cancelled.finished_at is not None
             assert cancelled.last_error == "connector review superseded"
+            assert cancelled.payload["review_action_history"][0]["action"] == (
+                "cancel_review"
+            )
+            assert cancelled.payload["review_action_history"][0]["reviewer_id"] == (
+                "db-reviewer-3"
+            )
     finally:
         with Session(engine) as session:
             session.execute(

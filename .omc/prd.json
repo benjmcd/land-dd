@@ -1,0 +1,123 @@
+{
+  "title": "Codex Live IPC Injection - advance safely toward GUI auto-inject",
+  "createdAt": "2026-06-04",
+  "source": "plans/2026-06-04-codex-ipc-injection.md",
+  "constraints": [
+    "Least danger/impact to the live Codex Desktop app; do not interfere/disable/break it.",
+    "No parallel/swarm contact with the live shared app-server router.",
+    "File-drop remains the proven default and fallback (Phase 0 shipped, GUI round-trip confirmed).",
+    "Never send any config/*, account/*, marketplace/*, plugin/*, or destructive thread method.",
+    "~/.codex/config.toml must be byte-identical before/after every live attempt.",
+    "Live real-thread writes require one explicit conversationId plus pre-send inspection; the original proof target was 019e932e-385b-7ee3-ad58-3157c9accaf5."
+  ],
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "IPC scaffold integrity & fail-closed safety gates verified",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "All scripts/codex_ipc_*.mjs pass `node --check`.",
+        "codex_ipc_client.mjs dry-run emits a uint32le `thread-follower-start-turn` envelope with explicit conversationId and minimal text input.",
+        "codex_ipc_client.mjs `--send` without `--ack-live-write` exits non-zero.",
+        "codex_ipc_client.mjs `--send --ack-live-write` with a non-authorized thread id exits non-zero."
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Negative owner-discovery probe: is the follower route externally reachable?",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "A fixed synthetic sentinel UUID is set internally (no external thread id accepted) and verified absent from ~/.codex/state_5.sqlite before any send.",
+        "Exactly one `thread-follower-start-turn` is sent to the live router with the sentinel conversationId; the router's response (or rejection) is captured verbatim.",
+        "~/.codex/config.toml is byte-identical before and after the probe.",
+        "A decision is recorded in the plan: follower route is externally VIABLE (router processed it, owner-not-found) or BLOCKED (router rejected/ignored external follower requests)."
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Decision gate + conditional controlled real-thread write",
+      "priority": 3,
+      "passes": true,
+      "result": "VIABLE+PROVEN+GUI-CONFIRMED: external thread-follower-start-turn forwarded by router to owning renderer; turn ran; model replied (IPCINJECTMARKER7F3A9 ACK). Isolation proven: global config sha unchanged, unexpectedNonTargetChangedIds=[]. Finding: renderer DERIVES turn params, so external model/effort override is NOT honored (turn ran at thread xhigh, not requested medium) - Claude input cannot change model/reasoning. User later confirmed the sent messages appeared in the Codex Windows app.",
+      "acceptanceCriteria": [
+        "If US-002 = VIABLE: with explicit user go-ahead, one follower-start-turn on 019e932e (default model/effort first) is sent; the turn appears in the Desktop GUI; a before/after state_5.sqlite + config snapshot proves isolation (config unchanged, no unexpected non-target thread row changed).",
+        "If US-002 = BLOCKED: documented as a fundamental architectural blocker (Desktop resists external prompt injection); no real-thread write is attempted; file-drop confirmed as the durable solution.",
+        "No forbidden method is ever sent; every live attempt is time-bounded and logs the exact JSON sent."
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Productionize --ipc OR finalize file-drop",
+      "priority": 4,
+      "passes": true,
+      "result": "PRODUCTIONIZED: handoff_to_codex.sh gains opt-in `--ipc <conversationId> \"task\"` that writes the file-drop then injects the pickup line into the live thread via codex_ipc_client.mjs (--allow-any-thread --send --ack-live-write), falling back to file-drop on any non-zero exit. File-drop remains default. End-to-end validated on test thread: model read for-codex.md and replied IPCPRODTEST ACK; config unchanged. Error paths (missing cid/task) exit 1.",
+      "acceptanceCriteria": [
+        "If US-003 real write proven: handoff_to_codex.sh gains an opt-in `--ipc` mode that calls the Node client and falls back to file-drop on any non-zero exit; file-drop stays the default.",
+        "If US-003 blocked: handoff_to_codex.sh is unchanged; README/skill state the IPC status plainly.",
+        "`bash -n scripts/handoff_to_codex.sh` passes; `.\\scripts\\agent-context-check.ps1` ok."
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Docs synced + reviewer sign-off",
+      "priority": 5,
+      "passes": true,
+      "result": "Plan progress/decision logs updated; README + skill document --ipc (marked experimental because of undocumented Desktop IPC internals, not because GUI confirmation is pending). code-reviewer verdict: APPROVE (0 Critical/0 High; 3 Medium + 3 Low addressed: stale comment, usage() flag, quoted path, experimental note). Fail-closed gates re-verified post-fix.",
+      "acceptanceCriteria": [
+        "plans/2026-06-04-codex-ipc-injection.md progress + decision logs updated with this run's evidence.",
+        "state/agent-inbox/README.md and .claude/skills/handoff-to-codex accurately reflect current IPC status.",
+        "Reviewer verifies the above against fresh evidence (config invariant, captured router responses)."
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Post-update IPC revalidation gate",
+      "priority": 6,
+      "passes": true,
+      "result": "ADDED: scripts/codex_ipc_revalidate.mjs performs validate-only post-update checks for required files, Node syntax, Git Bash shell syntax, node:sqlite, Codex state files, named-pipe presence, optional target inspection, and optional read-only router initialize. Current runtime-read-probe passed with router initialize only; no prompt/follower-start-turn/config write/SQLite write/artifact generation.",
+      "acceptanceCriteria": [
+        "The revalidation command can run without sending IPC prompts or generating artifacts.",
+        "A gated live read probe sends only router initialize and reports structured success/failure.",
+        "Missing optional Codex CLI version capture does not block IPC revalidation when state files, pipe presence, syntax, and read-only router initialize are healthy."
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "No-UUID /ipc thread discovery",
+      "priority": 7,
+      "passes": true,
+      "result": "ADDED: scripts/codex_ipc_thread_locator.mjs reads the Codex Desktop thread index read-only and filters candidate conversationIds by cwd, project, title text, and creation/update time. It found the known land_diligence Await message thread as exactly one candidate with --require-single. Candidate output is not write authority; selected ids must still be inspected before --ipc.",
+      "acceptanceCriteria": [
+        "The locator sends no IPC messages and writes no SQLite files.",
+        "The locator can list known Codex Desktop projects and narrow a known thread to exactly one candidate.",
+        "The Claude /ipc skill instructs agents to inspect the selected candidate before sending."
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "Static IPC contract audit",
+      "priority": 8,
+      "passes": true,
+      "result": "ADDED: scripts/codex_ipc_contract_audit.mjs reads repo artifacts only and emits a requirement matrix. Current run reports 11/11 IPC contract requirements evidenced, with caveats that runtime proof must use revalidation and controlled live-write proof must use the dry-run-first harness.",
+      "acceptanceCriteria": [
+        "The audit command sends no IPC messages, reads no SQLite runtime state, and writes no artifacts.",
+        "The audit covers default file-drop, opt-in IPC, explicit targeting, fallback, transcript pointers, inspect-before-send, no-UUID discovery, update revalidation, forbidden writes, and audit evidence.",
+        "The audit exits non-zero if a required file or requirement evidence is missing."
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "Controlled write re-proof harness",
+      "priority": 9,
+      "passes": true,
+      "result": "ADDED: scripts/codex_ipc_write_proof.mjs provides a dry-run-first future write re-proof workflow. Dry-run inspected the authorized test thread and emitted the full inspect/revalidate/snapshot/send/poll/compare plan without sending a prompt. Live mode requires --send --ack-live-write, uses one explicit conversationId, revalidates the runtime, sends one marker task through the maintained client, polls rollout JSONL for marker acknowledgement plus task_complete, and compares config/thread isolation in memory.",
+      "acceptanceCriteria": [
+        "Dry-run sends no prompt and still inspects the target thread before presenting the live proof sequence.",
+        "Live mode requires --send and --ack-live-write, and non-test explicit UUID targets still require --allow-any-thread.",
+        "The harness fails closed on missing/archived/mid-turn target evidence, revalidation failure, send failure, missing marker acknowledgement, or isolation compare failure."
+      ]
+    }
+  ]
+}

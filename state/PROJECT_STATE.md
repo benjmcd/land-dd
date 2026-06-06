@@ -3,10 +3,63 @@
 ## MILESTONE_MAP status block
 
 ```text
-Current milestone: Level 9 - MVP Workflow
-Milestone status: PASS for async report jobs, GeoJSON intake, end-to-end UI, and operator runbook (worktree ralph/production-advance)
+Current milestone: Level 10 - Production Hardening (partial)
+Milestone status: PARTIAL PASS for settings-backed scoped reviewer auth, production API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, and structured API-key auth audit logs plus DB-backed API-key auth events, default-off rate limiting, backend Docker/Compose service, structured JSON logging, structured runtime metrics, container build/runtime smoke, fail-closed connector source-use preflight, source-readiness audit reporting, reviewed source-rights candidates (DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA Web Soil Survey/SSURGO, and DS-004 National Wetlands Inventory), bounded DS-001 USGS TNM EPQS connector-layer terrain-relief screening plus controlled DS-001 API/operator invocation, explicit durable DS-001 live connector scheduling, and request-time DS-001 orchestration, bounded DS-002 FEMA NFHL live connector, bounded DS-003 USDA SSURGO connector plus controlled DS-003 API/operator invocation, explicit durable DS-003 live connector scheduling, and request-time DS-003 report integration with an UNKNOWN SSURGO screening-review claim, bounded DS-004 National Wetlands Inventory connector, controlled DS-002 API/operator invocation, controlled DS-004 API/operator invocation, explicit durable DS-002 and DS-004 live connector scheduling, read-only live connector job status API, bounded supervised live connector worker command, opt-in Compose live connector worker profile, connector review closeout actions, durable connector reviewer action history, approved connector evidence report gating, in-memory and DB-backed connector-to-report operator regressions, request-time DS-001, DS-002, DS-004, and DS-003 orchestration for intake/report-run flows, file-backed DS-004 raw response fixture corpus, API 422 deprecation cleanup, live connector sequence scheduling, failed report job retry with lineage, backup/restore proof, repo-local alert-rule catalog with validate-only proof, CI supply-chain dependency vulnerability scanning and update hygiene, backend production dependency lock/SBOM provenance proof, backend dependency lock/SBOM artifact attestation proof, backend container image/base-image scan proof, digest-pinned backend Docker base-image proof, repo-local cost monitoring catalog with validate-only guardrails and report zero-dollar cost attribution, repo-local release readiness catalog with validate-only proof, local release package ZIP/manifest builder with validate-only proof, repo-local image publication readiness catalog with validate-only proof, repo-local hosted deployment readiness catalog with validate-only proof, repo-local access-control posture catalog with validate-only proof, scoped local reviewer authorization with raw-or-sha256 configured service-account tokens for protected operator routes, explicit post-approval connector report resume, SQLAlchemy source placeholder URL hardening, and DB-backed async report job persistence; remaining non-DS-001/DS-002/DS-003/DS-004 source reviews remain open.
 Last verified: 2026-06-05
 Verification command(s):
+- cd backend; py -3.12 -m pytest -q tests/api/test_connector_review_actions.py tests/api/test_reviewer_auth.py tests/api/test_logging.py
+- cd backend; py -3.12 -m pytest -q tests/api/test_api_key_auth.py tests/api/test_api_scaffold.py tests/api/test_reviewer_auth.py tests/api/test_connector_review_actions.py
+- cd backend; py -3.12 -m pytest -q tests/api/test_rate_limit.py tests/api/test_api_key_auth.py tests/api/test_api_scaffold.py
+- cd backend; py -3.12 -m pytest -q tests/api/test_metrics.py tests/api/test_rate_limit.py tests/api/test_api_key_auth.py tests/api/test_api_scaffold.py
+- cd backend; py -3.12 -m pytest -q tests/api tests/test_planning_pack_schema_copies.py
+- cd backend; ruff check app/core app/api app/main.py tests/api tests/test_planning_pack_schema_copies.py
+- cd backend; py -3.12 -m mypy app/core app/api app/main.py tests/api
+- cd backend; mypy app tests
+- docker compose config
+- docker compose build backend
+- $env:DB_PORT='55432'; docker compose up -d db backend
+- Invoke-RestMethod -Uri http://127.0.0.1:8000/health
+- Invoke-RestMethod -Uri http://127.0.0.1:8000/version
+- Invoke-RestMethod -Uri http://127.0.0.1:8000/metrics
+- docker compose logs backend --tail 80
+- docker compose down
+- cd backend; py -3.12 -m pytest -q tests/connectors/test_license_guard.py tests/connectors/test_static_file_connector.py tests/source_registry/test_source_service.py
+- cd backend; ruff check app/source_registry/usage_rights.py app/source_registry/service.py app/connectors/license_guard.py tests/connectors/test_license_guard.py tests/connectors/test_static_file_connector.py tests/source_registry/test_source_service.py
+- cd backend; mypy app/source_registry/usage_rights.py app/source_registry/service.py app/connectors/license_guard.py tests/connectors/test_license_guard.py tests/connectors/test_static_file_connector.py tests/source_registry/test_source_service.py
+- cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/source_registry/test_source_seeds.py tests/source_registry/test_source_service.py
+- cd backend; ruff check ../scripts/source_readiness.py ../db/seeds/source_registry_seeds.py tests/source_registry/test_source_readiness.py tests/source_registry/test_source_seeds.py tests/source_registry/test_source_service.py
+- cd backend; mypy ../scripts/source_readiness.py ../db/seeds/source_registry_seeds.py tests/source_registry/test_source_readiness.py tests/source_registry/test_source_seeds.py tests/source_registry/test_source_service.py
+- py -3.12 .\scripts\source_readiness.py --priority Must
+- py -3.12 .\scripts\source_readiness.py --priority Must --json
+- py -3.12 .\scripts\source_readiness.py --priority Must --require-ready
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_fema_nfhl_connector.py
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_nwi_connector.py
+- cd backend; py -3.12 -m pytest -q tests\api\test_fema_nfhl_connector_api.py tests\connectors\test_fema_nfhl_connector.py
+- cd backend; py -3.12 -m pytest -q tests\api\test_connector_review_actions.py tests\connectors\test_review_queue.py
+- cd backend; py -3.12 -m pytest -q tests\evidence_ledger\test_evidence_schema_contract.py tests\evidence_ledger\test_sqlalchemy_evidence_repo.py tests\connectors\test_fema_nfhl_connector.py tests\reports\test_report_service.py
+- cd backend; ruff check app\domain\evidence_contracts.py app\evidence_ledger app\connectors app\reports tests\evidence_ledger tests\connectors tests\reports
+- cd backend; mypy app\domain\evidence_contracts.py app\evidence_ledger app\connectors app\reports tests\evidence_ledger tests\connectors tests\reports
+- cd backend; py -3.12 -m pytest -q tests\api\test_fema_nfhl_connector_api.py
+- cd backend; ruff check tests\api\test_fema_nfhl_connector_api.py app\api app\reports
+- cd backend; mypy tests\api\test_fema_nfhl_connector_api.py app\api app\reports
+- cd backend; py -3.12 -m pytest -q tests\connectors tests\source_registry
+- cd backend; py -3.12 -m pytest -q tests\api tests\connectors tests\source_registry
+- cd backend; ruff check app\connectors tests\connectors tests\source_registry
+- cd backend; ruff check app\api app\connectors tests\api tests\connectors tests\source_registry
+- cd backend; mypy app\connectors tests\connectors tests\source_registry
+- cd backend; mypy app\api app\connectors tests\api tests\connectors tests\source_registry
+- $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+- cd backend; py -3.12 -m pytest --collect-only
+- git diff --check
+- cd backend; py -3.12 -m pytest -q tests/reports/test_job_store.py tests/api/test_async_report_runs.py tests/api/test_api_scaffold.py tests/api/test_intake.py tests/api/test_logging.py tests/api/test_connector_review_actions.py tests/api/test_reviewer_auth.py
+- cd backend; ruff check app/core app/api app/reports tests/api tests/reports
+- cd backend; py -3.12 -m mypy app/core app/api app/reports tests/api tests/reports
+- docker compose config
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/reports/test_job_store.py tests/api/test_report_runs_db.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests/api/test_async_report_runs.py tests/api/test_intake.py tests/api/test_connector_review_queue_db.py
+- $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest --tb=no -q -rA
+- git diff --check
 - cd backend; py -3.12 -m pytest -q tests/connectors/test_connector_policy.py tests/connectors/test_connector_observability.py tests/connectors/test_license_guard.py tests/api/test_connector_review_actions.py
 - cd backend; py -3.12 -m pytest --tb=short
 - cd backend; ruff check app/connectors/ app/api/connectors.py
@@ -57,7 +110,55 @@ Verification command(s):
 - cd backend; mypy app/reports app/api app/main.py tests/reports tests/api
 - git diff --check
 - cd backend; py -3.12 -m pytest --collect-only
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_review_packet.py tests\connectors\test_review_handoff.py tests\connectors\test_review_queue.py tests\api\test_connector_review_status.py tests\api\test_fema_nfhl_connector_api.py
+- cd backend; ruff check app\api\connectors.py app\connectors\review_packet.py app\connectors\review_handoff.py app\connectors\review_queue.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_connector_review_status.py tests\connectors\test_review_packet.py tests\connectors\test_review_handoff.py tests\connectors\test_review_queue.py
+- cd backend; mypy app\api\connectors.py app\connectors\review_packet.py app\connectors\review_handoff.py app\connectors\review_queue.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_connector_review_status.py tests\connectors\test_review_packet.py tests\connectors\test_review_handoff.py tests\connectors\test_review_queue.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests\api\test_fema_nfhl_connector_api.py::test_db_live_connector_report_run_waits_for_approval_then_reports
+- cd backend; py -3.12 -m pytest -q tests\test_planning_pack_schema_copies.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_connector_review_actions.py tests\api\test_connector_review_status.py tests\connectors\test_review_packet.py tests\connectors\test_review_handoff.py tests\connectors\test_review_queue.py
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_review_queue.py tests\api\test_connector_review_actions.py tests\api\test_connector_review_status.py
+- cd backend; ruff check app\connectors\review_queue.py app\api\connectors.py tests\connectors\test_review_queue.py tests\api\test_connector_review_actions.py
+- cd backend; mypy app\connectors\review_queue.py app\api\connectors.py tests\connectors\test_review_queue.py tests\api\test_connector_review_actions.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests\connectors\test_review_queue.py
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_review_queue.py tests\api\test_connector_review_actions.py tests\api\test_connector_review_status.py tests\api\test_connector_review_queue_db.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_async_report_runs.py tests\api\test_report_runs_db.py
+- cd backend; py -3.12 -m pytest -q tests\api\test_fema_nfhl_connector_api.py tests\api\test_connector_review_actions.py tests\api\test_connector_review_status.py
+- cd backend; $env:RUN_DB_SMOKE='1'; py -3.12 -m pytest -q tests\api\test_fema_nfhl_connector_api.py::test_db_live_connector_scheduler_enqueues_and_runs_without_report_job tests\api\test_fema_nfhl_connector_api.py::test_db_live_connector_report_run_waits_for_approval_then_reports
+- cd backend; py -3.12 -m pytest -q tests\test_planning_pack_schema_copies.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_connector_review_actions.py tests\api\test_connector_review_status.py tests\api\test_connector_review_queue_db.py
+- cd backend; ruff check app\connectors\live_jobs.py app\api\live_connector_jobs.py app\api\connectors.py app\api\dependencies.py tests\api\test_fema_nfhl_connector_api.py tests\test_planning_pack_schema_copies.py
+- cd backend; mypy app\connectors\live_jobs.py app\api\live_connector_jobs.py app\api\connectors.py app\api\dependencies.py tests\api\test_fema_nfhl_connector_api.py tests\test_planning_pack_schema_copies.py
+- cd backend; py -3.12 -m pytest -q tests\api\test_live_connector_worker.py tests\api\test_fema_nfhl_connector_api.py
+- cd backend; py -3.12 -m pytest -q tests\api\test_nwi_connector_api.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_live_connector_worker.py
+- cd backend; py -3.12 -m pytest -q tests\test_planning_pack_schema_copies.py tests\api\test_nwi_connector_api.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_live_connector_worker.py
+- cd backend; ruff check app\connectors\live_jobs.py app\api\live_connector_jobs.py app\api\connectors.py app\connectors\__init__.py tests\api\test_nwi_connector_api.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_live_connector_worker.py ..\scripts\live_connector_worker.py
+- cd backend; mypy app\connectors\live_jobs.py app\api\live_connector_jobs.py app\api\connectors.py app\connectors\__init__.py tests\api\test_nwi_connector_api.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_live_connector_worker.py ..\scripts\live_connector_worker.py
+- cd backend; ruff check app\api\live_connector_jobs.py tests\api\test_live_connector_worker.py ..\scripts\live_connector_worker.py
+- cd backend; mypy app\api\live_connector_jobs.py tests\api\test_live_connector_worker.py ..\scripts\live_connector_worker.py
+- docker compose --profile workers config
+- docker compose build backend
+- docker compose --profile workers run --rm --no-deps --entrypoint python live-connector-worker /app/scripts/live_connector_worker.py --help
+- $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+- cd backend; py -3.12 -m pytest --collect-only
+- git diff --check
+- py -3.12 .\scripts\source_readiness.py --priority Must
+- cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py
+- cd backend; ruff check tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py ..\db\seeds\source_registry_seeds.py ..\scripts\source_readiness.py
+- cd backend; mypy tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py ..\db\seeds\source_registry_seeds.py ..\scripts\source_readiness.py
+- cd backend; ruff check app\connectors\nwi.py app\connectors\__init__.py tests\connectors\test_nwi_connector.py
+- cd backend; mypy app\connectors\nwi.py app\connectors\__init__.py tests\connectors\test_nwi_connector.py
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_nwi_connector.py tests\api\test_live_connector_worker.py
+- cd backend; ruff check tests\connectors\test_nwi_connector.py tests\api\test_live_connector_worker.py ..\scripts\live_connector_worker.py
+- cd backend; py -3.12 -m mypy tests\connectors\test_nwi_connector.py tests\api\test_live_connector_worker.py
+- cd backend; py -3.12 -m pytest -q tests\connectors\test_nwi_connector.py tests\api\test_nwi_connector_api.py tests\api\test_live_connector_worker.py
+- cd backend; py -3.12 -m pytest -q -W error::DeprecationWarning tests\api\test_api_scaffold.py::test_api_scaffold_returns_422_for_bad_input tests\api\test_async_report_runs.py::test_post_report_runs_unregistered_area_returns_422 tests\api\test_intake.py::test_intake_invalid_geojson_returns_422 tests\api\test_connector_review_actions.py::test_request_fixture_fix_requires_reason tests\api\test_fema_nfhl_connector_api.py::test_fema_nfhl_query_bbox_rejects_oversized_bbox tests\api\test_nwi_connector_api.py::test_nwi_query_bbox_rejects_oversized_bbox tests\api\test_ssurgo_connector_api.py::test_ssurgo_query_bbox_rejects_oversized_bbox tests\api\test_usgs_tnm_connector_api.py::test_usgs_tnm_query_bbox_rejects_oversized_bbox
+- cd backend; ruff check app\api\areas.py app\api\connectors.py app\api\intake.py app\api\live_connectors.py app\api\reports.py
+- cd backend; py -3.12 -m mypy app\api\areas.py app\api\connectors.py app\api\intake.py app\api\live_connectors.py app\api\reports.py
+- cd backend; py -3.12 -m pytest -q tests\test_planning_pack_schema_copies.py tests\api\test_fema_nfhl_connector_api.py::test_live_connector_sequence_schedule_bbox_enqueues_ordered_jobs_without_fetch_or_report tests\api\test_fema_nfhl_connector_api.py::test_live_connector_sequence_schedule_bbox_requires_reviewer_auth tests\api\test_fema_nfhl_connector_api.py::test_live_connector_sequence_schedule_bbox_rejects_unregistered_area
+- cd backend; ruff check app\api\connectors.py tests\api\test_fema_nfhl_connector_api.py tests\test_planning_pack_schema_copies.py
+- cd backend; py -3.12 -m mypy app\api\connectors.py tests\api\test_fema_nfhl_connector_api.py tests\test_planning_pack_schema_copies.py
+- cd backend; py -3.12 -m pytest -q tests\test_planning_pack_schema_copies.py tests\api\test_fema_nfhl_connector_api.py tests\api\test_nwi_connector_api.py tests\api\test_ssurgo_connector_api.py tests\api\test_usgs_tnm_connector_api.py tests\api\test_live_connector_worker.py
+- docker ps -a --filter "name=live-connector-worker-run" --format "{{.Names}} {{.Status}}"
+- docker compose ps
 Verification result:
+- Level 10 partial hardening slice passes: settings-backed scoped reviewer auth, production API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, and structured API-key auth audit logs plus DB-backed API-key auth events, default-off rate limiting, backend Docker/Compose service, structured JSON logging, structured runtime metrics, container build/runtime smoke, fail-closed connector source-use preflight, source-readiness audit reporting, reviewed source-rights candidates (DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA Web Soil Survey/SSURGO, and DS-004 National Wetlands Inventory), bounded DS-001 USGS TNM EPQS connector-layer terrain-relief screening plus controlled DS-001 API/operator invocation, explicit durable DS-001 live connector scheduling, and request-time DS-001 orchestration, bounded DS-002 FEMA NFHL live connector, bounded DS-003 USDA SSURGO connector plus controlled DS-003 API/operator invocation, explicit durable DS-003 live connector scheduling, and request-time DS-003 report integration with an UNKNOWN SSURGO screening-review claim, bounded DS-004 National Wetlands Inventory connector, controlled DS-002 API/operator invocation, controlled DS-004 API/operator invocation, explicit durable DS-002 and DS-004 live connector scheduling, read-only live connector job status API, bounded supervised live connector worker command, opt-in Compose live connector worker profile, connector review closeout actions, durable connector reviewer action history, approved connector evidence report gating, DB-backed connector approval-to-report regressions, request-time DS-001, DS-002, DS-004, and DS-003 orchestration for `/intake` and `/report-runs`, file-backed DS-004 raw response fixture corpus, API 422 deprecation cleanup, live connector sequence scheduling, failed report job retry with lineage, backup/restore proof, repo-local alert-rule catalog with validate-only proof, CI supply-chain dependency vulnerability scanning and update hygiene, backend production dependency lock/SBOM provenance proof, backend dependency lock/SBOM artifact attestation proof, backend container image/base-image scan proof, digest-pinned backend Docker base-image proof, repo-local cost monitoring catalog with validate-only guardrails and report zero-dollar cost attribution, repo-local release readiness catalog with validate-only proof, local release package ZIP/manifest builder with validate-only proof, repo-local image publication readiness catalog with validate-only proof, repo-local hosted deployment readiness catalog with validate-only proof, repo-local access-control posture catalog with validate-only proof, scoped local reviewer authorization with raw-or-sha256 configured service-account tokens for protected operator routes, explicit post-approval connector report resume, SQLAlchemy source placeholder URL hardening, and DB-backed async report job persistence through `jobs.job_queue` are implemented. Current full DB-enabled Windows PowerShell verification passes after the DB-backed API-key auth audit-event slice: 722 tests are collected; ruff clean; canonical mypy clean over 185 source files; migrations/seeds apply; DB smoke passes; hosted log retention, automatic key rotation, user accounts, OAuth/OIDC, hosted identity, full RBAC, hosted deployment, hosted billing reconciliation, and hosted alerting remain blocked.
 - 362 tests pass in the DB-enabled Windows PowerShell verification path after TD-083 report validation metadata; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 363 tests pass in the DB-enabled Windows PowerShell verification path after CON-027 connector fixture retrieval metric quality; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
 - 363 tests pass in the DB-enabled Windows PowerShell verification path after TD-084 job-schema boundary; lint clean; mypy clean (123 source files); migrations/seeds apply; DB smoke passes.
@@ -186,6 +287,7 @@ Completion evidence:
 - docs/adr/lane-d-0016-connector-review-action-route-subset.md
 - docs/adr/lane-d-0017-report-validation-metadata.md
 - docs/adr/lane-d-0018-job-schema-boundary.md
+- docs/adr/lane-d-0019-connector-review-closeout-api.md
 - backend/app/api/reviewer_auth.py
 - backend/tests/api/test_reviewer_auth.py
 - docs/planning_pack/api/openapi_stub.yaml
@@ -201,27 +303,96 @@ Completion evidence:
 - backend/tests/source_registry/test_source_provenance_schema_contract.py
 - backend/tests/connectors/test_fixture_quality.py
 - tests/fixtures/geometries/
+- plans/2026-06-05-l10-production-hardening.md
+- backend/Dockerfile
+- .dockerignore
+- docker-compose.yml
+- backend/app/core/logging.py
+- backend/app/core/metrics.py
+- backend/app/api/metrics.py
+- backend/app/api/rate_limit.py
+- backend/app/source_registry/usage_rights.py
+- backend/app/connectors/license_guard.py
+- backend/app/connectors/nwi.py
+- scripts/source_readiness.py
+- scripts/live_connector_worker.py
+- backend/tests/source_registry/test_source_readiness.py
+- backend/tests/api/test_live_connector_worker.py
+- docs/source-reviews/ds-002.md
+- backend/app/reports/job_store.py (`SqlAlchemyAsyncReportJobStore`)
+- backend/app/api/reports.py (`POST /report-runs/{report_run_id}/retry`)
+- backend/tests/api/test_logging.py
+- backend/tests/api/test_metrics.py
+- backend/tests/api/test_rate_limit.py
+- backend/tests/api/test_async_report_runs.py
+- backend/tests/connectors/test_license_guard.py
+- backend/tests/connectors/test_nwi_connector.py
+- backend/tests/connectors/test_static_file_connector.py
+- backend/tests/reports/test_job_store.py
+- backend/app/api/operations.py
+- backend/app/domain/job_health.py
+- backend/tests/api/test_operations.py
+- backend/tests/api/test_app_runtime_mode.py
+- backend/tests/test_deployment_smoke_scripts.py
+- scripts/run_deployment_smoke.ps1
+- scripts/run_deployment_smoke.sh
+- docs/runbooks/incident_response.md
+- scripts/run_incident_rollback_check.ps1
+- scripts/run_incident_rollback_check.sh
+- backend/tests/test_incident_rollback_artifacts.py
+- config/ops_alert_rules.yaml
+- docs/runbooks/alerting.md
+- scripts/run_alert_rules_check.ps1
+- scripts/run_alert_rules_check.sh
+- backend/tests/test_alerting_artifacts.py
+- .github/workflows/ci.yml
+- .github/dependabot.yml
+- docs/runbooks/supply_chain.md
+- scripts/run_supply_chain_check.ps1
+- scripts/run_supply_chain_check.sh
+- backend/tests/test_supply_chain_artifacts.py
+- backend/requirements-prod.lock
+- docs/sbom/backend-prod-sbom.json
+- docs/runbooks/dependency_provenance.md
+- scripts/run_provenance_check.ps1
+- scripts/run_provenance_check.sh
+- backend/tests/test_provenance_artifacts.py
+- config/ops_cost_monitoring.yaml
+- docs/runbooks/cost_monitoring.md
+- scripts/run_cost_monitoring_check.ps1
+- scripts/run_cost_monitoring_check.sh
+- backend/tests/test_cost_monitoring_artifacts.py
+- docs/planning_pack/api/openapi_stub.yaml
+- backend/tests/api/test_report_runs_db.py
+- scripts/run_backup_restore_check.ps1
+- scripts/run_backup_restore_check.sh
+- docs/runbooks/backup_restore.md
 Next lowest-dependency task:
-- Level 10 production hardening: async job persistence (store AsyncReportJobStore state in Postgres jobs.job_queue), production auth middleware, rate limiting, structured logging/metrics, deployment packaging (Dockerfile, compose updates), and live connector integration (after license review).
+- Continue Level 10 hardening without bypassing source-rights blockers: either review the
+  remaining blocked `Must` sources when jurisdiction/vendor/license authority exists, or
+  add the next bounded production-operations slice for the already reviewed workflow:
+  hosted alert routing, batch spend controls, or signed provenance publication.
 Do not work on yet:
-- Live connectors (credentials unavailable; license reviews pending)
+- Live connectors other than bounded DS-001 USGS TNM EPQS, bounded DS-002 FEMA NFHL,
+  bounded DS-003 SSURGO, and bounded DS-004 NWI unless source rights are reviewed and
+  the work is explicitly bounded
 - LLM summary generation (Level 10 scope)
-- New jurisdictions or intents until a live connector is registered and licensed
+- New jurisdictions or intents until the DS-002 connector slice or another registered/licensed live connector is implemented
 - Paid APIs without explicit license review and plan approval
 ```
 
 
 ## Current objective
 
-Build the foundation vertical slice for the land/locality due-diligence compiler:
+Harden the MVP workflow toward production operation while preserving the evidence-ledger-first spine:
 
 ```text
-source registry -> area geometry -> evidence -> claim -> report run -> API response
+source registry -> area geometry -> evidence -> claim -> report run -> API response -> durable jobs/runtime packaging
 ```
 
 ## Active plan (overall)
 
-`plans/2026-06-03-foundation-vertical-slice.md`
+`plans/2026-06-05-l10-production-hardening.md`
 
 ## 4-lane agent architecture (active)
 
@@ -252,13 +423,276 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 |---|---|---|
 | MVP state/counties | Undecided | Do not hard-code jurisdiction-specific logic |
 | Parcel vendor | Undecided | Use fixtures/public source registry only |
-| Live connector credentials | Unavailable | No live API/vendor integrations |
+| Live connector credentials | Not required for DS-002 public FEMA NFHL; unavailable for commercial vendors | DS-002 may proceed to a bounded public live connector slice; vendor connectors remain blocked |
 | Docker availability | Available | DB smoke now passes locally |
 | Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-020 complete; next Level 8 connector pass needs selection |
 
 ## Last verified state
 
-Level 8 PASS declared 2026-06-05 in worktree ralph/production-advance. 362 non-DB tests + 49 skipped DB tests pass after adding: ConnectorPolicy (US-001), ConnectorRunObservabilityLog (US-002), check_connector_source_license (US-003), connector review action routes request_fixture_fix/requeue_after_fix/cancel_review (US-004), connector runbook docs/connectors/connector_runbook.md (US-005), OpenAPI stub refresh. Lint clean; mypy clean. All L8-001 through L8-010 gates documented in state/VALIDATION_LOG.md. Prior DB-enabled baseline: 372 tests pass after CON-038; all CON-001 through CON-038 complete. Next: Level 9 MVP workflow groundwork — static local file connector (US-007), minimal web interface (US-008), async report job processing.
+Latest US-052 verification on 2026-06-05: reviewer-authenticated
+`GET /operations/queue-health` is implemented for in-memory and DB-backed report/live
+connector job stores. Full DB-enabled `.\scripts\verify.ps1` passes with
+`RUN_DB_SMOKE=1`; 631 tests are collected; source-readiness remains
+`sources=8 ready=4 blocked=4`; `git diff --check` reports only CRLF normalization
+warnings on generated/state files; no repo Docker services or worker-run containers
+remain running. Queue health is read-only and does not lease jobs, retry jobs, call live
+sources, persist evidence, or create reports.
+
+Latest US-053 verification on 2026-06-05: DB-backed deployment smoke automation is
+implemented through `scripts/run_deployment_smoke.ps1` and
+`scripts/run_deployment_smoke.sh`. `USE_DB_SERVICES` lets deployed `app.main:app` use
+Postgres-backed services, and Compose opts into that mode with
+`COMPOSE_USE_DB_SERVICES=true`. Final Windows deployment smoke passed after adding DB
+readiness waiting and guarding repeated `rule_execution_report_fk` migration
+application. Full DB-enabled `.\scripts\verify.ps1` passes with `RUN_DB_SMOKE=1`; 636
+tests are collected; source-readiness remains `sources=8 ready=4 blocked=4`; the diff
+whitespace check reports only CRLF normalization warnings on generated/state files; no
+repo, smoke, or worker-run containers remain running. Deployment smoke validates local
+Compose build/start, migrations/seeds, `/health`, `/version`, `/metrics`,
+`/operations/queue-health`, and an area-to-report HTTP workflow.
+
+Latest US-054 verification on 2026-06-05: incident response and rollback proof is
+implemented through `docs/runbooks/incident_response.md`,
+`scripts/run_incident_rollback_check.ps1`, and `scripts/run_incident_rollback_check.sh`.
+The runbook names severity levels, owner roles, escalation criteria, deployment rollback,
+database rollback/mitigation, connector outage handling, queue/report failure handling,
+recovery criteria, and closure records. The Windows incident/rollback check passed, full
+DB-enabled `.\scripts\verify.ps1` passes with `RUN_DB_SMOKE=1`; 638 tests are collected;
+source-readiness remains `sources=8 ready=4 blocked=4`; the diff whitespace check reports
+only CRLF normalization warnings on generated/state files; no repo, smoke, or worker-run
+containers remain running. Production on-call identities, alert routing, hosted rollback
+pipeline, and automated down migrations remain outside this proof.
+
+Latest US-055 verification on 2026-06-05: repo-local alert rules are implemented through
+`config/ops_alert_rules.yaml`, `docs/runbooks/alerting.md`,
+`scripts/run_alert_rules_check.ps1`, and `scripts/run_alert_rules_check.sh`. The catalog
+maps SEV0 safety-contract failure, SEV1 health/deployment/DB/restore failures, SEV2
+metrics/queue/live-connector failures, source-readiness ready-count drops, and stale
+source-registry `Last Checked At` metadata to owners, escalation, runbooks, and validation
+proofs. The Windows alert-rules check passed, full DB-enabled `.\scripts\verify.ps1`
+passes with `RUN_DB_SMOKE=1`; 642 tests are collected; source-readiness remains
+`sources=8 ready=4 blocked=4`; the diff whitespace check reports only CRLF normalization
+warnings on generated/state files; no repo, smoke, or worker-run containers remain
+running. Hosted alert routing, dashboards, pager delivery, a named on-call rotation, and
+independent real-time upstream dataset freshness verification remain outside this proof.
+
+Latest US-056 verification on 2026-06-05: CI supply-chain dependency vulnerability
+scanning and update hygiene are implemented through `.github/workflows/ci.yml`,
+`.github/dependabot.yml`, `docs/runbooks/supply_chain.md`,
+`scripts/run_supply_chain_check.ps1`, and `scripts/run_supply_chain_check.sh`. The CI
+workflow now has a `supply-chain` job that installs the backend dependency environment
+and runs `pip-audit --local`; Dependabot requests weekly checks for GitHub Actions and
+backend Python dependency metadata. The Windows supply-chain check passed, full
+DB-enabled `.\scripts\verify.ps1` passes with `RUN_DB_SMOKE=1`; canonical mypy is clean
+over 175 source files. At the US-056 point, a production dependency lockfile, signed
+SBOM, SLSA provenance attestation, Docker base-image package scan, and GitHub Actions
+runtime attestation remained outside that proof; US-058 later added the repo-local
+production lock/SBOM proof, and US-059 later added the repo-local container image scan
+proof.
+
+Latest US-058 verification on 2026-06-05: backend production dependency provenance is
+implemented through `backend/requirements-prod.lock`, `docs/sbom/backend-prod-sbom.json`,
+`docs/runbooks/dependency_provenance.md`, `scripts/run_provenance_check.ps1`,
+`scripts/run_provenance_check.sh`, and `backend/tests/test_provenance_artifacts.py`.
+The lock pins the CPython 3.12 manylinux backend runtime dependency closure with
+SHA-256 hashes, the repo-local CycloneDX SBOM mirrors that component set, and the CI
+`supply-chain` job now runs the provenance proof before `pip-audit --local`. The Windows
+provenance proof, updated supply-chain proof, focused tests, ruff, mypy, PowerShell
+parser validation, and full DB-enabled `.\scripts\verify.ps1` passed; 653 tests are
+collected and canonical mypy is clean over 177 source files. Signed/published SBOM,
+SLSA provenance attestation, Docker base-image scanning, and GitHub Actions runtime
+attestation remained outside the US-058 proof; US-059 later added the repo-local
+container image scan proof.
+
+Latest US-059 verification on 2026-06-05: backend container image/base-image
+vulnerability scanning is implemented through the CI `container-image-scan` job,
+`docs/runbooks/container_image_scan.md`, `scripts/run_container_scan_check.ps1`,
+`scripts/run_container_scan_check.sh`, and
+`backend/tests/test_container_scan_artifacts.py`. The CI job builds
+`backend/Dockerfile` into `land-diligence-backend:${{ github.sha }}` and runs
+`docker/scout-action@v1` with `command: cves`, `local://` image resolution,
+`only-severities: critical,high`, and `exit-code: true`. The Windows container scan
+proof, updated supply-chain proof, focused tests, ruff, mypy, PowerShell parser
+validation, and full DB-enabled `.\scripts\verify.ps1` passed; 657 tests are collected
+and canonical mypy is clean over 178 source files. Digest-pinned base images remained
+outside the US-059 proof; US-060 later added the repo-local digest-pinned backend
+base-image proof. Published-registry image attestation, signed image SBOM, SLSA
+provenance attestation, hosted deployment runtime scanning, GitHub Actions runtime
+attestation, and source/vendor rights remain outside this proof.
+
+Latest US-060 verification on 2026-06-05: the backend Docker runtime base image is pinned
+by OCI index digest in `backend/Dockerfile`:
+`python:3.12-slim@sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203`.
+The digest was verified from live `docker buildx imagetools inspect python:3.12-slim`
+output before editing. The Windows container scan proof, focused tests, ruff, mypy, an
+actual pinned `docker build`, and full DB-enabled `.\scripts\verify.ps1` passed;
+canonical mypy remains clean over 178 source files. Published-registry image
+attestation, signed image SBOM, SLSA provenance attestation, hosted deployment runtime
+scanning, GitHub Actions runtime attestation, and source/vendor rights remain outside
+this proof.
+
+Latest US-061 verification on 2026-06-05: GitHub dependency lock/SBOM artifact
+attestations are wired through the CI `dependency-attestations` job. The job validates
+dependency provenance first, then uses `actions/attest@v4` with `id-token: write`,
+`attestations: write`, and `artifact-metadata: write` to create a provenance
+attestation for `backend/requirements-prod.lock` and `docs/sbom/backend-prod-sbom.json`,
+plus an SBOM attestation binding `docs/sbom/backend-prod-sbom.json` to the production
+lock subject. The Windows provenance proof, supply-chain proof, focused tests, ruff,
+mypy, PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1` passed;
+canonical mypy remains clean over 178 source files. Release package, hosted deployment,
+published registry-image attestation, GitHub Actions runtime attestation, and
+source/vendor rights remain outside this proof.
+
+Latest US-062 verification on 2026-06-05: report `artifact_metadata.cost_metrics` now
+requires and emits explicit zero-dollar attribution fields for current local-only paths:
+`estimated_total_usd_cents`, `compute_usd_cents`, `storage_usd_cents`,
+`llm_usd_cents`, `map_tile_usd_cents`, `geocoding_usd_cents`,
+`paid_data_usd_cents`, `human_review_usd_cents`, and `human_review_minutes`.
+The report repository fills missing attribution defaults for older/custom metadata on
+persistence while preserving extension fields. The Windows cost-monitoring proof,
+focused report schema/service/repository/regression/API tests, ruff, mypy, PowerShell
+parser validation, and full DB-enabled `.\scripts\verify.ps1` passed; 659 tests are
+collected, canonical mypy remains clean over 178 source files, source readiness remains
+`sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain
+running. Hosted billing reconciliation, approved nonzero unit-cost thresholds, paid
+vendor metering, LLM metering, map/geocoding metering, and durable reviewer-time capture
+remain outside this proof.
+
+Latest US-063 verification on 2026-06-05: `config/release_readiness.yaml` now gathers
+the repo-local release gates for workspace verification, DB verification, deployment
+smoke, dependency provenance, supply-chain scanning, dependency attestations, container
+image scanning, backup/restore, incident/rollback, alerting, cost monitoring, and
+source readiness. `scripts/run_release_readiness_check.ps1` and `.sh` validate the
+catalog, CI `release-readiness` job, current Must-source readiness counts, and explicit
+release blockers. The Windows release-readiness proof, focused artifact tests, ruff,
+mypy, PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1` passed;
+664 tests are collected, canonical mypy is clean over 179 source files, source readiness
+remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers
+remain running. Release package creation, pushed registry image, hosted deployment,
+published registry-image attestations, hosted billing reconciliation, blocked source
+approval, full user auth/RBAC, and hosted alerting remain outside this proof.
+
+Latest US-064 verification on 2026-06-05: `config/access_control.yaml` now records
+current default-off API-key middleware, local reviewer service-account auth,
+reviewer-authenticated operator routes, intentionally public health/version routes, and
+production auth/RBAC blockers. `scripts/run_access_control_check.ps1` and `.sh`
+validate the catalog, referenced auth authority files, failure-mode test coverage,
+protected-route reviewer dependencies, `access-control` CI job, and runbook limits. The
+Windows access-control proof, release-readiness proof, focused artifact/auth tests, ruff,
+mypy, PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1` passed;
+668 tests are collected, canonical mypy is clean over 180 source files, source readiness
+remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers
+remain running. Full user auth/RBAC, OAuth/OIDC, user accounts, key rotation, hosted
+identity-provider integration, and role-scoped authorization remain outside this proof.
+
+Latest US-065 verification on 2026-06-05: protected operator routes now enforce scoped
+local reviewer service-account authorization. `REVIEWER_ACCOUNT_SCOPES` is required for
+custom reviewer accounts; connector invocation/scheduling requires `connector:run`,
+connector review decisions require `connector:review`, queue/live-job health reads
+require `operations:read`, failed-report retry requires `report:retry`, and manual
+approved-connector report creation requires `report:run`. The Windows access-control
+proof, release-readiness proof, focused scoped-auth tests, ruff, mypy, PowerShell parser
+validation, Compose config, and full DB-enabled `.\scripts\verify.ps1` passed; 680 tests
+are collected, canonical mypy is clean over 180 source files, source readiness remains
+`sources=8 ready=4 blocked=4`, auth-overclaim search has no matches, and no Docker
+services or worker-run containers remain running. This is a scoped local service-account
+authorization substrate, not full user auth/RBAC, OAuth/OIDC, user accounts, key
+rotation, or hosted identity-provider authorization.
+
+Latest US-066 verification on 2026-06-05: local release package creation is now
+implemented through `config/release_package.yaml`, `scripts/build_release_package.ps1`,
+`scripts/build_release_package.sh`, and validate-only package proofs. A clean package
+build produced `local_artifacts/releases/land-diligence-us066-20260606T013648Z.zip`
+and `local_artifacts/releases/land-diligence-us066-20260606T013648Z-release-manifest.json`
+with 220 files, an embedded manifest, no `.git`, no `local_artifacts`, and no secret-like
+`.env` files beyond allowed `.env.example`. Full DB-enabled `.\scripts\verify.ps1`
+passed after the package slice; 684 tests are collected, canonical mypy is clean over
+181 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker
+services or worker-run containers remain running. Pushed registry images, hosted
+deployment, registry-image attestations, signed image SBOM, SLSA provenance, hosted
+billing reconciliation, and blocked-source approval remain outside this proof.
+
+Latest US-067 verification on 2026-06-05: registry image publication readiness is now
+cataloged through `config/image_publication.yaml`, `docs/runbooks/image_publication.md`,
+`scripts/run_image_publication_check.ps1`, `scripts/run_image_publication_check.sh`, and
+`backend/tests/test_image_publication_artifacts.py`. The proof is wired into
+`config/release_readiness.yaml`, the read-only `image-publication` CI job, release
+readiness proofs, `docs/runbooks/mvp_operator.md`, `MANIFEST.md`, and this plan/state
+set. Full DB-enabled `.\scripts\verify.ps1` passed after the image publication slice;
+689 tests are collected, canonical mypy is clean over 182 source files, source readiness
+remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings on
+generated/state files, and no Docker services or worker-run containers remain running.
+This is a validate-only publication-readiness boundary; it does not push a registry
+image, create hosted deployment, sign an image SBOM, publish SLSA provenance, or attach
+registry-image attestations.
+
+Latest US-068 verification on 2026-06-05: hosted deployment readiness is now
+cataloged through `config/hosted_deployment.yaml`,
+`docs/runbooks/hosted_deployment.md`, `scripts/run_hosted_deployment_check.ps1`,
+`scripts/run_hosted_deployment_check.sh`, and
+`backend/tests/test_hosted_deployment_artifacts.py`. The proof is wired into
+`config/release_readiness.yaml`, the read-only `hosted-deployment` CI job,
+release readiness proofs, `docs/runbooks/mvp_operator.md`, `MANIFEST.md`, and this
+plan/state set. Full DB-enabled `.\scripts\verify.ps1` passed after the hosted
+deployment readiness slice; 694 tests are collected, canonical mypy is clean over
+183 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no
+Docker services or worker-run containers remain running. This is a validate-only
+hosted deployment readiness boundary; it does not provision infrastructure,
+publish a registry image, deploy the service, configure DNS/TLS, attach hosted
+identity, or enable hosted alerting.
+
+Latest US-069 verification on 2026-06-05: API-key and local reviewer
+service-account secrets now accept raw local values or normalized
+`sha256:<64-hex>` configured secret specs through the shared
+`backend/app/api/secret_specs.py` helper. `API_KEYS` and `REVIEWER_ACCOUNTS`
+parsing now fail closed for blank or malformed hash specs, compare configured
+hashes using SHA-256 plus constant-time comparison, keep raw fixture secrets
+available for local use, and update access-control catalogs/runbooks/proofs to
+document the boundary. The Windows access-control proof, release-readiness proof,
+focused auth tests, ruff, mypy, and full DB-enabled `.\scripts\verify.ps1` passed
+after the hashed secret specs slice; 704 tests are collected, canonical mypy is
+clean over 184 source files, migrations/seeds apply, and DB smoke passes. This is
+not key rotation, user accounts, OAuth/OIDC, hosted identity, or full RBAC.
+
+Latest US-070 verification on 2026-06-05: `API_KEY_SPECS` now provides a configured
+static API-key lifecycle substrate with comma-separated `id|status|secret` entries.
+Only `active` specs authenticate; `retired` specs do not; secrets may be raw or
+`sha256:<64-hex>`; malformed status, duplicate IDs, duplicate secrets, and malformed
+hashes fail closed during settings parsing. The access-control catalog now records
+`api_key_rotation` as an implemented configured static lifecycle control and keeps
+`automatic_api_key_rotation` blocked. `.env.example`, Compose, hosted deployment
+readiness, access-control proofs, hosted-deployment proofs, and operator runbooks expose
+the runtime knob without adding hosted secret writes. Focused API-key lifecycle tests,
+access-control and hosted-deployment artifact tests, access-control proof,
+hosted-deployment proof, focused ruff, and focused mypy passed before full verification.
+This is not automatic rotation, external secret-manager integration, per-key usage
+audit, user accounts, OAuth/OIDC, hosted identity, or full RBAC.
+
+Latest US-071 verification on 2026-06-05: protected-path API-key auth now emits
+structured runtime audit log events for accepted, missing, invalid, and unconfigured
+decisions. Events include `event_type=api_key_auth`, outcome, status code, method, path,
+auth source, and configured `api_key_id` for accepted `API_KEY_SPECS` credentials; they
+do not include the provided key, configured secret, or query string. The access-control
+catalog now records `api_key_audit_logging` as implemented structured runtime logs.
+Focused API-key auth/access-control tests, access-control proof, focused ruff, focused
+mypy, release-readiness proof, and full DB-enabled `.\scripts\verify.ps1` passed after
+this slice; 718 tests are collected, canonical mypy is clean over 184 source files,
+migrations/seeds apply, and DB smoke passes. This is not a durable database audit
+ledger, hosted log-retention system, automatic rotation, external secret-manager
+integration, user accounts, OAuth/OIDC, hosted identity, or full RBAC.
+
+Latest US-072 verification on 2026-06-05: protected-path API-key auth now records
+accepted, missing, invalid, and unconfigured decisions through an optional API-key auth
+audit sink. In DB-service mode, the SQLAlchemy sink writes those decisions to existing
+`audit.events` rows with `event_type=api_key_auth` and `target_table='api.api_key_auth'`.
+The middleware fails closed with 503 if configured audit persistence fails, and the
+runtime log plus DB-event payloads still exclude provided keys, configured secrets, and
+query strings. Focused API-key auth/access-control tests, access-control proof, focused
+ruff, and focused mypy passed before full verification. This is not hosted log retention,
+SIEM export, automatic rotation, external secret-manager integration, user accounts,
+OAuth/OIDC, hosted identity, or full RBAC.
+
+Level 10 partial hardening verified 2026-06-05 on local `main`: settings-backed scoped reviewer auth, production API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, and structured API-key auth audit logs plus DB-backed API-key auth events, default-off fixed-window rate limiting, backend Docker/Compose service, JSON runtime logging, structured runtime metrics, container build/runtime smoke, fail-closed connector source-use preflight, source-readiness audit reporting, reviewed source-rights candidates (DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA Web Soil Survey/SSURGO, and DS-004 National Wetlands Inventory), bounded DS-001 USGS TNM EPQS connector-layer terrain-relief screening plus controlled DS-001 API/operator invocation, explicit durable DS-001 live connector scheduling, and request-time DS-001 orchestration, bounded DS-002 FEMA NFHL live connector, bounded DS-003 USDA SSURGO connector plus controlled DS-003 API/operator invocation, explicit durable DS-003 live connector scheduling, and request-time DS-003 report integration with an UNKNOWN SSURGO screening-review claim, bounded DS-004 National Wetlands Inventory connector, controlled DS-002 API/operator invocation, controlled DS-004 API/operator invocation, explicit durable DS-002 and DS-004 live connector scheduling, read-only live connector job status API, bounded supervised live connector worker command, opt-in Compose live connector worker profile, connector review closeout actions, durable connector reviewer action history, approved connector evidence report gating, DB-backed connector approval-to-report regressions, request-time DS-001, DS-002, DS-004, and DS-003 orchestration for intake/report-run flows, file-backed DS-004 raw response fixture corpus, API 422 deprecation cleanup, live connector sequence scheduling, failed report job retry with lineage, backup/restore proof, repo-local alert-rule catalog with validate-only proof, CI supply-chain dependency vulnerability scanning and update hygiene, backend production dependency lock/SBOM provenance proof, backend dependency lock/SBOM artifact attestation proof, backend container image/base-image scan proof, digest-pinned backend Docker base-image proof, repo-local cost monitoring catalog with validate-only guardrails and report zero-dollar cost attribution, repo-local release readiness catalog with validate-only proof, local release package ZIP/manifest builder with validate-only proof, repo-local image publication readiness catalog with validate-only proof, repo-local hosted deployment readiness catalog with validate-only proof, repo-local access-control posture catalog with validate-only proof, scoped local reviewer authorization with raw-or-sha256 configured service-account tokens for protected operator routes, explicit post-approval connector report resume, SQLAlchemy source placeholder URL hardening, and Postgres-backed async report job state are implemented. Full DB-enabled `.\scripts\verify.ps1` passes with `RUN_DB_SMOKE=1` after the DB-backed API-key auth audit-event slice; 722 tests are collected; ruff is clean and canonical mypy is clean over 185 source files; migrations/seeds apply; DB smoke passes. Backend image build passes with the pinned base image; Compose runtime smoke serves `/health`, `/version`, and `/metrics`. Source-readiness audit reports current `Must` sources as `sources=8 ready=4 blocked=4`; DS-001 is approved-with-restrictions plus implemented as a bounded connector-layer EPQS terrain-relief screening slice with controlled API/operator invocation, durable scheduling, and request-time orchestration, DS-002 is approved-with-restrictions for bounded FEMA NFHL screening use, DS-003 is approved-with-restrictions plus implemented as a bounded connector-layer SSURGO mapunit/component screening slice with immediate, durable queued-worker, and request-time report paths, DS-004 is approved-with-restrictions for wetland/deepwater screening source-rights use only, and the SQL seed refreshes first-class DS-001/DS-002/DS-003/DS-004 usage-rights fields on re-seed. The DS-001 connector samples the official USGS TNM EPQS JSON service at the bbox center and corners with EPSG:4326 coordinates, emits one low-confidence terrain-relief `DERIVED_METRIC` for screening, emits source-failure evidence for no-data/error/malformed cases, and reuses existing retrieval provenance plus evidence-ingestion adapters. The reviewer-authenticated DS-001 route at `POST /connector-runs/usgs-tnm/query-bbox` invokes the bounded connector, records retrieval provenance, persists terrain-relief derived metric or source-failure evidence, and enqueues connector review status. `POST /connector-runs/usgs-tnm/schedule-bbox` enqueues durable DS-001 `live_connector_run` jobs without fetching EPQS or creating reports; the shared worker leases by `source_registry_id`, executes the existing DS-001 orchestration, and records the resulting connector review item. When `ENABLE_LIVE_CONNECTORS=true`, `/intake` and `/report-runs` run bounded DS-001 first, returning `pending_connector_review` until DS-001 approval before advancing to DS-002, DS-004, and DS-003; approved DS-001 evidence may enter reports as buildability-domain terrain screening evidence, but DS-001 still does not add DEM downloads, survey-grade elevation, engineering, site-plan, legal, buildability, lending, appraisal, investment conclusions, or a DS-001-specific claim. The DS-002 connector is implemented with reviewer-authenticated immediate, request-time, and queued-worker paths that record retrieval provenance, persist evidence, enqueue review status, support authenticated review closeout with queue-payload action history, and gate report use of connector-lineage evidence on succeeded `approve_for_connector_qa` queue state. The DS-003 connector/API/scheduler/request-time slice uses official USDA NRCS Soil Data Access `post.rest` with `JSON+COLUMNNAME` output and the documented WGS84 WKT mapunit-intersection function, exposes reviewer-authenticated immediate operator invocation at `POST /connector-runs/ssurgo/query-bbox`, records retrieval provenance, persists ledger-safe soil/septic/ag screening evidence or source-failure evidence, supports explicit durable scheduling at `POST /connector-runs/ssurgo/schedule-bbox`, and participates in request-time `/intake` and `/report-runs` after DS-004 approval. Approved DS-003 evidence can produce only an UNKNOWN `SOIL_NOT_EVALUATED` professional-review claim; it still has no pAOI state, WSS interpretation/rating execution, or final septic/soil-suitability/buildability conclusions. The DS-004 connector is implemented with reviewer-authenticated immediate, queued-worker, and request-time paths: `POST /connector-runs/nwi/query-bbox` runs the official USFWS-linked Wetlands ArcGIS REST layer 0 with EPSG:4326 bbox/feature limits immediately, and `POST /connector-runs/nwi/schedule-bbox` enqueues durable `live_connector_run` jobs without fetching NWI or creating reports. `GET /connector-runs/live-jobs/{job_id}` returns durable live connector job state without mutating, leasing, retrying, fetching, or scheduling reports. The shared worker dispatches by `source_registry_id`, executes existing DS-001, DS-002, DS-003, or DS-004 orchestration, records provenance, persists evidence, enqueues review status, and can feed the existing approved connector report-resume path without re-fetching live sources where report integration exists. DS-004 still has no source-specific autonomous scheduling policy. File-backed raw NWI fixtures now cover representative DS-004 success and empty-response source-failure behavior. API route validation/error paths now use the current FastAPI/Starlette 422 status constant name without changing the wire-level 422 status code. `POST /connector-runs/live-sequence/schedule-bbox` now enqueues the reviewed DS-001, DS-002, DS-004, and DS-003 durable live connector jobs for a registered area without fetching live sources, persisting evidence, approving review, or creating reports; its request body uses a source-neutral bbox schema rather than a FEMA-specific public model. `POST /report-runs/{report_run_id}/retry` now lets authenticated reviewers with `report:retry` create a new queued report job from a failed report job while preserving the failed job and recording `retry_of_report_run_id` lineage in in-memory and DB-backed job stores. `scripts/run_backup_restore_check.ps1` and `scripts/run_backup_restore_check.sh` now provide a Level 10 backup/restore proof that dumps the configured source DB, restores into a dedicated `land_diligence_restore_check*` database, runs `scripts/db_smoke_check.py` against the restored database, and drops the restore DB by default. The supply-chain CI job validates the backend production dependency lock/SBOM, installs the backend dependency environment, and runs `pip-audit --local`; the dependency-attestations CI job publishes GitHub artifact attestations for the production lock/SBOM files and an SBOM attestation binding the CycloneDX SBOM to the lock subject; the container-image scan CI job builds the backend image locally from a digest-pinned base image and scans it with Docker Scout for critical/high CVEs; the access-control CI job validates the repo-local access posture catalog; the hosted-deployment CI job validates the repo-local hosted deployment readiness boundary without provisioning infrastructure; the image-publication CI job validates the repo-local registry publication boundary without registry login, push, signing, or deployment; the release-readiness CI job validates the repo-local release gate catalog; Dependabot checks GitHub Actions and backend Python dependency metadata weekly. The repo-local cost monitoring catalog covers compute, storage, LLM-if-used, maps, geocoding, and data vendors, and the validate-only proof checks report `cost_metrics` counts plus zero-dollar attribution fields, planning cost inputs, alert integration, and DS-017 blocked vendor status. The repo-local release readiness catalog gathers verification, DB, deployment smoke, dependency provenance, supply-chain, dependency attestation, container scan, backup/restore, incident, alerting, cost, access-control, release-package, image-publication, hosted-deployment, and source-readiness gates while preserving release blockers for registry image publishing, hosted deployment, billing reconciliation, non-ready sources, full user auth/RBAC, and hosted alerting. The repo-local access-control catalog records current API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, structured API-key auth audit logs, DB-service-mode API-key auth events in `audit.events`, scoped local reviewer service-account auth with raw-or-sha256 configured tokens, protected operator-route scope posture, intentionally public health/version routes, and production auth/RBAC blockers without adding full user identity, OAuth/OIDC, automatic key rotation, hosted log retention, or hosted identity-provider authorization. `docs/runbooks/mvp_operator.md` now documents reviewed live connectors, repo-local alert rules, CI supply-chain checks, dependency provenance guardrails, dependency artifact attestation guardrails, container image scan guardrails, digest-pinned base-image guardrails, cost-monitoring guardrails, scoped access-control guardrails, release-package guardrails, image-publication guardrails, hosted-deployment guardrails, and release-readiness guardrails as bounded, screening-only/review-gated or validate-only operator flows instead of describing the current app as fixture-only/no-auth. The approval-to-report operator sequence is proven in both in-memory and DB-backed API service configurations. When `ENABLE_LIVE_CONNECTORS=true`, `/intake` and `/report-runs` run bounded DS-001 first, bounded DS-002 after DS-001 approval, bounded DS-004 after DS-002 approval, and bounded DS-003 after DS-004 approval, returning `pending_connector_review` without creating report jobs until each connector review item is approved. Operators should keep the returned `area_id` and continue with `/report-runs` to complete the full request-time sequence; `POST /connector-runs/{ingest_run_id}/report-runs` remains the explicit manual one-connector report path and now requires `report:run`. Remaining Level 10 work is remaining non-DS-001/DS-002/DS-003/DS-004 source reviews, hosted billing integration and deeper spend controls, hosted log retention, automatic key rotation, external secret-manager integration, full user auth/RBAC, hosted deployment / published image attestation, any future DS-001 advanced terrain/report semantics beyond approved screening evidence, and any future DS-004 source-specific autonomous scheduling work.
 
 ## Local repo bootstrap state
 

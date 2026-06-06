@@ -2,6 +2,534 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-05 (Level 10 partial production hardening)
+
+- Added US-072 DB-backed API-key auth audit events: `backend/app/api/auth_audit.py`
+  now defines API-key auth audit events plus in-memory and SQLAlchemy sinks, and DB
+  service mode writes protected-path API-key decisions to existing `audit.events`.
+- `ApiKeyAuthMiddleware` records accepted, missing, invalid, and unconfigured decisions
+  through structured runtime logs and the optional audit sink, fails closed with 503 if
+  configured audit persistence fails, and still excludes provided keys, configured
+  secrets, and query strings from log/event payloads.
+- Updated the access-control catalog, runbook, proof scripts, operator runbook, and
+  artifact tests to validate the DB-backed audit-event path while leaving hosted
+  retention/SIEM, user-account binding, automatic key rotation, OAuth/OIDC, hosted
+  identity, and full RBAC out of scope.
+- Added US-071 structured API-key auth audit logging: protected-path API-key decisions
+  now emit structured runtime log events with `event_type=api_key_auth`, outcome, status
+  code, method, path, auth source, and configured `api_key_id` for accepted
+  `API_KEY_SPECS` credentials.
+- The audit log path does not log the provided key, configured secret, or query string.
+  Access-control catalog, runbook, proof scripts, operator runbook, and artifact tests
+  now validate this runtime observability boundary. Before US-072, it was not a durable
+  DB audit ledger, hosted log-retention system, automatic key rotation, user accounts,
+  OAuth/OIDC, hosted identity, or full RBAC.
+- Added US-070 configured static API-key lifecycle specs: `API_KEY_SPECS` now accepts
+  comma-separated `id|status|secret` entries with `active` or `retired` status, raw or
+  `sha256:<64-hex>` secrets, active-only authentication, and fail-closed malformed,
+  duplicate-id, or duplicate-secret handling.
+- Updated `config/access_control.yaml`, `docs/runbooks/access_control.md`,
+  `docs/runbooks/mvp_operator.md`, `.env.example`, `docker-compose.yml`,
+  `config/hosted_deployment.yaml`, hosted-deployment runbooks/tests/proofs, and both
+  access-control proof scripts so static key lifecycle support is part of the audited
+  access-control and hosted runtime surfaces. Automatic key rotation, external
+  secret-manager integration, per-key usage audit, user accounts, OAuth/OIDC, hosted
+  identity, and full RBAC remain out of scope.
+- Focused API-key lifecycle tests, access-control artifact tests, hosted-deployment
+  artifact tests, access-control proof, hosted-deployment proof, ruff, and mypy passed
+  after US-070. Full verification is recorded in `state/VALIDATION_LOG.md`.
+- Added US-069 raw-or-sha256 configured secret specs for API-key and local reviewer
+  service-account auth: `backend/app/api/secret_specs.py`,
+  `backend/app/api/api_key_auth.py`, `backend/app/api/reviewer_auth.py`,
+  `backend/app/core/config.py`, `backend/tests/api/test_api_key_auth.py`, and
+  `backend/tests/api/test_reviewer_auth.py`.
+- API keys and reviewer tokens can now be configured as raw local fixture secrets or
+  `sha256:<64-hex>` specs. Malformed hash specs fail closed during settings parsing, and
+  runtime matching compares raw secrets or SHA-256 digests through constant-time helpers.
+- Updated `config/access_control.yaml`, `docs/runbooks/access_control.md`,
+  `.env.example`, and both access-control proof scripts so the hashed-secret behavior is
+  part of the audited access-control surface. Focused auth tests, access-control proof,
+  release-readiness proof, ruff, mypy, and full DB-enabled `.\scripts\verify.ps1` passed
+  after US-069; 704 tests are collected and canonical mypy is clean over 184 source
+  files.
+- Added US-068 hosted deployment readiness catalog and validate-only proof:
+  `config/hosted_deployment.yaml`, `docs/runbooks/hosted_deployment.md`,
+  `scripts/run_hosted_deployment_check.ps1`, `scripts/run_hosted_deployment_check.sh`,
+  and `backend/tests/test_hosted_deployment_artifacts.py`.
+- Wired hosted-deployment proof into `config/release_readiness.yaml`, the read-only
+  `hosted-deployment` CI job, release-readiness scripts/tests,
+  `docs/runbooks/release_readiness.md`, `docs/runbooks/mvp_operator.md`,
+  `MANIFEST.md`, and the active Level 10 plan. The proof validates required pre-deploy
+  gates, runtime inputs, runtime evidence, and hosted platform/DNS/TLS/secrets/database/
+  billing/alerting blockers while ensuring the hosted-deployment CI proof does not run
+  hosted infrastructure mutation commands.
+- The Windows hosted-deployment proof, release-readiness proof, focused artifact tests,
+  ruff, mypy, PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1`
+  passed after US-068; 694 tests are collected, canonical mypy is clean over 183 source
+  files, migrations/seeds apply, and DB smoke passes. Hosted infrastructure creation,
+  secret writes, public endpoint opening, registry image deployment, hosted billing
+  reconciliation, and hosted alerting remain blocked.
+- Added US-067 registry image publication readiness catalog and validate-only proof:
+  `config/image_publication.yaml`, `docs/runbooks/image_publication.md`,
+  `scripts/run_image_publication_check.ps1`, `scripts/run_image_publication_check.sh`,
+  and `backend/tests/test_image_publication_artifacts.py`.
+- Wired image-publication proof into `config/release_readiness.yaml`, the read-only
+  `image-publication` CI job, release-readiness scripts/tests,
+  `docs/runbooks/release_readiness.md`, `docs/runbooks/mvp_operator.md`,
+  `MANIFEST.md`, and the active Level 10 plan. The proof validates backend image source,
+  required release/deployment/scan gates, required post-publish evidence, and explicit
+  registry/deployment/attestation blockers while ensuring validate-only CI/scripts do not
+  push, registry-login, or sign images.
+- The Windows image-publication proof, release-readiness proof, focused artifact tests,
+  ruff, mypy, PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1`
+  passed after US-067; 689 tests are collected, canonical mypy is clean over 182 source
+  files, source readiness remains `sources=8 ready=4 blocked=4`, `git diff --check`
+  reports only CRLF warnings on generated/state files, and no Docker services or
+  worker-run containers remain running. Registry image push, hosted deployment, signed
+  image SBOM, SLSA provenance, and published registry-image attestation remain blocked.
+- Added US-066 local release package builder, manifest, and validate-only proof:
+  `config/release_package.yaml`, `docs/runbooks/release_package.md`,
+  `scripts/build_release_package.ps1`, `scripts/build_release_package.sh`,
+  `scripts/run_release_package_check.ps1`, `scripts/run_release_package_check.sh`, and
+  `backend/tests/test_release_package_artifacts.py`.
+- Wired release-package proof into `config/release_readiness.yaml`, release-readiness
+  scripts/tests, `docs/runbooks/release_readiness.md`, `docs/runbooks/mvp_operator.md`,
+  `MANIFEST.md`, and the active Level 10 plan. A clean local package build produced
+  `local_artifacts/releases/land-diligence-us066-20260606T013648Z.zip` and
+  `local_artifacts/releases/land-diligence-us066-20260606T013648Z-release-manifest.json`
+  with 220 files, a manifest entry inside the ZIP, no `.git`, no `local_artifacts`, and
+  no secret-like `.env` files beyond allowed `.env.example`.
+- The Windows release-package proof, release-readiness proof, focused artifact tests,
+  ruff, mypy, PowerShell parser validation, package manifest/ZIP inspection, and full
+  DB-enabled `.\scripts\verify.ps1` passed after US-066; 684 tests are collected,
+  canonical mypy is clean over 181 source files, source readiness remains
+  `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings on
+  generated/state files, and no Docker services or worker-run containers remain running.
+- Added US-065 scoped reviewer service-account authorization:
+  `ReviewerPrincipal` now carries explicit scopes from `REVIEWER_ACCOUNT_SCOPES`, custom
+  reviewer accounts fail closed without scopes, and protected operator routes enforce
+  `connector:run`, `connector:review`, `operations:read`, `report:retry`, or
+  `report:run` as appropriate.
+- Updated `.env.example`, `docker-compose.yml`, `config/access_control.yaml`,
+  `docs/runbooks/access_control.md`, `docs/runbooks/mvp_operator.md`, `MANIFEST.md`,
+  `scripts/run_access_control_check.ps1`, `scripts/run_access_control_check.sh`, and
+  access/auth/API tests so scoped local reviewer authorization is machine-checkable.
+- The Windows access-control proof, release-readiness proof, focused scoped-auth tests,
+  ruff, mypy, PowerShell parser validation, Compose config, and full DB-enabled
+  `.\scripts\verify.ps1` passed after US-065; 680 tests are collected, canonical mypy is
+  clean over 180 source files, source readiness remains `sources=8 ready=4 blocked=4`,
+  `git diff --check` reports only CRLF warnings on generated/state files, auth-overclaim
+  search has no matches, and no Docker services or worker-run containers remain running.
+- Added US-064 repo-local access-control posture catalog and validate-only proof:
+  `config/access_control.yaml`, `docs/runbooks/access_control.md`,
+  `scripts/run_access_control_check.ps1`, `scripts/run_access_control_check.sh`, and
+  `backend/tests/test_access_control_artifacts.py`.
+- The catalog records current default-off API-key middleware, local reviewer
+  service-account auth, reviewer-authenticated operator routes, intentionally public
+  `/health` and `/version` routes, and explicit production auth/RBAC blockers. It does
+  not add or claim user accounts, OAuth/OIDC, RBAC, key rotation, hosted identity, or
+  role-scoped authorization.
+- Added an `access-control` CI job and wired access-control into the release-readiness
+  catalog/proof. The Windows access-control proof, release-readiness proof, focused
+  artifact/auth tests, ruff, mypy, PowerShell parser validation, and full DB-enabled
+  `.\scripts\verify.ps1` passed after US-064; 668 tests are collected, canonical mypy is
+  clean over 180 source files, source readiness remains `sources=8 ready=4 blocked=4`,
+  `git diff --check` reports only CRLF warnings on generated/state files, and no Docker
+  services or worker-run containers remain running.
+- Added US-063 repo-local release readiness catalog and validate-only proof:
+  `config/release_readiness.yaml`, `docs/runbooks/release_readiness.md`,
+  `scripts/run_release_readiness_check.ps1`, `scripts/run_release_readiness_check.sh`,
+  and `backend/tests/test_release_readiness_artifacts.py`.
+- The catalog gathers workspace verification, DB verification, deployment smoke,
+  dependency provenance, supply-chain scanning, dependency attestations, container image
+  scanning, backup/restore, incident/rollback, alerting, cost monitoring, and
+  source-readiness gates into one release boundary. It also records blockers for hosted
+  deployment attestation, published registry-image attestation, hosted billing
+  reconciliation, non-ready Must sources, full user auth/RBAC, and hosted alerting.
+- Added a `release-readiness` CI job that installs PyYAML for static catalog parsing and
+  runs the POSIX readiness proof. The Windows release-readiness proof, focused artifact
+  tests, ruff, mypy, PowerShell parser validation, and full DB-enabled
+  `.\scripts\verify.ps1` passed after US-063; 664 tests are collected, canonical mypy is
+  clean over 179 source files, source readiness remains `sources=8 ready=4 blocked=4`,
+  `git diff --check` reports only CRLF warnings on generated/state files, and no Docker
+  services or worker-run containers remain running.
+- Added US-062 report cost metrics zero-dollar attribution proof:
+  `schemas/report_run_schema.json` now requires non-negative USD-cent and
+  reviewer-minute fields under `artifact_metadata.cost_metrics` for estimated total,
+  compute, storage, LLM, map tile, geocoding, paid data, and human review.
+- `backend/app/reports/service.py` emits those attribution fields as `0` for current
+  local-only report paths. `backend/app/reports/report_repo.py` fills missing defaults
+  while preserving extension fields when persisting older/custom metadata.
+- Updated cost-monitoring runbooks, catalog, ADR note, tests, and validate-only scripts
+  so the repo distinguishes local zero-dollar attribution from hosted billing
+  reconciliation and from blocked paid paths. The Windows cost-monitoring proof,
+  focused report/API tests, ruff, mypy, PowerShell parser validation, and full
+  DB-enabled `.\scripts\verify.ps1` passed after US-062; 659 tests are collected,
+  canonical mypy is clean over 178 source files, source readiness remains
+  `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings on
+  generated/state files, and no Docker services or worker-run containers remain
+  running.
+- Added US-061 GitHub dependency lock/SBOM artifact attestation proof:
+  `.github/workflows/ci.yml` now includes a `dependency-attestations` job with GitHub
+  OIDC, attestation, and artifact metadata permissions. The job validates dependency
+  provenance first, then uses `actions/attest@v4` to attest the production lock/SBOM
+  files and to create an SBOM attestation for `docs/sbom/backend-prod-sbom.json`.
+- Updated dependency provenance and supply-chain runbooks, validate-only scripts, and
+  artifact tests so the attestation job is enforced locally by static proof. The Windows
+  provenance proof, supply-chain proof, focused tests, ruff, mypy, PowerShell parser
+  validation, and full DB-enabled `.\scripts\verify.ps1` passed after US-061; canonical
+  mypy remains clean over 178 source files. Remaining provenance limits are no release
+  package, hosted deployment, or published-registry image attestation.
+- Added US-060 digest-pinned backend Docker base-image proof:
+  `backend/Dockerfile` now pins `python:3.12-slim` to OCI index digest
+  `sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203`, verified
+  from live `docker buildx imagetools inspect python:3.12-slim` output before editing.
+- Updated the container image scan runbook, validate-only scripts, and artifact tests so
+  the digest pin is enforced and the remaining image limits are narrowed to
+  published-registry image attestation, signed image SBOM, and SLSA attestation. The
+  Windows container scan proof, focused tests, ruff, mypy, actual pinned `docker build`,
+  and full DB-enabled `.\scripts\verify.ps1` passed after US-060; canonical mypy remains
+  clean over 178 source files.
+- Added US-059 backend container image/base-image vulnerability scan proof:
+  `.github/workflows/ci.yml` now has a `container-image-scan` job that builds
+  `backend/Dockerfile` and scans the local backend image with `docker/scout-action@v1`
+  for critical/high CVEs. Added `docs/runbooks/container_image_scan.md`,
+  `scripts/run_container_scan_check.ps1`, `scripts/run_container_scan_check.sh`, and
+  `backend/tests/test_container_scan_artifacts.py`.
+- Updated the supply-chain and MVP operator runbooks so Python dependency scanning,
+  dependency provenance, and Docker image scanning are separate, bounded gates. The
+  validate-only container scan proof, updated supply-chain proof, focused
+  container/supply-chain/provenance tests, ruff, mypy, PowerShell parser validation, and
+  full DB-enabled `.\scripts\verify.ps1` passed after US-059; 657 tests are collected,
+  canonical mypy is clean over 178 source files, source readiness remains
+  `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings on
+  generated/state files, and no smoke or worker-run containers remain running.
+  At the US-059 point, remaining image/provenance limits still included the base-image
+  digest pin, published registry-image attestation, signed image SBOM, and SLSA
+  attestation; US-060 later added the digest-pinned base-image proof.
+- Added US-058 backend production dependency provenance proof:
+  `backend/requirements-prod.lock`, `docs/sbom/backend-prod-sbom.json`,
+  `docs/runbooks/dependency_provenance.md`, `scripts/run_provenance_check.ps1`,
+  `scripts/run_provenance_check.sh`, and `backend/tests/test_provenance_artifacts.py`.
+- The production lock pins the CPython 3.12 manylinux backend runtime dependency closure
+  with SHA-256 hashes. The repo-local CycloneDX SBOM mirrors the lock component set,
+  versions, package URLs, and hashes. The CI `supply-chain` job now runs the provenance
+  proof before `pip-audit --local`.
+- `.\scripts\run_provenance_check.ps1` passed, including the hash-checked pip dry run.
+  Updated supply-chain proof, focused provenance/supply-chain/cost tests, ruff, mypy,
+  PowerShell parser validation, and full DB-enabled `.\scripts\verify.ps1` passed after
+  US-058; 653 tests are collected, canonical mypy is clean over 177 source files, source
+  readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF
+  warnings on generated/state files, and no smoke or worker-run containers remain
+  running. Remaining provenance limits at the US-058 point still included
+  signed/published SBOM, SLSA, and Docker base-image package scan gaps; US-059 later
+  added the repo-local container image scan proof, and US-061 later added dependency
+  lock/SBOM artifact attestation wiring.
+- Added US-057 repo-local cost monitoring catalog and validate-only guardrail proof:
+  `config/ops_cost_monitoring.yaml`, `docs/runbooks/cost_monitoring.md`,
+  `scripts/run_cost_monitoring_check.ps1`, `scripts/run_cost_monitoring_check.sh`, and
+  `backend/tests/test_cost_monitoring_artifacts.py`.
+- The cost catalog covers compute, storage, LLM-if-used, maps, geocoding, and data
+  vendors. It ties current report `artifact_metadata.cost_metrics` count metrics to the
+  planning cost inputs, keeps LLM/geocoding/map/vendor paths disabled or blocked until
+  metered, and verifies DS-017 remains blocked without vendor cost/license review.
+- Added `cost_monitoring_check_failed` to the repo-local alert rule catalog as a SEV2
+  guardrail. Focused cost-monitoring tests, the Windows cost-monitoring proof, ruff,
+  mypy, and PowerShell parser validation passed. Full DB-enabled `.\scripts\verify.ps1`
+  passed after US-057; 650 tests are collected, canonical mypy is clean over 176 source
+  files, source readiness remains `sources=8 ready=4 blocked=4`, `git diff --check`
+  reports only CRLF warnings on generated/state files, and no smoke or worker-run
+  containers remain running.
+- Added US-056 CI supply-chain dependency vulnerability scanning and update hygiene:
+  `.github/workflows/ci.yml` now has a `supply-chain` job that installs the backend
+  dependency environment and runs `pip-audit --local`, and `.github/dependabot.yml`
+  requests weekly update checks for GitHub Actions and backend Python dependencies.
+- Added `docs/runbooks/supply_chain.md`, `scripts/run_supply_chain_check.ps1`,
+  `scripts/run_supply_chain_check.sh`, and `backend/tests/test_supply_chain_artifacts.py`.
+  The validate-only check proves the CI job shape, Dependabot scope, and recorded limits
+  without requiring a live vulnerability-service call locally.
+- Focused supply-chain tests, ruff, mypy, PowerShell parser validation, and full
+  DB-enabled `.\scripts\verify.ps1` passed after US-056; canonical mypy is clean over
+  175 source files. At the US-056 point, the remaining supply-chain limits were no
+  production lockfile, signed SBOM, SLSA provenance attestation, or Docker base-image
+  package scan; US-058 later added the repo-local production lock/SBOM proof.
+- Added US-055 repo-local alert rules and validate-only proof:
+  `config/ops_alert_rules.yaml`, `docs/runbooks/alerting.md`,
+  `scripts/run_alert_rules_check.ps1`, and `scripts/run_alert_rules_check.sh`. The
+  catalog covers SEV0 safety-contract failure, SEV1 health/deployment/DB/restore
+  failures, SEV2 metrics/queue/live-connector failures, source-readiness ready-count
+  drops, and stale source-registry `Last Checked At` metadata.
+- `.\scripts\run_alert_rules_check.ps1` passed. It validates required alert rules,
+  referenced proof artifacts, source-readiness JSON shape, Must-source freshness metadata,
+  and `docker compose config --quiet` when Docker is available.
+- Focused alerting artifact tests, ruff, mypy, PowerShell parser validation, and full
+  DB-enabled `.\scripts\verify.ps1` passed after US-055; 642 tests are collected, source
+  readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF
+  warnings on generated/state files, and no repo, smoke, or worker-run containers remain
+  running.
+- Added US-054 incident response and rollback proof:
+  `docs/runbooks/incident_response.md`, `scripts/run_incident_rollback_check.ps1`, and
+  `scripts/run_incident_rollback_check.sh`. The runbook names severity levels, incident
+  owner roles, escalation criteria, deployment rollback, database rollback/mitigation,
+  connector/source outage handling, queue/report failure handling, recovery criteria, and
+  closure records.
+- `.\scripts\run_incident_rollback_check.ps1` passed. It validates required runbook
+  sections/artifacts, runs `docker compose config --quiet` when Docker is available, and
+  checks source-readiness JSON shape.
+- Focused incident/rollback tests, ruff, mypy, and full DB-enabled
+  `.\scripts\verify.ps1` passed after US-054; 638 tests are collected, source readiness
+  remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings
+  on generated/state files, and no repo, smoke, or worker-run containers remain running.
+- Added US-053 DB-backed deployment smoke automation:
+  `scripts/run_deployment_smoke.ps1` and `scripts/run_deployment_smoke.sh`. The smoke
+  path builds the backend image, starts an isolated Compose project, waits for Postgres,
+  applies migrations/seeds, starts DB-backed backend services, probes `/health`,
+  `/version`, `/metrics`, and `/operations/queue-health`, then creates an area and report
+  run through the deployed HTTP API.
+- Added `USE_DB_SERVICES` runtime config and `COMPOSE_USE_DB_SERVICES=true` so
+  `uvicorn app.main:app` can use Postgres-backed API services in deployed Compose mode
+  instead of silently using in-memory stores.
+- The first deployment-smoke runs exposed two issues: migrations were attempted before
+  Postgres accepted connections, and repeat application of `0001_initial_spine.sql`
+  failed on an already-present `rule_execution_report_fk` constraint. The smoke script
+  now waits for `pg_isready`, and the migration now guards that FK through
+  `pg_constraint`.
+- Final `.\scripts\run_deployment_smoke.ps1` passed. Focused tests, ruff, mypy, and full
+  DB-enabled `.\scripts\verify.ps1` passed after US-053; 636 tests are collected, source
+  readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF
+  warnings on generated/state files, and no repo or smoke Compose containers remain
+  running.
+- Added US-052 reviewer-authenticated operator queue health at
+  `GET /operations/queue-health`. The route aggregates report and live connector job
+  status counts plus oldest queued age through the in-memory and DB-backed job stores
+  without leasing jobs, retrying jobs, fetching live sources, persisting evidence, or
+  creating reports.
+- Added `backend/app/domain/job_health.py`, `backend/app/api/operations.py`, and
+  `backend/tests/api/test_operations.py`; updated report and live connector job stores
+  with read-only `health()` summaries and refreshed OpenAPI.
+- Focused US-052 validation passed: `py -3.12 -m pytest -q
+  tests\api\test_operations.py tests\reports\test_job_store.py`, ruff, and mypy for
+  touched operation/job-store paths.
+- DB-enabled focused validation passed for US-052, including OpenAPI parity. Full
+  DB-enabled `.\scripts\verify.ps1` passed after US-052; 631 tests are collected, source
+  readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF
+  warnings on generated/state files, and no Docker services or worker-run containers
+  remain running.
+- Added US-051 backup/restore proof scripts and runbook:
+  `scripts/run_backup_restore_check.ps1`, `scripts/run_backup_restore_check.sh`, and
+  `docs/runbooks/backup_restore.md`. The check dumps the configured source DB, restores
+  into a dedicated `land_diligence_restore_check*` database, runs
+  `scripts/db_smoke_check.py` against the restored DB, and drops the restore DB by
+  default.
+- The first restore-check run failed closed because local `pg_dump` was not installed and
+  the existing `psql` wrapper targets the repo's compose `db` service, which was not
+  running. The scripts now use Docker's `postgis/postgis:16-3.4` image as a PostgreSQL
+  client fallback for `pg_dump` and `psql`, mapping localhost URLs to
+  `host.docker.internal`.
+- Re-ran `.\scripts\run_backup_restore_check.ps1`; it restored into
+  `land_diligence_restore_check`, ran the DB smoke check successfully against the
+  restored DB, reported `backup/restore check: ok`, and dropped the restore DB.
+- Full DB-enabled `.\scripts\verify.ps1` passed after US-051; 627 tests are collected,
+  source readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports
+  only CRLF warnings on generated/state files, no Docker services or worker-run
+  containers remain running, and a Docker psql query confirmed
+  `land_diligence_restore_check` is absent after cleanup.
+- Added US-050 reviewer-authenticated failed report job retry at
+  `POST /report-runs/{report_run_id}/retry`. The route requires reviewer service-account
+  headers, accepts only failed report jobs, preserves the failed job, creates a new queued
+  report job from the failed job's stored area and intent, and records
+  `retry_of_report_run_id` lineage in both in-memory and DB-backed job stores.
+- Updated `docs/runbooks/mvp_operator.md` with the failed-report retry operator command,
+  corrected the two-step report response description, regenerated OpenAPI, and re-ran
+  focused retry/job-store/OpenAPI tests plus broader report/API regressions.
+- Full DB-enabled `.\scripts\verify.ps1` passed after US-050; 627 tests are collected,
+  source readiness remains `sources=8 ready=4 blocked=4`, `git diff --check` reports
+  only CRLF warnings on generated/state files, and no Docker services or worker-run
+  containers remain running.
+- Added US-049 reviewer-authenticated live connector sequence scheduling at
+  `POST /connector-runs/live-sequence/schedule-bbox`, with ADR
+  `docs/adr/live-sequence.md`. The route enqueues ordered DS-001, DS-002, DS-004, and
+  DS-003 durable jobs for a registered area and returns the sequence policy id plus
+  ordered job records without fetching live sources, persisting evidence, approving
+  review, or creating reports. The endpoint uses a source-neutral bbox request schema
+  rather than reusing a FEMA-specific public model.
+- Updated `docs/runbooks/mvp_operator.md` to describe the reviewed live connector
+  scheduling path and current API/reviewer gates instead of the older fixture-only/no-auth
+  posture, while preserving screening-only and source-blocker limitations.
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml` from `create_app().openapi()`
+  after US-049 and after the neutral sequence bbox schema cleanup. Re-ran focused
+  sequence scheduler tests, OpenAPI parity, broader connector API/worker regressions,
+  focused ruff/mypy, and full DB-enabled
+  `.\scripts\verify.ps1`; 622 tests are collected, source readiness remains
+  `sources=8 ready=4 blocked=4`, `git diff --check` reports only CRLF warnings on
+  generated/state files, and no Docker services or worker-run containers remain running.
+- Added US-048 API 422 status constant deprecation cleanup. API routes now use
+  `status.HTTP_422_UNPROCESSABLE_CONTENT`, preserving status code 422 while removing the
+  FastAPI/Starlette deprecation warnings emitted by the full verification gate.
+- Re-ran the warning-producing API tests with `-W error::DeprecationWarning`, focused
+  ruff/mypy for the touched API modules, and full DB-enabled `.\scripts\verify.ps1`;
+  619 tests are collected, source readiness remains `sources=8 ready=4 blocked=4`,
+  `git diff --check` reports only CRLF warnings on generated/state files, and no Docker
+  services or worker-run containers remain running.
+- Added US-047 DS-004 file-backed raw NWI response fixtures. The connector tests now load
+  `tests/fixtures/connectors/nwi_success.geojson` for representative wetland/deepwater
+  success parsing and `tests/fixtures/connectors/nwi_empty.geojson` for empty-response
+  source-failure behavior, keeping those cases reproducible without live NWI calls.
+- Updated the live connector worker CLI description and regression coverage so worker
+  help names all currently supported queued source jobs: DS-001, DS-002, DS-003, and
+  DS-004.
+- Re-ran focused US-047 tests: 21 NWI connector and live-worker tests passed; focused
+  ruff passed; focused mypy passed for the touched NWI/worker test paths.
+- Re-ran broader DS-004 API/connector/worker regression and full DB-enabled
+  `.\scripts\verify.ps1` after US-047; 619 tests are collected, canonical mypy remains
+  clean over 167 source files, source readiness remains `sources=8 ready=4 blocked=4`,
+  `git diff --check` reports only CRLF warnings on generated/state files, and no Docker
+  services or worker-run containers remain running.
+- Added US-046 request-time DS-001 orchestration. When `ENABLE_LIVE_CONNECTORS=true`,
+  `/intake` and `/report-runs` now run bounded DS-001 first, pause with
+  `pending_connector_review` until DS-001 approval, then advance through the existing
+  DS-002, DS-004, and DS-003 review gates before creating a report job. Approved DS-001
+  evidence can enter reports as buildability-domain terrain screening evidence, but it
+  does not create a DS-001 claim or terrain/buildability conclusion.
+- Re-ran focused DS-001/DS-002/DS-003/DS-004 connector API tests with DB smoke enabled
+  plus focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection,
+  source-readiness JSON, `git diff --check`, and Docker service-state checks after the
+  DS-001 request-time slice; 616 tests are collected, canonical mypy is clean over 167
+  source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker
+  services or worker-run containers remain running.
+- Added US-045 explicit durable DS-001 live connector scheduling and worker dispatch.
+  `POST /connector-runs/usgs-tnm/schedule-bbox` queues bounded USGS TNM EPQS
+  `live_connector_run` jobs without fetching EPQS or creating reports; the shared worker
+  dispatches by `source_registry_id`, runs the existing DS-001 orchestration with
+  `max_sample_points`, and records the connector review item without bypassing review.
+- Re-ran focused DS-001 scheduler/API/worker tests, DB-smoke-gated DS-001 job-store
+  regression, DS-001/DS-002/DS-003/DS-004 API parity regressions, focused ruff/mypy,
+  full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON,
+  `git diff --check`, and Docker service-state checks after the DS-001 scheduler slice;
+  616 tests are collected, canonical mypy is clean over 167 source files, source
+  readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run
+  containers remain running.
+- Added US-044 controlled DS-001 USGS TNM EPQS API/operator invocation at
+  `POST /connector-runs/usgs-tnm/query-bbox`. The route requires reviewer auth and a
+  registered area, invokes DS-001 only, records retrieval provenance, persists
+  terrain-relief derived metric or source-failure evidence, enqueues connector review
+  status, refreshes OpenAPI parity, and does not create scheduler jobs, request-time
+  runs, reports, or buildability conclusions.
+- Re-ran focused DS-001 API/connector tests, DS-001/DS-003/DS-004 API parity
+  regressions, focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test
+  collection, source-readiness JSON, `git diff --check`, and Docker service-state checks
+  after the DS-001 API/operator slice; 614 tests are collected, canonical mypy is clean
+  over 167 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no
+  Docker services or worker-run containers remain running.
+- Added US-043 bounded connector-layer DS-001 USGS TNM EPQS terrain-relief screening.
+  The connector samples the official EPQS JSON service at the bbox center and corners,
+  emits one low-confidence terrain-relief `DERIVED_METRIC`, emits source-failure
+  evidence for no-data/error/malformed cases, and stays before API/operator,
+  scheduler, request-time, report, or buildability conclusions.
+- Re-ran focused DS-001 connector tests, broader connector/evidence/claim regressions,
+  focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection,
+  source-readiness JSON, `git diff --check`, and Docker service-state checks after the
+  DS-001 connector-layer slice; 608 tests are collected, canonical mypy is clean over
+  166 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no
+  Docker services or worker-run containers remain running.
+- Added request-time DS-003 orchestration after DS-004 approval. When
+  `ENABLE_LIVE_CONNECTORS=true`, `/intake` and `/report-runs` now run a shared
+  request-time live connector sequence: DS-002 first, DS-004 after DS-002 approval,
+  DS-003 after DS-004 approval, and report job creation only after all three connector
+  review items are approved.
+- Added a cautious SSURGO screening rule-engine path for approved DS-003 evidence:
+  reports may emit an UNKNOWN `SOIL_NOT_EVALUATED` professional-review claim backed by
+  DS-003 mapunit/component screening evidence, but still do not determine septic
+  approval, perc results, soil suitability, permitting, buildability, lending, appraisal,
+  or investment conclusions.
+- Re-ran focused DS-003 request-time tests, broader DS-002/DS-003/DS-004 API/report/claim
+  regressions, focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test
+  collection, source-readiness JSON, `git diff --check`, and Docker service-state checks
+  after DS-003 request-time orchestration; 597 tests are collected, canonical mypy is
+  clean over 164 source files, source readiness remains `sources=8 ready=4 blocked=4`,
+  and no Docker services or worker-run containers remain running.
+- Added request-time DS-004 orchestration after DS-002 approval. When `ENABLE_LIVE_CONNECTORS=true`, `/intake` and `/report-runs` now run a shared request-time live connector sequence: DS-002 first, DS-004 after DS-002 approval, and report job creation only after both connector review items are approved.
+- Added in-memory API regressions proving both `/report-runs` and `/intake` can progress through DS-002 approval, DS-004 approval, and then create a report containing both `FLOOD_001` and `WETLAND_001`. The explicit connector-run report-resume endpoint remains a manual one-connector report path; full request-time sequencing uses repeated `/report-runs` calls with the same `area_id`.
+- Re-ran focused request-time DS-004 tests, broader API/report/claim regressions, focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after DS-004 request-time orchestration; 596 tests are collected, canonical mypy is clean over 164 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added explicit durable DS-003 live connector scheduling. `POST /connector-runs/ssurgo/schedule-bbox` queues bounded SSURGO `live_connector_run` jobs without fetching SSURGO or creating reports; the shared worker helper dispatches leased jobs by `source_registry_id`, runs existing DS-003 orchestration with `max_rows`, and records the connector review item without bypassing review.
+- Added DS-003 scheduler regressions covering side-effect-free enqueue, worker execution, read-only live-job status before and after execution, SQLAlchemy-backed DS-003 payload leasing behind `RUN_DB_SMOKE`, OpenAPI refresh, focused ruff, and focused mypy. This slice does not add DS-003 request-time orchestration, pAOI/WSS interpretations, claims, reports, or final septic/soil-suitability/buildability conclusions.
+- Re-ran DS-002/DS-003/DS-004 API and worker regressions, OpenAPI parity, focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after DS-003 durable scheduling; 595 tests are collected, canonical mypy is clean over 164 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Resumed the interrupted Ralph/Ultragoal session from `session-a44c3712-ce60-4d4d-a17c-9b70ffeb93b3.md` and treated current repo state plus `state/PROJECT_STATE.md` as live authority.
+- Added `plans/2026-06-05-l10-production-hardening.md` for the Level 10 partial slice.
+- Completed settings-backed connector reviewer auth: `REVIEWER_ACCOUNTS` parsing now fails closed on blank, malformed, or duplicate entries; connector review actions use `ApiServices.reviewer_auth`.
+- Added backend container wiring: `backend/Dockerfile`, `.dockerignore`, a Compose `backend` service, compose-safe DB/object-store defaults, and runtime env examples.
+- Added stdlib JSON runtime logging and report job lifecycle logs.
+- Added `SqlAlchemyAsyncReportJobStore` backed by `jobs.job_queue`, kept final report content authority in `reports.report_runs` plus object-store artifacts, and moved DB-mode background report creation to a fresh session.
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml` from the live FastAPI contract.
+- Added default-off production API-key middleware: `REQUIRE_API_KEY` + `API_KEYS`, protected API/UI/docs/OpenAPI behavior when enabled, public `/health` and `/version`, fail-closed unconfigured production mode, and Compose/env example wiring.
+- Added default-off fixed-window rate limiting: `ENABLE_RATE_LIMIT`, `RATE_LIMIT_REQUESTS`, and `RATE_LIMIT_WINDOW_SECONDS`; protected API/UI/docs behavior when enabled; public `/health` and `/version`; per-API-key or per-client-host buckets; and Compose/env example wiring.
+- Added structured runtime metrics: `ENABLE_METRICS`, route-template HTTP request/status/duration aggregation, protected/rate-limited `/metrics` JSON endpoint, and planning-pack OpenAPI refresh.
+- Verified backend container build and Compose runtime smoke. Added configurable `DB_PORT` after local port 5432 was occupied; smoke passed with DB host port 55432 and backend endpoints `/health`, `/version`, and `/metrics`.
+- Hardened connector source-use preflight: `check_connector_source_license` now shares the source registry production-use decision and fails closed on unapproved review status plus unknown/blocked license, commercial, redistribution, cache, export, raw-data, or AI-use rights. Updated connector tests and runbook language accordingly.
+- Added read-only source-readiness audit reporting through `scripts/source_readiness.py`; it reports connector-ready counts and blocked registry fields for all sources or a selected MVP priority without seeding, generating artifacts, or calling live sources.
+- Reviewed FEMA NFHL (DS-002) against official FEMA/NFHL/OpenFEMA sources, added `docs/source-reviews/ds-002.md`, updated the root registry plus DB seed to `approved-with-restrictions`, and preserved required screening/citation/non-endorsement caveats.
+- Re-audited DS-002 DB seed authority and fixed `db/seeds/002_seed_source_registry.sql` so re-seeding refreshes first-class usage-rights fields, including `attribution_required`, instead of updating only JSON metadata.
+- Added the bounded DS-002 FEMA NFHL live connector. It queries the official effective-data ArcGIS REST layer 28 with bbox/feature limits, emits spatial evidence for usable features, emits source-failure evidence for no-data/error/malformed/transfer-limit responses, and reuses the existing retrieval provenance plus evidence-ingestion adapter contract.
+- Added controlled DS-002 FEMA NFHL API/operator invocation at `POST /connector-runs/fema-nfhl/query-bbox`. The route requires reviewer auth and a registered area, invokes DS-002 only, records retrieval provenance, persists ledger-safe spatial or source-failure evidence, enqueues connector review status, refreshes OpenAPI parity, and does not create claims, reports, scheduler jobs, or `/intake` shortcuts.
+- Added connector review closeout actions. Authenticated reviewers can approve connector runs for QA, request fixture/source fixes with non-empty reasons, requeue fixed failed reviews, or cancel nonfinal reviews. These actions mutate only connector review queue state and record latest reviewer decision details in the queue payload.
+- Added approved connector evidence report gating. DS-002 connector evidence now carries `source_ingest_run_id`, the evidence repository persists that lineage in metadata, and report generation excludes connector-lineage evidence unless the matching review queue item succeeded with `approve_for_connector_qa`.
+- Verified the approved connector evidence report gate with focused pytest/ruff/mypy, planning-pack schema parity, full DB-enabled `.\scripts\verify.ps1`, 525-test collection, source-readiness audit, `git diff --check`, and Docker service-state check.
+- Added an API-level regression proving the operator path works end to end: DS-002 bbox query, reviewer approval, `POST /report-runs`, and `GET /report-runs/{id}` return a report with `FLOOD_001` and the connector `source_ingest_run_id`.
+- Re-ran full DB-enabled `.\scripts\verify.ps1` after the API regression; 526 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added a DB-backed API regression for the same DS-002 approval-to-report operator path, proving the sequence across SQLAlchemy-backed area, source, evidence, review queue, and report services while snapshotting/restoring the DS-002 source row it refreshes for stale local DBs.
+- Hardened SQLAlchemy source mapping so stale local rows with placeholder homepage URLs do not break `SourceContract` hydration; raw placeholders are preserved in metadata as `raw_url`.
+- Aligned FEMA NFHL success evidence `source_date` with the DB `date` column while keeping access timestamps in `observed_at` and retrieval metrics.
+- Re-ran full DB-enabled `.\scripts\verify.ps1` after the DB-backed operator regression; 528 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added request-time DS-002 orchestration for `/intake` and `/report-runs` behind `ENABLE_LIVE_CONNECTORS`. The entry points now run bounded DS-002 and return `pending_connector_review` without creating report jobs until the connector review item is approved.
+- Added in-memory and DB-backed regressions proving automatic DS-002 orchestration pauses before approval, creates no DB `report_run` job while pending, and creates a normal report with `FLOOD_001` plus connector evidence lineage after approval.
+- Re-ran full DB-enabled `.\scripts\verify.ps1` after request-time DS-002 orchestration; 532 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added explicit post-approval connector report resume at `POST /connector-runs/{ingest_run_id}/report-runs`. Connector review packets/queue payloads now carry the originating `area_id`; the resume route requires reviewer auth and `approve_for_connector_qa`, derives the report area from connector queue state, does not re-fetch FEMA, and creates the normal async report job.
+- Re-ran full DB-enabled `.\scripts\verify.ps1` after connector report resume; 534 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added durable connector reviewer action history in queue payloads. `approve_for_connector_qa` and `request_fixture_fix` update `review_decision` and append the same action to `review_action_history`; `requeue_after_fix` and `cancel_review` append authenticated reviewer id, reason, and timestamp without replacing the latest approval/fix decision.
+- Re-ran focused review/action/API tests, DB-backed review queue tests, ruff, mypy, source-readiness audit, and full DB-enabled `.\scripts\verify.ps1` after reviewer action history; 536 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added explicit durable DS-002 live connector scheduling. `POST /connector-runs/fema-nfhl/schedule-bbox` queues `live_connector_run` jobs without fetching FEMA or creating reports; `run_next_live_connector_job(...)` leases one job, runs the existing bounded DS-002 orchestration, and records the resulting connector review item.
+- Added in-memory and DB-backed regressions proving scheduled DS-002 jobs are idempotent/durable, do not fetch or create report jobs at schedule time, and create connector review state only when the worker runs.
+- Re-ran full DB-enabled `.\scripts\verify.ps1` after explicit DS-002 scheduling; 538 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added a bounded supervisor-callable live connector worker command at `scripts/live_connector_worker.py`. It processes existing `live_connector_run` jobs through fresh DB-backed services, defaults to one job, commits succeeded and failed job state, emits text or JSON summaries, and does not create report jobs or bypass connector review.
+- Added pure worker-command tests proving commit-on-processed-job behavior, idle stop behavior, and nonzero process return for processed job failures without touching Postgres or FEMA.
+- Re-ran focused worker/API tests, focused ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness audit, `git diff --check`, worker CLI help, and Docker service-state check after the worker command; 541 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services remain running.
+- Added supervised polling support for the live connector worker through `--poll-seconds` and `--idle-polls`, preserving one-shot behavior as the default.
+- Added an opt-in Compose `workers` profile service named `live-connector-worker`; it uses the same backend image, `restart: unless-stopped`, shared object-store volume, DB health dependency, and environment-driven worker settings while remaining outside default Compose startup.
+- Updated the backend Dockerfile to copy `scripts/live_connector_worker.py` into `/app/scripts/` so the profile can run the same audited worker command inside the container.
+- Re-ran focused worker/API tests, focused ruff/mypy, default and `workers` profile Compose config, backend image build, containerized worker help, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness audit, `git diff --check`, and Docker service-state checks after the worker profile; 543 tests are collected, source readiness remains `sources=8 ready=1 blocked=7`, and no Docker services or worker-run containers remain running.
+- Reviewed USGS The National Map (DS-001) against official USGS source/license pages, added `docs/source-reviews/ds-001.md`, updated the root registry plus planning-pack mirror and DB seed to `approved-with-restrictions`, and kept AI/service automation use restricted with product metadata, third-party notice, accuracy, scale, and citation caveats.
+- Re-ran focused source-readiness/source-seed tests, ruff, mypy, and the source-readiness audit after the DS-001 review; current `Must` source-readiness is `sources=8 ready=2 blocked=6`, with DS-001 and DS-002 ready by source-rights fields. No DS-001 live connector was added.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, source-readiness JSON, test collection, `git diff --check`, and Docker service-state checks after the DS-001 review; 544 tests are collected, ruff/mypy remain clean over 158 source files, migrations/seeds apply, DB smoke passes, and no Docker services or worker-run containers remain running.
+- Reviewed USDA Web Soil Survey/SSURGO (DS-003) against official USDA/NRCS source/license pages, added `docs/source-reviews/ds-003.md`, updated the root registry plus planning-pack mirror and DB seed to `approved-with-restrictions`, and kept AI/service automation use restricted with survey-area, refresh-date, map-scale, site-specific-test, and USDA/NRCS citation caveats.
+- Re-ran focused source-readiness/source-seed tests, ruff, mypy, and the source-readiness audit after the DS-003 review; current `Must` source-readiness is `sources=8 ready=3 blocked=5`, with DS-001, DS-002, and DS-003 ready by source-rights fields. No DS-003 live connector was added.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, source-readiness JSON, test collection, `git diff --check`, and Docker service-state checks after the DS-003 review; 545 tests are collected, ruff/mypy remain clean over 158 source files, migrations/seeds apply, DB smoke passes, and no Docker services or worker-run containers remain running.
+- Reviewed USFWS National Wetlands Inventory (DS-004) against official USFWS/NWI source, data download, disclaimer, limitations, geodatabase caution, and metadata pages; added `docs/source-reviews/ds-004.md`, updated the root registry plus planning-pack mirror and DB seed to `approved-with-restrictions`, and kept AI/service automation use restricted with metadata, published-date, project, imagery/source-date, exclusion, non-endorsement, and non-jurisdictional caveats.
+- Re-ran focused source-readiness/source-seed tests, ruff, mypy, and the source-readiness audit after the DS-004 review; current `Must` source-readiness is `sources=8 ready=4 blocked=4`, with DS-001, DS-002, DS-003, and DS-004 ready by source-rights fields. At that source-review point, no DS-004 live connector had been added.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, source-readiness JSON, test collection, `git diff --check`, and Docker service-state checks after the DS-004 review; 546 tests are collected, ruff/mypy remain clean over 158 source files, migrations/seeds apply, DB smoke passes, and no Docker services or worker-run containers remain running.
+- Added a bounded connector-layer DS-004 National Wetlands Inventory connector. It queries the official USFWS-linked Wetlands ArcGIS REST layer 0 with EPSG:4326 bbox and feature limits, emits wetlands spatial-intersection evidence for usable features, emits source-failure evidence for no-data/error/malformed/transfer-limit responses, preserves screening-only NWI caveats, and reuses the existing connector retrieval provenance plus evidence-ingestion adapters.
+- Re-ran focused DS-004 connector tests, ruff, and mypy after the NWI connector slice; 13 connector tests pass and touched connector/test paths are lint/type clean. This slice did not add a DS-004 API route, durable scheduler, worker integration, report resume path, fixtures, or claim/report shortcut.
+- Re-ran DS-004 plus DS-002 connector regression, connector-scope ruff/mypy, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the NWI connector slice; 559 tests are collected, canonical mypy is clean over 160 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added controlled DS-004 National Wetlands Inventory API/operator invocation at `POST /connector-runs/nwi/query-bbox`. The route requires reviewer auth and a registered area, invokes the bounded NWI connector, records retrieval provenance, persists wetlands spatial or source-failure evidence, enqueues connector review status, and exposes the run through the existing review-status/review-queue/read and review-action endpoints.
+- Added an API regression proving approved DS-004 connector evidence can feed the existing connector report-resume path without re-fetching NWI and produces the existing screening-only `WETLAND_001` claim after `approve_for_connector_qa`. DS-004 still has no durable scheduler, worker profile integration, request-time `/intake` or `/report-runs` orchestration, autonomous daemon, or separate fixture corpus.
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml` from `create_app().openapi()` after adding the DS-004 route and re-ran OpenAPI parity.
+- Re-ran focused DS-004 API/connector tests, DS-002/DS-004 API parity regressions, ruff, mypy, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the DS-004 API path; 565 tests are collected, canonical mypy is clean over 161 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added explicit durable DS-004 live connector scheduling. `POST /connector-runs/nwi/schedule-bbox` queues `live_connector_run` jobs without fetching NWI or creating reports; the shared worker helper dispatches leased jobs by `source_registry_id`, runs the existing DS-004 orchestration, and records the connector review item without bypassing review.
+- Added focused regressions proving scheduled DS-004 jobs do not fetch or create report payloads at schedule time, create connector review state only when the worker runs, and persist/lease DS-004 queue payloads as `NwiBbox` records in DB-smoke mode.
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml` after adding the DS-004 schedule route and re-ran OpenAPI parity.
+- Re-ran focused DS-004 scheduler/API/worker tests, DS-002 scheduler regressions, focused ruff, and focused mypy after the DS-004 durable scheduler slice; 30 focused tests pass/skip as expected, touched paths are lint/type clean, and DS-004 still has no request-time `/intake` or `/report-runs` orchestration, autonomous polling, or separate fixture corpus.
+- Re-ran DB-smoke-gated DS-004 queue-store regression, full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the DS-004 durable scheduler slice; 567 tests are collected, canonical mypy remains clean over 161 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added read-only live connector job status at `GET /connector-runs/live-jobs/{job_id}`. The route requires reviewer auth and returns durable job state before or after worker execution without leasing jobs, retrying, fetching live sources, creating reports, or mutating queue state.
+- Added DS-004 scheduler regressions covering queued and finished job-status reads, reviewer-auth enforcement, and unknown-job 404. Regenerated `docs/planning_pack/api/openapi_stub.yaml` and re-ran focused DS-004/DS-002/worker/OpenAPI tests plus ruff/mypy; 32 focused tests pass/skip as expected.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the live connector job-status endpoint; 569 tests are collected, canonical mypy remains clean over 161 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added a bounded connector-layer DS-003 USDA SSURGO connector. It uses the official Soil Data Access `post.rest` query service with `JSON+COLUMNNAME` output and the documented `SDA_Get_Mukey_from_intersection_with_WktWgs84` function for small EPSG:4326 bboxes, emits soil/septic/ag screening spatial-intersection evidence for intersecting mapunit/component rows, emits source-failure evidence for no-data/error/malformed responses, preserves USDA/NRCS screening-only caveats, and reuses existing connector retrieval provenance plus evidence-ingestion adapters.
+- Added ledger observed-value validation for soil mapunit/component spatial-intersection payloads so DS-003 connector success evidence can be ingested through the real evidence service. This slice does not add a DS-003 API route, durable scheduler, worker integration, request-time orchestration, WSS interpretation/rating execution, pAOI state, claims, reports, or final septic/soil-suitability/buildability conclusions.
+- Re-ran focused DS-003 connector and evidence-payload validation after the connector slice; 43 focused tests pass, focused ruff passes, and focused mypy is clean for `backend/app/connectors/ssurgo.py`, connector exports, evidence payload validation, and the touched tests.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the DS-003 connector-layer slice; 589 tests are collected, canonical mypy is clean over 163 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+- Added controlled DS-003 USDA SSURGO API/operator invocation at `POST /connector-runs/ssurgo/query-bbox`. The route requires reviewer auth and a registered area, invokes the bounded SSURGO connector, records retrieval provenance, persists soil/septic/ag screening spatial or source-failure evidence, enqueues connector review status, and exposes the run through the existing review-status and review-queue read paths.
+- Added DS-003 API regressions covering successful soil mapunit evidence persistence, empty-source source-failure evidence, reviewer-auth enforcement, oversized-bbox rejection, OpenAPI parity, and DS-002/DS-004 route regression. This slice does not add DS-003 durable scheduling, worker integration, request-time orchestration, WSS interpretation/rating execution, pAOI state, claims, reports, or final septic/soil-suitability/buildability conclusions.
+- Re-ran focused DS-003 API/connector tests, DS-002/DS-003/DS-004 API route regressions, OpenAPI parity, focused ruff, and focused mypy after the DS-003 API/operator slice; touched paths are lint/type clean and focused tests pass with expected DB-smoke skips.
+- Re-ran full DB-enabled `.\scripts\verify.ps1`, test collection, source-readiness JSON, `git diff --check`, and Docker service-state checks after the DS-003 API/operator slice; 593 tests are collected, canonical mypy is clean over 164 source files, source readiness remains `sources=8 ready=4 blocked=4`, and no Docker services or worker-run containers remain running.
+
 ## 2026-06-05 (Global Claude /ipc promotion)
 
 - Promoted the repo-local `/ipc` workflow into the global Claude setup by adding

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 from typing import Any, cast
 
-import yaml
-
 from app.main import create_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+yaml = cast(Any, importlib.import_module("yaml"))
 
 
 def load_json(path: Path) -> dict[str, Any]:

@@ -126,6 +126,9 @@ def test_api_scaffold_creates_and_gets_report_run() -> None:
     assert report_run["artifact_metadata"]["report_schema"] == "report_run_contract_v1"
     assert report_run["artifact_metadata"]["persistence"] == "memory"
     assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 4
+    assert report_run["artifact_metadata"]["cost_metrics"]["estimated_total_usd_cents"] == 0
+    assert report_run["artifact_metadata"]["cost_metrics"]["paid_data_usd_cents"] == 0
+    assert report_run["artifact_metadata"]["cost_metrics"]["human_review_minutes"] == 0
 
 
 def test_api_report_run_surfaces_source_failure_unknowns() -> None:
@@ -181,6 +184,8 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
         *not_evaluated_claim_codes(),
     ]
     assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == 5
+    assert report_run["artifact_metadata"]["cost_metrics"]["estimated_total_usd_cents"] == 0
+    assert report_run["artifact_metadata"]["cost_metrics"]["human_review_minutes"] == 0
 
 
 def test_api_scaffold_returns_422_for_bad_input() -> None:

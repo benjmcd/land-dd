@@ -310,6 +310,37 @@ def test_spatial_intersection_accepts_wetland_fixture_payload() -> None:
     assert created.observed_value["mapped_wetland_area_sq_m"] == 1700.0
 
 
+def test_spatial_intersection_accepts_soil_mapunit_payload() -> None:
+    area_id = uuid4()
+    source_id = uuid4()
+    service = make_service(area_id=area_id, source_id=source_id)
+    evidence = make_evidence(
+        area_id=area_id,
+        source_id=source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        observed_value={
+            "intersects_soil_mapunit": True,
+            "soil_mapunit_key": "1912968",
+            "soil_mapunit_symbol": "30A",
+            "soil_mapunit_name": "Codorus and Hatboro soils",
+            "soil_component_key": "27342553",
+            "soil_component_name": "Codorus",
+            "soil_component_percent": 55.0,
+            "soil_major_component": True,
+            "hydric_rating": "No",
+            "drainage_class": "Somewhat poorly drained",
+            "hydrologic_group": "B/D",
+            "slope_percent": 1.0,
+        },
+        domain="soil_septic",
+    )
+
+    created = service.create_observation(evidence)
+
+    assert created.observed_value["intersects_soil_mapunit"] is True
+    assert created.observed_value["soil_component_percent"] == 55.0
+
+
 def test_spatial_intersection_rejects_unsupported_payload_key() -> None:
     area_id = uuid4()
     source_id = uuid4()

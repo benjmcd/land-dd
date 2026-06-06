@@ -184,6 +184,21 @@ def test_sqlalchemy_source_repository_list_all_maps_models_to_contracts() -> Non
     assert [result.source_id for result in results] == [source.source_id]
 
 
+def test_sqlalchemy_source_repository_preserves_placeholder_homepage_as_metadata() -> None:
+    fake_session = _FakeSession()
+    source = _make_source()
+    model = _make_model(source)
+    model.homepage_url = "TBD"
+    fake_session.scalar_models = [model]
+    repo = SqlAlchemySourceRepository(cast(Session, fake_session))
+
+    results = repo.list_all()
+
+    assert len(results) == 1
+    assert results[0].homepage_url is None
+    assert results[0].metadata["raw_url"] == "TBD"
+
+
 def test_sqlalchemy_source_repository_exists_by_name_org_uses_session() -> None:
     fake_session = _FakeSession()
     fake_session.execute_exists = True

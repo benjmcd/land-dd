@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: land
       POSTGRES_PASSWORD: land
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U land -d land_diligence"]
       interval: 5s
@@ -14,6 +14,76 @@ services:
       retries: 20
     volumes:
       - pgdata:/var/lib/postgresql/data
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: ${APP_NAME:-land-diligence}
+      APP_ENV: ${APP_ENV:-local}
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://land:land@db:5432/land_diligence}
+      USE_DB_SERVICES: ${COMPOSE_USE_DB_SERVICES:-true}
+      OBJECT_STORE_ROOT: ${COMPOSE_OBJECT_STORE_ROOT:-/app/local_artifacts/object_store}
+      ENABLE_LIVE_CONNECTORS: ${ENABLE_LIVE_CONNECTORS:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REQUIRE_API_KEY: ${REQUIRE_API_KEY:-false}
+      API_KEYS: ${API_KEYS:-}
+      API_KEY_SPECS: ${API_KEY_SPECS:-}
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-120}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
+      REVIEWER_ACCOUNTS: ${REVIEWER_ACCOUNTS:-fixture-reviewer:fixture-token-123}
+      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:retry|report:run}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - object_store:/app/local_artifacts/object_store
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  live-connector-worker:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: ${APP_NAME:-land-diligence}
+      APP_ENV: ${APP_ENV:-local}
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://land:land@db:5432/land_diligence}
+      OBJECT_STORE_ROOT: ${COMPOSE_OBJECT_STORE_ROOT:-/app/local_artifacts/object_store}
+      ENABLE_LIVE_CONNECTORS: ${ENABLE_LIVE_CONNECTORS:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REVIEWER_ACCOUNTS: ${REVIEWER_ACCOUNTS:-fixture-reviewer:fixture-token-123}
+      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:retry|report:run}
+    command:
+      - python
+      - /app/scripts/live_connector_worker.py
+      - --worker-id
+      - ${LIVE_CONNECTOR_WORKER_ID:-compose-live-connector-worker}
+      - --max-jobs
+      - ${LIVE_CONNECTOR_WORKER_MAX_JOBS:-1}
+      - --poll-seconds
+      - ${LIVE_CONNECTOR_WORKER_POLL_SECONDS:-30}
+      - --idle-polls
+      - ${LIVE_CONNECTOR_WORKER_IDLE_POLLS:-0}
+      - --object-store-root
+      - ${COMPOSE_OBJECT_STORE_ROOT:-/app/local_artifacts/object_store}
+      - --json
+    restart: unless-stopped
+    volumes:
+      - object_store:/app/local_artifacts/object_store
 
 volumes:
   pgdata:
+  object_store:

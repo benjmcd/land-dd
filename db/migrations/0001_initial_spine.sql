@@ -360,9 +360,19 @@ CREATE TABLE IF NOT EXISTS reports.report_runs (
     cost_metrics jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 
-ALTER TABLE rules.rule_execution_runs
-    ADD CONSTRAINT rule_execution_report_fk
-    FOREIGN KEY (report_run_id) REFERENCES reports.report_runs(report_run_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'rule_execution_report_fk'
+          AND conrelid = 'rules.rule_execution_runs'::regclass
+    ) THEN
+        ALTER TABLE rules.rule_execution_runs
+            ADD CONSTRAINT rule_execution_report_fk
+            FOREIGN KEY (report_run_id) REFERENCES reports.report_runs(report_run_id);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS reports.report_sections (
     report_section_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -53,8 +53,20 @@ SPATIAL_INTERSECTION_KEYS = {
     "public_road_adjacency",
     "road_distance_m",
     "source_stale",
+    "drainage_class",
     "wetland_type",
     "wetland_types",
+    "hydric_rating",
+    "hydrologic_group",
+    "intersects_soil_mapunit",
+    "slope_percent",
+    "soil_component_key",
+    "soil_component_name",
+    "soil_component_percent",
+    "soil_major_component",
+    "soil_mapunit_key",
+    "soil_mapunit_name",
+    "soil_mapunit_symbol",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",
@@ -65,6 +77,7 @@ SPATIAL_RESULT_KEYS = {
     "intersects",
     "intersects_high_risk_flood_zone",
     "intersects_mapped_wetlands",
+    "intersects_soil_mapunit",
     "no_public_road_adjacency",
     "public_road_adjacency",
 }
@@ -160,8 +173,10 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         "intersects_high_risk_flood_zone",
         "has_public_road_adjacency",
         "intersects_mapped_wetlands",
+        "intersects_soil_mapunit",
         "no_public_road_adjacency",
         "public_road_adjacency",
+        "soil_major_component",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"spatial_intersection observed_value '{key}' must be boolean")
@@ -170,6 +185,8 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         "intersection_ratio",
         "mapped_wetland_area_sq_m",
         "road_distance_m",
+        "slope_percent",
+        "soil_component_percent",
     ):
         if key in evidence.observed_value:
             _require_non_negative_number(evidence.observed_value[key], key)

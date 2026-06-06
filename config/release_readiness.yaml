@@ -1,0 +1,67 @@
+schema_version: release_readiness_v1
+operator_runbook: docs/runbooks/release_readiness.md
+required_checks:
+  - id: workspace_verify
+    proof: scripts/verify.ps1
+    ci_job: verify
+  - id: db_verify
+    proof: scripts/verify.ps1
+    ci_job: db-verify
+  - id: deployment_smoke
+    proof: scripts/run_deployment_smoke.ps1
+    ci_job: null
+  - id: dependency_provenance
+    proof: scripts/run_provenance_check.ps1
+    ci_job: dependency-attestations
+  - id: supply_chain_scan
+    proof: scripts/run_supply_chain_check.ps1
+    ci_job: supply-chain
+  - id: container_image_scan
+    proof: scripts/run_container_scan_check.ps1
+    ci_job: container-image-scan
+  - id: backup_restore
+    proof: scripts/run_backup_restore_check.ps1
+    ci_job: null
+  - id: incident_rollback
+    proof: scripts/run_incident_rollback_check.ps1
+    ci_job: null
+  - id: alert_rules
+    proof: scripts/run_alert_rules_check.ps1
+    ci_job: null
+  - id: cost_monitoring
+    proof: scripts/run_cost_monitoring_check.ps1
+    ci_job: null
+  - id: access_control
+    proof: scripts/run_access_control_check.ps1
+    ci_job: access-control
+  - id: release_package
+    proof: scripts/run_release_package_check.ps1
+    ci_job: null
+  - id: image_publication
+    proof: scripts/run_image_publication_check.ps1
+    ci_job: image-publication
+  - id: hosted_deployment
+    proof: scripts/run_hosted_deployment_check.ps1
+    ci_job: hosted-deployment
+  - id: source_readiness
+    proof: scripts/source_readiness.py
+    ci_job: null
+release_blockers:
+  - id: hosted_deployment_attestation
+    status: blocked
+    authority: docs/runbooks/hosted_deployment.md
+  - id: published_registry_image_attestation
+    status: blocked
+    authority: docs/runbooks/image_publication.md
+  - id: hosted_billing_reconciliation
+    status: blocked
+    authority: docs/runbooks/cost_monitoring.md
+  - id: non_ready_must_sources
+    status: blocked
+    authority: scripts/source_readiness.py
+  - id: full_user_auth_rbac
+    status: blocked
+    authority: docs/runbooks/mvp_operator.md
+  - id: hosted_alerting
+    status: blocked
+    authority: docs/runbooks/alerting.md

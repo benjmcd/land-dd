@@ -3,11 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Protocol
 from uuid import UUID
 
+from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceRetrievalStatus
 
-from .fixture_workflow import FixtureConnectorIngestWorkflowResult
+from .evidence_ingestion import ConnectorEvidenceIngestionResult
+from .result import ConnectorResult
+from .retrieval_provenance import ConnectorRetrievalProvenanceResult
+
+
+class ConnectorIngestWorkflowResult(Protocol):
+    @property
+    def connector_result(self) -> ConnectorResult: ...
+
+    @property
+    def retrieval_provenance(self) -> ConnectorRetrievalProvenanceResult: ...
+
+    @property
+    def evidence_ingestion(self) -> ConnectorEvidenceIngestionResult: ...
 
 
 class ConnectorReviewSignalCode(StrEnum):
@@ -30,6 +45,7 @@ class ConnectorReviewSignal:
 class ConnectorRunReviewPacket:
     connector_name: str
     ingest_run_id: UUID
+    area_id: UUID | None
     dataset_version_id: UUID | None
     retrieval_status: SourceRetrievalStatus
     started_at: datetime
@@ -55,7 +71,7 @@ class ConnectorRunReviewPacket:
 
 
 def build_connector_run_review_packet(
-    workflow_result: FixtureConnectorIngestWorkflowResult,
+    workflow_result: ConnectorIngestWorkflowResult,
 ) -> ConnectorRunReviewPacket:
     retrieval_run = workflow_result.connector_result.retrieval_run
     created_evidence = workflow_result.evidence_ingestion.created_evidence
@@ -74,6 +90,9 @@ def build_connector_run_review_packet(
     return ConnectorRunReviewPacket(
         connector_name=retrieval_run.connector_name,
         ingest_run_id=retrieval_run.ingest_run_id,
+        area_id=_area_id_from_evidence_inputs(
+            workflow_result.connector_result.evidence_inputs
+        ),
         dataset_version_id=retrieval_run.dataset_version_id,
         retrieval_status=retrieval_run.status,
         started_at=retrieval_run.started_at,
@@ -107,9 +126,18 @@ def build_connector_run_review_packet(
     )
 
 
+def _area_id_from_evidence_inputs(
+    evidence_inputs: tuple[EvidenceContract, ...],
+) -> UUID | None:
+    area_ids = {evidence.area_id for evidence in evidence_inputs}
+    if len(area_ids) != 1:
+        return None
+    return next(iter(area_ids))
+
+
 def _review_signals(
     *,
-    workflow_result: FixtureConnectorIngestWorkflowResult,
+    workflow_result: ConnectorIngestWorkflowResult,
     source_failure_created_count: int,
     source_failure_skipped_count: int,
 ) -> tuple[ConnectorReviewSignal, ...]:
@@ -190,6 +218,7 @@ def _human_review_tasks(
 __all__ = [
     "ConnectorReviewSignal",
     "ConnectorReviewSignalCode",
+    "ConnectorIngestWorkflowResult",
     "ConnectorRunReviewPacket",
     "build_connector_run_review_packet",
 ]

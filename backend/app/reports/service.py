@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import cast
+from typing import Protocol, cast
 from uuid import UUID, uuid4
 
 from app.area_geometry.service import AreaService
@@ -39,6 +40,21 @@ _NO_EVIDENCE_CAVEAT = (
 _NOT_EVALUATED_SOURCE_ID = UUID("00000000-0000-4000-8000-0000000007d0")
 
 
+class ConnectorReviewQueueItemProtocol(Protocol):
+    @property
+    def status(self) -> JobStatus: ...
+
+    @property
+    def payload(self) -> Mapping[str, object]: ...
+
+
+class ConnectorReviewQueueProtocol(Protocol):
+    def get_by_ingest_run_id(
+        self,
+        ingest_run_id: UUID,
+    ) -> ConnectorReviewQueueItemProtocol | None: ...
+
+
 class ReportRunService:
     def __init__(
         self,
@@ -49,6 +65,7 @@ class ReportRunService:
         claim_service: ClaimService,
         rule_engine: RuleEngine,
         report_repo: ReportRunRepository | None = None,
+        connector_review_queue: ConnectorReviewQueueProtocol | None = None,
     ) -> None:
         self._source_service = source_service
         self._area_service = area_service
@@ -56,6 +73,7 @@ class ReportRunService:
         self._claim_service = claim_service
         self._rule_engine = rule_engine
         self._report_repo = report_repo or InMemoryReportRunRepository()
+        self._connector_review_queue = connector_review_queue
 
     def create_report_run(
         self,
@@ -70,7 +88,7 @@ class ReportRunService:
 
         evidence = self._with_not_evaluated_source_failures(
             area_id,
-            self._evidence_service.list_by_area(area_id),
+            self._approved_report_evidence(self._evidence_service.list_by_area(area_id)),
         )
         stored_claims = [
             self._store_claim_if_needed(claim) for claim in self._rule_engine.evaluate(evidence)
@@ -162,6 +180,31 @@ class ReportRunService:
                 metadata={"source_role": "unsupported_category_sentinel"},
             )
         )
+
+    def _approved_report_evidence(
+        self,
+        evidence: list[EvidenceContract],
+    ) -> list[EvidenceContract]:
+        return [
+            record
+            for record in evidence
+            if self._is_report_approved_evidence(record)
+        ]
+
+    def _is_report_approved_evidence(self, evidence: EvidenceContract) -> bool:
+        if evidence.source_ingest_run_id is None:
+            return True
+        if self._connector_review_queue is None:
+            return False
+        item = self._connector_review_queue.get_by_ingest_run_id(
+            evidence.source_ingest_run_id,
+        )
+        if item is None or item.status != JobStatus.SUCCEEDED:
+            return False
+        decision = item.payload.get("review_decision")
+        if not isinstance(decision, dict):
+            return False
+        return decision.get("action") == "approve_for_connector_qa"
 
     def _store_claim_if_needed(self, claim: ClaimContract) -> ClaimContract:
         existing = self._claim_service.get(claim.claim_id)
@@ -257,6 +300,15 @@ def _cost_metrics(
         "unknown_count": len(_unknown_claims(claims)),
         "red_flag_count": len(_red_flag_claims(claims)),
         "verification_task_count": len(_verification_tasks(claims)),
+        "estimated_total_usd_cents": 0,
+        "compute_usd_cents": 0,
+        "storage_usd_cents": 0,
+        "llm_usd_cents": 0,
+        "map_tile_usd_cents": 0,
+        "geocoding_usd_cents": 0,
+        "paid_data_usd_cents": 0,
+        "human_review_usd_cents": 0,
+        "human_review_minutes": 0,
     }
 
 

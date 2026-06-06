@@ -88,7 +88,10 @@ def test_sqlalchemy_evidence_repository_round_trips_observation(
     area_id = _insert_area(session)
     source_id = uuid4()
     repo = SqlAlchemyEvidenceRepository(session)
-    evidence = make_observation(area_id, source_id)
+    source_ingest_run_id = uuid4()
+    evidence = make_observation(area_id, source_id).model_copy(
+        update={"source_ingest_run_id": source_ingest_run_id}
+    )
 
     created = repo.add(evidence)
     session.commit()
@@ -119,6 +122,7 @@ def test_sqlalchemy_evidence_repository_round_trips_observation(
         ).mappings().one()
         assert stored["evidence_type"] == EvidenceType.SOURCE_OBSERVATION.value
         assert stored["metadata"]["source_id"] == str(source_id)
+        assert stored["metadata"]["source_ingest_run_id"] == str(source_ingest_run_id)
         assert stored["metadata"]["evidence_code"] == "FLOOD_ZONE_AE"
         assert stored["source_date"].isoformat() == "2026-06-04"
     finally:

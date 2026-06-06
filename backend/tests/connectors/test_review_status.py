@@ -62,6 +62,7 @@ class ReviewStatusEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._source_failure_counter),
@@ -76,6 +77,7 @@ class ReviewStatusEvidencePort:
             confidence=ConfidenceBand.UNKNOWN,
             caveat=caveat,
             is_source_failure=True,
+            source_ingest_run_id=source_ingest_run_id,
         )
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created

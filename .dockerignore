@@ -1,0 +1,16 @@
+.git
+.codesight
+.codex
+.claude
+.mypy_cache
+.omc
+.pytest_cache
+__pycache__
+**/__pycache__
+archive
+local_artifacts
+worktrees
+backend/.mypy_cache
+backend/.pytest_cache
+backend/tests
+docs/planning_pack

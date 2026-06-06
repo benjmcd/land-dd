@@ -1,0 +1,173 @@
+schema_version: ops_alert_rules_v1
+default_owner: operations-on-call
+incident_runbook: docs/runbooks/incident_response.md
+rules:
+  - id: safety_contract_check_failed
+    severity: SEV0
+    signal:
+      kind: verification_command
+      target: scripts/verify.ps1
+    condition: evidence/claim/report safety-contract tests fail
+    window: immediate
+    owner: operations-on-call
+    escalation: SEV0 incident response; freeze deploys and live connectors
+    runbook: docs/runbooks/incident_response.md
+    validation:
+      proof: scripts/verify.ps1
+      expected: verifies forbidden-claim and report-contract regressions
+  - id: api_health_down
+    severity: SEV1
+    signal:
+      kind: http_endpoint
+      target: /health
+    condition: non-200 response or status is not ok for 2 checks
+    window: 5m
+    owner: operations-on-call
+    escalation: SEV1 incident response
+    runbook: docs/runbooks/incident_response.md
+    validation:
+      proof: scripts/run_deployment_smoke.ps1
+      expected: deployed API health endpoint returns ok
+  - id: deployment_smoke_failed
+    severity: SEV1
+    signal:
+      kind: verification_command
+      target: scripts/run_deployment_smoke.ps1
+    condition: deployment smoke exits nonzero
+    window: immediate
+    owner: operations-on-call
+    escalation: SEV1 incident response
+    runbook: docs/runbooks/incident_response.md
+    validation:
+      proof: scripts/run_deployment_smoke.ps1
+      expected: deployed Compose health, metrics, queue health, and report workflow pass
+  - id: db_smoke_failed
+    severity: SEV1
+    signal:
+      kind: verification_command
+      target: scripts/db_smoke_check.py
+    condition: migrations, seeds, or DB smoke check exits nonzero
+    window: immediate
+    owner: operations-on-call
+    escalation: SEV1 incident response
+    runbook: docs/runbooks/incident_response.md
+    validation:
+      proof: scripts/verify.ps1
+      expected: RUN_DB_SMOKE=1 verification applies migrations, seeds, and DB smoke
+  - id: backup_restore_failed
+    severity: SEV1
+    signal:
+      kind: verification_command
+      target: scripts/run_backup_restore_check.ps1
+    condition: backup/restore proof exits nonzero
+    window: immediate
+    owner: operations-on-call
+    escalation: SEV1 incident response
+    runbook: docs/runbooks/incident_response.md
+    validation:
+      proof: scripts/run_backup_restore_check.ps1
+      expected: restore-check database can be dumped, restored, smoked, and cleaned up
+  - id: metrics_endpoint_down
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /metrics
+    condition: non-200 response or runtime_metrics_v1 payload missing
+    window: 10m
+    owner: operations-on-call
+    escalation: SEV2 incident response
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: scripts/run_deployment_smoke.ps1
+      expected: deployed metrics endpoint returns runtime_metrics_v1
+  - id: report_queue_backlog_high
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health report_jobs.oldest_queued_age_seconds
+    condition: oldest queued report job age exceeds 900 seconds
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: scripts/run_deployment_smoke.ps1
+      expected: queue-health endpoint exposes report job counts and oldest queued age
+  - id: report_failures_high
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health report_jobs.failed
+    condition: failed report job count increases for 15 minutes
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: backend/tests/api/test_operations.py
+      expected: queue-health tests cover report job failure counts
+  - id: live_connector_queue_backlog_high
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health live_connector_jobs.oldest_queued_age_seconds
+    condition: oldest queued live connector job age exceeds 900 seconds
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: backend/tests/api/test_operations.py
+      expected: queue-health tests cover live connector queue age
+  - id: live_connector_failures_high
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health live_connector_jobs.failed
+    condition: failed live connector job count increases for 15 minutes
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: backend/tests/api/test_operations.py
+      expected: queue-health tests cover live connector failure counts
+  - id: source_readiness_ready_drop
+    severity: SEV2
+    signal:
+      kind: verification_command
+      target: scripts/source_readiness.py --priority Must --json
+    condition: ready_count drops below 4 or blocked_count rises above 4 for Must sources
+    window: 1d
+    owner: operations-on-call
+    escalation: SEV2 incident response; source/review operator investigates
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: scripts/source_readiness.py
+      expected: source-readiness JSON exposes Must source_count, ready_count, and blocked_count
+  - id: source_registry_last_checked_stale
+    severity: SEV2
+    signal:
+      kind: registry_csv
+      target: registers/data_source_registry.csv Last Checked At
+    condition: any Must current-effective source has Last Checked At older than 90 days
+    window: 1d
+    owner: operations-on-call
+    escalation: SEV2 incident response; source/review operator refreshes source authority
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: registers/data_source_registry.csv
+      expected: Must source rows include Freshness Class and Last Checked At
+  - id: cost_monitoring_check_failed
+    severity: SEV2
+    signal:
+      kind: verification_command
+      target: scripts/run_cost_monitoring_check.ps1
+    condition: cost monitoring catalog, report cost_metrics schema, or vendor-cost guardrails fail
+    window: immediate
+    owner: operations-on-call
+    escalation: SEV2 incident response; review cost guardrails before enabling batch or paid sources
+    runbook: docs/runbooks/cost_monitoring.md
+    validation:
+      proof: scripts/run_cost_monitoring_check.ps1
+      expected: cost categories and current cost guardrails validate

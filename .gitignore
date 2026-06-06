@@ -13,6 +13,7 @@ worktrees/
 htmlcov/
 .venv/
 venv/
+*.egg-info/
 local_artifacts/
 *.log
 .DS_Store
@@ -21,3 +22,4 @@ CLAUDE.local.md
 findings.md
 progress.md
 task_plan.md
+.omc/state/

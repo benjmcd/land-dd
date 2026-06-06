@@ -22,9 +22,16 @@ External source / fixture file
 [Report]
 ```
 
-The current implementation is fixture-only. `StaticFloodFixtureConnector` reads a local JSON
-fixture file that was prepared offline. Live connectors that call external APIs or vendor
-services will follow the same contract once the fixture layer is stable.
+The current implementation includes fixture connectors and bounded public live connectors
+for DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA SSURGO, and DS-004
+National Wetlands Inventory.
+`StaticFloodFixtureConnector` reads a local JSON fixture file that was prepared offline.
+The live connectors require bounded EPSG:4326 areas, preserve source caveats, and return
+the same retrieval/evidence contract shape as fixture connectors.
+DS-004 also has raw NWI response fixtures under `tests/fixtures/connectors/` for
+representative success parsing and empty-response source-failure behavior. Those fixtures
+are deterministic test corpus inputs, not source authority and not proof that no
+wetland/deepwater mapping intersects a real area.
 
 ---
 
@@ -47,6 +54,37 @@ Every connector must:
 
 Fixture connectors must additionally use the `fixture://` scheme for `log_uri` and set
 `metrics["fixture_only"] = True`.
+
+Live USGS TNM EPQS connector runs must additionally:
+
+1. Use DS-001 (`USGS The National Map`) only after the source license guard passes.
+2. Query only the official EPQS JSON endpoint:
+   `https://epqs.nationalmap.gov/v1/json`.
+3. Require an EPSG:4326 bounding box no larger than 0.25 degrees in either dimension.
+4. Sample at most 9 points; the current connector-layer slice samples center plus corners
+   by default.
+5. Emit one `DERIVED_METRIC` terrain-relief screening observation for usable samples.
+6. Emit source-failure evidence, not negative evidence, for request, malformed, or no-data
+   responses.
+7. Preserve DS-001 screening, citation, metadata, non-survey, and non-engineering caveats
+   on every emitted evidence item.
+8. Set `EvidenceContract.source_ingest_run_id` on every emitted evidence item to the
+   connector result's `retrieval_run.ingest_run_id`.
+
+Live FEMA NFHL connector runs must additionally:
+
+1. Use DS-002 (`FEMA NFHL`) only after the source license guard passes.
+2. Query only the effective NFHL ArcGIS REST service:
+   `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer`.
+3. Query only layer `28` (`Flood Hazard Zones`) for this slice.
+4. Require an EPSG:4326 bounding box no larger than 1 degree in either dimension.
+5. Request at most 1000 features.
+6. Emit source-failure evidence, not negative evidence, for empty, errored, malformed,
+   or transfer-limited responses.
+7. Preserve DS-002 screening, citation, and FEMA non-endorsement caveats on every emitted
+   evidence item.
+8. Set `EvidenceContract.source_ingest_run_id` on every emitted evidence item to the
+   connector result's `retrieval_run.ingest_run_id`.
 
 ---
 
@@ -76,8 +114,211 @@ A complete connector ingest run proceeds through these steps:
                                  -> ConnectorReviewQueueItem (idempotent on ingest_run_id)
 ```
 
-Steps 2–4 are orchestrated by `FixtureConnectorIngestWorkflow.ingest_fixture()`.
-Steps 5–7 are assembled by callers after the workflow completes.
+Steps 2-4 are orchestrated by `FixtureConnectorIngestWorkflow.ingest_fixture()`.
+Steps 5-7 are assembled by callers after the workflow completes. The controlled
+USGS TNM EPQS, FEMA NFHL, SSURGO, and NWI API routes perform the same steps for live runs
+without using the fixture workflow wrapper.
+
+The DS-001 USGS TNM EPQS connector currently has a controlled immediate operator route,
+an explicit durable live-job scheduler/worker path, and a default-off request-time
+`/intake` plus `/report-runs` gate when live connectors are enabled. Its derived metric is
+a sparse point-sample screening proxy and does not determine surveyed elevation,
+engineering feasibility, site-plan approval, buildability, lending, appraisal, or
+investment suitability.
+
+---
+
+## Controlled USGS TNM EPQS API Invocation
+
+`POST /connector-runs/usgs-tnm/query-bbox` is the current operator-facing invocation path
+for the bounded DS-001 live connector.
+
+Request requirements:
+
+1. Reviewer service-account headers are required (`X-Reviewer-Id` and
+   `X-Reviewer-Token`).
+2. DS-001 must be present in the source registry and pass connector source-use preflight.
+3. `area_id` must reference an already registered area.
+4. `bbox` must be EPSG:4326 and no larger than 0.25 degrees in either dimension.
+5. `max_sample_points` must be between 1 and 9; the current implementation samples from
+   the fixed center-plus-corners set.
+
+Route behavior:
+
+1. Builds and runs `UsgsTnmElevationConnector` for DS-001 only.
+2. Records retrieval provenance through `ConnectorRetrievalProvenanceAdapter`.
+3. Persists one terrain-relief derived metric or source-failure evidence through
+   `ConnectorEvidenceIngestionAdapter`.
+4. Builds a connector review packet/status and enqueues the run into the existing review
+   queue.
+5. Returns `202 Accepted` with retrieval status, evidence counts, queue status, queue
+   name, source registry id, and request URL.
+
+The immediate route does not create claims, reports, scheduler jobs, request-time
+connector runs, DEM downloads, surveyed elevation records, legal conclusions,
+buildability conclusions, lending conclusions, appraisal conclusions, or investment
+conclusions. Empty/no-data, service errors, and malformed payloads remain source-failure
+evidence requiring review; they are not interpreted as "no terrain issue found."
+
+---
+
+## Controlled FEMA NFHL API Invocation
+
+`POST /connector-runs/fema-nfhl/query-bbox` is the current operator-facing invocation
+path for the bounded DS-002 live connector.
+
+Request requirements:
+
+1. Reviewer service-account headers are required (`X-Reviewer-Id` and
+   `X-Reviewer-Token`).
+2. DS-002 must be present in the source registry and pass connector source-use preflight.
+3. `area_id` must reference an already registered area.
+4. `bbox` must be EPSG:4326 and no larger than 1 degree in either dimension.
+5. `max_features` must be between 1 and 1000.
+
+Route behavior:
+
+1. Builds and runs `FemaNfhlConnector` for DS-002 only.
+2. Records retrieval provenance through `ConnectorRetrievalProvenanceAdapter`.
+3. Persists spatial evidence or source-failure evidence through
+   `ConnectorEvidenceIngestionAdapter`.
+4. Builds a connector review packet/status and enqueues the run into the existing review
+   queue.
+5. Returns `202 Accepted` with retrieval status, evidence counts, queue status, queue
+   name, source registry id, and request URL.
+
+The route does not create claims, reports, legal conclusions, scheduler jobs, or `/intake`
+shortcuts. Empty FEMA responses, service errors, malformed payloads, and transfer-limit
+responses remain source-failure evidence requiring review; they are not interpreted as
+"no flood issue found."
+
+Connector-produced evidence is report-eligible only after review approval. Report
+generation includes evidence with `source_ingest_run_id` only when the connector review
+queue has a matching item whose status is `SUCCEEDED` and whose latest
+`review_decision.action` is `approve_for_connector_qa`. Unapproved connector-lineage
+evidence remains in the ledger but is excluded from report evidence, claims, caveats, and
+source manifests.
+
+Manual operator sequence:
+
+1. Register or select an area.
+2. Invoke `POST /connector-runs/fema-nfhl/query-bbox` for DS-002.
+3. Approve the queued connector run with
+   `POST /connector-runs/{ingest_run_id}/review-actions/approve_for_connector_qa`.
+4. Create a report from the approved connector run with
+   `POST /connector-runs/{ingest_run_id}/report-runs`, passing only the desired
+   `intent_code`. The route derives the `area_id` from the connector review queue item,
+   requires the latest review decision to be `approve_for_connector_qa`, and does not
+   re-run the live FEMA request.
+5. Fetch the report with `GET /report-runs/{report_run_id}` and verify the report evidence
+   contains the connector `source_ingest_run_id`.
+
+This sequence is operator-driven and is covered by API regressions for both in-memory and
+DB-backed service wiring.
+
+When `ENABLE_LIVE_CONNECTORS=true`, `/intake` and `/report-runs` perform request-time
+DS-001, DS-002, DS-004, then DS-003 orchestration before report generation:
+
+1. The entry point derives bounded USGS TNM EPQS, FEMA NFHL, and NWI bounding boxes from
+   the submitted or stored area; DS-003 derives the bounded SSURGO WKT query area from
+   the same area.
+2. DS-001 runs first through the same provenance, evidence-ingestion, and review-queue
+   adapters as the manual route. If DS-001 is not approved, the API returns
+   `status="pending_connector_review"` plus the DS-001 `ingest_run_id`, and does not
+   create a report job.
+3. After DS-001 approval, call `POST /report-runs` with the same `area_id`. DS-002 then
+   runs through the same adapters. If DS-002 is not approved, the API returns
+   `status="pending_connector_review"` plus the DS-002 `ingest_run_id`, and still does
+   not create a report job.
+4. After DS-002 approval, call `POST /report-runs` with the same `area_id`. DS-004 then
+   runs through the same adapters. If DS-004 is not approved, the API returns
+   `status="pending_connector_review"` plus the DS-004 `ingest_run_id`, and still does
+   not create a report job.
+5. After DS-004 approval, call `POST /report-runs` with the same `area_id` again. DS-003
+   then runs through the same adapters. If DS-003 is not approved, the API returns
+   `status="pending_connector_review"` plus the DS-003 `ingest_run_id`, and still does
+   not create a report job.
+6. After DS-003 approval, call `POST /report-runs` with the same `area_id` again. The API
+   creates the normal report job, and report generation may consume only connector-lineage
+   evidence approved with `approve_for_connector_qa`.
+7. Approved DS-001 evidence may appear as buildability-domain terrain screening evidence,
+   but it does not create a DS-001 claim or any buildability, legal, lending, appraisal,
+   or investment conclusion.
+8. Approved DS-003 evidence may produce only an UNKNOWN, review-required SSURGO screening
+   claim. It does not determine septic approval, perc results, soil suitability,
+   engineering feasibility, permitting, legal access, buildability, lending, appraisal, or
+   investment suitability.
+
+For `/intake`, keep the returned `area_id` from the first pending response and continue
+with `/report-runs`; calling `/intake` again creates a new area and starts a new request
+sequence.
+
+The connector-run resume route remains available for explicit manual report creation from
+one approved connector run. Use the repeated `/report-runs` flow above when the intent is
+to complete the full request-time DS-001, DS-002, DS-004, plus DS-003 sequence.
+
+This is request-time orchestration, not an autonomous background live connector daemon.
+
+Background DS-001, DS-002, DS-003, and DS-004 connector scheduling is available as an
+explicit queue/worker path:
+
+Use `POST /connector-runs/live-sequence/schedule-bbox` when the operator wants to enqueue
+the current reviewed live-source sequence for one registered area in one call. The route
+requires reviewer auth, validates the registered `area_id` plus one bounded EPSG:4326
+bbox, and enqueues four separate `live_connector_run` jobs in this order: DS-001, DS-002,
+DS-004, then DS-003. The response includes
+`policy_id="reviewed_live_sequence_ds001_ds002_ds004_ds003_v1"` and the ordered live job
+records. Sequence scheduling is idempotent through the same per-source job keys used by
+the individual routes.
+
+The sequence scheduler does not call live sources, persist evidence, create claims,
+approve connector review items, or create report jobs. It is an operator convenience for
+queue creation only; the worker, connector review, and report approval gates remain the
+execution authorities.
+
+1. Call the relevant reviewer-authenticated route with a registered `area_id` and a
+   bounded EPSG:4326 bbox: `POST /connector-runs/usgs-tnm/schedule-bbox` for DS-001,
+   `POST /connector-runs/fema-nfhl/schedule-bbox` for DS-002,
+   `POST /connector-runs/ssurgo/schedule-bbox` for DS-003, or
+   `POST /connector-runs/nwi/schedule-bbox` for DS-004. DS-001 accepts optional
+   `max_sample_points`; DS-002 and DS-004 accept optional `max_features`; DS-003 accepts
+   optional `max_rows`.
+2. The API validates the area and connector-specific bounds, then enqueues a durable
+   `live_connector_run` job in `jobs.job_queue`. Scheduling does not call the live
+   source, persist evidence, create claims, or create report jobs.
+3. Run the bounded worker command:
+   `py -3.12 .\scripts\live_connector_worker.py --max-jobs 1 --json`.
+   The command opens fresh DB-backed services, calls `run_next_live_connector_job(...)`,
+   leases one queued live connector job by default, dispatches by `source_registry_id`,
+   runs the same bounded connector orchestration, persists provenance/evidence, and
+   enqueues the normal connector review item.
+4. The live connector job is marked `SUCCEEDED` with `connector_ingest_run_id`,
+   `connector_review_status`, and `request_url`, or `FAILED` with `last_error`.
+5. Report creation remains gated on reviewer approval of the resulting connector review
+   item; operators still use `POST /connector-runs/{ingest_run_id}/report-runs` after
+   approval.
+
+The worker exits `0` when no queued job exists or all processed jobs succeed. It exits
+`1` when a processed job fails after the failure state is committed. One-shot mode remains
+the default for operator calls.
+
+For supervised polling, pass `--poll-seconds <seconds>`. `--idle-polls 0` means keep
+polling until the process is stopped by the supervisor; a positive value exits after that
+many consecutive idle polls. The Compose file includes an opt-in worker profile:
+
+```powershell
+docker compose --profile workers up -d live-connector-worker
+docker compose --profile workers logs -f live-connector-worker
+```
+
+The profile is not part of default `docker compose up`. It uses
+`LIVE_CONNECTOR_WORKER_ID`, `LIVE_CONNECTOR_WORKER_MAX_JOBS`,
+`LIVE_CONNECTOR_WORKER_POLL_SECONDS`, and `LIVE_CONNECTOR_WORKER_IDLE_POLLS` from the
+environment or `.env`.
+
+Even in supervised mode, report creation remains separate and review-gated. The worker
+does not approve connector review items, create report jobs, or bypass
+`POST /connector-runs/{ingest_run_id}/report-runs`.
 
 ---
 
@@ -86,8 +327,9 @@ Steps 5–7 are assembled by callers after the workflow completes.
 ### LicenseBlockedError (`ConnectorLicenseBlockedError`)
 
 Raised by `check_connector_source_license()` before any ingestion attempt when the source
-`license_status` is `incompatible` or `unknown_blocking`. No retrieval run is recorded and
-no evidence is written.
+is not approved for production use. This includes unapproved review status, unknown or
+blocked license status, and unknown or blocked commercial/cache/export/raw-data/AI-use
+rights. No retrieval run is recorded and no evidence is written.
 
 ### ConnectorLoadError (`FixtureConnectorError`)
 
@@ -100,6 +342,14 @@ Raised by `StaticFloodFixtureConnector.load_fixture()` when:
 - Evidence list is empty.
 - A succeeded run contains no spatial evidence.
 - A failed/blocked run contains no source-failure evidence.
+
+### Live FEMA NFHL request failure
+
+`FemaNfhlConnector` converts live request errors, FEMA service errors, malformed responses,
+empty feature responses, and FEMA transfer-limit responses into
+`EvidenceType.SOURCE_FAILURE` evidence. These are not treated as "no flood issue found."
+The source-failure payload includes the failure reason, error message, and retryability.
+Service URL, layer ID, and query bounding box are preserved in retrieval-run metrics.
 
 ### EvidenceIngestionError (`ConnectorEvidenceIngestionError`)
 
@@ -222,20 +472,33 @@ policy instance.
 `check_connector_source_license(source: SourceContract)` must be called before any connector
 run begins.
 
-Blocking statuses (raise `ConnectorLicenseBlockedError`):
-- `incompatible` — source license is incompatible with the project's use terms.
-- `unknown_blocking` — license is unknown and has been explicitly flagged as blocking.
+Connector source use is fail-closed. A source passes only when:
 
-Pass-through statuses (no exception):
-- `allowed`
-- `allowed_with_attribution`
-- `review_required`
-- `unknown`
-- `unreviewed`
+- `review_status` is `approved` or `approved-with-restrictions`;
+- `license_status`, `commercial_use_status`, `redistribution_status`, `cache_allowed`,
+  `export_allowed`, `raw_data_allowed`, and `ai_use_allowed` are explicit allowed values:
+  `yes`, `allowed`, `approved`, `approved-with-restrictions`, or `restricted`.
+
+Unknown, unreviewed, pending, blocked, incompatible, or absent production-use rights raise
+`ConnectorLicenseBlockedError`. The error includes `source_id`, `license_status`, and the
+blocked source fields.
 
 When `ConnectorLicenseBlockedError` is raised, the connector run must be aborted. No
 retrieval run is recorded, no evidence is written, and no review queue item is created.
-Record the blocked attempt in operational logs with the `source_id` and `license_status`.
+Record the blocked attempt in operational logs with the `source_id`, `license_status`, and
+blocked fields.
+
+Use the source-readiness audit before selecting a live connector candidate:
+
+```powershell
+py -3.12 .\scripts\source_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+```
+
+The command is read-only. It reports connector-ready counts and the exact registry fields
+that block each source. Add `--require-ready` only in a gate that should fail when no source
+in the selected scope is connector-ready.
 
 ---
 
@@ -297,10 +560,33 @@ Review queue actions available to human reviewers:
 
 | Action | Method | Applicable statuses | Effect |
 |---|---|---|---|
+| Approve for connector QA | `approve_for_connector_qa(job_id, reviewer_id=..., reason=...)` | NEEDS_REVIEW, QUEUED, RUNNING | Closes job as SUCCEEDED and records the reviewer decision in the queue payload |
+| Request fixture/source fix | `request_fixture_fix(job_id, reviewer_id=..., reason=...)` | NEEDS_REVIEW, QUEUED, RUNNING | Closes job as FAILED, records the reviewer decision in the queue payload, and stores the reason in `last_error` |
 | Mark succeeded | `mark_succeeded(job_id)` | RUNNING | Closes job as SUCCEEDED |
 | Mark failed | `mark_failed(job_id, error=...)` | RUNNING | Closes job as FAILED |
-| Requeue after fix | `requeue_failed(job_id, reason=..., not_before=...)` | FAILED (with retries remaining) | Returns to QUEUED |
-| Cancel | `cancel(job_id, reason=...)` | Any except SUCCEEDED, CANCELLED | Closes as CANCELLED |
+| Requeue after fix | `requeue_failed(job_id, reviewer_id=..., reason=..., not_before=...)` | FAILED (with retries remaining) | Returns to QUEUED and appends the reviewer action to the queue payload |
+| Cancel | `cancel(job_id, reviewer_id=..., reason=...)` | Any except SUCCEEDED, CANCELLED | Closes as CANCELLED and appends the reviewer action to the queue payload |
+
+API actions:
+
+| Route | Reason required | Effect |
+|---|---|---|
+| `POST /connector-runs/{ingest_run_id}/review-actions/approve_for_connector_qa` | No | Calls `approve_for_connector_qa` and returns the updated queue item |
+| `POST /connector-runs/{ingest_run_id}/review-actions/request_fixture_fix` | Yes | Calls `request_fixture_fix` and returns the updated queue item |
+| `POST /connector-runs/{ingest_run_id}/review-actions/requeue_after_fix` | Yes | Calls `requeue_failed` and returns the updated queue item |
+| `POST /connector-runs/{ingest_run_id}/review-actions/cancel_review` | Yes | Calls `cancel` and returns the updated queue item |
+
+These actions mutate only connector review queue state. They do not mutate source
+retrieval provenance, evidence observations, claims, report runs, schemas, connector
+runtime behavior, or live source data. Downstream report generation reads the queue state
+as an approval gate for connector-lineage evidence, so `approve_for_connector_qa` affects
+future report eligibility without rewriting already persisted evidence.
+
+Reviewer action metadata is stored in the queue item payload. `review_decision` records the
+latest approve/fix decision used by report gating. `review_action_history` is an append-only
+payload array for reviewer closeout, requeue, and cancel actions; API routes pass the
+authenticated reviewer id into each history entry. This is durable queue metadata, not a
+separate audit-event authorization ledger.
 
 ---
 

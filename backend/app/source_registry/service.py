@@ -4,9 +4,8 @@ from uuid import UUID
 
 from app.domain.source_contracts import SourceContract
 from app.source_registry.source_repo import SourceRepository
+from app.source_registry.usage_rights import source_production_use_allowed
 
-_ALLOWED_REVIEW_STATUSES = {"approved", "approved-with-restrictions"}
-_ALLOWED_USAGE_STATUSES = {"yes", "allowed", "approved", "approved-with-restrictions", "restricted"}
 
 class SourceService:
     def __init__(self, repo: SourceRepository) -> None:
@@ -32,23 +31,4 @@ class SourceService:
         source = self._repo.get(source_id)
         if source is None:
             return False
-        usage_statuses = (
-            source.license_status,
-            source.commercial_use_status,
-            source.redistribution_status,
-            source.cache_allowed,
-            source.export_allowed,
-            source.raw_data_allowed,
-            source.ai_use_allowed,
-        )
-        return (
-            _status_allows(source.review_status, _ALLOWED_REVIEW_STATUSES)
-            and all(
-                _status_allows(status, _ALLOWED_USAGE_STATUSES)
-                for status in usage_statuses
-            )
-        )
-
-
-def _status_allows(status: str, allowed_values: set[str]) -> bool:
-    return status.strip().lower() in allowed_values
+        return source_production_use_allowed(source)

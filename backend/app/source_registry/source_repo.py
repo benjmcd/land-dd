@@ -107,12 +107,13 @@ def _source_to_model(source: SourceContract) -> SourceModel:
 
 
 def _model_to_source(model: SourceModel) -> SourceContract:
-    metadata = model.source_metadata
+    metadata = dict(model.source_metadata)
+    homepage_url = _homepage_url_or_none(model.homepage_url, metadata)
     return SourceContract(
         source_id=model.source_id,
         name=model.name,
         organization=model.organization,
-        homepage_url=cast(Any, model.homepage_url),
+        homepage_url=cast(Any, homepage_url),
         source_type=_metadata_str(metadata, "source_type"),
         authority_level=AuthorityLevel(model.authority_level),
         domain=model.domain,
@@ -150,6 +151,19 @@ def _model_to_source(model: SourceModel) -> SourceContract:
         notes=model.notes,
         metadata=metadata,
     )
+
+
+def _homepage_url_or_none(
+    value: str | None,
+    metadata: dict[str, Any],
+) -> str | None:
+    if value is None:
+        return None
+    if value.startswith(("http://", "https://")):
+        return value
+    if value:
+        metadata.setdefault("raw_url", value)
+    return None
 
 
 def _metadata_str(

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.domain.source_contracts import SourceRetrievalRunContract
 
-from .flood_fixture import FloodFixtureConnectorResult
+from .result import ConnectorResult
 
 
 class SourceRetrievalProvenancePort(Protocol):
@@ -30,7 +30,7 @@ class ConnectorRetrievalProvenanceAdapter:
 
     def record(
         self,
-        connector_result: FloodFixtureConnectorResult,
+        connector_result: ConnectorResult,
     ) -> ConnectorRetrievalProvenanceResult:
         return self.record_retrieval_run(connector_result.retrieval_run)
 

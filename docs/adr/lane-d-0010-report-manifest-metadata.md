@@ -22,6 +22,7 @@ Tighten `schemas/report_run_schema.json` for the stable generated report metadat
 - `source_details` now requires the stable source governance fields emitted by `ReportRunService`, including the current Lane A `AuthorityLevel` values for `authority_level`.
 - `artifact_metadata` now requires `artifact_kind`, `report_schema`, and `cost_metrics`.
 - `cost_metrics` now requires non-negative evidence, claim, unknown, red-flag, and verification-task counts.
+- 2026-06-05 follow-up: `cost_metrics` also requires non-negative local-only zero-dollar attribution fields for estimated total, compute, storage, LLM, map tile, geocoding, paid data, human review USD cents, and human review minutes. Current local paths emit `0` for these fields until a future approved metering slice supplies nonzero costs.
 - `persistence`, `output_uri`, and `machine_json_uri` are modeled as optional artifact persistence fields because in-memory generated reports and repository-persisted reports do not expose the same storage metadata.
 - Nested `additionalProperties` remains true so future report metadata extensions do not require a schema fork before they are intentionally promoted to stable keys.
 

@@ -65,6 +65,7 @@ class ApiStatusEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         created = EvidenceContract(
             evidence_id=evidence_id or UUID(int=self._source_failure_counter),
@@ -79,6 +80,7 @@ class ApiStatusEvidencePort:
             confidence=ConfidenceBand.UNKNOWN,
             caveat=caveat,
             is_source_failure=True,
+            source_ingest_run_id=source_ingest_run_id,
         )
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created
@@ -245,6 +247,7 @@ def test_connector_review_queue_endpoint_returns_in_memory_queue_item() -> None:
     assert record["priority"] == 10
     assert record["idempotency_key"] == f"connector_review_status:{ingest_run_id}"
     assert record["payload"]["ingest_run_id"] == ingest_run_id
+    assert record["payload"]["area_id"] is not None
     assert record["payload"]["kind"] == "connector_review_status"
     assert record["attempts"] == 0
     assert record["max_attempts"] == 1

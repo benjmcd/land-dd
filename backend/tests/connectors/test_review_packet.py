@@ -61,6 +61,7 @@ class ReviewPacketEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         self.events.append("create_source_failure")
         created = EvidenceContract(
@@ -76,6 +77,7 @@ class ReviewPacketEvidencePort:
             confidence=ConfidenceBand.UNKNOWN,
             caveat=caveat,
             is_source_failure=True,
+            source_ingest_run_id=source_ingest_run_id,
         )
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created
@@ -119,6 +121,7 @@ def test_review_packet_summarizes_successful_fixture_workflow() -> None:
 
     assert packet.connector_name == "fixture_flood_static"
     assert packet.ingest_run_id == result.connector_result.retrieval_run.ingest_run_id
+    assert packet.area_id == result.connector_result.evidence_inputs[0].area_id
     assert packet.dataset_version_id == (
         result.connector_result.retrieval_run.dataset_version_id
     )

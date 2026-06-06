@@ -1,0 +1,80 @@
+schema_version: access_control_v1
+operator_runbook: docs/runbooks/access_control.md
+current_controls:
+  - id: api_key_middleware
+    status: implemented_default_off
+    authority:
+      - backend/app/api/api_key_auth.py
+      - backend/app/api/secret_specs.py
+      - backend/app/core/config.py
+      - backend/tests/api/test_api_key_auth.py
+    validation: scripts/run_access_control_check.ps1
+  - id: api_key_rotation
+    status: implemented_configured_static_lifecycle
+    authority:
+      - backend/app/core/config.py
+      - backend/tests/api/test_api_key_auth.py
+      - docs/runbooks/access_control.md
+    validation: scripts/run_access_control_check.ps1
+  - id: api_key_audit_logging
+    status: implemented_structured_runtime_logs_and_db_events
+    authority:
+      - backend/app/api/auth_audit.py
+      - backend/app/api/api_key_auth.py
+      - backend/app/main.py
+      - backend/tests/api/test_api_key_auth.py
+      - docs/runbooks/access_control.md
+    validation: scripts/run_access_control_check.ps1
+  - id: reviewer_service_account
+    status: implemented_local_service_account_scoped
+    authority:
+      - backend/app/api/reviewer_auth.py
+      - backend/app/api/secret_specs.py
+      - backend/app/core/config.py
+      - backend/tests/api/test_reviewer_auth.py
+    validation: scripts/run_access_control_check.ps1
+  - id: protected_operator_routes
+    status: implemented_reviewer_authenticated_and_scoped
+    authority:
+      - backend/app/api/connectors.py
+      - backend/app/api/operations.py
+      - backend/app/api/reports.py
+      - backend/tests/api/test_connector_review_actions.py
+      - backend/tests/api/test_operations.py
+      - backend/tests/api/test_async_report_runs.py
+    validation: scripts/run_access_control_check.ps1
+  - id: reviewer_scope_enforcement
+    status: implemented_local_route_scopes
+    authority:
+      - backend/app/api/reviewer_auth.py
+      - backend/app/api/connectors.py
+      - backend/app/api/operations.py
+      - backend/app/api/reports.py
+      - backend/tests/api/test_reviewer_auth.py
+      - backend/tests/api/test_connector_review_actions.py
+      - backend/tests/api/test_operations.py
+      - backend/tests/api/test_async_report_runs.py
+      - backend/tests/api/test_fema_nfhl_connector_api.py
+    validation: scripts/run_access_control_check.ps1
+  - id: public_health_routes
+    status: intentionally_public
+    authority:
+      - backend/app/api/api_key_auth.py
+      - backend/tests/api/test_api_key_auth.py
+    validation: scripts/run_access_control_check.ps1
+production_blockers:
+  - id: full_user_auth_rbac
+    status: blocked
+    authority: docs/runbooks/mvp_operator.md
+  - id: oauth_oidc_identity_provider
+    status: blocked
+    authority: docs/runbooks/access_control.md
+  - id: user_account_persistence
+    status: blocked
+    authority: docs/runbooks/access_control.md
+  - id: automatic_api_key_rotation
+    status: blocked
+    authority: docs/runbooks/access_control.md
+  - id: full_user_role_policy
+    status: blocked
+    authority: docs/runbooks/access_control.md

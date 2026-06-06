@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -25,11 +26,35 @@ from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
 from app.reports.report_repo import ReportRunRepository
-from app.reports.service import ReportRunService
+from app.reports.service import (
+    ConnectorReviewQueueItemProtocol,
+    ConnectorReviewQueueProtocol,
+    ReportRunService,
+)
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
+
+
+@dataclass(frozen=True)
+class FakeConnectorReviewQueueItem:
+    status: JobStatus
+    payload: dict[str, object]
+
+
+class FakeConnectorReviewQueue:
+    def __init__(
+        self,
+        items: dict[UUID, FakeConnectorReviewQueueItem] | None = None,
+    ) -> None:
+        self._items = items or {}
+
+    def get_by_ingest_run_id(
+        self,
+        ingest_run_id: UUID,
+    ) -> ConnectorReviewQueueItemProtocol | None:
+        return self._items.get(ingest_run_id)
 
 
 def load_geometry(name: str) -> dict[str, object]:
@@ -40,6 +65,7 @@ def load_geometry(name: str) -> dict[str, object]:
 
 def make_service(
     report_repo: ReportRunRepository | None = None,
+    connector_review_queue: ConnectorReviewQueueProtocol | None = None,
 ) -> tuple[
     SourceService,
     AreaService,
@@ -59,6 +85,7 @@ def make_service(
         claim_service=claim_service,
         rule_engine=RuleEngine.from_file(),
         report_repo=report_repo,
+        connector_review_queue=connector_review_queue,
     )
     return source_service, area_service, evidence_service, claim_service, report_service
 
@@ -103,6 +130,26 @@ def flood_evidence(area: AreaContract, source: SourceContract) -> EvidenceContra
         method_code="fixture_flood_overlay",
         confidence=ConfidenceBand.MEDIUM,
         caveat="Screening fixture only; confirm locally.",
+    )
+
+
+def fema_live_evidence(
+    area: AreaContract,
+    source: SourceContract,
+    ingest_run_id: UUID,
+) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="FLOOD_ZONE_SCREEN",
+        domain="flood",
+        observation="FEMA NFHL feature intersects a mapped flood hazard zone.",
+        observed_value={"flood_zone_code": "AE", "intersects": True},
+        method_code="fema_nfhl_bbox_query_v1",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="FEMA NFHL screening only; confirm locally.",
+        source_ingest_run_id=ingest_run_id,
     )
 
 
@@ -174,6 +221,15 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     assert cost_metrics["claim_count"] == 7
     assert cost_metrics["unknown_count"] == 6
     assert cost_metrics["red_flag_count"] == 1
+    assert cost_metrics["estimated_total_usd_cents"] == 0
+    assert cost_metrics["compute_usd_cents"] == 0
+    assert cost_metrics["storage_usd_cents"] == 0
+    assert cost_metrics["llm_usd_cents"] == 0
+    assert cost_metrics["map_tile_usd_cents"] == 0
+    assert cost_metrics["geocoding_usd_cents"] == 0
+    assert cost_metrics["paid_data_usd_cents"] == 0
+    assert cost_metrics["human_review_usd_cents"] == 0
+    assert cost_metrics["human_review_minutes"] == 0
     assert report_service.get_report_run(report_run.report_run_id) == report_run
 
 
@@ -237,6 +293,66 @@ def test_create_report_run_without_source_evidence_surfaces_not_evaluated_unknow
     assert cost_metrics["claim_count"] == 4
     assert cost_metrics["unknown_count"] == 4
     assert cost_metrics["red_flag_count"] == 0
+    assert cost_metrics["estimated_total_usd_cents"] == 0
+    assert cost_metrics["human_review_minutes"] == 0
+
+
+def test_create_report_run_excludes_unapproved_connector_evidence() -> None:
+    source_service, area_service, evidence_service, _, report_service = make_service()
+    source = register_source(source_service)
+    area = register_area(area_service)
+    ingest_run_id = uuid4()
+    stored = evidence_service.create_observation(
+        fema_live_evidence(area, source, ingest_run_id)
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert stored not in report_run.evidence
+    assert [claim.claim_code for claim in report_run.claims] == [
+        NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
+    ]
+    assert report_run.red_flags == []
+    assert report_run.source_manifest["evidence_count"] == 4
+
+
+def test_create_report_run_includes_approved_connector_evidence() -> None:
+    ingest_run_id = uuid4()
+    review_queue = FakeConnectorReviewQueue(
+        {
+            ingest_run_id: FakeConnectorReviewQueueItem(
+                status=JobStatus.SUCCEEDED,
+                payload={
+                    "review_decision": {
+                        "action": "approve_for_connector_qa",
+                        "reviewer_id": "fixture-reviewer",
+                    }
+                },
+            )
+        }
+    )
+    source_service, area_service, evidence_service, _, report_service = make_service(
+        connector_review_queue=review_queue,
+    )
+    source = register_source(source_service)
+    area = register_area(area_service)
+    stored = evidence_service.create_observation(
+        fema_live_evidence(area, source, ingest_run_id)
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert report_run.evidence[0] == stored
+    assert "FLOOD_001" in [claim.claim_code for claim in report_run.claims]
+    assert report_run.red_flags[0].claim_code == "FLOOD_001"
+    assert "FEMA NFHL screening only; confirm locally." in report_run.caveats
+    assert report_run.source_manifest["evidence_count"] == 5
 
 
 def test_create_report_run_rejects_unregistered_area() -> None:

@@ -141,6 +141,15 @@ def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
         "unknown_count",
         "red_flag_count",
         "verification_task_count",
+        "estimated_total_usd_cents",
+        "compute_usd_cents",
+        "storage_usd_cents",
+        "llm_usd_cents",
+        "map_tile_usd_cents",
+        "geocoding_usd_cents",
+        "paid_data_usd_cents",
+        "human_review_usd_cents",
+        "human_review_minutes",
     }
     assert all(
         cost_metric_properties[name]["minimum"] == 0

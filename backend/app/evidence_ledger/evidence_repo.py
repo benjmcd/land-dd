@@ -332,6 +332,8 @@ def _evidence_metadata(evidence: EvidenceContract) -> dict[str, object]:
     }
     if evidence.superseded_by is not None:
         metadata["superseded_by"] = str(evidence.superseded_by)
+    if evidence.source_ingest_run_id is not None:
+        metadata["source_ingest_run_id"] = str(evidence.source_ingest_run_id)
     if evidence.spatial_precision_meters is not None:
         metadata["spatial_precision_meters"] = evidence.spatial_precision_meters
     return metadata
@@ -348,6 +350,7 @@ def _row_to_evidence(row: Any) -> EvidenceContract:
         observation=row["observation"],
         observed_value=_json_object(row["observed_value"], "observed_value"),
         source_id=_required_metadata_uuid(metadata, "source_id"),
+        source_ingest_run_id=_optional_metadata_uuid(metadata, "source_ingest_run_id"),
         method_code=row["method_code"],
         method_version=row["method_version"],
         confidence=row["confidence"],

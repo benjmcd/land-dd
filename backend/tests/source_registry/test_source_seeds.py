@@ -43,8 +43,130 @@ def test_seed_sources_are_valid_source_contracts() -> None:
 
     assert all(isinstance(source, SourceContract) for source in seeds)
     assert all(source.metadata["mvp_priority"] == "Must" for source in seeds)
-    assert all(source.review_status == "pending" for source in seeds)
-    assert all(source.freshness_class == "unreviewed" for source in seeds)
+    assert {source.review_status for source in seeds} == {
+        "approved-with-restrictions",
+        "pending",
+    }
+    assert {source.freshness_class for source in seeds} == {
+        "current-effective",
+        "unreviewed",
+    }
+
+
+def test_fema_nfhl_seed_preserves_reviewed_restricted_rights() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    fema = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-002"
+    )
+
+    assert fema.license_status == "approved-with-restrictions"
+    assert fema.commercial_use_status == "restricted"
+    assert fema.redistribution_status == "restricted"
+    assert fema.cache_allowed == "restricted"
+    assert fema.export_allowed == "approved-with-restrictions"
+    assert fema.ai_use_allowed == "restricted"
+    assert fema.raw_data_allowed == "restricted"
+    assert fema.attribution_required is True
+    assert fema.review_status == "approved-with-restrictions"
+    assert fema.last_checked_at == "2026-06-05"
+
+
+def test_usgs_national_map_seed_preserves_reviewed_restricted_rights() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    usgs = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-001"
+    )
+
+    assert str(usgs.homepage_url) == "https://www.usgs.gov/nationalmap"
+    assert usgs.license_status == "approved-with-restrictions"
+    assert usgs.commercial_use_status == "approved-with-restrictions"
+    assert usgs.redistribution_status == "approved-with-restrictions"
+    assert usgs.cache_allowed == "approved-with-restrictions"
+    assert usgs.export_allowed == "approved-with-restrictions"
+    assert usgs.ai_use_allowed == "restricted"
+    assert usgs.raw_data_allowed == "approved-with-restrictions"
+    assert usgs.attribution_required is True
+    assert usgs.update_cadence == "dynamic"
+    assert usgs.freshness_class == "current-effective"
+    assert usgs.review_status == "approved-with-restrictions"
+    assert usgs.last_checked_at == "2026-06-05"
+
+
+def test_usda_ssurgo_seed_preserves_reviewed_restricted_rights() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    usda = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-003"
+    )
+
+    assert str(usda.homepage_url) == "https://websoilsurvey.nrcs.usda.gov/"
+    assert usda.license_status == "approved-with-restrictions"
+    assert usda.commercial_use_status == "approved-with-restrictions"
+    assert usda.redistribution_status == "approved-with-restrictions"
+    assert usda.cache_allowed == "approved-with-restrictions"
+    assert usda.export_allowed == "approved-with-restrictions"
+    assert usda.ai_use_allowed == "restricted"
+    assert usda.raw_data_allowed == "approved-with-restrictions"
+    assert usda.attribution_required is True
+    assert usda.update_cadence == "annual"
+    assert usda.freshness_class == "current-effective"
+    assert usda.review_status == "approved-with-restrictions"
+    assert usda.last_checked_at == "2026-06-05"
+
+
+def test_nwi_seed_preserves_reviewed_restricted_rights() -> None:
+    module = _load_seed_module()
+
+    seeds = module.load_seed_sources()
+    nwi = next(
+        source for source in seeds if source.metadata["source_registry_id"] == "DS-004"
+    )
+
+    assert str(nwi.homepage_url) == "https://www.fws.gov/program/national-wetlands-inventory"
+    assert nwi.license_status == "approved-with-restrictions"
+    assert nwi.commercial_use_status == "approved-with-restrictions"
+    assert nwi.redistribution_status == "approved-with-restrictions"
+    assert nwi.cache_allowed == "approved-with-restrictions"
+    assert nwi.export_allowed == "approved-with-restrictions"
+    assert nwi.ai_use_allowed == "restricted"
+    assert nwi.raw_data_allowed == "approved-with-restrictions"
+    assert nwi.attribution_required is True
+    assert nwi.update_cadence == "biannual"
+    assert nwi.freshness_class == "current-effective"
+    assert nwi.review_status == "approved-with-restrictions"
+    assert nwi.last_checked_at == "2026-06-05"
+
+
+def test_sql_seed_refreshes_first_class_usage_rights() -> None:
+    sql_path = Path(__file__).resolve().parents[3] / "db" / "seeds" / (
+        "002_seed_source_registry.sql"
+    )
+    sql = sql_path.read_text(encoding="utf-8")
+
+    assert "attribution_required" in sql
+    assert "'USGS The National Map', 'USGS'" in sql
+    assert "'FEMA NFHL', 'FEMA'" in sql
+    assert "'USDA Web Soil Survey/SSURGO', 'USDA NRCS'" in sql
+    assert "'National Wetlands Inventory', 'USFWS'" in sql
+    assert (
+        "true, 'restricted', 'approved-with-restrictions', "
+        "'approved-with-restrictions'"
+    ) in sql
+    assert "true, 'restricted', 'restricted', 'approved-with-restrictions'" in sql
+    for column_name in (
+        "commercial_use_status",
+        "attribution_required",
+        "ai_use_allowed",
+        "cache_allowed",
+        "export_allowed",
+        "raw_data_allowed",
+    ):
+        assert f"{column_name} = EXCLUDED.{column_name}" in sql
 
 
 def test_seed_metadata_preserves_registry_context() -> None:

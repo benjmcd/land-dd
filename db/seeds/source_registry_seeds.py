@@ -29,8 +29,20 @@ def load_seed_sources(
     *,
     priority: str = DEFAULT_PRIORITY,
 ) -> list[SourceContract]:
+    return load_registry_sources(register_path, priority=priority)
+
+
+def load_registry_sources(
+    register_path: Path = DEFAULT_REGISTER_PATH,
+    *,
+    priority: str | None = None,
+) -> list[SourceContract]:
     rows = _load_rows(register_path)
-    return [_row_to_source(row) for row in rows if row["MVP Priority"] == priority]
+    return [
+        _row_to_source(row)
+        for row in rows
+        if priority is None or row["MVP Priority"] == priority
+    ]
 
 
 def _load_rows(register_path: Path) -> list[dict[str, str]]:
@@ -104,4 +116,9 @@ def _status_to_bool(value: str) -> bool:
     return value.strip().lower() == "yes"
 
 
-__all__ = ["DEFAULT_PRIORITY", "DEFAULT_REGISTER_PATH", "load_seed_sources"]
+__all__ = [
+    "DEFAULT_PRIORITY",
+    "DEFAULT_REGISTER_PATH",
+    "load_registry_sources",
+    "load_seed_sources",
+]

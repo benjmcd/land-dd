@@ -159,16 +159,26 @@ def _with_persistence(
 
 
 def _report_cost_metrics(report_run: ReportRunContract) -> dict[str, Any]:
-    cost_metrics = report_run.artifact_metadata.get("cost_metrics")
-    if isinstance(cost_metrics, dict):
-        return cost_metrics
-    return {
+    default_metrics: dict[str, Any] = {
         "evidence_count": len(report_run.evidence),
         "claim_count": len(report_run.claims),
         "unknown_count": len(report_run.unknowns),
         "red_flag_count": len(report_run.red_flags),
         "verification_task_count": len(report_run.verification_tasks),
+        "estimated_total_usd_cents": 0,
+        "compute_usd_cents": 0,
+        "storage_usd_cents": 0,
+        "llm_usd_cents": 0,
+        "map_tile_usd_cents": 0,
+        "geocoding_usd_cents": 0,
+        "paid_data_usd_cents": 0,
+        "human_review_usd_cents": 0,
+        "human_review_minutes": 0,
     }
+    cost_metrics = report_run.artifact_metadata.get("cost_metrics")
+    if isinstance(cost_metrics, dict):
+        return {**default_metrics, **cost_metrics}
+    return default_metrics
 
 
 __all__ = [

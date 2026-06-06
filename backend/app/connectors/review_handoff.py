@@ -37,6 +37,9 @@ class ConnectorReviewHandoff:
             "summary": self.summary,
             "connector_name": self.packet.connector_name,
             "ingest_run_id": str(self.packet.ingest_run_id),
+            "area_id": (
+                str(self.packet.area_id) if self.packet.area_id is not None else None
+            ),
             "dataset_version_id": (
                 str(self.packet.dataset_version_id)
                 if self.packet.dataset_version_id is not None

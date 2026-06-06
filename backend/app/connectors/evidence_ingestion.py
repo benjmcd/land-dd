@@ -9,7 +9,7 @@ from uuid import UUID
 from app.domain.enums import EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 
-from .flood_fixture import FloodFixtureConnectorResult
+from .result import ConnectorResult
 
 
 class ConnectorEvidenceIngestionError(ValueError):
@@ -31,6 +31,7 @@ class EvidenceIngestionPort(Protocol):
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract: ...
 
     def evidence_exists(self, evidence_id: UUID) -> bool: ...
@@ -50,7 +51,7 @@ class ConnectorEvidenceIngestionAdapter:
 
     def ingest(
         self,
-        connector_result: FloodFixtureConnectorResult,
+        connector_result: ConnectorResult,
     ) -> ConnectorEvidenceIngestionResult:
         return self.ingest_evidence(connector_result.evidence_inputs)
 
@@ -107,6 +108,7 @@ class ConnectorEvidenceIngestionAdapter:
             domain=evidence.domain,
             observation=evidence.observation,
             observed_value=evidence.observed_value,
+            source_ingest_run_id=evidence.source_ingest_run_id,
         )
 
     def _matching_source_failure(
@@ -131,6 +133,7 @@ def _source_failure_fingerprint(evidence: EvidenceContract) -> tuple[object, ...
         evidence.domain,
         evidence.observation,
         evidence.caveat,
+        evidence.source_ingest_run_id,
         _stable_observed_value(evidence.observed_value),
     )
 

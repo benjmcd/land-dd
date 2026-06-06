@@ -31,6 +31,10 @@ def test_evidence_schema_tracks_contract_enums_and_geometry_guards() -> None:
 
     assert properties["evidence_type"]["enum"] == [item.value for item in EvidenceType]
     assert properties["confidence"]["enum"] == [item.value for item in ConfidenceBand]
+    assert properties["source_ingest_run_id"] == {
+        "type": ["string", "null"],
+        "format": "uuid",
+    }
     assert properties["geometry_srid"] == {"type": "integer", "const": 4326}
     assert properties["spatial_precision_meters"]["minimum"] == 0
 

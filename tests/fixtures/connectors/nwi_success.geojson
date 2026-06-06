@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 2808733,
+      "properties": {
+        "Wetlands.OBJECTID": 2808733,
+        "Wetlands.ATTRIBUTE": "L1UBH",
+        "Wetlands.WETLAND_TYPE": "Lake",
+        "Wetlands.ACRES": 106.82272375751111,
+        "Wetlands.GLOBALID": "{3FE208B5-9945-4564-B466-FF415177DE3B}",
+        "NWI_Wetland_Codes.SYSTEM_NAME": "Lacustrine",
+        "NWI_Wetland_Codes.CLASS_NAME": "Unconsolidated Bottom",
+        "NWI_Wetland_Codes.WATER_REGIME_NAME": "Permanently Flooded"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-77.05, 38.82],
+            [-77.03, 38.82],
+            [-77.03, 38.84],
+            [-77.05, 38.84],
+            [-77.05, 38.82]
+          ]
+        ]
+      }
+    }
+  ]
+}

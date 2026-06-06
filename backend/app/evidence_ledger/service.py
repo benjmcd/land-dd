@@ -67,6 +67,7 @@ class EvidenceService:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         self._validate_area_registered(area_id)
         self._validate_source_registered(source_id)
@@ -85,6 +86,7 @@ class EvidenceService:
             "confidence": ConfidenceBand.UNKNOWN,
             "caveat": caveat,
             "is_source_failure": True,
+            "source_ingest_run_id": source_ingest_run_id,
         }
         if evidence_id is not None:
             evidence_data["evidence_id"] = evidence_id

@@ -278,7 +278,16 @@
             "claim_count",
             "unknown_count",
             "red_flag_count",
-            "verification_task_count"
+            "verification_task_count",
+            "estimated_total_usd_cents",
+            "compute_usd_cents",
+            "storage_usd_cents",
+            "llm_usd_cents",
+            "map_tile_usd_cents",
+            "geocoding_usd_cents",
+            "paid_data_usd_cents",
+            "human_review_usd_cents",
+            "human_review_minutes"
           ],
           "properties": {
             "evidence_count": {
@@ -298,6 +307,42 @@
               "minimum": 0
             },
             "verification_task_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "estimated_total_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "compute_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "storage_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "llm_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "map_tile_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "geocoding_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "paid_data_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "human_review_usd_cents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "human_review_minutes": {
               "type": "integer",
               "minimum": 0
             }

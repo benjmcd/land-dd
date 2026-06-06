@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import json
 import threading
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
+from sqlalchemy import text
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.db.engine import get_session_factory
 from app.domain.enums import IntentCode, JobStatus
+from app.domain.job_health import JobQueueHealth
+
+REPORT_RUN_JOB_TYPE = "report_run"
 
 
 @dataclass
@@ -14,6 +25,28 @@ class ReportJobRecord:
     intent_code: IntentCode
     status: JobStatus = JobStatus.QUEUED
     error_msg: str | None = None
+    retry_of_report_run_id: UUID | None = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+class AsyncReportJobStoreProtocol(Protocol):
+    def create(
+        self,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+        retry_of_report_run_id: UUID | None = None,
+    ) -> ReportJobRecord: ...
+
+    def get(self, report_run_id: UUID) -> ReportJobRecord | None: ...
+
+    def mark_running(self, report_run_id: UUID) -> None: ...
+
+    def mark_succeeded(self, report_run_id: UUID) -> None: ...
+
+    def mark_failed(self, report_run_id: UUID, *, error_msg: str) -> None: ...
+
+    def health(self) -> JobQueueHealth: ...
 
 
 class AsyncReportJobStore:
@@ -21,11 +54,18 @@ class AsyncReportJobStore:
         self._lock = threading.Lock()
         self._jobs: dict[UUID, ReportJobRecord] = {}
 
-    def create(self, *, area_id: UUID, intent_code: IntentCode) -> ReportJobRecord:
+    def create(
+        self,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+        retry_of_report_run_id: UUID | None = None,
+    ) -> ReportJobRecord:
         record = ReportJobRecord(
             report_run_id=uuid4(),
             area_id=area_id,
             intent_code=intent_code,
+            retry_of_report_run_id=retry_of_report_run_id,
         )
         with self._lock:
             self._jobs[record.report_run_id] = record
@@ -54,5 +94,304 @@ class AsyncReportJobStore:
                 record.status = JobStatus.FAILED
                 record.error_msg = error_msg
 
+    def health(self) -> JobQueueHealth:
+        with self._lock:
+            return _health_from_records(REPORT_RUN_JOB_TYPE, tuple(self._jobs.values()))
 
-__all__ = ["AsyncReportJobStore", "ReportJobRecord"]
+
+class SqlAlchemyAsyncReportJobStore:
+    def __init__(
+        self,
+        session_factory: sessionmaker[Session] | None = None,
+    ) -> None:
+        self._session_factory = session_factory or get_session_factory()
+
+    def create(
+        self,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+        retry_of_report_run_id: UUID | None = None,
+    ) -> ReportJobRecord:
+        record = ReportJobRecord(
+            report_run_id=uuid4(),
+            area_id=area_id,
+            intent_code=intent_code,
+            retry_of_report_run_id=retry_of_report_run_id,
+        )
+        with self._session_factory() as session:
+            session.execute(
+                text(
+                    """
+                    INSERT INTO jobs.job_queue (
+                        job_id,
+                        job_type,
+                        status,
+                        payload,
+                        idempotency_key,
+                        max_attempts
+                    )
+                    VALUES (
+                        :job_id,
+                        :job_type,
+                        CAST(:status AS jobs.job_status),
+                        CAST(:payload AS jsonb),
+                        :idempotency_key,
+                        1
+                    )
+                    """
+                ),
+                {
+                    "job_id": str(record.report_run_id),
+                    "job_type": REPORT_RUN_JOB_TYPE,
+                    "status": record.status.value,
+                    "payload": _json_payload(record),
+                    "idempotency_key": _idempotency_key(record.report_run_id),
+                },
+            )
+            session.commit()
+        return record
+
+    def get(self, report_run_id: UUID) -> ReportJobRecord | None:
+        with self._session_factory() as session:
+            row = session.execute(
+                text(
+                    """
+                    SELECT job_id, status, payload, last_error, created_at
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                      AND job_id = :job_id
+                    LIMIT 1
+                    """
+                ),
+                {
+                    "job_type": REPORT_RUN_JOB_TYPE,
+                    "job_id": str(report_run_id),
+                },
+            ).mappings().one_or_none()
+        if row is None:
+            return None
+        return _record_from_row(row)
+
+    def mark_running(self, report_run_id: UUID) -> None:
+        self._update_status(
+            report_run_id,
+            status=JobStatus.RUNNING,
+            started=True,
+            error_msg=None,
+        )
+
+    def mark_succeeded(self, report_run_id: UUID) -> None:
+        self._update_status(
+            report_run_id,
+            status=JobStatus.SUCCEEDED,
+            finished=True,
+            error_msg=None,
+        )
+
+    def mark_failed(self, report_run_id: UUID, *, error_msg: str) -> None:
+        self._update_status(
+            report_run_id,
+            status=JobStatus.FAILED,
+            finished=True,
+            error_msg=error_msg,
+        )
+
+    def health(self) -> JobQueueHealth:
+        with self._session_factory() as session:
+            row = session.execute(
+                text(
+                    """
+                    SELECT
+                        count(*) AS total,
+                        count(*) FILTER (
+                            WHERE status = CAST(:queued_status AS jobs.job_status)
+                        ) AS queued,
+                        count(*) FILTER (
+                            WHERE status = CAST(:running_status AS jobs.job_status)
+                        ) AS running,
+                        count(*) FILTER (
+                            WHERE status = CAST(:succeeded_status AS jobs.job_status)
+                        ) AS succeeded,
+                        count(*) FILTER (
+                            WHERE status = CAST(:failed_status AS jobs.job_status)
+                        ) AS failed,
+                        count(*) FILTER (
+                            WHERE status = CAST(:cancelled_status AS jobs.job_status)
+                        ) AS cancelled,
+                        count(*) FILTER (
+                            WHERE status = CAST(:needs_review_status AS jobs.job_status)
+                        ) AS needs_review,
+                        min(created_at) FILTER (
+                            WHERE status = CAST(:queued_status AS jobs.job_status)
+                        ) AS oldest_queued_at
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                    """
+                ),
+                _health_query_params(REPORT_RUN_JOB_TYPE),
+            ).mappings().one()
+        return _health_from_row(REPORT_RUN_JOB_TYPE, row)
+
+    def _update_status(
+        self,
+        report_run_id: UUID,
+        *,
+        status: JobStatus,
+        started: bool = False,
+        finished: bool = False,
+        error_msg: str | None,
+    ) -> None:
+        statement = text(
+            """
+            UPDATE jobs.job_queue
+            SET
+                status = CAST(:status AS jobs.job_status),
+                last_error = :last_error
+            WHERE job_type = :job_type
+              AND job_id = :job_id
+            """
+        )
+        if started:
+            statement = text(
+                """
+                UPDATE jobs.job_queue
+                SET
+                    status = CAST(:status AS jobs.job_status),
+                    started_at = COALESCE(started_at, now()),
+                    attempts = attempts + 1,
+                    last_error = :last_error
+                WHERE job_type = :job_type
+                  AND job_id = :job_id
+                """
+            )
+        if finished:
+            statement = text(
+                """
+                UPDATE jobs.job_queue
+                SET
+                    status = CAST(:status AS jobs.job_status),
+                    finished_at = now(),
+                    last_error = :last_error
+                WHERE job_type = :job_type
+                  AND job_id = :job_id
+                """
+            )
+        with self._session_factory() as session:
+            session.execute(
+                statement,
+                {
+                    "status": status.value,
+                    "last_error": error_msg,
+                    "job_type": REPORT_RUN_JOB_TYPE,
+                    "job_id": str(report_run_id),
+                },
+            )
+            session.commit()
+
+
+def _payload(record: ReportJobRecord) -> dict[str, str]:
+    payload = {
+        "kind": REPORT_RUN_JOB_TYPE,
+        "report_run_id": str(record.report_run_id),
+        "area_id": str(record.area_id),
+        "intent_code": record.intent_code.value,
+    }
+    if record.retry_of_report_run_id is not None:
+        payload["retry_of_report_run_id"] = str(record.retry_of_report_run_id)
+    return payload
+
+
+def _json_payload(record: ReportJobRecord) -> str:
+    return json.dumps(_payload(record), sort_keys=True)
+
+
+def _idempotency_key(report_run_id: UUID) -> str:
+    return f"{REPORT_RUN_JOB_TYPE}:{report_run_id}"
+
+
+def _record_from_row(row: Any) -> ReportJobRecord:
+    payload = dict(row["payload"]) if isinstance(row["payload"], Mapping) else {}
+    return ReportJobRecord(
+        report_run_id=UUID(str(row["job_id"])),
+        area_id=UUID(str(payload["area_id"])),
+        intent_code=IntentCode(str(payload["intent_code"])),
+        status=JobStatus(str(row["status"])),
+        error_msg=None if row["last_error"] is None else str(row["last_error"]),
+        retry_of_report_run_id=_optional_payload_uuid(payload, "retry_of_report_run_id"),
+        created_at=row["created_at"],
+    )
+
+
+def _optional_payload_uuid(payload: dict[str, Any], key: str) -> UUID | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    return UUID(str(value))
+
+
+def _health_from_records(
+    job_type: str,
+    records: tuple[ReportJobRecord, ...],
+) -> JobQueueHealth:
+    counts = {status: 0 for status in JobStatus}
+    queued_created_at: list[datetime] = []
+    for record in records:
+        counts[record.status] += 1
+        if record.status == JobStatus.QUEUED:
+            queued_created_at.append(record.created_at)
+    oldest_queued_at = min(queued_created_at) if queued_created_at else None
+    return JobQueueHealth(
+        job_type=job_type,
+        total=len(records),
+        queued=counts[JobStatus.QUEUED],
+        running=counts[JobStatus.RUNNING],
+        succeeded=counts[JobStatus.SUCCEEDED],
+        failed=counts[JobStatus.FAILED],
+        cancelled=counts[JobStatus.CANCELLED],
+        needs_review=counts[JobStatus.NEEDS_REVIEW],
+        oldest_queued_age_seconds=_age_seconds(oldest_queued_at),
+    )
+
+
+def _health_query_params(job_type: str) -> dict[str, str]:
+    return {
+        "job_type": job_type,
+        "queued_status": JobStatus.QUEUED.value,
+        "running_status": JobStatus.RUNNING.value,
+        "succeeded_status": JobStatus.SUCCEEDED.value,
+        "failed_status": JobStatus.FAILED.value,
+        "cancelled_status": JobStatus.CANCELLED.value,
+        "needs_review_status": JobStatus.NEEDS_REVIEW.value,
+    }
+
+
+def _health_from_row(job_type: str, row: Any) -> JobQueueHealth:
+    return JobQueueHealth(
+        job_type=job_type,
+        total=int(row["total"]),
+        queued=int(row["queued"]),
+        running=int(row["running"]),
+        succeeded=int(row["succeeded"]),
+        failed=int(row["failed"]),
+        cancelled=int(row["cancelled"]),
+        needs_review=int(row["needs_review"]),
+        oldest_queued_age_seconds=_age_seconds(row["oldest_queued_at"]),
+    )
+
+
+def _age_seconds(created_at: datetime | None) -> float | None:
+    if created_at is None:
+        return None
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=UTC)
+    return max(0.0, (datetime.now(UTC) - created_at).total_seconds())
+
+
+__all__ = [
+    "AsyncReportJobStore",
+    "AsyncReportJobStoreProtocol",
+    "REPORT_RUN_JOB_TYPE",
+    "ReportJobRecord",
+    "SqlAlchemyAsyncReportJobStore",
+]

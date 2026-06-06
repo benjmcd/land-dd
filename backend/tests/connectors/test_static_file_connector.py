@@ -18,11 +18,18 @@ from app.connectors.static_file_connector import (
 from app.domain.source_contracts import SourceContract
 
 
-def _make_source(license_status: str = "allowed") -> SourceContract:
+def _make_source(license_status: str = "approved") -> SourceContract:
     return SourceContract(
         name="Test Static Source",
         domain="test",
         license_status=license_status,
+        review_status="approved",
+        commercial_use_status="yes",
+        redistribution_status="restricted",
+        cache_allowed="yes",
+        export_allowed="approved-with-restrictions",
+        raw_data_allowed="allowed",
+        ai_use_allowed="restricted",
     )
 
 
@@ -109,7 +116,7 @@ def source_failure_fixture_file(tmp_path: Path) -> Path:
 
 class TestStaticLocalFileConnectorLoadSuccess:
     def test_load_success_returns_result(self, fixture_file: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         connector = StaticLocalFileConnector(source=source)
         result = connector.load(fixture_file)
 
@@ -118,14 +125,14 @@ class TestStaticLocalFileConnectorLoadSuccess:
         assert len(result.evidence_inputs) == 1
 
     def test_load_success_log_has_run_started(self, fixture_file: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(fixture_file)
 
         started = result.observability_log.events_of_type(ConnectorEventType.run_started)
         assert len(started) == 1
 
     def test_load_success_log_has_run_succeeded(self, fixture_file: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(fixture_file)
 
         succeeded = result.observability_log.events_of_type(
@@ -134,7 +141,7 @@ class TestStaticLocalFileConnectorLoadSuccess:
         assert len(succeeded) == 1
 
     def test_load_success_log_has_no_run_failed(self, fixture_file: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(fixture_file)
 
         failed = result.observability_log.events_of_type(ConnectorEventType.run_failed)
@@ -156,9 +163,27 @@ class TestStaticLocalFileConnectorLicenseBlocked:
         with pytest.raises(ConnectorLicenseBlockedError):
             connector.load(fixture_file)
 
+    def test_load_license_blocked_unknown(self, fixture_file: Path) -> None:
+        source = _make_source("unknown")
+        connector = StaticLocalFileConnector(source=source)
+
+        with pytest.raises(ConnectorLicenseBlockedError) as exc_info:
+            connector.load(fixture_file)
+
+        assert exc_info.value.blocked_fields == ("license_status",)
+
+    def test_load_license_blocked_unreviewed(self, fixture_file: Path) -> None:
+        source = _make_source("unreviewed")
+        connector = StaticLocalFileConnector(source=source)
+
+        with pytest.raises(ConnectorLicenseBlockedError) as exc_info:
+            connector.load(fixture_file)
+
+        assert exc_info.value.blocked_fields == ("license_status",)
+
     def test_load_license_blocked_log_has_run_started(self, fixture_file: Path) -> None:
         # run_started is always emitted before the license check; verify via allowed path.
-        allowed_source = _make_source("allowed")
+        allowed_source = _make_source("approved")
         allowed_result = StaticLocalFileConnector(source=allowed_source).load(fixture_file)
         started = allowed_result.observability_log.events_of_type(
             ConnectorEventType.run_started
@@ -177,7 +202,7 @@ class TestStaticLocalFileConnectorLicenseBlocked:
 
 class TestStaticLocalFileConnectorMissingFile:
     def test_load_missing_file_raises(self, tmp_path: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         connector = StaticLocalFileConnector(source=source)
         missing = tmp_path / "does_not_exist.json"
 
@@ -185,7 +210,7 @@ class TestStaticLocalFileConnectorMissingFile:
             connector.load(missing)
 
     def test_load_missing_file_log_has_run_started(self, tmp_path: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         # We cannot inspect the log after a raise from load(), so we verify the
         # success path emits run_started and missing-file path is consistent by
         # checking the error message carries the path.
@@ -199,7 +224,7 @@ class TestStaticLocalFileConnectorMissingFile:
 
     def test_load_missing_file_log_has_run_failed(self, tmp_path: Path) -> None:
         # Verify run_failed is in the error message (path is recorded)
-        source = _make_source("allowed")
+        source = _make_source("approved")
         connector = StaticLocalFileConnector(source=source)
         missing = tmp_path / "no_such_file.json"
 
@@ -210,7 +235,7 @@ class TestStaticLocalFileConnectorMissingFile:
 
 class TestStaticLocalFileConnectorEvidenceEvents:
     def test_load_records_evidence_stored_events(self, fixture_file: Path) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(fixture_file)
 
         evidence_events = result.observability_log.events_of_type(
@@ -221,7 +246,7 @@ class TestStaticLocalFileConnectorEvidenceEvents:
     def test_load_records_source_failure_stored_events(
         self, source_failure_fixture_file: Path
     ) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(source_failure_fixture_file)
 
         failure_events = result.observability_log.events_of_type(
@@ -232,7 +257,7 @@ class TestStaticLocalFileConnectorEvidenceEvents:
     def test_load_no_evidence_stored_events_for_source_failure(
         self, source_failure_fixture_file: Path
     ) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         result = StaticLocalFileConnector(source=source).load(source_failure_fixture_file)
 
         evidence_events = result.observability_log.events_of_type(
@@ -243,14 +268,14 @@ class TestStaticLocalFileConnectorEvidenceEvents:
 
 class TestStaticLocalFileConnectorPolicy:
     def test_default_policy_is_fixture_policy(self) -> None:
-        source = _make_source("allowed")
+        source = _make_source("approved")
         connector = StaticLocalFileConnector(source=source)
         assert connector._policy is DEFAULT_FIXTURE_POLICY
 
     def test_custom_policy_is_stored(self) -> None:
         from app.connectors.policy import ConnectorPolicy
 
-        source = _make_source("allowed")
+        source = _make_source("approved")
         custom_policy = ConnectorPolicy(timeout_seconds=10.0, max_retries=1)
         connector = StaticLocalFileConnector(source=source, policy=custom_policy)
         assert connector._policy is custom_policy

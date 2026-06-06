@@ -43,6 +43,7 @@ class RecordingEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract:
         call: dict[str, object] = {
             "evidence_id": evidence_id,
@@ -54,6 +55,7 @@ class RecordingEvidencePort:
             "domain": domain,
             "observation": observation,
             "observed_value": observed_value,
+            "source_ingest_run_id": source_ingest_run_id,
         }
         self.source_failure_calls.append(call)
         created = EvidenceContract(
@@ -69,6 +71,7 @@ class RecordingEvidencePort:
             confidence=ConfidenceBand.UNKNOWN,
             caveat=caveat,
             is_source_failure=True,
+            source_ingest_run_id=source_ingest_run_id,
         )
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created

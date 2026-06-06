@@ -1,0 +1,63 @@
+schema_version: ops_cost_monitoring_v1
+incident_runbook: docs/runbooks/incident_response.md
+operator_runbook: docs/runbooks/cost_monitoring.md
+report_cost_metrics_authority: schemas/report_run_schema.json
+planning_cost_inputs: docs/planning_pack/registers/cost_model_inputs.csv
+categories:
+  - id: compute
+    status: monitored
+    meter: report artifact cost_metrics counts and USD-cent attribution plus runtime metrics
+    source_of_truth:
+      - schemas/report_run_schema.json
+      - backend/app/reports/service.py
+      - backend/app/reports/report_repo.py
+      - backend/app/core/metrics.py
+    threshold: investigate if report runtime, queue backlog, or compute_usd_cents exceeds approved local-only expectations
+    action: inspect /metrics, /operations/queue-health, and report artifact cost_metrics
+    validation: scripts/run_cost_monitoring_check.ps1
+  - id: storage
+    status: monitored
+    meter: database/object-store growth by operator review plus storage_usd_cents attribution
+    source_of_truth:
+      - scripts/db_smoke_check.py
+      - docs/runbooks/backup_restore.md
+      - docs/planning_pack/registers/cost_model_inputs.csv
+    threshold: investigate if raw archive storage growth is unbudgeted or storage_usd_cents becomes nonzero without billing authority
+    action: review object store retention and backup/restore proof before expanding capture
+    validation: scripts/run_cost_monitoring_check.ps1
+  - id: llm
+    status: disabled_until_metered
+    meter: token cost plus llm_usd_cents per report
+    source_of_truth:
+      - docs/planning_pack/07_FINANCIAL_CONSTRAINTS_AND_UNIT_ECONOMICS.md
+      - docs/planning_pack/registers/cost_model_inputs.csv
+    threshold: block production LLM use until token metrics and llm_usd_cents are recorded
+    action: add explicit token/cost instrumentation before enabling LLM extraction or summaries
+    validation: scripts/run_cost_monitoring_check.ps1
+  - id: maps
+    status: disabled_until_metered
+    meter: tile and map asset generation requests plus map_tile_usd_cents per report
+    source_of_truth:
+      - docs/planning_pack/07_FINANCIAL_CONSTRAINTS_AND_UNIT_ECONOMICS.md
+      - docs/planning_pack/registers/cost_model_inputs.csv
+    threshold: block interactive map/tile expansion until cache controls and map_tile_usd_cents exist
+    action: prefer cached/static report assets before launch
+    validation: scripts/run_cost_monitoring_check.ps1
+  - id: geocoding
+    status: disabled_until_metered
+    meter: geocode requests plus geocoding_usd_cents per report
+    source_of_truth:
+      - docs/planning_pack/07_FINANCIAL_CONSTRAINTS_AND_UNIT_ECONOMICS.md
+    threshold: block geocoding vendors until per-request cost tracking and geocoding_usd_cents exist
+    action: require vendor/license/cost review before adding a geocoding connector
+    validation: scripts/run_cost_monitoring_check.ps1
+  - id: data_vendors
+    status: blocked_until_reviewed
+    meter: paid_data_usd_cents per report plus cache/export rights
+    source_of_truth:
+      - registers/data_source_registry.csv
+      - scripts/source_readiness.py
+      - docs/planning_pack/registers/cost_model_inputs.csv
+    threshold: block paid/commercial sources until license authority and paid_data_usd_cents are reviewed
+    action: keep DS-017 and other commercial sources blocked until explicit approval
+    validation: scripts/run_cost_monitoring_check.ps1

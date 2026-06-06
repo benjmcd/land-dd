@@ -22,6 +22,6 @@ def create_area(area: AreaContract, services: ServicesDep) -> AreaContract:
         return services.area_service.create(area)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc

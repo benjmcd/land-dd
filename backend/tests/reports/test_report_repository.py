@@ -170,6 +170,9 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert cost_metrics["evidence_count"] == 6
     assert cost_metrics["claim_count"] == 7
     assert cost_metrics["unknown_count"] == 6
+    assert cost_metrics["estimated_total_usd_cents"] == 0
+    assert cost_metrics["paid_data_usd_cents"] == 0
+    assert cost_metrics["human_review_minutes"] == 0
     assert report_run.source_manifest["source_names"] == [
         "Fixture FEMA Flood Map",
         NOT_EVALUATED_SOURCE_NAME,
