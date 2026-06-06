@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-06 (Operator UI hardening and verify gate fix)
+
+- Fixed UI approval bypass: `GET /ui/report-runs/{id}` now gates on `ReportReviewStatus.APPROVED` before rendering dossier; unapproved reports return a pending-approval page with a one-click Approve button.
+- Added `GET /ui/report-runs` report list: color-coded job table with review badges, `list_recent()` on both in-memory and SQLAlchemy job stores.
+- Added `POST /ui/report-runs/{id}/approve` operator quick-approve action (uses first configured reviewer account from `Settings.parsed_reviewer_accounts()`).
+- Added `GET /ui/report-runs/{id}/print` print/export-PDF route: print-ready HTML with `@media print` CSS, `window.print()` button, approval gate enforced.
+- Added "View all report runs" nav link to the UI index page.
+- Added DB-backed full reviewed path test (`test_db_backed_full_reviewed_dossier_path` in `test_report_runs_db.py`): proves POST /areas → POST /report-runs → 409 pre-approval → POST /approve → 200 dossier → DB row status=succeeded + artifact present → API reload confirms review_status=approved.
+- Fixed wrong-workspace fail-closed test in `test_report_auth.py`: parametrized across dossier/lineage/compare/diff routes.
+- Fixed stale NOT_EVALUATED count assertions in `test_report_repository.py` and `test_report_runs_db.py` (hardcoded 4 → dynamic `len(NOT_EVALUATED_DOMAINS)`).
+- Promoted `db_backed_regression_path` in `config/private_mvp_beta_readiness.yaml` from `accepted_with_risk` to `complete`.
+- Fixed verify.ps1 transient planning-pack schema failure: planning pack YAML was regenerated with Python 3.11 but verify.ps1 uses py -3.12; Pydantic v2 produces slightly different OpenAPI schemas across versions. Regenerated with Python 3.12 — verify: ok is now stable.
+- Updated `api/openapi_stub.yaml` and regenerated `docs/planning_pack/api/openapi_stub.yaml` for all new UI routes.
+- Added 13 new tests in `test_ui_routes.py` (index, pending gate, approved dossier, list, approve, print — unapproved, approved, unknown-id paths).
+- Confirmed private MVP regression tests pass under `RUN_DB_SMOKE=1` (3 passed, in-memory repos, no Postgres needed).
+- Final: 871 passed, 68 skipped, 0 failed; ruff clean; mypy clean on 227 source files; verify: ok.
+- Commits: 029bdbc, c4bda16, dbd132c, 7367a2e.
+
 ## 2026-06-06 (Private MVP Utility Proof — US-001 through US-008)
 
 **Lane:** Private MVP Utility Proof (`plans/2026-06-06-private-mvp-utility-proof.md`)

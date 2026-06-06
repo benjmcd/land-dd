@@ -36,7 +36,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Parcel ID/APN: {_parcel_id(report_run)}",
         "- Jurisdiction: unknown",
         f"- Acreage: {_parcel_acreage(report_run)}",
-        f"- Geometry source: area_id {report_run.area_id}",
+        f"- Area ID: {report_run.area_id}",
         "- Geometry confidence: unknown",
         f"- Intent: {report_run.intent_code.value}",
         f"- Report generated at: {_format_datetime(report_run.finished_at)}",
@@ -184,7 +184,11 @@ def _claim_rows(claims: list[ClaimContract]) -> list[str]:
             severity=_cell(claim.severity.value),
             domain=_cell(claim.domain),
             claim=_cell(claim.user_safe_language or claim.assertion),
-            evidence=_cell(", ".join(str(evidence_id) for evidence_id in claim.evidence_ids)),
+            evidence=_cell(
+                f"{len(claim.evidence_ids)} record(s)"
+                if claim.evidence_ids
+                else "none"
+            ),
             verification=_cell(claim.verification_task or "none"),
         )
         for claim in claims
