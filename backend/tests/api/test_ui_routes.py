@@ -82,3 +82,38 @@ def test_ui_report_run_shows_dossier_after_approval() -> None:
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Executive Summary" in response.text
+
+
+def test_ui_report_run_list_returns_html_table() -> None:
+    _app, tc, report_run_id = _make_app_client_with_report()
+    response = tc.get("/ui/report-runs")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert report_run_id[:8] in response.text
+
+
+def test_ui_report_run_list_empty_state() -> None:
+    tc = TestClient(create_app())
+    response = tc.get("/ui/report-runs")
+    assert response.status_code == 200
+    assert "No report runs yet" in response.text
+
+
+def test_ui_approve_report_run_redirects_on_success() -> None:
+    _app, tc, report_run_id = _make_app_client_with_report()
+    response = tc.post(
+        f"/ui/report-runs/{report_run_id}/approve",
+        follow_redirects=False,
+    )
+    assert response.status_code == 200
+    assert "Approved" in response.text
+    # Dossier now accessible
+    dossier_resp = tc.get(f"/ui/report-runs/{report_run_id}")
+    assert "Executive Summary" in dossier_resp.text
+
+
+def test_ui_approve_report_run_unknown_id() -> None:
+    tc = TestClient(create_app())
+    response = tc.post(f"/ui/report-runs/{uuid4()}/approve")
+    assert response.status_code == 200
+    assert "Not Found" in response.text

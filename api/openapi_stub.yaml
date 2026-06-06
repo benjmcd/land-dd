@@ -3673,6 +3673,46 @@ paths:
       summary: Ui Index
       tags:
       - ui
+  /ui/report-runs:
+    get:
+      operationId: ui_report_run_list_ui_report_runs_get
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+      summary: Ui Report Run List
+      tags:
+      - ui
+  /ui/report-runs/{report_run_id}/approve:
+    post:
+      operationId: ui_approve_report_run_ui_report_runs__report_run_id__approve_post
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Ui Approve Report Run
+      tags:
+      - ui
   /ui/report-runs/{report_run_id}:
     get:
       operationId: ui_report_run_ui_report_runs__report_run_id__get

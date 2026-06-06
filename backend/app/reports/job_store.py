@@ -48,6 +48,8 @@ class AsyncReportJobStoreProtocol(Protocol):
 
     def health(self) -> JobQueueHealth: ...
 
+    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]: ...
+
 
 class AsyncReportJobStore:
     def __init__(self) -> None:
@@ -97,6 +99,11 @@ class AsyncReportJobStore:
     def health(self) -> JobQueueHealth:
         with self._lock:
             return _health_from_records(REPORT_RUN_JOB_TYPE, tuple(self._jobs.values()))
+
+    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]:
+        with self._lock:
+            jobs = sorted(self._jobs.values(), key=lambda r: r.created_at, reverse=True)
+            return jobs[:limit]
 
 
 class SqlAlchemyAsyncReportJobStore:
@@ -196,6 +203,22 @@ class SqlAlchemyAsyncReportJobStore:
             finished=True,
             error_msg=error_msg,
         )
+
+    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]:
+        with self._session_factory() as session:
+            rows = session.execute(
+                text(
+                    """
+                    SELECT job_id, status, payload, last_error, created_at
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                    ORDER BY created_at DESC
+                    LIMIT :limit
+                    """
+                ),
+                {"job_type": REPORT_RUN_JOB_TYPE, "limit": limit},
+            ).mappings().all()
+        return [_record_from_row(row) for row in rows]
 
     def health(self) -> JobQueueHealth:
         with self._session_factory() as session:

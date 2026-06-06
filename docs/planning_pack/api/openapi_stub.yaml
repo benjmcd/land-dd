@@ -1868,6 +1868,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/report-runs:
+    get:
+      tags:
+      - ui
+      summary: Ui Report Run List
+      operationId: ui_report_run_list_ui_report_runs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+  /ui/report-runs/{report_run_id}/approve:
+    post:
+      tags:
+      - ui
+      summary: Ui Approve Report Run
+      operationId: ui_approve_report_run_ui_report_runs__report_run_id__approve_post
+      parameters:
+      - name: report_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Report Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AreaContract:

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
+from app.core.config import Settings
 from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
 
@@ -141,7 +142,18 @@ def ui_report_run(
             "An operator must review and approve it before the dossier is available.</p>"
             f"<p>Review status: <strong>{_html.escape(report.review_status.value)}</strong></p>"
             f"<p>Report ID: {report_run_id}</p>"
-            "<a href=\"/ui/\">Back to Home</a></body></html>"
+            "<a href=\"/ui/\">Back to Home</a>"
+            f" &nbsp; <a href=\"/ui/report-runs\">All Reports</a>"
+            f"<br><br>"
+            f"<form method=\"POST\""
+            f" action=\"/ui/report-runs/{report_run_id}/approve\""
+            " style=\"display:inline\">"
+            "<button type=\"submit\""
+            " style=\"background:#28a745;color:white;border:none;"
+            "padding:0.5rem 1rem;cursor:pointer;"
+            "font-size:1rem;border-radius:4px\">Approve Report</button>"
+            "</form>"
+            "</body></html>"
         )
 
     dossier_md = build_rural_land_dossier(report)
@@ -154,12 +166,13 @@ def ui_report_run(
 {_REPORT_CSS}
 </style></head>
 <body>
-<a href="/ui/">&#8592; Back</a>
+<a href="/ui/">&#8592; Back</a>&nbsp;|&nbsp; <a href="/ui/report-runs">All Reports</a>
 <h1>Report Run</h1>
 <div class="meta">
   <div>ID: {report.report_run_id}</div>
   <div>Status: {report.status.value}</div>
   <div>Intent: {report.intent_code.value}</div>
+  <div>Review: {report.review_status.value}</div>
 </div>
 <pre class="dossier">{dossier_escaped}</pre>
 <div class="warning">
@@ -169,3 +182,88 @@ def ui_report_run(
   where indicated.
 </div>
 </body></html>"""
+
+
+@router.get("/report-runs", response_class=HTMLResponse)
+def ui_report_run_list(services: ServicesDep) -> str:
+    jobs = services.async_report_jobs.list_recent(limit=30)
+    rows = ""
+    for job in jobs:
+        review_badge = ""
+        if job.status == JobStatus.SUCCEEDED:
+            report = services.report_service.get_report_run(job.report_run_id)
+            if report is not None:
+                rv = report.review_status.value
+                color = "#28a745" if rv == "approved" else "#ffc107"
+                review_badge = f' &nbsp; <span style="color:{color};font-weight:bold">{rv}</span>'
+        status_color = {
+            "queued": "#6c757d",
+            "running": "#007bff",
+            "succeeded": "#28a745",
+            "failed": "#dc3545",
+        }.get(job.status.value, "#333")
+        rows += (
+            f'<tr>'
+            f'<td><a href="/ui/report-runs/{job.report_run_id}">'
+            f'{str(job.report_run_id)[:8]}…</a></td>'
+            f'<td>{_html.escape(job.intent_code.value)}</td>'
+            f'<td style="color:{status_color}">{job.status.value}{review_badge}</td>'
+            f'<td>{_html.escape(str(job.created_at)[:19])}</td>'
+            f'</tr>\n'
+        )
+    if not rows:
+        rows = '<tr><td colspan="4" style="color:#666">No report runs yet.</td></tr>'
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Report Runs</title>
+<style>
+body {{ font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }}
+h1 {{ color: #2c3e50; }}
+table {{ border-collapse: collapse; width: 100%; }}
+th, td {{ text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2e6; }}
+th {{ background: #f8f9fa; }}
+a {{ color: #2c3e50; }}
+</style>
+</head>
+<body>
+<a href="/ui/">&#8592; Home</a>
+<h1>Report Runs</h1>
+<table>
+<thead><tr><th>ID</th><th>Intent</th><th>Status</th><th>Created</th></tr></thead>
+<tbody>{rows}</tbody>
+</table>
+</body></html>"""
+
+
+@router.post("/report-runs/{report_run_id}/approve", response_class=HTMLResponse)
+def ui_approve_report_run(
+    report_run_id: UUID,
+    services: ServicesDep,
+) -> str:
+    settings = Settings()
+    accounts = settings.parsed_reviewer_accounts()
+    if not accounts:
+        return (
+            "<!DOCTYPE html><html><head><title>Error</title></head>"
+            "<body><h1>No reviewer accounts configured</h1>"
+            f"<a href='/ui/report-runs/{report_run_id}'>Back</a></body></html>"
+        )
+    reviewer_id = next(iter(accounts))
+    report = services.report_service.get_report_run(report_run_id)
+    if report is None:
+        return (
+            "<!DOCTYPE html><html><head><title>Not Found</title></head>"
+            f"<body><h1>Report Not Found</h1><p>ID: {report_run_id}</p>"
+            "<a href='/ui/report-runs'>Back to List</a></body></html>"
+        )
+    services.report_service.approve_report_run(report_run_id, reviewer_id=reviewer_id)
+    return (
+        "<!DOCTYPE html>"
+        "<html><head><title>Approved</title>"
+        f"<meta http-equiv='refresh' content='1;url=/ui/report-runs/{report_run_id}'>"
+        "</head>"
+        f"<body><h1>Report Approved</h1>"
+        f"<p>Approved by: {_html.escape(reviewer_id)}</p>"
+        f"<p><a href='/ui/report-runs/{report_run_id}'>View Report</a></p>"
+        "</body></html>"
+    )
