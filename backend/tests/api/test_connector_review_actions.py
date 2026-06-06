@@ -239,6 +239,24 @@ def test_request_fixture_fix_requires_reason() -> None:
     assert response.json()["detail"] == "reason is required"
 
 
+def test_required_review_actions_require_request_body_in_openapi() -> None:
+    schema = _make_app().openapi()
+    paths = schema["paths"]
+    required_paths = [
+        "/connector-runs/{ingest_run_id}/review-actions/request_fixture_fix",
+        "/connector-runs/{ingest_run_id}/review-actions/requeue_after_fix",
+        "/connector-runs/{ingest_run_id}/review-actions/cancel_review",
+    ]
+
+    for path in required_paths:
+        request_body = paths[path]["post"]["requestBody"]
+        assert request_body["required"] is True
+        schema_ref = request_body["content"]["application/json"]["schema"]
+        assert schema_ref == {
+            "$ref": "#/components/schemas/RequiredConnectorReviewActionRequest"
+        }
+
+
 def test_request_fixture_fix_returns_404_for_unknown_run() -> None:
     client = TestClient(_make_app())
 

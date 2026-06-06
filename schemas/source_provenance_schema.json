@@ -4,6 +4,73 @@
   "title": "SourceProvenanceContracts",
   "type": "object",
   "$defs": {
+    "SourceContract": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "name",
+        "organization",
+        "homepage_url",
+        "source_type",
+        "authority_level",
+        "domain",
+        "geographic_scope",
+        "update_cadence",
+        "license_status",
+        "commercial_use_status",
+        "redistribution_status",
+        "license_summary",
+        "attribution_required",
+        "cache_allowed",
+        "export_allowed",
+        "ai_use_allowed",
+        "raw_data_allowed",
+        "freshness_class",
+        "last_checked_at",
+        "review_owner",
+        "review_status",
+        "notes",
+        "metadata"
+      ],
+      "properties": {
+        "source_id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" },
+        "organization": { "type": ["string", "null"] },
+        "homepage_url": { "type": ["string", "null"], "format": "uri" },
+        "source_type": { "type": ["string", "null"] },
+        "authority_level": {
+          "type": "string",
+          "enum": [
+            "official_primary",
+            "official_secondary",
+            "commercial_normalized",
+            "open_community",
+            "derived_model",
+            "user_supplied",
+            "unknown"
+          ]
+        },
+        "domain": { "type": "string" },
+        "geographic_scope": { "type": ["string", "null"] },
+        "update_cadence": { "type": ["string", "null"] },
+        "license_status": { "type": "string" },
+        "commercial_use_status": { "type": "string" },
+        "redistribution_status": { "type": "string" },
+        "license_summary": { "type": ["string", "null"] },
+        "attribution_required": { "type": "boolean" },
+        "cache_allowed": { "type": "string" },
+        "export_allowed": { "type": "string" },
+        "ai_use_allowed": { "type": "string" },
+        "raw_data_allowed": { "type": "string" },
+        "freshness_class": { "type": "string" },
+        "last_checked_at": { "type": ["string", "null"] },
+        "review_owner": { "type": ["string", "null"] },
+        "review_status": { "type": "string" },
+        "notes": { "type": ["string", "null"] },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
     "SourceDatasetContract": {
       "type": "object",
       "required": [
@@ -102,7 +169,7 @@
   },
   "properties": {
     "source": {
-      "type": "object"
+      "$ref": "#/$defs/SourceContract"
     },
     "production_use_allowed": {
       "type": "boolean"

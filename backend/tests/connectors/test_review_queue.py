@@ -4,7 +4,7 @@ import inspect
 import os
 from dataclasses import replace
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import text
@@ -136,6 +136,23 @@ def test_in_memory_review_queue_enqueues_idempotent_success_status() -> None:
     assert first.payload["ingest_run_id"] == str(review_status.handoff.packet.ingest_run_id)
     assert first.payload["area_id"] == str(review_status.handoff.packet.area_id)
     assert first.payload["review_required"] is False
+
+
+def test_in_memory_review_queue_rejects_cross_workspace_idempotency_collision() -> None:
+    review_status = _review_status("flood_success.json")
+    repo = InMemoryConnectorReviewQueueRepository()
+    first_workspace_id = uuid4()
+    second_workspace_id = uuid4()
+
+    repo.enqueue_review_status(review_status, workspace_id=first_workspace_id)
+
+    with pytest.raises(ValueError, match="insert did not round-trip"):
+        repo.enqueue_review_status(review_status, workspace_id=second_workspace_id)
+
+    assert repo.get_by_ingest_run_id(
+        review_status.handoff.packet.ingest_run_id,
+        workspace_id=second_workspace_id,
+    ) is None
 
 
 def test_sqlalchemy_review_queue_insert_uses_idempotency_conflict_guard() -> None:
@@ -595,6 +612,71 @@ def test_sqlalchemy_review_queue_leases_and_completes_job_queue_item() -> None:
                     "DELETE FROM jobs.job_queue WHERE job_type = :job_type"
                 ),
                 {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.commit()
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_review_queue_rejects_cross_workspace_idempotency_collision() -> None:
+    engine = build_engine()
+    review_status = _review_status("flood_success.json")
+    first_workspace_id = uuid4()
+    second_workspace_id = uuid4()
+
+    try:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.execute(
+                text(
+                    """
+                    INSERT INTO core.workspaces (workspace_id, name)
+                    VALUES
+                        (:first_workspace_id, 'review queue collision test 1'),
+                        (:second_workspace_id, 'review queue collision test 2')
+                    ON CONFLICT (workspace_id) DO NOTHING
+                    """
+                ),
+                {
+                    "first_workspace_id": str(first_workspace_id),
+                    "second_workspace_id": str(second_workspace_id),
+                },
+            )
+            repo = SqlAlchemyConnectorReviewQueueRepository(session)
+            first = repo.enqueue_review_status(
+                review_status,
+                workspace_id=first_workspace_id,
+            )
+
+            with pytest.raises(ValueError, match="insert did not round-trip"):
+                repo.enqueue_review_status(
+                    review_status,
+                    workspace_id=second_workspace_id,
+                )
+
+            assert first.workspace_id == first_workspace_id
+            assert repo.get_by_ingest_run_id(
+                review_status.handoff.packet.ingest_run_id,
+                workspace_id=second_workspace_id,
+            ) is None
+            session.rollback()
+    finally:
+        with Session(engine) as session:
+            session.execute(
+                text("DELETE FROM jobs.job_queue WHERE job_type = :job_type"),
+                {"job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE},
+            )
+            session.execute(
+                text(
+                    "DELETE FROM core.workspaces "
+                    "WHERE workspace_id IN (:first_workspace_id, :second_workspace_id)"
+                ),
+                {
+                    "first_workspace_id": str(first_workspace_id),
+                    "second_workspace_id": str(second_workspace_id),
+                },
             )
             session.commit()
 

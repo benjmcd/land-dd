@@ -2997,10 +2997,8 @@ paths:
         content:
           application/json:
             schema:
-              anyOf:
-              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
-              - type: 'null'
-              title: Request
+              $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
+        required: true
       responses:
         '200':
           content:
@@ -3048,10 +3046,8 @@ paths:
         content:
           application/json:
             schema:
-              anyOf:
-              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
-              - type: 'null'
-              title: Request
+              $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
+        required: true
       responses:
         '200':
           content:
@@ -3099,10 +3095,8 @@ paths:
         content:
           application/json:
             schema:
-              anyOf:
-              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
-              - type: 'null'
-              title: Request
+              $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
+        required: true
       responses:
         '200':
           content:
