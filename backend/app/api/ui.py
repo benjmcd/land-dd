@@ -57,7 +57,8 @@ def ui_index() -> str:
 </head>
 <body>
 <h1>Land Diligence</h1>
-<p>Submit an area of interest to generate a due-diligence report.</p>
+<p>Submit an area of interest to generate a due-diligence report. &nbsp;
+<a href="/ui/report-runs">View all report runs &rarr;</a></p>
 <h2>Create Report</h2>
 <form id="report-form">
   <label>Area GeoJSON (Polygon or MultiPolygon):
