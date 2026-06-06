@@ -275,7 +275,8 @@ limits. The catalog does not create hosted dashboards, alert routing, or pager d
 The CI workflow includes a `supply-chain` job that validates the backend production
 dependency lock/SBOM, installs the backend dependency environment, and runs
 `pip-audit --local`. It also includes a `container-image-scan` job that builds the
-backend image from `backend/Dockerfile` and scans the local image with Docker Scout for
+backend image from `backend/Dockerfile` and, when Docker Scout credentials are configured,
+scans the local image with Docker Scout for
 critical/high CVEs. Dependabot is configured for GitHub Actions and backend Python
 dependency metadata.
 

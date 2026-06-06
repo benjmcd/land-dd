@@ -98,7 +98,11 @@ def test_ci_attests_dependency_provenance_artifacts() -> None:
     )
     job = ci["jobs"]["dependency-attestations"]
     steps_text = "\n".join(
-        str(step.get("uses", ""))
+        str(step.get("name", ""))
+        + "\n"
+        + str(step.get("uses", ""))
+        + "\n"
+        + str(step.get("if", ""))
         + "\n"
         + str(step.get("run", ""))
         + "\n"
@@ -111,8 +115,14 @@ def test_ci_attests_dependency_provenance_artifacts() -> None:
     assert job["permissions"]["attestations"] == "write"
     assert job["permissions"]["artifact-metadata"] == "write"
     assert "actions/checkout@v4" in steps_text
+    assert "actions/setup-python@v5" in steps_text
+    assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_provenance_check.sh" in steps_text
+    assert "Check GitHub attestation entitlement" in steps_text
+    assert "Dependency attestations blocked" in steps_text
+    assert "steps.attestation-entitlement.outputs.enabled == 'true'" in steps_text
     assert steps_text.count("actions/attest@v4") == 2
+    assert "create-storage-record" in steps_text
     assert "backend/requirements-prod.lock" in steps_text
     assert "docs/sbom/backend-prod-sbom.json" in steps_text
     assert "'sbom-path': 'docs/sbom/backend-prod-sbom.json'" in steps_text

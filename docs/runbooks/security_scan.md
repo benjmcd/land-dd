@@ -100,7 +100,7 @@ security-scan:
         python -m pip install -e "backend[dev]"
         python -m pip install bandit
     - name: Run bandit security scan
-      run: bandit -r backend/app -ll -q
+      run: ./scripts/run_security_scan.sh
 ```
 
 ## Escalation

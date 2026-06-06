@@ -27,6 +27,7 @@ The check is validate-only. It verifies that:
 
 - `.github/workflows/ci.yml` has a `supply-chain` job.
 - the job uses Python 3.12;
+- the job installs `PyYAML` for static catalog parsing;
 - the job runs `scripts/run_provenance_check.sh`;
 - the job installs `backend[dev]`;
 - the job installs `pip-audit`;
@@ -73,8 +74,10 @@ is not proof that dependency risk is gone; the CI supply-chain job must pass.
 - The CI scan depends on the advisory data available to `pip-audit` at run time.
 - `backend/requirements-prod.lock` and `docs/sbom/backend-prod-sbom.json` are repo-local
   production dependency artifacts. CI publishes GitHub artifact attestations for those
-  files, but the repo does not yet publish a release package or registry image with an
-  attached attestation.
+  files only when repository entitlement is available. Private user-owned repositories
+  without that entitlement record `Dependency attestations blocked` instead of claiming a
+  live attestation. The repo does not yet publish a release package or registry image with
+  an attached attestation.
 - `pip-audit --local` audits the installed Python environment; Docker base-image package
   CVEs are handled by the separate `container-image-scan` job.
 - The current CI gates do not scan GitHub Actions internals, hosted deployment runtime

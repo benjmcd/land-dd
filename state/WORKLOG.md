@@ -2,6 +2,17 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-06 (CI gate authority correction)
+
+- Corrected CI's POSIX script execution failure by tracking repo shell scripts as executable.
+- Updated `security-scan` to run the repo wrapper `./scripts/run_security_scan.sh` instead of raw Bandit, preserving the documented gate: report medium findings, fail on HIGH/CRITICAL.
+- Fixed `scripts/run_security_scan.ps1` so Windows validation uses Python 3.12 and resolves the backend path correctly.
+- Made `container-image-scan` build the backend image on every run, run Docker Scout only when Docker Hub credentials are configured, and record missing Docker Scout entitlement as a blocked live CVE scan instead of failing every PR with an authentication error.
+- Updated container/security runbooks, operator docs, and artifact tests to match the actual CI behavior.
+- After PR #19 remote CI, fixed additional CI-only failures: `db-verify` now applies migrations before DB-gated backend tests, `supply-chain` installs `PyYAML` before provenance validation, `release-readiness` installs backend dependencies before running `source_readiness.py`, and `dependency-attestations` records private-repository attestation entitlement as blocked instead of hard-failing.
+- Updated dependency provenance/supply-chain runbooks and artifact tests so they no longer overclaim live GitHub attestations when the repository plan cannot publish them.
+- PR #19 remote CI passed after the follow-up: `verify`, `db-verify`, `supply-chain`, `dependency-attestations`, `container-image-scan`, `security-scan`, `release-readiness`, `access-control`, `image-publication`, and `hosted-deployment`.
+
 ## 2026-06-05 (Level 10 production hardening — US-073 through US-082)
 
 - Added US-073 load test baseline: `scripts/run_load_test.ps1`, `.sh`, `docs/runbooks/load_testing.md`, `backend/tests/test_load_test_artifacts.py`. Covers L10-PERF-006.
