@@ -29,8 +29,8 @@ def test_ci_has_supply_chain_scan_job() -> None:
     )
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v4" in steps_text
-    assert "actions/setup-python@v5" in steps_text
+    assert "actions/checkout@v6" in steps_text
+    assert "actions/setup-python@v6" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_provenance_check.sh" in steps_text
@@ -61,7 +61,7 @@ def test_ci_has_dependency_attestation_job() -> None:
     assert job["permissions"]["id-token"] == "write"
     assert job["permissions"]["attestations"] == "write"
     assert job["permissions"]["artifact-metadata"] == "write"
-    assert "actions/setup-python@v5" in steps_text
+    assert "actions/setup-python@v6" in steps_text
     assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_provenance_check.sh" in steps_text
     assert "Check GitHub attestation entitlement" in steps_text

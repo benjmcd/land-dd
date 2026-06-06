@@ -95,8 +95,8 @@ def test_access_control_ci_job_runs_validate_only_proof() -> None:
     )
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v4" in steps_text
-    assert "actions/setup-python@v5" in steps_text
+    assert "actions/checkout@v6" in steps_text
+    assert "actions/setup-python@v6" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_access_control_check.sh" in steps_text

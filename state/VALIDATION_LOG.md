@@ -2,6 +2,55 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 GitHub Actions Node 24 readiness
+
+**Scope:**
+
+- `.github/workflows/ci.yml`
+- `backend/tests/test_access_control_artifacts.py`
+- `backend/tests/test_container_scan_artifacts.py`
+- `backend/tests/test_provenance_artifacts.py`
+- `backend/tests/test_release_readiness_artifacts.py`
+- `backend/tests/test_supply_chain_artifacts.py`
+- `scripts/run_access_control_check.ps1` and `.sh`
+- `scripts/run_container_scan_check.ps1` and `.sh`
+- `scripts/run_release_readiness_check.ps1` and `.sh`
+- `scripts/run_supply_chain_check.ps1` and `.sh`
+- `docs/runbooks/security_scan.md`
+- `state/WORKLOG.md`
+- `state/VALIDATION_LOG.md`
+
+**Commands run:**
+
+```powershell
+rg -n "actions/checkout@v4|actions/setup-python@v5" .\.github .\backend\tests .\scripts .\docs\runbooks .\config
+py -3.12 -m pytest -q backend\tests\test_access_control_artifacts.py backend\tests\test_container_scan_artifacts.py backend\tests\test_provenance_artifacts.py backend\tests\test_release_readiness_artifacts.py backend\tests\test_supply_chain_artifacts.py
+.\scripts\run_access_control_check.ps1
+.\scripts\run_container_scan_check.ps1
+.\scripts\run_release_readiness_check.ps1
+.\scripts\run_supply_chain_check.ps1
+git diff --check
+.\scripts\verify.ps1
+$env:PYTHONPATH='backend'; py -3.12 .\scripts\source_readiness.py --priority Must --json
+```
+
+**Result:**
+
+Focused artifact tests passed; access-control, container-image-scan, release-readiness,
+and supply-chain validate-only proof scripts passed; stale `actions/checkout@v4` and
+`actions/setup-python@v5` references are absent from workflow/proof surfaces;
+`git diff --check` passed; full Windows `.\scripts\verify.ps1` passed. Full verification
+reported existing `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warnings in unrelated
+paths. Local DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:**
+
+- Must-source readiness remains `sources=8 ready=4 blocked=4`; blocked sources are
+  `DS-010`, `DS-011`, `DS-017`, and `DS-023`.
+- Hosted production blockers remain: billing, hosted log retention, automatic key
+  rotation/external secret manager, full user auth/RBAC, hosted deployment, and hosted
+  registry-image/attestation proof.
+
 ## 2026-06-06 PR #20 review-thread follow-up
 
 **Scope:**
