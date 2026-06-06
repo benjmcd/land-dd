@@ -186,6 +186,38 @@ def test_report_identity_token_verifies_signature_and_expiration() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "route_fn",
+    [
+        lambda rid: f"/report-runs/{rid}/dossier",
+        lambda rid: f"/report-runs/{rid}/lineage",
+        lambda rid: f"/report-runs/compare?ids={rid},{rid}",
+        lambda rid: f"/report-runs/{rid}/diff?base_id={rid}",
+    ],
+    ids=["dossier", "lineage", "compare", "diff"],
+)
+def test_report_adjacent_routes_fail_closed_for_wrong_workspace(
+    route_fn: object,
+) -> None:
+    client = signed_token_client()
+    workspace_a = str(uuid4())
+    workspace_b = str(uuid4())
+    user_id = str(uuid4())
+
+    area_id = create_area(client, bearer_headers(workspace_a, user_id))
+    run_resp = client.post(
+        "/report-runs",
+        json={"area_id": area_id, "intent_code": "rural_land_purchase"},
+        headers=bearer_headers(workspace_a, user_id),
+    )
+    assert run_resp.status_code == 201
+    report_run_id = run_resp.json()["report_run_id"]
+
+    url = route_fn(report_run_id)  # type: ignore[operator]
+    response = client.get(url, headers=bearer_headers(workspace_b, user_id))
+    assert response.status_code == 404
+
+
 def signed_test_token(payload: dict[str, object]) -> str:
     payload_segment = base64url_encode(
         json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")

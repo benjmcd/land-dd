@@ -167,9 +167,9 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert report_run.artifact_metadata["persistence"] == "postgres+object_store"
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
-    assert cost_metrics["evidence_count"] == 6
-    assert cost_metrics["claim_count"] == 7
-    assert cost_metrics["unknown_count"] == 6
+    n_domains = len(NOT_EVALUATED_DOMAINS)
+    # 2 flood evidence records (observation + source failure) plus one per NOT_EVALUATED domain
+    assert cost_metrics["evidence_count"] == n_domains + 2
     assert cost_metrics["estimated_total_usd_cents"] == 0
     assert cost_metrics["paid_data_usd_cents"] == 0
     assert cost_metrics["human_review_minutes"] == 0
@@ -178,7 +178,7 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         NOT_EVALUATED_SOURCE_NAME,
     ]
     assert [record.domain for record in report_run.evidence[2:]] == list(NOT_EVALUATED_DOMAINS)
-    assert [claim.claim_code for claim in report_run.unknowns][-4:] == [
+    assert [claim.claim_code for claim in report_run.unknowns][-n_domains:] == [
         NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
     ]
 

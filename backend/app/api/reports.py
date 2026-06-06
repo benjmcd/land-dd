@@ -502,11 +502,14 @@ def get_report_run_dossier(
     report = services.report_service.get_report_run(report_run_id)
     if report is not None:
         if auth is not None and report.workspace_id != auth.workspace_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="report run not found",
+            )
         if report.review_status != ReportReviewStatus.APPROVED:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"report run is not approved for delivery (review_status={report.review_status})",
+                detail=f"report run is not approved for delivery (review_status={report.review_status})",  # noqa: E501
             )
         dossier_md = build_rural_land_dossier(report)
         return Response(content=dossier_md, media_type="text/markdown; charset=utf-8")

@@ -286,7 +286,7 @@ def _access_road_result(report_run: ReportRunContract) -> str:
                     return f"public road adjacency observed (~{float(dist):.0f}m)"  # type: ignore[arg-type]
                 return "public road adjacency observed"
             if has_road is False:
-                return "no public road adjacency observed — physical proxy only; legal access status unknown"
+                return "no public road adjacency observed — physical proxy only; legal access status unknown"  # noqa: E501
     records = [r for r in report_run.evidence if r.domain == "access"]
     if records:
         return _domain_summary(report_run, "access")
@@ -339,7 +339,7 @@ def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
         if allowed is True:
             return "residential use appears permitted (screening only; verify with county planning)"
         if prohibited is True:
-            return "residential use appears restricted (screening only; verify with county planning)"
+            return "residential use appears restricted (screening only; verify with county planning)"  # noqa: E501
         if edge is True:
             return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
     return "not determined"

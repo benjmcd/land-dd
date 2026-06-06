@@ -48,7 +48,10 @@ FORBIDDEN_PHRASES = (
 
 _SKIP_FIXTURE_SMOKE = pytest.mark.skipif(
     os.getenv("RUN_DB_SMOKE") != "1",
-    reason="Fixture MVP regression not enabled (set RUN_DB_SMOKE=1 to run; uses InMemory repos, not a Postgres-backed test)",
+    reason=(
+        "Fixture MVP regression not enabled (set RUN_DB_SMOKE=1 to run;"
+        " uses InMemory repos, not a Postgres-backed test)"
+    ),
 )
 
 

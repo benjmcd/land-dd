@@ -38,7 +38,11 @@ _NO_EVIDENCE_CAVEAT = (
     "due-diligence findings."
 )
 _NOT_EVALUATED_SOURCE_ID = UUID("00000000-0000-4000-8000-0000000007d0")
-_SOURCE_APPROVED_STATUSES = frozenset({"approved", "approved_with_restrictions", "approved-with-restrictions"})
+_SOURCE_APPROVED_STATUSES = frozenset({
+    "approved",
+    "approved_with_restrictions",
+    "approved-with-restrictions",
+})
 
 
 class ConnectorReviewQueueItemProtocol(Protocol):

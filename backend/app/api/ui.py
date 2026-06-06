@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.domain.enums import JobStatus
+from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
 
 router = APIRouter(prefix="/ui", tags=["ui"])
@@ -130,6 +130,17 @@ def ui_report_run(
             "<!DOCTYPE html>\n"
             "<html><head><title>Report Not Found</title></head>\n"
             f"<body><h1>Report Not Found</h1><p>No report found for ID: {report_run_id}</p>\n"
+            "<a href=\"/ui/\">Back to Home</a></body></html>"
+        )
+    if report.review_status != ReportReviewStatus.APPROVED:
+        return (
+            "<!DOCTYPE html>\n"
+            "<html><head><title>Report Pending Review</title></head>\n"
+            "<body><h1>Report Pending Approval</h1>"
+            "<p>This report has not yet been approved for release. "
+            "An operator must review and approve it before the dossier is available.</p>"
+            f"<p>Review status: <strong>{_html.escape(report.review_status.value)}</strong></p>"
+            f"<p>Report ID: {report_run_id}</p>"
             "<a href=\"/ui/\">Back to Home</a></body></html>"
         )
 

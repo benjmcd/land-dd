@@ -75,8 +75,9 @@ def test_private_mvp_gates_have_status_and_note(readiness: dict[str, Any]) -> No
             f"private_mvp_beta.{gate_name} is missing required 'status' field"
         )
         assert gate["status"] in {"complete", "pending", "blocked", "accepted_with_risk"}, (
-            f"private_mvp_beta.{gate_name}.status must be complete/pending/blocked/accepted_with_risk, "
-            f"got {gate['status']!r}"
+            f"private_mvp_beta.{gate_name}.status must be"
+            " complete/pending/blocked/accepted_with_risk,"
+            f" got {gate['status']!r}"
         )
         assert "note" in gate, (
             f"private_mvp_beta.{gate_name} is missing required 'note' field"

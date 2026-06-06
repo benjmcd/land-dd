@@ -56,20 +56,18 @@ private_mvp_beta:
       InMemory repositories. See db_backed_regression_path for residual risk.
 
   db_backed_regression_path:
-    status: accepted_with_risk
-    evidence: pending — no Postgres-backed regression test exists yet
-    risk: >
-      The fixture regression (fixture_regression_path) uses InMemory repositories only.
-      A true SQLAlchemy/Postgres-backed regression (SqlAlchemyReportRunRepository +
-      SqlAlchemyAsyncReportJobStore + POST /report-runs + GET /dossier) has not been
-      implemented. This means the DB code path is exercised only through unit tests for
-      the repository layer, not through the full private-MVP intake-to-dossier flow.
-      Acceptable residual risk for private MVP; must be resolved before hosted production.
+    status: complete
+    evidence: >
+      backend/tests/api/test_report_runs_db.py
+      (test_db_backed_full_reviewed_dossier_path, RUN_DB_SMOKE=1-gated;
+      uses SqlAlchemyReportRunRepository + real Postgres; proves full path:
+      POST /areas → POST /report-runs → GET /dossier 409 → POST /approve →
+      GET /dossier 200 with Markdown → DB row confirms status=succeeded + artifact present
+      → API reload confirms review_status=approved, reviewed_by=fixture-reviewer)
     note: >
-      DB-backed MVP regression exercises fixture connector workflow (Path B) for
-      each county case: AOI intake, FixtureConnectorIngestWorkflow, review/approval
-      gate, approved Markdown dossier. Tests assert connector evidence present,
-      NOT_EVALUATED domains visible in unknowns, and no forbidden claim phrases.
+      Full AOI-to-approved-dossier DB-backed path proven. The test exercises
+      SqlAlchemy persistence, the approval gate (pre-approval 409, post-approval 200),
+      and confirms artifact and review state survive a DB reload.
 
   ds010_011_023_selected_county_behavior:
     status: complete
@@ -138,10 +136,15 @@ private_mvp_beta:
     status: complete
     evidence: >
       backend/app/api/reports.py (GET /{id}/dossier, 409 approval gate),
-      backend/tests/api/test_report_dossier.py (5 tests including 409 guard)
+      backend/app/api/ui.py (UI route enforces same approval gate),
+      backend/tests/api/test_report_dossier.py (5 tests including 409 guard),
+      backend/tests/api/test_ui_routes.py (approval gate tests: unapproved→pending page, approved→dossier),
+      backend/tests/api/test_report_auth.py (wrong-workspace 404 for dossier/lineage/compare/diff)
     note: >
-      Approved report runs served as Markdown rural land dossiers via the
-      existing dossier delivery gate. Proven via DB-backed MVP regression.
+      Approved report runs served as Markdown rural land dossiers via the API and UI.
+      Both API (/dossier endpoint) and web UI (/ui/report-runs/{id}) enforce the approval
+      gate. Wrong-workspace tokens receive 404 on all report-adjacent routes.
+      Proven via DB-backed MVP regression (db_backed_regression_path).
 
   overclaim_checks:
     status: complete
