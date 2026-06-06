@@ -2,6 +2,18 @@ from app.connectors.access_fixture import (
     AccessFixtureConnectorResult,
     StaticAccessFixtureConnector,
 )
+from app.connectors.chatham_parcels import (
+    CHATHAM_PARCELS_CAVEAT,
+    CHATHAM_PARCELS_CONNECTOR_NAME,
+    CHATHAM_PARCELS_MAX_BBOX_DEGREES,
+    CHATHAM_PARCELS_MAX_FEATURES,
+    CHATHAM_PARCELS_METHOD_CODE,
+    CHATHAM_PARCELS_SERVICE_URL,
+    ChathamParcelsBbox,
+    ChathamParcelsConnector,
+    ChathamParcelsConnectorError,
+    ChathamParcelsConnectorResult,
+)
 from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionError,
@@ -137,6 +149,16 @@ from app.connectors.zoning_fixture import (
 )
 
 __all__ = [
+    "CHATHAM_PARCELS_CAVEAT",
+    "CHATHAM_PARCELS_CONNECTOR_NAME",
+    "CHATHAM_PARCELS_MAX_BBOX_DEGREES",
+    "CHATHAM_PARCELS_MAX_FEATURES",
+    "CHATHAM_PARCELS_METHOD_CODE",
+    "CHATHAM_PARCELS_SERVICE_URL",
+    "ChathamParcelsBbox",
+    "ChathamParcelsConnector",
+    "ChathamParcelsConnectorError",
+    "ChathamParcelsConnectorResult",
     "CONNECTOR_REVIEW_STATUS_JOB_TYPE",
     "ConnectorPolicy",
     "DEFAULT_FIXTURE_POLICY",

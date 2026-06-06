@@ -67,6 +67,17 @@ SPATIAL_INTERSECTION_KEYS = {
     "soil_mapunit_key",
     "soil_mapunit_name",
     "soil_mapunit_symbol",
+    "parcel_pin",
+    "parcel_owner",
+    "parcel_land_value",
+    "parcel_bldg_value",
+    "parcel_total_value",
+    "parcel_acres",
+    "parcel_zoning",
+    "parcel_address",
+    "parcel_city",
+    "parcel_state",
+    "parcel_zip",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",

@@ -29,6 +29,8 @@ from app.api.live_connectors import (
     DS_002_REGISTRY_ID,
     DS_003_REGISTRY_ID,
     DS_004_REGISTRY_ID,
+    DS_010_REGISTRY_ID,
+    orchestrate_chatham_parcels_for_area,
     orchestrate_fema_nfhl_for_area,
     orchestrate_nwi_for_area,
     orchestrate_ssurgo_for_area,
@@ -312,6 +314,37 @@ class SsurgoQueryRequest(BaseModel):
 
 
 class SsurgoQueryResponse(BaseModel):
+    connector_name: str
+    ingest_run_id: UUID
+    retrieval_status: str
+    row_count: int | None
+    error_count: int
+    evidence_input_count: int
+    evidence_created_count: int
+    evidence_skipped_count: int
+    source_failure_created_count: int
+    source_failure_skipped_count: int
+    review_required: bool
+    queue_item_status: str
+    queue_name: str
+    source_registry_id: str
+    request_url: str
+
+
+class ChathamParcelsBboxRequest(BaseModel):
+    xmin: float
+    ymin: float
+    xmax: float
+    ymax: float
+
+
+class ChathamParcelsQueryRequest(BaseModel):
+    area_id: UUID
+    bbox: ChathamParcelsBboxRequest
+    max_features: int = 1000
+
+
+class ChathamParcelsQueryResponse(BaseModel):
     connector_name: str
     ingest_run_id: UUID
     retrieval_status: str
@@ -906,6 +939,63 @@ def query_nwi_bbox(
         "queue_item_status": queue_item.status.value,
         "queue_name": handoff.queue_name,
         "source_registry_id": DS_004_REGISTRY_ID,
+        "request_url": result.request_url,
+    }
+
+
+@router.post(
+    "/chatham-parcels/query-bbox",
+    response_model=ChathamParcelsQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def query_chatham_parcels_bbox(
+    request: ChathamParcelsQueryRequest,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> dict[str, object]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
+    try:
+        area = services.area_service.get(request.area_id)
+        if area is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Area '{request.area_id}' is not registered",
+            )
+        area_for_bbox = _area_with_bbox_geometry(
+            area=area,
+            xmin=request.bbox.xmin,
+            ymin=request.bbox.ymin,
+            xmax=request.bbox.xmax,
+            ymax=request.bbox.ymax,
+        )
+        result = orchestrate_chatham_parcels_for_area(
+            services=services,
+            area=area_for_bbox,
+            max_features=request.max_features,
+        )
+        queue_item = result.queue_item
+        review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
+        packet = review_status.handoff.packet
+        handoff = review_status.handoff
+    except HTTPException:
+        raise
+
+    return {
+        "connector_name": packet.connector_name,
+        "ingest_run_id": packet.ingest_run_id,
+        "retrieval_status": packet.retrieval_status.value,
+        "row_count": packet.row_count,
+        "error_count": packet.error_count,
+        "evidence_input_count": packet.evidence_input_count,
+        "evidence_created_count": packet.evidence_created_count,
+        "evidence_skipped_count": packet.evidence_skipped_count,
+        "source_failure_created_count": packet.source_failure_created_count,
+        "source_failure_skipped_count": packet.source_failure_skipped_count,
+        "review_required": review_status.review_required,
+        "queue_item_status": queue_item.status.value,
+        "queue_name": handoff.queue_name,
+        "source_registry_id": DS_010_REGISTRY_ID,
         "request_url": result.request_url,
     }
 

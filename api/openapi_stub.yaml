@@ -2445,6 +2445,48 @@ paths:
       summary: Run Fixture Connector
       tags:
       - connector-runs
+  /connector-runs/chatham-parcels/query-bbox:
+    post:
+      operationId: query_chatham_parcels_bbox_connector_runs_chatham_parcels_query_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: "null"
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: "null"
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChathamParcelsQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChathamParcelsQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query Chatham Parcels Bbox
+      tags:
+      - connector-runs
   /connector-runs/fema-nfhl/query-bbox:
     post:
       operationId: query_fema_nfhl_bbox_connector_runs_fema_nfhl_query_bbox_post
