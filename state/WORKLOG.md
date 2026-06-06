@@ -2,6 +2,18 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-06 (Buildability fixture connector — Buncombe AOIs)
+
+- Added `StaticBuildabilityFixtureConnector` in `backend/app/connectors/buildability_fixture.py` following the flood/access pattern; uses `DERIVED_METRIC` evidence type (no spatial geometry required).
+- Added `evaluate_buildability_fixture_quality` in `fixture_quality.py`; wired exports in `connectors/__init__.py`.
+- Extended `DERIVED_METRIC_KEYS` in `payload_validation.py` to include: `low_slope_area_ratio`, `mean_elevation_m`, `mean_slope_pct`, `relief_m`, `screening_note`; added required `value`/`unit` fields to all three Buncombe buildability fixture JSONs.
+- Created three `BUILDABILITY_SLOPE_SCREEN` derived-metric fixture files: `nc_buncombe_bun_{slope,flood,access}_buildability.json`.
+- Updated golden AOI manifest: BUN-slope, BUN-flood, BUN-access now declare `buildability` as a connector domain with fixture file pointers.
+- Updated `test_mvp_regression.py`: BUN-slope case now exercises the buildability connector; 3 MVP regression tests pass under `RUN_DB_SMOKE=1`.
+- Updated `test_golden_aoi_manifest.py`: added `buildability` to `ALLOWED_CONNECTOR_DOMAINS`.
+- Final: verify: ok — all tests pass, ruff clean, mypy clean on 228 source files.
+- Commit: 3c221a8.
+
 ## 2026-06-06 (Operator UI hardening and verify gate fix)
 
 - Fixed UI approval bypass: `GET /ui/report-runs/{id}` now gates on `ReportReviewStatus.APPROVED` before rendering dossier; unapproved reports return a pending-approval page with a one-click Approve button.
