@@ -57,9 +57,8 @@ The check verifies:
 
 ## Known Limits
 
-- The SBOM is repo-local; CI publishes a GitHub SBOM attestation for it, but the repo
-  does not yet publish a release artifact, package, or container image with a registry
-  attached SBOM.
+- The SBOM is repo-local; CI publishes a GitHub SBOM attestation for it. Registry image
+  publication and registry-attached SBOMs are out of scope for local-only operation.
 - CI publishes GitHub artifact attestations for the lock/SBOM files. This is not a
   hosted deployment attestation and does not prove a published container image.
 - The lock targets the backend Python runtime, not Docker base-image packages, GitHub

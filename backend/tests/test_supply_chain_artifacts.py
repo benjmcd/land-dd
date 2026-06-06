@@ -86,7 +86,7 @@ def test_supply_chain_runbook_records_validation_and_limits() -> None:
         "container-image-scan",
         "docs/runbooks/container_image_scan.md",
         "docs/runbooks/incident_response.md",
-        "attached attestation",
+        "out of scope for local-only operation",
         "base-image packages",
     ):
         assert phrase in runbook

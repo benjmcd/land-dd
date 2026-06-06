@@ -47,11 +47,12 @@ REQUIRED_CONTROLS = {
     "protected_operator_routes",
     "public_health_routes",
 }
-REQUIRED_BLOCKERS = {
+REQUIRED_NON_GOALS = {
     "full_user_auth_rbac",
     "oauth_oidc_identity_provider",
     "user_account_persistence",
     "automatic_api_key_rotation",
+    "external_secret_manager",
     "full_user_role_policy",
 }
 
@@ -98,19 +99,19 @@ for control in controls:
     require_existing(validation)
 require(REQUIRED_CONTROLS.issubset(control_ids), f"missing controls: {sorted(REQUIRED_CONTROLS - control_ids)}")
 
-blockers = catalog.get("production_blockers")
-require(isinstance(blockers, list) and blockers, "production blockers missing")
-blocker_ids = set()
-for blocker in blockers:
-    require(isinstance(blocker, dict), "each production blocker must be a mapping")
-    blocker_id = blocker.get("id")
-    require(isinstance(blocker_id, str) and blocker_id, "blocker id missing")
-    blocker_ids.add(blocker_id)
-    require(blocker.get("status") == "blocked", f"{blocker_id} must remain blocked")
-    authority = blocker.get("authority")
-    require(isinstance(authority, str) and authority, f"{blocker_id} authority missing")
+non_goals = catalog.get("local_only_non_goals")
+require(isinstance(non_goals, list) and non_goals, "local-only non-goals missing")
+non_goal_ids = set()
+for item in non_goals:
+    require(isinstance(item, dict), "each local-only non-goal must be a mapping")
+    item_id = item.get("id")
+    require(isinstance(item_id, str) and item_id, "non-goal id missing")
+    non_goal_ids.add(item_id)
+    require(item.get("status") == "out_of_scope_local_only", f"{item_id} must be out_of_scope_local_only")
+    authority = item.get("authority")
+    require(isinstance(authority, str) and authority, f"{item_id} authority missing")
     require_existing(authority)
-require(REQUIRED_BLOCKERS.issubset(blocker_ids), f"missing blockers: {sorted(REQUIRED_BLOCKERS - blocker_ids)}")
+require(REQUIRED_NON_GOALS.issubset(non_goal_ids), f"missing local-only non-goals: {sorted(REQUIRED_NON_GOALS - non_goal_ids)}")
 
 api_auth = (ROOT / "backend" / "app" / "api" / "api_key_auth.py").read_text(encoding="utf-8")
 auth_audit = (ROOT / "backend" / "app" / "api" / "auth_audit.py").read_text(encoding="utf-8")
@@ -321,7 +322,8 @@ for phrase in (
     "operations:read",
     "report:retry",
     "report:run",
-    "No full user auth/RBAC exists yet.",
+    "out of scope for local-only",
+    "No full user auth/RBAC is planned",
     "No OAuth/OIDC",
     "No user-account persistence",
     "API_KEY_SPECS",
@@ -333,6 +335,7 @@ for phrase in (
     "durable per-key usage audit ledger",
     "configured static key lifecycle exists",
     "no automatic",
+    "external secret manager",
 ):
     require(phrase in runbook, f"access-control runbook missing phrase: {phrase}")
 env_example = (ROOT / ".env.example").read_text(encoding="utf-8")

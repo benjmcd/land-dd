@@ -1,15 +1,19 @@
 schema_version: hosted_deployment_v1
+scope:
+  status: out_of_scope_local_only
+  required_for_local_only_release: false
+  applies_when: cloud_or_online_hosting_is_explicitly_approved
 deployment:
   service_name: land-diligence-api
   runtime: containerized-fastapi
   image_publication_catalog: config/image_publication.yaml
   release_readiness_catalog: config/release_readiness.yaml
-required_pre_deploy_gates:
+optional_pre_deploy_gates:
   - scripts/verify.ps1
   - scripts/run_deployment_smoke.ps1
   - scripts/run_release_readiness_check.ps1
   - scripts/run_image_publication_check.ps1
-required_runtime_inputs:
+future_runtime_inputs:
   - REGISTRY_IMAGE
   - IMAGE_DIGEST
   - PUBLIC_BASE_URL
@@ -18,7 +22,7 @@ required_runtime_inputs:
   - API_KEY_SPECS
   - REVIEWER_ACCOUNTS
   - REVIEWER_ACCOUNT_SCOPES
-required_runtime_evidence:
+future_runtime_evidence:
   - immutable_image_digest
   - deployed_image_ref
   - platform_environment_name
@@ -32,7 +36,7 @@ required_runtime_evidence:
   - report_workflow_smoke_ok
   - rollback_target
   - backup_restore_proof
-blocked_until:
+deferred_remote_requirements:
   - hosted_platform_selected
   - domain_tls_authority
   - secrets_manager_authority
@@ -42,6 +46,7 @@ blocked_until:
   - hosted_alerting_route
 limits:
   validate_only: true
+  required_for_local_only_release: false
   creates_hosted_deployment: false
   mutates_hosted_infrastructure: false
   writes_secrets: false

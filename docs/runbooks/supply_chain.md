@@ -73,11 +73,13 @@ is not proof that dependency risk is gone; the CI supply-chain job must pass.
 - The CI scan depends on the advisory data available to `pip-audit` at run time.
 - `backend/requirements-prod.lock` and `docs/sbom/backend-prod-sbom.json` are repo-local
   production dependency artifacts. CI publishes GitHub artifact attestations for those
-  files, but the repo does not yet publish a release package or registry image with an
-  attached attestation.
+  files. Registry image publication and attached registry-image attestations are out of
+  scope for local-only operation.
+- Remote registry attestation proof is out of scope for local-only operation.
 - `pip-audit --local` audits the installed Python environment; Docker base-image package
   CVEs are handled by the separate `container-image-scan` job.
-- The current CI gates do not scan GitHub Actions internals, hosted deployment runtime
-  state, frontend packages, source licensing, or vendor data rights.
+- The current CI gates do not scan GitHub Actions internals, frontend packages, source
+  licensing, or vendor data rights. Hosted deployment runtime scanning is out of scope
+  for local-only operation.
 - Local validation proves the CI configuration shape. The live vulnerability scan itself
   runs in CI or when an operator explicitly installs and runs `pip-audit`.

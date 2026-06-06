@@ -9,6 +9,8 @@ verification gates pass.
 
 This runbook does not push a registry image, create a hosted deployment, attach hosted
 attestations, approve blocked sources, or weaken evidence/report safety constraints.
+Registry image publication, hosted deployment, and hosted/published image attestations
+are out of scope for local-only release.
 
 ## Validate Package Boundary
 
@@ -56,8 +58,8 @@ The builder fails if either output already exists. It does not delete, overwrite
 - The package is a local source/runtime/operator artifact bundle, not a hosted release.
 - No registry image is pushed.
 - No hosted deployment, domain, TLS endpoint, hosted alerting, or pager routing is
-  created.
-- No published registry-image attestation, signed image SBOM, or SLSA provenance
-  attestation exists yet.
+  created or required for local-only release.
+- Published registry-image attestation, signed image SBOM, and SLSA provenance
+  attestation for a registry image are out of scope for local-only release.
 - The package reflects the current worktree. Run verification immediately before
   packaging and keep the manifest with the ZIP.

@@ -84,6 +84,7 @@ def test_container_image_scan_runbook_records_validation_and_limits() -> None:
         "pinned base image digest",
         "signed image SBOM",
         "SLSA provenance attestation",
+        "out of scope for local-only operation",
         "docs/runbooks/incident_response.md",
     ):
         assert phrase in runbook

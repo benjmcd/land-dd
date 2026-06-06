@@ -54,6 +54,8 @@ The check is validate-only. It verifies that:
 - The job scans the backend image built locally in CI; it does not prove any separately
   published registry image.
 - The current base image is pinned to the `python:3.12-slim` OCI index digest above.
-- This repo does not yet publish a signed image SBOM or SLSA provenance attestation.
-- This scan does not evaluate GitHub Actions internals, hosted deployment runtime state,
-  frontend packages, source licensing, or vendor data rights.
+- A signed image SBOM and SLSA provenance attestation for a published registry image are
+  out of scope for local-only operation.
+- This scan does not evaluate GitHub Actions internals, frontend packages, source
+  licensing, or vendor data rights. Hosted deployment runtime scanning is out of scope
+  for local-only operation.

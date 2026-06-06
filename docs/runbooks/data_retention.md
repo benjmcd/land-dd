@@ -43,7 +43,8 @@ action. The current blockers are:
 
 - **automated_deletion** — No automated deletion procedure implemented in MVP; all
   deletion is manual.
-- **hosted_log_retention** — Hosted log retention system not yet provisioned.
+- **hosted_log_retention** — Out of scope for local-only operation; hosted log
+  retention or SIEM export is only relevant after an explicit hosting scope change.
 
 Do not delete `reports.report_runs`, `evidence.observations`, `jobs.job_queue`, or
 `source.ingest_runs` rows without explicit operator sign-off. Deleting evidence breaks
@@ -80,7 +81,8 @@ There is no automated job for this procedure. It must be triggered manually.
 ## Future work
 
 - Implement automated purge job for `audit.events` rows older than 90 days.
-- Provision hosted log retention / SIEM export for `audit.events`.
+- Keep hosted log retention / SIEM export deferred unless hosting scope is explicitly
+  approved.
 - Assess GDPR/CCPA scope when user-identifying data is introduced.
 - Add retention policy enforcement tests to CI once automated deletion exists.
 - Revisit `indefinite_mvp` classes when operational data volume requires archival.

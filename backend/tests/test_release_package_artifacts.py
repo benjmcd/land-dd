@@ -90,6 +90,7 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
         "does not delete, overwrite, push, deploy, or publish",
         "No registry image is pushed",
         "No hosted deployment",
+        "out of scope for local-only release",
         "current worktree",
     ):
         assert phrase in runbook

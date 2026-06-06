@@ -49,6 +49,11 @@ Output: web/API report run with source-linked evidence and cautious claims
 - investment advice
 - demographic/protected-class/neighborhood desirability scoring
 - live paid vendor integration
+- billing, report credits, hosted billing reconciliation, or customer payment flows
+- hosted/cloud deployment or online service hosting
+- registry image push/signing or published registry-image attestation requirements
+- full user auth/RBAC, OAuth/OIDC, user accounts, or hosted identity-provider workflows
+- automatic key rotation or external secret-manager integration beyond sane local secret handling
 - global legal-grade parcel diligence
 
 ## Differentiator

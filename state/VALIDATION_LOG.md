@@ -2,6 +2,52 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 Level 10 local-only scope correction US-083
+
+**Scope:**
+
+- Reclassified billing/hosted billing, hosted deployment, hosted deployment
+  attestation, registry push/signing, published registry-image attestation, automatic
+  key rotation/external secret-manager integration, hosted log retention/alerting, and
+  full user auth/RBAC/OIDC/user accounts as `out_of_scope_local_only`.
+- Removed remote-only `image-publication` and `hosted-deployment` CI jobs from the
+  local-only release path.
+- Updated release/access/image/hosted/cost/data-retention catalogs, runbooks, proof
+  scripts, artifact tests, `MILESTONE_MAP.md`, `docs/PRODUCT_SPEC.md`, `MANIFEST.md`,
+  `state/PROJECT_STATE.md`, and the active Level 10 plan.
+
+**Commands run:**
+
+```powershell
+.\scripts\run_release_readiness_check.ps1
+.\scripts\run_access_control_check.ps1
+.\scripts\run_image_publication_check.ps1
+.\scripts\run_hosted_deployment_check.ps1
+.\scripts\run_cost_monitoring_check.ps1
+.\scripts\run_release_package_check.ps1
+.\scripts\run_supply_chain_check.ps1
+.\scripts\run_container_scan_check.ps1
+.\scripts\run_data_retention_check.ps1
+py -3.12 -m pytest -q backend\tests\test_release_readiness_artifacts.py backend\tests\test_access_control_artifacts.py backend\tests\test_image_publication_artifacts.py backend\tests\test_hosted_deployment_artifacts.py backend\tests\test_cost_monitoring_artifacts.py backend\tests\test_release_package_artifacts.py backend\tests\test_supply_chain_artifacts.py backend\tests\test_container_scan_artifacts.py backend\tests\test_data_retention_artifacts.py
+.\scripts\verify.ps1
+git diff --check
+rg -n "release blockers for registry image publishing|hosted deployment, billing|hosted auth/RBAC, billing|Remaining L10 blockers: full user|production auth blockers|production blockers|hosted-deployment CI proof|image-publication CI job|hosted billing reconciliation.*remain blocked|full user auth/RBAC.*remain blocked|automatic key rotation.*remain blocked|does not yet publish|not yet publish" .\config .\docs .\scripts .\backend\tests .\state\PROJECT_STATE.md .\plans\2026-06-05-l10-production-hardening.md .\MANIFEST.md .\MILESTONE_MAP.md .\.github\workflows\ci.yml
+```
+
+**Result:** PASS — focused proof scripts passed; 42 focused artifact tests passed; full
+`.\scripts\verify.ps1` passed with backend tests, ruff, and mypy clean over 216 source
+files. The stale-language scan found no active-surface matches for the old hosted/auth/
+billing blocker framing.
+
+**Residual risk:**
+
+- Full verify skipped DB smoke because `RUN_DB_SMOKE` was not set; this slice changed
+  docs/config/scripts/tests only, not DB schema or persistence behavior.
+- `git diff --check` passed with the existing warning that `state/PROJECT_STATE.md` CRLF
+  line endings will normalize to LF when Git touches the file.
+- Current active local-only blocker remains non-ready Must-source review beyond
+  DS-001/DS-002/DS-003/DS-004.
+
 ## 2026-06-05 Level 10 hardening US-073 through US-082
 
 **Scope:**

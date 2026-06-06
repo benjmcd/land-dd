@@ -1063,9 +1063,8 @@ This does **not** mean purchase-grade legal coverage worldwide. It means the cor
 ### Required artifacts
 
 ```text
-production deployment docs
+local production operation docs
 environment config template
-secrets management docs
 CI/CD workflow
 migration/rollback runbook
 backup/restore runbook and test record
@@ -1086,6 +1085,24 @@ jurisdiction readiness checklist
 connector readiness checklist
 rulepack readiness checklist
 ```
+
+### Local-only production-grade interpretation
+
+The current product target is local PC operation, not cloud hosting or online service
+delivery. For this scope, Level 10 production-grade means reproducible, secure,
+observable, recoverable, and source-rights-safe local operation.
+
+The following are `N/A` for local-only Level 10 unless a future plan explicitly changes
+the product scope: billing or hosted billing reconciliation; hosted deployment; hosted
+deployment attestation; registry image push/signing; published registry-image
+attestation; automatic key rotation or external secret-manager integration beyond sane
+local secret handling; full user auth/RBAC/OIDC/user accounts; hosted log retention;
+hosted alert routing or pager infrastructure.
+
+Do not treat those remote/hosted/user-account items as local-only release blockers.
+Record them as deferred out-of-scope items and prioritize source-rights closure,
+evidence/claim/report correctness, reproducible local packaging, local backup/restore,
+local smoke tests, local security checks, and operator workflow quality.
 
 ### Pass/fail gates — deployment and operations
 

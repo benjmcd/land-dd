@@ -287,11 +287,11 @@ Validate the repo-local supply-chain configuration with:
 
 See `docs/runbooks/supply_chain.md` for operator workflow and limits. The CI workflow
 publishes GitHub artifact attestations for the repo-local production lock and SBOM, but
-does not publish a release package or registry image with attached attestations. The
-backend Dockerfile pins the `python:3.12-slim` base image by OCI index digest; see
-`docs/runbooks/container_image_scan.md` for the Docker image scan boundary,
-`docs/runbooks/image_publication.md` for the registry publication boundary, and
-`docs/runbooks/hosted_deployment.md` for the hosted deployment boundary.
+registry image publication and hosted deployment are out of scope for local-only
+operation. The backend Dockerfile pins the `python:3.12-slim` base image by OCI index
+digest; see `docs/runbooks/container_image_scan.md` for the Docker image scan boundary.
+`docs/runbooks/image_publication.md` and `docs/runbooks/hosted_deployment.md` are
+optional future remote-distribution/hosting references only.
 
 ---
 
@@ -325,8 +325,9 @@ The access-control proof is validate-only. It checks the current default-off API
 middleware, local scoped reviewer service-account auth, reviewer-authenticated and
 scoped operator routes, intentionally public `/health` and `/version` routes, CI proof
 wiring, configured static API-key lifecycle support, structured API-key auth runtime
-logs, and explicit production auth blockers. It does not add user accounts, OAuth/OIDC,
-full user RBAC, automatic key rotation, or hosted identity-provider integration.
+logs, and explicit local-only auth non-goals. Full user auth/RBAC, OAuth/OIDC, user
+accounts, automatic key rotation, external secret-manager integration, and hosted
+identity-provider integration are out of scope for local-only operation.
 
 ---
 
@@ -339,11 +340,13 @@ with:
 .\scripts\run_release_readiness_check.ps1
 ```
 
-The release-readiness proof is validate-only. It gathers the repo's existing verification,
-DB, deployment smoke, supply-chain, image scan, backup/restore, incident, alerting, cost,
-access-control, release-package, image-publication, hosted-deployment, and
-source-readiness proofs into one boundary. It does not push a registry image, create a
-hosted deployment, or attach published registry-image attestations.
+The release-readiness proof is validate-only. It gathers the repo's existing
+verification, DB, deployment smoke, supply-chain, image scan, backup/restore, incident,
+alerting, cost, access-control, release-package, and source-readiness proofs into one
+local-only boundary. Billing, hosted deployment, registry publication/signing,
+published registry-image attestations, automatic key rotation/external secret-manager
+integration, and full user auth/RBAC/OIDC/user accounts are recorded as out of scope for
+local-only operation, not local-only release blockers.
 
 ---
 
@@ -369,31 +372,31 @@ already exist and does not delete, overwrite, push, deploy, or publish anything.
 
 ## Image Publication
 
-Use `config/image_publication.yaml` as the validate-only registry image publication
-boundary. Validate it with:
+Use `config/image_publication.yaml` only as an optional remote distribution checklist.
+Validate it with:
 
 ```powershell
 .\scripts\run_image_publication_check.ps1
 ```
 
-The proof checks the backend image source, required release/deployment/scan gates,
-required post-publish evidence, and publication blockers. It does not push a registry
-image, create a hosted deployment, sign an image SBOM, or publish registry attestations.
+The proof checks that remote publication remains out of scope for local-only operation
+and that validate-only scripts do not push a registry image, create a hosted deployment,
+sign an image SBOM, or publish registry attestations.
 
 ---
 
 ## Hosted Deployment
 
-Use `config/hosted_deployment.yaml` as the validate-only hosted runtime deployment
-boundary. Validate it with:
+Use `config/hosted_deployment.yaml` only as an optional future-hosting checklist.
+Validate it with:
 
 ```powershell
 .\scripts\run_hosted_deployment_check.ps1
 ```
 
-The proof checks required pre-deploy gates, runtime inputs, runtime evidence, and hosted
-platform/DNS/TLS/secrets/database/billing/alerting blockers. It does not create hosted
-infrastructure, write secrets, open a public endpoint, or deploy a registry image.
+The proof checks that hosted deployment remains out of scope for local-only operation
+and that validate-only scripts do not create hosted infrastructure, write secrets, open
+a public endpoint, or deploy a registry image.
 
 ---
 
@@ -423,12 +426,12 @@ future work items.
 | Live connectors are bounded and review-gated | Reviewed DS-001, DS-002, DS-003, and DS-004 public-source connectors are available, but outputs remain screening-only and cannot assert legal/buildability/title/water/wetland jurisdiction conclusions |
 | County/vendor sources not ready | Parcel, assessor, commercial parcel, and local zoning sources still require jurisdiction/vendor/license decisions before production connector use |
 | Single-process default | In-memory stores are not shared across multiple workers or processes |
-| No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode, but there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
+| Full user auth/RBAC out of scope | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode; user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, and user-bound audit semantics are not planned for local-only operation |
 | No persistence by default | In-memory repositories reset on restart; use DATABASE_URL for persistence |
-| Repo-local alert rules only | Alert rules are validated as artifacts, but no hosted alert manager, dashboard, pager, or named on-call rotation exists |
-| Supply-chain scan limits | CI runs Python dependency vulnerability scanning, validates and attests the repo-local production lock/SBOM, pins the backend base image by OCI index digest, scans the locally built backend image for critical/high CVEs, and validates the image-publication and hosted-deployment boundaries, but there is no hosted deployment or published-registry image attestation |
-| Cost monitoring is local and zero-dollar attributed | Report cost metrics include local-only USD-cent attribution, but no hosted billing reconciliation or approved nonzero unit-cost thresholds exist yet |
-| Release package is local | Local ZIP package creation exists under `local_artifacts/releases`, but there is no pushed registry image, hosted deployment, signed image SBOM, or published registry-image attestation yet |
+| Repo-local alert rules only | Alert rules are validated as artifacts; hosted alert manager, dashboard, pager, or named on-call rotation are out of scope for local-only operation |
+| Supply-chain scan limits | CI runs Python dependency vulnerability scanning, validates and attests the repo-local production lock/SBOM, pins the backend base image by OCI index digest, and scans the locally built backend image for critical/high CVEs; hosted deployment and published-registry image attestation are out of scope |
+| Cost monitoring is local and zero-dollar attributed | Report cost metrics include local-only USD-cent attribution; billing and hosted billing reconciliation are out of scope |
+| Release package is local | Local ZIP package creation exists under `local_artifacts/releases`; pushed registry image, hosted deployment, signed image SBOM, and published registry-image attestation are out of scope |
 
 ---
 

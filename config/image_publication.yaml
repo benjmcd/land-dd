@@ -1,29 +1,36 @@
 schema_version: image_publication_v1
+scope:
+  status: out_of_scope_local_only
+  required_for_local_only_release: false
+  applies_when: remote_registry_distribution_is_explicitly_approved
 image:
   name: land-diligence-backend
   dockerfile: backend/Dockerfile
   context: .
   local_tag_template: land-diligence-backend:{git_sha}
   registry_image_env: REGISTRY_IMAGE
-required_gates:
+optional_pre_publish_gates:
   - scripts/verify.ps1
   - scripts/run_deployment_smoke.ps1
   - scripts/run_container_scan_check.ps1
   - scripts/run_release_package_check.ps1
   - scripts/run_release_readiness_check.ps1
-required_attestations:
-  - image_digest
-  - registry_image_ref
+local_only_evidence:
+  - local_image_build
   - vulnerability_scan
   - dependency_sbom
-  - provenance
-blocked_until:
+  - release_package_manifest
+deferred_remote_requirements:
   - registry_repository_authority
-  - hosted_deployment_authority
+  - registry_push_authority
+  - registry_image_ref
+  - immutable_image_digest
   - registry_image_attestation_authority
   - signed_image_sbom_authority
+  - provenance_attestation
 limits:
   validate_only: true
+  required_for_local_only_release: false
   pushes_registry_image: false
   creates_hosted_deployment: false
   signs_or_publishes_attestations: false

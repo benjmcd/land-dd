@@ -5,10 +5,12 @@
 Use `config/access_control.yaml` as the repo-local Level 10 access-control posture
 catalog. It records the current API-key middleware, local scoped reviewer
 service-account boundary, reviewer-authenticated and scoped operator routes,
-intentionally public health/version routes, and production auth blockers.
+intentionally public health/version routes, and local-only auth non-goals.
 
-This runbook does not add user accounts, OAuth/OIDC, full user RBAC, automatic key
-rotation, external secrets management, or hosted identity-provider integration.
+Full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation,
+external secret manager integration, and hosted identity-provider integration are
+out of scope for local-only production-grade. No full user auth/RBAC is planned unless
+the local-only scope changes.
 
 ## Current Controls
 
@@ -31,7 +33,7 @@ Run from the repository root:
 
 The check is validate-only. It verifies that:
 
-- the access-control catalog names current controls and production blockers;
+- the access-control catalog names current controls and local-only non-goals;
 - referenced authority files exist;
 - API-key middleware still uses `X-API-Key`, keeps only `/health` and `/version`
   public, supports raw and `sha256:<64-hex>` configured secrets, and fails closed with
@@ -67,20 +69,22 @@ The check is validate-only. It verifies that:
    mode.
 5. Treat a failed access-control proof as a release blocker until the current controls,
    tests, catalog, and runbook are reconciled.
-6. Do not claim full user auth/RBAC until user accounts, identity-provider integration,
-  full role policy, automatic key rotation, hosted retention, and audit semantics are designed,
-   implemented, and verified.
+6. Do not plan or claim full user auth/RBAC, OAuth/OIDC, user accounts, automatic key
+   rotation, external secret manager integration, hosted identity, or hosted retention
+   for the local-only product. Treat those as optional future-hosting work only after an
+   explicit scope change.
 
 ## Known Limits
 
-- No full user auth/RBAC exists yet.
-- No OAuth/OIDC integration or hosted identity provider exists.
-- No user-account persistence exists.
+- No full user auth/RBAC is planned for local-only operation.
+- No OAuth/OIDC integration or hosted identity provider is planned for local-only
+  operation.
+- No user-account persistence is planned for local-only operation.
 - API keys are static environment values; raw and `sha256:<64-hex>` configured secrets
   are supported.
 - A configured static key lifecycle exists through `API_KEY_SPECS`, but no automatic
   key-rotation scheduler, external secret manager integration, revocation propagation,
-  or hosted key-management workflow exists yet.
+  or hosted key-management workflow is planned for local-only operation.
 - API-key auth writes runtime logs, and DB-service mode writes `audit.events`, but there is
   no hosted log-retention/export/SIEM integration, no user-account binding, and no
   durable per-key usage audit ledger for legacy `API_KEYS` entries without configured IDs.

@@ -25,8 +25,8 @@ tiles, change report semantics, or weaken source-rights review.
 zero-dollar attribution fields (`estimated_total_usd_cents`, `compute_usd_cents`,
 `storage_usd_cents`, `llm_usd_cents`, `map_tile_usd_cents`, `geocoding_usd_cents`,
 `paid_data_usd_cents`, `human_review_usd_cents`, and `human_review_minutes`). Current
-report generation sets these attribution fields to `0` because the repo has no hosted
-billing integration, paid vendor path, LLM path, geocoding path, map-tile path, or
+report generation sets these attribution fields to `0` because the local-only repo has
+no billing feature, paid vendor path, LLM path, geocoding path, map-tile path, or
 durable reviewer-time workflow enabled.
 
 ## Validate Monitoring
@@ -57,18 +57,20 @@ The check is validate-only. It verifies that:
 4. Keep LLM, geocoding, interactive map/tile, and paid data-vendor work disabled until
    token/request/vendor cost is recorded per report or per batch in the corresponding
    `*_usd_cents` metric.
-5. Do not treat zero-dollar attribution as hosted billing proof. Any hosted deployment
-   must add billing-source reconciliation before nonzero production usage.
+5. Do not treat zero-dollar attribution as billing proof. Billing and hosted billing
+   reconciliation are out of scope for local-only operation; any future paid or hosted
+   scope change needs a new plan before nonzero production usage.
 6. Escalate through `docs/runbooks/incident_response.md` if a cost spike threatens
    availability, causes uncontrolled vendor spend, or risks unsupported report output.
 
 ## Known Limits
 
-- No hosted cloud billing integration exists in this repo.
+- No billing feature or hosted cloud billing integration is planned for local-only
+  operation.
 - No production unit-cost thresholds have been approved because first geography, parcel
   vendor, pricing, and batch usage remain undecided.
 - `cost_metrics` records zero-dollar attribution for current local-only paths; it does
-  not prove hosted billing reconciliation or authorize nonzero spend.
+  not prove billing reconciliation or authorize nonzero spend.
 - LLM, map/tile, geocoding, and paid-vendor costs are guardrailed as disabled or blocked,
   not actively metered runtime spend.
 - `human_review_minutes` and `human_review_usd_cents` are currently `0` because durable

@@ -63,8 +63,6 @@ REQUIRED_CHECKS = {
     "cost_monitoring",
     "access_control",
     "release_package",
-    "image_publication",
-    "hosted_deployment",
     "source_readiness",
 }
 REQUIRED_CI_JOBS = {
@@ -74,18 +72,24 @@ REQUIRED_CI_JOBS = {
     "dependency-attestations",
     "container-image-scan",
     "access-control",
-    "image-publication",
-    "hosted-deployment",
     "release-readiness",
 }
 REQUIRED_BLOCKERS = {
-    "hosted_deployment_attestation",
-    "published_registry_image_attestation",
-    "hosted_billing_reconciliation",
     "non_ready_must_sources",
-    "full_user_auth_rbac",
-    "hosted_alerting",
 }
+REQUIRED_DEFERRED = {
+    "billing_hosted_billing_reconciliation",
+    "hosted_deployment",
+    "hosted_deployment_attestation",
+    "hosted_alerting",
+    "hosted_log_retention",
+    "published_registry_image_attestation",
+    "registry_push_signing_requirements",
+    "automatic_key_rotation_external_secret_manager",
+    "full_user_auth_rbac_oidc_user_accounts",
+}
+REMOTE_ONLY_CHECKS = {"image_publication", "hosted_deployment"}
+REMOTE_ONLY_CI_JOBS = {"image-publication", "hosted-deployment"}
 
 
 def require(condition: bool, message: str) -> None:
@@ -124,6 +128,7 @@ for check in checks:
     require(isinstance(proof, str) and proof, f"{check_id} proof missing")
     require_existing(proof)
 require(REQUIRED_CHECKS.issubset(check_ids), f"missing release checks: {sorted(REQUIRED_CHECKS - check_ids)}")
+require(check_ids.isdisjoint(REMOTE_ONLY_CHECKS), f"remote-only checks must not be required for local-only release: {sorted(check_ids & REMOTE_ONLY_CHECKS)}")
 
 blockers = catalog.get("release_blockers")
 require(isinstance(blockers, list) and blockers, "release blockers missing")
@@ -138,6 +143,21 @@ for blocker in blockers:
     require(isinstance(authority, str) and authority, f"{blocker_id} authority missing")
     require_existing(authority)
 require(REQUIRED_BLOCKERS.issubset(blocker_ids), f"missing release blockers: {sorted(REQUIRED_BLOCKERS - blocker_ids)}")
+deferred = catalog.get("local_only_deferred")
+require(isinstance(deferred, list) and deferred, "local-only deferred list missing")
+deferred_ids = set()
+for item in deferred:
+    require(isinstance(item, dict), "each local-only deferred item must be a mapping")
+    item_id = item.get("id")
+    require(isinstance(item_id, str) and item_id, "local-only deferred id missing")
+    deferred_ids.add(item_id)
+    require(item.get("status") == "out_of_scope_local_only", f"{item_id} must be out_of_scope_local_only")
+    authority = item.get("authority")
+    require(isinstance(authority, str) and authority, f"{item_id} authority missing")
+    require_existing(authority)
+    reason = item.get("reason")
+    require(isinstance(reason, str) and reason, f"{item_id} reason missing")
+require(REQUIRED_DEFERRED.issubset(deferred_ids), f"missing local-only deferred items: {sorted(REQUIRED_DEFERRED - deferred_ids)}")
 
 ci_text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 ci = yaml.safe_load(ci_text)
@@ -145,6 +165,7 @@ require(isinstance(ci, dict), "ci workflow must be a mapping")
 jobs = ci.get("jobs")
 require(isinstance(jobs, dict), "ci workflow jobs missing")
 require(REQUIRED_CI_JOBS.issubset(set(jobs)), f"missing CI jobs: {sorted(REQUIRED_CI_JOBS - set(jobs))}")
+require(REMOTE_ONLY_CI_JOBS.isdisjoint(set(jobs)), f"remote-only CI jobs must not run for local-only release: {sorted(REMOTE_ONLY_CI_JOBS & set(jobs))}")
 job = jobs["release-readiness"]
 permissions = job.get("permissions")
 require(isinstance(permissions, dict), "release-readiness permissions missing")
@@ -155,25 +176,6 @@ require("actions/setup-python@v5" in text, "release-readiness job must setup Pyt
 require("python-version: '3.12'" in ci_text, "release-readiness job must use Python 3.12")
 require("python -m pip install PyYAML" in text, "release-readiness job must install PyYAML")
 require("./scripts/run_release_readiness_check.sh" in text, "release-readiness job must run POSIX proof")
-image_job = jobs["image-publication"]
-image_permissions = image_job.get("permissions")
-require(isinstance(image_permissions, dict), "image-publication permissions missing")
-require(image_permissions.get("contents") == "read", "image-publication must use read-only contents permission")
-image_text = step_text(image_job, "image-publication")
-require("actions/checkout@v4" in image_text, "image-publication job must checkout repo")
-require("actions/setup-python@v5" in image_text, "image-publication job must setup Python")
-require("python -m pip install PyYAML" in image_text, "image-publication job must install PyYAML")
-require("./scripts/run_image_publication_check.sh" in image_text, "image-publication job must run POSIX image publication proof")
-hosted_job = jobs["hosted-deployment"]
-hosted_permissions = hosted_job.get("permissions")
-require(isinstance(hosted_permissions, dict), "hosted-deployment permissions missing")
-require(hosted_permissions.get("contents") == "read", "hosted-deployment must use read-only contents permission")
-hosted_text = step_text(hosted_job, "hosted-deployment")
-require("actions/checkout@v4" in hosted_text, "hosted-deployment job must checkout repo")
-require("actions/setup-python@v5" in hosted_text, "hosted-deployment job must setup Python")
-require("python -m pip install PyYAML" in hosted_text, "hosted-deployment job must install PyYAML")
-require("./scripts/run_hosted_deployment_check.sh" in hosted_text, "hosted-deployment job must run POSIX hosted deployment proof")
-
 result = subprocess.run(
     [sys.executable, "scripts/source_readiness.py", "--priority", "Must", "--json"],
     check=True,
@@ -202,15 +204,13 @@ for phrase in (
     "container-image-scan",
     "access-control",
     "release-package",
-    "image-publication",
-    "hosted-deployment",
     "release-readiness",
     "sources=8 ready=4 blocked=4",
     "build_release_package.ps1",
     "run_image_publication_check.ps1",
     "run_hosted_deployment_check.ps1",
-    "No container image is pushed",
-    "published registry-image attestation",
+    "out of scope for local-only",
+    "not local-only release blockers",
 ):
     require(phrase in runbook, f"release readiness runbook missing phrase: {phrase}")
 PY

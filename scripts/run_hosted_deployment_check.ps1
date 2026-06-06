@@ -32,13 +32,13 @@ from typing import Any
 import yaml
 
 ROOT = Path.cwd()
-REQUIRED_PRE_DEPLOY_GATES = {
+OPTIONAL_PRE_DEPLOY_GATES = {
     "scripts/verify.ps1",
     "scripts/run_deployment_smoke.ps1",
     "scripts/run_release_readiness_check.ps1",
     "scripts/run_image_publication_check.ps1",
 }
-REQUIRED_RUNTIME_INPUTS = {
+FUTURE_RUNTIME_INPUTS = {
     "REGISTRY_IMAGE",
     "IMAGE_DIGEST",
     "PUBLIC_BASE_URL",
@@ -48,7 +48,7 @@ REQUIRED_RUNTIME_INPUTS = {
     "REVIEWER_ACCOUNTS",
     "REVIEWER_ACCOUNT_SCOPES",
 }
-REQUIRED_RUNTIME_EVIDENCE = {
+FUTURE_RUNTIME_EVIDENCE = {
     "immutable_image_digest",
     "deployed_image_ref",
     "platform_environment_name",
@@ -63,7 +63,7 @@ REQUIRED_RUNTIME_EVIDENCE = {
     "rollback_target",
     "backup_restore_proof",
 }
-REQUIRED_BLOCKERS = {
+DEFERRED_REMOTE_REQUIREMENTS = {
     "hosted_platform_selected",
     "domain_tls_authority",
     "secrets_manager_authority",
@@ -111,6 +111,10 @@ def validate_catalog() -> None:
     payload = yaml.safe_load((ROOT / "config" / "hosted_deployment.yaml").read_text(encoding="utf-8"))
     require(isinstance(payload, dict), "hosted deployment catalog must be a mapping")
     require(payload.get("schema_version") == "hosted_deployment_v1", "unexpected hosted deployment schema")
+    scope = payload.get("scope")
+    require(isinstance(scope, dict), "scope section missing")
+    require(scope.get("status") == "out_of_scope_local_only", "hosted deployment must be out_of_scope_local_only")
+    require(scope.get("required_for_local_only_release") is False, "hosted deployment must not be required for local-only release")
     deployment = payload.get("deployment")
     require(isinstance(deployment, dict), "deployment section missing")
     require(deployment.get("service_name") == "land-diligence-api", "service name mismatch")
@@ -119,22 +123,26 @@ def validate_catalog() -> None:
     require(deployment.get("release_readiness_catalog") == "config/release_readiness.yaml", "release readiness catalog mismatch")
     require_existing(str(deployment["image_publication_catalog"]))
     require_existing(str(deployment["release_readiness_catalog"]))
-    gates = set(require_str_list(payload, "required_pre_deploy_gates"))
-    require(REQUIRED_PRE_DEPLOY_GATES.issubset(gates), f"missing hosted deployment gates: {sorted(REQUIRED_PRE_DEPLOY_GATES - gates)}")
+    gates = set(require_str_list(payload, "optional_pre_deploy_gates"))
+    require(OPTIONAL_PRE_DEPLOY_GATES.issubset(gates), f"missing optional hosted deployment gates: {sorted(OPTIONAL_PRE_DEPLOY_GATES - gates)}")
     for gate in gates:
         require_existing(gate)
-    runtime_inputs = set(require_str_list(payload, "required_runtime_inputs"))
-    require(REQUIRED_RUNTIME_INPUTS.issubset(runtime_inputs), f"missing runtime inputs: {sorted(REQUIRED_RUNTIME_INPUTS - runtime_inputs)}")
-    runtime_evidence = set(require_str_list(payload, "required_runtime_evidence"))
+    runtime_inputs = set(require_str_list(payload, "future_runtime_inputs"))
+    require(FUTURE_RUNTIME_INPUTS.issubset(runtime_inputs), f"missing future runtime inputs: {sorted(FUTURE_RUNTIME_INPUTS - runtime_inputs)}")
+    runtime_evidence = set(require_str_list(payload, "future_runtime_evidence"))
     require(
-        REQUIRED_RUNTIME_EVIDENCE.issubset(runtime_evidence),
-        f"missing runtime evidence requirements: {sorted(REQUIRED_RUNTIME_EVIDENCE - runtime_evidence)}",
+        FUTURE_RUNTIME_EVIDENCE.issubset(runtime_evidence),
+        f"missing future runtime evidence requirements: {sorted(FUTURE_RUNTIME_EVIDENCE - runtime_evidence)}",
     )
-    blockers = set(require_str_list(payload, "blocked_until"))
-    require(REQUIRED_BLOCKERS.issubset(blockers), f"missing hosted deployment blockers: {sorted(REQUIRED_BLOCKERS - blockers)}")
+    deferred = set(require_str_list(payload, "deferred_remote_requirements"))
+    require(
+        DEFERRED_REMOTE_REQUIREMENTS.issubset(deferred),
+        f"missing deferred hosted deployment requirements: {sorted(DEFERRED_REMOTE_REQUIREMENTS - deferred)}",
+    )
     limits = payload.get("limits")
     require(isinstance(limits, dict), "limits section missing")
     require(limits.get("validate_only") is True, "hosted deployment proof must be validate-only")
+    require(limits.get("required_for_local_only_release") is False, "hosted deployment proof must not be required for local-only release")
     require(limits.get("creates_hosted_deployment") is False, "hosted deployment proof must not create hosted deployments")
     require(limits.get("mutates_hosted_infrastructure") is False, "hosted deployment proof must not mutate hosted infrastructure")
     require(limits.get("writes_secrets") is False, "hosted deployment proof must not write secrets")
@@ -160,8 +168,9 @@ def validate_runbook() -> None:
         "validate-only",
         "PUBLIC_BASE_URL",
         "IMAGE_DIGEST",
-        "public HTTPS URL",
-        "TLS status",
+        "out of scope for local-only",
+        "optional future-hosting",
+        "local-only release",
         "No hosted deployment",
         "No secrets are written",
         "No registry image is deployed",

@@ -131,6 +131,7 @@ for phrase in (
     "does not delete, overwrite, push, deploy, or publish",
     "No registry image is pushed",
     "No hosted deployment",
+    "out of scope for local-only release",
     "current worktree",
 ):
     require(phrase in runbook, f"release package runbook missing phrase: {phrase}")

@@ -75,19 +75,22 @@ implemented_controls:
       - docs/runbooks/security_scan.md
     validation: scripts/run_security_scan.ps1
 
-production_blockers:
+local_only_non_goals:
   - id: full_user_auth_rbac
-    status: blocked
+    status: out_of_scope_local_only
     authority: docs/runbooks/mvp_operator.md
   - id: oauth_oidc_identity_provider
-    status: blocked
+    status: out_of_scope_local_only
     authority: docs/runbooks/access_control.md
   - id: user_account_persistence
-    status: blocked
+    status: out_of_scope_local_only
     authority: docs/runbooks/access_control.md
   - id: automatic_api_key_rotation
-    status: blocked
+    status: out_of_scope_local_only
+    authority: docs/runbooks/access_control.md
+  - id: external_secret_manager
+    status: out_of_scope_local_only
     authority: docs/runbooks/access_control.md
   - id: full_user_role_policy
-    status: blocked
+    status: out_of_scope_local_only
     authority: docs/runbooks/access_control.md

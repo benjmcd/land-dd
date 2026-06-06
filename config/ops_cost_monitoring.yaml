@@ -22,7 +22,7 @@ categories:
       - scripts/db_smoke_check.py
       - docs/runbooks/backup_restore.md
       - docs/planning_pack/registers/cost_model_inputs.csv
-    threshold: investigate if raw archive storage growth is unbudgeted or storage_usd_cents becomes nonzero without billing authority
+    threshold: investigate if raw archive storage growth is unbudgeted or storage_usd_cents becomes nonzero without explicit local cost approval
     action: review object store retention and backup/restore proof before expanding capture
     validation: scripts/run_cost_monitoring_check.ps1
   - id: llm

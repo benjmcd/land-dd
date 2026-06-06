@@ -7,7 +7,7 @@ from typing import Any, cast
 yaml = cast(Any, importlib.import_module("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-REQUIRED_GATES = {
+OPTIONAL_GATES = {
     "scripts/verify.ps1",
     "scripts/run_deployment_smoke.ps1",
     "scripts/run_container_scan_check.ps1",
@@ -22,29 +22,34 @@ def test_image_publication_catalog_records_publish_boundary_and_blockers() -> No
     )
 
     assert catalog["schema_version"] == "image_publication_v1"
+    assert catalog["scope"]["status"] == "out_of_scope_local_only"
+    assert catalog["scope"]["required_for_local_only_release"] is False
     assert catalog["image"]["name"] == "land-diligence-backend"
     assert catalog["image"]["dockerfile"] == "backend/Dockerfile"
     assert catalog["image"]["context"] == "."
     assert catalog["image"]["local_tag_template"] == "land-diligence-backend:{git_sha}"
     assert catalog["image"]["registry_image_env"] == "REGISTRY_IMAGE"
     assert (REPO_ROOT / catalog["image"]["dockerfile"]).exists()
-    assert REQUIRED_GATES.issubset(set(catalog["required_gates"]))
-    for gate in catalog["required_gates"]:
+    assert OPTIONAL_GATES.issubset(set(catalog["optional_pre_publish_gates"]))
+    for gate in catalog["optional_pre_publish_gates"]:
         assert (REPO_ROOT / gate).exists()
     assert {
-        "image_digest",
-        "registry_image_ref",
+        "local_image_build",
         "vulnerability_scan",
         "dependency_sbom",
-        "provenance",
-    }.issubset(set(catalog["required_attestations"]))
+        "release_package_manifest",
+    }.issubset(set(catalog["local_only_evidence"]))
     assert {
         "registry_repository_authority",
-        "hosted_deployment_authority",
+        "registry_push_authority",
+        "registry_image_ref",
+        "immutable_image_digest",
         "registry_image_attestation_authority",
         "signed_image_sbom_authority",
-    }.issubset(set(catalog["blocked_until"]))
+        "provenance_attestation",
+    }.issubset(set(catalog["deferred_remote_requirements"]))
     assert catalog["limits"]["validate_only"] is True
+    assert catalog["limits"]["required_for_local_only_release"] is False
     assert catalog["limits"]["pushes_registry_image"] is False
     assert catalog["limits"]["creates_hosted_deployment"] is False
     assert catalog["limits"]["signs_or_publishes_attestations"] is False
@@ -75,11 +80,11 @@ def test_image_publication_runbook_records_validation_workflow_and_limits() -> N
         "run_image_publication_check.ps1",
         "validate-only",
         "REGISTRY_IMAGE",
-        "image digest",
-        "registry image ref",
+        "out of scope for local-only",
+        "optional remote distribution",
+        "local-only release",
         "No registry image is pushed",
         "No hosted deployment",
-        "published registry-image attestation",
     ):
         assert phrase in runbook
 

@@ -134,7 +134,7 @@ for phrase in (
     "Data vendors",
     "cost_metrics",
     "docs/runbooks/incident_response.md",
-    "No hosted cloud billing integration",
+    "No billing feature or hosted cloud billing integration is planned",
     "zero-dollar attribution",
     "human_review_minutes",
 ):

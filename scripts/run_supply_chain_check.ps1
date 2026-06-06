@@ -117,7 +117,7 @@ def validate_runbook() -> None:
         "docs/runbooks/container_image_scan.md",
         "docs/runbooks/incident_response.md",
         "Known Limits",
-        "attached attestation",
+        "out of scope for local-only operation",
         "base-image packages",
     ):
         require(phrase in runbook, f"supply-chain runbook missing phrase: {phrase}")

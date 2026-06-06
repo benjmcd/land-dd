@@ -87,7 +87,7 @@ def test_cost_monitoring_runbook_records_limits_and_validation() -> None:
         "Maps",
         "Geocoding",
         "Data vendors",
-        "No hosted cloud billing integration",
+        "No billing feature or hosted cloud billing integration is planned",
         "zero-dollar attribution",
         "human_review_minutes",
     ):

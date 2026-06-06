@@ -101,6 +101,7 @@ def validate_runbook() -> None:
         "pinned base image digest",
         "signed image SBOM",
         "SLSA provenance attestation",
+        "out of scope for local-only operation",
         "docs/runbooks/incident_response.md",
     ):
         require(phrase in runbook, f"container image scan runbook missing phrase: {phrase}")

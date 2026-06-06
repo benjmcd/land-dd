@@ -25,6 +25,10 @@ consumption of connector-produced evidence on explicit connector review approval
   NFHL, DS-003 Soil Data Access/SSURGO, and DS-004 NWI validate-only smoke
   checks.
 - No paid vendor APIs or credentials.
+- No billing, report credits, hosted billing reconciliation, hosted/cloud deployment,
+  hosted deployment attestation, registry image push/signing, published registry-image
+  attestation, full user auth/RBAC/OAuth/OIDC/user accounts, or automatic key
+  rotation/external secret-manager integration for the local-only product.
 - No new legal conclusions, suitability assertions, or source interpretation beyond
   fail-closed eligibility gating for reviewed connector evidence.
 - No user accounts, RBAC, OAuth/OIDC, session auth, automatic key rotation, external
@@ -38,6 +42,10 @@ consumption of connector-produced evidence on explicit connector review approval
 
 - `state/PROJECT_STATE.md` records Level 10 as partially passing and names further
   production hardening as the next lowest-dependency task.
+- The local-only scope has been clarified: billing, hosted deployment, hosted
+  attestations, registry push/signing, automatic key rotation/external secret managers,
+  and full user auth/RBAC/OIDC/user accounts are deferred out of scope unless a future
+  plan explicitly changes the product target.
 - Connector review action routes currently accept local service-account reviewer auth.
 - The interrupted Claude session started US-015 through US-018 and partially applied
   US-015 in `backend/app/core/config.py`, `backend/app/api/dependencies.py`,
@@ -224,6 +232,11 @@ consumption of connector-produced evidence on explicit connector review approval
   report job state transitions from the report route boundary.
 - Add a `SqlAlchemyAsyncReportJobStore` backed by `jobs.job_queue`. Store report
   job metadata in JSON payload and use the existing `job_status` enum values.
+- Keep Level 10 release readiness scoped to local PC production-grade: source rights,
+  evidence/claim/report correctness, local reproducibility, local packaging, local
+  backup/restore, local smoke tests, local security checks, and operator workflow
+  quality are required; hosted/cloud, billing, registry publication, full user-account
+  auth, and external secret-manager automation are optional future scope only.
 - In DB mode, schedule background report creation through a fresh session factory
   instead of reusing request-scoped services.
 - Add a small FastAPI middleware for shared API-key enforcement before rate limiting.
@@ -1176,9 +1189,9 @@ $env:RUN_DB_SMOKE='1'; cd backend; py -3.12 -m pytest -q tests/api/test_report_r
   requires `connector:run`, connector review decisions require `connector:review`,
   queue/live-job health reads require `operations:read`, report retry requires
   `report:retry`, and manual approved-connector report creation requires `report:run`.
-  The access-control catalog and proof now validate this scoped local substrate while
-  keeping full user auth/RBAC, OAuth/OIDC, user accounts, key rotation, and hosted
-  identity-provider authorization as unresolved production blockers.
+  The access-control catalog and proof now validate this scoped local substrate. US-083
+  later reclassified full user auth/RBAC, OAuth/OIDC, user accounts, key rotation, and
+  hosted identity-provider authorization as out-of-scope for local-only operation.
 - 2026-06-05: Added US-066 local release package builder, manifest, and validate-only
   proof. `config/release_package.yaml` defines the package boundary,
   `scripts/build_release_package.ps1` and `.sh` create a local ZIP plus JSON manifest under
@@ -1198,14 +1211,11 @@ $env:RUN_DB_SMOKE='1'; cd backend; py -3.12 -m pytest -q tests/api/test_report_r
   read-only `image-publication` job; it does not push a registry image, create a hosted
   deployment, sign an image SBOM, or publish registry-image attestations.
 - 2026-06-05: Added US-068 hosted deployment readiness catalog and validate-only proof.
-  `config/hosted_deployment.yaml` records required pre-deploy gates, runtime inputs,
-  hosted runtime evidence, and hosted platform/DNS/TLS/secrets/database/billing/alerting
-  blockers. `scripts/run_hosted_deployment_check.ps1` and `.sh` validate the boundary
-  and ensure the hosted-deployment CI proof does not run hosted infrastructure mutation
-  commands. `docs/runbooks/hosted_deployment.md` records the operator workflow and
-  limits. The proof is wired into release readiness and CI as a read-only
-  `hosted-deployment` job; it does not create hosted infrastructure, write secrets, open
-  a public endpoint, or deploy a registry image.
+  `config/hosted_deployment.yaml` recorded pre-deploy gates, runtime inputs, hosted
+  runtime evidence, and hosted platform/DNS/TLS/secrets/database/billing/alerting
+  blockers at the time. US-083 later reclassified hosted deployment as an optional
+  future-hosting checklist, removed it from the local-only release CI path, and kept the
+  proof validate-only.
 - 2026-06-05: Added US-069 raw-or-sha256 configured secret specs for API-key and local
   reviewer service-account auth. `backend/app/api/secret_specs.py` normalizes raw or
   `sha256:<64-hex>` secret specs and compares provided secrets through constant-time
@@ -1244,3 +1254,11 @@ $env:RUN_DB_SMOKE='1'; cd backend; py -3.12 -m pytest -q tests/api/test_report_r
   access-control proof, ruff, and mypy passed. Remaining blockers: hosted log retention
   or SIEM export, user-account binding, automatic key rotation/secret-manager workflow,
   OAuth/OIDC, hosted identity, and full RBAC.
+- 2026-06-06: Added US-083 local-only scope correction. Release readiness now treats
+  billing/hosted billing, hosted deployment and hosted attestation, published
+  registry-image attestation and registry push/signing, automatic key rotation/external
+  secret-manager integration, hosted log retention/alerting, and full user
+  auth/RBAC/OIDC/user accounts as `out_of_scope_local_only` rather than remaining Level
+  10 blockers. The local-only release path keeps source readiness as the active blocker
+  and removes remote-only image-publication/hosted-deployment CI jobs from required
+  release readiness.

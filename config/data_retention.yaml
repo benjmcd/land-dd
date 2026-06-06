@@ -47,6 +47,7 @@ retention_blockers:
   - id: automated_deletion
     status: blocked
     reason: No automated deletion procedure implemented in MVP; all deletion is manual
+local_only_deferred:
   - id: hosted_log_retention
-    status: blocked
-    reason: Hosted log retention system not yet provisioned
+    status: out_of_scope_local_only
+    reason: Hosted log retention or SIEM export is not required for local PC operation

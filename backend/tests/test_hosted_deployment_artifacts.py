@@ -7,7 +7,7 @@ from typing import Any, cast
 yaml = cast(Any, importlib.import_module("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-REQUIRED_PRE_DEPLOY_GATES = {
+OPTIONAL_PRE_DEPLOY_GATES = {
     "scripts/verify.ps1",
     "scripts/run_deployment_smoke.ps1",
     "scripts/run_release_readiness_check.ps1",
@@ -21,12 +21,14 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
     )
 
     assert catalog["schema_version"] == "hosted_deployment_v1"
+    assert catalog["scope"]["status"] == "out_of_scope_local_only"
+    assert catalog["scope"]["required_for_local_only_release"] is False
     assert catalog["deployment"]["service_name"] == "land-diligence-api"
     assert catalog["deployment"]["runtime"] == "containerized-fastapi"
     assert catalog["deployment"]["image_publication_catalog"] == "config/image_publication.yaml"
     assert catalog["deployment"]["release_readiness_catalog"] == "config/release_readiness.yaml"
-    assert REQUIRED_PRE_DEPLOY_GATES.issubset(set(catalog["required_pre_deploy_gates"]))
-    for gate in catalog["required_pre_deploy_gates"]:
+    assert OPTIONAL_PRE_DEPLOY_GATES.issubset(set(catalog["optional_pre_deploy_gates"]))
+    for gate in catalog["optional_pre_deploy_gates"]:
         assert (REPO_ROOT / gate).exists()
     assert {
         "REGISTRY_IMAGE",
@@ -37,7 +39,7 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
         "API_KEY_SPECS",
         "REVIEWER_ACCOUNTS",
         "REVIEWER_ACCOUNT_SCOPES",
-    }.issubset(set(catalog["required_runtime_inputs"]))
+    }.issubset(set(catalog["future_runtime_inputs"]))
     assert {
         "immutable_image_digest",
         "deployed_image_ref",
@@ -50,7 +52,7 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
         "report_workflow_smoke_ok",
         "rollback_target",
         "backup_restore_proof",
-    }.issubset(set(catalog["required_runtime_evidence"]))
+    }.issubset(set(catalog["future_runtime_evidence"]))
     assert {
         "hosted_platform_selected",
         "domain_tls_authority",
@@ -59,8 +61,9 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
         "registry_image_digest_available",
         "hosted_billing_reconciliation",
         "hosted_alerting_route",
-    }.issubset(set(catalog["blocked_until"]))
+    }.issubset(set(catalog["deferred_remote_requirements"]))
     assert catalog["limits"]["validate_only"] is True
+    assert catalog["limits"]["required_for_local_only_release"] is False
     assert catalog["limits"]["creates_hosted_deployment"] is False
     assert catalog["limits"]["mutates_hosted_infrastructure"] is False
     assert catalog["limits"]["writes_secrets"] is False
@@ -101,8 +104,9 @@ def test_hosted_deployment_runbook_records_validation_workflow_and_limits() -> N
         "validate-only",
         "PUBLIC_BASE_URL",
         "IMAGE_DIGEST",
-        "public HTTPS URL",
-        "TLS status",
+        "out of scope for local-only",
+        "optional future-hosting",
+        "local-only release",
         "No hosted deployment",
         "No secrets are written",
         "No registry image is deployed",

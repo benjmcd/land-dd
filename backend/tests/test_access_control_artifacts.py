@@ -16,11 +16,12 @@ REQUIRED_CONTROLS = {
     "protected_operator_routes",
     "public_health_routes",
 }
-REQUIRED_BLOCKERS = {
+REQUIRED_NON_GOALS = {
     "full_user_auth_rbac",
     "oauth_oidc_identity_provider",
     "user_account_persistence",
     "automatic_api_key_rotation",
+    "external_secret_manager",
     "full_user_role_policy",
 }
 
@@ -39,11 +40,11 @@ def test_access_control_catalog_covers_current_controls_and_blockers() -> None:
         for authority in control["authority"]:
             assert (REPO_ROOT / authority).exists()
 
-    blockers = {blocker["id"]: blocker for blocker in catalog["production_blockers"]}
-    assert REQUIRED_BLOCKERS.issubset(set(blockers))
-    for blocker in blockers.values():
-        assert blocker["status"] == "blocked"
-        assert (REPO_ROOT / blocker["authority"]).exists()
+    non_goals = {item["id"]: item for item in catalog["local_only_non_goals"]}
+    assert REQUIRED_NON_GOALS.issubset(set(non_goals))
+    for item in non_goals.values():
+        assert item["status"] == "out_of_scope_local_only"
+        assert (REPO_ROOT / item["authority"]).exists()
 
 
 def test_access_control_runbook_records_validation_and_limits() -> None:
@@ -63,7 +64,8 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "operations:read",
         "report:retry",
         "report:run",
-        "No full user auth/RBAC exists yet.",
+        "out of scope for local-only",
+        "No full user auth/RBAC is planned",
         "No OAuth/OIDC",
         "No user-account persistence",
         "API_KEY_SPECS",
@@ -75,6 +77,7 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "durable per-key usage audit ledger",
         "configured static key lifecycle exists",
         "no automatic",
+        "external secret manager",
     ):
         assert phrase in runbook
 

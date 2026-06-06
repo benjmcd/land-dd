@@ -37,12 +37,6 @@ required_checks:
   - id: release_package
     proof: scripts/run_release_package_check.ps1
     ci_job: null
-  - id: image_publication
-    proof: scripts/run_image_publication_check.ps1
-    ci_job: image-publication
-  - id: hosted_deployment
-    proof: scripts/run_hosted_deployment_check.ps1
-    ci_job: hosted-deployment
   - id: source_readiness
     proof: scripts/source_readiness.py
     ci_job: null
@@ -68,21 +62,43 @@ required_checks:
     proof: backend/app/api/reports.py
     ci_job: null
 release_blockers:
-  - id: hosted_deployment_attestation
-    status: blocked
-    authority: docs/runbooks/hosted_deployment.md
-  - id: published_registry_image_attestation
-    status: blocked
-    authority: docs/runbooks/image_publication.md
-  - id: hosted_billing_reconciliation
-    status: blocked
-    authority: docs/runbooks/cost_monitoring.md
   - id: non_ready_must_sources
     status: blocked
     authority: scripts/source_readiness.py
-  - id: full_user_auth_rbac
-    status: blocked
-    authority: docs/runbooks/mvp_operator.md
+local_only_deferred:
+  - id: billing_hosted_billing_reconciliation
+    status: out_of_scope_local_only
+    authority: docs/runbooks/cost_monitoring.md
+    reason: No billing feature, hosted spend reconciliation, or customer payment path is planned for local PC operation.
+  - id: hosted_deployment
+    status: out_of_scope_local_only
+    authority: docs/runbooks/hosted_deployment.md
+    reason: Cloud or online hosting is not part of the local-only production-grade target.
+  - id: hosted_deployment_attestation
+    status: out_of_scope_local_only
+    authority: docs/runbooks/hosted_deployment.md
+    reason: Deployment attestation only applies to hosted/cloud runtime distribution.
   - id: hosted_alerting
-    status: blocked
+    status: out_of_scope_local_only
     authority: docs/runbooks/alerting.md
+    reason: Hosted alert manager, pager, dashboard, and routing are not required for local PC operation.
+  - id: hosted_log_retention
+    status: out_of_scope_local_only
+    authority: docs/runbooks/data_retention.md
+    reason: Hosted log retention or SIEM export is not required for local PC operation.
+  - id: published_registry_image_attestation
+    status: out_of_scope_local_only
+    authority: docs/runbooks/image_publication.md
+    reason: Published registry-image attestations are remote distribution proof, not local-only release evidence.
+  - id: registry_push_signing_requirements
+    status: out_of_scope_local_only
+    authority: docs/runbooks/image_publication.md
+    reason: Registry push, image signing, and signed image SBOM requirements are deferred unless remote distribution is approved.
+  - id: automatic_key_rotation_external_secret_manager
+    status: out_of_scope_local_only
+    authority: docs/runbooks/access_control.md
+    reason: Local static secret hygiene is sufficient unless a shared hosted environment is introduced.
+  - id: full_user_auth_rbac_oidc_user_accounts
+    status: out_of_scope_local_only
+    authority: docs/runbooks/access_control.md
+    reason: Full users, RBAC, OIDC/OAuth, user accounts, and hosted identity are not planned for local PC operation.
