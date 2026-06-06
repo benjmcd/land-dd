@@ -81,8 +81,8 @@ class SourceRetrievalRunContract(BaseModel):
     status: SourceRetrievalStatus = SourceRetrievalStatus.PENDING
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
-    row_count: int | None = None
-    error_count: int = 0
-    warning_count: int = 0
+    row_count: int | None = Field(default=None, ge=0)
+    error_count: int = Field(default=0, ge=0)
+    warning_count: int = Field(default=0, ge=0)
     log_uri: str | None = None
     metrics: dict[str, object] = Field(default_factory=dict)

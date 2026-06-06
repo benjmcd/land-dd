@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -43,7 +44,11 @@ class RecordingEvidencePort:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        dataset_version_id: UUID | None = None,
         source_ingest_run_id: UUID | None = None,
+        method_version: str = "0.1.0",
+        source_date: str | None = None,
+        observed_at: datetime | None = None,
     ) -> EvidenceContract:
         call: dict[str, object] = {
             "evidence_id": evidence_id,
@@ -55,24 +60,34 @@ class RecordingEvidencePort:
             "domain": domain,
             "observation": observation,
             "observed_value": observed_value,
+            "dataset_version_id": dataset_version_id,
             "source_ingest_run_id": source_ingest_run_id,
+            "method_version": method_version,
+            "source_date": source_date,
+            "observed_at": observed_at,
         }
         self.source_failure_calls.append(call)
-        created = EvidenceContract(
-            evidence_id=evidence_id or UUID(int=self._source_failure_counter),
-            area_id=area_id,
-            source_id=source_id,
-            method_code=method_code,
-            evidence_type=EvidenceType.SOURCE_FAILURE,
-            evidence_code=evidence_code,
-            domain=domain,
-            observation=observation or f"Source unavailable or failed: {caveat}",
-            observed_value=observed_value or {},
-            confidence=ConfidenceBand.UNKNOWN,
-            caveat=caveat,
-            is_source_failure=True,
-            source_ingest_run_id=source_ingest_run_id,
-        )
+        evidence_data = {
+            "evidence_id": evidence_id or UUID(int=self._source_failure_counter),
+            "area_id": area_id,
+            "source_id": source_id,
+            "method_code": method_code,
+            "evidence_type": EvidenceType.SOURCE_FAILURE,
+            "evidence_code": evidence_code,
+            "domain": domain,
+            "observation": observation or f"Source unavailable or failed: {caveat}",
+            "observed_value": observed_value or {},
+            "confidence": ConfidenceBand.UNKNOWN,
+            "caveat": caveat,
+            "is_source_failure": True,
+            "dataset_version_id": dataset_version_id,
+            "source_ingest_run_id": source_ingest_run_id,
+            "method_version": method_version,
+            "source_date": source_date,
+        }
+        if observed_at is not None:
+            evidence_data["observed_at"] = observed_at
+        created = EvidenceContract.model_validate(evidence_data)
         self._source_failure_counter += 1
         self._stored[created.evidence_id] = created
         return created
@@ -126,8 +141,22 @@ def test_ingestion_adapter_routes_source_failure_to_public_failure_method() -> N
     assert call["domain"] == failure_input.domain
     assert call["observation"] == failure_input.observation
     assert call["observed_value"] == failure_input.observed_value
+    assert call["dataset_version_id"] == failure_input.dataset_version_id
+    assert call["source_ingest_run_id"] == failure_input.source_ingest_run_id
+    assert call["method_version"] == failure_input.method_version
+    assert call["source_date"] == failure_input.source_date
+    assert call["observed_at"] == failure_input.observed_at
     assert result.created_evidence[0].evidence_id == failure_input.evidence_id
     assert result.created_evidence[0].is_source_failure is True
+    assert result.created_evidence[0].dataset_version_id == (
+        failure_input.dataset_version_id
+    )
+    assert result.created_evidence[0].source_ingest_run_id == (
+        failure_input.source_ingest_run_id
+    )
+    assert result.created_evidence[0].method_version == failure_input.method_version
+    assert result.created_evidence[0].source_date == failure_input.source_date
+    assert result.created_evidence[0].observed_at == failure_input.observed_at
     assert result.skipped_evidence == ()
 
 

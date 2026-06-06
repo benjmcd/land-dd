@@ -1244,3 +1244,17 @@ $env:RUN_DB_SMOKE='1'; cd backend; py -3.12 -m pytest -q tests/api/test_report_r
   access-control proof, ruff, and mypy passed. Remaining blockers: hosted log retention
   or SIEM export, user-account binding, automatic key rotation/secret-manager workflow,
   OAuth/OIDC, hosted identity, and full RBAC.
+- 2026-06-06: Began review-debt closeout for unresolved merged-PR threads after PR #19
+  made `origin/main` CI-clean. This slice is limited to live review-thread-backed
+  defects: source retrieval count validation and source-provenance review-bundle schema
+  parity; flood fixture terminal-status/source-failure/spatial evidence quality gates;
+  fixture workflow quality gating before provenance/evidence side effects; preservation
+  of source-failure evidence provenance fields through ingestion; retrieval provenance
+  adapter compatibility with raw `SourceProvenanceService`; atomic SQL connector-review
+  queue enqueue through `ON CONFLICT (idempotency_key) DO NOTHING`; required-reason
+  OpenAPI schema parity for connector review actions; and preservation of caller-set
+  `OBJECT_STORE_ROOT` in `scripts/run_api.ps1`. Focused pytest, ruff, mypy, and OpenAPI
+  parity checks passed for the touched surfaces before broad verification. Full
+  `.\scripts\verify.ps1` then passed; source readiness remains
+  `sources=8 ready=4 blocked=4` for Must sources, with `DS-010`, `DS-011`, `DS-017`,
+  and `DS-023` still blocked.

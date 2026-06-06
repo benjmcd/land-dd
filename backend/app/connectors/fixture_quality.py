@@ -11,6 +11,7 @@ from .flood_fixture import FixtureConnectorResultProtocol
 
 
 class ConnectorFixtureQualityIssueCode(StrEnum):
+    RETRIEVAL_STATUS_UNSUPPORTED = "retrieval_status_unsupported"
     RETRIEVAL_FINISHED_BEFORE_STARTED = "retrieval_finished_before_started"
     RETRIEVAL_CONNECTOR_NAME_MISMATCH = "retrieval_connector_name_mismatch"
     RETRIEVAL_DATASET_VERSION_MISSING = "retrieval_dataset_version_missing"
@@ -24,8 +25,12 @@ class ConnectorFixtureQualityIssueCode(StrEnum):
     SUCCEEDED_ROW_COUNT_MISMATCH = "succeeded_row_count_mismatch"
     SUCCEEDED_ERROR_COUNT_NONZERO = "succeeded_error_count_nonzero"
     SUCCEEDED_HAS_FAILURE_REASON = "succeeded_has_failure_reason"
+    SUCCEEDED_SPATIAL_EVIDENCE_MISSING = "succeeded_spatial_evidence_missing"
     BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO = "blocked_or_failed_row_count_not_zero"
     BLOCKED_OR_FAILED_ERROR_COUNT_MISSING = "blocked_or_failed_error_count_missing"
+    BLOCKED_OR_FAILED_SOURCE_FAILURE_MISSING = (
+        "blocked_or_failed_source_failure_missing"
+    )
     RETRIEVAL_FAILURE_REASON_MISSING = "retrieval_failure_reason_missing"
     SUCCEEDED_HAS_SOURCE_FAILURE = "succeeded_has_source_failure"
     BLOCKED_HAS_NON_FAILURE_EVIDENCE = "blocked_has_non_failure_evidence"
@@ -136,6 +141,7 @@ def evaluate_flood_fixture_quality(
         1 for evidence in evidence_inputs if not evidence.is_source_failure
     )
     source_failure_count = len(evidence_inputs) - non_failure_count
+    _append_retrieval_status_issue(issues, retrieval_run.status)
 
     if (
         retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
@@ -174,6 +180,16 @@ def evaluate_flood_fixture_quality(
                 "succeeded fixture must not emit source-failure evidence",
             ),
         )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and not _has_spatial_evidence(evidence_inputs)
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_SPATIAL_EVIDENCE_MISSING,
+                "succeeded flood fixture must emit spatial intersection evidence",
+            ),
+        )
     if retrieval_run.status in {
         SourceRetrievalStatus.BLOCKED,
         SourceRetrievalStatus.FAILED,
@@ -204,6 +220,13 @@ def evaluate_flood_fixture_quality(
                 _issue(
                     ConnectorFixtureQualityIssueCode.BLOCKED_HAS_NON_FAILURE_EVIDENCE,
                     "blocked or failed fixture must not emit non-failure evidence",
+                ),
+            )
+        if source_failure_count == 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_SOURCE_FAILURE_MISSING,
+                    "blocked or failed fixture must emit source-failure evidence",
                 ),
             )
 
@@ -411,6 +434,7 @@ def _evaluate_fixture_quality(
         1 for evidence in evidence_inputs if not evidence.is_source_failure
     )
     source_failure_count = len(evidence_inputs) - non_failure_count
+    _append_retrieval_status_issue(issues, retrieval_run.status)
 
     if (
         retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
@@ -479,6 +503,13 @@ def _evaluate_fixture_quality(
                 _issue(
                     ConnectorFixtureQualityIssueCode.BLOCKED_HAS_NON_FAILURE_EVIDENCE,
                     "blocked or failed fixture must not emit non-failure evidence",
+                ),
+            )
+        if source_failure_count == 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_SOURCE_FAILURE_MISSING,
+                    "blocked or failed fixture must emit source-failure evidence",
                 ),
             )
 
@@ -683,6 +714,31 @@ def _issue(
     message: str,
 ) -> ConnectorFixtureQualityIssue:
     return ConnectorFixtureQualityIssue(code=code, message=message)
+
+
+def _append_retrieval_status_issue(
+    issues: list[ConnectorFixtureQualityIssue],
+    status: SourceRetrievalStatus,
+) -> None:
+    if status not in {
+        SourceRetrievalStatus.SUCCEEDED,
+        SourceRetrievalStatus.BLOCKED,
+        SourceRetrievalStatus.FAILED,
+    }:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.RETRIEVAL_STATUS_UNSUPPORTED,
+                "fixture quality only supports terminal succeeded, blocked, or failed retrievals",
+            ),
+        )
+
+
+def _has_spatial_evidence(evidence_inputs: tuple[EvidenceContract, ...]) -> bool:
+    return any(
+        evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
+        and not evidence.is_source_failure
+        for evidence in evidence_inputs
+    )
 
 
 def _append_source_failure_reason_consistency_issue(

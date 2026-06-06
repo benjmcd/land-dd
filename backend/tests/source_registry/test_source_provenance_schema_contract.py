@@ -71,6 +71,26 @@ def test_source_provenance_schema_declares_non_negative_counts() -> None:
     assert properties["warning_count"]["minimum"] == 0
 
 
+def test_source_provenance_schema_matches_review_bundle_root_fields() -> None:
+    schema = load_schema()
+    properties = cast(dict[str, Any], schema["properties"])
+    required = cast(list[str], schema["required"])
+
+    assert set(properties) == {
+        "source",
+        "production_use_allowed",
+        "datasets",
+        "dataset_versions",
+        "retrieval_runs",
+        "latest_retrieval_status",
+        "review_summary",
+    }
+    assert set(required) == set(properties)
+    assert properties["latest_retrieval_status"]["enum"] == [
+        item.value for item in SourceRetrievalStatus
+    ]
+
+
 def test_serialized_source_provenance_contracts_use_schema_field_sets() -> None:
     dataset = SourceDatasetContract(
         source_id=uuid4(),

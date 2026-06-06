@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol, cast
 from uuid import UUID
 
 from app.domain.source_contracts import SourceRetrievalRunContract
@@ -44,11 +44,31 @@ class ConnectorRetrievalProvenanceAdapter:
                 skipped_run=retrieval_run,
             )
 
-        recorded = self._provenance_port.record_retrieval_run(retrieval_run)
+        recorded = _record_retrieval_run(self._provenance_port, retrieval_run)
         return ConnectorRetrievalProvenanceResult(
             recorded_run=recorded,
             skipped_run=None,
         )
+
+
+def _record_retrieval_run(
+    provenance_port: SourceRetrievalProvenancePort,
+    retrieval_run: SourceRetrievalRunContract,
+) -> SourceRetrievalRunContract:
+    contract_recorder = getattr(
+        provenance_port,
+        "record_retrieval_run_contract",
+        None,
+    )
+    if callable(contract_recorder):
+        return cast(
+            SourceRetrievalRunContract,
+            contract_recorder(retrieval_run),
+        )
+    return cast(
+        SourceRetrievalRunContract,
+        cast(Any, provenance_port).record_retrieval_run(retrieval_run),
+    )
 
 
 __all__ = [
