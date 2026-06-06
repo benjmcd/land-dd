@@ -42,3 +42,10 @@ def test_security_scan_runbook_mentions_validate_only() -> None:
     assert "--validate-only" in content or "validate-only" in content, (
         "security_scan.md must document the --validate-only / validate-only flag"
     )
+
+
+def test_security_scan_ci_uses_repo_wrapper() -> None:
+    workflow = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+    content = workflow.read_text(encoding="utf-8")
+    assert "security-scan:" in content
+    assert "run: ./scripts/run_security_scan.sh" in content

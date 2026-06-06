@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 CI gate authority correction
+
+**Scope:**
+
+- `.github/workflows/ci.yml`
+- POSIX executable bits for `scripts/*.sh`
+- `scripts/run_security_scan.ps1`
+- `docs/runbooks/container_image_scan.md`
+- `docs/runbooks/security_scan.md`
+- `docs/runbooks/mvp_operator.md`
+- `docs/runbooks/dependency_provenance.md`
+- `docs/runbooks/supply_chain.md`
+- `backend/tests/test_container_scan_artifacts.py`
+- `backend/tests/test_security_scan_artifacts.py`
+- `backend/tests/test_provenance_artifacts.py`
+- `backend/tests/test_supply_chain_artifacts.py`
+- `backend/tests/test_release_readiness_artifacts.py`
+- `scripts/run_provenance_check.sh`
+- `scripts/verify.ps1`
+- `scripts/verify.sh`
+- `state/WORKLOG.md`
+- `state/VALIDATION_LOG.md`
+- `state/PROJECT_STATE.md`
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_container_scan_artifacts.py backend\tests\test_security_scan_artifacts.py backend\tests\test_release_readiness_artifacts.py backend\tests\test_supply_chain_artifacts.py
+@' ... '@ | py -3.12 -
+.\scripts\run_container_scan_check.ps1
+.\scripts\run_release_readiness_check.ps1
+.\scripts\run_security_scan.ps1
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+gh pr checks 19 --repo benjmcd/land-dd --watch --interval 35
+gh run view 27053083439 --repo benjmcd/land-dd --log-failed
+py -3.12 -m pytest -q backend\tests\test_supply_chain_artifacts.py backend\tests\test_provenance_artifacts.py backend\tests\test_release_readiness_artifacts.py backend\tests\test_container_scan_artifacts.py
+.\scripts\run_provenance_check.ps1
+.\scripts\run_supply_chain_check.ps1
+.\scripts\run_release_readiness_check.ps1
+.\scripts\verify.ps1
+gh pr checks 19 --repo benjmcd/land-dd --watch --interval 35
+```
+
+**Result:** PASS for focused artifact tests, workflow YAML parsing, container scan static proof, dependency provenance proof, supply-chain proof, release-readiness proof, security scan wrapper, source-readiness JSON, and default `.\scripts\verify.ps1`. The default verification collected backend tests, linted clean, typechecked 216 source files cleanly, and skipped DB smoke as expected. The security scan reports 13 medium Bandit findings and 0 HIGH/CRITICAL findings, so it passes under the documented threshold. Initial PR #19 remote CI showed additional CI-only failures: private-repository GitHub artifact-attestation entitlement, missing `PyYAML` before POSIX provenance validation, missing backend dependencies before release-readiness source-readiness validation, and DB migrations running after DB-gated tests. The follow-up patch gates live attestations on entitlement, installs required CI dependencies, and moves DB migrations before DB-gated backend tests. PR #19 remote CI then passed all jobs, including `verify`, `db-verify`, `supply-chain`, `dependency-attestations`, `container-image-scan`, `security-scan`, `release-readiness`, `access-control`, `image-publication`, and `hosted-deployment`.
+
+**Residual risk:**
+
+- Docker Scout live CVE scanning remains blocked unless `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are configured in GitHub secrets.
+- GitHub dependency attestations remain blocked for this private repository unless repository visibility/plan changes to an artifact-attestation-supported context.
+- Existing Bandit medium findings remain review debt; they are reported but not release-blocking under the current threshold.
+- Local DB-enabled `.\scripts\verify.ps1` remains environment-blocked in this clean worktree because `psql` is not available locally. GitHub Actions installs `postgresql-client`, and PR #19 remote CI passed `db-verify`.
+- Source readiness remains `sources=8 ready=4 blocked=4`; blocked Must sources are `DS-010`, `DS-011`, `DS-017`, and `DS-023`.
+
 ## 2026-06-05 Level 10 hardening US-073 through US-082
 
 **Scope:**

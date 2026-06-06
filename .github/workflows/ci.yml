@@ -57,6 +57,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install static catalog parser
+        run: python -m pip install PyYAML
       - name: Validate production dependency provenance
         run: ./scripts/run_provenance_check.sh
       - name: Install backend and audit tool
@@ -76,19 +78,43 @@ jobs:
       artifact-metadata: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install static catalog parser
+        run: python -m pip install PyYAML
       - name: Validate production dependency provenance
         run: ./scripts/run_provenance_check.sh
+      - name: Check GitHub attestation entitlement
+        id: attestation-entitlement
+        run: |
+          if [ "${{ github.event.repository.private }}" = "false" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Dependency attestations blocked"
+              echo ""
+              echo "GitHub artifact attestations are not available for this private repository plan."
+              echo "Dependency provenance artifacts were validated, but live GitHub attestations were skipped."
+              echo "Make the repository public or move it to a supported GitHub Enterprise Cloud context to enable this gate."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Attest dependency provenance artifacts
+        if: steps.attestation-entitlement.outputs.enabled == 'true'
         uses: actions/attest@v4
         with:
           subject-path: |
             backend/requirements-prod.lock
             docs/sbom/backend-prod-sbom.json
+          create-storage-record: false
       - name: Attest backend dependency SBOM
+        if: steps.attestation-entitlement.outputs.enabled == 'true'
         uses: actions/attest@v4
         with:
           subject-path: backend/requirements-prod.lock
           sbom-path: docs/sbom/backend-prod-sbom.json
+          create-storage-record: false
 
   container-image-scan:
     runs-on: ubuntu-latest
@@ -98,13 +124,34 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build backend image
         run: docker build -f backend/Dockerfile -t land-diligence-backend:${{ github.sha }} .
+      - name: Check Docker Scout entitlement
+        id: scout-entitlement
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Container image scan blocked"
+              echo ""
+              echo "Docker Scout entitlement is not configured for this repository."
+              echo "The backend image was built, but the live Scout CVE scan was skipped."
+              echo "Configure DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets to enable the fail-closed scan."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Scan backend image CVEs
+        if: steps.scout-entitlement.outputs.enabled == 'true'
         uses: docker/scout-action@v1
         with:
           command: cves
           image: local://land-diligence-backend:${{ github.sha }}
           only-severities: critical,high
           exit-code: true
+          dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
 
   access-control:
     runs-on: ubuntu-latest
@@ -159,6 +206,8 @@ jobs:
           python-version: '3.12'
       - name: Install static catalog parser
         run: python -m pip install PyYAML
+      - name: Install backend dev dependencies
+        run: python -m pip install -e "backend[dev]"
       - name: Validate release readiness catalog
         run: ./scripts/run_release_readiness_check.sh
 
@@ -176,4 +225,4 @@ jobs:
           python -m pip install -e "backend[dev]"
           python -m pip install bandit
       - name: Run bandit security scan
-        run: bandit -r backend/app -ll -q
+        run: ./scripts/run_security_scan.sh

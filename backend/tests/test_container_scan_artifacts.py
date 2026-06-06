@@ -11,7 +11,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 def _steps_text(job: dict[str, Any]) -> str:
     return "\n".join(
-        str(step.get("uses", ""))
+        str(step.get("name", ""))
+        + "\n"
+        + str(step.get("if", ""))
+        + "\n"
+        + str(step.get("uses", ""))
         + "\n"
         + str(step.get("run", ""))
         + "\n"
@@ -34,7 +38,11 @@ def test_ci_has_container_image_scan_job() -> None:
         "docker build -f backend/Dockerfile -t land-diligence-backend:${{ github.sha }} ."
         in steps_text
     )
+    assert "Check Docker Scout entitlement" in steps_text
+    assert "Docker Scout entitlement is not configured for this repository." in steps_text
     assert "docker/scout-action@v1" in steps_text
+    assert "'dockerhub-user': '${{ secrets.DOCKERHUB_USERNAME }}'" in steps_text
+    assert "'dockerhub-password': '${{ secrets.DOCKERHUB_TOKEN }}'" in steps_text
     assert "'command': 'cves'" in steps_text or '"command": "cves"' in steps_text
     assert "local://land-diligence-backend:${{ github.sha }}" in steps_text
     assert (
@@ -75,10 +83,13 @@ def test_container_image_scan_runbook_records_validation_and_limits() -> None:
     for phrase in (
         "container-image-scan",
         "Docker Scout",
+        "DOCKERHUB_USERNAME",
+        "DOCKERHUB_TOKEN",
         "backend/Dockerfile",
         "local://land-diligence-backend:${{ github.sha }}",
         "critical and high severity CVEs",
         "exit-code: true",
+        "blocked",
         "python:3.12-slim",
         "sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203",
         "pinned base image digest",

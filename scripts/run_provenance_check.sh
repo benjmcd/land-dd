@@ -50,7 +50,15 @@ def text_from_steps(job: dict[str, Any]) -> str:
     steps = job.get("steps")
     require(isinstance(steps, list) and steps, "CI job has no steps")
     return "\n".join(
-        str(step.get("uses", "")) + "\n" + str(step.get("run", "")) + "\n" + str(step.get("with", ""))
+        str(step.get("name", ""))
+        + "\n"
+        + str(step.get("uses", ""))
+        + "\n"
+        + str(step.get("if", ""))
+        + "\n"
+        + str(step.get("run", ""))
+        + "\n"
+        + str(step.get("with", ""))
         for step in steps
         if isinstance(step, dict)
     )
@@ -129,8 +137,10 @@ def validate_docs_and_ci() -> None:
     require(isinstance(jobs, dict), "ci workflow jobs missing")
     supply_job = jobs.get("supply-chain")
     require(isinstance(supply_job, dict), "CI missing supply-chain job")
-    require("run_provenance_check.sh" in text_from_steps(supply_job), "CI must run dependency provenance check")
-    require("pip-audit --local" in text_from_steps(supply_job), "CI must still run pip-audit")
+    supply_steps = text_from_steps(supply_job)
+    require("python -m pip install PyYAML" in supply_steps, "supply-chain job must install PyYAML")
+    require("run_provenance_check.sh" in supply_steps, "CI must run dependency provenance check")
+    require("pip-audit --local" in supply_steps, "CI must still run pip-audit")
     attest_job = jobs.get("dependency-attestations")
     require(isinstance(attest_job, dict), "CI missing dependency-attestations job")
     permissions = attest_job.get("permissions")
@@ -144,7 +154,14 @@ def validate_docs_and_ci() -> None:
     )
     attest_steps = text_from_steps(attest_job)
     require("./scripts/run_provenance_check.sh" in attest_steps, "attestation job must validate provenance first")
+    require("Check GitHub attestation entitlement" in attest_steps, "attestation job must check entitlement")
+    require("Dependency attestations blocked" in attest_steps, "attestation job must record blocked entitlement")
     require(attest_steps.count("actions/attest@v4") == 2, "attestation job must use actions/attest@v4 twice")
+    require(
+        "steps.attestation-entitlement.outputs.enabled == 'true'" in attest_steps,
+        "attestation actions must be entitlement-gated",
+    )
+    require("create-storage-record" in attest_steps, "attestation job must avoid storage-record writes")
     require("backend/requirements-prod.lock" in attest_steps, "attestation job missing lock subject")
     require("docs/sbom/backend-prod-sbom.json" in attest_steps, "attestation job missing SBOM path")
     require("'sbom-path': 'docs/sbom/backend-prod-sbom.json'" in attest_steps, "attestation job missing SBOM attestation")

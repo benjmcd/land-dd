@@ -76,6 +76,7 @@ def test_ci_has_release_readiness_job() -> None:
     assert "actions/setup-python@v5" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text
+    assert 'python -m pip install -e "backend[dev]"' in steps_text
     assert "./scripts/run_release_readiness_check.sh" in steps_text
 
 

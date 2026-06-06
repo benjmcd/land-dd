@@ -16,7 +16,15 @@ def test_ci_has_supply_chain_scan_job() -> None:
     ci = yaml.safe_load(ci_text)
     job = ci["jobs"]["supply-chain"]
     steps_text = "\n".join(
-        str(step.get("uses", "")) + "\n" + str(step.get("run", ""))
+        str(step.get("name", ""))
+        + "\n"
+        + str(step.get("uses", ""))
+        + "\n"
+        + str(step.get("if", ""))
+        + "\n"
+        + str(step.get("run", ""))
+        + "\n"
+        + str(step.get("with", ""))
         for step in job["steps"]
     )
 
@@ -24,6 +32,7 @@ def test_ci_has_supply_chain_scan_job() -> None:
     assert "actions/checkout@v4" in steps_text
     assert "actions/setup-python@v5" in steps_text
     assert "python-version: '3.12'" in ci_text
+    assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_provenance_check.sh" in steps_text
     assert 'python -m pip install -e "backend[dev]"' in steps_text
     assert "python -m pip install pip-audit" in steps_text
@@ -36,7 +45,11 @@ def test_ci_has_dependency_attestation_job() -> None:
     )
     job = ci["jobs"]["dependency-attestations"]
     steps_text = "\n".join(
-        str(step.get("uses", ""))
+        str(step.get("name", ""))
+        + "\n"
+        + str(step.get("uses", ""))
+        + "\n"
+        + str(step.get("if", ""))
         + "\n"
         + str(step.get("run", ""))
         + "\n"
@@ -48,8 +61,14 @@ def test_ci_has_dependency_attestation_job() -> None:
     assert job["permissions"]["id-token"] == "write"
     assert job["permissions"]["attestations"] == "write"
     assert job["permissions"]["artifact-metadata"] == "write"
+    assert "actions/setup-python@v5" in steps_text
+    assert "python -m pip install PyYAML" in steps_text
     assert "./scripts/run_provenance_check.sh" in steps_text
+    assert "Check GitHub attestation entitlement" in steps_text
+    assert "Dependency attestations blocked" in steps_text
+    assert "steps.attestation-entitlement.outputs.enabled == 'true'" in steps_text
     assert steps_text.count("actions/attest@v4") == 2
+    assert "create-storage-record" in steps_text
     assert "backend/requirements-prod.lock" in steps_text
     assert "docs/sbom/backend-prod-sbom.json" in steps_text
     assert "'sbom-path': 'docs/sbom/backend-prod-sbom.json'" in steps_text
@@ -83,6 +102,7 @@ def test_supply_chain_runbook_records_validation_and_limits() -> None:
         "run_provenance_check.ps1",
         "dependency-attestations",
         "actions/attest@v4",
+        "Dependency attestations blocked",
         "container-image-scan",
         "docs/runbooks/container_image_scan.md",
         "docs/runbooks/incident_response.md",

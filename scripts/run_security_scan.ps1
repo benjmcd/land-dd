@@ -22,11 +22,12 @@ if ($ValidateOnly) {
     exit 0
 }
 
-Push-Location (Join-Path $PSScriptRoot ".." "backend")
+$backendRoot = Join-Path (Join-Path $PSScriptRoot "..") "backend"
+Push-Location $backendRoot
 try {
     Write-Host "Running bandit on backend/app (severity threshold: medium+) ..."
     $banditOutput = $null
-    python -m bandit -r app -ll -q 2>&1 | Tee-Object -Variable banditOutput
+    py -3.12 -m bandit -r app -ll -q 2>&1 | Tee-Object -Variable banditOutput
 
     $outputText = $banditOutput -join "`n"
 

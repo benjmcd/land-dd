@@ -4,10 +4,14 @@
 
 Use the CI `container-image-scan` job in `.github/workflows/ci.yml` as the
 repo-local Level 10 container vulnerability gate. The job builds the backend image from
-`backend/Dockerfile`, keeps it in the GitHub Actions runner local image store, and runs
-Docker Scout `cves` against `local://land-diligence-backend:${{ github.sha }}` for
-critical and high severity CVEs. The backend Dockerfile pins the runtime base image to
-the current `python:3.12-slim` OCI index digest:
+`backend/Dockerfile` and keeps it in the GitHub Actions runner local image store. When
+Docker Scout credentials are configured through `DOCKERHUB_USERNAME` and
+`DOCKERHUB_TOKEN`, the job runs Docker Scout `cves` against
+`local://land-diligence-backend:${{ github.sha }}` for critical and high severity CVEs
+with `exit-code: true`. When Docker Scout entitlement is not configured, the job records
+the blocked scan in the GitHub step summary instead of pretending that a live CVE scan
+ran. The backend Dockerfile pins the runtime base image to the current
+`python:3.12-slim` OCI index digest:
 `sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203`.
 
 This runbook covers backend container image vulnerability scanning only. It does not
@@ -26,7 +30,9 @@ The check is validate-only. It verifies that:
 
 - `.github/workflows/ci.yml` has a `container-image-scan` job.
 - the job builds `backend/Dockerfile` into a local backend image tag.
-- the job runs `docker/scout-action@v1` with `command: cves`.
+- the job records missing Docker Scout entitlement as a blocked scan.
+- the job passes configured Docker Hub credentials to Docker Scout when they are present.
+- the job runs `docker/scout-action@v1` with `command: cves` only when entitlement is configured.
 - the Scout image reference uses `local://` so the runner scans the just-built image.
 - the Scout action is scoped to `critical,high` severities and fails closed with
   `exit-code: true`.
@@ -50,7 +56,10 @@ The check is validate-only. It verifies that:
 
 ## Known Limits
 
-- The CI scan depends on Docker Scout advisory data available at run time.
+- The CI scan depends on Docker Scout advisory data and repository entitlement available
+  at run time.
+- Without `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`, CI proves the image build and
+  records the live CVE scan as blocked; it does not prove the image is CVE-clean.
 - The job scans the backend image built locally in CI; it does not prove any separately
   published registry image.
 - The current base image is pinned to the `python:3.12-slim` OCI index digest above.
