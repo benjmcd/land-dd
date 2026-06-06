@@ -166,7 +166,9 @@ def ui_report_run(
 {_REPORT_CSS}
 </style></head>
 <body>
-<a href="/ui/">&#8592; Back</a>&nbsp;|&nbsp; <a href="/ui/report-runs">All Reports</a>
+<a href="/ui/">&#8592; Back</a>&nbsp;|&nbsp;
+<a href="/ui/report-runs">All Reports</a>&nbsp;|&nbsp;
+<a href="/ui/report-runs/{report_run_id}/print">Print / Export PDF</a>
 <h1>Report Run</h1>
 <div class="meta">
   <div>ID: {report.report_run_id}</div>
@@ -267,3 +269,57 @@ def ui_approve_report_run(
         f"<p><a href='/ui/report-runs/{report_run_id}'>View Report</a></p>"
         "</body></html>"
     )
+
+
+_PRINT_CSS = (
+    "body { font-family: Georgia, serif; max-width: 860px; margin: 2rem auto; padding: 0 1.5rem; font-size: 11pt; }\n"  # noqa: E501
+    "h1, h2, h3 { color: #1a1a1a; }\n"
+    "h2 { border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; page-break-after: avoid; }\n"
+    "pre { white-space: pre-wrap; font-family: inherit; line-height: 1.7; }\n"
+    ".caveat { background: #fffbe6; border: 1px solid #e6c200; padding: 0.75rem; border-radius: 4px; font-size: 9pt; }\n"  # noqa: E501
+    ".no-print { margin-bottom: 1rem; }\n"
+    "@media print { .no-print { display: none; } body { margin: 0; padding: 1cm; } }\n"
+)
+
+
+@router.get("/report-runs/{report_run_id}/print", response_class=HTMLResponse)
+def ui_print_report_run(
+    report_run_id: UUID,
+    services: ServicesDep,
+) -> str:
+    report = services.report_service.get_report_run(report_run_id)
+    if report is None:
+        return (
+            "<!DOCTYPE html><html><head><title>Not Found</title></head>"
+            f"<body><h1>Report Not Found</h1><p>ID: {report_run_id}</p>"
+            "<a href='/ui/report-runs'>Back to List</a></body></html>"
+        )
+    if report.review_status != ReportReviewStatus.APPROVED:
+        return (
+            "<!DOCTYPE html><html><head><title>Not Approved</title></head>"
+            "<body><h1>Report Not Yet Approved</h1>"
+            "<p>This report must be approved before it can be exported.</p>"
+            f"<a href='/ui/report-runs/{report_run_id}'>Back</a></body></html>"
+        )
+    dossier_md = build_rural_land_dossier(report)
+    dossier_escaped = _html.escape(dossier_md)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Dossier — {report_run_id}</title>
+<style>
+{_PRINT_CSS}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button onclick="window.print()"
+    style="padding:0.5rem 1.5rem;font-size:1rem;cursor:pointer">Print / Save as PDF</button>
+  &nbsp; <a href="/ui/report-runs/{report_run_id}">&#8592; Back to Report</a>
+</div>
+<pre>{dossier_escaped}</pre>
+<div class="caveat">
+  <strong>Screening Tool Only.</strong> This report does not constitute legal, title,
+  survey, appraisal, or investment advice. All claims require professional verification
+  where indicated.
+</div>
+</body></html>"""

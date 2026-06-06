@@ -117,3 +117,31 @@ def test_ui_approve_report_run_unknown_id() -> None:
     response = tc.post(f"/ui/report-runs/{uuid4()}/approve")
     assert response.status_code == 200
     assert "Not Found" in response.text
+
+
+def test_ui_print_report_run_unapproved_returns_not_approved_page() -> None:
+    _app, tc, report_run_id = _make_app_client_with_report()
+    response = tc.get(f"/ui/report-runs/{report_run_id}/print")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Not Yet Approved" in response.text or "not yet approved" in response.text.lower()
+    assert "Executive Summary" not in response.text
+
+
+def test_ui_print_report_run_approved_returns_printable_dossier() -> None:
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    services.report_service.approve_report_run(UUID(report_run_id), reviewer_id="test-reviewer")
+    response = tc.get(f"/ui/report-runs/{report_run_id}/print")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Executive Summary" in response.text
+    assert "window.print()" in response.text
+    assert "@media print" in response.text
+
+
+def test_ui_print_report_run_unknown_id_returns_not_found() -> None:
+    tc = TestClient(create_app())
+    response = tc.get(f"/ui/report-runs/{uuid4()}/print")
+    assert response.status_code == 200
+    assert "Not Found" in response.text

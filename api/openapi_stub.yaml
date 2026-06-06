@@ -3686,6 +3686,33 @@ paths:
       summary: Ui Report Run List
       tags:
       - ui
+  /ui/report-runs/{report_run_id}/print:
+    get:
+      operationId: ui_print_report_run_ui_report_runs__report_run_id__print_get
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Ui Print Report Run
+      tags:
+      - ui
   /ui/report-runs/{report_run_id}/approve:
     post:
       operationId: ui_approve_report_run_ui_report_runs__report_run_id__approve_post
