@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html as _html
 from typing import Annotated
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
 from app.domain.enums import JobStatus
+from app.reports.dossier import build_rural_land_dossier
 
 router = APIRouter(prefix="/ui", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -28,11 +30,12 @@ button { background: #2c3e50; color: white; border: none; cursor: pointer; paddi
 .note { color: #666; font-size: 0.9rem; margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1rem; }"""  # noqa: E501
 
 _REPORT_CSS = (
-    "body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }\n"  # noqa: E501
+    "body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }\n"  # noqa: E501
     "h1 { color: #2c3e50; } h2 { color: #34495e; border-bottom: 1px solid #eee; }\n"
     "ul { line-height: 1.8; }\n"
     ".meta { background: #f8f9fa; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }\n"  # noqa: E501
-    ".warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 4px; margin-top: 2rem; }"  # noqa: E501
+    ".warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 4px; margin-top: 2rem; }\n"  # noqa: E501
+    "pre.dossier { white-space: pre-wrap; font-family: system-ui, sans-serif; line-height: 1.6; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 1.5rem; margin-top: 1rem; font-size: 0.95rem; }"  # noqa: E501
 )
 
 
@@ -75,10 +78,12 @@ function submitReport() {{
     body: JSON.stringify({{area_geojson: JSON.parse(geojson), intent_code: intent}})
   }}).then(r => r.json()).then(function(data) {{
     var id = data.report_run_id;
-    var el = document.getElementById('result');
-    el.innerHTML = id
-      ? '<p>Report queued: <a href="/ui/report-runs/' + id + '">' + id + '</a></p>'
-      : '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    if (id) {{
+      window.location.href = '/ui/report-runs/' + id;
+    }} else {{
+      var el = document.getElementById('result');
+      el.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    }}
   }}).catch(function(e) {{
     document.getElementById('result').innerHTML = '<p>Error: ' + e + '</p>';
   }});
@@ -128,15 +133,8 @@ def ui_report_run(
             "<a href=\"/ui/\">Back to Home</a></body></html>"
         )
 
-    claims_html = "\n".join(
-        f"<li><strong>{c.claim_code}</strong>: {c.severity.value} — {c.assertion}</li>"
-        for c in report.claims
-    ) or "<li>No claims generated.</li>"
-
-    unknowns_html = "\n".join(
-        f"<li>{u.claim_code}: {u.assertion}</li>"
-        for u in report.unknowns
-    ) or "<li>No unknowns.</li>"
+    dossier_md = build_rural_land_dossier(report)
+    dossier_escaped = _html.escape(dossier_md)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -152,8 +150,7 @@ def ui_report_run(
   <div>Status: {report.status.value}</div>
   <div>Intent: {report.intent_code.value}</div>
 </div>
-<h2>Claims</h2><ul>{claims_html}</ul>
-<h2>Unknowns / Source Failures</h2><ul>{unknowns_html}</ul>
+<pre class="dossier">{dossier_escaped}</pre>
 <div class="warning">
   <strong>Screening Tool Only.</strong> This report does not constitute legal, title,
   survey, appraisal, or investment advice.

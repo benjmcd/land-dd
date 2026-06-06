@@ -15,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.api.dependencies import (
@@ -35,6 +36,7 @@ from app.db.engine import get_session_factory
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, SeverityBand
 from app.domain.report_contracts import ReportRunContract
+from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import SqlAlchemyAsyncReportJobStore
 
 router = APIRouter(prefix="/report-runs", tags=["report-runs"])
@@ -442,6 +444,24 @@ def get_report_run(
     if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report
+
+
+@router.get("/{report_run_id}/dossier")
+def get_report_run_dossier(
+    report_run_id: UUID,
+    services: ServicesDep,
+) -> Response:
+    report = services.report_service.get_report_run(report_run_id)
+    if report is not None:
+        dossier_md = build_rural_land_dossier(report)
+        return Response(content=dossier_md, media_type="text/markdown; charset=utf-8")
+    job = services.async_report_jobs.get(report_run_id)
+    if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+        return JSONResponse(
+            status_code=202,
+            content={"status": "pending", "report_run_id": str(report_run_id)},
+        )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
 
 
 @router.get("/{report_run_id}/lineage", response_model=ReportLineageResponse)

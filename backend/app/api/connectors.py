@@ -45,6 +45,7 @@ from app.api.reviewer_auth import (
 )
 from app.connectors import (
     ConnectorFixtureQualityProfile,
+    ConnectorRunReviewStatus,
     FixtureConnectorProtocol,
     FixtureConnectorResultProtocol,
     StaticAccessFixtureConnector,
@@ -66,9 +67,11 @@ from app.connectors.fixture_resources import (
 )
 from app.connectors.live_jobs import LiveConnectorJobRecord
 from app.connectors.nwi import NWI_MAX_FEATURES, NwiBbox
+from app.connectors.review_handoff import ConnectorReviewDisposition
 from app.connectors.review_queue import ConnectorReviewQueueItem
 from app.connectors.ssurgo import SSURGO_MAX_ROWS, SsurgoBbox
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS, UsgsTnmBbox
+from app.core.config import get_settings
 from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
@@ -444,6 +447,7 @@ def run_fixture_connector(
             status_code=status.HTTP_409_CONFLICT,
             detail="connector review queue item conflicts with authenticated workspace",
         ) from exc
+    queue_item = _maybe_auto_approve(services, queue_item, review_status)
     return ConnectorRunResultContract(
         ingest_run_id=result.connector_result.retrieval_run.ingest_run_id,
         connector_name=result.connector_result.retrieval_run.connector_name,
@@ -710,6 +714,7 @@ def query_fema_nfhl_bbox(
         )
         queue_item = result.queue_item
         review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
         packet = review_status.handoff.packet
         handoff = review_status.handoff
     except HTTPException:
@@ -766,6 +771,7 @@ def query_usgs_tnm_bbox(
         )
         queue_item = result.queue_item
         review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
         packet = review_status.handoff.packet
         handoff = review_status.handoff
     except HTTPException:
@@ -822,6 +828,7 @@ def query_ssurgo_bbox(
         )
         queue_item = result.queue_item
         review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
         packet = review_status.handoff.packet
         handoff = review_status.handoff
     except HTTPException:
@@ -878,6 +885,7 @@ def query_nwi_bbox(
         )
         queue_item = result.queue_item
         review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
         packet = review_status.handoff.packet
         handoff = review_status.handoff
     except HTTPException:
@@ -1448,6 +1456,23 @@ def _review_action_response(
         "reason": reason,
         "queue_item": _queue_item_response(queue_item),
     }
+
+
+def _maybe_auto_approve(
+    services: ApiServices,
+    queue_item: ConnectorReviewQueueItem,
+    review_status: ConnectorRunReviewStatus,
+) -> ConnectorReviewQueueItem:
+    """Auto-approve the queue item when CONNECTOR_AUTO_APPROVE is enabled and quality passes."""
+    if not get_settings().connector_auto_approve:
+        return queue_item
+    if review_status.handoff.disposition != ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
+        return queue_item
+    return services.connector_review_queue_repo.approve_for_connector_qa(
+        queue_item.job_id,
+        reviewer_id="system-auto-approve",
+        reason="auto-approved: CONNECTOR_AUTO_APPROVE enabled and quality checks passed",
+    )
 
 
 def _queue_item_approved_for_report(queue_item: ConnectorReviewQueueItem) -> bool:

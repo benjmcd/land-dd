@@ -120,6 +120,16 @@ class Settings(BaseSettings):
             "Ignored when DATABASE_URL uses SQLite."
         ),
     )
+    connector_auto_approve: bool = Field(
+        default=False,
+        alias="CONNECTOR_AUTO_APPROVE",
+        description=(
+            "When true, connector runs classified as READY_FOR_CONNECTOR_QA are "
+            "automatically approved without manual review-action. "
+            "Safe for fixture and federal public-source connectors. "
+            "Do not enable for unreviewed third-party vendor connectors."
+        ),
+    )
 
     def parsed_api_keys(self) -> frozenset[str]:
         keys: set[str] = set()
