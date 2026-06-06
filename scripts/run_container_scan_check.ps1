@@ -55,7 +55,7 @@ def validate_ci() -> None:
     require(isinstance(permissions, dict), "container-image-scan permissions missing")
     require(permissions.get("contents") == "read", "container-image-scan must use read-only contents permission")
     steps_text = text_from_steps(job)
-    require("actions/checkout@v4" in steps_text, "container-image-scan job must checkout repo")
+    require("actions/checkout@v6" in steps_text, "container-image-scan job must checkout repo")
     require(
         "docker build -f backend/Dockerfile -t land-diligence-backend:${{ github.sha }} ." in steps_text,
         "container-image-scan job must build backend image from backend/Dockerfile",

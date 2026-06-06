@@ -1397,6 +1397,11 @@ Append concise entries. Do not rely on chat history.
   reason-required primary review-action bodies required in runtime OpenAPI signatures;
   regenerated OpenAPI stubs; and added focused regressions for the reported failure
   modes.
+- Replaced stale Node 20-backed GitHub Actions runner dependencies in CI by moving
+  workflow checkout and Python setup steps to the current major versions across the
+  checked-in workflow, artifact tests, validate-only proof scripts, and security-scan
+  runbook. This supersedes the stale single-action dependency-update PRs once the
+  combined CI proof passes.
 
 ## 2026-06-03 (repo bootstrap + local index)
 
