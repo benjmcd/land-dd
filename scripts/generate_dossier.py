@@ -61,11 +61,6 @@ _AOI_PREFIX_TO_COUNTY: dict[str, str] = {
 }
 
 _CONNECTOR_CHOICES = ("flood", "access", "zoning")
-_CONNECTOR_SUFFIX: dict[str, str] = {
-    "flood": "flood",
-    "access": "access",
-    "zoning": "zoning",
-}
 
 _CONNECTOR_CLS = {
     "flood": StaticFloodFixtureConnector,
@@ -110,8 +105,7 @@ def _resolve_fixture_path(aoi_path: Path, connector: str) -> Path:
             f"Cannot derive county for AOI prefix {prefix!r}. "
             f"Known prefixes: {list(_AOI_PREFIX_TO_COUNTY)}"
         )
-    suffix = _CONNECTOR_SUFFIX[connector]
-    fixture_name = f"nc_{county}_{aoi_stem}_{suffix}.json"
+    fixture_name = f"nc_{county}_{aoi_stem}_{connector}.json"
     fixture_path = CONNECTOR_DIR / fixture_name
     if not fixture_path.exists():
         raise FileNotFoundError(

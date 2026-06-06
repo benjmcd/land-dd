@@ -106,14 +106,6 @@ def _review_status(fixture_name: str) -> ConnectorRunReviewStatus:
     return build_connector_run_review_status(handoff, quality)
 
 
-def _services_with_queue(repo: InMemoryConnectorReviewQueueRepository):  # type: ignore[no-untyped-def]
-    """Build minimal ApiServices with a pre-wired queue repo."""
-    services = create_api_services()
-    # Replace the connector_review_queue with the one we control
-    object.__setattr__(services, "connector_review_queue", repo)
-    return services
-
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
