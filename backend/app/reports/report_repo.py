@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID
@@ -8,7 +9,8 @@ from uuid import UUID
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
-from app.domain.report_contracts import ReportRunContract
+from app.domain.enums import ReportReviewStatus
+from app.domain.report_contracts import ReportReviewActionContract, ReportRunContract
 from app.reports.models import ReportRunModel
 
 
@@ -16,6 +18,15 @@ class ReportRunRepository(Protocol):
     def add(self, report_run: ReportRunContract) -> ReportRunContract: ...
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None: ...
+
+    def update_review_status(
+        self,
+        report_run_id: UUID,
+        *,
+        new_status: ReportReviewStatus,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ReportRunContract | None: ...
 
 
 class InMemoryReportRunRepository:
@@ -36,6 +47,35 @@ class InMemoryReportRunRepository:
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._store.get(report_run_id)
+
+    def update_review_status(
+        self,
+        report_run_id: UUID,
+        *,
+        new_status: ReportReviewStatus,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ReportRunContract | None:
+        existing = self._store.get(report_run_id)
+        if existing is None:
+            return None
+        action = ReportReviewActionContract(
+            action=new_status,
+            from_status=existing.review_status,
+            to_status=new_status,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+        updated = existing.model_copy(
+            update={
+                "review_status": new_status,
+                "reviewed_by": reviewer_id,
+                "reviewed_at": datetime.now(UTC),
+                "review_actions": [*existing.review_actions, action],
+            }
+        )
+        self._store[report_run_id] = updated
+        return updated
 
 
 class SqlAlchemyReportRunRepository:
@@ -66,6 +106,44 @@ class SqlAlchemyReportRunRepository:
         return ReportRunContract.model_validate(
             json.loads(artifact_path.read_text(encoding="utf-8"))
         )
+
+    def update_review_status(
+        self,
+        report_run_id: UUID,
+        *,
+        new_status: ReportReviewStatus,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ReportRunContract | None:
+        model = self._session.get(ReportRunModel, report_run_id)
+        if model is None:
+            return None
+        artifact_path = self._artifact_path_from_model(model)
+        if not artifact_path.exists():
+            raise ValueError(f"Report artifact '{artifact_path}' is missing")
+        report = ReportRunContract.model_validate(
+            json.loads(artifact_path.read_text(encoding="utf-8"))
+        )
+        action = ReportReviewActionContract(
+            action=new_status,
+            from_status=report.review_status,
+            to_status=new_status,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+        updated = report.model_copy(
+            update={
+                "review_status": new_status,
+                "reviewed_by": reviewer_id,
+                "reviewed_at": datetime.now(UTC),
+                "review_actions": [*report.review_actions, action],
+            }
+        )
+        artifact_path.write_text(
+            json.dumps(updated.model_dump(mode="json"), indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        return updated
 
     def _prepare_persisted_report(
         self,

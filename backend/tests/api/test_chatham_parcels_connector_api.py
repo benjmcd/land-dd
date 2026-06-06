@@ -66,16 +66,8 @@ def _feature() -> dict[str, object]:
         "type": "Feature",
         "properties": {
             "PIN": "0012345",
-            "OWNER": "TEST OWNER",
-            "LAND_VALUE": 50000,
-            "BLDG_VALUE": 120000,
-            "TOTAL_VALUE": 170000,
             "ACRES": 1.5,
             "ZONING": "RA",
-            "ADDRESS": "123 TEST RD",
-            "CITY": "SILER CITY",
-            "STATE": "NC",
-            "ZIP": "27344",
         },
         "geometry": {
             "type": "Polygon",

@@ -46,9 +46,9 @@ FORBIDDEN_PHRASES = (
     "This property is worth",
 )
 
-_SKIP_NO_DB = pytest.mark.skipif(
+_SKIP_FIXTURE_SMOKE = pytest.mark.skipif(
     os.getenv("RUN_DB_SMOKE") != "1",
-    reason="DB smoke not enabled",
+    reason="Fixture MVP regression not enabled (set RUN_DB_SMOKE=1 to run; uses InMemory repos, not a Postgres-backed test)",
 )
 
 
@@ -174,7 +174,7 @@ def _run_mvp_case(
     assert "not determined" in dossier_lower or "not evaluated" in dossier_lower
 
 
-@_SKIP_NO_DB
+@_SKIP_FIXTURE_SMOKE
 def test_buncombe_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="bun_slope.geojson",
@@ -193,7 +193,7 @@ def test_buncombe_mvp_regression() -> None:
     )
 
 
-@_SKIP_NO_DB
+@_SKIP_FIXTURE_SMOKE
 def test_chatham_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="cha_rural_use.geojson",
@@ -212,7 +212,7 @@ def test_chatham_mvp_regression() -> None:
     )
 
 
-@_SKIP_NO_DB
+@_SKIP_FIXTURE_SMOKE
 def test_brunswick_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="bru_coastal_flood.geojson",

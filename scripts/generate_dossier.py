@@ -60,7 +60,7 @@ _AOI_PREFIX_TO_COUNTY: dict[str, str] = {
     "bru": "brunswick",
 }
 
-_CONNECTOR_CHOICES = ("flood", "access", "zoning")
+_CONNECTOR_CHOICES = ("flood", "access", "zoning", "all")
 
 _CONNECTOR_CLS = {
     "flood": StaticFloodFixtureConnector,
@@ -165,15 +165,6 @@ def main() -> int:  # noqa: C901
         print(f"ERROR: Failed to load GeoJSON: {exc}", file=sys.stderr)
         return 1
 
-    # Resolve connector fixture path
-    try:
-        fixture_path = _resolve_fixture_path(aoi_path, args.connector)
-    except (ValueError, FileNotFoundError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
-
-    print(f"[generate_dossier] Fixture: {fixture_path.name}", file=sys.stderr)
-
     # Create in-memory services
     services = create_api_services()
 
@@ -210,53 +201,135 @@ def main() -> int:  # noqa: C901
         )
     )
 
-    print("[generate_dossier] Running fixture connector workflow...", file=sys.stderr)
+    if args.connector == "all":
+        # Run all three connectors in sequence; warn-and-continue on missing fixtures
+        _CONNECTOR_SEQUENCE = ("flood", "access", "zoning")
+        total_evidence = 0
+        for connector_name in _CONNECTOR_SEQUENCE:
+            print(
+                f"[generate_dossier] Running connector: {connector_name}...",
+                file=sys.stderr,
+            )
+            try:
+                fixture_path = _resolve_fixture_path(aoi_path, connector_name)
+            except (ValueError, FileNotFoundError) as exc:
+                print(
+                    f"[generate_dossier] WARNING: Skipping {connector_name}: {exc}",
+                    file=sys.stderr,
+                )
+                continue
 
-    # Build workflow using the public-lane wiring (includes source provenance)
-    connector_cls = _CONNECTOR_CLS[args.connector]
-    quality_evaluator = _QUALITY_EVALUATORS[args.connector]
+            print(f"[generate_dossier] Fixture: {fixture_path.name}", file=sys.stderr)
 
-    workflow = build_fixture_workflow_with_public_lane_services(
-        source_provenance_service=services.source_provenance_service,
-        evidence_service=services.evidence_service,
-        connector=connector_cls(),
-        quality_evaluator=quality_evaluator,
-    )
+            connector_cls = _CONNECTOR_CLS[connector_name]
+            quality_evaluator = _QUALITY_EVALUATORS[connector_name]
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=services.source_provenance_service,
+                evidence_service=services.evidence_service,
+                connector=connector_cls(),
+                quality_evaluator=quality_evaluator,
+            )
 
-    try:
-        workflow_result = workflow.ingest_fixture(fixture_path)
-    except Exception as exc:
-        print(f"ERROR: Connector workflow failed: {exc}", file=sys.stderr)
-        return 1
+            try:
+                workflow_result = workflow.ingest_fixture(fixture_path)
+            except Exception as exc:
+                print(
+                    f"[generate_dossier] WARNING: Connector {connector_name} workflow failed: {exc}",
+                    file=sys.stderr,
+                )
+                continue
 
-    ingest_run_id = workflow_result.connector_result.retrieval_run.ingest_run_id
-    evidence_created = len(workflow_result.evidence_ingestion.created_evidence)
-    print(
-        f"[generate_dossier] Workflow complete: {evidence_created} evidence records created.",
-        file=sys.stderr,
-    )
+            ingest_run_id = workflow_result.connector_result.retrieval_run.ingest_run_id
+            evidence_created = len(workflow_result.evidence_ingestion.created_evidence)
+            total_evidence += evidence_created
+            print(
+                f"[generate_dossier] {connector_name}: {evidence_created} evidence records created.",
+                file=sys.stderr,
+            )
 
-    # Build review packet + handoff to determine auto-approval eligibility
-    packet = build_connector_run_review_packet(workflow_result)
-    handoff = build_connector_review_handoff(packet)
-    quality_profile = quality_evaluator(workflow_result.connector_result)
-    review_status = build_connector_run_review_status(handoff, quality_profile)
+            # Build review packet + handoff; auto-approve if eligible
+            packet = build_connector_run_review_packet(workflow_result)
+            handoff = build_connector_review_handoff(packet)
+            quality_profile = quality_evaluator(workflow_result.connector_result)
+            review_status = build_connector_run_review_status(handoff, quality_profile)
 
-    # Enqueue and auto-approve if READY_FOR_CONNECTOR_QA
-    services.connector_review_queue.enqueue_review_status(review_status)
-    if handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
-        services.connector_review_queue.approve_for_connector_qa(
-            ingest_run_id,
-            reviewer_id="cli",
-            reason="auto-approved by generate_dossier",
-        )
-        print("[generate_dossier] Auto-approved for connector QA.", file=sys.stderr)
-    else:
+            services.connector_review_queue.enqueue_review_status(review_status)
+            if handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
+                services.connector_review_queue.approve_for_connector_qa(
+                    ingest_run_id,
+                    reviewer_id="cli",
+                    reason="auto-approved by generate_dossier",
+                )
+                print(
+                    f"[generate_dossier] {connector_name}: Auto-approved for connector QA.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"[generate_dossier] {connector_name}: Disposition: {handoff.disposition.value} "
+                    "(evidence may not appear in report without human review).",
+                    file=sys.stderr,
+                )
+
         print(
-            f"[generate_dossier] Disposition: {handoff.disposition.value} "
-            "(evidence may not appear in report without human review).",
+            f"[generate_dossier] All connectors complete: {total_evidence} evidence records created.",
             file=sys.stderr,
         )
+    else:
+        # Single-connector path — existing behavior unchanged
+        try:
+            fixture_path = _resolve_fixture_path(aoi_path, args.connector)
+        except (ValueError, FileNotFoundError) as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"[generate_dossier] Fixture: {fixture_path.name}", file=sys.stderr)
+        print("[generate_dossier] Running fixture connector workflow...", file=sys.stderr)
+
+        connector_cls = _CONNECTOR_CLS[args.connector]
+        quality_evaluator = _QUALITY_EVALUATORS[args.connector]
+
+        workflow = build_fixture_workflow_with_public_lane_services(
+            source_provenance_service=services.source_provenance_service,
+            evidence_service=services.evidence_service,
+            connector=connector_cls(),
+            quality_evaluator=quality_evaluator,
+        )
+
+        try:
+            workflow_result = workflow.ingest_fixture(fixture_path)
+        except Exception as exc:
+            print(f"ERROR: Connector workflow failed: {exc}", file=sys.stderr)
+            return 1
+
+        ingest_run_id = workflow_result.connector_result.retrieval_run.ingest_run_id
+        evidence_created = len(workflow_result.evidence_ingestion.created_evidence)
+        print(
+            f"[generate_dossier] Workflow complete: {evidence_created} evidence records created.",
+            file=sys.stderr,
+        )
+
+        # Build review packet + handoff to determine auto-approval eligibility
+        packet = build_connector_run_review_packet(workflow_result)
+        handoff = build_connector_review_handoff(packet)
+        quality_profile = quality_evaluator(workflow_result.connector_result)
+        review_status = build_connector_run_review_status(handoff, quality_profile)
+
+        # Enqueue and auto-approve if READY_FOR_CONNECTOR_QA
+        services.connector_review_queue.enqueue_review_status(review_status)
+        if handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
+            services.connector_review_queue.approve_for_connector_qa(
+                ingest_run_id,
+                reviewer_id="cli",
+                reason="auto-approved by generate_dossier",
+            )
+            print("[generate_dossier] Auto-approved for connector QA.", file=sys.stderr)
+        else:
+            print(
+                f"[generate_dossier] Disposition: {handoff.disposition.value} "
+                "(evidence may not appear in report without human review).",
+                file=sys.stderr,
+            )
 
     # Create report run
     intent_code = _INTENT_MAP[args.intent]

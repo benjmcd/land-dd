@@ -20,6 +20,9 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "has_public_road_adjacency",
     "intended_residential_use_allowed",
     "intended_residential_use_prohibited",
+    "jurisdiction_boundary_proximity",
+    "jurisdiction_edge",
+    "municipal_jurisdiction_possible",
     "nearby_well_log_count",
     "no_public_road_adjacency",
     "no_plausible_water_context",
@@ -155,6 +158,8 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
     for key in (
         "intended_residential_use_allowed",
         "intended_residential_use_prohibited",
+        "jurisdiction_edge",
+        "municipal_jurisdiction_possible",
         "no_plausible_water_context",
         "plausible_water_context",
         "source_stale",

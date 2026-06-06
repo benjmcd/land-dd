@@ -9,6 +9,7 @@
 #   complete  — implemented and verified
 #   pending   — required but not yet implemented
 #   blocked   — cannot proceed; documented blocker
+#   accepted_with_risk — risk acknowledged and accepted; documented in risk field
 
 private_mvp_beta:
 
@@ -31,17 +32,39 @@ private_mvp_beta:
       each of the three selected NC counties.
 
   golden_aoi_fixture_manifest:
-    status: pending
-    evidence: tests/fixtures/golden_aois/manifest.yaml (to be created)
+    status: complete
+    evidence: >
+      tests/fixtures/golden_aois/manifest.yaml, tests/fixtures/golden_aois/*.geojson (9 cases),
+      backend/tests/test_golden_aoi_manifest.py
     note: >
       Nine golden AOI fixture cases (3 per county) covering the full stress-case
       set. Manifest includes connector fixture file references, expected domains,
       NOT_EVALUATED domains, forbidden claim phrases, and expected caveats.
       Required before DB-backed regression proof.
 
+  fixture_regression_path:
+    status: complete
+    evidence: >
+      backend/tests/private_mvp/test_mvp_regression.py
+      (RUN_DB_SMOKE=1-gated; uses InMemory repos — StaticFloodFixtureConnector,
+      StaticAccessFixtureConnector; 3 county AOI regression tests: Buncombe flood/access,
+      Chatham parcels/zoning, Brunswick coastal/wetlands; all assert NOT_EVALUATED unknowns
+      and no forbidden phrases)
+    note: >
+      Fixture-backed regression (in-memory repos) exercises the connector ingest workflow
+      for each county case and asserts report shape. NOT a DB-backed regression — uses
+      InMemory repositories. See db_backed_regression_path for residual risk.
+
   db_backed_regression_path:
-    status: pending
-    evidence: backend/tests/private_mvp/test_mvp_regression.py (to be created)
+    status: accepted_with_risk
+    evidence: pending — no Postgres-backed regression test exists yet
+    risk: >
+      The fixture regression (fixture_regression_path) uses InMemory repositories only.
+      A true SQLAlchemy/Postgres-backed regression (SqlAlchemyReportRunRepository +
+      SqlAlchemyAsyncReportJobStore + POST /report-runs + GET /dossier) has not been
+      implemented. This means the DB code path is exercised only through unit tests for
+      the repository layer, not through the full private-MVP intake-to-dossier flow.
+      Acceptable residual risk for private MVP; must be resolved before hosted production.
     note: >
       DB-backed MVP regression exercises fixture connector workflow (Path B) for
       each county case: AOI intake, FixtureConnectorIngestWorkflow, review/approval
@@ -49,21 +72,59 @@ private_mvp_beta:
       NOT_EVALUATED domains visible in unknowns, and no forbidden claim phrases.
 
   ds010_011_023_selected_county_behavior:
-    status: pending
+    status: complete
     evidence: >
-      backend/app/claims_engine/not_evaluated.py (parcels, assessor in
-      NOT_EVALUATED_DOMAINS),
-      backend/app/claims_engine/rule_engine.py (parcels, assessor in
-      NOT_EVALUATED_CONDITIONS_BY_DOMAIN),
-      config/ruleset_homestead_mvp.yaml (condition entries),
-      tests/fixtures/golden_aois/manifest.yaml (connector_fixture_files for
-      flood/access/zoning; expected_not_evaluated_domains for parcels/assessor)
+      backend/app/claims_engine/not_evaluated.py (parcels and assessor in NOT_EVALUATED_DOMAINS),
+      backend/app/claims_engine/rule_engine.py (NOT_EVALUATED_CONDITIONS_BY_DOMAIN),
+      tests/fixtures/golden_aois/manifest.yaml
     note: >
       DS-010 (county GIS parcels) and DS-011 (county assessor): added to
       NOT_EVALUATED_DOMAINS — parcels and assessor evidence is recorded as
       NOT_EVALUATED with explicit unknown in the report.
       DS-023 (local zoning PDFs): covered by fixture-backed zoning connector
       (StaticZoningFixtureConnector) for private MVP regression.
+
+  ds010_source_review_gate:
+    status: complete
+    evidence: >
+      backend/app/reports/service.py (_is_report_approved_evidence: checks source.review_status
+      against _SOURCE_APPROVED_STATUSES before connector review queue check;
+      fixture evidence with source_ingest_run_id=None bypasses gate by design)
+    note: >
+      Live connector evidence is blocked from reports unless the registered source has
+      review_status in {approved, approved_with_restrictions, approved-with-restrictions}.
+      Applies only to connector-backed evidence (source_ingest_run_id set); fixture-backed
+      evidence (source_ingest_run_id=None) is approved unconditionally for private MVP.
+
+  unauthenticated_workspace_isolation:
+    status: accepted_with_risk
+    evidence: backend/app/api/reports.py (_optional_report_auth_context, lines 698-716)
+    risk: >
+      When no Authorization/X-Workspace-Id/X-User-Id headers are present and
+      report_auth_mode != "signed_token", _optional_report_auth_context returns None
+      and the create_report_run handler skips workspace_id gating entirely. The
+      unauthenticated path proceeds to the async job queue (202 ACCEPTED) without
+      area ownership validation. Acceptable for private MVP where the operator controls
+      all access; must be hardened before hosted multi-tenant production.
+    note: >
+      The authenticated path (auth != None) enforces workspace_id isolation and
+      returns 201 CREATED synchronously. The unauthenticated path (auth == None)
+      returns 202 ACCEPTED and dispatches a background job with no workspace check.
+
+  sync_async_create_divergence:
+    status: accepted_with_risk
+    evidence: backend/app/api/reports.py (create_report_run handler, lines 208-278)
+    risk: >
+      Authenticated requests (valid signed token + workspace headers) receive 201 CREATED
+      with a full ReportRunContract synchronously. Unauthenticated requests receive 202
+      ACCEPTED with an AsyncReportRunResponse (job ID only). Clients must handle both
+      response shapes and status codes. This divergence is intentional for private MVP
+      (operator can use either path) but creates inconsistent API ergonomics. Should be
+      unified — likely to 202 with a polling endpoint — before hosted production.
+    note: >
+      The two paths share the same POST /report-runs endpoint but differ in response
+      shape, status code, and execution model. No client-facing documentation currently
+      describes the conditional behavior.
 
   ds017_not_required:
     status: complete
@@ -74,41 +135,47 @@ private_mvp_beta:
       NOT_EVALUATED sentinels are sufficient for the selected NC counties.
 
   markdown_dossier_delivery:
-    status: pending
-    evidence: backend/tests/private_mvp/test_mvp_regression.py (to be created)
+    status: complete
+    evidence: >
+      backend/app/api/reports.py (GET /{id}/dossier, 409 approval gate),
+      backend/tests/api/test_report_dossier.py (5 tests including 409 guard)
     note: >
       Approved report runs served as Markdown rural land dossiers via the
       existing dossier delivery gate. Proven via DB-backed MVP regression.
 
   overclaim_checks:
-    status: pending
-    evidence: backend/tests/reports/test_report_overclaim.py (to be created)
+    status: complete
+    evidence: >
+      backend/tests/reports/test_report_overclaim.py (4 overclaim tests covering FORBIDDEN_PHRASES),
+      backend/tests/reports/test_safe_language.py
     note: >
       Report-language test validates Markdown dossier output does not contain
       forbidden certainty phrases: 'You can build here', 'legal access',
       'water rights', 'good investment', 'This land is safe', 'worth $'.
 
   evidence_lineage_checks:
-    status: pending
-    evidence: backend/tests/reports/test_report_overclaim.py (to be created)
+    status: complete
+    evidence: >
+      backend/tests/reports/test_report_overclaim.py (assert source citations and NOT_EVALUATED unknowns appear in dossier prose)
     note: >
       Report-language test validates that at least one source citation appears
       in the dossier and NOT_EVALUATED domains appear as 'not determined' or
       equivalent in dossier prose.
 
   unknowns_visible:
-    status: pending
+    status: complete
     evidence: >
-      backend/tests/private_mvp/test_mvp_regression.py (assert parcels/assessor
-      NOT_EVALUATED entries appear in report unknowns)
+      backend/app/claims_engine/not_evaluated.py (NOT_EVALUATED_DOMAINS: parcels, assessor),
+      backend/tests/private_mvp/test_mvp_regression.py (asserts NOT_EVALUATED unknowns in report)
     note: >
       Requires NOT_EVALUATED domain extension for parcels and assessor
       (ds010_011_023_selected_county_behavior). Reports must surface explicit
       NOT_EVALUATED unknowns rather than silently omitting unsupported domains.
 
   operator_runbook_current:
-    status: pending
-    evidence: docs/runbooks/mvp_operator.md (to be updated)
+    status: complete
+    evidence: >
+      docs/runbooks/mvp_operator.md (Private MVP section: steps 1-6 including step 4a approval gate, known limitations table)
     note: >
       Operator runbook updated with private MVP path: DB startup, fixture-backed
       AOI intake, report creation, review/approval, Markdown dossier retrieval,

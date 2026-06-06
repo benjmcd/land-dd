@@ -33,11 +33,13 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 2. Area Identity",
         "",
-        "- Parcel ID/APN: unknown",
+        f"- Parcel ID/APN: {_parcel_id(report_run)}",
         "- Jurisdiction: unknown",
-        "- Acreage: unknown",
+        f"- Acreage: {_parcel_acreage(report_run)}",
         f"- Geometry source: area_id {report_run.area_id}",
         "- Geometry confidence: unknown",
+        f"- Intent: {report_run.intent_code.value}",
+        f"- Report generated at: {_format_datetime(report_run.finished_at)}",
         f"- Report run ID: {report_run.report_run_id}",
         f"- Review status: {report_run.review_status.value}",
         f"- Reviewed by: {report_run.reviewed_by or 'unknown'}",
@@ -58,7 +60,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 5. Access Screen",
         "",
-        "- Apparent road adjacency: unknown",
+        f"- Apparent road adjacency: {_access_road_result(report_run)}",
         "- Public/private/unknown road context: unknown",
         "- Legal access conclusion: not determined",
         f"- Required verification: {_domain_verification(report_run, 'access')}",
@@ -75,7 +77,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 7. Flood and Wetlands Screen",
         "",
-        f"- FEMA/NFHL result: {_domain_summary(report_run, 'flood')}",
+        f"- FEMA/NFHL result: {_flood_zone_result(report_run)}",
         f"- USFWS/NWI result: {_domain_summary(report_run, 'wetland')}",
         f"- Caveats: {_domain_caveats(report_run, {'flood', 'wetland'})}",
         f"- Required verification: {_domain_verification(report_run, 'flood')}",
@@ -96,8 +98,8 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 10. Zoning / Land Use",
         "",
-        f"- Zoning district: {_domain_summary(report_run, 'zoning')}",
-        "- Intended-use compatibility: not determined",
+        f"- Zoning district: {_zoning_district_result(report_run)}",
+        f"- Intended-use compatibility: {_zoning_use_compatibility(report_run)}",
         "- Overlays: unknown",
         "- Minimum lot size/setbacks: unknown",
         "- Source excerpts: see source appendix",
@@ -254,6 +256,95 @@ def _domain_verification(report_run: ReportRunContract, domain: str) -> str:
     return "; ".join(_cell(task) for task in tasks)
 
 
+def _parcel_id(report_run: ReportRunContract) -> str:
+    for record in report_run.evidence:
+        if record.domain == "parcels" and not record.is_source_failure:
+            pin = record.observed_value.get("parcel_pin")
+            if pin is not None:
+                return str(pin)
+    return "unknown"
+
+
+def _parcel_acreage(report_run: ReportRunContract) -> str:
+    for record in report_run.evidence:
+        if record.domain == "parcels" and not record.is_source_failure:
+            acres = record.observed_value.get("parcel_acres")
+            if acres is not None:
+                return f"{acres} acres (parcel record)"
+    return "unknown"
+
+
+def _access_road_result(report_run: ReportRunContract) -> str:
+    for record in report_run.evidence:
+        if record.domain == "access" and not record.is_source_failure:
+            has_road = record.observed_value.get("has_public_road_adjacency")
+            dist = record.observed_value.get("road_distance_m")
+            if has_road is True:
+                if dist is not None and float(dist) == 0.0:  # type: ignore[arg-type]
+                    return "public road adjacency observed (abutting)"
+                if dist is not None:
+                    return f"public road adjacency observed (~{float(dist):.0f}m)"  # type: ignore[arg-type]
+                return "public road adjacency observed"
+            if has_road is False:
+                return "no public road adjacency observed — physical proxy only; legal access status unknown"
+    records = [r for r in report_run.evidence if r.domain == "access"]
+    if records:
+        return _domain_summary(report_run, "access")
+    return "unknown"
+
+
+def _flood_zone_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "flood" and not r.is_source_failure]
+    if not records:
+        return "not evaluated"
+    parts: list[str] = []
+    for record in records:
+        zone_code = record.observed_value.get("flood_zone_code")
+        ratio = record.observed_value.get("intersection_ratio")
+        if zone_code:
+            part = f"FEMA zone {zone_code}"
+            if ratio is not None:
+                try:
+                    part += f" ({float(ratio):.0%} area intersection)"  # type: ignore[arg-type]
+                except (TypeError, ValueError):
+                    pass
+            parts.append(part)
+        else:
+            parts.append(_cell(record.observation))
+    return "; ".join(parts) if parts else _domain_summary(report_run, "flood")
+
+
+def _zoning_district_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
+    if not records:
+        return "not evaluated"
+    parts: list[str] = []
+    for record in records:
+        district = record.observed_value.get("zoning_district")
+        if district:
+            parts.append(str(district))
+        else:
+            parts.append(_cell(record.observation))
+    return "; ".join(parts) if parts else _domain_summary(report_run, "zoning")
+
+
+def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
+    if not records:
+        return "not determined"
+    for record in records:
+        allowed = record.observed_value.get("intended_residential_use_allowed")
+        prohibited = record.observed_value.get("intended_residential_use_prohibited")
+        edge = record.observed_value.get("jurisdiction_edge")
+        if allowed is True:
+            return "residential use appears permitted (screening only; verify with county planning)"
+        if prohibited is True:
+            return "residential use appears restricted (screening only; verify with county planning)"
+        if edge is True:
+            return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
+    return "not determined"
+
+
 def _unknown_rows(report_run: ReportRunContract) -> list[str]:
     if not report_run.unknowns:
         return ["| none | none | none | none |"]
@@ -299,7 +390,7 @@ def _source_rows(report_run: ReportRunContract) -> list[str]:
                 ),
                 use=_cell(str(detail.get("review_status", "unknown"))),
                 caveat=_cell(str(detail.get("license_status", "unknown"))),
-                url="unknown",
+                url=_cell(str(detail.get("homepage_url") or "unknown")),
             )
         )
     if not rows:

@@ -282,16 +282,8 @@ class ChathamParcelsConnector:
                 observed_value={
                     "intersects": True,
                     "parcel_pin": props.get("PIN"),
-                    "parcel_owner": props.get("OWNER"),
-                    "parcel_land_value": props.get("LAND_VALUE"),
-                    "parcel_bldg_value": props.get("BLDG_VALUE"),
-                    "parcel_total_value": props.get("TOTAL_VALUE"),
                     "parcel_acres": props.get("ACRES"),
                     "parcel_zoning": props.get("ZONING"),
-                    "parcel_address": props.get("ADDRESS"),
-                    "parcel_city": props.get("CITY"),
-                    "parcel_state": props.get("STATE"),
-                    "parcel_zip": props.get("ZIP"),
                 },
                 source_id=self._source.source_id,
                 source_ingest_run_id=ingest_run_id,
@@ -425,9 +417,7 @@ def _build_query_url(*, bbox: ChathamParcelsBbox, max_features: int) -> str:
         "geometry": f"{bbox.xmin},{bbox.ymin},{bbox.xmax},{bbox.ymax}",
         "geometryType": "esriGeometryEnvelope",
         "spatialRel": "esriSpatialRelIntersects",
-        "outFields": (
-            "PIN,OWNER,LAND_VALUE,BLDG_VALUE,TOTAL_VALUE,ACRES,ZONING,ADDRESS,CITY,STATE,ZIP"
-        ),
+        "outFields": "PIN,ACRES,ZONING",
         "returnGeometry": "true",
         "f": "geojson",
         "maxRecordCount": str(max_features),

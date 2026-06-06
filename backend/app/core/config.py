@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     reviewer_account_scopes: str = Field(
         default=(
             "fixture-reviewer:"
-            "connector:run|connector:review|operations:read|report:retry|report:run"
+            "connector:run|connector:review|operations:read|report:approve|report:retry|report:run"
         ),
         alias="REVIEWER_ACCOUNT_SCOPES",
         description=(

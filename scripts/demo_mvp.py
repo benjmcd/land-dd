@@ -30,6 +30,7 @@ def main() -> None:
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--reviewer-id", default=DEMO_USER_ID)
+    parser.add_argument("--reviewer-token", default="fixture-token-123")
     parser.add_argument("--workspace-id", default=DEMO_WORKSPACE_ID)
     parser.add_argument("--user-id", default=DEMO_USER_ID)
     parser.add_argument("--identity-token")
@@ -87,6 +88,32 @@ def main() -> None:
         f"red_flags={len(report['red_flags'])} unknowns={len(report['unknowns'])}"
     )
 
+    # Step A: Approve the report run
+    reviewer_headers = {
+        "X-Reviewer-Id": args.reviewer_id,
+        "X-Reviewer-Token": args.reviewer_token,
+    }
+    approved_report = client.request(
+        "POST",
+        f"/report-runs/{report['report_run_id']}/approve",
+        {"reason": "demo review approval"},
+        headers=reviewer_headers,
+        ok_statuses=(200, 201),
+    )
+    print(f"report approval: {approved_report['review_status']} by {args.reviewer_id}")
+
+    # Step B: Retrieve the dossier (text/markdown response)
+    dossier_text = client.request(
+        "GET",
+        f"/report-runs/{report['report_run_id']}/dossier",
+        headers=identity_headers,
+        ok_statuses=(200,),
+        parse_json=False,
+    )
+    lines = dossier_text.split("\n")[:5]
+    print(f"dossier preview: {' | '.join(l.strip() for l in lines if l.strip())}")
+
+    # Run failure connector, review it, then list reports
     failure_result = run_connector(
         client,
         "fixture_access_static",
@@ -132,6 +159,7 @@ class ApiClient:
         *,
         headers: dict[str, str] | None = None,
         ok_statuses: tuple[int, ...] = (200, 201),
+        parse_json: bool = True,
     ) -> Any:
         data = None
         request_headers = {"Accept": "application/json", **(headers or {})}
@@ -146,7 +174,8 @@ class ApiClient:
         )
         try:
             with urlopen(request, timeout=20) as response:
-                body = _read_json(response.read())
+                raw = response.read()
+                body = _read_json(raw) if parse_json else raw.decode("utf-8")
                 if response.status not in ok_statuses:
                     raise RuntimeError(f"{method} {path} returned {response.status}: {body}")
                 return body

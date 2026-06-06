@@ -3461,6 +3461,35 @@ paths:
       summary: Get Report Run
       tags:
       - report-runs
+  /report-runs/{report_run_id}/approve:
+    post:
+      operationId: approve_report_run_report_runs__report_run_id__approve_post
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Approve Report Run
+      tags:
+      - report-runs
   /report-runs/{report_run_id}/diff:
     get:
       operationId: diff_report_runs_report_runs__report_run_id__diff_get

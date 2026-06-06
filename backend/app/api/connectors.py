@@ -1596,7 +1596,7 @@ def _required_action_reason(
     reason = _optional_action_reason(request)
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="reason is required",
         )
     return reason
@@ -1610,7 +1610,7 @@ def _optional_action_reason(
     reason = request.reason.strip()
     if not reason:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="reason is required",
         )
     return reason

@@ -13,8 +13,12 @@ EXPECTED_PRIVATE_MVP_GATES = {
     "geography_selected",
     "county_manifests_present",
     "golden_aoi_fixture_manifest",
+    "fixture_regression_path",
     "db_backed_regression_path",
     "ds010_011_023_selected_county_behavior",
+    "ds010_source_review_gate",
+    "unauthenticated_workspace_isolation",
+    "sync_async_create_divergence",
     "ds017_not_required",
     "markdown_dossier_delivery",
     "overclaim_checks",
@@ -70,8 +74,8 @@ def test_private_mvp_gates_have_status_and_note(readiness: dict[str, Any]) -> No
         assert "status" in gate, (
             f"private_mvp_beta.{gate_name} is missing required 'status' field"
         )
-        assert gate["status"] in {"complete", "pending", "blocked"}, (
-            f"private_mvp_beta.{gate_name}.status must be complete/pending/blocked, "
+        assert gate["status"] in {"complete", "pending", "blocked", "accepted_with_risk"}, (
+            f"private_mvp_beta.{gate_name}.status must be complete/pending/blocked/accepted_with_risk, "
             f"got {gate['status']!r}"
         )
         assert "note" in gate, (
@@ -89,6 +93,20 @@ def test_no_private_mvp_gate_is_blocked(readiness: dict[str, Any]) -> None:
         "private_mvp_beta gates must not be blocked — all blocking conditions "
         "belong in hosted_production. Blocked gates: "
         + str(sorted(blocked_gates))
+    )
+
+
+def test_no_private_mvp_required_gate_is_pending(readiness: dict[str, Any]) -> None:
+    """Gates that are implemented and verified must not linger as pending."""
+    pending_gates = [
+        name
+        for name, gate in readiness["private_mvp_beta"].items()
+        if isinstance(gate, dict) and gate.get("status") == "pending"
+    ]
+    assert not pending_gates, (
+        "private_mvp_beta has pending gates — either promote to complete/accepted_with_risk "
+        "with evidence, or document a real blocker. Pending: "
+        + str(sorted(pending_gates))
     )
 
 

@@ -63,7 +63,7 @@ Apply migrations before first run:
 | `USE_DB_SERVICES` | `false` | Use Postgres-backed services instead of in-memory stores |
 | `OBJECT_STORE_ROOT` | `./object_store` | Directory for report artifact files |
 | `REVIEWER_ACCOUNTS` | local fixture reviewer | Reviewer service account ids and tokens |
-| `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:retry`, and `report:run` |
+| `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:approve`, `report:retry`, and `report:run` |
 | `ENABLE_LIVE_CONNECTORS` | `false` | Enables request-time DS-001, DS-002, DS-004, then DS-003 connector gating |
 
 ---
@@ -115,6 +115,32 @@ curl -s -X POST http://localhost:8000/report-runs \
 
 The two-step report creation response is `202 Accepted` with `report_run_id` and
 `status="queued"`.
+
+### Approve a report run
+
+The final Markdown dossier (`GET /report-runs/{id}/dossier`) is gated on approval status.
+A report that has not been approved returns `409 Conflict`. Approve a completed report run
+using a reviewer account that holds the `report:approve` scope:
+
+```bash
+X-Reviewer-Id: fixture-reviewer
+X-Reviewer-Token: fixture-token-123
+```
+
+```bash
+curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+  -H 'Content-Type: application/json' \
+  -H 'X-Reviewer-Id: fixture-reviewer' \
+  -H 'X-Reviewer-Token: fixture-token-123' \
+  -d '{"reason": "Screened and verified — approved for delivery"}'
+```
+
+The `reason` field is optional. The response returns the updated `ReportRunContract` with
+`"review_status": "approved"` and the approval action recorded in `review_actions`. Once
+approved, `GET /report-runs/{id}/dossier` returns the full Markdown dossier.
+
+Approval is idempotent: a second `POST /approve` on an already-approved report returns
+the current contract unchanged.
 
 ### Retry a failed report job
 
@@ -181,6 +207,66 @@ curl -s http://localhost:8000/operations/queue-health \
 The response reports status counts and oldest queued age for report jobs and live
 connector jobs. It does not lease work, retry jobs, call live sources, persist evidence,
 or create reports.
+
+---
+
+## Local Dossier Generation (no server required)
+
+Generate a Markdown dossier directly from a GeoJSON AOI file using fixture connectors.
+No database, no API server, and no approval step required.
+
+```bash
+# Single connector (flood only)
+py -3.12 scripts/generate_dossier.py \
+  --aoi tests/fixtures/golden_aois/cha_rural_use.geojson \
+  --intent homestead_feasibility
+
+# All available connectors (flood + access + zoning where fixtures exist)
+py -3.12 scripts/generate_dossier.py \
+  --aoi tests/fixtures/golden_aois/cha_rural_use.geojson \
+  --intent homestead_feasibility \
+  --connector all
+
+# Write to file instead of stdout
+py -3.12 scripts/generate_dossier.py \
+  --aoi tests/fixtures/golden_aois/bru_wetlands_soils.geojson \
+  --intent rural_land_purchase \
+  --connector all \
+  --output /tmp/bru_dossier.md
+```
+
+`--connector all` runs flood, access, and zoning in sequence. Missing fixtures for a
+given AOI are warned and skipped — the dossier is still produced from whichever
+connectors succeeded. Evidence from each connector is auto-approved for connector QA
+when the quality profile is `READY_FOR_CONNECTOR_QA`.
+
+Available AOI fixtures (9 cases): `tests/fixtures/golden_aois/*.geojson`.
+Available connector fixtures: `tests/fixtures/connectors/*.json`.
+
+---
+
+## Token Generation
+
+Generate a short-lived report identity bearer token for authenticated API calls:
+
+```bash
+REPORT_IDENTITY_TOKEN_SECRET=<your-32+-char-secret> \
+py -3.12 scripts/mint_report_token.py \
+  --workspace-id <workspace-uuid> \
+  --user-id <user-uuid> \
+  --expires-minutes 480
+
+# JSON output with full token metadata
+REPORT_IDENTITY_TOKEN_SECRET=<secret> \
+py -3.12 scripts/mint_report_token.py \
+  --workspace-id <workspace-uuid> \
+  --user-id <user-uuid> \
+  --json
+```
+
+Use the printed token as `Authorization: Bearer <token>` with `X-Workspace-Id` and
+`X-User-Id` headers on API calls. Requires `REPORT_AUTH_MODE=signed_token` in the
+server environment (default is `trusted_headers` for local development).
 
 ---
 
@@ -506,6 +592,10 @@ Alternatively, load a GeoJSON file from `tests/fixtures/golden_aois/` and POST i
 
 ### 3. Run fixture connector workflow (Path B)
 
+**Quickest path (no server required):** use `scripts/generate_dossier.py --connector all`
+(see [Local Dossier Generation](#local-dossier-generation-no-server-required)). Steps
+3–5 below describe the equivalent code-level flow for integration testing.
+
 Fixture connectors are invoked via `FixtureConnectorIngestWorkflow` with the
 domain-appropriate quality evaluator. From Python:
 
@@ -542,6 +632,22 @@ curl -s -X POST http://localhost:8000/report-runs \
 ```
 
 Poll `GET /report-runs/<report_run_id>` until `"status": "succeeded"`.
+
+### 4a. Approve the report run (required before dossier delivery)
+
+The dossier endpoint enforces an approval gate. A reviewer with `report:approve` scope
+must approve the completed report before `GET /report-runs/{id}/dossier` will serve it:
+
+```bash
+curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+  -H 'Content-Type: application/json' \
+  -H 'X-Reviewer-Id: fixture-reviewer' \
+  -H 'X-Reviewer-Token: fixture-token-123' \
+  -d '{"reason": "fixture regression — approved for dossier delivery"}'
+```
+
+The response returns `"review_status": "approved"`. Without this step, step 5 returns
+`409 Conflict`.
 
 ### 5. Retrieve Markdown dossier
 

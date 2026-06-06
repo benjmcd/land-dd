@@ -27,6 +27,7 @@ from app.api.dependencies import (
 )
 from app.api.live_connectors import orchestrate_request_time_live_connectors_for_area
 from app.api.reviewer_auth import (
+    REVIEWER_SCOPE_REPORT_APPROVE,
     REVIEWER_SCOPE_REPORT_RETRY,
     ReviewerPrincipal,
     require_reviewer_scope,
@@ -34,7 +35,7 @@ from app.api.reviewer_auth import (
 from app.core.config import Settings
 from app.db.engine import get_session_factory
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import IntentCode, JobStatus, SeverityBand
+from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.report_contracts import ReportRunContract
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import SqlAlchemyAsyncReportJobStore
@@ -280,6 +281,33 @@ def create_report_run(
     )
 
 
+class ReportApproveRequest(BaseModel):
+    reason: str | None = None
+
+
+@router.post("/{report_run_id}/approve", response_model=ReportRunContract)
+def approve_report_run(
+    report_run_id: UUID,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+    body: ReportApproveRequest | None = None,
+) -> ReportRunContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_APPROVE)
+    report = services.report_service.get_report_run(report_run_id)
+    if report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+    if report.review_status == ReportReviewStatus.APPROVED:
+        return report
+    updated = services.report_service.approve_report_run(
+        report_run_id,
+        reviewer_id=principal.reviewer_id,
+        reason=body.reason if body else None,
+    )
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+    return updated
+
+
 @router.post(
     "/{report_run_id}/retry",
     response_model=AsyncReportRunResponse,
@@ -357,7 +385,17 @@ class ReportRunDiffResponse(BaseModel):
 def compare_report_runs(
     ids: str,
     services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> ReportRunCompareResponse:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     raw_ids = [part.strip() for part in ids.split(",") if part.strip()]
     if len(raw_ids) < 2:
         raise HTTPException(
@@ -380,7 +418,7 @@ def compare_report_runs(
     summaries: list[ReportRunComparisonSummary] = []
     for run_id in run_ids:
         report = services.report_service.get_report_run(run_id)
-        if report is None:
+        if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"report run '{run_id}' not found",
@@ -450,9 +488,26 @@ def get_report_run(
 def get_report_run_dossier(
     report_run_id: UUID,
     services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> Response:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     report = services.report_service.get_report_run(report_run_id)
     if report is not None:
+        if auth is not None and report.workspace_id != auth.workspace_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+        if report.review_status != ReportReviewStatus.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"report run is not approved for delivery (review_status={report.review_status})",
+            )
         dossier_md = build_rural_land_dossier(report)
         return Response(content=dossier_md, media_type="text/markdown; charset=utf-8")
     job = services.async_report_jobs.get(report_run_id)
@@ -468,9 +523,19 @@ def get_report_run_dossier(
 def get_report_run_lineage(
     report_run_id: UUID,
     services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> ReportLineageResponse:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     report = services.report_service.get_report_run(report_run_id)
-    if report is None:
+    if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
 
     # Build a map from evidence_id -> list of claim_ids that cite it
@@ -557,15 +622,25 @@ def diff_report_runs(
     report_run_id: UUID,
     base_id: UUID,
     services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> ReportRunDiffResponse:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     report = services.report_service.get_report_run(report_run_id)
-    if report is None:
+    if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"report run '{report_run_id}' not found",
         )
     base = services.report_service.get_report_run(base_id)
-    if base is None:
+    if base is None or (auth is not None and base.workspace_id != auth.workspace_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"base report run '{base_id}' not found",

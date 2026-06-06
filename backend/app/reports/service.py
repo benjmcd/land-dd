@@ -15,7 +15,7 @@ from app.claims_engine.not_evaluated import (
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import IntentCode, JobStatus, SeverityBand
+from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
 from app.domain.source_contracts import SourceContract
@@ -38,6 +38,7 @@ _NO_EVIDENCE_CAVEAT = (
     "due-diligence findings."
 )
 _NOT_EVALUATED_SOURCE_ID = UUID("00000000-0000-4000-8000-0000000007d0")
+_SOURCE_APPROVED_STATUSES = frozenset({"approved", "approved_with_restrictions", "approved-with-restrictions"})
 
 
 class ConnectorReviewQueueItemProtocol(Protocol):
@@ -123,6 +124,20 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def approve_report_run(
+        self,
+        report_run_id: UUID,
+        *,
+        reviewer_id: str,
+        reason: str | None = None,
+    ) -> ReportRunContract | None:
+        return self._report_repo.update_review_status(
+            report_run_id,
+            new_status=ReportReviewStatus.APPROVED,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+
     def _with_not_evaluated_source_failures(
         self,
         area_id: UUID,
@@ -198,6 +213,9 @@ class ReportRunService:
     def _is_report_approved_evidence(self, evidence: EvidenceContract) -> bool:
         if evidence.source_ingest_run_id is None:
             return True
+        source = self._source_service.get(evidence.source_id)
+        if source is not None and source.review_status not in _SOURCE_APPROVED_STATUSES:
+            return False
         if self._connector_review_queue is None:
             return False
         item = self._connector_review_queue.get_by_ingest_run_id(
@@ -238,6 +256,7 @@ class ReportRunService:
                     "review_status": source.review_status,
                     "review_owner": source.review_owner,
                     "last_checked_at": source.last_checked_at,
+                    "homepage_url": str(source.homepage_url) if source.homepage_url else None,
                 }
                 for source in registered_sources_by_id.values()
             ],
