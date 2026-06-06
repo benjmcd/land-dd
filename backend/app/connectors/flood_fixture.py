@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from app.domain.enums import EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
@@ -11,6 +11,21 @@ from app.domain.source_contracts import (
     SourceRetrievalRunContract,
     SourceRetrievalStatus,
 )
+
+
+class FixtureConnectorResultProtocol(Protocol):
+    @property
+    def retrieval_run(self) -> SourceRetrievalRunContract: ...
+
+    @property
+    def evidence_inputs(self) -> tuple[EvidenceContract, ...]: ...
+
+
+class FixtureConnectorProtocol(Protocol):
+    def load_fixture(
+        self,
+        fixture_path: str | Path,
+    ) -> FixtureConnectorResultProtocol: ...
 
 
 class FixtureConnectorError(ValueError):

@@ -6,9 +6,14 @@ from pathlib import Path
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import Depends, Request
+from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.report_auth import (
+    MIN_SECRET_LENGTH,
+    ReportIdentityClaims,
+    verify_report_identity_token,
+)
 from app.api.reviewer_auth import LocalServiceAccountReviewerAuth
 from app.area_geometry.area_repo import InMemoryAreaRepository, SqlAlchemyAreaRepository
 from app.area_geometry.service import AreaService
@@ -70,6 +75,16 @@ class ApiServices:
     usgs_tnm_fetch_json: UsgsTnmJsonFetcher | None = None
     nwi_fetch_json: NwiJsonFetcher | None = None
     ssurgo_fetch_json: SsurgoJsonFetcher | None = None
+
+    @property
+    def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:
+        return self.connector_review_queue
+
+
+@dataclass(frozen=True)
+class RequestAuthContext:
+    workspace_id: UUID
+    user_id: UUID
 
 
 def create_api_services(settings: Settings | None = None) -> ApiServices:
@@ -164,6 +179,84 @@ def get_services(request: Request) -> ApiServices:
     return cast(ApiServices, request.app.state.services)
 
 
+def get_request_auth_context(
+    request: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> RequestAuthContext:
+    settings = cast(Settings, request.app.state.settings)
+    if settings.report_auth_mode == "signed_token":
+        return _get_signed_token_auth_context(
+            settings,
+            authorization=authorization,
+            x_workspace_id=x_workspace_id,
+            x_user_id=x_user_id,
+        )
+    return _get_trusted_header_auth_context(
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
+
+
+def _get_trusted_header_auth_context(
+    *,
+    x_workspace_id: str | None,
+    x_user_id: str | None,
+) -> RequestAuthContext:
+    if x_workspace_id is None or not x_workspace_id.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="X-Workspace-Id header is required",
+        )
+    if x_user_id is None or not x_user_id.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="X-User-Id header is required",
+        )
+    return RequestAuthContext(
+        workspace_id=_parse_uuid_header(x_workspace_id, "X-Workspace-Id"),
+        user_id=_parse_uuid_header(x_user_id, "X-User-Id"),
+    )
+
+
+def _get_signed_token_auth_context(
+    settings: Settings,
+    *,
+    authorization: str | None,
+    x_workspace_id: str | None,
+    x_user_id: str | None,
+) -> RequestAuthContext:
+    if (
+        settings.report_identity_token_secret is None
+        or len(settings.report_identity_token_secret.strip()) < MIN_SECRET_LENGTH
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "report identity token secret must be configured with "
+                f"at least {MIN_SECRET_LENGTH} characters"
+            ),
+        )
+    token = _bearer_token(authorization)
+    try:
+        claims = verify_report_identity_token(
+            token,
+            secret=settings.report_identity_token_secret,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+    _enforce_matching_identity_headers(
+        claims,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
+    return RequestAuthContext(workspace_id=claims.workspace_id, user_id=claims.user_id)
+
+
 def get_db_services(
     request: Request,
     session: Annotated[Session, Depends(get_db_session)],
@@ -180,10 +273,59 @@ def get_db_services(
         raise
 
 
+def _parse_uuid_header(value: str, header_name: str) -> UUID:
+    try:
+        return UUID(value.strip())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{header_name} header must be a UUID",
+        ) from exc
+
+
+def _bearer_token(authorization: str | None) -> str:
+    if authorization is None or not authorization.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization bearer token is required",
+        )
+    scheme, separator, token = authorization.strip().partition(" ")
+    if scheme.lower() != "bearer" or not separator or not token.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization bearer token is required",
+        )
+    return token.strip()
+
+
+def _enforce_matching_identity_headers(
+    claims: ReportIdentityClaims,
+    *,
+    x_workspace_id: str | None,
+    x_user_id: str | None,
+) -> None:
+    if x_workspace_id is not None and x_workspace_id.strip():
+        workspace_id = _parse_uuid_header(x_workspace_id, "X-Workspace-Id")
+        if workspace_id != claims.workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="X-Workspace-Id header does not match bearer token",
+            )
+    if x_user_id is not None and x_user_id.strip():
+        user_id = _parse_uuid_header(x_user_id, "X-User-Id")
+        if user_id != claims.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="X-User-Id header does not match bearer token",
+            )
+
+
 __all__ = [
     "ApiServices",
+    "RequestAuthContext",
     "create_api_services",
     "create_db_api_services",
+    "get_request_auth_context",
     "get_db_services",
     "get_services",
 ]

@@ -83,6 +83,11 @@ class Settings(BaseSettings):
             "Every REVIEWER_ACCOUNTS id must have explicit scopes."
         ),
     )
+    report_auth_mode: str = Field(default="trusted_headers", alias="REPORT_AUTH_MODE")
+    report_identity_token_secret: str | None = Field(
+        default=None,
+        alias="REPORT_IDENTITY_TOKEN_SECRET",
+    )
 
     def parsed_api_keys(self) -> frozenset[str]:
         keys: set[str] = set()

@@ -1,3 +1,7 @@
+from app.connectors.access_fixture import (
+    AccessFixtureConnectorResult,
+    StaticAccessFixtureConnector,
+)
 from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionError,
@@ -21,7 +25,9 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssue,
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
+    evaluate_access_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_zoning_fixture_quality,
 )
 from app.connectors.fixture_workflow import (
     FixtureConnectorIngestWorkflow,
@@ -29,6 +35,8 @@ from app.connectors.fixture_workflow import (
 )
 from app.connectors.flood_fixture import (
     FixtureConnectorError,
+    FixtureConnectorProtocol,
+    FixtureConnectorResultProtocol,
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
 )
@@ -122,6 +130,10 @@ from app.connectors.usgs_tnm import (
     UsgsTnmConnectorResult,
     UsgsTnmElevationConnector,
 )
+from app.connectors.zoning_fixture import (
+    StaticZoningFixtureConnector,
+    ZoningFixtureConnectorResult,
+)
 
 __all__ = [
     "CONNECTOR_REVIEW_STATUS_JOB_TYPE",
@@ -161,7 +173,10 @@ __all__ = [
     "FixtureConnectorError",
     "FixtureConnectorIngestWorkflow",
     "FixtureConnectorIngestWorkflowResult",
+    "FixtureConnectorProtocol",
+    "FixtureConnectorResultProtocol",
     "FloodFixtureConnectorResult",
+    "AccessFixtureConnectorResult",
     "InMemoryConnectorReviewQueueRepository",
     "InMemoryLiveConnectorJobStore",
     "LIVE_CONNECTOR_DS001_ID",
@@ -194,6 +209,7 @@ __all__ = [
     "SqlAlchemyConnectorReviewQueueRepository",
     "SqlAlchemyLiveConnectorJobStore",
     "StaticFloodFixtureConnector",
+    "StaticAccessFixtureConnector",
     "StaticLocalFileConnector",
     "StaticLocalFileConnectorError",
     "StaticLocalFileConnectorResult",
@@ -211,10 +227,14 @@ __all__ = [
     "UsgsTnmConnectorError",
     "UsgsTnmConnectorResult",
     "UsgsTnmElevationConnector",
+    "ZoningFixtureConnectorResult",
+    "StaticZoningFixtureConnector",
     "build_connector_run_review_packet",
     "build_connector_run_review_status",
     "build_connector_review_handoff",
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
+    "evaluate_access_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_zoning_fixture_quality",
 ]

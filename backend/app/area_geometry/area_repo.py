@@ -59,31 +59,37 @@ class SqlAlchemyAreaRepository:
                 """
                 INSERT INTO core.areas (
                     area_id,
+                    workspace_id,
                     area_type,
                     label,
                     geom,
                     geom_validated,
                     geom_source,
+                    created_by,
                     geom_confidence,
                     metadata
                 )
                 VALUES (
                     :area_id,
+                    :workspace_id,
                     CAST(:area_type AS core.area_type),
                     :label,
                     ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geom_geojson), :geom_srid)),
                     :geom_validated,
                     :geom_source,
+                    :created_by,
                     CAST(:geom_confidence AS evidence.confidence_band),
                     CAST(:area_metadata AS jsonb)
                 )
                 RETURNING
                     area_id,
+                    workspace_id,
                     area_type::text AS area_type,
                     label,
                     ST_AsGeoJSON(geom) AS geom_geojson,
                     ST_SRID(geom) AS geom_srid,
                     geom_source,
+                    created_by,
                     geom_confidence::text AS geom_confidence,
                     geom_validated,
                     metadata AS area_metadata
@@ -91,6 +97,7 @@ class SqlAlchemyAreaRepository:
             ),
             {
                 "area_id": area.area_id,
+                "workspace_id": area.workspace_id,
                 "area_type": _area_type_to_db(area.area_type),
                 "area_metadata": json.dumps(_area_metadata_for(area.area_type)),
                 "label": area.label,
@@ -98,6 +105,7 @@ class SqlAlchemyAreaRepository:
                 "geom_srid": area.geom_srid,
                 "geom_validated": area.geom_validated,
                 "geom_source": area.geom_source,
+                "created_by": area.created_by,
                 "geom_confidence": area.geom_confidence.value,
             },
         ).mappings().one()
@@ -257,11 +265,13 @@ class SqlAlchemyAreaRepository:
                     AND EXISTS (SELECT 1 FROM inserted_version)
                 RETURNING
                     area_id,
+                    workspace_id,
                     area_type::text AS area_type,
                     label,
                     ST_AsGeoJSON(geom) AS geom_geojson,
                     ST_SRID(geom) AS geom_srid,
                     geom_source,
+                    created_by,
                     geom_confidence::text AS geom_confidence,
                     geom_validated,
                     metadata AS area_metadata
@@ -308,11 +318,13 @@ def _select_area_statement(suffix: str) -> TextClause:
         f"""
         SELECT
             area_id,
+            workspace_id,
             area_type::text AS area_type,
             label,
             ST_AsGeoJSON(geom) AS geom_geojson,
             ST_SRID(geom) AS geom_srid,
             geom_source,
+            created_by,
             geom_confidence::text AS geom_confidence,
             geom_validated,
             metadata AS area_metadata,
@@ -387,6 +399,8 @@ def _row_to_area(row: Any) -> AreaContract:
 
     return AreaContract(
         area_id=row["area_id"],
+        workspace_id=row["workspace_id"],
+        created_by=row["created_by"],
         area_type=_db_area_type_to_domain(
             row["area_type"],
             _json_object(row["area_metadata"], "area metadata"),

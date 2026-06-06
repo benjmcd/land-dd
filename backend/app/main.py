@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app.api.api_key_auth import ApiKeyAuthConfig, ApiKeyAuthMiddleware, ApiKeyCredential
 from app.api.areas import router as areas_router
 from app.api.auth_audit import ApiKeyAuthAuditLog, SqlAlchemyApiKeyAuthAuditLog
+from app.api.connectors import review_queue_router as connector_review_queue_router
 from app.api.connectors import router as connectors_router
 from app.api.dependencies import create_api_services, get_db_services, get_services
 from app.api.evidence import router as evidence_router
@@ -92,6 +93,7 @@ def create_app(
     app.include_router(reports_router)
     app.include_router(intake_router)
     app.include_router(connectors_router)
+    app.include_router(connector_review_queue_router)
     app.include_router(operations_router)
     app.include_router(metrics_router)
     app.include_router(ui_router)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol, cast
 from uuid import UUID
 
 from app.domain.enums import EvidenceType
@@ -31,7 +31,6 @@ class EvidenceIngestionPort(Protocol):
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
-        source_ingest_run_id: UUID | None = None,
     ) -> EvidenceContract: ...
 
     def evidence_exists(self, evidence_id: UUID) -> bool: ...
@@ -98,18 +97,34 @@ class ConnectorEvidenceIngestionAdapter:
             raise ConnectorEvidenceIngestionError(
                 "is_source_failure connector evidence must use source_failure type",
             )
-        return self._evidence_port.create_source_failure(
-            evidence_id=evidence.evidence_id,
-            area_id=evidence.area_id,
-            source_id=evidence.source_id,
-            method_code=evidence.method_code,
-            caveat=evidence.caveat,
-            evidence_code=evidence.evidence_code,
-            domain=evidence.domain,
-            observation=evidence.observation,
-            observed_value=evidence.observed_value,
-            source_ingest_run_id=evidence.source_ingest_run_id,
-        )
+        try:
+            created = cast(Any, self._evidence_port).create_source_failure(
+                evidence_id=evidence.evidence_id,
+                area_id=evidence.area_id,
+                source_id=evidence.source_id,
+                method_code=evidence.method_code,
+                caveat=evidence.caveat,
+                evidence_code=evidence.evidence_code,
+                domain=evidence.domain,
+                observation=evidence.observation,
+                observed_value=evidence.observed_value,
+                source_ingest_run_id=evidence.source_ingest_run_id,
+            )
+            return cast(EvidenceContract, created)
+        except TypeError as exc:
+            if "source_ingest_run_id" not in str(exc):
+                raise
+            return self._evidence_port.create_source_failure(
+                evidence_id=evidence.evidence_id,
+                area_id=evidence.area_id,
+                source_id=evidence.source_id,
+                method_code=evidence.method_code,
+                caveat=evidence.caveat,
+                evidence_code=evidence.evidence_code,
+                domain=evidence.domain,
+                observation=evidence.observation,
+                observed_value=evidence.observed_value,
+            )
 
     def _matching_source_failure(
         self,

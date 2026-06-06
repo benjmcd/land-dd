@@ -59,6 +59,14 @@ class JobStatus(StrEnum):
     NEEDS_REVIEW = "needs_review"
 
 
+class ReportReviewStatus(StrEnum):
+    DRAFT = "draft"
+    NEEDS_REVIEW = "needs_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+
+
 class IntentCode(StrEnum):
     """Intent codes that drive report evaluation.
 

@@ -1,126 +1,3308 @@
-openapi: 3.1.0
+components:
+  schemas:
+    AreaContract:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        area_type:
+          $ref: '#/components/schemas/AreaType'
+          default: drawn_polygon
+        created_by:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Created By
+        geom_confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        geom_geojson:
+          additionalProperties: true
+          title: Geom Geojson
+          type: object
+        geom_source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Geom Source
+        geom_srid:
+          default: 4326
+          title: Geom Srid
+          type: integer
+        geom_validated:
+          default: false
+          title: Geom Validated
+          type: boolean
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
+      title: AreaContract
+      type: object
+    AreaType:
+      enum:
+      - parcel_like
+      - drawn_polygon
+      - multi_polygon
+      - locality
+      - buffer
+      - generated_candidate
+      title: AreaType
+      type: string
+    AsyncReportRunResponse:
+      properties:
+        connector_ingest_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Connector Ingest Run Id
+        connector_review_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Connector Review Status
+        report_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Report Run Id
+        retry_of_report_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Retry Of Report Run Id
+        status:
+          title: Status
+          type: string
+      required:
+      - status
+      title: AsyncReportRunResponse
+      type: object
+    AuthorityLevel:
+      enum:
+      - official_primary
+      - official_secondary
+      - commercial_normalized
+      - open_community
+      - derived_model
+      - user_supplied
+      - unknown
+      title: AuthorityLevel
+      type: string
+    ClaimContract:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        assertion:
+          title: Assertion
+          type: string
+        claim_code:
+          title: Claim Code
+          type: string
+        claim_id:
+          format: uuid
+          title: Claim Id
+          type: string
+        confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        domain:
+          default: unknown
+          title: Domain
+          type: string
+        evidence_ids:
+          items:
+            format: uuid
+            type: string
+          title: Evidence Ids
+          type: array
+        rule_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rule Code
+        ruleset_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ruleset Id
+        ruleset_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ruleset Version
+        severity:
+          $ref: '#/components/schemas/SeverityBand'
+          default: unknown
+        user_safe_language:
+          default: ''
+          title: User Safe Language
+          type: string
+        verification_required:
+          default: true
+          title: Verification Required
+          type: boolean
+        verification_task:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Verification Task
+      required:
+      - area_id
+      - claim_code
+      - assertion
+      - evidence_ids
+      title: ClaimContract
+      type: object
+    ConfidenceBand:
+      enum:
+      - very_low
+      - low
+      - medium
+      - high
+      - very_high
+      - unknown
+      title: ConfidenceBand
+      type: string
+    ConnectorFixtureQualityIssueResponse:
+      properties:
+        blocking:
+          title: Blocking
+          type: boolean
+        code:
+          title: Code
+          type: string
+        message:
+          title: Message
+          type: string
+      required:
+      - code
+      - message
+      - blocking
+      title: ConnectorFixtureQualityIssueResponse
+      type: object
+    ConnectorFixtureQualityResponse:
+      properties:
+        blocking_issue_count:
+          title: Blocking Issue Count
+          type: integer
+        evidence_count:
+          title: Evidence Count
+          type: integer
+        issues:
+          items:
+            $ref: '#/components/schemas/ConnectorFixtureQualityIssueResponse'
+          title: Issues
+          type: array
+        passed:
+          title: Passed
+          type: boolean
+        source_failure_count:
+          title: Source Failure Count
+          type: integer
+      required:
+      - passed
+      - evidence_count
+      - source_failure_count
+      - blocking_issue_count
+      - issues
+      title: ConnectorFixtureQualityResponse
+      type: object
+    ConnectorReportRunCreateRequest:
+      properties:
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+      required:
+      - intent_code
+      title: ConnectorReportRunCreateRequest
+      type: object
+    ConnectorReportRunResponse:
+      properties:
+        connector_ingest_run_id:
+          format: uuid
+          title: Connector Ingest Run Id
+          type: string
+        report_run_id:
+          format: uuid
+          title: Report Run Id
+          type: string
+        status:
+          title: Status
+          type: string
+      required:
+      - report_run_id
+      - status
+      - connector_ingest_run_id
+      title: ConnectorReportRunResponse
+      type: object
+    ConnectorReviewActionRequest:
+      properties:
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      title: ConnectorReviewActionRequest
+      type: object
+    ConnectorReviewActionResponse:
+      properties:
+        action:
+          title: Action
+          type: string
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        new_status:
+          title: New Status
+          type: string
+        queue_item:
+          $ref: '#/components/schemas/ConnectorReviewQueueItemResponse'
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        reviewer_id:
+          title: Reviewer Id
+          type: string
+      required:
+      - action
+      - ingest_run_id
+      - reviewer_id
+      - new_status
+      - reason
+      - queue_item
+      title: ConnectorReviewActionResponse
+      type: object
+    ConnectorReviewQueueActionRequest:
+      properties:
+        not_before:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Not Before
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        reviewer_id:
+          title: Reviewer Id
+          type: string
+      required:
+      - reviewer_id
+      title: ConnectorReviewQueueActionRequest
+      type: object
+    ConnectorReviewQueueItemContract:
+      properties:
+        attempts:
+          default: 0
+          title: Attempts
+          type: integer
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        finished_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Finished At
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        job_id:
+          format: uuid
+          title: Job Id
+          type: string
+        job_type:
+          title: Job Type
+          type: string
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        locked_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Locked At
+        locked_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locked By
+        max_attempts:
+          default: 1
+          title: Max Attempts
+          type: integer
+        not_before:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Not Before
+        payload:
+          additionalProperties: true
+          title: Payload
+          type: object
+        priority:
+          title: Priority
+          type: integer
+        started_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Started At
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
+      required:
+      - job_id
+      - ingest_run_id
+      - job_type
+      - status
+      - priority
+      - payload
+      - created_at
+      title: ConnectorReviewQueueItemContract
+      type: object
+    ConnectorReviewQueueItemResponse:
+      properties:
+        attempts:
+          title: Attempts
+          type: integer
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        finished_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Finished At
+        idempotency_key:
+          title: Idempotency Key
+          type: string
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        job_id:
+          format: uuid
+          title: Job Id
+          type: string
+        job_type:
+          title: Job Type
+          type: string
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        locked_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Locked At
+        locked_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locked By
+        max_attempts:
+          title: Max Attempts
+          type: integer
+        payload:
+          additionalProperties: true
+          title: Payload
+          type: object
+        priority:
+          title: Priority
+          type: integer
+        started_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Started At
+        status:
+          title: Status
+          type: string
+      required:
+      - job_id
+      - ingest_run_id
+      - job_type
+      - status
+      - priority
+      - idempotency_key
+      - payload
+      - created_at
+      - attempts
+      - max_attempts
+      - locked_by
+      - locked_at
+      - started_at
+      - finished_at
+      - last_error
+      title: ConnectorReviewQueueItemResponse
+      type: object
+    ConnectorRunRequest:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        fixture_key:
+          title: Fixture Key
+          type: string
+      required:
+      - connector_name
+      - fixture_key
+      title: ConnectorRunRequest
+      type: object
+    ConnectorRunResultContract:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        evidence_created:
+          title: Evidence Created
+          type: integer
+        evidence_skipped:
+          title: Evidence Skipped
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_job_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Queue Job Id
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+      required:
+      - ingest_run_id
+      - connector_name
+      - retrieval_status
+      - evidence_created
+      - evidence_skipped
+      - review_required
+      title: ConnectorRunResultContract
+      type: object
+    ConnectorRunReviewStatusResponse:
+      properties:
+        area_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Area Id
+        connector_name:
+          title: Connector Name
+          type: string
+        dataset_version_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Dataset Version Id
+        disposition:
+          title: Disposition
+          type: string
+        evidence_created_count:
+          title: Evidence Created Count
+          type: integer
+        evidence_skipped_count:
+          title: Evidence Skipped Count
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        priority:
+          title: Priority
+          type: string
+        quality:
+          $ref: '#/components/schemas/ConnectorFixtureQualityResponse'
+        queue_name:
+          title: Queue Name
+          type: string
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+        signal_codes:
+          items:
+            type: string
+          title: Signal Codes
+          type: array
+        source_failure_created_count:
+          title: Source Failure Created Count
+          type: integer
+        source_failure_skipped_count:
+          title: Source Failure Skipped Count
+          type: integer
+        summary:
+          title: Summary
+          type: string
+        tasks:
+          items:
+            type: string
+          title: Tasks
+          type: array
+        title:
+          title: Title
+          type: string
+      required:
+      - queue_name
+      - disposition
+      - priority
+      - title
+      - summary
+      - connector_name
+      - ingest_run_id
+      - area_id
+      - dataset_version_id
+      - retrieval_status
+      - review_required
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - signal_codes
+      - tasks
+      - quality
+      title: ConnectorRunReviewStatusResponse
+      type: object
+    EvidenceContract:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        caveat:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Caveat
+        confidence:
+          $ref: '#/components/schemas/ConfidenceBand'
+          default: unknown
+        dataset_version_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Dataset Version Id
+        domain:
+          title: Domain
+          type: string
+        evidence_code:
+          title: Evidence Code
+          type: string
+        evidence_id:
+          format: uuid
+          title: Evidence Id
+          type: string
+        evidence_type:
+          $ref: '#/components/schemas/EvidenceType'
+          default: source_observation
+        geometry_geojson:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Geometry Geojson
+        geometry_srid:
+          default: 4326
+          title: Geometry Srid
+          type: integer
+        is_negative_evidence:
+          default: false
+          title: Is Negative Evidence
+          type: boolean
+        is_source_failure:
+          default: false
+          title: Is Source Failure
+          type: boolean
+        method_code:
+          title: Method Code
+          type: string
+        method_version:
+          default: 0.1.0
+          title: Method Version
+          type: string
+        observation:
+          title: Observation
+          type: string
+        observed_at:
+          format: date-time
+          title: Observed At
+          type: string
+        observed_value:
+          additionalProperties: true
+          title: Observed Value
+          type: object
+        source_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Date
+        source_id:
+          format: uuid
+          title: Source Id
+          type: string
+        source_ingest_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Source Ingest Run Id
+        spatial_precision_meters:
+          anyOf:
+          - minimum: 0.0
+            type: number
+          - type: 'null'
+          title: Spatial Precision Meters
+        superseded_by:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Superseded By
+      required:
+      - area_id
+      - evidence_code
+      - domain
+      - observation
+      - source_id
+      - method_code
+      title: EvidenceContract
+      type: object
+    EvidenceType:
+      enum:
+      - source_observation
+      - spatial_intersection
+      - derived_metric
+      - document_extract
+      - source_failure
+      - human_verification
+      - manual_note
+      title: EvidenceType
+      type: string
+    FemaNfhlBboxRequest:
+      properties:
+        xmax:
+          title: Xmax
+          type: number
+        xmin:
+          title: Xmin
+          type: number
+        ymax:
+          title: Ymax
+          type: number
+        ymin:
+          title: Ymin
+          type: number
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: FemaNfhlBboxRequest
+      type: object
+    FemaNfhlQueryRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        bbox:
+          $ref: '#/components/schemas/FemaNfhlBboxRequest'
+        max_features:
+          default: 1000
+          title: Max Features
+          type: integer
+      required:
+      - area_id
+      - bbox
+      title: FemaNfhlQueryRequest
+      type: object
+    FemaNfhlQueryResponse:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        error_count:
+          title: Error Count
+          type: integer
+        evidence_created_count:
+          title: Evidence Created Count
+          type: integer
+        evidence_input_count:
+          title: Evidence Input Count
+          type: integer
+        evidence_skipped_count:
+          title: Evidence Skipped Count
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_item_status:
+          title: Queue Item Status
+          type: string
+        queue_name:
+          title: Queue Name
+          type: string
+        request_url:
+          title: Request Url
+          type: string
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+        row_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Row Count
+        source_failure_created_count:
+          title: Source Failure Created Count
+          type: integer
+        source_failure_skipped_count:
+          title: Source Failure Skipped Count
+          type: integer
+        source_registry_id:
+          title: Source Registry Id
+          type: string
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - row_count
+      - error_count
+      - evidence_input_count
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - review_required
+      - queue_item_status
+      - queue_name
+      - source_registry_id
+      - request_url
+      title: FemaNfhlQueryResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    IntakeRequest:
+      properties:
+        area_geojson:
+          additionalProperties: true
+          title: Area Geojson
+          type: object
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+      required:
+      - area_geojson
+      - intent_code
+      title: IntakeRequest
+      type: object
+    IntakeResponse:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        connector_ingest_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Connector Ingest Run Id
+        connector_review_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Connector Review Status
+        report_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Report Run Id
+        status:
+          default: queued
+          title: Status
+          type: string
+      required:
+      - area_id
+      title: IntakeResponse
+      type: object
+    IntentCode:
+      description: 'Intent codes that drive report evaluation.
+
+
+        Values must exactly match the core.intent_code SQL enum defined in
+
+        db/migrations/0001_initial_spine.sql. Two intents are seeded in
+
+        db/seeds/001_seed_intents.sql; others are defined for future use.
+
+
+        Do not add or rename values here without a coordinated schema migration.'
+      enum:
+      - rural_land_purchase
+      - homestead_feasibility
+      - farmland
+      - development
+      - solar
+      - data_center
+      - conservation
+      - mineral_resource_screen
+      - speculative_hold
+      title: IntentCode
+      type: string
+    JobQueueHealthResponse:
+      properties:
+        cancelled:
+          title: Cancelled
+          type: integer
+        failed:
+          title: Failed
+          type: integer
+        job_type:
+          title: Job Type
+          type: string
+        needs_review:
+          title: Needs Review
+          type: integer
+        oldest_queued_age_seconds:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Oldest Queued Age Seconds
+        queued:
+          title: Queued
+          type: integer
+        running:
+          title: Running
+          type: integer
+        succeeded:
+          title: Succeeded
+          type: integer
+        total:
+          title: Total
+          type: integer
+      required:
+      - job_type
+      - total
+      - queued
+      - running
+      - succeeded
+      - failed
+      - cancelled
+      - needs_review
+      title: JobQueueHealthResponse
+      type: object
+    JobStatus:
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      - cancelled
+      - needs_review
+      title: JobStatus
+      type: string
+    LiveConnectorJobResponse:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        connector_ingest_run_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Connector Ingest Run Id
+        connector_name:
+          title: Connector Name
+          type: string
+        connector_review_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Connector Review Status
+        idempotency_key:
+          title: Idempotency Key
+          type: string
+        job_id:
+          format: uuid
+          title: Job Id
+          type: string
+        max_features:
+          title: Max Features
+          type: integer
+        payload:
+          additionalProperties: true
+          title: Payload
+          type: object
+        priority:
+          title: Priority
+          type: integer
+        request_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Request Url
+        source_registry_id:
+          title: Source Registry Id
+          type: string
+        status:
+          title: Status
+          type: string
+      required:
+      - job_id
+      - area_id
+      - source_registry_id
+      - connector_name
+      - status
+      - priority
+      - idempotency_key
+      - max_features
+      - payload
+      title: LiveConnectorJobResponse
+      type: object
+    LiveConnectorSequenceBboxRequest:
+      properties:
+        xmax:
+          title: Xmax
+          type: number
+        xmin:
+          title: Xmin
+          type: number
+        ymax:
+          title: Ymax
+          type: number
+        ymin:
+          title: Ymin
+          type: number
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: LiveConnectorSequenceBboxRequest
+      type: object
+    LiveConnectorSequenceScheduleRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        bbox:
+          $ref: '#/components/schemas/LiveConnectorSequenceBboxRequest'
+        max_features:
+          default: 1000
+          title: Max Features
+          type: integer
+        max_rows:
+          default: 1000
+          title: Max Rows
+          type: integer
+        max_sample_points:
+          default: 9
+          title: Max Sample Points
+          type: integer
+      required:
+      - area_id
+      - bbox
+      title: LiveConnectorSequenceScheduleRequest
+      type: object
+    LiveConnectorSequenceScheduleResponse:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        jobs:
+          items:
+            $ref: '#/components/schemas/LiveConnectorJobResponse'
+          title: Jobs
+          type: array
+        policy_id:
+          title: Policy Id
+          type: string
+      required:
+      - area_id
+      - policy_id
+      - jobs
+      title: LiveConnectorSequenceScheduleResponse
+      type: object
+    NwiBboxRequest:
+      properties:
+        xmax:
+          title: Xmax
+          type: number
+        xmin:
+          title: Xmin
+          type: number
+        ymax:
+          title: Ymax
+          type: number
+        ymin:
+          title: Ymin
+          type: number
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: NwiBboxRequest
+      type: object
+    NwiQueryRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        bbox:
+          $ref: '#/components/schemas/NwiBboxRequest'
+        max_features:
+          default: 1000
+          title: Max Features
+          type: integer
+      required:
+      - area_id
+      - bbox
+      title: NwiQueryRequest
+      type: object
+    NwiQueryResponse:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        error_count:
+          title: Error Count
+          type: integer
+        evidence_created_count:
+          title: Evidence Created Count
+          type: integer
+        evidence_input_count:
+          title: Evidence Input Count
+          type: integer
+        evidence_skipped_count:
+          title: Evidence Skipped Count
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_item_status:
+          title: Queue Item Status
+          type: string
+        queue_name:
+          title: Queue Name
+          type: string
+        request_url:
+          title: Request Url
+          type: string
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+        row_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Row Count
+        source_failure_created_count:
+          title: Source Failure Created Count
+          type: integer
+        source_failure_skipped_count:
+          title: Source Failure Skipped Count
+          type: integer
+        source_registry_id:
+          title: Source Registry Id
+          type: string
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - row_count
+      - error_count
+      - evidence_input_count
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - review_required
+      - queue_item_status
+      - queue_name
+      - source_registry_id
+      - request_url
+      title: NwiQueryResponse
+      type: object
+    OperationsQueueHealthResponse:
+      properties:
+        live_connector_jobs:
+          $ref: '#/components/schemas/JobQueueHealthResponse'
+        report_jobs:
+          $ref: '#/components/schemas/JobQueueHealthResponse'
+        schema_version:
+          title: Schema Version
+          type: string
+      required:
+      - schema_version
+      - report_jobs
+      - live_connector_jobs
+      title: OperationsQueueHealthResponse
+      type: object
+    ReportReviewActionContract:
+      properties:
+        action:
+          $ref: '#/components/schemas/ReportReviewStatus'
+        from_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        reviewed_at:
+          format: date-time
+          title: Reviewed At
+          type: string
+        reviewer_id:
+          title: Reviewer Id
+          type: string
+        to_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+      required:
+      - action
+      - from_status
+      - to_status
+      - reviewer_id
+      title: ReportReviewActionContract
+      type: object
+    ReportReviewStatus:
+      enum:
+      - draft
+      - needs_review
+      - approved
+      - rejected
+      - superseded
+      title: ReportReviewStatus
+      type: string
+    ReportRunContract:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        artifact_metadata:
+          additionalProperties: true
+          title: Artifact Metadata
+          type: object
+        assumptions:
+          items:
+            type: string
+          title: Assumptions
+          type: array
+        caveats:
+          items:
+            type: string
+          title: Caveats
+          type: array
+        claims:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          title: Claims
+          type: array
+        evidence:
+          items:
+            $ref: '#/components/schemas/EvidenceContract'
+          title: Evidence
+          type: array
+        finished_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Finished At
+        idempotency_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency Key
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+        output_uri:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Output Uri
+        red_flags:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          title: Red Flags
+          type: array
+        report_run_id:
+          format: uuid
+          title: Report Run Id
+          type: string
+        requested_by:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Requested By
+        review_actions:
+          items:
+            $ref: '#/components/schemas/ReportReviewActionContract'
+          title: Review Actions
+          type: array
+        review_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+          default: needs_review
+        reviewed_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Reviewed At
+        reviewed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewed By
+        source_manifest:
+          additionalProperties: true
+          title: Source Manifest
+          type: object
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+        status:
+          $ref: '#/components/schemas/JobStatus'
+          default: queued
+        unknowns:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          title: Unknowns
+          type: array
+        verification_tasks:
+          items:
+            type: string
+          title: Verification Tasks
+          type: array
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
+      required:
+      - area_id
+      - intent_code
+      title: ReportRunContract
+      type: object
+    ReportRunCreateRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+      required:
+      - area_id
+      - intent_code
+      title: ReportRunCreateRequest
+      type: object
+    SeverityBand:
+      enum:
+      - critical
+      - high
+      - medium
+      - low
+      - informational
+      - unknown
+      title: SeverityBand
+      type: string
+    SourceContract:
+      properties:
+        ai_use_allowed:
+          default: unknown
+          title: Ai Use Allowed
+          type: string
+        attribution_required:
+          default: false
+          title: Attribution Required
+          type: boolean
+        authority_level:
+          $ref: '#/components/schemas/AuthorityLevel'
+          default: unknown
+        cache_allowed:
+          default: unknown
+          title: Cache Allowed
+          type: string
+        commercial_use_status:
+          default: unknown
+          title: Commercial Use Status
+          type: string
+        domain:
+          title: Domain
+          type: string
+        export_allowed:
+          default: unknown
+          title: Export Allowed
+          type: string
+        freshness_class:
+          default: unknown
+          title: Freshness Class
+          type: string
+        geographic_scope:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Geographic Scope
+        homepage_url:
+          anyOf:
+          - format: uri
+            maxLength: 2083
+            minLength: 1
+            type: string
+          - type: 'null'
+          title: Homepage Url
+        last_checked_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Checked At
+        license_status:
+          default: unknown
+          title: License Status
+          type: string
+        license_summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: License Summary
+        metadata:
+          additionalProperties: true
+          title: Metadata
+          type: object
+        name:
+          title: Name
+          type: string
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        raw_data_allowed:
+          default: unknown
+          title: Raw Data Allowed
+          type: string
+        redistribution_status:
+          default: unknown
+          title: Redistribution Status
+          type: string
+        review_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Review Owner
+        review_status:
+          default: pending
+          title: Review Status
+          type: string
+        source_id:
+          format: uuid
+          title: Source Id
+          type: string
+        source_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Type
+        update_cadence:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Update Cadence
+      required:
+      - name
+      - domain
+      title: SourceContract
+      type: object
+    SsurgoBboxRequest:
+      properties:
+        xmax:
+          title: Xmax
+          type: number
+        xmin:
+          title: Xmin
+          type: number
+        ymax:
+          title: Ymax
+          type: number
+        ymin:
+          title: Ymin
+          type: number
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: SsurgoBboxRequest
+      type: object
+    SsurgoQueryRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        bbox:
+          $ref: '#/components/schemas/SsurgoBboxRequest'
+        max_rows:
+          default: 1000
+          title: Max Rows
+          type: integer
+      required:
+      - area_id
+      - bbox
+      title: SsurgoQueryRequest
+      type: object
+    SsurgoQueryResponse:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        error_count:
+          title: Error Count
+          type: integer
+        evidence_created_count:
+          title: Evidence Created Count
+          type: integer
+        evidence_input_count:
+          title: Evidence Input Count
+          type: integer
+        evidence_skipped_count:
+          title: Evidence Skipped Count
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_item_status:
+          title: Queue Item Status
+          type: string
+        queue_name:
+          title: Queue Name
+          type: string
+        request_url:
+          title: Request Url
+          type: string
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+        row_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Row Count
+        source_failure_created_count:
+          title: Source Failure Created Count
+          type: integer
+        source_failure_skipped_count:
+          title: Source Failure Skipped Count
+          type: integer
+        source_registry_id:
+          title: Source Registry Id
+          type: string
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - row_count
+      - error_count
+      - evidence_input_count
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - review_required
+      - queue_item_status
+      - queue_name
+      - source_registry_id
+      - request_url
+      title: SsurgoQueryResponse
+      type: object
+    UsgsTnmBboxRequest:
+      properties:
+        xmax:
+          title: Xmax
+          type: number
+        xmin:
+          title: Xmin
+          type: number
+        ymax:
+          title: Ymax
+          type: number
+        ymin:
+          title: Ymin
+          type: number
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: UsgsTnmBboxRequest
+      type: object
+    UsgsTnmQueryRequest:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        bbox:
+          $ref: '#/components/schemas/UsgsTnmBboxRequest'
+        max_sample_points:
+          default: 9
+          title: Max Sample Points
+          type: integer
+      required:
+      - area_id
+      - bbox
+      title: UsgsTnmQueryRequest
+      type: object
+    UsgsTnmQueryResponse:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        error_count:
+          title: Error Count
+          type: integer
+        evidence_created_count:
+          title: Evidence Created Count
+          type: integer
+        evidence_input_count:
+          title: Evidence Input Count
+          type: integer
+        evidence_skipped_count:
+          title: Evidence Skipped Count
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_item_status:
+          title: Queue Item Status
+          type: string
+        queue_name:
+          title: Queue Name
+          type: string
+        request_url:
+          title: Request Url
+          type: string
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+        row_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Row Count
+        source_failure_created_count:
+          title: Source Failure Created Count
+          type: integer
+        source_failure_skipped_count:
+          title: Source Failure Skipped Count
+          type: integer
+        source_registry_id:
+          title: Source Registry Id
+          type: string
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - row_count
+      - error_count
+      - evidence_input_count
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - review_required
+      - queue_item_status
+      - queue_name
+      - source_registry_id
+      - request_url
+      title: UsgsTnmQueryResponse
+      type: object
+    ValidationError:
+      properties:
+        ctx:
+          title: Context
+          type: object
+        input:
+          title: Input
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
 info:
-  title: Area Due-Diligence Compiler API
+  description: Intent-aware land/locality due-diligence backend scaffold.
+  title: land-diligence
   version: 0.1.0
-  description: Draft API for areas, sources, evidence, claims, report runs, and review workflow.
-servers:
-  - url: https://api.example.com/v1
+openapi: 3.1.0
 paths:
   /areas:
+    get:
+      operationId: list_areas_areas_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AreaContract'
+                title: Response List Areas Areas Get
+                type: array
+          description: Successful Response
+      summary: List Areas
+      tags:
+      - areas
     post:
-      summary: Create an area from parcel/address/polygon input
-      operationId: createArea
+      operationId: create_area_areas_post
       parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [area_type]
-              properties:
-                area_type:
-                  enum: [parcel, polygon, address, locality, watershed, corridor, generated_candidate]
-                input_reference: { type: string }
-                geometry_geojson: { type: object }
-                metadata: { type: object }
-      responses:
-        '202':
-          description: Area accepted or created
-  /areas/{area_id}:
-    get:
-      summary: Get area metadata and geometry
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Area }
-  /areas/{area_id}/evidence:
-    get:
-      summary: List evidence for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Evidence list }
-  /areas/{area_id}/claims:
-    get:
-      summary: List claims for an area
-      parameters:
-        - name: area_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Claim list }
-  /reports:
-    post:
-      summary: Create a report run
-      operationId: createReportRun
-      parameters:
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema: { type: string }
-      requestBody:
+              $ref: '#/components/schemas/AreaContract'
         required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Area
+      tags:
+      - areas
+  /connector-review-queue:
+    get:
+      operationId: list_connector_review_queue_compat_connector_review_queue_get
+      parameters:
+      - in: query
+        name: status
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/JobStatus'
+          - type: 'null'
+          title: Status
+      - in: query
+        name: connector_name
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Connector Name
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          maximum: 100
+          minimum: 1
+          title: Limit
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          title: Offset
+          type: integer
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+                title: Response List Connector Review Queue Compat Connector Review
+                  Queue Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List Connector Review Queue Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}:
+    get:
+      operationId: get_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__get
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/approve:
+    post:
+      operationId: approve_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__approve_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
         content:
           application/json:
             schema:
-              type: object
-              required: [area_id, intent]
-              properties:
-                area_id: { type: string, format: uuid }
-                intent: { type: string }
-                ruleset_version: { type: string }
-                options: { type: object }
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Approve Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/cancel:
+    post:
+      operationId: cancel_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__cancel_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Cancel Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/reject:
+    post:
+      operationId: reject_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__reject_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Reject Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/requeue:
+    post:
+      operationId: requeue_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__requeue_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Requeue Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-runs:
+    post:
+      operationId: run_fixture_connector_connector_runs_post
+      parameters:
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorRunRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorRunResultContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Run Fixture Connector
+      tags:
+      - connector-runs
+  /connector-runs/fema-nfhl/query-bbox:
+    post:
+      operationId: query_fema_nfhl_bbox_connector_runs_fema_nfhl_query_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FemaNfhlQueryRequest'
+        required: true
       responses:
         '202':
-          description: Report run queued
-  /reports/{report_run_id}:
-    get:
-      summary: Get report run metadata
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Report run }
-  /reports/{report_run_id}/machine-json:
-    get:
-      summary: Get machine-readable report output
-      parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Machine JSON }
-  /reports/{report_run_id}/approve:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FemaNfhlQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query Fema Nfhl Bbox
+      tags:
+      - connector-runs
+  /connector-runs/fema-nfhl/schedule-bbox:
     post:
-      summary: Approve report after human review
+      operationId: schedule_fema_nfhl_bbox_connector_runs_fema_nfhl_schedule_bbox_post
       parameters:
-        - name: report_run_id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FemaNfhlQueryRequest'
+        required: true
       responses:
-        '200': { description: Approved }
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorJobResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Schedule Fema Nfhl Bbox
+      tags:
+      - connector-runs
+  /connector-runs/live-jobs/{job_id}:
+    get:
+      operationId: get_live_connector_job_connector_runs_live_jobs__job_id__get
+      parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema:
+          format: uuid
+          title: Job Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorJobResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Live Connector Job
+      tags:
+      - connector-runs
+  /connector-runs/live-sequence/schedule-bbox:
+    post:
+      operationId: schedule_live_connector_sequence_bbox_connector_runs_live_sequence_schedule_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveConnectorSequenceScheduleRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorSequenceScheduleResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Schedule Live Connector Sequence Bbox
+      tags:
+      - connector-runs
+  /connector-runs/nwi/query-bbox:
+    post:
+      operationId: query_nwi_bbox_connector_runs_nwi_query_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NwiQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NwiQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query Nwi Bbox
+      tags:
+      - connector-runs
+  /connector-runs/nwi/schedule-bbox:
+    post:
+      operationId: schedule_nwi_bbox_connector_runs_nwi_schedule_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NwiQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorJobResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Schedule Nwi Bbox
+      tags:
+      - connector-runs
+  /connector-runs/ssurgo/query-bbox:
+    post:
+      operationId: query_ssurgo_bbox_connector_runs_ssurgo_query_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsurgoQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsurgoQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query Ssurgo Bbox
+      tags:
+      - connector-runs
+  /connector-runs/ssurgo/schedule-bbox:
+    post:
+      operationId: schedule_ssurgo_bbox_connector_runs_ssurgo_schedule_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsurgoQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorJobResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Schedule Ssurgo Bbox
+      tags:
+      - connector-runs
+  /connector-runs/usgs-tnm/query-bbox:
+    post:
+      operationId: query_usgs_tnm_bbox_connector_runs_usgs_tnm_query_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsgsTnmQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsgsTnmQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query Usgs Tnm Bbox
+      tags:
+      - connector-runs
+  /connector-runs/usgs-tnm/schedule-bbox:
+    post:
+      operationId: schedule_usgs_tnm_bbox_connector_runs_usgs_tnm_schedule_bbox_post
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsgsTnmQueryRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveConnectorJobResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Schedule Usgs Tnm Bbox
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/report-runs:
+    post:
+      operationId: create_report_run_from_approved_connector_connector_runs__ingest_run_id__report_runs_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReportRunCreateRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReportRunResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Report Run From Approved Connector
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-actions/approve_for_connector_qa:
+    post:
+      operationId: approve_for_connector_qa_connector_runs__ingest_run_id__review_actions_approve_for_connector_qa_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - type: 'null'
+              title: Request
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Approve For Connector Qa
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-actions/cancel_review:
+    post:
+      operationId: cancel_review_connector_runs__ingest_run_id__review_actions_cancel_review_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - type: 'null'
+              title: Request
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Cancel Review
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-actions/request_fixture_fix:
+    post:
+      operationId: request_fixture_fix_connector_runs__ingest_run_id__review_actions_request_fixture_fix_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - type: 'null'
+              title: Request
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Request Fixture Fix
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-actions/requeue_after_fix:
+    post:
+      operationId: requeue_after_fix_connector_runs__ingest_run_id__review_actions_requeue_after_fix_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - type: 'null'
+              title: Request
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Requeue After Fix
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-queue:
+    get:
+      operationId: get_connector_review_queue_item_connector_runs__ingest_run_id__review_queue_get
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Connector Review Queue Item
+      tags:
+      - connector-runs
+  /connector-runs/{ingest_run_id}/review-status:
+    get:
+      operationId: get_connector_run_review_status_connector_runs__ingest_run_id__review_status_get
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorRunReviewStatusResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Connector Run Review Status
+      tags:
+      - connector-runs
+  /evidence:
+    get:
+      operationId: list_evidence_evidence_get
+      parameters:
+      - in: query
+        name: area_id
+        required: true
+        schema:
+          format: uuid
+          title: Area Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/EvidenceContract'
+                title: Response List Evidence Evidence Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List Evidence
+      tags:
+      - evidence
+  /health:
+    get:
+      operationId: health_health_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                title: Response Health Health Get
+                type: object
+          description: Successful Response
+      summary: Health
+      tags:
+      - health
+  /intake:
+    post:
+      operationId: intake_report_intake_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Intake Report
+      tags:
+      - intake
+  /metrics:
+    get:
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Metrics Metrics Get
+                type: object
+          description: Successful Response
+      summary: Metrics
+      tags:
+      - metrics
+  /operations/queue-health:
+    get:
+      operationId: queue_health_operations_queue_health_get
+      parameters:
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsQueueHealthResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Queue Health
+      tags:
+      - operations
+  /report-runs:
+    post:
+      operationId: create_report_run_report_runs_post
+      parameters:
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRunCreateRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/AsyncReportRunResponse'
+                - $ref: '#/components/schemas/ReportRunContract'
+                title: Response Create Report Run Report Runs Post
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Report Run
+      tags:
+      - report-runs
+  /report-runs/{report_run_id}:
+    get:
+      operationId: get_report_run_report_runs__report_run_id__get
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRunContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Report Run
+      tags:
+      - report-runs
+  /report-runs/{report_run_id}/retry:
+    post:
+      operationId: retry_report_run_report_runs__report_run_id__retry_post
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      - in: header
+        name: X-Reviewer-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - in: header
+        name: X-Reviewer-Token
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncReportRunResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Retry Report Run
+      tags:
+      - report-runs
   /sources:
     get:
-      summary: List source registry entries
+      operationId: list_sources_sources_get
       responses:
-        '200': { description: Source list }
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SourceContract'
+                title: Response List Sources Sources Get
+                type: array
+          description: Successful Response
+      summary: List Sources
+      tags:
+      - sources
     post:
-      summary: Create source registry entry
+      operationId: create_source_sources_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceContract'
+        required: true
       responses:
-        '201': { description: Source created }
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Source
+      tags:
+      - sources
+  /ui/:
+    get:
+      operationId: ui_index_ui__get
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+      summary: Ui Index
+      tags:
+      - ui
+  /ui/report-runs/{report_run_id}:
+    get:
+      operationId: ui_report_run_ui_report_runs__report_run_id__get
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Ui Report Run
+      tags:
+      - ui
+  /version:
+    get:
+      operationId: version_version_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                title: Response Version Version Get
+                type: object
+          description: Successful Response
+      summary: Version
+      tags:
+      - health

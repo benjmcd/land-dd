@@ -1,0 +1,43 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_zoning_static",
+    "status": "succeeded",
+    "started_at": "2026-06-04T09:00:00Z",
+    "finished_at": "2026-06-04T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/zoning_allowed",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "ZONING_USE_CLASSIFICATION",
+      "domain": "zoning",
+      "observation": "Fixture parcel zoning classification permits residential and homestead use.",
+      "observed_value": {
+        "intended_residential_use_allowed": true,
+        "zoning_district": "A-R"
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_zoning_classification_lookup",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only zoning screening; not a legal use determination, zoning compliance verification, or building permit eligibility assessment.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-04",
+      "observed_at": "2026-06-04T09:00:01Z"
+    }
+  ]
+}

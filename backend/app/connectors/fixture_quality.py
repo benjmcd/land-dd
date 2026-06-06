@@ -7,7 +7,7 @@ from app.domain.enums import ConfidenceBand, EvidenceType
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceRetrievalStatus
 
-from .flood_fixture import FloodFixtureConnectorResult
+from .flood_fixture import FixtureConnectorResultProtocol
 
 
 class ConnectorFixtureQualityIssueCode(StrEnum):
@@ -52,6 +52,14 @@ _FLOOD_FIXTURE_DOMAIN = "flood"
 _FLOOD_FIXTURE_CONNECTOR_NAME = "fixture_flood_static"
 _FLOOD_FIXTURE_METHOD_PREFIX = "fixture_flood_"
 
+_ACCESS_FIXTURE_DOMAIN = "access"
+_ACCESS_FIXTURE_CONNECTOR_NAME = "fixture_access_static"
+_ACCESS_FIXTURE_METHOD_PREFIX = "fixture_access_"
+
+_ZONING_FIXTURE_DOMAIN = "zoning"
+_ZONING_FIXTURE_CONNECTOR_NAME = "fixture_zoning_static"
+_ZONING_FIXTURE_METHOD_PREFIX = "fixture_zoning_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -77,7 +85,7 @@ class ConnectorFixtureQualityProfile:
 
 
 def evaluate_flood_fixture_quality(
-    connector_result: FloodFixtureConnectorResult,
+    connector_result: FixtureConnectorResultProtocol,
 ) -> ConnectorFixtureQualityProfile:
     retrieval_run = connector_result.retrieval_run
     evidence_inputs = connector_result.evidence_inputs
@@ -319,6 +327,282 @@ def evaluate_flood_fixture_quality(
     )
 
 
+def evaluate_access_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_ACCESS_FIXTURE_CONNECTOR_NAME,
+        domain=_ACCESS_FIXTURE_DOMAIN,
+        method_prefix=_ACCESS_FIXTURE_METHOD_PREFIX,
+        label="access",
+        require_spatial_geometry=True,
+    )
+
+
+def evaluate_zoning_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_ZONING_FIXTURE_CONNECTOR_NAME,
+        domain=_ZONING_FIXTURE_DOMAIN,
+        method_prefix=_ZONING_FIXTURE_METHOD_PREFIX,
+        label="zoning",
+        require_spatial_geometry=False,
+    )
+
+
+def _evaluate_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+    *,
+    connector_name: str,
+    domain: str,
+    method_prefix: str,
+    label: str,
+    require_spatial_geometry: bool,
+) -> ConnectorFixtureQualityProfile:
+    retrieval_run = connector_result.retrieval_run
+    evidence_inputs = connector_result.evidence_inputs
+    issues: list[ConnectorFixtureQualityIssue] = []
+
+    if (
+        retrieval_run.finished_at is not None
+        and retrieval_run.finished_at < retrieval_run.started_at
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.RETRIEVAL_FINISHED_BEFORE_STARTED,
+                "fixture retrieval finished before it started",
+            ),
+        )
+    if retrieval_run.connector_name != connector_name:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.RETRIEVAL_CONNECTOR_NAME_MISMATCH,
+                f"{label} fixture retrieval connector_name must be {connector_name}",
+            ),
+        )
+    if retrieval_run.dataset_version_id is None:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.RETRIEVAL_DATASET_VERSION_MISSING,
+                "fixture retrieval must identify a dataset version",
+            ),
+        )
+    if retrieval_run.log_uri is None or not retrieval_run.log_uri.startswith(
+        "fixture://",
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.FIXTURE_LOG_URI_NOT_LOCAL,
+                "fixture retrieval log_uri must use the fixture:// scheme",
+            ),
+        )
+    if retrieval_run.metrics.get("fixture_only") is not True:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.FIXTURE_METRIC_MISSING,
+                "fixture retrieval metrics must mark fixture_only as true",
+            ),
+        )
+
+    non_failure_count = sum(
+        1 for evidence in evidence_inputs if not evidence.is_source_failure
+    )
+    source_failure_count = len(evidence_inputs) - non_failure_count
+
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and retrieval_run.row_count != non_failure_count
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_ROW_COUNT_MISMATCH,
+                "succeeded fixture row_count must match non-failure evidence count",
+            ),
+        )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and retrieval_run.error_count != 0
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_ERROR_COUNT_NONZERO,
+                "succeeded fixture error_count must be zero",
+            ),
+        )
+    if (
+        retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+        and _non_empty_text(retrieval_run.metrics.get("failure_reason"))
+    ):
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_HAS_FAILURE_REASON,
+                "succeeded fixture must not record a failure reason metric",
+            ),
+        )
+    if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED and source_failure_count:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.SUCCEEDED_HAS_SOURCE_FAILURE,
+                "succeeded fixture must not emit source-failure evidence",
+            ),
+        )
+    if retrieval_run.status in {
+        SourceRetrievalStatus.BLOCKED,
+        SourceRetrievalStatus.FAILED,
+    }:
+        if retrieval_run.row_count != 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO,
+                    "blocked or failed fixture row_count must be zero",
+                ),
+            )
+        if retrieval_run.error_count <= 0:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ERROR_COUNT_MISSING,
+                    "blocked or failed fixture must record at least one error",
+                ),
+            )
+        if not _non_empty_text(retrieval_run.metrics.get("failure_reason")):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.RETRIEVAL_FAILURE_REASON_MISSING,
+                    "blocked or failed fixture must record a failure reason metric",
+                ),
+            )
+        if non_failure_count:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.BLOCKED_HAS_NON_FAILURE_EVIDENCE,
+                    "blocked or failed fixture must not emit non-failure evidence",
+                ),
+            )
+
+    evidence_ids: set[object] = set()
+    area_ids = {evidence.area_id for evidence in evidence_inputs}
+    if len(area_ids) > 1:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_AREA_ID_MISMATCH,
+                "fixture evidence area_id values must match within one run",
+            ),
+        )
+    source_ids = {evidence.source_id for evidence in evidence_inputs}
+    if len(source_ids) > 1:
+        issues.append(
+            _issue(
+                ConnectorFixtureQualityIssueCode.EVIDENCE_SOURCE_ID_MISMATCH,
+                "fixture evidence source_id values must match within one run",
+            ),
+        )
+
+    for evidence in evidence_inputs:
+        if evidence.evidence_id in evidence_ids:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.DUPLICATE_EVIDENCE_ID,
+                    "fixture evidence IDs must be unique within one connector run",
+                ),
+            )
+        evidence_ids.add(evidence.evidence_id)
+
+        if evidence.observed_at < retrieval_run.started_at:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_BEFORE_RETRIEVAL,
+                    "fixture evidence observed_at must not precede retrieval start",
+                ),
+            )
+        if (
+            retrieval_run.finished_at is not None
+            and evidence.observed_at > retrieval_run.finished_at
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_OBSERVED_AFTER_RETRIEVAL_FINISHED,
+                    "fixture evidence observed_at must not follow retrieval finish",
+                ),
+            )
+        if (
+            retrieval_run.dataset_version_id is not None
+            and evidence.dataset_version_id != retrieval_run.dataset_version_id
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_DATASET_VERSION_MISMATCH,
+                    "fixture evidence dataset_version_id must match retrieval run",
+                ),
+            )
+        if evidence.is_source_failure != (
+            evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_TYPE_MISMATCH,
+                    "source-failure flag must match source-failure evidence type",
+                ),
+            )
+        if evidence.domain != domain:
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_DOMAIN_MISMATCH,
+                    f"{label} fixture evidence domain must be {domain}",
+                ),
+            )
+        if evidence.method_code.strip() and not evidence.method_code.startswith(
+            method_prefix,
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.EVIDENCE_METHOD_CODE_MISMATCH,
+                    f"{label} fixture evidence method_code must use {method_prefix} prefix",
+                ),
+            )
+        _append_evidence_provenance_issues(issues, evidence)
+        if (
+            require_spatial_geometry
+            and evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
+            and not evidence.is_source_failure
+            and (
+                evidence.geometry_geojson is None
+                or evidence.spatial_precision_meters is None
+            )
+        ):
+            issues.append(
+                _issue(
+                    ConnectorFixtureQualityIssueCode.SPATIAL_EVIDENCE_GEOMETRY_MISSING,
+                    "spatial fixture evidence must include geometry and precision",
+                ),
+            )
+        if evidence.is_source_failure:
+            if (
+                evidence.geometry_geojson is not None
+                or evidence.spatial_precision_meters is not None
+            ):
+                issues.append(
+                    _issue(
+                        ConnectorFixtureQualityIssueCode.SOURCE_FAILURE_GEOMETRY_PRESENT,
+                        "source-failure fixture evidence must not include geometry",
+                    ),
+                )
+            _append_source_failure_issues(
+                issues,
+                evidence,
+                retrieval_failure_reason=retrieval_run.metrics.get("failure_reason"),
+            )
+
+    return ConnectorFixtureQualityProfile(
+        connector_name=retrieval_run.connector_name,
+        evidence_count=len(evidence_inputs),
+        source_failure_count=source_failure_count,
+        issues=tuple(issues),
+    )
+
+
 def _append_evidence_provenance_issues(
     issues: list[ConnectorFixtureQualityIssue],
     evidence: EvidenceContract,
@@ -433,5 +717,7 @@ __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
     "ConnectorFixtureQualityProfile",
+    "evaluate_access_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_zoning_fixture_quality",
 ]

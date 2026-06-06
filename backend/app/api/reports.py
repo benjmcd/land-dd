@@ -4,10 +4,25 @@ import logging
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import BaseModel
 
-from app.api.dependencies import ApiServices, create_db_api_services, get_services
+from app.api.dependencies import (
+    ApiServices,
+    RequestAuthContext,
+    create_db_api_services,
+    get_request_auth_context,
+    get_services,
+)
 from app.api.live_connectors import orchestrate_request_time_live_connectors_for_area
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_RETRY,
@@ -149,19 +164,53 @@ def schedule_report_background(
     )
 
 
-@router.post("", response_model=AsyncReportRunResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "",
+    response_model=AsyncReportRunResponse | ReportRunContract,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 def create_report_run(
     request: ReportRunCreateRequest,
     background_tasks: BackgroundTasks,
     request_context: Request,
     services: ServicesDep,
-) -> AsyncReportRunResponse:
+    response: Response,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> AsyncReportRunResponse | ReportRunContract:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
+    if auth is not None:
+        if area.workspace_id != auth.workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="area not found",
+            )
+        try:
+            report = services.report_service.create_report_run(
+                area_id=request.area_id,
+                intent_code=request.intent_code,
+                workspace_id=auth.workspace_id,
+                requested_by=auth.user_id,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        response.status_code = status.HTTP_201_CREATED
+        return report
     if _live_connectors_enabled(request_context):
         connector_result = orchestrate_request_time_live_connectors_for_area(
             services=services,
@@ -240,7 +289,17 @@ def retry_report_run(
 def get_report_run(
     report_run_id: UUID,
     services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> ReportRunContract:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     job = services.async_report_jobs.get(report_run_id)
     if job is not None:
         if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
@@ -261,7 +320,7 @@ def get_report_run(
         # SUCCEEDED — fall through to fetch full report from repo
 
     report = services.report_service.get_report_run(report_run_id)
-    if report is None:
+    if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report
 
@@ -281,3 +340,24 @@ def _job_log_context(
 def _live_connectors_enabled(request_context: Request) -> bool:
     settings = cast(Settings, request_context.app.state.settings)
     return settings.enable_live_connectors
+
+
+def _optional_report_auth_context(
+    request_context: Request,
+    *,
+    authorization: str | None,
+    x_workspace_id: str | None,
+    x_user_id: str | None,
+) -> RequestAuthContext | None:
+    settings = cast(Settings, request_context.app.state.settings)
+    if (
+        settings.report_auth_mode != "signed_token"
+        and (not x_workspace_id or not x_user_id)
+    ):
+        return None
+    return get_request_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )

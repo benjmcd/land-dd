@@ -1,13 +1,29 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
+from importlib.resources import as_file
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from pydantic import BaseModel
 
-from app.api.dependencies import ApiServices, get_services
+from app.api.dependencies import (
+    ApiServices,
+    RequestAuthContext,
+    get_request_auth_context,
+    get_services,
+)
 from app.api.live_connectors import (
     DS_001_REGISTRY_ID,
     DS_002_REGISTRY_ID,
@@ -27,16 +43,62 @@ from app.api.reviewer_auth import (
     ReviewerPrincipal,
     require_reviewer_scope,
 )
+from app.connectors import (
+    ConnectorFixtureQualityProfile,
+    FixtureConnectorProtocol,
+    FixtureConnectorResultProtocol,
+    StaticAccessFixtureConnector,
+    StaticFloodFixtureConnector,
+    StaticZoningFixtureConnector,
+    build_connector_review_handoff,
+    build_connector_run_review_packet,
+    build_connector_run_review_status,
+    build_fixture_workflow_with_public_lane_services,
+    evaluate_access_fixture_quality,
+    evaluate_flood_fixture_quality,
+    evaluate_zoning_fixture_quality,
+)
 from app.connectors.fema_nfhl import FEMA_NFHL_MAX_FEATURES, FemaNfhlBbox
+from app.connectors.fixture_resources import (
+    connector_fixture_resource,
+    fixture_dataset_contract,
+    fixture_dataset_version_contract,
+)
 from app.connectors.live_jobs import LiveConnectorJobRecord
 from app.connectors.nwi import NWI_MAX_FEATURES, NwiBbox
 from app.connectors.review_queue import ConnectorReviewQueueItem
 from app.connectors.ssurgo import SSURGO_MAX_ROWS, SsurgoBbox
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS, UsgsTnmBbox
+from app.domain.connector_contracts import (
+    ConnectorReviewQueueItemContract,
+    ConnectorRunResultContract,
+)
 from app.domain.enums import IntentCode, JobStatus
 
 router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
+review_queue_router = APIRouter(
+    prefix="/connector-review-queue",
+    tags=["connector-review-queue"],
+)
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
+AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]
+
+_SUPPORTED_FIXTURE_CONNECTOR_NAMES = frozenset(
+    {"fixture_access_static", "fixture_flood_static", "fixture_zoning_static"}
+)
+_FIXTURE_CONNECTORS: dict[str, FixtureConnectorProtocol] = {
+    "fixture_access_static": StaticAccessFixtureConnector(),
+    "fixture_flood_static": StaticFloodFixtureConnector(),
+    "fixture_zoning_static": StaticZoningFixtureConnector(),
+}
+_QUALITY_EVALUATORS: dict[
+    str,
+    Callable[[FixtureConnectorResultProtocol], ConnectorFixtureQualityProfile],
+] = {
+    "fixture_access_static": evaluate_access_fixture_quality,
+    "fixture_flood_static": evaluate_flood_fixture_quality,
+    "fixture_zoning_static": evaluate_zoning_fixture_quality,
+}
 
 
 def get_reviewer_principal(
@@ -296,6 +358,315 @@ class LiveConnectorSequenceScheduleResponse(BaseModel):
     jobs: tuple[LiveConnectorJobResponse, ...]
 
 
+class ConnectorRunRequest(BaseModel):
+    connector_name: str
+    fixture_key: str
+
+
+class ConnectorReviewQueueActionRequest(BaseModel):
+    reviewer_id: str
+    reason: str | None = None
+    not_before: datetime | None = None
+
+
+def _is_safe_fixture_key(key: str) -> bool:
+    return bool(key) and all(char.isalnum() or char in ("_", "-") for char in key)
+
+
+@router.post(
+    "",
+    response_model=ConnectorRunResultContract,
+    status_code=status.HTTP_201_CREATED,
+)
+def run_fixture_connector(
+    request: ConnectorRunRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorRunResultContract:
+    if request.connector_name not in _SUPPORTED_FIXTURE_CONNECTOR_NAMES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"unsupported connector: {request.connector_name!r}",
+        )
+    if not _is_safe_fixture_key(request.fixture_key):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="fixture_key must be non-empty alphanumeric with underscores or hyphens",
+        )
+    fixture_resource = connector_fixture_resource(request.fixture_key)
+    if fixture_resource is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"fixture not found: {request.fixture_key!r}",
+        )
+    connector = _FIXTURE_CONNECTORS[request.connector_name]
+    try:
+        with as_file(fixture_resource) as fixture_path:
+            connector_result = connector.load_fixture(fixture_path)
+            _ensure_connector_areas_in_workspace(
+                connector_result,
+                services=services,
+                auth=auth,
+            )
+            _ensure_fixture_provenance(services)
+            workflow = build_fixture_workflow_with_public_lane_services(
+                source_provenance_service=services.source_provenance_service,
+                evidence_service=services.evidence_service,
+                connector=connector,
+            )
+            result = workflow.ingest_fixture(fixture_path)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    packet = build_connector_run_review_packet(result)
+    handoff = build_connector_review_handoff(packet)
+    quality = _QUALITY_EVALUATORS[request.connector_name](result.connector_result)
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[result.connector_result.retrieval_run.ingest_run_id] = (
+        review_status
+    )
+    queue_item = services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
+    )
+    return ConnectorRunResultContract(
+        ingest_run_id=result.connector_result.retrieval_run.ingest_run_id,
+        connector_name=result.connector_result.retrieval_run.connector_name,
+        retrieval_status=result.connector_result.retrieval_run.status.value,
+        evidence_created=len(result.evidence_ingestion.created_evidence),
+        evidence_skipped=len(result.evidence_ingestion.skipped_evidence),
+        review_required=review_status.review_required,
+        queue_job_id=queue_item.job_id,
+    )
+
+
+@review_queue_router.get("", response_model=list[ConnectorReviewQueueItemContract])
+def list_connector_review_queue_compat(
+    services: ServicesDep,
+    auth: AuthDep,
+    status_filter: Annotated[
+        JobStatus | None,
+        Query(alias="status"),
+    ] = None,
+    connector_name: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[ConnectorReviewQueueItemContract]:
+    items = services.connector_review_queue_repo.list_connector_runs(
+        workspace_id=auth.workspace_id,
+        status=status_filter.value if status_filter is not None else None,
+        connector_name=connector_name,
+        limit=limit,
+        offset=offset,
+    )
+    return [_connector_review_queue_item_contract(item) for item in items]
+
+
+@review_queue_router.get(
+    "/{ingest_run_id}",
+    response_model=ConnectorReviewQueueItemContract,
+)
+def get_connector_review_queue_item_compat(
+    ingest_run_id: UUID,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorReviewQueueItemContract:
+    return _connector_review_queue_item_contract(
+        _get_compat_queue_item_or_404(services, auth, ingest_run_id)
+    )
+
+
+@review_queue_router.post(
+    "/{ingest_run_id}/approve",
+    response_model=ConnectorReviewQueueItemContract,
+)
+def approve_connector_review_queue_item_compat(
+    ingest_run_id: UUID,
+    request: ConnectorReviewQueueActionRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
+    return _run_compat_queue_action(
+        lambda: services.connector_review_queue_repo.approve_for_connector_qa(
+            item.job_id,
+            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reason=request.reason,
+        )
+    )
+
+
+@review_queue_router.post(
+    "/{ingest_run_id}/reject",
+    response_model=ConnectorReviewQueueItemContract,
+)
+def reject_connector_review_queue_item_compat(
+    ingest_run_id: UUID,
+    request: ConnectorReviewQueueActionRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
+    return _run_compat_queue_action(
+        lambda: services.connector_review_queue_repo.request_fixture_fix(
+            item.job_id,
+            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reason=_required_compat_reason(request.reason),
+        )
+    )
+
+
+@review_queue_router.post(
+    "/{ingest_run_id}/requeue",
+    response_model=ConnectorReviewQueueItemContract,
+)
+def requeue_connector_review_queue_item_compat(
+    ingest_run_id: UUID,
+    request: ConnectorReviewQueueActionRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
+    return _run_compat_queue_action(
+        lambda: services.connector_review_queue_repo.requeue_failed(
+            item.job_id,
+            reason=_required_compat_reason(request.reason),
+            not_before=request.not_before,
+            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+        )
+    )
+
+
+@review_queue_router.post(
+    "/{ingest_run_id}/cancel",
+    response_model=ConnectorReviewQueueItemContract,
+)
+def cancel_connector_review_queue_item_compat(
+    ingest_run_id: UUID,
+    request: ConnectorReviewQueueActionRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+) -> ConnectorReviewQueueItemContract:
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
+    return _run_compat_queue_action(
+        lambda: services.connector_review_queue_repo.cancel(
+            item.job_id,
+            reason=_required_compat_reason(request.reason),
+            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+        )
+    )
+
+
+def _ensure_connector_areas_in_workspace(
+    connector_result: FixtureConnectorResultProtocol,
+    *,
+    services: ApiServices,
+    auth: RequestAuthContext,
+) -> None:
+    for area_id in {evidence.area_id for evidence in connector_result.evidence_inputs}:
+        if not services.area_service.area_is_registered(
+            area_id,
+            workspace_id=auth.workspace_id,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="area not found",
+            )
+
+
+def _ensure_fixture_provenance(services: ApiServices) -> None:
+    try:
+        services.source_provenance_service.ensure_dataset(fixture_dataset_contract())
+        services.source_provenance_service.ensure_dataset_version(
+            fixture_dataset_version_contract()
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+
+def _get_compat_queue_item_or_404(
+    services: ApiServices,
+    auth: RequestAuthContext,
+    ingest_run_id: UUID,
+) -> ConnectorReviewQueueItem:
+    item = services.connector_review_queue_repo.get_by_ingest_run_id(
+        ingest_run_id,
+        workspace_id=auth.workspace_id,
+    )
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector review queue item not found",
+        )
+    return item
+
+
+def _connector_review_queue_item_contract(
+    item: ConnectorReviewQueueItem,
+) -> ConnectorReviewQueueItemContract:
+    return ConnectorReviewQueueItemContract(
+        job_id=item.job_id,
+        workspace_id=item.workspace_id,
+        ingest_run_id=item.ingest_run_id,
+        job_type=item.job_type,
+        status=item.status,
+        priority=item.priority,
+        payload=dict(item.payload),
+        created_at=item.created_at,
+        not_before=item.not_before,
+        attempts=item.attempts,
+        max_attempts=item.max_attempts,
+        locked_by=item.locked_by,
+        locked_at=item.locked_at,
+        started_at=item.started_at,
+        finished_at=item.finished_at,
+        last_error=item.last_error,
+    )
+
+
+def _run_compat_queue_action(
+    action: Callable[[], ConnectorReviewQueueItem],
+) -> ConnectorReviewQueueItemContract:
+    try:
+        return _connector_review_queue_item_contract(action())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+
+def _compat_reviewer_id(auth: RequestAuthContext, reviewer_id: str) -> str:
+    reviewer = reviewer_id.strip()
+    if not reviewer:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="reviewer_id is required",
+        )
+    if reviewer != str(auth.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="reviewer_id does not match authenticated user",
+        )
+    return reviewer
+
+
+def _required_compat_reason(reason: str | None) -> str:
+    if reason is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="connector review queue reason is required",
+        )
+    return reason
+
+
 @router.post(
     "/fema-nfhl/query-bbox",
     response_model=FemaNfhlQueryResponse,
@@ -311,7 +682,7 @@ def query_fema_nfhl_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -367,7 +738,7 @@ def query_usgs_tnm_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -423,7 +794,7 @@ def query_ssurgo_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -479,7 +850,7 @@ def query_nwi_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -569,7 +940,7 @@ def schedule_live_connector_sequence_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -622,7 +993,7 @@ def schedule_live_connector_sequence_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
     return {
@@ -646,7 +1017,7 @@ def schedule_fema_nfhl_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -663,7 +1034,7 @@ def schedule_fema_nfhl_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -683,7 +1054,7 @@ def schedule_usgs_tnm_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -700,7 +1071,7 @@ def schedule_usgs_tnm_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -720,7 +1091,7 @@ def schedule_nwi_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -737,7 +1108,7 @@ def schedule_nwi_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -757,7 +1128,7 @@ def schedule_ssurgo_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -774,7 +1145,7 @@ def schedule_ssurgo_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -1097,7 +1468,7 @@ def _required_action_reason(request: ConnectorReviewActionRequest | None) -> str
     reason = _optional_action_reason(request)
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="reason is required",
         )
     return reason
@@ -1109,7 +1480,7 @@ def _optional_action_reason(request: ConnectorReviewActionRequest | None) -> str
     reason = request.reason.strip()
     if not reason:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="reason is required",
         )
     return reason

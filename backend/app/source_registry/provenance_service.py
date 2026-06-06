@@ -57,6 +57,16 @@ class SourceProvenanceService:
         )
         return self._repo.add_dataset(dataset)
 
+    def ensure_dataset(
+        self,
+        dataset: SourceDatasetContract,
+    ) -> SourceDatasetContract:
+        existing = self._repo.get_dataset(dataset.dataset_id)
+        if existing is not None:
+            return existing
+        self._require_source(dataset.source_id)
+        return self._repo.add_dataset(dataset)
+
     def create_dataset_version(
         self,
         *,
@@ -95,6 +105,16 @@ class SourceProvenanceService:
         if notes is not None:
             version_kwargs["notes"] = notes
         version = SourceDatasetVersionContract.model_validate(version_kwargs)
+        return self._repo.add_dataset_version(version)
+
+    def ensure_dataset_version(
+        self,
+        version: SourceDatasetVersionContract,
+    ) -> SourceDatasetVersionContract:
+        existing = self._repo.get_dataset_version(version.dataset_version_id)
+        if existing is not None:
+            return existing
+        self._require_dataset(version.dataset_id)
         return self._repo.add_dataset_version(version)
 
     def record_retrieval_run(

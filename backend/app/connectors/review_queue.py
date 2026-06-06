@@ -26,6 +26,7 @@ class ConnectorReviewQueueItem:
     idempotency_key: str
     payload: dict[str, Any]
     created_at: datetime
+    workspace_id: UUID | None = None
     not_before: datetime | None = None
     attempts: int = 0
     max_attempts: int = 1
@@ -40,12 +41,27 @@ class ConnectorReviewQueueRepository(Protocol):
     def enqueue_review_status(
         self,
         review_status: ConnectorRunReviewStatus,
+        *,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ConnectorReviewQueueItem: ...
 
     def get_by_ingest_run_id(
         self,
         ingest_run_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
     ) -> ConnectorReviewQueueItem | None: ...
+
+    def list_connector_runs(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]: ...
 
     def lease_next(self, *, worker_id: str) -> ConnectorReviewQueueItem | None: ...
 
@@ -94,6 +110,9 @@ class InMemoryConnectorReviewQueueRepository:
     def enqueue_review_status(
         self,
         review_status: ConnectorRunReviewStatus,
+        *,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ConnectorReviewQueueItem:
         ingest_run_id = review_status.handoff.packet.ingest_run_id
         existing = self._store.get(ingest_run_id)
@@ -101,6 +120,7 @@ class InMemoryConnectorReviewQueueRepository:
             return existing
         item = ConnectorReviewQueueItem(
             job_id=ingest_run_id,
+            workspace_id=workspace_id,
             ingest_run_id=ingest_run_id,
             job_type=CONNECTOR_REVIEW_STATUS_JOB_TYPE,
             status=JobStatus.NEEDS_REVIEW
@@ -108,7 +128,11 @@ class InMemoryConnectorReviewQueueRepository:
             else JobStatus.QUEUED,
             priority=_priority(review_status),
             idempotency_key=_idempotency_key(ingest_run_id),
-            payload=_payload(review_status),
+            payload=_payload(
+                review_status,
+                workspace_id=workspace_id,
+                requested_by=requested_by,
+            ),
             created_at=review_status.handoff.packet.started_at,
             not_before=review_status.handoff.packet.started_at,
         )
@@ -118,8 +142,38 @@ class InMemoryConnectorReviewQueueRepository:
     def get_by_ingest_run_id(
         self,
         ingest_run_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
     ) -> ConnectorReviewQueueItem | None:
-        return self._store.get(ingest_run_id)
+        item = self._store.get(ingest_run_id)
+        if item is None:
+            return None
+        if workspace_id is not None and item.workspace_id != workspace_id:
+            return None
+        return item
+
+    def list_connector_runs(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]:
+        items = list(self._store.values())
+        if workspace_id is not None:
+            items = [item for item in items if item.workspace_id == workspace_id]
+        if status is not None:
+            items = [item for item in items if item.status.value == status]
+        if connector_name is not None:
+            items = [
+                item
+                for item in items
+                if item.payload.get("connector_name") == connector_name
+            ]
+        items.sort(key=lambda item: (item.created_at, item.job_id))
+        return items[offset : offset + limit]
 
     def lease_next(self, *, worker_id: str) -> ConnectorReviewQueueItem | None:
         worker_id = _require_worker_id(worker_id)
@@ -323,9 +377,15 @@ class SqlAlchemyConnectorReviewQueueRepository:
     def enqueue_review_status(
         self,
         review_status: ConnectorRunReviewStatus,
+        *,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ConnectorReviewQueueItem:
         ingest_run_id = review_status.handoff.packet.ingest_run_id
-        existing = self.get_by_ingest_run_id(ingest_run_id)
+        existing = self.get_by_ingest_run_id(
+            ingest_run_id,
+            workspace_id=workspace_id,
+        )
         if existing is not None:
             return existing
         self._session.execute(
@@ -333,6 +393,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                 """
                 INSERT INTO jobs.job_queue (
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -341,6 +402,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                 )
                 VALUES (
                     :job_type,
+                    :workspace_id,
                     :status,
                     :priority,
                     CAST(:payload AS jsonb),
@@ -351,13 +413,18 @@ class SqlAlchemyConnectorReviewQueueRepository:
             ),
             {
                 "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                "workspace_id": workspace_id,
                 "status": (
                     JobStatus.NEEDS_REVIEW
                     if review_status.review_required
                     else JobStatus.QUEUED
                 ).value,
                 "priority": _priority(review_status),
-                "payload": _json_payload(review_status),
+                "payload": _json_payload(
+                    review_status,
+                    workspace_id=workspace_id,
+                    requested_by=requested_by,
+                ),
                 "idempotency_key": _idempotency_key(ingest_run_id),
             },
         )
@@ -370,12 +437,15 @@ class SqlAlchemyConnectorReviewQueueRepository:
     def get_by_ingest_run_id(
         self,
         ingest_run_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
     ) -> ConnectorReviewQueueItem | None:
         row = self._session.execute(
             text(
                 """
                 SELECT
                     job_id,
+                    workspace_id,
                     job_type,
                     status,
                     priority,
@@ -406,7 +476,64 @@ class SqlAlchemyConnectorReviewQueueRepository:
         item = _item_from_row(row)
         if item.ingest_run_id != ingest_run_id:
             raise ValueError("connector review queue payload ingest_run_id mismatch")
+        if workspace_id is not None and item.workspace_id != workspace_id:
+            return None
         return item
+
+    def list_connector_runs(
+        self,
+        *,
+        workspace_id: UUID | None = None,
+        status: str | None = None,
+        connector_name: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ConnectorReviewQueueItem]:
+        predicates = ["job_type = :job_type"]
+        params: dict[str, object] = {
+            "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+            "limit": limit,
+            "offset": offset,
+        }
+        if workspace_id is not None:
+            predicates.append("workspace_id = :workspace_id")
+            params["workspace_id"] = str(workspace_id)
+        if status is not None:
+            predicates.append("status = CAST(:status AS jobs.job_status)")
+            params["status"] = status
+        if connector_name is not None:
+            predicates.append("payload->>'connector_name' = :connector_name")
+            params["connector_name"] = connector_name
+        where_clause = " AND ".join(predicates)
+        rows = self._session.execute(
+            text(
+                f"""
+                SELECT
+                    job_id,
+                    workspace_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                FROM jobs.job_queue
+                WHERE {where_clause}
+                ORDER BY created_at, job_id
+                LIMIT :limit OFFSET :offset
+                """
+            ),
+            params,
+        ).mappings().all()
+        return [_item_from_row(row) for row in rows]
 
     def lease_next(self, *, worker_id: str) -> ConnectorReviewQueueItem | None:
         worker_id = _require_worker_id(worker_id)
@@ -795,9 +922,14 @@ def _idempotency_key(ingest_run_id: UUID) -> str:
     return f"{CONNECTOR_REVIEW_STATUS_JOB_TYPE}:{ingest_run_id}"
 
 
-def _payload(review_status: ConnectorRunReviewStatus) -> dict[str, Any]:
+def _payload(
+    review_status: ConnectorRunReviewStatus,
+    *,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
+) -> dict[str, Any]:
     record = review_status.to_status_record()
-    return {
+    payload = {
         "kind": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
         "connector_name": record["connector_name"],
         "ingest_run_id": record["ingest_run_id"],
@@ -811,12 +943,29 @@ def _payload(review_status: ConnectorRunReviewStatus) -> dict[str, Any]:
         "signal_codes": record["signal_codes"],
         "quality": record["quality"],
     }
+    if workspace_id is not None:
+        payload["workspace_id"] = str(workspace_id)
+    if requested_by is not None:
+        payload["requested_by"] = str(requested_by)
+    return payload
 
 
-def _json_payload(review_status: ConnectorRunReviewStatus) -> str:
+def _json_payload(
+    review_status: ConnectorRunReviewStatus,
+    *,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
+) -> str:
     import json
 
-    return json.dumps(_payload(review_status), sort_keys=True)
+    return json.dumps(
+        _payload(
+            review_status,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+        ),
+        sort_keys=True,
+    )
 
 
 def _item_from_row(row: Any) -> ConnectorReviewQueueItem:
@@ -830,6 +979,11 @@ def _item_from_row(row: Any) -> ConnectorReviewQueueItem:
         idempotency_key=str(row["idempotency_key"]),
         payload=payload,
         created_at=row["created_at"],
+        workspace_id=(
+            UUID(str(payload["workspace_id"]))
+            if payload.get("workspace_id") is not None
+            else None
+        ),
         not_before=row["not_before"],
         attempts=int(row["attempts"]),
         max_attempts=int(row["max_attempts"]),
@@ -895,13 +1049,15 @@ def _payload_with_review_decision(
         reason=reason,
         decided_at=decided_at,
     )
+    history = _append_review_action_history(payload, review_decision)
+    compat_action = _compat_review_action_entry(review_decision)
+    compat_history = _append_compat_review_actions(payload, compat_action)
     return {
         **payload,
         "review_decision": review_decision,
-        "review_action_history": _append_review_action_history(
-            payload,
-            review_decision,
-        ),
+        "last_review_action": compat_action,
+        "review_action_history": history,
+        "review_actions": compat_history,
     }
 
 
@@ -919,12 +1075,14 @@ def _payload_with_review_action(
         reason=reason,
         decided_at=decided_at,
     )
+    history = _append_review_action_history(payload, review_action)
+    compat_action = _compat_review_action_entry(review_action)
+    compat_history = _append_compat_review_actions(payload, compat_action)
     return {
         **payload,
-        "review_action_history": _append_review_action_history(
-            payload,
-            review_action,
-        ),
+        "last_review_action": compat_action,
+        "review_action_history": history,
+        "review_actions": compat_history,
     }
 
 
@@ -936,6 +1094,33 @@ def _append_review_action_history(
     if isinstance(current, list):
         return [*current, review_action]
     return [review_action]
+
+
+def _append_compat_review_actions(
+    payload: dict[str, Any],
+    review_action: dict[str, object],
+) -> list[object]:
+    current = payload.get("review_actions")
+    if isinstance(current, list):
+        return [*current, review_action]
+    return [review_action]
+
+
+def _compat_review_action_entry(
+    review_action: dict[str, object],
+) -> dict[str, object]:
+    action = review_action.get("action")
+    action_name = str(action) if action is not None else ""
+    aliases = {
+        "approve_for_connector_qa": "approve",
+        "request_fixture_fix": "reject",
+        "requeue_after_fix": "requeue",
+        "cancel_review": "cancel",
+    }
+    return {
+        **review_action,
+        "action": aliases.get(action_name, action_name),
+    }
 
 
 def _review_action_entry(

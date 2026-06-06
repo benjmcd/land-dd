@@ -9,6 +9,8 @@ from app.domain.enums import AreaType, ConfidenceBand
 
 class AreaContract(BaseModel):
     area_id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID | None = None
+    created_by: UUID | None = None
     area_type: AreaType = AreaType.DRAWN_POLYGON
     label: str | None = None
     geom_geojson: dict[str, object] = Field(default_factory=dict)

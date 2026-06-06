@@ -81,6 +81,8 @@ class ReportRunService:
         area_id: UUID,
         intent_code: IntentCode,
         report_run_id: UUID | None = None,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ReportRunContract:
         _require_non_empty(intent_code, "intent_code")
         if not self._area_service.area_is_registered(area_id):
@@ -95,6 +97,8 @@ class ReportRunService:
         ]
         report_run = ReportRunContract(
             report_run_id=report_run_id if report_run_id is not None else uuid4(),
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             area_id=area_id,
             intent_code=intent_code,
             status=JobStatus.SUCCEEDED,

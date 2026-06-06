@@ -9,6 +9,12 @@ components:
         area_type:
           $ref: '#/components/schemas/AreaType'
           default: drawn_polygon
+        created_by:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Created By
         geom_confidence:
           $ref: '#/components/schemas/ConfidenceBand'
           default: unknown
@@ -34,6 +40,12 @@ components:
           - type: string
           - type: 'null'
           title: Label
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
       title: AreaContract
       type: object
     AreaType:
@@ -277,6 +289,110 @@ components:
       - queue_item
       title: ConnectorReviewActionResponse
       type: object
+    ConnectorReviewQueueActionRequest:
+      properties:
+        not_before:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Not Before
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        reviewer_id:
+          title: Reviewer Id
+          type: string
+      required:
+      - reviewer_id
+      title: ConnectorReviewQueueActionRequest
+      type: object
+    ConnectorReviewQueueItemContract:
+      properties:
+        attempts:
+          default: 0
+          title: Attempts
+          type: integer
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        finished_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Finished At
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        job_id:
+          format: uuid
+          title: Job Id
+          type: string
+        job_type:
+          title: Job Type
+          type: string
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        locked_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Locked At
+        locked_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locked By
+        max_attempts:
+          default: 1
+          title: Max Attempts
+          type: integer
+        not_before:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Not Before
+        payload:
+          additionalProperties: true
+          title: Payload
+          type: object
+        priority:
+          title: Priority
+          type: integer
+        started_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Started At
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
+      required:
+      - job_id
+      - ingest_run_id
+      - job_type
+      - status
+      - priority
+      - payload
+      - created_at
+      title: ConnectorReviewQueueItemContract
+      type: object
     ConnectorReviewQueueItemResponse:
       properties:
         attempts:
@@ -358,6 +474,55 @@ components:
       - finished_at
       - last_error
       title: ConnectorReviewQueueItemResponse
+      type: object
+    ConnectorRunRequest:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        fixture_key:
+          title: Fixture Key
+          type: string
+      required:
+      - connector_name
+      - fixture_key
+      title: ConnectorRunRequest
+      type: object
+    ConnectorRunResultContract:
+      properties:
+        connector_name:
+          title: Connector Name
+          type: string
+        evidence_created:
+          title: Evidence Created
+          type: integer
+        evidence_skipped:
+          title: Evidence Skipped
+          type: integer
+        ingest_run_id:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+        queue_job_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Queue Job Id
+        retrieval_status:
+          title: Retrieval Status
+          type: string
+        review_required:
+          title: Review Required
+          type: boolean
+      required:
+      - ingest_run_id
+      - connector_name
+      - retrieval_status
+      - evidence_created
+      - evidence_skipped
+      - review_required
+      title: ConnectorRunResultContract
       type: object
     ConnectorRunReviewStatusResponse:
       properties:
@@ -1044,6 +1209,42 @@ components:
       - live_connector_jobs
       title: OperationsQueueHealthResponse
       type: object
+    ReportReviewActionContract:
+      properties:
+        action:
+          $ref: '#/components/schemas/ReportReviewStatus'
+        from_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        reviewed_at:
+          format: date-time
+          title: Reviewed At
+          type: string
+        reviewer_id:
+          title: Reviewer Id
+          type: string
+        to_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+      required:
+      - action
+      - from_status
+      - to_status
+      - reviewer_id
+      title: ReportReviewActionContract
+      type: object
+    ReportReviewStatus:
+      enum:
+      - draft
+      - needs_review
+      - approved
+      - rejected
+      - superseded
+      title: ReportReviewStatus
+      type: string
     ReportRunContract:
       properties:
         area_id:
@@ -1080,6 +1281,11 @@ components:
             type: string
           - type: 'null'
           title: Finished At
+        idempotency_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency Key
         intent_code:
           $ref: '#/components/schemas/IntentCode'
         output_uri:
@@ -1096,6 +1302,31 @@ components:
           format: uuid
           title: Report Run Id
           type: string
+        requested_by:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Requested By
+        review_actions:
+          items:
+            $ref: '#/components/schemas/ReportReviewActionContract'
+          title: Review Actions
+          type: array
+        review_status:
+          $ref: '#/components/schemas/ReportReviewStatus'
+          default: needs_review
+        reviewed_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Reviewed At
+        reviewed_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewed By
         source_manifest:
           additionalProperties: true
           title: Source Manifest
@@ -1117,6 +1348,12 @@ components:
             type: string
           title: Verification Tasks
           type: array
+        workspace_id:
+          anyOf:
+          - format: uuid
+            type: string
+          - type: 'null'
+          title: Workspace Id
       required:
       - area_id
       - intent_code
@@ -1519,6 +1756,31 @@ paths:
       - areas
     post:
       operationId: create_area_areas_post
+      parameters:
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       requestBody:
         content:
           application/json:
@@ -1541,6 +1803,416 @@ paths:
       summary: Create Area
       tags:
       - areas
+  /connector-review-queue:
+    get:
+      operationId: list_connector_review_queue_compat_connector_review_queue_get
+      parameters:
+      - in: query
+        name: status
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/JobStatus'
+          - type: 'null'
+          title: Status
+      - in: query
+        name: connector_name
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Connector Name
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          maximum: 100
+          minimum: 1
+          title: Limit
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          title: Offset
+          type: integer
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+                title: Response List Connector Review Queue Compat Connector Review
+                  Queue Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List Connector Review Queue Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}:
+    get:
+      operationId: get_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__get
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/approve:
+    post:
+      operationId: approve_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__approve_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Approve Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/cancel:
+    post:
+      operationId: cancel_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__cancel_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Cancel Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/reject:
+    post:
+      operationId: reject_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__reject_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Reject Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-review-queue/{ingest_run_id}/requeue:
+    post:
+      operationId: requeue_connector_review_queue_item_compat_connector_review_queue__ingest_run_id__requeue_post
+      parameters:
+      - in: path
+        name: ingest_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Ingest Run Id
+          type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorReviewQueueActionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorReviewQueueItemContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Requeue Connector Review Queue Item Compat
+      tags:
+      - connector-review-queue
+  /connector-runs:
+    post:
+      operationId: run_fixture_connector_connector_runs_post
+      parameters:
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorRunRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorRunResultContract'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Run Fixture Connector
+      tags:
+      - connector-runs
   /connector-runs/fema-nfhl/query-bbox:
     post:
       operationId: query_fema_nfhl_bbox_connector_runs_fema_nfhl_query_bbox_post
@@ -2394,6 +3066,31 @@ paths:
   /report-runs:
     post:
       operationId: create_report_run_report_runs_post
+      parameters:
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       requestBody:
         content:
           application/json:
@@ -2405,7 +3102,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AsyncReportRunResponse'
+                anyOf:
+                - $ref: '#/components/schemas/AsyncReportRunResponse'
+                - $ref: '#/components/schemas/ReportRunContract'
+                title: Response Create Report Run Report Runs Post
           description: Successful Response
         '422':
           content:
@@ -2427,6 +3127,30 @@ paths:
           format: uuid
           title: Report Run Id
           type: string
+      - in: header
+        name: Authorization
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - in: header
+        name: X-Workspace-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - in: header
+        name: X-User-Id
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       responses:
         '200':
           content:

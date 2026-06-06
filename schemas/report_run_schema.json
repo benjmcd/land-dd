@@ -5,9 +5,16 @@
   "type": "object",
   "required": [
     "report_run_id",
+    "workspace_id",
+    "requested_by",
     "area_id",
     "intent_code",
+    "idempotency_key",
     "status",
+    "review_status",
+    "reviewed_by",
+    "reviewed_at",
+    "review_actions",
     "source_manifest",
     "assumptions",
     "caveats",
@@ -24,6 +31,20 @@
   "properties": {
     "report_run_id": {
       "type": "string",
+      "format": "uuid"
+    },
+    "workspace_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "requested_by": {
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "uuid"
     },
     "area_id": {
@@ -44,6 +65,12 @@
         "speculative_hold"
       ]
     },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -54,6 +81,89 @@
         "cancelled",
         "needs_review"
       ]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "needs_review",
+        "approved",
+        "rejected",
+        "superseded"
+      ]
+    },
+    "reviewed_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviewed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "review_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "action",
+          "from_status",
+          "to_status",
+          "reviewer_id",
+          "reason",
+          "reviewed_at"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "needs_review",
+              "approved",
+              "rejected",
+              "superseded"
+            ]
+          },
+          "from_status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "needs_review",
+              "approved",
+              "rejected",
+              "superseded"
+            ]
+          },
+          "to_status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "needs_review",
+              "approved",
+              "rejected",
+              "superseded"
+            ]
+          },
+          "reviewer_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "source_manifest": {
       "type": "object",
