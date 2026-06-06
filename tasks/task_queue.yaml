@@ -1,10 +1,10 @@
 version: 2
-active_plan: plans/2026-06-03-foundation-vertical-slice.md
+active_plan: plans/2026-06-06-private-mvp-utility-proof.md
 routing_note: >
-  Implementation is driven by lane-specific plans and deferred task specs.
-  For Lane C next work, see plans/2026-06-03-codex-deferred-tasks.md (C-001, C-002).
-  For Lane D next work, see plans/2026-06-03-codex-deferred-tasks.md (D-001).
-  For parallel session coordination, see CODEX_PARALLEL.md.
+  Active lane: Private MVP Utility Proof (plans/2026-06-06-private-mvp-utility-proof.md).
+  Geography: North Carolina — Buncombe, Chatham, Brunswick counties.
+  Prior L10 production-hardening plans remain in plans/ for reference; they are not the active lane.
+  Production hardening (hosted, auth/RBAC, registry) continues as a separate blocked lane.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md

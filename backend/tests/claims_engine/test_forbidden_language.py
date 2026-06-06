@@ -80,6 +80,18 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: market_context_out_of_scope
           claim_code: MARKET_OUT_OF_SCOPE
           verification_task: Consult qualified local professionals for market context.
+        - code: HG-PARCEL-001
+          domain: parcels
+          severity_on_fail: unknown
+          condition: parcels_not_evaluated
+          claim_code: PARCEL_NOT_EVALUATED
+          verification_task: Confirm parcel boundaries with county Register of Deeds.
+        - code: HG-ASSESSOR-001
+          domain: assessor
+          severity_on_fail: unknown
+          condition: assessor_not_evaluated
+          claim_code: ASSESSOR_NOT_EVALUATED
+          verification_task: Confirm tax records with county Tax Administration office.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.

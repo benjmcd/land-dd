@@ -745,6 +745,45 @@ full `.\scripts\verify.ps1` pass for that follow-up; DB smoke remains skipped lo
 unless `RUN_DB_SMOKE=1`. Must-source readiness remains `sources=8 ready=4 blocked=4`
 with `DS-010`, `DS-011`, `DS-017`, and `DS-023` blocked.
 
+## Active lane: Private MVP Utility Proof (completed 2026-06-06)
+
+Active plan: `plans/2026-06-06-private-mvp-utility-proof.md` (approved and completed 2026-06-06).
+Geography: North Carolina — Buncombe, Chatham, Brunswick counties.
+Goal: prove that representative rural-land AOIs flow end-to-end through the pipeline
+(intake → fixture connector evidence → claims/NOT_EVALUATED → review/approval →
+approved Markdown dossier) using only public/official or fixture-backed sources.
+No paid vendors, hosted deployment, OAuth/OIDC, or live-source API keys required.
+
+**Status: ALL 8 WORK PACKAGES COMPLETE (US-001 through US-008)**
+
+| Story | Title | Status |
+|---|---|---|
+| US-001 | State and plan alignment | PASS |
+| US-002 | County source manifests (Buncombe, Chatham, Brunswick) | PASS |
+| US-003 | Private MVP readiness profile | PASS |
+| US-004 | Source-readiness profile resolution | PASS |
+| US-005 | Golden AOI fixtures and NOT_EVALUATED domain extension | PASS |
+| US-006 | DB-backed MVP regression proof | PASS |
+| US-007 | Report-language and evidence-lineage checks | PASS |
+| US-008 | Operator runbook and state update | PASS |
+
+Key artifacts delivered:
+- `tests/fixtures/golden_aois/` — 9 GeoJSON cases (3 per county)
+- `tests/fixtures/connectors/` — 13 connector evidence blobs
+- `tests/fixtures/golden_aois/manifest.yaml` — fixture manifest
+- `config/private_mvp_beta_readiness.yaml` — private MVP gate registry
+- `docs/geographies/nc/{buncombe,chatham,brunswick}/source_manifest.md`
+- `backend/tests/private_mvp/test_mvp_regression.py` — 3 DB-smoke-gated county tests
+- `backend/tests/reports/test_report_overclaim.py` — 4 Markdown overclaim checks
+- `scripts/run_mvp_regression.ps1`
+- `docs/runbooks/mvp_operator.md` — Private MVP path section added
+
+Last verified: 2026-06-06 — `.\scripts\verify.ps1` → `verify: ok`, 222 mypy source files.
+Residual risk: parcels/assessor NOT_EVALUATED by design; terrain/wetlands live-connector only.
+
+Prior lane (L10 production hardening) plans remain in `plans/` for reference. Production
+hardening continues as a separate blocked lane and does not gate private MVP utility proof.
+
 ## Local repo bootstrap state
 
 - Local Git initialized on `main`.

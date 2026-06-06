@@ -74,6 +74,18 @@ ruleset:
       condition: market_context_out_of_scope
       claim_code: MARKET_OUT_OF_SCOPE
       verification_task: Use qualified local professionals for sales-comparison, appraisal, buyer-suitability, or financial-return questions.
+    - code: PARCEL_G001
+      domain: parcels
+      severity_on_fail: unknown
+      condition: parcels_not_evaluated
+      claim_code: PARCEL_NOT_EVALUATED
+      verification_task: Confirm parcel boundaries and cadastral data with the county Register of Deeds and a licensed surveyor. Mapped parcel boundaries are not survey-grade.
+    - code: ASSESSOR_G001
+      domain: assessor
+      severity_on_fail: unknown
+      condition: assessor_not_evaluated
+      claim_code: ASSESSOR_NOT_EVALUATED
+      verification_task: Confirm assessed value, tax year, and ownership information with the county Tax Administration office. Assessed value is not market value.
   scoring:
     output: bands_not_raw_score
     weights:

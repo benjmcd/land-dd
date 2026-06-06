@@ -11,29 +11,19 @@ from app.claims_engine.not_evaluated import (
 )
 from app.claims_engine.rule_engine import (
     DEFAULT_RULESET_PATH,
-    ENV_HAZARD_CONDITION,
-    MARKET_CONTEXT_CONDITION,
-    RESOURCE_CONTEXT_CONDITION,
-    SOIL_SEPTIC_CONDITION,
+    NOT_EVALUATED_CONDITIONS_BY_DOMAIN,
     RuleEngine,
     load_ruleset,
 )
 from app.domain.enums import ConfidenceBand, EvidenceType, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 
-_CONDITIONS_BY_DOMAIN = {
-    "soil_septic": SOIL_SEPTIC_CONDITION,
-    "env_hazard": ENV_HAZARD_CONDITION,
-    "resource_context": RESOURCE_CONTEXT_CONDITION,
-    "market_context": MARKET_CONTEXT_CONDITION,
-}
-
 
 def test_default_ruleset_declares_not_evaluated_hard_gates() -> None:
     ruleset = load_ruleset(DEFAULT_RULESET_PATH)
 
     for domain in NOT_EVALUATED_DOMAINS:
-        rule = ruleset.hard_gate_for_condition(_CONDITIONS_BY_DOMAIN[domain])
+        rule = ruleset.hard_gate_for_condition(NOT_EVALUATED_CONDITIONS_BY_DOMAIN[domain])
         assert rule.domain == domain
         assert rule.claim_code == NOT_EVALUATED_CLAIM_CODES[domain]
         assert rule.severity_on_fail == SeverityBand.UNKNOWN

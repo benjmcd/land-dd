@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-06 (Private MVP Utility Proof — US-001 through US-008)
+
+**Lane:** Private MVP Utility Proof (`plans/2026-06-06-private-mvp-utility-proof.md`)
+**Geography:** North Carolina — Buncombe County, Chatham County, Brunswick County
+
+- **WP-1 (US-001):** Activated Private MVP lane — updated `tasks/task_queue.yaml`, `state/OPEN_QUESTIONS.md` (NC geography moved to Decided), `state/PROJECT_STATE.md`, and plan status to `approved`.
+- **WP-2 (US-002/003):** Created county source manifests (`docs/geographies/nc/{buncombe,chatham,brunswick}/source_manifest.md`) covering fixture-backed stance, NOT_EVALUATED stance for parcels/assessor, DS-017 blocked/not-required stance. Created `config/private_mvp_beta_readiness.yaml` (11 private_mvp_beta gates + 5 hosted_production blocked items). Added `backend/tests/test_private_mvp_readiness.py`.
+- **WP-3 (US-004):** Annotated DS-010, DS-011, DS-017, DS-023 in `registers/data_source_registry.csv` with private MVP stance. Updated `test_source_seeds.py` assertion from exact to `startswith` match.
+- **WP-4 (US-004 continued):** Created 9 golden AOI GeoJSON fixtures in `tests/fixtures/golden_aois/` (3 per county, WGS84 Polygon, Feature format), 13 connector evidence blobs in `tests/fixtures/connectors/`, and `tests/fixtures/golden_aois/manifest.yaml`. Added `backend/tests/test_golden_aoi_manifest.py`.
+- **WP-5 (US-005):** Extended NOT_EVALUATED domains to include `parcels` and `assessor` in 5 locations: `not_evaluated.py` (3 dicts), `rule_engine.py` (2 constants + dict entry), `ruleset_homestead_mvp.yaml` (2 new rules). Fixed downstream count assertions in `test_report_service.py`, `test_report_regression.py`, `test_api_scaffold.py`, and lint issue in `test_forbidden_language.py`. Full verify passed.
+- **WP-6 (US-006):** Created `backend/tests/private_mvp/__init__.py` and `test_mvp_regression.py` — 3 DB-smoke-gated tests (Buncombe/Chatham/Brunswick), exercises `FixtureConnectorIngestWorkflow` with domain-appropriate quality evaluator, asserts `PARCEL_NOT_EVALUATED`/`ASSESSOR_NOT_EVALUATED` in unknowns and no forbidden phrases in Markdown dossier. Added `scripts/run_mvp_regression.ps1`.
+- **WP-7 (US-007):** Created `backend/tests/reports/test_report_overclaim.py` — 4 tests covering no-forbidden-phrases in Markdown output, dossier structure, NOT_EVALUATED unknowns surface as "not determined", and screening disclaimer always present.
+- **WP-8 (US-008):** Updated `docs/runbooks/mvp_operator.md` with Private MVP path (DB startup, fixture AOI intake, connector workflow, review/approval, dossier retrieval, known limitations). Updated `state/WORKLOG.md`, `state/VALIDATION_LOG.md`, `state/PROJECT_STATE.md`.
+
+**Final verification:** `.\scripts\verify.ps1` — `verify: ok`, 222 mypy source files clean, ruff clean.
+**Residual risk:** parcels/assessor NOT_EVALUATED by design; terrain/wetlands live-connector only; hosted-production gates blocked per `config/private_mvp_beta_readiness.yaml`.
+
 ## 2026-06-06 (CI gate authority correction)
 
 - Corrected CI's POSIX script execution failure by tracking repo shell scripts as executable.

@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BRU-coastal-flood",
+    "description": "Brunswick County coastal flood/low-elevation stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-78.110, 33.915],
+        [-78.090, 33.915],
+        [-78.090, 33.925],
+        [-78.110, 33.925],
+        [-78.110, 33.915]
+      ]
+    ]
+  }
+}

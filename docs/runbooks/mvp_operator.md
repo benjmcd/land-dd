@@ -458,3 +458,125 @@ cd backend && py -3.12 -m pytest -q
 # or on Windows:
 .\scripts\verify.ps1
 ```
+
+---
+
+## Private MVP Utility Proof (fixture-backed, no paid vendors)
+
+This path proves the end-to-end pipeline for North Carolina private MVP counties
+(Buncombe, Chatham, Brunswick) using only official/public or fixture-backed sources.
+No API keys, paid vendors, or live DB are required.
+
+### Geography and scope
+
+- **Counties:** Buncombe, Chatham, Brunswick (NC)
+- **Intent:** `homestead_feasibility` / `rural_land_purchase`
+- **Connector domains:** `flood` (StaticFloodFixtureConnector), `access`
+  (StaticAccessFixtureConnector), `zoning` (StaticZoningFixtureConnector)
+- **NOT_EVALUATED domains:** `parcels`, `assessor` — recorded as explicit unknowns;
+  no cadastral or tax data is asserted
+
+### 1. DB startup (optional — in-memory is sufficient for fixture regression)
+
+For full DB-backed mode, start Postgres and apply migrations:
+
+```powershell
+docker compose up -d db
+.\scripts\db_apply_migrations.ps1
+```
+
+For the fixture regression suite, in-memory services are used and no DB is required.
+
+### 2. Fixture-backed AOI intake
+
+Register an area of interest using a golden fixture geometry:
+
+```bash
+curl -s -X POST http://localhost:8000/areas \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "geom_geojson": {"type":"Polygon","coordinates":[[[-82.340,35.615],[-82.320,35.615],[-82.320,35.625],[-82.340,35.625],[-82.340,35.615]]]},
+    "label": "bun-slope-test",
+    "geom_source": "golden-aoi-fixture"
+  }'
+```
+
+Alternatively, load a GeoJSON file from `tests/fixtures/golden_aois/` and POST its
+`geometry` field.
+
+### 3. Run fixture connector workflow (Path B)
+
+Fixture connectors are invoked via `FixtureConnectorIngestWorkflow` with the
+domain-appropriate quality evaluator. From Python:
+
+```python
+from app.connectors import (
+    StaticFloodFixtureConnector,
+    evaluate_flood_fixture_quality,
+    build_fixture_workflow_with_public_services,
+)
+
+workflow = build_fixture_workflow_with_public_services(
+    retrieval_provenance_port=retrieval_port,
+    evidence_service=evidence_service,
+    connector=StaticFloodFixtureConnector(),
+    quality_evaluator=evaluate_flood_fixture_quality,
+)
+result = workflow.ingest_fixture("tests/fixtures/connectors/nc_buncombe_bun_slope_flood.json")
+```
+
+Repeat for access (`StaticAccessFixtureConnector` + `evaluate_access_fixture_quality`)
+and zoning (`StaticZoningFixtureConnector` + `evaluate_zoning_fixture_quality`) as
+applicable per the case manifest in `tests/fixtures/golden_aois/manifest.yaml`.
+
+### 4. Report creation and review/approval gate
+
+Create a report run after connector evidence is ingested. Evidence with
+`source_ingest_run_id = None` (all fixture connector blobs) is auto-approved.
+For explicit review, wire a `ConnectorReviewQueue` that returns an approved decision:
+
+```bash
+curl -s -X POST http://localhost:8000/report-runs \
+  -H 'Content-Type: application/json' \
+  -d '{"area_id": "<uuid>", "intent_code": "homestead_feasibility"}'
+```
+
+Poll `GET /report-runs/<report_run_id>` until `"status": "succeeded"`.
+
+### 5. Retrieve Markdown dossier
+
+```python
+from app.reports.dossier import build_rural_land_dossier
+dossier = build_rural_land_dossier(report_run)
+print(dossier)
+```
+
+The dossier always begins with a screening disclaimer and surfaces all unknowns,
+verification tasks, and source citations. It never asserts legal access, buildability,
+title status, or investment suitability.
+
+### 6. Run fixture regression suite
+
+```powershell
+.\scripts\run_mvp_regression.ps1 -Force
+# or:
+$env:RUN_DB_SMOKE = '1'
+cd backend
+PYTHONPATH=. python -m pytest tests/private_mvp/test_mvp_regression.py -v
+```
+
+All three county tests (Buncombe, Chatham, Brunswick) must pass.
+
+### Known limitations for fixture regression
+
+| Domain | Status | Reason |
+|---|---|---|
+| `flood` | fixture-backed | StaticFloodFixtureConnector; confirm with county flood-plain manager |
+| `access` | fixture-backed | StaticAccessFixtureConnector; road presence ≠ legal access |
+| `zoning` | fixture-backed | StaticZoningFixtureConnector; requires county planning confirmation |
+| `parcels` | NOT_EVALUATED | No machine-queryable county parcel connector; recorded as unknown |
+| `assessor` | NOT_EVALUATED | No machine-queryable assessor connector; recorded as unknown |
+| `terrain/slope` | live-connector only | DS-001 USGS TNM; not included in fixture regression |
+| `wetlands` | live-connector only | DS-004 NWI; not included in fixture regression |
+| Appraisal/value | never | Not provided — outside scope; use licensed appraiser |
+| Legal access | never | Not asserted — road proximity only; confirm with title/surveyor |

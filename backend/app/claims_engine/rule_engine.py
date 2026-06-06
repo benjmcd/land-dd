@@ -26,11 +26,15 @@ SOIL_SEPTIC_CONDITION = "soil_septic_unsupported"
 ENV_HAZARD_CONDITION = "env_hazard_unsupported"
 RESOURCE_CONTEXT_CONDITION = "resource_context_unsupported"
 MARKET_CONTEXT_CONDITION = "market_context_out_of_scope"
+PARCELS_NOT_EVALUATED_CONDITION = "parcels_not_evaluated"
+ASSESSOR_NOT_EVALUATED_CONDITION = "assessor_not_evaluated"
 NOT_EVALUATED_CONDITIONS_BY_DOMAIN = {
     "soil_septic": SOIL_SEPTIC_CONDITION,
     "env_hazard": ENV_HAZARD_CONDITION,
     "resource_context": RESOURCE_CONTEXT_CONDITION,
     "market_context": MARKET_CONTEXT_CONDITION,
+    "parcels": PARCELS_NOT_EVALUATED_CONDITION,
+    "assessor": ASSESSOR_NOT_EVALUATED_CONDITION,
 }
 HIGH_RISK_FLOOD_ZONES = {"A", "AE", "AH", "AO", "A99", "V", "VE"}
 ACCESS_ADJACENCY_TRUE_KEYS = ("public_road_adjacency", "has_public_road_adjacency")

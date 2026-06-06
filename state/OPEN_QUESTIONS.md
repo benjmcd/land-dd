@@ -4,11 +4,17 @@ These questions gate live-source, user-facing, or impact-heavy implementation.
 
 ## Critical
 
-1. Which U.S. state and 3-5 counties are the MVP geography?
+*(No open critical questions — all critical questions have been decided.)*
 
 ## Decided
 
-1. First federal source candidate: FEMA NFHL (`DS-002`) is the reviewed source
+1. MVP geography: **North Carolina — Buncombe County, Chatham County, Brunswick County** are
+   accepted as the Private MVP Utility Proof geography (decided 2026-06-06). These counties
+   cover mountain/slope (Buncombe), rural/piedmont/zoning-edge (Chatham), and coastal/wetland
+   (Brunswick) representative stress cases. Fixture-backed connectors (flood, access, zoning)
+   are used for private MVP; DS-010/DS-011 data is NOT_EVALUATED and recorded explicitly as
+   unknown; DS-017 is deferred and not a private-MVP blocker.
+2. First federal source candidate: FEMA NFHL (`DS-002`) is the reviewed source
    for the federal-first flood path. Live connector code remains gated by
    fixture-backed success/failure tests, source-failure behavior, and API/report
    caveat surfacing.

@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_access_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_slope_access",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "b2b3b4b5-b2b3-4b4b-8b5b-b2b3b4b5b6b7",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "ACCESS_ROAD_ADJACENCY_SCREEN",
+      "domain": "access",
+      "observation": "Fixture road screening: mapped road present near mountain AOI. Private road status requires title verification.",
+      "observed_value": {
+        "public_road_adjacency": true,
+        "has_public_road_adjacency": true,
+        "road_distance_m": 45.0
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_access_road_adjacency_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only road-adjacency screening for Buncombe County mountain terrain. Road presence does not confirm legal access, right-of-way, or maintenance obligations. Requires title search and licensed surveyor.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-82.340, 35.615], [-82.320, 35.615], [-82.320, 35.625], [-82.340, 35.625], [-82.340, 35.615]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

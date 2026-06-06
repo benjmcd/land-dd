@@ -1,0 +1,156 @@
+# Private MVP Beta Readiness Gates
+#
+# Records which gates are required for private MVP beta and which are
+# explicitly deferred to hosted production. The two sections are
+# intentionally separate: hosted_production blockers must NOT gate
+# private MVP beta work.
+#
+# Gate statuses:
+#   complete  — implemented and verified
+#   pending   — required but not yet implemented
+#   blocked   — cannot proceed; documented blocker
+
+private_mvp_beta:
+
+  geography_selected:
+    status: complete
+    evidence: state/OPEN_QUESTIONS.md (Decided section, item 1)
+    note: >
+      North Carolina — Buncombe, Chatham, and Brunswick counties accepted as
+      private MVP geography on 2026-06-06.
+
+  county_manifests_present:
+    status: complete
+    evidence: >
+      docs/geographies/nc/buncombe/source_manifest.md,
+      docs/geographies/nc/chatham/source_manifest.md,
+      docs/geographies/nc/brunswick/source_manifest.md
+    note: >
+      County source manifests record official data portals, per-domain queryability
+      class, source authority level, known caveats, and report caveat text for
+      each of the three selected NC counties.
+
+  golden_aoi_fixture_manifest:
+    status: pending
+    evidence: tests/fixtures/golden_aois/manifest.yaml (to be created)
+    note: >
+      Nine golden AOI fixture cases (3 per county) covering the full stress-case
+      set. Manifest includes connector fixture file references, expected domains,
+      NOT_EVALUATED domains, forbidden claim phrases, and expected caveats.
+      Required before DB-backed regression proof.
+
+  db_backed_regression_path:
+    status: pending
+    evidence: backend/tests/private_mvp/test_mvp_regression.py (to be created)
+    note: >
+      DB-backed MVP regression exercises fixture connector workflow (Path B) for
+      each county case: AOI intake, FixtureConnectorIngestWorkflow, review/approval
+      gate, approved Markdown dossier. Tests assert connector evidence present,
+      NOT_EVALUATED domains visible in unknowns, and no forbidden claim phrases.
+
+  ds010_011_023_selected_county_behavior:
+    status: pending
+    evidence: >
+      backend/app/claims_engine/not_evaluated.py (parcels, assessor in
+      NOT_EVALUATED_DOMAINS),
+      backend/app/claims_engine/rule_engine.py (parcels, assessor in
+      NOT_EVALUATED_CONDITIONS_BY_DOMAIN),
+      config/ruleset_homestead_mvp.yaml (condition entries),
+      tests/fixtures/golden_aois/manifest.yaml (connector_fixture_files for
+      flood/access/zoning; expected_not_evaluated_domains for parcels/assessor)
+    note: >
+      DS-010 (county GIS parcels) and DS-011 (county assessor): added to
+      NOT_EVALUATED_DOMAINS — parcels and assessor evidence is recorded as
+      NOT_EVALUATED with explicit unknown in the report.
+      DS-023 (local zoning PDFs): covered by fixture-backed zoning connector
+      (StaticZoningFixtureConnector) for private MVP regression.
+
+  ds017_not_required:
+    status: complete
+    evidence: registers/data_source_registry.csv (DS-017 row; Caveats column)
+    note: >
+      DS-017 commercial parcel vendor is blocked (license/cost). Not required
+      for private MVP utility proof; public/official county sources and
+      NOT_EVALUATED sentinels are sufficient for the selected NC counties.
+
+  markdown_dossier_delivery:
+    status: pending
+    evidence: backend/tests/private_mvp/test_mvp_regression.py (to be created)
+    note: >
+      Approved report runs served as Markdown rural land dossiers via the
+      existing dossier delivery gate. Proven via DB-backed MVP regression.
+
+  overclaim_checks:
+    status: pending
+    evidence: backend/tests/reports/test_report_overclaim.py (to be created)
+    note: >
+      Report-language test validates Markdown dossier output does not contain
+      forbidden certainty phrases: 'You can build here', 'legal access',
+      'water rights', 'good investment', 'This land is safe', 'worth $'.
+
+  evidence_lineage_checks:
+    status: pending
+    evidence: backend/tests/reports/test_report_overclaim.py (to be created)
+    note: >
+      Report-language test validates that at least one source citation appears
+      in the dossier and NOT_EVALUATED domains appear as 'not determined' or
+      equivalent in dossier prose.
+
+  unknowns_visible:
+    status: pending
+    evidence: >
+      backend/tests/private_mvp/test_mvp_regression.py (assert parcels/assessor
+      NOT_EVALUATED entries appear in report unknowns)
+    note: >
+      Requires NOT_EVALUATED domain extension for parcels and assessor
+      (ds010_011_023_selected_county_behavior). Reports must surface explicit
+      NOT_EVALUATED unknowns rather than silently omitting unsupported domains.
+
+  operator_runbook_current:
+    status: pending
+    evidence: docs/runbooks/mvp_operator.md (to be updated)
+    note: >
+      Operator runbook updated with private MVP path: DB startup, fixture-backed
+      AOI intake, report creation, review/approval, Markdown dossier retrieval,
+      and known limitations (terrain/wetlands as live-connector-only,
+      parcels/assessor as NOT_EVALUATED for fixture regression).
+
+hosted_production:
+  # These gates are NOT required for private MVP beta.
+  # They are documented here so private_mvp_beta gates cannot inadvertently
+  # block on them or claim completion without them.
+  _not_required_for_private_mvp: true
+
+  hosted_deployment:
+    status: blocked
+    note: >
+      Requires cloud infrastructure provisioning, container registry publication,
+      DNS/TLS configuration, and hosted secrets. Not required for private MVP.
+
+  oauth_oidc:
+    status: blocked
+    note: >
+      Full user auth/RBAC, OAuth/OIDC, user accounts, and hosted identity-provider
+      integration remain outside private MVP scope. Local signed-token auth is
+      sufficient for private MVP.
+
+  registry_publication:
+    status: blocked
+    note: >
+      Requires GitHub artifact attestation entitlement (private repository).
+      Local SBOM/lock provenance validates without registry publication.
+      Not required for private MVP.
+
+  billing:
+    status: blocked
+    note: >
+      Hosted billing reconciliation, approved nonzero unit-cost thresholds,
+      and paid-vendor metering remain outside private MVP scope.
+      All current private MVP paths are zero-dollar compute-only.
+
+  external_secret_manager:
+    status: blocked
+    note: >
+      External secret manager integration, automatic key rotation, and
+      hosted identity are outside private MVP scope. Local configured
+      API_KEYS and REVIEWER_ACCOUNTS are sufficient for private MVP.

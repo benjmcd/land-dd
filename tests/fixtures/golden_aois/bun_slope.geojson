@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BUN-slope",
+    "description": "Buncombe County mountain/slope stress case — Black Mountain area"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-82.340, 35.615],
+        [-82.320, 35.615],
+        [-82.320, 35.625],
+        [-82.340, 35.625],
+        [-82.340, 35.615]
+      ]
+    ]
+  }
+}

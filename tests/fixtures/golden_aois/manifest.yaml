@@ -1,0 +1,241 @@
+# Golden AOI Fixture Manifest
+#
+# Nine representative rural-land AOI cases for the Private MVP Utility Proof.
+# Geography: North Carolina — Buncombe, Chatham, Brunswick counties.
+#
+# connector_fixture_files: paths relative to tests/fixtures/connectors/
+# geometry_file: path relative to tests/fixtures/golden_aois/
+# expected_connector_workflow_domains: fixture connectors that will be invoked
+# expected_not_evaluated_domains: domains with no connector; recorded as NOT_EVALUATED
+# forbidden_claims: phrases that must NOT appear in any report dossier output
+
+cases:
+
+  - case_id: BUN-slope
+    county: buncombe
+    state: nc
+    intent: rural_land_purchase
+    description: Mountain/slope/elevation stress case — Black Mountain area
+    geometry_file: bun_slope.geojson
+    connector_fixture_files:
+      flood: nc_buncombe_bun_slope_flood.json
+      access: nc_buncombe_bun_slope_access.json
+    expected_connector_workflow_domains: [flood, access]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Buncombe County
+      - does not confirm legal access
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+
+  - case_id: BUN-flood
+    county: buncombe
+    state: nc
+    intent: rural_land_purchase
+    description: Mountain floodplain stress case — French Broad River area
+    geometry_file: bun_flood.geojson
+    connector_fixture_files:
+      flood: nc_buncombe_bun_flood_flood.json
+    expected_connector_workflow_domains: [flood]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Buncombe County
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+
+  - case_id: BUN-access
+    county: buncombe
+    state: nc
+    intent: rural_land_purchase
+    description: Private-road/access-ambiguity stress case — remote north Buncombe
+    geometry_file: bun_access.geojson
+    connector_fixture_files:
+      access: nc_buncombe_bun_access_access.json
+    expected_connector_workflow_domains: [access]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - does not confirm legal access
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+
+  - case_id: CHA-rural-use
+    county: chatham
+    state: nc
+    intent: rural_land_purchase
+    description: Rural/agricultural land-use stress case — Chatham County
+    geometry_file: cha_rural_use.geojson
+    connector_fixture_files:
+      flood: nc_chatham_cha_rural_use_flood.json
+      access: nc_chatham_cha_rural_use_access.json
+    expected_connector_workflow_domains: [flood, access]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Chatham County
+      - does not confirm legal access
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+      - "septic suitability"
+
+  - case_id: CHA-zoning-edge
+    county: chatham
+    state: nc
+    intent: rural_land_purchase
+    description: Zoning/unzoned/jurisdiction-edge stress case — Chatham County
+    geometry_file: cha_zoning_edge.geojson
+    connector_fixture_files:
+      zoning: nc_chatham_cha_zoning_edge_zoning.json
+    expected_connector_workflow_domains: [zoning]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Requires confirmation by Chatham County Planning
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "zoning entitlement"
+      - "permit-ready"
+
+  - case_id: CHA-parcel-tax
+    county: chatham
+    state: nc
+    intent: rural_land_purchase
+    description: Parcel/tax/easement-ambiguity stress case — Chatham County
+    geometry_file: cha_parcel_tax.geojson
+    connector_fixture_files:
+      flood: nc_chatham_cha_parcel_tax_flood.json
+      access: nc_chatham_cha_parcel_tax_access.json
+    expected_connector_workflow_domains: [flood, access]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Chatham County
+      - does not confirm legal access
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+
+  - case_id: BRU-coastal-flood
+    county: brunswick
+    state: nc
+    intent: rural_land_purchase
+    description: Coastal flood/low-elevation stress case — Brunswick County
+    geometry_file: bru_coastal_flood.geojson
+    connector_fixture_files:
+      flood: nc_brunswick_bru_coastal_flood_flood.json
+    expected_connector_workflow_domains: [flood]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Brunswick County
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "legal boundary"
+      - "CAMA permit eligibility"
+
+  - case_id: BRU-wetlands-soils
+    county: brunswick
+    state: nc
+    intent: rural_land_purchase
+    description: Wetlands/soils/septic-proxy stress case — Brunswick County
+    geometry_file: bru_wetlands_soils.geojson
+    connector_fixture_files:
+      flood: nc_brunswick_bru_wetlands_soils_flood.json
+      access: nc_brunswick_bru_wetlands_soils_access.json
+    expected_connector_workflow_domains: [flood, access]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Mapped flood data for Brunswick County
+      - does not confirm legal access
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "wetland jurisdictional determination"
+      - "septic suitability"
+
+  - case_id: BRU-jurisdiction
+    county: brunswick
+    state: nc
+    intent: rural_land_purchase
+    description: Municipal-vs-county zoning jurisdiction stress case — Brunswick County
+    geometry_file: bru_jurisdiction.geojson
+    connector_fixture_files:
+      zoning: nc_brunswick_bru_jurisdiction_zoning.json
+    expected_connector_workflow_domains: [zoning]
+    expected_not_evaluated_domains: [parcels, assessor]
+    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+    expected_caveats:
+      - Requires confirmation by Brunswick County Planning
+      - Parcel boundary and cadastral data were not available
+      - Assessor and tax data were not available
+    forbidden_claims:
+      - "You can build here"
+      - "This parcel has legal access"
+      - "This property has water rights"
+      - "This is a good investment"
+      - "This land is safe"
+      - "This property is worth"
+      - "zoning entitlement"
+      - "CAMA permit eligibility"

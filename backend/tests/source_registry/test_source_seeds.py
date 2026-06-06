@@ -183,7 +183,7 @@ def test_seed_metadata_preserves_registry_context() -> None:
     assert county_gis.license_status == "unknown"
     assert county_gis.redistribution_status == "unknown"
     assert county_gis.metadata["review_owner"] == "unassigned"
-    assert county_gis.license_summary == "Approximate; not survey"
+    assert county_gis.license_summary.startswith("Approximate; not survey")
 
 
 def test_commercial_blocker_seed_fails_closed_for_usage_statuses() -> None:

@@ -88,8 +88,8 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
         "intent_code": "homestead_feasibility",
         "source_manifest": {
             "source_count": 2,
-            "evidence_count": 5,
-            "claim_count": 5,
+            "evidence_count": 7,
+            "claim_count": 7,
             "ruleset_id": "homestead_mvp_v0_1",
             "ruleset_version": "0.1",
             "source_names": [
@@ -148,11 +148,11 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
                 "ruleset_version": "0.1",
             },
             "cost_metrics": {
-                "evidence_count": 5,
-                "claim_count": 5,
-                "unknown_count": 4,
+                "evidence_count": 7,
+                "claim_count": 7,
+                "unknown_count": 6,
                 "red_flag_count": 1,
-                "verification_task_count": 5,
+                "verification_task_count": 7,
                 "estimated_total_usd_cents": 0,
                 "compute_usd_cents": 0,
                 "storage_usd_cents": 0,

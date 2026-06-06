@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BUN-access",
+    "description": "Buncombe County private-road/access-ambiguity stress case — remote north Buncombe"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-82.575, 35.655],
+        [-82.555, 35.655],
+        [-82.555, 35.665],
+        [-82.575, 35.665],
+        [-82.575, 35.655]
+      ]
+    ]
+  }
+}

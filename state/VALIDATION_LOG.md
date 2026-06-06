@@ -2,6 +2,52 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 Private MVP Utility Proof
+
+**Scope:** US-001 through US-008 — fixture connector pipeline, NOT_EVALUATED extension, golden AOI fixtures, MVP regression suite, overclaim test.
+
+**Commands run:**
+
+```powershell
+# Core test suite slices (run iteratively as each WP completed)
+cd backend; PYTHONPATH=. python -m pytest tests/test_private_mvp_readiness.py -q
+cd backend; PYTHONPATH=. python -m pytest tests/test_golden_aoi_manifest.py -q
+cd backend; PYTHONPATH=. python -m pytest tests/claims_engine/ -q
+cd backend; PYTHONPATH=. python -m pytest tests/reports/test_report_service.py tests/reports/test_report_regression.py tests/api/test_api_scaffold.py -q
+cd backend; PYTHONPATH=. python -m pytest tests/source_registry/test_source_seeds.py -q
+cd backend; RUN_DB_SMOKE=1 PYTHONPATH=. python -m pytest tests/private_mvp/test_mvp_regression.py -v
+cd backend; PYTHONPATH=. python -m pytest tests/reports/test_report_overclaim.py -q
+
+# Lint and typecheck
+ruff check backend/
+cd backend; mypy tests/private_mvp/ tests/reports/test_report_overclaim.py
+
+# Full gate
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+| Check | Result |
+|---|---|
+| `test_private_mvp_readiness.py` | PASS |
+| `test_golden_aoi_manifest.py` | PASS |
+| `tests/claims_engine/` | PASS |
+| `test_report_service.py`, `test_report_regression.py`, `test_api_scaffold.py` | PASS |
+| `test_source_seeds.py` | PASS |
+| `test_mvp_regression.py` (RUN_DB_SMOKE=1) | PASS (3/3) |
+| `test_report_overclaim.py` | PASS (4/4) |
+| `ruff check backend/` | PASS (0 errors) |
+| `mypy` (222 source files) | PASS (0 errors) |
+| `.\scripts\verify.ps1` | `verify: ok` |
+
+**Residual risk:**
+
+- `parcels` and `assessor` are intentionally NOT_EVALUATED — no machine-queryable connector exists for private MVP. Operator must direct users to county Register of Deeds and Tax Administration.
+- Terrain/slope and wetlands screening require DS-001 (USGS TNM) and DS-004 (NWI) live connectors; not included in fixture regression.
+- DS-017 (commercial parcel data) remains license-blocked; not required for private MVP.
+- Hosted-production gates (`hosted_production` section of `config/private_mvp_beta_readiness.yaml`) intentionally deferred.
+
 ## 2026-06-06 GitHub Actions Node 24 readiness
 
 **Scope:**

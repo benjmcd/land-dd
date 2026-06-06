@@ -12,6 +12,8 @@ NOT_EVALUATED_DOMAINS = (
     "env_hazard",
     "resource_context",
     "market_context",
+    "parcels",
+    "assessor",
 )
 
 NOT_EVALUATED_CLAIM_CODES = {
@@ -19,6 +21,8 @@ NOT_EVALUATED_CLAIM_CODES = {
     "env_hazard": "ENV_HAZ_NOT_EVALUATED",
     "resource_context": "RESOURCE_NOT_EVALUATED",
     "market_context": "MARKET_OUT_OF_SCOPE",
+    "parcels": "PARCEL_NOT_EVALUATED",
+    "assessor": "ASSESSOR_NOT_EVALUATED",
 }
 
 NOT_EVALUATED_CAVEATS = {
@@ -42,6 +46,19 @@ NOT_EVALUATED_CAVEATS = {
         "Market context was not evaluated. This screening tool provides no "
         "sales-comparison, appraisal, buyer-suitability, or financial-return "
         "guidance."
+    ),
+    "parcels": (
+        "Parcel boundary and cadastral data were not available through a "
+        "machine-queryable county connection for this analysis. Parcel "
+        "information requires confirmation by the county Register of Deeds "
+        "and a licensed surveyor. Mapped parcel boundaries are not "
+        "survey-grade and do not confirm legal boundaries."
+    ),
+    "assessor": (
+        "Assessor and tax data were not available through a machine-queryable "
+        "county connection for this analysis. Tax records, assessed value, "
+        "and ownership information require confirmation by the county Tax "
+        "Administration office. Assessed value is not market value."
     ),
 }
 
