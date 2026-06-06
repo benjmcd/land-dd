@@ -115,9 +115,14 @@ class InMemoryConnectorReviewQueueRepository:
         requested_by: UUID | None = None,
     ) -> ConnectorReviewQueueItem:
         ingest_run_id = review_status.handoff.packet.ingest_run_id
-        existing = self._store.get(ingest_run_id)
+        existing = self.get_by_ingest_run_id(
+            ingest_run_id,
+            workspace_id=workspace_id,
+        )
         if existing is not None:
             return existing
+        if ingest_run_id in self._store:
+            raise ValueError("connector review queue insert did not round-trip")
         item = ConnectorReviewQueueItem(
             job_id=ingest_run_id,
             workspace_id=workspace_id,
@@ -430,7 +435,10 @@ class SqlAlchemyConnectorReviewQueueRepository:
             },
         )
         self._session.flush()
-        queued = self.get_by_ingest_run_id(ingest_run_id)
+        queued = self.get_by_ingest_run_id(
+            ingest_run_id,
+            workspace_id=workspace_id,
+        )
         if queued is None:
             raise ValueError("connector review queue insert did not round-trip")
         return queued

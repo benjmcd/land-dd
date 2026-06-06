@@ -1258,3 +1258,13 @@ $env:RUN_DB_SMOKE='1'; cd backend; py -3.12 -m pytest -q tests/api/test_report_r
   `.\scripts\verify.ps1` then passed; source readiness remains
   `sources=8 ready=4 blocked=4` for Must sources, with `DS-010`, `DS-011`, `DS-017`,
   and `DS-023` still blocked.
+- 2026-06-06: Followed up on three new PR #20 review threads after PR #20 merged and
+  main CI passed. This narrow slice preserves workspace scope for idempotent connector
+  review enqueue collisions by failing closed on cross-workspace duplicates, embeds the
+  strict `SourceContract` schema into source-provenance review bundles, and makes
+  reason-required primary connector review actions require non-null request bodies in
+  runtime OpenAPI. Focused pytest, ruff, mypy, regenerated OpenAPI parity, full
+  `.\scripts\verify.ps1`, and Must-source readiness audit pass locally; DB smoke is
+  still skipped unless `RUN_DB_SMOKE=1`. The slice does not change the larger L10
+  blocker profile: `DS-010`, `DS-011`, `DS-017`, and `DS-023` remain blocked, and
+  hosted production blockers remain open.

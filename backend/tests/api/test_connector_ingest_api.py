@@ -14,6 +14,7 @@ from app.api.dependencies import ApiServices
 from app.api.report_auth import create_report_identity_token
 from app.area_geometry.area_repo import SqlAlchemyAreaRepository
 from app.area_geometry.service import AreaService
+from app.connectors import InMemoryConnectorReviewQueueRepository
 from app.core.config import Settings
 from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
@@ -378,6 +379,47 @@ def test_run_connector_rejects_area_outside_authenticated_workspace() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "area not found"
+
+
+def test_run_connector_returns_409_for_cross_workspace_queue_collision() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    _seed(services)
+
+    review_status = services.connector_review_statuses.get(_FIXTURE_INGEST_RUN_ID)
+    if review_status is None:
+        response = client.post(
+            "/connector-runs",
+            json={
+                "connector_name": "fixture_flood_static",
+                "fixture_key": "flood_success",
+            },
+            headers=_auth_headers(),
+        )
+        assert response.status_code == 201
+        review_status = services.connector_review_statuses[_FIXTURE_INGEST_RUN_ID]
+        cast(
+            InMemoryConnectorReviewQueueRepository,
+            services.connector_review_queue_repo,
+        )._store.clear()
+
+    services.connector_review_queue_repo.enqueue_review_status(
+        review_status,
+        workspace_id=_OTHER_WORKSPACE_ID,
+        requested_by=_OTHER_USER_ID,
+    )
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == (
+        "connector review queue item conflicts with authenticated workspace"
+    )
 
 
 def test_run_connector_accepts_signed_identity_token() -> None:

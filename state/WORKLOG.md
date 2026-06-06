@@ -1389,6 +1389,14 @@ Append concise entries. Do not rely on chat history.
   atomic SQL connector-review enqueue using `ON CONFLICT (idempotency_key) DO NOTHING`;
   primary review-action required-reason OpenAPI schema parity; and conditional
   `OBJECT_STORE_ROOT` defaulting in `scripts/run_api.ps1`.
+- After PR #20 merged and main CI passed, re-scanned live review threads and found
+  three new unresolved PR #20 threads. Opened an isolated follow-up worktree from
+  current `origin/main`; patched cross-workspace connector review queue idempotency
+  collisions to fail closed in memory and SQL-backed paths; embedded strict
+  `SourceContract` validation into the source-provenance review-bundle schema; made
+  reason-required primary review-action bodies required in runtime OpenAPI signatures;
+  regenerated OpenAPI stubs; and added focused regressions for the reported failure
+  modes.
 
 ## 2026-06-03 (repo bootstrap + local index)
 

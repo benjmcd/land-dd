@@ -2,6 +2,51 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 PR #20 review-thread follow-up
+
+**Scope:**
+
+- `backend/app/connectors/review_queue.py`
+- `backend/app/api/connectors.py`
+- `schemas/source_provenance_schema.json`
+- `api/openapi_stub.yaml`
+- `docs/planning_pack/api/openapi_stub.yaml`
+- `backend/tests/connectors/test_review_queue.py`
+- `backend/tests/api/test_connector_review_actions.py`
+- `backend/tests/source_registry/test_source_provenance_schema_contract.py`
+- `state/PROJECT_STATE.md`
+- `state/WORKLOG.md`
+- `state/VALIDATION_LOG.md`
+- `plans/2026-06-05-l10-production-hardening.md`
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q .\backend\tests\connectors\test_review_queue.py .\backend\tests\api\test_connector_review_actions.py .\backend\tests\source_registry\test_source_provenance_schema_contract.py .\backend\tests\api\test_openapi_contract.py .\backend\tests\test_planning_pack_schema_copies.py
+ruff check .\backend\app\connectors\review_queue.py .\backend\app\api\connectors.py .\backend\tests\connectors\test_review_queue.py .\backend\tests\api\test_connector_review_actions.py .\backend\tests\source_registry\test_source_provenance_schema_contract.py
+$env:PYTHONPATH='backend'; py -3.12 -m mypy .\backend\app\connectors\review_queue.py .\backend\app\api\connectors.py .\backend\tests\connectors\test_review_queue.py .\backend\tests\api\test_connector_review_actions.py .\backend\tests\source_registry\test_source_provenance_schema_contract.py
+.\scripts\verify.ps1
+$env:PYTHONPATH='backend'; py -3.12 .\scripts\source_readiness.py --priority Must --json
+```
+
+**Result:**
+
+Focused pytest passed after regenerating OpenAPI stubs; focused ruff passed; focused
+mypy passed; full Windows `.\scripts\verify.ps1` passed. Full verification reported
+existing `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warnings in unrelated paths. Local
+DB smoke was skipped because `RUN_DB_SMOKE` was not set; the added DB regression remains
+gated behind `RUN_DB_SMOKE=1`.
+
+**Residual risk:**
+
+- Must-source readiness remains `sources=8 ready=4 blocked=4`; blocked sources are
+  `DS-010`, `DS-011`, `DS-017`, and `DS-023`.
+- Hosted production blockers remain: billing, hosted log retention, automatic key
+  rotation/external secret manager, full user auth/RBAC, hosted deployment, and hosted
+  registry-image/attestation proof.
+- Dependabot PRs #17/#18 remain unstable until refreshed or replaced by a controlled
+  GitHub Actions upgrade slice.
+
 ## 2026-06-06 CI gate authority correction
 
 **Scope:**

@@ -433,11 +433,17 @@ def run_fixture_connector(
     services.connector_review_statuses[result.connector_result.retrieval_run.ingest_run_id] = (
         review_status
     )
-    queue_item = services.connector_review_queue_repo.enqueue_review_status(
-        review_status,
-        workspace_id=auth.workspace_id,
-        requested_by=auth.user_id,
-    )
+    try:
+        queue_item = services.connector_review_queue_repo.enqueue_review_status(
+            review_status,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="connector review queue item conflicts with authenticated workspace",
+        ) from exc
     return ConnectorRunResultContract(
         ingest_run_id=result.connector_result.retrieval_run.ingest_run_id,
         connector_name=result.connector_result.retrieval_run.connector_name,
@@ -1250,7 +1256,7 @@ def request_fixture_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: RequiredConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)
@@ -1283,7 +1289,7 @@ def requeue_after_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: RequiredConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)
@@ -1316,7 +1322,7 @@ def cancel_review(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: RequiredConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)

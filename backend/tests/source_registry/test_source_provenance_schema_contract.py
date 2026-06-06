@@ -6,6 +6,7 @@ from typing import Any, cast
 from uuid import uuid4
 
 from app.domain.source_contracts import (
+    SourceContract,
     SourceDatasetContract,
     SourceDatasetVersionContract,
     SourceRetrievalRunContract,
@@ -33,6 +34,30 @@ def test_source_provenance_schema_matches_dataset_contract_fields() -> None:
 
     assert set(properties) == set(SourceDatasetContract.model_fields)
     assert set(required) == set(SourceDatasetContract.model_fields)
+
+
+def test_source_provenance_schema_embeds_source_contract_schema() -> None:
+    schema = load_schema()
+    source_provenance_source = contract_schema("SourceContract")
+    source_schema = cast(
+        dict[str, Any],
+        json.loads(
+            (REPO_ROOT / "schemas" / "source_schema.json").read_text(
+                encoding="utf-8",
+            ),
+        ),
+    )
+    properties = cast(dict[str, Any], source_provenance_source["properties"])
+    required = cast(list[str], source_provenance_source["required"])
+
+    assert schema["properties"]["source"] == {"$ref": "#/$defs/SourceContract"}
+    assert set(properties) == set(SourceContract.model_fields)
+    assert set(required) == set(SourceContract.model_fields)
+    assert source_provenance_source == {
+        key: value
+        for key, value in source_schema.items()
+        if key not in {"$schema", "$id", "title"}
+    }
 
 
 def test_source_provenance_schema_matches_dataset_version_contract_fields() -> None:
