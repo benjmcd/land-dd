@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -67,7 +68,11 @@ class EvidenceService:
         domain: str = "unknown",
         observation: str | None = None,
         observed_value: dict[str, object] | None = None,
+        dataset_version_id: UUID | None = None,
         source_ingest_run_id: UUID | None = None,
+        method_version: str = "0.1.0",
+        source_date: str | None = None,
+        observed_at: datetime | None = None,
     ) -> EvidenceContract:
         self._validate_area_registered(area_id)
         self._validate_source_registered(source_id)
@@ -86,8 +91,13 @@ class EvidenceService:
             "confidence": ConfidenceBand.UNKNOWN,
             "caveat": caveat,
             "is_source_failure": True,
+            "dataset_version_id": dataset_version_id,
             "source_ingest_run_id": source_ingest_run_id,
+            "method_version": method_version,
+            "source_date": source_date,
         }
+        if observed_at is not None:
+            evidence_data["observed_at"] = observed_at
         if evidence_id is not None:
             evidence_data["evidence_id"] = evidence_id
         evidence = EvidenceContract(**evidence_data)

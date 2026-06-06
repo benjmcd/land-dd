@@ -409,6 +409,7 @@ class SqlAlchemyConnectorReviewQueueRepository:
                     :idempotency_key,
                     1
                 )
+                ON CONFLICT (idempotency_key) DO NOTHING
                 """
             ),
             {

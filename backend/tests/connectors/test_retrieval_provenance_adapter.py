@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
+from typing import cast
 from uuid import UUID
 
 import app.connectors.retrieval_provenance as retrieval_provenance_module
@@ -9,7 +10,17 @@ from app.connectors import (
     ConnectorRetrievalProvenanceAdapter,
     StaticFloodFixtureConnector,
 )
-from app.domain.source_contracts import SourceRetrievalRunContract
+from app.connectors.fixture_resources import (
+    FIXTURE_SOURCE_ID,
+    fixture_dataset_contract,
+    fixture_dataset_version_contract,
+)
+from app.connectors.retrieval_provenance import SourceRetrievalProvenancePort
+from app.domain.source_contracts import SourceContract, SourceRetrievalRunContract
+from app.source_registry.provenance_repo import InMemorySourceProvenanceRepository
+from app.source_registry.provenance_service import SourceProvenanceService
+from app.source_registry.service import SourceService
+from app.source_registry.source_repo import InMemorySourceRepository
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
 
@@ -76,6 +87,32 @@ def test_retrieval_provenance_adapter_records_before_evidence_ingestion() -> Non
     assert result.recorded_run == connector_result.retrieval_run
     assert connector_result.evidence_inputs
     assert port.recorded_runs == [connector_result.retrieval_run]
+
+
+def test_retrieval_provenance_adapter_records_raw_source_provenance_service() -> None:
+    retrieval_run = _load_success_run()
+    source_service = SourceService(InMemorySourceRepository())
+    source_service.register(
+        SourceContract(
+            source_id=FIXTURE_SOURCE_ID,
+            name="Static Connector Fixture Source",
+            domain="fixture",
+        )
+    )
+    provenance_service = SourceProvenanceService(
+        source_service=source_service,
+        repo=InMemorySourceProvenanceRepository(),
+    )
+    provenance_service.ensure_dataset(fixture_dataset_contract())
+    provenance_service.ensure_dataset_version(fixture_dataset_version_contract())
+
+    result = ConnectorRetrievalProvenanceAdapter(
+        cast(SourceRetrievalProvenancePort, provenance_service),
+    ).record_retrieval_run(retrieval_run)
+
+    assert result.recorded_run == retrieval_run
+    assert result.skipped_run is None
+    assert provenance_service.retrieval_run_exists(retrieval_run.ingest_run_id) is True
 
 
 def test_retrieval_provenance_adapter_stays_connector_owned() -> None:

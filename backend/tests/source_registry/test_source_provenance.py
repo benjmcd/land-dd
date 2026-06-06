@@ -194,6 +194,22 @@ def test_record_retrieval_run_contract_rejects_duplicate_identity() -> None:
         provenance_service.record_retrieval_run_contract(supplied_run)
 
 
+@pytest.mark.parametrize(
+    "field_name",
+    ("row_count", "error_count", "warning_count"),
+)
+def test_source_retrieval_run_contract_rejects_negative_counts(
+    field_name: str,
+) -> None:
+    with pytest.raises(ValueError):
+        SourceRetrievalRunContract.model_validate(
+            {
+                "connector_name": "fixture_flood_static",
+                field_name: -1,
+            },
+        )
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_source_provenance_repository_round_trips_records() -> None:
     engine = build_engine()

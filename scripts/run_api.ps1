@@ -40,7 +40,9 @@ $previousPythonPath = $env:PYTHONPATH
 $previousObjectStoreRoot = $env:OBJECT_STORE_ROOT
 $env:APP_STORAGE_BACKEND = $StorageBackend
 $env:PYTHONPATH = '.'
-$env:OBJECT_STORE_ROOT = Join-Path $root 'local_artifacts\object_store'
+if ([string]::IsNullOrWhiteSpace($env:OBJECT_STORE_ROOT)) {
+    $env:OBJECT_STORE_ROOT = Join-Path $root 'local_artifacts\object_store'
+}
 $uvicornArgs = @('-m', 'uvicorn', 'app.main:app', '--host', $BindAddress, '--port', [string]$Port)
 if (-not $NoReload) {
     $uvicornArgs += '--reload'

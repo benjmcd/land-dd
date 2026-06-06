@@ -194,6 +194,23 @@ def test_fixture_quality_flags_success_metric_and_geometry_gaps() -> None:
     )
 
 
+def test_fixture_quality_flags_success_without_spatial_evidence() -> None:
+    result = _load_success()
+    retrieval_run = result.retrieval_run.model_copy(update={"row_count": 0})
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=(),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.SUCCEEDED_SPATIAL_EVIDENCE_MISSING,
+    )
+
+
 def test_fixture_quality_flags_blocked_or_failed_metric_gaps() -> None:
     result = _load_failure()
     retrieval_run = result.retrieval_run.model_copy(
@@ -212,6 +229,41 @@ def test_fixture_quality_flags_blocked_or_failed_metric_gaps() -> None:
         ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ROW_COUNT_NOT_ZERO,
         ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_ERROR_COUNT_MISSING,
         ConnectorFixtureQualityIssueCode.RETRIEVAL_FAILURE_REASON_MISSING,
+    )
+
+
+def test_fixture_quality_flags_blocked_or_failed_without_source_failure_evidence() -> None:
+    result = _load_failure()
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=result.retrieval_run,
+            evidence_inputs=(),
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.BLOCKED_OR_FAILED_SOURCE_FAILURE_MISSING,
+    )
+
+
+def test_fixture_quality_flags_unsupported_retrieval_status() -> None:
+    result = _load_success()
+    retrieval_run = result.retrieval_run.model_copy(
+        update={"status": "pending"},
+    )
+
+    profile = evaluate_flood_fixture_quality(
+        FloodFixtureConnectorResult(
+            retrieval_run=retrieval_run,
+            evidence_inputs=result.evidence_inputs,
+        ),
+    )
+
+    assert profile.passed is False
+    assert tuple(issue.code for issue in profile.issues) == (
+        ConnectorFixtureQualityIssueCode.RETRIEVAL_STATUS_UNSUPPORTED,
     )
 
 

@@ -6741,6 +6741,32 @@ cd backend && PYTHONPATH=. python -m pytest -q
 
 DB smoke not run by default because it requires Docker/PostGIS.
 
+## 2026-06-06 review-debt focused validation
+
+```powershell
+cd backend
+py -3.12 -m pytest -q tests\source_registry\test_source_provenance.py tests\source_registry\test_source_provenance_schema_contract.py tests\connectors\test_fixture_quality.py tests\connectors\test_fixture_workflow.py tests\connectors\test_evidence_ingestion_adapter.py tests\connectors\test_retrieval_provenance_adapter.py tests\connectors\test_review_queue.py tests\test_run_api_script.py tests\api\test_connector_review_actions.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+ruff check app\domain\source_contracts.py app\evidence_ledger\service.py app\connectors app\api\connectors.py tests\source_registry\test_source_provenance.py tests\source_registry\test_source_provenance_schema_contract.py tests\connectors\test_fixture_quality.py tests\connectors\test_fixture_workflow.py tests\connectors\test_evidence_ingestion_adapter.py tests\connectors\test_retrieval_provenance_adapter.py tests\connectors\test_review_queue.py tests\test_run_api_script.py tests\api\test_connector_review_actions.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+mypy app\domain\source_contracts.py app\evidence_ledger\service.py app\connectors app\api\connectors.py tests\source_registry\test_source_provenance.py tests\source_registry\test_source_provenance_schema_contract.py tests\connectors\test_fixture_quality.py tests\connectors\test_fixture_workflow.py tests\connectors\test_evidence_ingestion_adapter.py tests\connectors\test_retrieval_provenance_adapter.py tests\connectors\test_review_queue.py tests\test_run_api_script.py tests\api\test_connector_review_actions.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+git diff --check
+```
+
+Result: focused pytest passed, ruff passed, mypy passed for 39 source files, and
+`git diff --check` passed with only CRLF normalization warnings on generated OpenAPI
+stub files.
+
+```powershell
+.\scripts\verify.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+```
+
+Result: full Windows verification passed. Backend tests, ruff, mypy, workspace
+validation, and structural invariants passed; DB smoke was skipped because
+`RUN_DB_SMOKE` was not set. The full test run still reports existing
+`HTTP_422_UNPROCESSABLE_ENTITY` deprecation warnings in unrelated API paths.
+Must-source readiness remains `sources=8 ready=4 blocked=4`; blocked Must sources are
+`DS-010`, `DS-011`, `DS-017`, and `DS-023`.
+
 ## 2026-06-03 local validation in generation environment
 
 ```bash

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -9,6 +10,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+import app.connectors.review_queue as review_queue_module
 from app.connectors import (
     CONNECTOR_REVIEW_STATUS_JOB_TYPE,
     ConnectorEvidenceIngestionAdapter,
@@ -134,6 +136,12 @@ def test_in_memory_review_queue_enqueues_idempotent_success_status() -> None:
     assert first.payload["ingest_run_id"] == str(review_status.handoff.packet.ingest_run_id)
     assert first.payload["area_id"] == str(review_status.handoff.packet.area_id)
     assert first.payload["review_required"] is False
+
+
+def test_sqlalchemy_review_queue_insert_uses_idempotency_conflict_guard() -> None:
+    source = inspect.getsource(review_queue_module.SqlAlchemyConnectorReviewQueueRepository)
+
+    assert "ON CONFLICT (idempotency_key) DO NOTHING" in source
 
 
 def test_in_memory_review_queue_prioritizes_human_review_status() -> None:

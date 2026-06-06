@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
+
+import pytest
 
 import app.connectors.fixture_workflow as fixture_workflow_module
 from app.connectors import (
     ConnectorEvidenceIngestionAdapter,
+    ConnectorFixtureQualityIssue,
+    ConnectorFixtureQualityIssueCode,
+    ConnectorFixtureQualityProfile,
+    ConnectorResult,
     ConnectorRetrievalProvenanceAdapter,
     FixtureConnectorIngestWorkflow,
+    FixtureConnectorIngestWorkflowError,
     StaticFloodFixtureConnector,
 )
 from app.domain.enums import ConfidenceBand, EvidenceType
@@ -117,13 +125,20 @@ def _workflow(
     *,
     retrieval_port: WorkflowRetrievalProvenancePort,
     evidence_port: WorkflowEvidencePort,
+    quality_evaluator: (
+        Callable[[ConnectorResult], ConnectorFixtureQualityProfile] | None
+    ) = None,
 ) -> FixtureConnectorIngestWorkflow:
+    kwargs = {}
+    if quality_evaluator is not None:
+        kwargs["quality_evaluator"] = quality_evaluator
     return FixtureConnectorIngestWorkflow(
         connector=StaticFloodFixtureConnector(),
         retrieval_provenance_adapter=ConnectorRetrievalProvenanceAdapter(
             retrieval_port,
         ),
         evidence_ingestion_adapter=ConnectorEvidenceIngestionAdapter(evidence_port),
+        **kwargs,
     )
 
 
@@ -171,6 +186,42 @@ def test_fixture_workflow_routes_source_failure_after_blocked_retrieval() -> Non
     assert result.retrieval_provenance.recorded_run == result.connector_result.retrieval_run
     assert len(evidence_port.source_failure_calls) == 1
     assert result.evidence_ingestion.created_evidence[0].is_source_failure is True
+
+
+def test_fixture_workflow_blocks_quality_failures_before_side_effects() -> None:
+    events: list[str] = []
+    retrieval_port = WorkflowRetrievalProvenancePort(events)
+    evidence_port = WorkflowEvidencePort(events)
+
+    def blocking_quality(
+        _connector_result: ConnectorResult,
+    ) -> ConnectorFixtureQualityProfile:
+        return ConnectorFixtureQualityProfile(
+            connector_name="fixture_flood_static",
+            evidence_count=0,
+            source_failure_count=0,
+            issues=(
+                ConnectorFixtureQualityIssue(
+                    code=ConnectorFixtureQualityIssueCode.RETRIEVAL_STATUS_UNSUPPORTED,
+                    message="not terminal",
+                ),
+            ),
+        )
+
+    with pytest.raises(
+        FixtureConnectorIngestWorkflowError,
+        match="retrieval_status_unsupported",
+    ):
+        _workflow(
+            retrieval_port=retrieval_port,
+            evidence_port=evidence_port,
+            quality_evaluator=blocking_quality,
+        ).ingest_fixture(FIXTURE_DIR / "flood_success.json")
+
+    assert events == []
+    assert retrieval_port.recorded_runs == []
+    assert evidence_port.created_observations == []
+    assert evidence_port.source_failure_calls == []
 
 
 def test_fixture_workflow_is_idempotent_for_repeated_fixture_runs() -> None:

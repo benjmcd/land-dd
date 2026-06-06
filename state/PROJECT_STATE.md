@@ -726,6 +726,19 @@ supports them; the lock/SBOM provenance artifacts still validate locally and in 
 After the follow-up, PR #19 remote CI passed all configured jobs, including DB-enabled
 verification.
 
+Review-debt closeout pass on 2026-06-06 is in progress on isolated branch
+`codex/review-debt`. Live defects from unresolved merged-PR review threads were patched
+for source retrieval count validation, source-provenance review-bundle schema parity,
+flood fixture quality fail-closed checks, fixture workflow quality gating before
+side effects, source-failure evidence provenance preservation, raw
+`SourceProvenanceService` retrieval adapter compatibility, atomic SQL connector review
+queue enqueue, primary connector review-action OpenAPI required-reason parity, and
+Windows API runner `OBJECT_STORE_ROOT` preservation. Focused pytest, ruff, mypy,
+OpenAPI parity, `git diff --check`, and full `.\scripts\verify.ps1` have passed for
+touched surfaces. Must-source readiness remains `sources=8 ready=4 blocked=4` with
+`DS-010`, `DS-011`, `DS-017`, and `DS-023` blocked. Remote PR CI remains pending for
+this branch.
+
 ## Local repo bootstrap state
 
 - Local Git initialized on `main`.

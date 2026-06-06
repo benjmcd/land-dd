@@ -1595,6 +1595,15 @@ components:
       - evidence_count_delta
       title: ReportRunDiffResponse
       type: object
+    RequiredConnectorReviewActionRequest:
+      properties:
+        reason:
+          title: Reason
+          type: string
+      required:
+      - reason
+      title: RequiredConnectorReviewActionRequest
+      type: object
     SeverityBand:
       enum:
       - critical
@@ -2989,7 +2998,7 @@ paths:
           application/json:
             schema:
               anyOf:
-              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
               - type: 'null'
               title: Request
       responses:
@@ -3040,7 +3049,7 @@ paths:
           application/json:
             schema:
               anyOf:
-              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
               - type: 'null'
               title: Request
       responses:
@@ -3091,7 +3100,7 @@ paths:
           application/json:
             schema:
               anyOf:
-              - $ref: '#/components/schemas/ConnectorReviewActionRequest'
+              - $ref: '#/components/schemas/RequiredConnectorReviewActionRequest'
               - type: 'null'
               title: Request
       responses:

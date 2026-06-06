@@ -97,34 +97,46 @@ class ConnectorEvidenceIngestionAdapter:
             raise ConnectorEvidenceIngestionError(
                 "is_source_failure connector evidence must use source_failure type",
             )
+        base_kwargs: dict[str, object | None] = {
+            "evidence_id": evidence.evidence_id,
+            "area_id": evidence.area_id,
+            "source_id": evidence.source_id,
+            "method_code": evidence.method_code,
+            "caveat": evidence.caveat,
+            "evidence_code": evidence.evidence_code,
+            "domain": evidence.domain,
+            "observation": evidence.observation,
+            "observed_value": evidence.observed_value,
+        }
+        full_kwargs = {
+            **base_kwargs,
+            "dataset_version_id": evidence.dataset_version_id,
+            "source_ingest_run_id": evidence.source_ingest_run_id,
+            "method_version": evidence.method_version,
+            "source_date": evidence.source_date,
+            "observed_at": evidence.observed_at,
+        }
         try:
             created = cast(Any, self._evidence_port).create_source_failure(
-                evidence_id=evidence.evidence_id,
-                area_id=evidence.area_id,
-                source_id=evidence.source_id,
-                method_code=evidence.method_code,
-                caveat=evidence.caveat,
-                evidence_code=evidence.evidence_code,
-                domain=evidence.domain,
-                observation=evidence.observation,
-                observed_value=evidence.observed_value,
-                source_ingest_run_id=evidence.source_ingest_run_id,
+                **full_kwargs,
+            )
+            return cast(EvidenceContract, created)
+        except TypeError as exc:
+            if not _is_legacy_source_failure_signature_error(exc):
+                raise
+        try:
+            created = cast(Any, self._evidence_port).create_source_failure(
+                **{
+                    **base_kwargs,
+                    "source_ingest_run_id": evidence.source_ingest_run_id,
+                },
             )
             return cast(EvidenceContract, created)
         except TypeError as exc:
             if "source_ingest_run_id" not in str(exc):
                 raise
-            return self._evidence_port.create_source_failure(
-                evidence_id=evidence.evidence_id,
-                area_id=evidence.area_id,
-                source_id=evidence.source_id,
-                method_code=evidence.method_code,
-                caveat=evidence.caveat,
-                evidence_code=evidence.evidence_code,
-                domain=evidence.domain,
-                observation=evidence.observation,
-                observed_value=evidence.observed_value,
-            )
+        created = cast(Any, self._evidence_port).create_source_failure(**base_kwargs)
+        return cast(EvidenceContract, created)
 
     def _matching_source_failure(
         self,
@@ -159,6 +171,19 @@ def _stable_observed_value(observed_value: dict[str, object]) -> str:
         default=str,
         separators=(",", ":"),
         sort_keys=True,
+    )
+
+
+def _is_legacy_source_failure_signature_error(exc: TypeError) -> bool:
+    return any(
+        field_name in str(exc)
+        for field_name in {
+            "dataset_version_id",
+            "source_ingest_run_id",
+            "method_version",
+            "source_date",
+            "observed_at",
+        }
     )
 
 

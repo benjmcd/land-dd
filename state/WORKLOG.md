@@ -1370,6 +1370,26 @@ Append concise entries. Do not rely on chat history.
 - Completed Lane D TD-050 for the in-memory protocol adapter wiring: added `SourceServiceProtocolAdapter` and `AreaServiceProtocolAdapter`, wired them into `EvidenceService` construction in the report pipeline, and added adapter-focused delegation/guardrail tests. Lane D tests pass: 15 tests.
 - `verify.sh` passes via explicit Git Bash after TD-050: 172 tests pass; ruff clean; mypy clean (69 source files); DB smoke skipped. Docker Desktop Linux engine remains unavailable for DB smoke.
 
+## 2026-06-06 (review-debt closeout pass)
+
+- Created isolated review-debt branch/worktree `codex/review-debt` from live
+  `origin/main` after PR #19 merged and passed post-merge CI.
+- Audited unresolved merged-PR review threads against current `origin/main`.
+  Determined several threads were stale after PR #19 or later work
+  (`scripts/run_api.sh` executable bit, access fixture quality checks, and no current
+  report-list pagination surface), while live review-backed defects remained in source
+  provenance, connector fixture quality/workflow, evidence ingestion, retrieval
+  provenance adapter compatibility, SQL review queue enqueue, OpenAPI request schema,
+  and the Windows API runner.
+- Patched the live defects narrowly: non-negative retrieval counts in
+  `SourceRetrievalRunContract`; root source-provenance review-bundle schema fields;
+  terminal-status, source-failure, and spatial-evidence flood fixture quality gates;
+  workflow quality gating before provenance/evidence writes; source-failure provenance
+  field preservation; raw `SourceProvenanceService` retrieval adapter compatibility;
+  atomic SQL connector-review enqueue using `ON CONFLICT (idempotency_key) DO NOTHING`;
+  primary review-action required-reason OpenAPI schema parity; and conditional
+  `OBJECT_STORE_ROOT` defaulting in `scripts/run_api.ps1`.
+
 ## 2026-06-03 (repo bootstrap + local index)
 
 - Ran `npx codesight --index`; local index written to `.codesight/`.

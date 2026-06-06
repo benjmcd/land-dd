@@ -31,6 +31,7 @@ from app.connectors.fixture_quality import (
 )
 from app.connectors.fixture_workflow import (
     FixtureConnectorIngestWorkflow,
+    FixtureConnectorIngestWorkflowError,
     FixtureConnectorIngestWorkflowResult,
 )
 from app.connectors.flood_fixture import (
@@ -171,6 +172,7 @@ __all__ = [
     "FemaNfhlConnectorError",
     "FemaNfhlConnectorResult",
     "FixtureConnectorError",
+    "FixtureConnectorIngestWorkflowError",
     "FixtureConnectorIngestWorkflow",
     "FixtureConnectorIngestWorkflowResult",
     "FixtureConnectorProtocol",

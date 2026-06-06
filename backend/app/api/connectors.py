@@ -179,6 +179,10 @@ class ConnectorReviewActionRequest(BaseModel):
     reason: str | None = None
 
 
+class RequiredConnectorReviewActionRequest(BaseModel):
+    reason: str
+
+
 class ConnectorReviewActionResponse(BaseModel):
     action: str
     ingest_run_id: UUID
@@ -413,6 +417,7 @@ def run_fixture_connector(
                 source_provenance_service=services.source_provenance_service,
                 evidence_service=services.evidence_service,
                 connector=connector,
+                quality_evaluator=_QUALITY_EVALUATORS[request.connector_name],
             )
             result = workflow.ingest_fixture(fixture_path)
     except ValueError as exc:
@@ -1245,7 +1250,7 @@ def request_fixture_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: ConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest | None = None,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)
@@ -1278,7 +1283,7 @@ def requeue_after_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: ConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest | None = None,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)
@@ -1311,7 +1316,7 @@ def cancel_review(
     ingest_run_id: UUID,
     services: ServicesDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
-    request: ConnectorReviewActionRequest | None = None,
+    request: RequiredConnectorReviewActionRequest | None = None,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_queue_item_or_404(services, ingest_run_id)
@@ -1464,23 +1469,27 @@ def _area_id_from_queue_item(queue_item: ConnectorReviewQueueItem) -> UUID:
         ) from exc
 
 
-def _required_action_reason(request: ConnectorReviewActionRequest | None) -> str:
+def _required_action_reason(
+    request: ConnectorReviewActionRequest | RequiredConnectorReviewActionRequest | None,
+) -> str:
     reason = _optional_action_reason(request)
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reason is required",
         )
     return reason
 
 
-def _optional_action_reason(request: ConnectorReviewActionRequest | None) -> str | None:
+def _optional_action_reason(
+    request: ConnectorReviewActionRequest | RequiredConnectorReviewActionRequest | None,
+) -> str | None:
     if request is None or request.reason is None:
         return None
     reason = request.reason.strip()
     if not reason:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reason is required",
         )
     return reason

@@ -101,6 +101,12 @@
     }
   },
   "properties": {
+    "source": {
+      "type": "object"
+    },
+    "production_use_allowed": {
+      "type": "boolean"
+    },
     "datasets": {
       "type": "array",
       "items": { "$ref": "#/$defs/SourceDatasetContract" }
@@ -112,8 +118,36 @@
     "retrieval_runs": {
       "type": "array",
       "items": { "$ref": "#/$defs/SourceRetrievalRunContract" }
+    },
+    "latest_retrieval_status": {
+      "type": "string",
+      "enum": ["pending", "running", "succeeded", "failed", "blocked", "skipped"]
+    },
+    "review_summary": {
+      "type": "object",
+      "required": [
+        "source_count",
+        "dataset_count",
+        "dataset_version_count",
+        "retrieval_run_count"
+      ],
+      "properties": {
+        "source_count": { "type": "integer", "minimum": 0 },
+        "dataset_count": { "type": "integer", "minimum": 0 },
+        "dataset_version_count": { "type": "integer", "minimum": 0 },
+        "retrieval_run_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
     }
   },
-  "required": ["datasets", "dataset_versions", "retrieval_runs"],
+  "required": [
+    "source",
+    "production_use_allowed",
+    "datasets",
+    "dataset_versions",
+    "retrieval_runs",
+    "latest_retrieval_status",
+    "review_summary"
+  ],
   "additionalProperties": false
 }
