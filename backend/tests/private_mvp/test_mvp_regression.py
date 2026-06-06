@@ -16,9 +16,11 @@ from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.connectors import (
     StaticAccessFixtureConnector,
+    StaticBuildabilityFixtureConnector,
     StaticFloodFixtureConnector,
     build_fixture_workflow_with_public_services,
     evaluate_access_fixture_quality,
+    evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
@@ -191,6 +193,11 @@ def test_buncombe_mvp_regression() -> None:
                 "nc_buncombe_bun_slope_access.json",
                 StaticAccessFixtureConnector,
                 evaluate_access_fixture_quality,
+            ),
+            (
+                "nc_buncombe_bun_slope_buildability.json",
+                StaticBuildabilityFixtureConnector,
+                evaluate_buildability_fixture_quality,
             ),
         ],
     )

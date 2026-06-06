@@ -2,6 +2,10 @@ from app.connectors.access_fixture import (
     AccessFixtureConnectorResult,
     StaticAccessFixtureConnector,
 )
+from app.connectors.buildability_fixture import (
+    BuildabilityFixtureConnectorResult,
+    StaticBuildabilityFixtureConnector,
+)
 from app.connectors.chatham_parcels import (
     CHATHAM_PARCELS_CAVEAT,
     CHATHAM_PARCELS_CONNECTOR_NAME,
@@ -38,6 +42,7 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
     evaluate_access_fixture_quality,
+    evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -232,6 +237,8 @@ __all__ = [
     "SSURGO_POST_REST_URL",
     "SqlAlchemyConnectorReviewQueueRepository",
     "SqlAlchemyLiveConnectorJobStore",
+    "BuildabilityFixtureConnectorResult",
+    "StaticBuildabilityFixtureConnector",
     "StaticFloodFixtureConnector",
     "StaticAccessFixtureConnector",
     "StaticLocalFileConnector",
@@ -259,6 +266,7 @@ __all__ = [
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
     "evaluate_access_fixture_quality",
+    "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

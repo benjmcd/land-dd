@@ -1,0 +1,51 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e3e3e3e3-e3e3-4e3e-8e3e-e3e3e3e3e3e3",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_buildability_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_access_buildability",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e3e4e5e6-e3e4-4e5e-8e6e-e3e4e5e6e7e8",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "derived_metric",
+      "evidence_code": "BUILDABILITY_SLOPE_SCREEN",
+      "domain": "buildability",
+      "observation": "Fixture terrain screening: mountain access route area, Buncombe County. Moderate-to-steep terrain with limited low-slope buildable area.",
+      "observed_value": {
+        "metric_code": "fixture_slope_buildability_screen",
+        "value": 28,
+        "unit": "%",
+        "insufficient_low_slope_buildable_area": true,
+        "low_slope_buildable_area_sufficient": false,
+        "low_slope_area_ratio": 0.18,
+        "mean_elevation_m": 780,
+        "relief_m": 160,
+        "mean_slope_pct": 28,
+        "screening_note": "Mountain terrain with moderate-to-steep slope. Less than 20% of area meets low-slope buildability threshold."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_buildability_slope_overlay",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only terrain screening for Buncombe County mountain access area. Slope metrics are approximate; confirmed survey-grade slope analysis required before any grading, septic, or construction decision.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}

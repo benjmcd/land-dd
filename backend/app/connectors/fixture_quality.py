@@ -65,6 +65,10 @@ _ZONING_FIXTURE_DOMAIN = "zoning"
 _ZONING_FIXTURE_CONNECTOR_NAME = "fixture_zoning_static"
 _ZONING_FIXTURE_METHOD_PREFIX = "fixture_zoning_"
 
+_BUILDABILITY_FIXTURE_DOMAIN = "buildability"
+_BUILDABILITY_FIXTURE_CONNECTOR_NAME = "fixture_buildability_static"
+_BUILDABILITY_FIXTURE_METHOD_PREFIX = "fixture_buildability_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -769,11 +773,25 @@ def _non_empty_text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
+def evaluate_buildability_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_BUILDABILITY_FIXTURE_CONNECTOR_NAME,
+        domain=_BUILDABILITY_FIXTURE_DOMAIN,
+        method_prefix=_BUILDABILITY_FIXTURE_METHOD_PREFIX,
+        label="buildability",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
     "ConnectorFixtureQualityProfile",
     "evaluate_access_fixture_quality",
+    "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

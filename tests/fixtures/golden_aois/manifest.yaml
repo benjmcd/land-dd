@@ -20,7 +20,8 @@ cases:
     connector_fixture_files:
       flood: nc_buncombe_bun_slope_flood.json
       access: nc_buncombe_bun_slope_access.json
-    expected_connector_workflow_domains: [flood, access]
+      buildability: nc_buncombe_bun_slope_buildability.json
+    expected_connector_workflow_domains: [flood, access, buildability]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -45,7 +46,8 @@ cases:
     geometry_file: bun_flood.geojson
     connector_fixture_files:
       flood: nc_buncombe_bun_flood_flood.json
-    expected_connector_workflow_domains: [flood]
+      buildability: nc_buncombe_bun_flood_buildability.json
+    expected_connector_workflow_domains: [flood, buildability]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -69,7 +71,8 @@ cases:
     geometry_file: bun_access.geojson
     connector_fixture_files:
       access: nc_buncombe_bun_access_access.json
-    expected_connector_workflow_domains: [access]
+      buildability: nc_buncombe_bun_access_buildability.json
+    expected_connector_workflow_domains: [access, buildability]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:

@@ -23,7 +23,7 @@ REQUIRED_CASE_FIELDS = {
     "forbidden_claims",
 }
 
-ALLOWED_CONNECTOR_DOMAINS = {"flood", "access", "zoning"}
+ALLOWED_CONNECTOR_DOMAINS = {"flood", "access", "zoning", "buildability"}
 EXPECTED_NOT_EVALUATED_DOMAINS = {"parcels", "assessor"}
 SUPPORTED_COUNTIES = {"buncombe", "chatham", "brunswick"}
 EXPECTED_STATE = "nc"
@@ -166,7 +166,7 @@ def test_connector_fixture_domains_are_supported() -> None:
             assert domain in ALLOWED_CONNECTOR_DOMAINS, (
                 f"Case {case_id!r}: connector domain {domain!r} not in "
                 f"supported domains {ALLOWED_CONNECTOR_DOMAINS}. "
-                "Only flood, access, and zoning fixture connectors exist."
+                "Only flood, access, zoning, and buildability fixture connectors exist."
             )
 
 
