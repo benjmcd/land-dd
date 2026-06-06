@@ -962,6 +962,82 @@ components:
       - needs_review
       title: JobStatus
       type: string
+    LineageClaimEntry:
+      properties:
+        claim_code:
+          title: Claim Code
+          type: string
+        claim_id:
+          format: uuid
+          title: Claim Id
+          type: string
+        domain:
+          title: Domain
+          type: string
+        evidence_ids:
+          items:
+            format: uuid
+            type: string
+          title: Evidence Ids
+          type: array
+      required:
+      - claim_id
+      - claim_code
+      - domain
+      - evidence_ids
+      title: LineageClaimEntry
+      type: object
+    LineageEvidenceEntry:
+      properties:
+        claim_ids:
+          items:
+            format: uuid
+            type: string
+          title: Claim Ids
+          type: array
+        domain:
+          title: Domain
+          type: string
+        evidence_code:
+          title: Evidence Code
+          type: string
+        evidence_id:
+          format: uuid
+          title: Evidence Id
+          type: string
+        source_id:
+          format: uuid
+          title: Source Id
+          type: string
+      required:
+      - evidence_id
+      - source_id
+      - evidence_code
+      - domain
+      - claim_ids
+      title: LineageEvidenceEntry
+      type: object
+    LineageSourceEntry:
+      properties:
+        ingest_run_ids:
+          items:
+            format: uuid
+            type: string
+          title: Ingest Run Ids
+          type: array
+        source_id:
+          format: uuid
+          title: Source Id
+          type: string
+        source_name:
+          title: Source Name
+          type: string
+      required:
+      - source_id
+      - source_name
+      - ingest_run_ids
+      title: LineageSourceEntry
+      type: object
     LiveConnectorJobResponse:
       properties:
         area_id:
@@ -1209,6 +1285,43 @@ components:
       - live_connector_jobs
       title: OperationsQueueHealthResponse
       type: object
+    ReportLineageResponse:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        claim_lineage:
+          items:
+            $ref: '#/components/schemas/LineageClaimEntry'
+          title: Claim Lineage
+          type: array
+        evidence_lineage:
+          items:
+            $ref: '#/components/schemas/LineageEvidenceEntry'
+          title: Evidence Lineage
+          type: array
+        intent_code:
+          title: Intent Code
+          type: string
+        report_run_id:
+          format: uuid
+          title: Report Run Id
+          type: string
+        sources:
+          items:
+            $ref: '#/components/schemas/LineageSourceEntry'
+          title: Sources
+          type: array
+      required:
+      - report_run_id
+      - area_id
+      - intent_code
+      - sources
+      - evidence_lineage
+      - claim_lineage
+      title: ReportLineageResponse
+      type: object
     ReportReviewActionContract:
       properties:
         action:
@@ -1245,6 +1358,60 @@ components:
       - superseded
       title: ReportReviewStatus
       type: string
+    ReportRunCompareResponse:
+      properties:
+        summaries:
+          items:
+            $ref: '#/components/schemas/ReportRunComparisonSummary'
+          title: Summaries
+          type: array
+      required:
+      - summaries
+      title: ReportRunCompareResponse
+      type: object
+    ReportRunComparisonSummary:
+      properties:
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        claims_count:
+          title: Claims Count
+          type: integer
+        high_severity_claims:
+          items:
+            additionalProperties:
+              type: string
+            type: object
+          title: High Severity Claims
+          type: array
+        intent_code:
+          title: Intent Code
+          type: string
+        red_flags_count:
+          title: Red Flags Count
+          type: integer
+        report_run_id:
+          format: uuid
+          title: Report Run Id
+          type: string
+        unknowns_count:
+          title: Unknowns Count
+          type: integer
+        verification_tasks_count:
+          title: Verification Tasks Count
+          type: integer
+      required:
+      - report_run_id
+      - area_id
+      - intent_code
+      - claims_count
+      - unknowns_count
+      - red_flags_count
+      - high_severity_claims
+      - verification_tasks_count
+      title: ReportRunComparisonSummary
+      type: object
     ReportRunContract:
       properties:
         area_id:
@@ -1371,6 +1538,62 @@ components:
       - area_id
       - intent_code
       title: ReportRunCreateRequest
+      type: object
+    ReportRunDiffResponse:
+      properties:
+        added_claim_codes:
+          items:
+            type: string
+          title: Added Claim Codes
+          type: array
+        added_sources:
+          items:
+            type: string
+          title: Added Sources
+          type: array
+        area_id:
+          format: uuid
+          title: Area Id
+          type: string
+        base_report_run_id:
+          format: uuid
+          title: Base Report Run Id
+          type: string
+        evidence_count_delta:
+          title: Evidence Count Delta
+          type: integer
+        removed_claim_codes:
+          items:
+            type: string
+          title: Removed Claim Codes
+          type: array
+        removed_sources:
+          items:
+            type: string
+          title: Removed Sources
+          type: array
+        report_run_id:
+          format: uuid
+          title: Report Run Id
+          type: string
+        ruleset_changed:
+          title: Ruleset Changed
+          type: boolean
+        same_area:
+          title: Same Area
+          type: boolean
+      required:
+      - report_run_id
+      - base_report_run_id
+      - area_id
+      - same_area
+      - ruleset_changed
+      - added_claim_codes
+      - removed_claim_codes
+      - added_sources
+      - removed_sources
+      - evidence_count_delta
+      title: ReportRunDiffResponse
       type: object
     SeverityBand:
       enum:
@@ -3116,6 +3339,32 @@ paths:
       summary: Create Report Run
       tags:
       - report-runs
+  /report-runs/compare:
+    get:
+      operationId: compare_report_runs_report_runs_compare_get
+      parameters:
+      - in: query
+        name: ids
+        required: true
+        schema:
+          title: Ids
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRunCompareResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Compare Report Runs
+      tags:
+      - report-runs
   /report-runs/{report_run_id}:
     get:
       operationId: get_report_run_report_runs__report_run_id__get
@@ -3165,6 +3414,67 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Get Report Run
+      tags:
+      - report-runs
+  /report-runs/{report_run_id}/diff:
+    get:
+      operationId: diff_report_runs_report_runs__report_run_id__diff_get
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      - in: query
+        name: base_id
+        required: true
+        schema:
+          format: uuid
+          title: Base Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRunDiffResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Diff Report Runs
+      tags:
+      - report-runs
+  /report-runs/{report_run_id}/lineage:
+    get:
+      operationId: get_report_run_lineage_report_runs__report_run_id__lineage_get
+      parameters:
+      - in: path
+        name: report_run_id
+        required: true
+        schema:
+          format: uuid
+          title: Report Run Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportLineageResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Report Run Lineage
       tags:
       - report-runs
   /report-runs/{report_run_id}/retry:

@@ -62,6 +62,19 @@ current_controls:
       - backend/app/api/api_key_auth.py
       - backend/tests/api/test_api_key_auth.py
     validation: scripts/run_access_control_check.ps1
+implemented_controls:
+  - id: security_static_analysis
+    type: ci_gate
+    tool: bandit
+    scope: backend/app
+    severity_threshold: medium+
+    ci_job: security-scan
+    authority:
+      - scripts/run_security_scan.ps1
+      - scripts/run_security_scan.sh
+      - docs/runbooks/security_scan.md
+    validation: scripts/run_security_scan.ps1
+
 production_blockers:
   - id: full_user_auth_rbac
     status: blocked

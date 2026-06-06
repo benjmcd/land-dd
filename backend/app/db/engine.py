@@ -11,7 +11,14 @@ from app.core.config import get_settings
 
 def build_engine(database_url: str | None = None) -> Engine:
     settings = get_settings()
-    return create_engine(database_url or settings.database_url, pool_pre_ping=True)
+    url = database_url or settings.database_url
+    kwargs: dict[str, object] = {"pool_pre_ping": True}
+    if "sqlite" not in url:
+        kwargs["pool_size"] = settings.db_pool_size
+        kwargs["max_overflow"] = settings.db_max_overflow
+        kwargs["pool_timeout"] = settings.db_pool_timeout
+        kwargs["pool_recycle"] = settings.db_pool_recycle
+    return create_engine(url, **kwargs)
 
 
 _engine: Engine | None = None

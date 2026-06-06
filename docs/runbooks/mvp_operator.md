@@ -397,6 +397,24 @@ infrastructure, write secrets, open a public endpoint, or deploy a registry imag
 
 ---
 
+## Data retention
+
+Use `config/data_retention.yaml` as the repo-local data retention policy catalog.
+Validate it with:
+
+```powershell
+.\scripts\run_data_retention_check.ps1
+```
+
+The MVP retains all operational data (report runs, evidence, job queue, source ingest
+runs) indefinitely. Audit events (`audit.events`) have a target retention period of
+90 days, but no automated purge exists yet. All deletion is a manual operator action.
+
+See `docs/runbooks/data_retention.md` for retention classes, manual purge SQL, and
+future work items.
+
+---
+
 ## Known Limitations
 
 | Limitation | Impact |

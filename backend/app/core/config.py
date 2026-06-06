@@ -88,6 +88,38 @@ class Settings(BaseSettings):
         default=None,
         alias="REPORT_IDENTITY_TOKEN_SECRET",
     )
+    db_pool_size: int = Field(
+        default=5,
+        alias="DB_POOL_SIZE",
+        description=(
+            "Number of persistent connections to keep open in the SQLAlchemy connection pool. "
+            "Ignored when DATABASE_URL uses SQLite."
+        ),
+    )
+    db_max_overflow: int = Field(
+        default=10,
+        alias="DB_MAX_OVERFLOW",
+        description=(
+            "Maximum number of connections to allow above DB_POOL_SIZE before blocking. "
+            "Ignored when DATABASE_URL uses SQLite."
+        ),
+    )
+    db_pool_timeout: int = Field(
+        default=30,
+        alias="DB_POOL_TIMEOUT",
+        description=(
+            "Seconds to wait for a connection from the pool before raising a timeout error. "
+            "Ignored when DATABASE_URL uses SQLite."
+        ),
+    )
+    db_pool_recycle: int = Field(
+        default=1800,
+        alias="DB_POOL_RECYCLE",
+        description=(
+            "Seconds after which idle connections are recycled to avoid stale-connection errors. "
+            "Ignored when DATABASE_URL uses SQLite."
+        ),
+    )
 
     def parsed_api_keys(self) -> frozenset[str]:
         keys: set[str] = set()

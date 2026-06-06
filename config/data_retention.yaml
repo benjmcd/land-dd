@@ -1,0 +1,52 @@
+schema_version: data_retention_v1
+operator_runbook: docs/runbooks/data_retention.md
+retention_classes:
+  - id: report_runs
+    description: Completed report run records in reports.report_runs
+    retention_period: indefinite_mvp
+    deletion_approach: manual_operator
+    data_sensitivity: internal_operational
+    blocker: No automated deletion yet; retain all for reproducibility in MVP scope
+  - id: evidence_observations
+    description: Evidence records in evidence.observations
+    retention_period: indefinite_mvp
+    deletion_approach: manual_operator
+    data_sensitivity: internal_operational
+    blocker: Deleting evidence breaks report reproducibility; MVP retains all
+  - id: audit_events
+    description: Audit events in audit.events (access, evidence, etc.)
+    retention_period: 90_days_target
+    deletion_approach: not_yet_automated
+    data_sensitivity: internal_audit
+    blocker: No automated deletion procedure; manual review required
+  - id: connector_review_queue
+    description: Connector review queue items in jobs.job_queue (type=connector_review_status)
+    retention_period: indefinite_mvp
+    deletion_approach: manual_operator
+    data_sensitivity: internal_operational
+    blocker: Queue items needed for lineage tracing; MVP retains all
+  - id: job_queue_report_jobs
+    description: Report job records in jobs.job_queue (type=report_run)
+    retention_period: indefinite_mvp
+    deletion_approach: manual_operator
+    data_sensitivity: internal_operational
+    blocker: Job records needed for retry lineage; MVP retains all
+  - id: source_ingest_runs
+    description: Source retrieval run records in source.ingest_runs
+    retention_period: indefinite_mvp
+    deletion_approach: manual_operator
+    data_sensitivity: internal_operational
+    blocker: Ingest run records are connector provenance authority; MVP retains all
+  - id: api_key_audit_events
+    description: API key auth events in audit.events (event_type=api_key_auth)
+    retention_period: 90_days_target
+    deletion_approach: not_yet_automated
+    data_sensitivity: internal_security_audit
+    blocker: No automated purge; manual review required
+retention_blockers:
+  - id: automated_deletion
+    status: blocked
+    reason: No automated deletion procedure implemented in MVP; all deletion is manual
+  - id: hosted_log_retention
+    status: blocked
+    reason: Hosted log retention system not yet provisioned

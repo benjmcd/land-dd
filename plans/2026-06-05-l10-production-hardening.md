@@ -362,8 +362,17 @@ consumption of connector-produced evidence on explicit connector review approval
 56. Add US-070 configured static API-key lifecycle specs.
 57. Add US-071 structured API-key auth audit logging.
 58. Add US-072 DB-backed API-key auth audit events.
-59. Run targeted tests, lint, type checks, and the Windows verification gate.
-60. Update project state, worklog, validation log, and this plan.
+59. Add US-073 load test baseline: `scripts/run_load_test.ps1/.sh`, `docs/runbooks/load_testing.md`, `backend/tests/test_load_test_artifacts.py`, `config/release_readiness.yaml` load_test entry. Covers L10-PERF-006.
+60. Add US-074 security static analysis CI gate: `scripts/run_security_scan.ps1/.sh`, `docs/runbooks/security_scan.md`, bandit CI job, `backend/tests/test_security_scan_artifacts.py`. Covers L10-SEC-005.
+61. Add US-075 data retention policy catalog: `config/data_retention.yaml`, `docs/runbooks/data_retention.md`, proof scripts, artifact tests. Covers L10-SEC-007.
+62. Add US-076 jurisdiction and rulepack readiness checklists: `docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`, `backend/tests/test_readiness_checklists.py`. Covers L10-DATA-005/006.
+63. Add US-077 DB connection pool explicit configuration: `DB_POOL_SIZE/MAX_OVERFLOW/TIMEOUT/RECYCLE` in config.py + conditional pool kwargs in engine.py + `backend/tests/test_db_pool_config.py`. Covers L10-PERF-009.
+64. Add US-078 performance and scalability runbook: `docs/runbooks/performance.md` (cache, batch, spatial indexes, backpressure, perf regression). Covers L10-PERF-002/005/008/010.
+65. Add US-079 report lineage endpoint: `GET /report-runs/{id}/lineage` in `backend/app/api/reports.py` + `backend/tests/api/test_report_lineage.py`. Covers L10-DATA-007.
+66. Add US-080 candidate comparison endpoint: `GET /report-runs/compare` + `backend/tests/api/test_report_comparison.py`. Covers L10-PROD-006.
+67. Add US-081 report rerun diff endpoint: `GET /report-runs/{id}/diff?base_id=`. Covers L10-PROD-004.
+68. Run targeted tests, lint, type checks, and the Windows verification gate.
+69. Update project state, worklog, validation log, and this plan.
 
 ## Files likely to change
 

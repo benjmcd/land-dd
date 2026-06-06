@@ -46,6 +46,27 @@ required_checks:
   - id: source_readiness
     proof: scripts/source_readiness.py
     ci_job: null
+  - id: security_scan
+    proof: scripts/run_security_scan.ps1
+    ci_job: security-scan
+  - id: data_retention
+    proof: scripts/run_data_retention_check.ps1
+    ci_job: null
+  - id: jurisdiction_readiness
+    proof: docs/checklists/jurisdiction_readiness.md
+    ci_job: null
+  - id: rulepack_readiness
+    proof: docs/checklists/rulepack_readiness.md
+    ci_job: null
+  - id: load_test
+    proof: scripts/run_load_test.ps1
+    ci_job: null
+  - id: performance
+    proof: docs/runbooks/performance.md
+    ci_job: null
+  - id: data_lineage
+    proof: backend/app/api/reports.py
+    ci_job: null
 release_blockers:
   - id: hosted_deployment_attestation
     status: blocked

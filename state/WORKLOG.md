@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-05 (Level 10 production hardening — US-073 through US-082)
+
+- Added US-073 load test baseline: `scripts/run_load_test.ps1`, `.sh`, `docs/runbooks/load_testing.md`, `backend/tests/test_load_test_artifacts.py`. Covers L10-PERF-006.
+- Added US-074 security static analysis CI gate: `scripts/run_security_scan.ps1/.sh`, `docs/runbooks/security_scan.md`, bandit CI job in `.github/workflows/ci.yml`, `backend/tests/test_security_scan_artifacts.py`. Covers L10-SEC-005. bandit: 0 HIGH/CRITICAL.
+- Added US-075 data retention policy catalog: `config/data_retention.yaml` (7 classes), `docs/runbooks/data_retention.md`, proof scripts, artifact tests. Covers L10-SEC-007.
+- Added US-076 jurisdiction + rulepack readiness checklists: `docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`, `backend/tests/test_readiness_checklists.py`. Covers L10-DATA-005/006.
+- Added US-077 DB connection pool explicit config: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT`, `DB_POOL_RECYCLE` in `backend/app/core/config.py` with conditional pool kwargs in `backend/app/db/engine.py` (SQLite guard). Covers L10-PERF-009.
+- Added US-078 performance runbook: `docs/runbooks/performance.md` (cache, batch controls, spatial indexes, backpressure, perf regression). Covers L10-PERF-002/005/008/010.
+- Added US-079 report lineage endpoint: `GET /report-runs/{id}/lineage` in `backend/app/api/reports.py`, `backend/tests/api/test_report_lineage.py`. Covers L10-DATA-007.
+- Added US-080 candidate comparison endpoint: `GET /report-runs/compare` registered before `/{id}` catch-all. Covers L10-PROD-006.
+- Added US-081 report rerun diff endpoint: `GET /report-runs/{id}/diff?base_id=`. Covers L10-PROD-004.
+- Deslop pass: extracted `_RED_FLAG_BANDS` constant and `_flat_claims()` helper from `backend/app/api/reports.py`, eliminating 3× duplication and module-level mutation.
+- Updated `config/release_readiness.yaml` with 7 new required_checks (security_scan, data_retention, jurisdiction_readiness, rulepack_readiness, load_test, performance, data_lineage). MANIFEST.md updated with checklists entry.
+- Final test count: 794 passed, 63 skipped (DB-layer), 0 failed. ruff clean. mypy clean on 216 source files. OpenAPI stubs regenerated.
+
 ## 2026-06-05 (Level 10 partial production hardening)
 
 - Added US-072 DB-backed API-key auth audit events: `backend/app/api/auth_audit.py`

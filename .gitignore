@@ -22,4 +22,5 @@ CLAUDE.local.md
 findings.md
 progress.md
 task_plan.md
-.omc/state/
+.omc/
+**/.omc/

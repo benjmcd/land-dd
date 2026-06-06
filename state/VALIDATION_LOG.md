@@ -2,6 +2,39 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-05 Level 10 hardening US-073 through US-082
+
+**Scope:**
+
+- Added `scripts/run_load_test.ps1`, `scripts/run_load_test.sh`, `docs/runbooks/load_testing.md`, `backend/tests/test_load_test_artifacts.py`
+- Added `scripts/run_security_scan.ps1`, `scripts/run_security_scan.sh`, `docs/runbooks/security_scan.md`, `backend/tests/test_security_scan_artifacts.py`
+- Added `config/data_retention.yaml`, `docs/runbooks/data_retention.md`, `scripts/run_data_retention_check.ps1/.sh`, `backend/tests/test_data_retention_artifacts.py`
+- Added `docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`, `backend/tests/test_readiness_checklists.py`
+- Updated `backend/app/core/config.py`, `backend/app/db/engine.py`, `backend/.env.example`; added `backend/tests/test_db_pool_config.py`
+- Added `docs/runbooks/performance.md`, `backend/tests/test_performance_artifacts.py`
+- Updated `backend/app/api/reports.py` (lineage + compare + diff routes + deslop); added `backend/tests/api/test_report_lineage.py`, `backend/tests/api/test_report_comparison.py`
+- Updated `config/release_readiness.yaml`, `config/access_control.yaml`, `.github/workflows/ci.yml`, `docs/runbooks/mvp_operator.md`, `MANIFEST.md`
+- Regenerated `docs/planning_pack/api/openapi_stub.yaml`
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest 2>&1 | Select-Object -Last 2
+# → 794 passed, 63 skipped, 15 warnings in 10.79s
+cd backend; ruff check app tests
+# → All checks passed!
+cd backend; py -3.12 -m mypy app tests
+# → Success: no issues found in 216 source files
+```
+
+**Result:** PASS — 794 tests pass (up from 722), ruff clean, mypy clean on 216 source files.
+
+**Residual risk:**
+- Load test script performs sequential HTTP calls; not a concurrent load test. External tooling (locust, k6) needed for concurrency testing.
+- bandit finds 13 medium/low severity issues in backend/app; none HIGH/CRITICAL; all acknowledged.
+- DB pool settings only apply when not using SQLite (conditional guard in engine.py).
+- Remaining L10 blockers: full user auth/RBAC, hosted deployment, hosted billing, hosted log retention, automatic key rotation, non-ready Must sources.
+
 ## 2026-06-05 Level 10 API-key audit logging and DB events
 
 **Scope:**
