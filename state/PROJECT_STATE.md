@@ -5,8 +5,13 @@
 ```text
 Current milestone: Level 10 - Production Hardening (partial)
 Milestone status: PARTIAL PASS for settings-backed scoped reviewer auth, production API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, and structured API-key auth audit logs plus DB-backed API-key auth events, default-off rate limiting, backend Docker/Compose service, structured JSON logging, structured runtime metrics, container build/runtime smoke, fail-closed connector source-use preflight, source-readiness audit reporting, reviewed source-rights candidates (DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA Web Soil Survey/SSURGO, and DS-004 National Wetlands Inventory), bounded DS-001 USGS TNM EPQS connector-layer terrain-relief screening plus controlled DS-001 API/operator invocation, explicit durable DS-001 live connector scheduling, and request-time DS-001 orchestration, bounded DS-002 FEMA NFHL live connector, bounded DS-003 USDA SSURGO connector plus controlled DS-003 API/operator invocation, explicit durable DS-003 live connector scheduling, and request-time DS-003 report integration with an UNKNOWN SSURGO screening-review claim, bounded DS-004 National Wetlands Inventory connector, controlled DS-002 API/operator invocation, controlled DS-004 API/operator invocation, explicit durable DS-002 and DS-004 live connector scheduling, read-only live connector job status API, bounded supervised live connector worker command, opt-in Compose live connector worker profile, connector review closeout actions, durable connector reviewer action history, approved connector evidence report gating, in-memory and DB-backed connector-to-report operator regressions, request-time DS-001, DS-002, DS-004, and DS-003 orchestration for intake/report-run flows, file-backed DS-004 raw response fixture corpus, API 422 deprecation cleanup, live connector sequence scheduling, failed report job retry with lineage, backup/restore proof, repo-local alert-rule catalog with validate-only proof, CI supply-chain dependency vulnerability scanning and update hygiene, backend production dependency lock/SBOM provenance proof, backend dependency lock/SBOM artifact attestation proof, backend container image/base-image scan proof, digest-pinned backend Docker base-image proof, repo-local cost monitoring catalog with validate-only guardrails and report zero-dollar cost attribution, repo-local release readiness catalog with validate-only proof, local release package ZIP/manifest builder with validate-only proof, repo-local image publication readiness catalog with validate-only proof, repo-local hosted deployment readiness catalog with validate-only proof, repo-local access-control posture catalog with validate-only proof, scoped local reviewer authorization with raw-or-sha256 configured service-account tokens for protected operator routes, explicit post-approval connector report resume, SQLAlchemy source placeholder URL hardening, and DB-backed async report job persistence; DS-010 County GIS parcels (Chatham County, NC) reviewed and approved-with-restrictions (live connector unblocked); DS-011, DS-017, and DS-023 remain pending review. Lane 3 (Chatham Parcel/Zoning Utility Slice) complete: PARCEL_SCREEN_G001 rule, _parcel_screen_claim(), _is_county_parcel_screen_evidence(), and _parcel_zoning() dossier field wired; 880 tests pass. Lane 4 (Chatham Orchestration Loop Wiring + Dossier Acreage Fallback) complete: ChathamParcelsOrchestrationResult in union, conditional orchestration via _source_registry_id_available(), _parcel_acreage() total_acres_approx fallback; 882 tests pass. Lane 5 (Chatham Parcel Report Regression + Dossier Zoning Assertion) complete: report regression covers COUNTY_PARCEL_INTERSECTION -> PARCEL_SCREEN_001 plus non-parcel NOT_EVALUATED claims; dossier Section 2 asserts parcel zoning; 883 tests pass.
-Last verified: 2026-06-06
+Last verified: 2026-06-07
 Verification command(s):
+- cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/test_release_readiness_artifacts.py
+- py -3.12 .\scripts\source_readiness.py --priority Must --json
+- .\scripts\run_release_readiness_check.ps1
+- git diff --check
+- .\scripts\verify.ps1
 - cd backend; python -m pytest --tb=no
 - cd backend; python -m pytest -q tests/reports/test_report_regression.py tests/reports/test_dossier_enrichment.py
 - cd backend; ruff check tests/reports/test_report_regression.py tests/reports/test_dossier_enrichment.py
@@ -750,7 +755,41 @@ full `.\scripts\verify.ps1` pass for that follow-up; DB smoke remains skipped lo
 unless `RUN_DB_SMOKE=1`. Must-source readiness remains `sources=8 ready=4 blocked=4`
 with `DS-010`, `DS-011`, `DS-017`, and `DS-023` blocked.
 
-## Active lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
+## Active lane: Source Readiness Closure (2026-06-07)
+
+Goal: continue DS-011/DS-023 closure and DB-proof unblock without overclaiming
+private MVP or Level 10 production readiness.
+
+Current state:
+
+| Item | Status | Evidence |
+|---|---|---|
+| DB-enabled local verifier | blocked locally | `RUN_DB_SMOKE=1 .\scripts\verify.ps1` fails at `psql not found`; no local `docker`, `psql`, `pg_dump`, or Postgres listener found |
+| DS-011 County assessor | pending | Official candidate county sources identified; no endpoint/terms/field policy/connector selected |
+| DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
+| DS-023 Local zoning ordinance PDFs | pending | Chatham selected as first live-candidate scope; no rights approval or live connector yet |
+| Source readiness gate | hardened | `scripts/source_readiness.py` now reports `production_use_allowed`, `connector_implemented`, and `connector_ready` separately |
+
+Key artifacts:
+- `plans/2026-06-06-source-readiness-closure.md`
+- `docs/source-reviews/ds-011.md`
+- `docs/source-reviews/ds-023.md`
+- `docs/source-reviews/ds-023-chatham-live-scope.md`
+- `scripts/source_readiness.py`
+- `backend/tests/source_registry/test_source_readiness.py`
+
+Current Must-source readiness: `sources=8 ready=5 blocked=3`. DS-001, DS-002,
+DS-003, DS-004, and DS-010 are connector-ready. DS-011, DS-017, and DS-023 are
+not connector-ready. DS-011 and DS-023 now remain blocked by
+`connector_implemented` even if future rights fields are approved before a live
+connector exists.
+
+Last verified: 2026-06-07 — focused source-readiness and release-readiness tests
+pass; `.\scripts\run_release_readiness_check.ps1` passes; default
+`.\scripts\verify.ps1` passes with DB smoke skipped. Bash is not available locally,
+so `scripts/run_release_readiness_check.sh` was updated but not executed here.
+
+## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 
 Active plan: `plans/2026-06-06-private-mvp-utility-proof.md` (extended for utility closure).
 Geography: North Carolina — Buncombe, Chatham, Brunswick counties.
