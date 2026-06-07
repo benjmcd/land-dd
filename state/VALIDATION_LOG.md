@@ -17,6 +17,16 @@ git diff --check
 
 **Result:** Focused tests passed. Source readiness remained `ready=5 blocked=3` and now includes `connector_implemented` in each record. Release readiness PS proof passed after updating stale `ready=4 blocked=4` expectations to `ready=5 blocked=3`. Bash is not available locally, so the POSIX release-readiness script was content-updated but not executed here.
 
+**Additional downstream validation:**
+
+```powershell
+.\scripts\run_alert_rules_check.ps1
+.\scripts\run_cost_monitoring_check.ps1
+.\scripts\run_incident_rollback_check.ps1
+```
+
+**Additional result:** Alert rules check passed with Docker/Compose skipped because Docker is unavailable; cost monitoring check passed; incident/rollback check passed with Docker/Compose skipped because Docker is unavailable.
+
 **Residual risk:** `IMPLEMENTED_SOURCE_CONNECTORS` must be updated when a future DS-011 or DS-023 live connector is actually implemented and reviewed.
 
 ## 2026-06-07 DS-023 Chatham Live-Candidate Scope
