@@ -102,6 +102,7 @@ RequestTimeLiveConnectorResult = (
     | FemaNfhlOrchestrationResult
     | NwiOrchestrationResult
     | SsurgoOrchestrationResult
+    | ChathamParcelsOrchestrationResult
 )
 
 
@@ -119,6 +120,10 @@ def orchestrate_request_time_live_connectors_for_area(
         result = orchestrate(services=services, area=area)
         if not result.report_ready:
             return result
+    if _source_registry_id_available(services, DS_010_REGISTRY_ID):
+        chatham_result = orchestrate_chatham_parcels_for_area(services=services, area=area)
+        if not chatham_result.report_ready:
+            return chatham_result
     return None
 
 
@@ -427,6 +432,13 @@ def get_source_by_registry_id(
     raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
         detail=f"source registry id {source_registry_id} is not registered",
+    )
+
+
+def _source_registry_id_available(services: ApiServices, source_registry_id: str) -> bool:
+    return any(
+        source.metadata.get("source_registry_id") == source_registry_id
+        for source in services.source_service.list_all()
     )
 
 

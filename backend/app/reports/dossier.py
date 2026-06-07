@@ -272,7 +272,9 @@ def _parcel_id(report_run: ReportRunContract) -> str:
 def _parcel_acreage(report_run: ReportRunContract) -> str:
     for record in report_run.evidence:
         if record.domain == "parcels" and not record.is_source_failure:
-            acres = record.observed_value.get("parcel_acres")
+            acres = record.observed_value.get("parcel_acres") or record.observed_value.get(
+                "total_acres_approx"
+            )
             if acres is not None:
                 return f"{acres} acres (parcel record)"
     return "unknown"
