@@ -21,6 +21,16 @@ from app.source_registry.usage_rights import (  # noqa: E402
     source_production_use_blocking_fields,
 )
 
+IMPLEMENTED_SOURCE_CONNECTORS = frozenset(
+    {
+        "DS-001",
+        "DS-002",
+        "DS-003",
+        "DS-004",
+        "DS-010",
+    }
+)
+
 
 @dataclass(frozen=True)
 class SourceReadinessRecord:
@@ -33,6 +43,7 @@ class SourceReadinessRecord:
     review_status: str
     license_status: str
     production_use_allowed: bool
+    connector_implemented: bool
     connector_ready: bool
     blocked_fields: tuple[str, ...]
 
@@ -107,9 +118,16 @@ def main() -> int:
 
 
 def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
-    blocked_fields = source_production_use_blocking_fields(source)
+    source_registry_id = str(source.metadata["source_registry_id"])
+    usage_blocked_fields = source_production_use_blocking_fields(source)
+    connector_implemented = source_registry_id in IMPLEMENTED_SOURCE_CONNECTORS
+    blocked_fields = (
+        usage_blocked_fields
+        if connector_implemented
+        else (*usage_blocked_fields, "connector_implemented")
+    )
     return SourceReadinessRecord(
-        source_registry_id=str(source.metadata["source_registry_id"]),
+        source_registry_id=source_registry_id,
         name=source.name,
         organization=source.organization,
         domain=source.domain,
@@ -117,7 +135,8 @@ def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
         source_type=source.source_type,
         review_status=source.review_status,
         license_status=source.license_status,
-        production_use_allowed=blocked_fields == (),
+        production_use_allowed=usage_blocked_fields == (),
+        connector_implemented=connector_implemented,
         connector_ready=blocked_fields == (),
         blocked_fields=blocked_fields,
     )

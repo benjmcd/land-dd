@@ -2,6 +2,23 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-07 Source Readiness Connector-Implementation Gate
+
+**Scope:** Hardened source-readiness reporting so rights approval alone cannot mark a source connector-ready. This prevents DS-023 or DS-011 from becoming `connector_ready=true` until a connector implementation is explicitly recognized.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/test_release_readiness_artifacts.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\run_release_readiness_check.ps1
+```
+
+**Result:** Focused tests passed. Source readiness remained `ready=5 blocked=3` and now includes `connector_implemented` in each record. Release readiness PS proof passed after updating stale `ready=4 blocked=4` expectations to `ready=5 blocked=3`. Bash is not available locally, so the POSIX release-readiness script was content-updated but not executed here.
+
+**Residual risk:** `IMPLEMENTED_SOURCE_CONNECTORS` must be updated when a future DS-011 or DS-023 live connector is actually implemented and reviewed.
+
 ## 2026-06-07 DS-023 Chatham Live-Candidate Scope
 
 **Scope:** Chatham County selected as the first DS-023 live-candidate scope. This records connector policy and acceptance gates only; it does not approve live production use.

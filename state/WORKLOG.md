@@ -4,6 +4,16 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-07 - Source Readiness Connector-Implementation Gate
+
+**Goal:** Prevent source-readiness overclaim if DS-011 or DS-023 rights are approved before a connector exists.
+
+**Change:** Updated `scripts/source_readiness.py` to distinguish `production_use_allowed` from `connector_implemented` and `connector_ready`. Added a regression proving DS-023 remains not connector-ready even if rights fields are approved, until its connector implementation is explicitly recognized. Updated stale release-readiness scripts from `ready=4 blocked=4` / DS-010 blocked to the current `ready=5 blocked=3` / DS-011, DS-017, DS-023 blocked state.
+
+**Result:** Focused source-readiness/release-readiness tests passed; `.\scripts\run_release_readiness_check.ps1` passed. Bash was not available locally to execute the POSIX script.
+
+---
+
 ## 2026-06-07 - DS-023 Chatham Live-Candidate Scope
 
 **Goal:** Pick the next DS-023 live-candidate slice without promoting source readiness.

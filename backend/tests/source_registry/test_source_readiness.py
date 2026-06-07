@@ -71,6 +71,37 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
     assert nwi.blocked_fields == ()
     county_gis = next(record for record in records if record.source_registry_id == "DS-010")
     assert county_gis.blocked_fields == ()
+    assert county_gis.production_use_allowed is True
+    assert county_gis.connector_implemented is True
+
+
+def test_readiness_requires_connector_implementation_after_rights_approval() -> None:
+    readiness = _load_readiness_module()
+    seed_module = _load_seed_module()
+
+    source = next(
+        source
+        for source in seed_module.load_registry_sources()
+        if source.metadata["source_registry_id"] == "DS-023"
+    ).model_copy(
+        update={
+            "license_status": "approved-with-restrictions",
+            "commercial_use_status": "approved-with-restrictions",
+            "redistribution_status": "approved-with-restrictions",
+            "cache_allowed": "restricted",
+            "export_allowed": "restricted",
+            "raw_data_allowed": "restricted",
+            "ai_use_allowed": "restricted",
+            "review_status": "approved-with-restrictions",
+        },
+    )
+
+    record = readiness.build_readiness_records([source])[0]
+
+    assert record.production_use_allowed is True
+    assert record.connector_implemented is False
+    assert record.connector_ready is False
+    assert record.blocked_fields == ("connector_implemented",)
 
 
 def test_source_readiness_json_reports_blocked_sources() -> None:
@@ -104,6 +135,12 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
         "DS-004",
         "DS-010",
     ]
+    ds023 = next(
+        source
+        for source in payload["sources"]
+        if source["source_registry_id"] == "DS-023"
+    )
+    assert ds023["connector_implemented"] is False
 
 
 def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None:
