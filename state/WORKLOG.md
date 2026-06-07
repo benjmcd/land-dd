@@ -4,6 +4,18 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-06 - DB Smoke Blocker + Source Readiness Forward Plan
+
+**Goal:** Re-check unfinished work after Lane 5 closeout and make the next completion path explicit.
+
+**DB-enabled verifier:** Ran `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`. The verifier passed workspace validation and failed closed at DB migration because `psql` is not available locally. Follow-up prerequisite checks found no `docker`, no `psql`, no `pg_dump`, no local `5432` listener, and no repo-local PostgreSQL client binary under `local_artifacts`.
+
+**Source readiness:** Confirmed current source-readiness state remains `ready=5 blocked=3`: DS-001, DS-002, DS-003, DS-004, and DS-010 ready; DS-011, DS-017, and DS-023 blocked or pending. Added `plans/2026-06-06-source-readiness-closure.md` to scope the next pass without promoting DS-011 or DS-023 from fixture/pending evidence.
+
+**Result:** `git diff --check` passed; source readiness remained `ready=5 blocked=3`; default `.\scripts\verify.ps1` passed. DB-backed proof for latest Lane 5 remains environment-blocked, not failed by product behavior. Next work is DB prerequisite provisioning plus official-source/terms closure for DS-011 and DS-023.
+
+---
+
 ## 2026-06-06 — Chatham Parcel Report Regression + Dossier Zoning Assertion (Lane 5)
 
 **Goal:** Lock the Chatham parcel report path so live-style `COUNTY_PARCEL_INTERSECTION` evidence produces `PARCEL_SCREEN_001` instead of falling back to `PARCEL_NOT_EVALUATED`, and ensure dossier Section 2 renders parcel zoning.

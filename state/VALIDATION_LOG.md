@@ -2,6 +2,32 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 DB-Enabled Local Verification Attempt
+
+**Scope:** Post-Lane-5 local verification with DB smoke enabled. This records an environment blocker only; it does not claim DB-backed proof for the latest Lane 5 closeout.
+
+**Command run:**
+
+```powershell
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Result:** `.\scripts\verify.ps1` passed workspace validation, then failed closed at the DB migration step because `psql` was not available on this machine. Additional prerequisite checks found `docker` unavailable, `psql` unavailable, `pg_dump` unavailable, no local `5432` listener, and no repo-local PostgreSQL client binary under `local_artifacts`.
+
+**Assessment:** This is a local environment blocker, not evidence of a product regression. The default verifier remains the latest successful product gate for Lane 5; DB-enabled verification remains unproven after Lane 5 until a PostgreSQL client and reachable Postgres/PostGIS runtime are available.
+
+**Required unblock:** Install or otherwise provide `psql`, start a Postgres/PostGIS database reachable via `DATABASE_URL_SYNC` or the default `postgresql://land:land@localhost:5432/land_diligence`, then rerun `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`.
+
+**Follow-up validation after recording blocker:**
+
+```powershell
+git diff --check
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\verify.ps1
+```
+
+**Follow-up result:** `git diff --check` passed. Source readiness remained `ready=5 blocked=3`. Default `.\scripts\verify.ps1` passed with backend tests, lint, and typecheck; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
 ## 2026-06-06 Chatham Parcel Report Regression + Dossier Zoning Assertion
 
 **Scope:** Lane 5 closeout after Chatham parcel rule/dossier wiring. This records regression coverage only; it does not claim new DB-backed, hosted-production, or source-license completion.
