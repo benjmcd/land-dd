@@ -173,6 +173,30 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
         if source["connector_ready"] is False
     }
     assert {"DS-011", "DS-017", "DS-023"}.issubset(blocked)
+    ds010 = next(
+        source
+        for source in payload["sources"]
+        if source["source_registry_id"] == "DS-010"
+    )
+    assert ds010["connector_ready"] is True
+    assert ds010["connector_surfaces"] == [
+        "immediate_operator_api",
+        "request_time_orchestration",
+    ]
+    assert "durable_live_job" not in ds010["connector_surfaces"]
+
+
+def test_release_readiness_scripts_expect_current_source_counts() -> None:
+    for script_path in (
+        REPO_ROOT / "scripts" / "run_release_readiness_check.ps1",
+        REPO_ROOT / "scripts" / "run_release_readiness_check.sh",
+    ):
+        script = script_path.read_text(encoding="utf-8")
+
+        assert "ready_count\") == 5" in script or 'ready_count") == 5' in script
+        assert "blocked_count\") == 3" in script or 'blocked_count") == 3' in script
+        assert '{"DS-011", "DS-017", "DS-023"}' in script
+        assert '{"DS-010", "DS-011", "DS-017", "DS-023"}' not in script
 
 
 def test_release_readiness_scripts_exist_for_windows_and_posix() -> None:

@@ -768,13 +768,14 @@ Current state:
 | DS-011 County assessor | pending | Official candidate county sources identified; no endpoint/terms/field policy/connector selected |
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
 | DS-023 Local zoning ordinance PDFs | pending | Chatham selected as first live-candidate scope; no rights approval or live connector yet |
-| Source readiness gate | hardened | `scripts/source_readiness.py` now reports `production_use_allowed`, `connector_implemented`, and `connector_ready` separately |
+| Source readiness gate | hardened | `scripts/source_readiness.py` now reports `production_use_allowed`, `connector_implemented`, `connector_surfaces`, and `connector_ready` separately |
 
 Key artifacts:
 - `plans/2026-06-06-source-readiness-closure.md`
 - `docs/source-reviews/ds-011.md`
 - `docs/source-reviews/ds-023.md`
 - `docs/source-reviews/ds-023-chatham-live-scope.md`
+- `backend/app/source_registry/connector_inventory.py`
 - `scripts/source_readiness.py`
 - `backend/tests/source_registry/test_source_readiness.py`
 
@@ -782,12 +783,14 @@ Current Must-source readiness: `sources=8 ready=5 blocked=3`. DS-001, DS-002,
 DS-003, DS-004, and DS-010 are connector-ready. DS-011, DS-017, and DS-023 are
 not connector-ready. DS-011 and DS-023 now remain blocked by
 `connector_implemented` even if future rights fields are approved before a live
-connector exists.
+connector exists. DS-010 readiness is scoped to `immediate_operator_api` and
+`request_time_orchestration`; durable live-job support is not claimed for DS-010.
 
 Last verified: 2026-06-07 — focused source-readiness and release-readiness tests
 pass; `.\scripts\run_release_readiness_check.ps1` passes; default
-`.\scripts\verify.ps1` passes with DB smoke skipped. Bash is not available locally,
-so `scripts/run_release_readiness_check.sh` was updated but not executed here.
+`.\scripts\verify.ps1` passes with backend tests, lint, and typecheck over 235
+source files; DB smoke skipped. Bash is not available locally, so
+`scripts/run_release_readiness_check.sh` was updated but not executed here.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 

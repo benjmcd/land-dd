@@ -27,6 +27,37 @@ git diff --check
 
 **Additional result:** Alert rules check passed with Docker/Compose skipped because Docker is unavailable; cost monitoring check passed; incident/rollback check passed with Docker/Compose skipped because Docker is unavailable.
 
+**Follow-up POSIX/PowerShell script regression:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests/test_release_readiness_artifacts.py tests/source_registry/test_source_readiness.py
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+```
+
+**Follow-up result:** Focused tests passed with `14 passed`; release-readiness PS proof passed; `git diff --check` passed. The added regression checks both PowerShell and POSIX release-readiness scripts for the current `ready=5 blocked=3` source-readiness expectation.
+
+**Reviewer follow-up:** Independent explorer review found stale release-runbook language for DS-010 and ambiguity around `connector_ready` surface semantics. Follow-up fixes updated the release runbook to say DS-010 is ready only for immediate operator API and request-time orchestration, added `backend/app/source_registry/connector_inventory.py`, and added `connector_surfaces` to source-readiness JSON.
+
+**Reviewer-fix validation:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/test_release_readiness_artifacts.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+```
+
+**Reviewer-fix result:** Focused tests passed with `14 passed`; source-readiness JSON remained `ready=5 blocked=3` and now records DS-010 surfaces as `immediate_operator_api` and `request_time_orchestration` without `durable_live_job`; release-readiness PS proof passed; `git diff --check` passed.
+
+**Full verifier after reviewer fixes:**
+
+```powershell
+.\scripts\verify.ps1
+```
+
+**Full verifier result:** Passed with backend tests, lint, and typecheck; mypy checked 235 source files. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
 **Residual risk:** `IMPLEMENTED_SOURCE_CONNECTORS` must be updated when a future DS-011 or DS-023 live connector is actually implemented and reviewed.
 
 ## 2026-06-07 DS-023 Chatham Live-Candidate Scope

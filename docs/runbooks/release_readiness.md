@@ -65,6 +65,8 @@ The check is validate-only. It verifies that:
   created by this proof.
 - No published registry-image attestation, signed image SBOM, or SLSA provenance
   attestation exists yet.
-- County parcels, county assessor, commercial parcel vendor, and local zoning sources
-  remain blocked until jurisdiction, license, cost, and source-rights review decisions
-  are made.
+- County assessor, commercial parcel vendor, and local zoning sources remain blocked
+  until jurisdiction, license, cost, source-rights, and connector-surface decisions
+  are made. Chatham County parcels (DS-010) are ready only for immediate operator
+  API and request-time orchestration surfaces; durable live-job support is not
+  claimed for DS-010.

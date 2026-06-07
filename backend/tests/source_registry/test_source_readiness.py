@@ -73,6 +73,11 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
     assert county_gis.blocked_fields == ()
     assert county_gis.production_use_allowed is True
     assert county_gis.connector_implemented is True
+    assert county_gis.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+    assert "durable_live_job" not in county_gis.connector_surfaces
 
 
 def test_readiness_requires_connector_implementation_after_rights_approval() -> None:
@@ -100,6 +105,7 @@ def test_readiness_requires_connector_implementation_after_rights_approval() -> 
 
     assert record.production_use_allowed is True
     assert record.connector_implemented is False
+    assert record.connector_surfaces == ()
     assert record.connector_ready is False
     assert record.blocked_fields == ("connector_implemented",)
 
@@ -141,6 +147,7 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
         if source["source_registry_id"] == "DS-023"
     )
     assert ds023["connector_implemented"] is False
+    assert ds023["connector_surfaces"] == []
 
 
 def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None:

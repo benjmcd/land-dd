@@ -17,18 +17,11 @@ from db.seeds.source_registry_seeds import (  # type: ignore[import-not-found]  
 )
 
 from app.domain.source_contracts import SourceContract  # noqa: E402
+from app.source_registry.connector_inventory import (  # noqa: E402
+    source_connector_inventory_entry,
+)
 from app.source_registry.usage_rights import (  # noqa: E402
     source_production_use_blocking_fields,
-)
-
-IMPLEMENTED_SOURCE_CONNECTORS = frozenset(
-    {
-        "DS-001",
-        "DS-002",
-        "DS-003",
-        "DS-004",
-        "DS-010",
-    }
 )
 
 
@@ -44,6 +37,7 @@ class SourceReadinessRecord:
     license_status: str
     production_use_allowed: bool
     connector_implemented: bool
+    connector_surfaces: tuple[str, ...]
     connector_ready: bool
     blocked_fields: tuple[str, ...]
 
@@ -120,7 +114,11 @@ def main() -> int:
 def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
     source_registry_id = str(source.metadata["source_registry_id"])
     usage_blocked_fields = source_production_use_blocking_fields(source)
-    connector_implemented = source_registry_id in IMPLEMENTED_SOURCE_CONNECTORS
+    connector_inventory = source_connector_inventory_entry(source_registry_id)
+    connector_surfaces = (
+        () if connector_inventory is None else connector_inventory.surfaces
+    )
+    connector_implemented = connector_inventory is not None
     blocked_fields = (
         usage_blocked_fields
         if connector_implemented
@@ -137,6 +135,7 @@ def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
         license_status=source.license_status,
         production_use_allowed=usage_blocked_fields == (),
         connector_implemented=connector_implemented,
+        connector_surfaces=connector_surfaces,
         connector_ready=blocked_fields == (),
         blocked_fields=blocked_fields,
     )

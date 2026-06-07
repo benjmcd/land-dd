@@ -10,6 +10,8 @@ Append concise entries. Do not rely on chat history.
 
 **Change:** Updated `scripts/source_readiness.py` to distinguish `production_use_allowed` from `connector_implemented` and `connector_ready`. Added a regression proving DS-023 remains not connector-ready even if rights fields are approved, until its connector implementation is explicitly recognized. Updated stale release-readiness scripts from `ready=4 blocked=4` / DS-010 blocked to the current `ready=5 blocked=3` / DS-011, DS-017, DS-023 blocked state.
 
+**Reviewer follow-up:** Fixed stale release-runbook blocker language for DS-010 and added `backend/app/source_registry/connector_inventory.py` so source readiness reports connector surfaces explicitly. DS-010 is now documented as ready for immediate operator API and request-time orchestration only; durable live-job support is not claimed for DS-010.
+
 **Result:** Focused source-readiness/release-readiness tests passed; `.\scripts\run_release_readiness_check.ps1` passed. Bash was not available locally to execute the POSIX script.
 
 ---
