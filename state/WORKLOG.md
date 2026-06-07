@@ -4,6 +4,26 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-06 — Local Source Readiness Closure: DS-010 / DS-011 / DS-023
+
+**Goal:** Promote DS-010 (Chatham County GIS parcels) to connector-ready by completing the source review; write NOT_EVALUATED docs for DS-011 and DS-023.
+
+**DS-010 (County GIS parcels — Chatham County, NC):**
+- Wrote `docs/source-reviews/ds-010.md` — approved-with-restrictions; NC G.S. § 132-1 public records basis; no API key required; field policy (PIN/ACRES/ZONING only, no owner/value) enforced in connector.
+- Updated `registers/data_source_registry.csv` DS-010: all usage fields set to `approved-with-restrictions` or `restricted`; attribution_required=yes; freshness_class=current-effective; review_status=approved-with-restrictions; last_checked_at=2026-06-06; review_owner=operator.
+- Updated `db/seeds/002_seed_source_registry.sql` DS-010 entry to match.
+- Updated `backend/tests/source_registry/test_source_seeds.py` DS-010 assertions (license_status, redistribution_status, review_owner, license_summary prefix).
+- Updated `backend/tests/source_registry/test_source_readiness.py`: DS-010 removed from blocked list, added to ready list; ready_count 4→5, blocked_count 4→3.
+- Updated `backend/tests/test_release_readiness_artifacts.py` and `docs/runbooks/release_readiness.md`: counts updated to sources=8 ready=5 blocked=3.
+
+**DS-011 (County assessor):** Wrote `docs/source-reviews/ds-011.md` — NOT_EVALUATED; no live connector; registry row remains pending.
+
+**DS-023 (Local zoning ordinance PDFs):** Wrote `docs/source-reviews/ds-023.md` — fixture-backed; no live connector; registry row remains pending.
+
+**Result:** `py -3.12 scripts/source_readiness.py --priority Must` → `ready=5 blocked=3`; DS-010 shows `ready`. `.\scripts\verify.ps1` → `verify: ok`; ruff clean; mypy clean on 233 source files.
+
+---
+
 ## 2026-06-06 — Selected-County Evidence Utility Closure (WP-9 through WP-12)
 
 **Goal:** Close highest-value evidence gaps for Buncombe, Chatham, Brunswick to satisfy the Selected-County Evidence Utility Closure lane completion condition.

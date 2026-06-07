@@ -144,7 +144,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "image-publication",
         "hosted-deployment",
         "release-readiness",
-        "sources=8 ready=4 blocked=4",
+        "sources=8 ready=5 blocked=3",
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
@@ -165,14 +165,14 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
     payload = json.loads(result.stdout)
 
     assert payload["source_count"] == 8
-    assert payload["ready_count"] == 4
-    assert payload["blocked_count"] == 4
+    assert payload["ready_count"] == 5
+    assert payload["blocked_count"] == 3
     blocked = {
         source["source_registry_id"]
         for source in payload["sources"]
         if source["connector_ready"] is False
     }
-    assert {"DS-010", "DS-011", "DS-017", "DS-023"}.issubset(blocked)
+    assert {"DS-011", "DS-017", "DS-023"}.issubset(blocked)
 
 
 def test_release_readiness_scripts_exist_for_windows_and_posix() -> None:

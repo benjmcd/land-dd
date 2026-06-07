@@ -59,6 +59,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-002",
         "DS-003",
         "DS-004",
+        "DS-010",
     ]
     usgs = next(record for record in records if record.source_registry_id == "DS-001")
     assert usgs.blocked_fields == ()
@@ -69,16 +70,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
     nwi = next(record for record in records if record.source_registry_id == "DS-004")
     assert nwi.blocked_fields == ()
     county_gis = next(record for record in records if record.source_registry_id == "DS-010")
-    assert county_gis.blocked_fields == (
-        "review_status",
-        "license_status",
-        "commercial_use_status",
-        "redistribution_status",
-        "cache_allowed",
-        "export_allowed",
-        "raw_data_allowed",
-        "ai_use_allowed",
-    )
+    assert county_gis.blocked_fields == ()
 
 
 def test_source_readiness_json_reports_blocked_sources() -> None:
@@ -100,8 +92,8 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
     assert payload["schema_version"] == "source_readiness_v1"
     assert payload["priority"] == "Must"
     assert payload["source_count"] == 8
-    assert payload["ready_count"] == 4
-    assert payload["blocked_count"] == 4
+    assert payload["ready_count"] == 5
+    assert payload["blocked_count"] == 3
     ready_sources = [
         source for source in payload["sources"] if source["connector_ready"] is True
     ]
@@ -110,6 +102,7 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
         "DS-002",
         "DS-003",
         "DS-004",
+        "DS-010",
     ]
 
 
@@ -129,7 +122,7 @@ def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None
     )
 
     assert result.returncode == 0
-    assert "ready=4" in result.stdout
+    assert "ready=5" in result.stdout
 
 
 def test_source_readiness_require_ready_fails_when_selected_scope_has_none_ready() -> None:

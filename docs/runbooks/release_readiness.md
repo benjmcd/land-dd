@@ -31,7 +31,7 @@ The check is validate-only. It verifies that:
   `container-image-scan`, `access-control`, `image-publication`, `hosted-deployment`, and
   `release-readiness` jobs;
 - the `release-readiness` CI job runs the POSIX readiness proof;
-- current Must-source readiness remains explicit about `sources=8 ready=4 blocked=4`;
+- current Must-source readiness remains explicit about `sources=8 ready=5 blocked=3`;
 - the local release package boundary and builders are validated by
   `scripts/run_release_package_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;
