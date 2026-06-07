@@ -80,6 +80,12 @@ ruleset:
       condition: parcels_not_evaluated
       claim_code: PARCEL_NOT_EVALUATED
       verification_task: Confirm parcel boundaries and cadastral data with the county Register of Deeds and a licensed surveyor. Mapped parcel boundaries are not survey-grade.
+    - code: PARCEL_SCREEN_G001
+      domain: parcels
+      severity_on_fail: unknown
+      condition: county_parcel_screen_identified
+      claim_code: PARCEL_SCREEN_001
+      verification_task: Verify parcel boundaries, acreage, and zoning with the county Register of Deeds, county GIS, and a licensed surveyor. Parcel boundaries from county GIS are approximate and not survey-grade.
     - code: ASSESSOR_G001
       domain: assessor
       severity_on_fail: unknown

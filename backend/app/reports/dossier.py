@@ -36,6 +36,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Parcel ID/APN: {_parcel_id(report_run)}",
         "- Jurisdiction: unknown",
         f"- Acreage: {_parcel_acreage(report_run)}",
+        f"- Zoning designation: {_parcel_zoning(report_run)}",
         f"- Area ID: {report_run.area_id}",
         "- Geometry confidence: unknown",
         f"- Intent: {report_run.intent_code.value}",
@@ -274,6 +275,15 @@ def _parcel_acreage(report_run: ReportRunContract) -> str:
             acres = record.observed_value.get("parcel_acres")
             if acres is not None:
                 return f"{acres} acres (parcel record)"
+    return "unknown"
+
+
+def _parcel_zoning(report_run: ReportRunContract) -> str:
+    for record in report_run.evidence:
+        if record.domain == "parcels" and not record.is_source_failure:
+            zoning = record.observed_value.get("parcel_zoning")
+            if zoning is not None:
+                return str(zoning)
     return "unknown"
 
 

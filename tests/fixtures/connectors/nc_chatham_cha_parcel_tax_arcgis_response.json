@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-79.148, 35.723],
+          [-79.140, 35.723],
+          [-79.140, 35.730],
+          [-79.148, 35.730],
+          [-79.148, 35.723]
+        ]]
+      },
+      "properties": {
+        "PIN": "0060143",
+        "ACRES": 42.5,
+        "ZONING": "RA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-79.140, 35.723],
+          [-79.132, 35.723],
+          [-79.132, 35.730],
+          [-79.140, 35.730],
+          [-79.140, 35.723]
+        ]]
+      },
+      "properties": {
+        "PIN": "0060144",
+        "ACRES": 43.1,
+        "ZONING": "RA"
+      }
+    }
+  ]
+}

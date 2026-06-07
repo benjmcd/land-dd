@@ -27,6 +27,7 @@ ENV_HAZARD_CONDITION = "env_hazard_unsupported"
 RESOURCE_CONTEXT_CONDITION = "resource_context_unsupported"
 MARKET_CONTEXT_CONDITION = "market_context_out_of_scope"
 PARCELS_NOT_EVALUATED_CONDITION = "parcels_not_evaluated"
+PARCELS_SCREEN_CONDITION = "county_parcel_screen_identified"
 ASSESSOR_NOT_EVALUATED_CONDITION = "assessor_not_evaluated"
 NOT_EVALUATED_CONDITIONS_BY_DOMAIN = {
     "soil_septic": SOIL_SEPTIC_CONDITION,
@@ -109,6 +110,7 @@ class RuleEngine:
             domain: self._ruleset.hard_gate_for_condition(condition)
             for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
         }
+        parcel_screen_rule = self._ruleset.hard_gate_for_condition(PARCELS_SCREEN_CONDITION)
         active_evidence = sorted(
             (evidence for evidence in evidence_list if evidence.superseded_by is None),
             key=lambda evidence: (str(evidence.area_id), str(evidence.evidence_id)),
@@ -259,6 +261,11 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_soil_screening_evidence(evidence)
+            ]
+            county_parcel_screen = [
+                evidence
+                for evidence in area_evidence
+                if _is_county_parcel_screen_evidence(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -465,6 +472,14 @@ class RuleEngine:
                         area_id,
                         not_evaluated_rules["soil_septic"],
                         soil_screening,
+                    )
+                )
+            if county_parcel_screen:
+                claims.append(
+                    self._parcel_screen_claim(
+                        area_id,
+                        parcel_screen_rule,
+                        county_parcel_screen,
                     )
                 )
             for domain in NOT_EVALUATED_DOMAINS:
@@ -1400,6 +1415,50 @@ class RuleEngine:
             verification_task=rule.verification_task,
         )
 
+    def _parcel_screen_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "County GIS parcel screening evidence identified for the area. "
+            "Parcel boundaries, acreage, and zoning designations from county GIS "
+            "are approximate only — not a survey, not a title determination, and "
+            "not a buildability or legal-access determination. Verify all parcel "
+            "data with the county Register of Deeds, county GIS, and a licensed "
+            "surveyor before relying on this information."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id(
+                "parcel-screen",
+                rule,
+                area_id,
+                evidence_ids,
+            ),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=(
+                "County GIS parcel screening evidence identified for AOI — "
+                "verify boundaries, acreage, and zoning with authoritative sources."
+            ),
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.LOW,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -1832,6 +1891,15 @@ def _is_soil_screening_evidence(evidence: EvidenceContract) -> bool:
         and evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
         and evidence.evidence_code == "SSURGO_SOIL_MAPUNIT_INTERSECTION"
         and _observed_bool(evidence.observed_value.get("intersects_soil_mapunit"))
+    )
+
+
+def _is_county_parcel_screen_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "parcels"
+        and not evidence.is_source_failure
+        and evidence.evidence_type == EvidenceType.SPATIAL_INTERSECTION
+        and evidence.evidence_code == "COUNTY_PARCEL_INTERSECTION"
     )
 
 

@@ -86,6 +86,12 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: parcels_not_evaluated
           claim_code: PARCEL_NOT_EVALUATED
           verification_task: Confirm parcel boundaries with county Register of Deeds.
+        - code: HG-PARCEL-SCREEN-001
+          domain: parcels
+          severity_on_fail: unknown
+          condition: county_parcel_screen_identified
+          claim_code: PARCEL_SCREEN_001
+          verification_task: Verify parcel data with county Register of Deeds and a surveyor.
         - code: HG-ASSESSOR-001
           domain: assessor
           severity_on_fail: unknown
