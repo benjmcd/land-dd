@@ -4,6 +4,18 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-07 - DS-011 / DS-023 Official-Source Reconnaissance
+
+**Goal:** Advance source-readiness closure without overclaiming production use.
+
+**DS-011:** Updated `docs/source-reviews/ds-011.md` with official candidate tax/assessor/property-record sources for Buncombe, Chatham, and Brunswick. The review remains pending because machine access terms, endpoint selection, owner/value/situs/tax-year field policy, and connector design are unresolved.
+
+**DS-023:** Updated `docs/source-reviews/ds-023.md` with official candidate zoning/ordinance sources for Buncombe, Chatham, and Brunswick. The review remains pending because document reuse, extracted-text retention, amendment tracking, jurisdiction handling, and live connector design are unresolved.
+
+**Result:** Source readiness intentionally remained `ready=5 blocked=3`; no registry or seed promotion was made.
+
+---
+
 ## 2026-06-06 - DB Smoke Blocker + Source Readiness Forward Plan
 
 **Goal:** Re-check unfinished work after Lane 5 closeout and make the next completion path explicit.

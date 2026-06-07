@@ -2,6 +2,22 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-07 DS-011 / DS-023 Official-Source Reconnaissance
+
+**Scope:** Official-source reconnaissance for remaining Must-priority source-readiness gaps. This records candidate authorities only; it does not promote DS-011 or DS-023 to production-ready.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Result:** Source readiness remained `ready=5 blocked=3`; DS-011 and DS-023 still report `review_status=pending`, `license_status=unknown`, `production_use_allowed=false`, and `connector_ready=false`. `git diff --check` passed. Default verifier passed with backend tests, lint, and typecheck; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Official web/PDF sources exist for Buncombe, Chatham, and Brunswick, but endpoint-level access terms, caching/export/reuse policy, owner/value/situs field policy, zoning amendment tracking, and live connector design are still unresolved.
+
 ## 2026-06-06 DB-Enabled Local Verification Attempt
 
 **Scope:** Post-Lane-5 local verification with DB smoke enabled. This records an environment blocker only; it does not claim DB-backed proof for the latest Lane 5 closeout.
