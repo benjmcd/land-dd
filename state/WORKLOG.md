@@ -4,6 +4,24 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-06 — Chatham Parcel/Zoning Utility Slice (Lane 3)
+
+**Goal:** Wire live Chatham parcel evidence into the rule engine and dossier so DS-010 data produces actionable output.
+
+**WP-A (Ruleset):** Added `PARCEL_SCREEN_G001` rule to `config/ruleset_homestead_mvp.yaml` — condition `county_parcel_screen_identified`, claim code `PARCEL_SCREEN_001`, severity UNKNOWN, with verification task for Register of Deeds + surveyor confirmation.
+
+**WP-B (Rule engine):** Added `PARCELS_SCREEN_CONDITION` constant, `parcel_screen_rule` lookup in `evaluate()`, `county_parcel_screen` evidence collection, `if county_parcel_screen:` claim generation block, `_parcel_screen_claim()` method (SeverityBand.UNKNOWN, ConfidenceBand.LOW), and `_is_county_parcel_screen_evidence()` module-level function to `backend/app/claims_engine/rule_engine.py`. Helper detects `COUNTY_PARCEL_INTERSECTION` (live connector only); deliberately excludes `PARCEL_INTERSECTION_SCREEN` (fixture connector).
+
+**WP-C (Dossier):** Added `_parcel_zoning()` function to `backend/app/reports/dossier.py` extracting `parcel_zoning` from parcels evidence. Wired into Section 2 (Area Identity) as "Zoning designation" line between Acreage and Area ID.
+
+**WP-D (Fixture):** Created `tests/fixtures/connectors/nc_chatham_cha_parcel_tax_arcgis_response.json` — recorded ArcGIS GeoJSON with 2 parcels (PIN 0060143/42.5ac/RA; PIN 0060144/43.1ac/RA).
+
+**WP-E (Tests):** Added 9-test `backend/tests/claims_engine/test_parcel_screening.py` covering helper detection, claim fire/no-fire conditions, determinism, and caveat propagation. Updated `_MINIMAL_RULESET_YAML` in `test_forbidden_language.py` to include `PARCEL_SCREEN_G001`.
+
+**Result:** `880 passed` (full suite); ruff/mypy clean; `.\scripts\verify.ps1` → `verify: ok`. Commit: `6b0c135`.
+
+---
+
 ## 2026-06-06 — Local Source Readiness Closure: DS-010 / DS-011 / DS-023
 
 **Goal:** Promote DS-010 (Chatham County GIS parcels) to connector-ready by completing the source review; write NOT_EVALUATED docs for DS-011 and DS-023.
