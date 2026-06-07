@@ -4,6 +4,16 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-07 - DS-023 Chatham Live-Candidate Scope
+
+**Goal:** Pick the next DS-023 live-candidate slice without promoting source readiness.
+
+**Decision:** Chatham County zoning is the first DS-023 live-candidate scope because DS-010 already has Chatham live parcel/zoning-adjacent evidence, the official Chatham zoning ordinance path is current and explicit, and existing golden AOIs already exercise Chatham zoning-edge cases.
+
+**Result:** Added `docs/source-reviews/ds-023-chatham-live-scope.md`. DS-023 remains pending; registry and seed readiness counts are unchanged until reuse terms, caching/export/AI policy, amendment tracking, connector behavior, and tests support promotion.
+
+---
+
 ## 2026-06-07 - DS-011 / DS-023 Official-Source Reconnaissance
 
 **Goal:** Advance source-readiness closure without overclaiming production use.

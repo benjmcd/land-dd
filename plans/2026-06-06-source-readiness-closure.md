@@ -22,7 +22,7 @@ Close the remaining Must-priority source-readiness gaps without overclaiming pro
 
 2. Select official candidate sources for DS-011 and DS-023.
    - DS-011: choose the target county assessor/tax endpoints for the private MVP counties.
-   - DS-023: choose the target county or municipal zoning ordinance URLs for the private MVP counties.
+   - DS-023: Chatham County is the first live-candidate county; see `docs/source-reviews/ds-023-chatham-live-scope.md`.
    - Use official county or municipal sources first. Do not promote registry readiness from third-party mirrors.
 
 3. Review rights and constraints before implementation.

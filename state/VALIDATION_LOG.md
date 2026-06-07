@@ -2,6 +2,22 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-07 DS-023 Chatham Live-Candidate Scope
+
+**Scope:** Chatham County selected as the first DS-023 live-candidate scope. This records connector policy and acceptance gates only; it does not approve live production use.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Result:** Source readiness remained `ready=5 blocked=3`; DS-023 remains pending and not connector-ready. `git diff --check` passed. Default verifier passed with backend tests, lint, and typecheck; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Chatham ordinance sources are official candidates, but PDF reuse/caching/export/AI policy and amendment-tracking requirements still need review before any connector or registry promotion.
+
 ## 2026-06-07 DS-011 / DS-023 Official-Source Reconnaissance
 
 **Scope:** Official-source reconnaissance for remaining Must-priority source-readiness gaps. This records candidate authorities only; it does not promote DS-011 or DS-023 to production-ready.
