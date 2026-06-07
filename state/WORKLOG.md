@@ -4,6 +4,32 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-06 — Chatham Parcel Report Regression + Dossier Zoning Assertion (Lane 5)
+
+**Goal:** Lock the Chatham parcel report path so live-style `COUNTY_PARCEL_INTERSECTION` evidence produces `PARCEL_SCREEN_001` instead of falling back to `PARCEL_NOT_EVALUATED`, and ensure dossier Section 2 renders parcel zoning.
+
+**WP-A (Report regression):** Added `test_chatham_parcel_report_artifact_semantics_are_stable()` to `backend/tests/reports/test_report_regression.py`. The regression registers approved-with-restrictions Chatham parcel evidence, verifies 1 parcel-screen claim plus 5 non-parcel NOT_EVALUATED claims, and asserts stable evidence, caveats, unknowns, and cost metrics.
+
+**WP-B (Dossier assertion):** Extended `test_dossier_renders_parcel_acreage_from_evidence()` in `backend/tests/reports/test_dossier_enrichment.py` to assert `Zoning designation: RA` appears in Section 2.
+
+**Result:** `python -m pytest --tb=no` -> `883 passed, 70 skipped, 17 warnings`; targeted report tests -> `7 passed`; focused ruff/mypy clean; `.\scripts\verify.ps1` -> `verify: ok`. DB smoke not claimed in this slice.
+
+---
+
+## 2026-06-06 — Chatham Orchestration Loop Wiring + Dossier Acreage Fallback (Lane 4)
+
+**Goal:** Wire `orchestrate_chatham_parcels_for_area()` into the live orchestration loop and fix dossier acreage fallback so DS-010 evidence flows into reports automatically.
+
+**WP-A (Orchestration loop):** Updated `orchestrate_request_time_live_connectors_for_area()` in `backend/app/api/live_connectors.py` to call Chatham as the 5th connector, guarded by `_source_registry_id_available()`. Chatham is skipped when DS-010 is not registered, preserving existing test behavior. Added `ChathamParcelsOrchestrationResult` to `RequestTimeLiveConnectorResult` union.
+
+**WP-B (Acreage fallback):** Fixed `_parcel_acreage()` in `backend/app/reports/dossier.py` to check `total_acres_approx` as fallback after `parcel_acres`, supporting both fixture connector (uses `total_acres_approx`) and live connector (uses `parcel_acres`).
+
+**WP-C (Tests):** Added `test_chatham_parcels_is_fifth_connector_in_live_orchestration_sequence()` and `test_chatham_parcels_skipped_in_orchestration_when_ds010_not_registered()` to `backend/tests/api/test_chatham_parcels_connector_api.py`. Added `_small_area()` fixture (0.05° span) to stay within USGS TNM 0.25° bbox limit.
+
+**Result:** `882 passed` (full suite); ruff/mypy clean; `.\scripts\verify.ps1` → `verify: ok`. Commit: `43a66bf`.
+
+---
+
 ## 2026-06-06 — Chatham Parcel/Zoning Utility Slice (Lane 3)
 
 **Goal:** Wire live Chatham parcel evidence into the rule engine and dossier so DS-010 data produces actionable output.

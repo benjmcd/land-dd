@@ -167,6 +167,157 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
     }
 
 
+def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
+    source_service = SourceService(InMemorySourceRepository())
+    area_service = AreaService(InMemoryAreaRepository())
+    evidence_repo = InMemoryEvidenceRepository()
+    evidence_service = EvidenceService(evidence_repo, source_service, area_service)
+    claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
+    report_service = ReportRunService(
+        source_service=source_service,
+        area_service=area_service,
+        evidence_service=evidence_service,
+        claim_service=claim_service,
+        rule_engine=RuleEngine.from_file(),
+    )
+    source = source_service.register(
+        SourceContract(
+            name="Fixture Chatham Parcel Source",
+            organization="Chatham County GIS",
+            domain="parcels",
+            license_status="approved",
+            commercial_use_status="approved",
+            redistribution_status="restricted",
+            cache_allowed="approved",
+            export_allowed="approved-with-restrictions",
+            raw_data_allowed="approved",
+            ai_use_allowed="restricted",
+            review_status="approved",
+        )
+    )
+    area = area_service.create(
+        AreaContract(
+            label="fixture polygon",
+            geom_geojson=load_geometry("valid_polygon.geojson"),
+            geom_source="report regression fixture",
+        )
+    )
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="COUNTY_PARCEL_INTERSECTION",
+            domain="parcels",
+            observation="County GIS parcel intersects the area of interest.",
+            observed_value={
+                "intersects": True,
+                "parcel_pin": "0060143",
+                "parcel_acres": 42.5,
+                "parcel_zoning": "RA",
+            },
+            method_code="chatham_parcels_live",
+            confidence=ConfidenceBand.LOW,
+            caveat="County GIS parcel data; approximate only; verify with Register of Deeds.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    parcel_domains_not_evaluated = [d for d in NOT_EVALUATED_DOMAINS if d != "parcels"]
+    assert stable_report_projection(report_run.model_dump(mode="json")) == {
+        "status": "succeeded",
+        "intent_code": "homestead_feasibility",
+        "source_manifest": {
+            "source_count": 2,
+            "evidence_count": 6,
+            "claim_count": 6,
+            "ruleset_id": "homestead_mvp_v0_1",
+            "ruleset_version": "0.1",
+            "source_names": [
+                "Fixture Chatham Parcel Source",
+                NOT_EVALUATED_SOURCE_NAME,
+            ],
+        },
+        "evidence": [
+            {
+                "evidence_type": "spatial_intersection",
+                "evidence_code": "COUNTY_PARCEL_INTERSECTION",
+                "domain": "parcels",
+                "method_code": "chatham_parcels_live",
+                "confidence": "low",
+                "is_source_failure": False,
+                "observed_value": {
+                    "intersects": True,
+                    "parcel_pin": "0060143",
+                    "parcel_acres": 42.5,
+                    "parcel_zoning": "RA",
+                },
+            },
+            *[
+                {
+                    "evidence_type": "source_failure",
+                    "evidence_code": f"{domain.upper()}_NOT_EVALUATED",
+                    "domain": domain,
+                    "method_code": f"{domain}_not_evaluated",
+                    "confidence": "unknown",
+                    "is_source_failure": True,
+                    "observed_value": {
+                        "failure_reason": "unsupported_screening_domain"
+                    },
+                }
+                for domain in parcel_domains_not_evaluated
+            ],
+        ],
+        "claim_codes": [
+            "PARCEL_SCREEN_001",
+            *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in parcel_domains_not_evaluated],
+        ],
+        "unknown_codes": [
+            "PARCEL_SCREEN_001",
+            *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in parcel_domains_not_evaluated],
+        ],
+        "red_flag_codes": [],
+        "caveats": sorted(
+            [
+                "County GIS parcel data; approximate only; verify with Register of Deeds.",
+                *[NOT_EVALUATED_CAVEATS[domain] for domain in parcel_domains_not_evaluated],
+            ]
+        ),
+        "artifact_metadata": {
+            "artifact_kind": "report_run",
+            "report_schema": "report_run_contract_v1",
+            "persistence": "memory",
+            "validation": {
+                "contract_name": "ReportRunContract",
+                "contract_version": "report_run_contract_v1",
+                "validation_profile": "fixture_report_contract_v1",
+                "ruleset_id": "homestead_mvp_v0_1",
+                "ruleset_version": "0.1",
+            },
+            "cost_metrics": {
+                "evidence_count": 6,
+                "claim_count": 6,
+                "unknown_count": 6,
+                "red_flag_count": 0,
+                "verification_task_count": 6,
+                "estimated_total_usd_cents": 0,
+                "compute_usd_cents": 0,
+                "storage_usd_cents": 0,
+                "llm_usd_cents": 0,
+                "map_tile_usd_cents": 0,
+                "geocoding_usd_cents": 0,
+                "paid_data_usd_cents": 0,
+                "human_review_usd_cents": 0,
+                "human_review_minutes": 0,
+            },
+        },
+    }
+
+
 def load_geometry(name: str) -> dict[str, object]:
     data = json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
     assert isinstance(data, dict)

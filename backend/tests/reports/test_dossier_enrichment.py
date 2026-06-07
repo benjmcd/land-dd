@@ -240,3 +240,11 @@ def test_dossier_renders_parcel_acreage_from_evidence() -> None:
     dossier = build_rural_land_dossier(report_run)
     assert "4.75 acres" in dossier, "Expected parcel acreage '4.75 acres' in dossier"
     assert "0099887" in dossier, "Expected parcel PIN '0099887' in dossier"
+    section_2_start = dossier.find("## 2.")
+    section_3_start = dossier.find("## 3.")
+    assert section_2_start != -1, "Expected Section 2 heading in dossier"
+    assert section_3_start != -1, "Expected Section 3 heading in dossier"
+    section_2 = dossier[section_2_start:section_3_start]
+    assert "Zoning designation: RA" in section_2, (
+        "Expected parcel zoning 'RA' in Section 2 area identity; got: " + section_2
+    )

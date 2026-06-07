@@ -2,6 +2,29 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-06 Chatham Parcel Report Regression + Dossier Zoning Assertion
+
+**Scope:** Lane 5 closeout after Chatham parcel rule/dossier wiring. This records regression coverage only; it does not claim new DB-backed, hosted-production, or source-license completion.
+
+**Commands run:**
+
+```powershell
+cd backend; python -m pytest --tb=no
+cd backend; python -m pytest -q tests/reports/test_report_regression.py tests/reports/test_dossier_enrichment.py
+cd backend; ruff check tests/reports/test_report_regression.py tests/reports/test_dossier_enrichment.py
+cd backend; py -3.12 -m mypy tests/reports/test_report_regression.py tests/reports/test_dossier_enrichment.py
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Result:** Full backend pytest passed with `883 passed, 70 skipped, 17 warnings`; targeted report tests passed with `7 passed`; focused ruff and mypy passed; `git diff --check` passed. Default `.\scripts\verify.ps1` passed after this state update; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:**
+
+- This is an in-memory report-regression slice, not a DB-backed smoke proof.
+- DS-011 and DS-023 remain pending/limited by documented source stance; DS-017 remains blocked/not required for private MVP.
+- Hosted-production blockers remain separate from private MVP proof.
+
 ## 2026-06-06 Private MVP Utility Proof
 
 **Scope:** US-001 through US-008 — fixture connector pipeline, NOT_EVALUATED extension, golden AOI fixtures, MVP regression suite, overclaim test.
