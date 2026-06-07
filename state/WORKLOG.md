@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+---
+
+## 2026-06-06 — Selected-County Evidence Utility Closure (WP-9 through WP-12)
+
+**Goal:** Close highest-value evidence gaps for Buncombe, Chatham, Brunswick to satisfy the Selected-County Evidence Utility Closure lane completion condition.
+
+**WP-9 (terrain/Buncombe):** Added StaticTerrainFixtureConnector (fixture_terrain_static, DERIVED_METRIC) with fixture-backed terrain relief evidence for all three Buncombe AOIs (BUN-slope: 215m relief; BUN-flood: 85m relief; BUN-access: 142m relief). Added evaluate_terrain_fixture_quality evaluator.
+
+**WP-10 (parcels/Chatham):** Added StaticParcelFixtureConnector (fixture_parcel_static, SPATIAL_INTERSECTION) with fixture-backed parcel intersection evidence for all three Chatham AOIs (CHA-parcel-tax: 2 parcels ~85 acres; CHA-rural-use: 3 parcels ~121 acres; CHA-zoning-edge: 1 parcel ~15 acres). Field policy: owner/value suppressed. Added evaluate_parcel_fixture_quality evaluator.
+
+**WP-11 (wetlands/soils/Brunswick):** Added StaticWetlandsFixtureConnector and StaticSoilsFixtureConnector with coastal wetland and hydric soil fixture evidence for Brunswick AOIs. Wetland types: Estuarine/Palustrine. Soils: Newhan-Corolla complex and Murville sand (hydric). Added evaluate_wetlands_fixture_quality and evaluate_soils_fixture_quality evaluators.
+
+**WP-12 (tests/manifest/state):** Updated manifest.yaml to add terrain/parcel/wetlands/soils domains. Updated test_mvp_regression.py to include terrain in Buncombe test. Added test_utility_closure.py with two promoted-case tests (Chatham parcel utility, Brunswick wetlands/soils utility). Updated source mode documentation in county source manifests.
+
+**Source mode decisions:**
+- Buncombe terrain: fixture-backed (DS-001 live connector exists; fixture used for MVP regression)
+- Chatham parcels: fixture-backed (DS-010 live connector exists; fixture used per MVP fixture scope)
+- Brunswick wetlands: fixture-backed (DS-004 live connector exists; fixture used for MVP regression)
+- Brunswick soils: fixture-backed (DS-003 live connector exists; fixture used for MVP regression)
+
+**Residual risks:**
+- Parcel fixture does not claim live DS-010 data; source remains pending review for live use
+- Assessor remains NOT_EVALUATED for all cases (no fixture or live connector wired)
+- DS-017 deferred; not required
+
+---
+
 ## 2026-06-06 (Buildability fixture connector — Buncombe AOIs)
 
 - Added `StaticBuildabilityFixtureConnector` in `backend/app/connectors/buildability_fixture.py` following the flood/access pattern; uses `DERIVED_METRIC` evidence type (no spatial geometry required).

@@ -1,0 +1,50 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "dbdbdbdb-dbdb-4dbd-8dbd-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_soils_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_wetlands_soils_soils",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "dbdbdbdb-dbdb-4dbd-8dbd-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "SOIL_SURVEY_SCREEN",
+      "domain": "soils",
+      "observation": "Fixture soil survey screening: very poorly drained hydric soils — Brunswick County wetlands/soils stress case. Dominant map unit indicates consistently saturated conditions with high septic limitation.",
+      "observed_value": {
+        "dominant_map_unit": "Murville sand",
+        "drainage_class": "Very poorly drained",
+        "hydric_rating": "yes",
+        "dominant_condition": "hydric",
+        "water_table_depth_cm": 10,
+        "source_note": "SSURGO-class fixture data for Brunswick County wetlands/soils stress case."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_soils_survey_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only soil survey screening for Brunswick County wetlands/soils area. SSURGO soil survey data is a broad screening tool; it is not a site-specific soil evaluation or septic suitability determination. Very poorly drained hydric soils indicate high water table and likely constraints on conventional septic systems. Requires evaluation by a licensed soil scientist and county environmental health approval.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-78.320, 33.995], [-78.300, 33.995], [-78.300, 34.005], [-78.320, 34.005], [-78.320, 33.995]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 40.0
+    }
+  ]
+}

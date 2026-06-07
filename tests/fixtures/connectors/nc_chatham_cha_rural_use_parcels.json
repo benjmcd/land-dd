@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "bbbbbbbb-bbbb-4bbb-8bbb-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_chatham_cha_rural_use_parcels",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "bbbbbbbb-bbbb-4bbb-8bbb-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "PARCEL_INTERSECTION_SCREEN",
+      "domain": "parcels",
+      "observation": "Fixture parcel screening: Chatham County parcel intersection — rural/agricultural land-use stress case. AOI intersects 3 parcels; ownership and assessed value suppressed per field policy.",
+      "observed_value": {
+        "parcel_count": 3,
+        "owner_display": "NOT_SHOWN",
+        "parcel_class": "agricultural",
+        "total_acres_approx": 120.7,
+        "source_note": "Fixture parcel data for Chatham County rural land-use stress case."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only parcel data for Chatham County. Parcel boundaries are approximate; not survey-grade. Ownership, easements, and recorded instruments require confirmation by the Chatham County Register of Deeds and a licensed surveyor. Acreage and classification are indicative only.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-79.160, 35.745], [-79.140, 35.745], [-79.140, 35.755], [-79.160, 35.755], [-79.160, 35.745]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 50.0
+    }
+  ]
+}

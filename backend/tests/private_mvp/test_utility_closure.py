@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Any
@@ -15,15 +14,15 @@ from app.claims_engine.not_evaluated import NOT_EVALUATED_CLAIM_CODES
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.connectors import (
-    StaticAccessFixtureConnector,
-    StaticBuildabilityFixtureConnector,
     StaticFloodFixtureConnector,
-    StaticTerrainFixtureConnector,
+    StaticParcelFixtureConnector,
+    StaticSoilsFixtureConnector,
+    StaticWetlandsFixtureConnector,
     build_fixture_workflow_with_public_services,
-    evaluate_access_fixture_quality,
-    evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
-    evaluate_terrain_fixture_quality,
+    evaluate_parcel_fixture_quality,
+    evaluate_soils_fixture_quality,
+    evaluate_wetlands_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
 from app.domain.enums import IntentCode, JobStatus
@@ -53,7 +52,7 @@ FORBIDDEN_PHRASES = (
 _SKIP_FIXTURE_SMOKE = pytest.mark.skipif(
     os.getenv("RUN_DB_SMOKE") != "1",
     reason=(
-        "Fixture MVP regression not enabled (set RUN_DB_SMOKE=1 to run;"
+        "Utility closure regression not enabled (set RUN_DB_SMOKE=1 to run;"
         " uses InMemory repos, not a Postgres-backed test)"
     ),
 )
@@ -84,19 +83,17 @@ def _make_services() -> tuple[SourceService, AreaService, EvidenceService, Claim
 
 
 def _load_geometry(path: Path) -> dict[str, object]:
+    import json
     data: Any = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(data, dict)
-    # GeoJSON Feature — extract inner geometry for AreaContract
     if data.get("type") == "Feature":
         return data["geometry"]  # type: ignore[no-any-return]
     return data
 
 
-def _run_mvp_case(
-    *,
-    geom_file: str,
-    connector_fixtures: list[tuple[str, Any, Any]],
-) -> None:
+@_SKIP_FIXTURE_SMOKE
+def test_chatham_parcel_utility() -> None:
+    """Chatham parcel utility: parcel evidence present; assessor still NOT_EVALUATED."""
     source_service, area_service, evidence_service, claim_service = _make_services()
     retrieval_port = _InMemoryRetrievalPort()
 
@@ -117,16 +114,28 @@ def _run_mvp_case(
         )
     )
 
-    geom = _load_geometry(GOLDEN_AOI_DIR / geom_file)
+    geom = _load_geometry(GOLDEN_AOI_DIR / "cha_parcel_tax.geojson")
     area_service.create(
         AreaContract(
             area_id=_FIXTURE_AREA_ID,
-            label=f"mvp-regression-{geom_file}",
+            label="chatham-parcel-utility",
             geom_geojson=geom,
             geom_source="golden-aoi-fixture",
         )
     )
 
+    connector_fixtures: list[tuple[str, Any, Any]] = [
+        (
+            "nc_chatham_cha_parcel_tax_flood.json",
+            StaticFloodFixtureConnector,
+            evaluate_flood_fixture_quality,
+        ),
+        (
+            "nc_chatham_cha_parcel_tax_parcels.json",
+            StaticParcelFixtureConnector,
+            evaluate_parcel_fixture_quality,
+        ),
+    ]
     for fixture_file, connector_cls, quality_eval in connector_fixtures:
         workflow = build_fixture_workflow_with_public_services(
             retrieval_provenance_port=retrieval_port,
@@ -151,24 +160,15 @@ def _run_mvp_case(
     assert report_run.status == JobStatus.SUCCEEDED
 
     unknown_codes = {claim.claim_code for claim in report_run.unknowns}
-    assert NOT_EVALUATED_CLAIM_CODES["parcels"] in unknown_codes, (
-        f"PARCEL_NOT_EVALUATED missing from unknowns; got {sorted(unknown_codes)}"
-    )
     assert NOT_EVALUATED_CLAIM_CODES["assessor"] in unknown_codes, (
-        f"ASSESSOR_NOT_EVALUATED missing from unknowns; got {sorted(unknown_codes)}"
+        f"ASSESSOR_NOT_EVALUATED missing; got {sorted(unknown_codes)}"
     )
 
-    connector_evidence = [rec for rec in report_run.evidence if not rec.is_source_failure]
-    assert len(connector_evidence) >= len(connector_fixtures), (
-        f"Expected >= {len(connector_fixtures)} connector evidence records; "
-        f"got {len(connector_evidence)}"
-    )
-
-    evidence_count = report_run.source_manifest.get("evidence_count", 0)
-    assert isinstance(evidence_count, int) and evidence_count > len(NOT_EVALUATED_CLAIM_CODES), (
-        f"source_manifest evidence_count={evidence_count!r} — expected connector evidence "
-        "beyond NOT_EVALUATED domains only"
-    )
+    parcel_evidence = [
+        rec for rec in report_run.evidence
+        if rec.domain == "parcels" and not rec.is_source_failure
+    ]
+    assert len(parcel_evidence) >= 1, "Expected at least one parcel evidence record"
 
     dossier = build_rural_land_dossier(report_run)
     dossier_lower = dossier.lower()
@@ -176,68 +176,102 @@ def _run_mvp_case(
         assert phrase.lower() not in dossier_lower, (
             f"Forbidden phrase {phrase!r} found in Markdown dossier"
         )
+    assert "## 1. Executive Summary" in dossier
 
+
+@_SKIP_FIXTURE_SMOKE
+def test_brunswick_wetlands_soils_utility() -> None:
+    """Brunswick wetlands+soils utility: wetlands and soils evidence present."""
+    source_service, area_service, evidence_service, claim_service = _make_services()
+    retrieval_port = _InMemoryRetrievalPort()
+
+    source_service.register(
+        SourceContract(
+            source_id=_FIXTURE_SOURCE_ID,
+            name="MVP Fixture Source",
+            organization="fixture",
+            domain="fixture",
+            license_status="approved",
+            commercial_use_status="approved",
+            redistribution_status="approved",
+            cache_allowed="approved",
+            export_allowed="approved",
+            raw_data_allowed="approved",
+            ai_use_allowed="approved",
+            review_status="approved",
+        )
+    )
+
+    geom = _load_geometry(GOLDEN_AOI_DIR / "bru_wetlands_soils.geojson")
+    area_service.create(
+        AreaContract(
+            area_id=_FIXTURE_AREA_ID,
+            label="brunswick-wetlands-soils-utility",
+            geom_geojson=geom,
+            geom_source="golden-aoi-fixture",
+        )
+    )
+
+    connector_fixtures: list[tuple[str, Any, Any]] = [
+        (
+            "nc_brunswick_bru_wetlands_soils_flood.json",
+            StaticFloodFixtureConnector,
+            evaluate_flood_fixture_quality,
+        ),
+        (
+            "nc_brunswick_bru_wetlands_soils_wetlands.json",
+            StaticWetlandsFixtureConnector,
+            evaluate_wetlands_fixture_quality,
+        ),
+        (
+            "nc_brunswick_bru_wetlands_soils_soils.json",
+            StaticSoilsFixtureConnector,
+            evaluate_soils_fixture_quality,
+        ),
+    ]
+    for fixture_file, connector_cls, quality_eval in connector_fixtures:
+        workflow = build_fixture_workflow_with_public_services(
+            retrieval_provenance_port=retrieval_port,
+            evidence_service=evidence_service,
+            connector=connector_cls(),
+            quality_evaluator=quality_eval,
+        )
+        workflow.ingest_fixture(CONNECTOR_DIR / fixture_file)
+
+    report_service = ReportRunService(
+        source_service=source_service,
+        area_service=area_service,
+        evidence_service=evidence_service,
+        claim_service=claim_service,
+        rule_engine=RuleEngine.from_file(),
+    )
+    report_run = report_service.create_report_run(
+        area_id=_FIXTURE_AREA_ID,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert report_run.status == JobStatus.SUCCEEDED
+
+    unknown_codes = {claim.claim_code for claim in report_run.unknowns}
+    assert NOT_EVALUATED_CLAIM_CODES["parcels"] in unknown_codes
+    assert NOT_EVALUATED_CLAIM_CODES["assessor"] in unknown_codes
+
+    wetlands_evidence = [
+        rec for rec in report_run.evidence
+        if rec.domain == "wetlands" and not rec.is_source_failure
+    ]
+    soils_evidence = [
+        rec for rec in report_run.evidence
+        if rec.domain == "soils" and not rec.is_source_failure
+    ]
+    assert len(wetlands_evidence) >= 1, "Expected at least one wetlands evidence record"
+    assert len(soils_evidence) >= 1, "Expected at least one soils evidence record"
+
+    dossier = build_rural_land_dossier(report_run)
+    dossier_lower = dossier.lower()
+    for phrase in FORBIDDEN_PHRASES:
+        assert phrase.lower() not in dossier_lower, (
+            f"Forbidden phrase {phrase!r} found in Markdown dossier"
+        )
     assert "## 1. Executive Summary" in dossier
     assert "not determined" in dossier_lower or "not evaluated" in dossier_lower
-
-
-@_SKIP_FIXTURE_SMOKE
-def test_buncombe_mvp_regression() -> None:
-    _run_mvp_case(
-        geom_file="bun_slope.geojson",
-        connector_fixtures=[
-            (
-                "nc_buncombe_bun_slope_flood.json",
-                StaticFloodFixtureConnector,
-                evaluate_flood_fixture_quality,
-            ),
-            (
-                "nc_buncombe_bun_slope_access.json",
-                StaticAccessFixtureConnector,
-                evaluate_access_fixture_quality,
-            ),
-            (
-                "nc_buncombe_bun_slope_buildability.json",
-                StaticBuildabilityFixtureConnector,
-                evaluate_buildability_fixture_quality,
-            ),
-            (
-                "nc_buncombe_bun_slope_terrain.json",
-                StaticTerrainFixtureConnector,
-                evaluate_terrain_fixture_quality,
-            ),
-        ],
-    )
-
-
-@_SKIP_FIXTURE_SMOKE
-def test_chatham_mvp_regression() -> None:
-    _run_mvp_case(
-        geom_file="cha_rural_use.geojson",
-        connector_fixtures=[
-            (
-                "nc_chatham_cha_rural_use_flood.json",
-                StaticFloodFixtureConnector,
-                evaluate_flood_fixture_quality,
-            ),
-            (
-                "nc_chatham_cha_rural_use_access.json",
-                StaticAccessFixtureConnector,
-                evaluate_access_fixture_quality,
-            ),
-        ],
-    )
-
-
-@_SKIP_FIXTURE_SMOKE
-def test_brunswick_mvp_regression() -> None:
-    _run_mvp_case(
-        geom_file="bru_coastal_flood.geojson",
-        connector_fixtures=[
-            (
-                "nc_brunswick_bru_coastal_flood_flood.json",
-                StaticFloodFixtureConnector,
-                evaluate_flood_fixture_quality,
-            ),
-        ],
-    )

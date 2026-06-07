@@ -1,0 +1,50 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "cacacaca-caca-4cac-8cac-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_wetlands_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_coastal_flood_wetlands",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "cacacaca-caca-4cac-8cac-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "WETLAND_INTERSECTION_SCREEN",
+      "domain": "wetlands",
+      "observation": "Fixture wetlands screening: mapped Estuarine and Marine Wetland intersects the area of interest — Brunswick County coastal flood stress case. High intersection ratio indicates significant mapped wetland coverage.",
+      "observed_value": {
+        "wetland_type": "Estuarine and Marine Wetland",
+        "wetland_system": "Estuarine",
+        "wetland_class": "Estuarine Intertidal",
+        "intersection_ratio": 0.48,
+        "acres_approx": 9.6,
+        "source_note": "NWI-class fixture data for Brunswick County coastal flood stress case."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_wetlands_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only wetlands screening for Brunswick County coastal area. NWI mapping is not a jurisdictional wetland delineation; it is a screening tool. Mapped wetland presence does not confirm Clean Water Act jurisdiction, CAMA AEC status, or permit requirements. Requires confirmation by a qualified wetland scientist and the NC Division of Coastal Management.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-78.110, 33.915], [-78.090, 33.915], [-78.090, 33.925], [-78.110, 33.925], [-78.110, 33.915]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

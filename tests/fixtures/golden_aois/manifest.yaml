@@ -21,7 +21,8 @@ cases:
       flood: nc_buncombe_bun_slope_flood.json
       access: nc_buncombe_bun_slope_access.json
       buildability: nc_buncombe_bun_slope_buildability.json
-    expected_connector_workflow_domains: [flood, access, buildability]
+      terrain: nc_buncombe_bun_slope_terrain.json
+    expected_connector_workflow_domains: [flood, access, buildability, terrain]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -47,7 +48,8 @@ cases:
     connector_fixture_files:
       flood: nc_buncombe_bun_flood_flood.json
       buildability: nc_buncombe_bun_flood_buildability.json
-    expected_connector_workflow_domains: [flood, buildability]
+      terrain: nc_buncombe_bun_flood_terrain.json
+    expected_connector_workflow_domains: [flood, buildability, terrain]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -72,7 +74,8 @@ cases:
     connector_fixture_files:
       access: nc_buncombe_bun_access_access.json
       buildability: nc_buncombe_bun_access_buildability.json
-    expected_connector_workflow_domains: [access, buildability]
+      terrain: nc_buncombe_bun_access_terrain.json
+    expected_connector_workflow_domains: [access, buildability, terrain]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -97,9 +100,10 @@ cases:
     connector_fixture_files:
       flood: nc_chatham_cha_rural_use_flood.json
       access: nc_chatham_cha_rural_use_access.json
-    expected_connector_workflow_domains: [flood, access]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_chatham_cha_rural_use_parcels.json
+    expected_connector_workflow_domains: [flood, access, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Chatham County
       - does not confirm legal access
@@ -123,9 +127,10 @@ cases:
     geometry_file: cha_zoning_edge.geojson
     connector_fixture_files:
       zoning: nc_chatham_cha_zoning_edge_zoning.json
-    expected_connector_workflow_domains: [zoning]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_chatham_cha_zoning_edge_parcels.json
+    expected_connector_workflow_domains: [zoning, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Requires confirmation by Chatham County Planning
       - Parcel boundary and cadastral data were not available
@@ -149,9 +154,10 @@ cases:
     connector_fixture_files:
       flood: nc_chatham_cha_parcel_tax_flood.json
       access: nc_chatham_cha_parcel_tax_access.json
-    expected_connector_workflow_domains: [flood, access]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_chatham_cha_parcel_tax_parcels.json
+    expected_connector_workflow_domains: [flood, access, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Chatham County
       - does not confirm legal access
@@ -174,7 +180,9 @@ cases:
     geometry_file: bru_coastal_flood.geojson
     connector_fixture_files:
       flood: nc_brunswick_bru_coastal_flood_flood.json
-    expected_connector_workflow_domains: [flood]
+      wetlands: nc_brunswick_bru_coastal_flood_wetlands.json
+      soils: nc_brunswick_bru_coastal_flood_soils.json
+    expected_connector_workflow_domains: [flood, wetlands, soils]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -200,7 +208,9 @@ cases:
     connector_fixture_files:
       flood: nc_brunswick_bru_wetlands_soils_flood.json
       access: nc_brunswick_bru_wetlands_soils_access.json
-    expected_connector_workflow_domains: [flood, access]
+      wetlands: nc_brunswick_bru_wetlands_soils_wetlands.json
+      soils: nc_brunswick_bru_wetlands_soils_soils.json
+    expected_connector_workflow_domains: [flood, access, wetlands, soils]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:
@@ -226,7 +236,8 @@ cases:
     geometry_file: bru_jurisdiction.geojson
     connector_fixture_files:
       zoning: nc_brunswick_bru_jurisdiction_zoning.json
-    expected_connector_workflow_domains: [zoning]
+      wetlands: nc_brunswick_bru_jurisdiction_wetlands.json
+    expected_connector_workflow_domains: [zoning, wetlands]
     expected_not_evaluated_domains: [parcels, assessor]
     expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
     expected_caveats:

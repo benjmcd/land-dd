@@ -69,6 +69,22 @@ _BUILDABILITY_FIXTURE_DOMAIN = "buildability"
 _BUILDABILITY_FIXTURE_CONNECTOR_NAME = "fixture_buildability_static"
 _BUILDABILITY_FIXTURE_METHOD_PREFIX = "fixture_buildability_"
 
+_TERRAIN_FIXTURE_DOMAIN = "terrain"
+_TERRAIN_FIXTURE_CONNECTOR_NAME = "fixture_terrain_static"
+_TERRAIN_FIXTURE_METHOD_PREFIX = "fixture_terrain_"
+
+_WETLANDS_FIXTURE_DOMAIN = "wetlands"
+_WETLANDS_FIXTURE_CONNECTOR_NAME = "fixture_wetlands_static"
+_WETLANDS_FIXTURE_METHOD_PREFIX = "fixture_wetlands_"
+
+_SOILS_FIXTURE_DOMAIN = "soils"
+_SOILS_FIXTURE_CONNECTOR_NAME = "fixture_soils_static"
+_SOILS_FIXTURE_METHOD_PREFIX = "fixture_soils_"
+
+_PARCEL_FIXTURE_DOMAIN = "parcels"
+_PARCEL_FIXTURE_CONNECTOR_NAME = "fixture_parcel_static"
+_PARCEL_FIXTURE_METHOD_PREFIX = "fixture_parcel_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -786,6 +802,58 @@ def evaluate_buildability_fixture_quality(
     )
 
 
+def evaluate_terrain_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_TERRAIN_FIXTURE_CONNECTOR_NAME,
+        domain=_TERRAIN_FIXTURE_DOMAIN,
+        method_prefix=_TERRAIN_FIXTURE_METHOD_PREFIX,
+        label="terrain",
+        require_spatial_geometry=False,
+    )
+
+
+def evaluate_wetlands_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_WETLANDS_FIXTURE_CONNECTOR_NAME,
+        domain=_WETLANDS_FIXTURE_DOMAIN,
+        method_prefix=_WETLANDS_FIXTURE_METHOD_PREFIX,
+        label="wetlands",
+        require_spatial_geometry=True,
+    )
+
+
+def evaluate_soils_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_SOILS_FIXTURE_CONNECTOR_NAME,
+        domain=_SOILS_FIXTURE_DOMAIN,
+        method_prefix=_SOILS_FIXTURE_METHOD_PREFIX,
+        label="soils",
+        require_spatial_geometry=True,
+    )
+
+
+def evaluate_parcel_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_PARCEL_FIXTURE_CONNECTOR_NAME,
+        domain=_PARCEL_FIXTURE_DOMAIN,
+        method_prefix=_PARCEL_FIXTURE_METHOD_PREFIX,
+        label="parcel",
+        require_spatial_geometry=True,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
@@ -793,5 +861,9 @@ __all__ = [
     "evaluate_access_fixture_quality",
     "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_parcel_fixture_quality",
+    "evaluate_soils_fixture_quality",
+    "evaluate_terrain_fixture_quality",
+    "evaluate_wetlands_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

@@ -23,8 +23,11 @@ REQUIRED_CASE_FIELDS = {
     "forbidden_claims",
 }
 
-ALLOWED_CONNECTOR_DOMAINS = {"flood", "access", "zoning", "buildability"}
-EXPECTED_NOT_EVALUATED_DOMAINS = {"parcels", "assessor"}
+ALLOWED_CONNECTOR_DOMAINS = {
+    "flood", "access", "zoning", "buildability",
+    "terrain", "wetlands", "soils", "parcels",
+}
+ALWAYS_NOT_EVALUATED_DOMAINS = {"assessor"}
 SUPPORTED_COUNTIES = {"buncombe", "chatham", "brunswick"}
 EXPECTED_STATE = "nc"
 
@@ -165,8 +168,7 @@ def test_connector_fixture_domains_are_supported() -> None:
         for domain in case["connector_fixture_files"]:
             assert domain in ALLOWED_CONNECTOR_DOMAINS, (
                 f"Case {case_id!r}: connector domain {domain!r} not in "
-                f"supported domains {ALLOWED_CONNECTOR_DOMAINS}. "
-                "Only flood, access, zoning, and buildability fixture connectors exist."
+                f"supported domains {sorted(ALLOWED_CONNECTOR_DOMAINS)}."
             )
 
 
@@ -182,15 +184,20 @@ def test_expected_connector_domains_match_fixture_files() -> None:
         )
 
 
-def test_all_cases_declare_parcels_and_assessor_as_not_evaluated() -> None:
+def test_all_cases_declare_assessor_as_not_evaluated() -> None:
     manifest = _load_manifest()
     for case in manifest["cases"]:
         case_id = case["case_id"]
         not_evaluated = set(case["expected_not_evaluated_domains"])
-        assert EXPECTED_NOT_EVALUATED_DOMAINS <= not_evaluated, (
+        assert ALWAYS_NOT_EVALUATED_DOMAINS <= not_evaluated, (
             f"Case {case_id!r}: expected_not_evaluated_domains must include "
-            f"{sorted(EXPECTED_NOT_EVALUATED_DOMAINS)}; got {sorted(not_evaluated)}"
+            f"{sorted(ALWAYS_NOT_EVALUATED_DOMAINS)}; got {sorted(not_evaluated)}"
         )
+        if "parcels" not in case.get("connector_fixture_files", {}):
+            assert "parcels" in not_evaluated, (
+                f"Case {case_id!r}: no parcel fixture wired but 'parcels' missing from "
+                f"expected_not_evaluated_domains: {sorted(not_evaluated)}"
+            )
 
 
 def test_all_cases_have_forbidden_claims_list() -> None:

@@ -1,0 +1,44 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "aaaaaaaa-aaaa-4aaa-8aaa-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_terrain_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_slope_terrain",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "aaaaaaaa-aaaa-4aaa-8aaa-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "derived_metric",
+      "evidence_code": "TERRAIN_RELIEF_SCREEN",
+      "domain": "terrain",
+      "observation": "Fixture terrain screening: high-relief mountain terrain — Black Mountain area, Buncombe County. Elevation samples show steep gradient; less than 15% of the area meets a low-slope buildability threshold.",
+      "observed_value": {
+        "metric_code": "fixture_terrain_relief_sample",
+        "relief_m": 215,
+        "max_elevation_m": 987,
+        "min_elevation_m": 772,
+        "sample_count": 5,
+        "screening_note": "High-relief mountain terrain. Steep gradients present throughout AOI."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_terrain_relief_sample",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only terrain relief screening for Buncombe County mountain terrain (Black Mountain area). Elevation samples are interpolated; not survey-grade. Slope and grading decisions require a licensed civil engineer or surveyor.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}
