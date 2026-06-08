@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Protocol, cast
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from app.area_geometry.service import AreaService
 from app.claims_engine.not_evaluated import (
@@ -15,7 +15,7 @@ from app.claims_engine.not_evaluated import (
 from app.claims_engine.rule_engine import RuleEngine
 from app.claims_engine.service import ClaimService
 from app.domain.claim_contracts import ClaimContract
-from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
+from app.domain.enums import ConfidenceBand, IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
 from app.domain.source_contracts import SourceContract
@@ -23,6 +23,16 @@ from app.evidence_ledger.service import EvidenceService
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
 
+_ZONING_RULE_CODE = "ZONING_G001"
+_ZONING_UNKNOWN_CLAIM_CODE = "ZONING_SOURCE_UNAVAILABLE_UNKNOWN"
+_ZONING_SENTINEL_CAVEAT = (
+    "No zoning source data was available for this area. "
+    "Zoning use classification requires verification with the "
+    "relevant county planning or zoning authority."
+)
+_ZONING_SENTINEL_VERIFICATION_TASK = (
+    "Call county planning and verify permitted uses, overlays, and minimum lot size."
+)
 _REPORT_ASSUMPTIONS = [
     (
         "Fixture-backed screening output; not a legal, title, insurance, "
@@ -97,9 +107,17 @@ class ReportRunService:
             area_id,
             self._approved_report_evidence(self._evidence_service.list_by_area(area_id)),
         )
+        # Exclude our own sentinel from rule engine input — sentinel evidence would
+        # trigger _zoning_unknown_claim at zoning's position in evaluate(), producing
+        # the claim before flood claims. We always append it last ourselves below.
+        rule_evidence = [e for e in evidence if not _is_zoning_sentinel(e)]
         stored_claims = [
-            self._store_claim_if_needed(claim) for claim in self._rule_engine.evaluate(evidence)
+            self._store_claim_if_needed(claim)
+            for claim in self._rule_engine.evaluate(rule_evidence)
         ]
+        evidence, stored_claims = self._with_zoning_sentinel_if_missing(
+            area_id, evidence, stored_claims
+        )
         report_run = ReportRunContract(
             report_run_id=report_run_id if report_run_id is not None else uuid4(),
             workspace_id=workspace_id,
@@ -176,6 +194,70 @@ class ReportRunService:
                 )
             )
         return enriched_evidence
+
+    def _with_zoning_sentinel_if_missing(
+        self,
+        area_id: UUID,
+        evidence: list[EvidenceContract],
+        claims: list[ClaimContract],
+    ) -> tuple[list[EvidenceContract], list[ClaimContract]]:
+        # Real zoning evidence (non-sentinel) means the rule engine evaluated zoning.
+        if any(
+            record.domain == "zoning" and not _is_zoning_sentinel(record) for record in evidence
+        ):
+            return evidence, claims
+
+        existing_sentinel = next(
+            (record for record in evidence if _is_zoning_sentinel(record)), None
+        )
+        source = self._ensure_not_evaluated_source()
+        if existing_sentinel is None:
+            sentinel = self._evidence_service.create_source_failure(
+                area_id=area_id,
+                source_id=source.source_id,
+                method_code="zoning_not_screened",
+                caveat=_ZONING_SENTINEL_CAVEAT,
+                evidence_code="ZONING_NOT_SCREENED",
+                domain="zoning",
+                observation=(
+                    "Zoning screening was not performed; "
+                    "no zoning source was connected for this report run."
+                ),
+                observed_value={"failure_reason": "zoning_not_screened"},
+            )
+            new_evidence = [*evidence, sentinel]
+        else:
+            sentinel = existing_sentinel
+            new_evidence = evidence
+
+        claim = self._store_claim_if_needed(
+            ClaimContract(
+                claim_id=_zoning_sentinel_claim_id(
+                    ruleset_id=self._rule_engine.ruleset_id,
+                    ruleset_version=self._rule_engine.ruleset_version,
+                    area_id=area_id,
+                    evidence_id=sentinel.evidence_id,
+                ),
+                area_id=area_id,
+                claim_code=_ZONING_UNKNOWN_CLAIM_CODE,
+                domain="zoning",
+                assertion="Zoning source data could not be evaluated for this area.",
+                user_safe_language=(
+                    "Zoning/use screening remains unknown because required zoning source "
+                    "evidence failed or was unavailable. This does not establish legal use, "
+                    "zoning compliance, permit eligibility, or buildability."
+                ),
+                severity=SeverityBand.UNKNOWN,
+                confidence=ConfidenceBand.UNKNOWN,
+                evidence_ids=[sentinel.evidence_id],
+                rule_code=_ZONING_RULE_CODE,
+                ruleset_id=self._rule_engine.ruleset_id,
+                ruleset_version=self._rule_engine.ruleset_version,
+                verification_required=True,
+                verification_task=_ZONING_SENTINEL_VERIFICATION_TASK,
+            )
+        )
+        return new_evidence, [*claims, claim]
 
     def _ensure_not_evaluated_source(self) -> SourceContract:
         existing = self._source_service.get(_NOT_EVALUATED_SOURCE_ID)
@@ -354,6 +436,29 @@ def _not_evaluated_failure_payload(evidence: EvidenceContract) -> dict[str, obje
     if not isinstance(reason, str) or not reason.strip():
         reason = "unsupported_screening_domain"
     return {"failure_reason": reason.strip()}
+
+
+def _is_zoning_sentinel(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "zoning" and evidence.evidence_code == "ZONING_NOT_SCREENED"
+
+
+def _zoning_sentinel_claim_id(
+    *,
+    ruleset_id: str,
+    ruleset_version: str,
+    area_id: UUID,
+    evidence_id: UUID,
+) -> UUID:
+    seed = "|".join([
+        "land-dd-claim",
+        ruleset_id,
+        ruleset_version,
+        _ZONING_RULE_CODE,
+        "unknown",
+        str(area_id),
+        str(evidence_id),
+    ])
+    return uuid5(NAMESPACE_URL, seed)
 
 
 def _require_non_empty(value: str, field_name: str) -> None:

@@ -4,6 +4,52 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-08 - Zoning Silent UNKNOWN Gap Fix
+
+**Goal:** When no zoning evidence is present, surface an UNKNOWN claim instead of silently omitting zoning from the report.
+
+**Constraint:** Must not modify `rule_engine.py` zoning paths or add zoning to `NOT_EVALUATED_DOMAINS`.
+
+**Approach:** Post-rule-engine injection in `service.py`. After rule engine evaluation, if no real (non-sentinel) zoning evidence is present, create a `ZONING_NOT_SCREENED` source failure and a `ZONING_SOURCE_UNAVAILABLE_UNKNOWN` claim with deterministic ID (uuid5). Sentinel evidence and claim are always appended at the end of their respective lists for consistent ordering.
+
+**Key design detail — ordering stability:** On the second run, the sentinel evidence (stored in the first run) would be seen by the rule engine's `zoning_failures` filter and injected at zoning's position in `evaluate()` (before flood claims). This would break repeatability. Fix: filter sentinel evidence from rule engine input (`rule_evidence = [e for e in evidence if not _is_zoning_sentinel(e)]`). The service always appends the sentinel claim at the end, ensuring consistent ordering across runs.
+
+**Changes:**
+- `backend/app/reports/service.py`:
+  - Added `_is_zoning_sentinel()` module-level helper.
+  - `create_report_run()`: filters sentinel from `rule_evidence` before calling `_rule_engine.evaluate()`.
+  - `_with_zoning_sentinel_if_missing()`: skips sentinel injection when real zoning evidence is present; reuses existing sentinel on repeat runs; always appends claim at end.
+- `backend/tests/reports/test_report_service.py`: updated 5 tests — evidence domains, claim/unknown codes, all count fields.
+- `backend/tests/reports/test_report_regression.py`: updated 2 regression tests — evidence list, claim codes, unknown codes, caveats, cost_metrics counts.
+- `backend/tests/api/test_api_scaffold.py`: updated 2 API tests — evidence domains, claim/unknown codes, counts.
+
+**Result:** 885 passed, 70 skipped. Smoke tests pass (`RUN_DB_SMOKE=1`). mypy clean (235 files). ruff clean.
+
+---
+
+## 2026-06-07 - Payload Validation Allowlist Expansion + Terrain Fixture Fix
+
+**Goal:** Fix 3 (actually 5) failing smoke tests revealed by `RUN_DB_SMOKE=1`.
+
+**Root cause:** `payload_validation.py` allowlists were incomplete for the new wetland, soils, and parcel fixture connectors. The terrain fixture was also missing a required `value` field.
+
+**Changes:**
+- `backend/app/evidence_ledger/payload_validation.py`:
+  - `SPATIAL_INTERSECTION_KEYS`: added `acres_approx`, `source_note`, `wetland_class`, `wetland_system` (wetland fixtures), `dominant_condition`, `dominant_map_unit`, `water_table_depth_cm` (soils fixtures), `owner_display`, `parcel_class`, `parcel_count`, `total_acres_approx` (parcel fixtures).
+  - `SPATIAL_RESULT_KEYS`: added `drainage_class`, `parcel_count`, `wetland_type` as domain-specific presence indicators for fixtures that don't carry standard `intersects_*` boolean keys.
+  - `DERIVED_METRIC_KEYS`: added `max_elevation_m`, `min_elevation_m`, `sample_count` (terrain fixture).
+- `tests/fixtures/connectors/nc_buncombe_bun_slope_terrain.json`: added `"value": 215, "unit": "m"` to satisfy `derived_metric` mandatory numeric value constraint.
+
+**Also committed in prior session (commit 86094ee):**
+- `HTTP_422_UNPROCESSABLE_ENTITY` → `HTTP_422_UNPROCESSABLE_CONTENT` across 6 API files (42 occurrences).
+- CHA-zoning-edge fixture semantic fix: removed `intended_residential_use_allowed/prohibited` keys → fixture now correctly yields `ZONING_EVIDENCE_NEEDS_REVIEW` instead of `ZONING_001` (PROHIBITED) for unzoned/jurisdiction-edge area.
+
+**Result:** All 5 smoke tests pass (`RUN_DB_SMOKE=1`). `.\scripts\verify.ps1` green (lint clean, mypy clean over 235 source files). Committed as 299c716.
+
+**Silent UNKNOWN gap (deferred):** When no zoning evidence exists at all, the rule engine emits no claim. Fix must be at orchestration layer (not rule_engine.py, to avoid breaking flood/access count assertions). Spawning background task.
+
+---
+
 ## 2026-06-07 - Source Readiness Closure: Routing Fix + Policy Decisions
 
 **Goal:** Advance source-readiness closure lane without overclaiming or expanding scope.

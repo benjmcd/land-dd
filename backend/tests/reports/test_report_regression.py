@@ -88,8 +88,8 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
         "intent_code": "homestead_feasibility",
         "source_manifest": {
             "source_count": 2,
-            "evidence_count": 7,
-            "claim_count": 7,
+            "evidence_count": 8,
+            "claim_count": 8,
             "ruleset_id": "homestead_mvp_v0_1",
             "ruleset_version": "0.1",
             "source_names": [
@@ -121,19 +121,33 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
                 }
                 for domain in NOT_EVALUATED_DOMAINS
             ],
+            {
+                "evidence_type": "source_failure",
+                "evidence_code": "ZONING_NOT_SCREENED",
+                "domain": "zoning",
+                "method_code": "zoning_not_screened",
+                "confidence": "unknown",
+                "is_source_failure": True,
+                "observed_value": {"failure_reason": "zoning_not_screened"},
+            },
         ],
         "claim_codes": [
             "FLOOD_001",
             *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS],
+            "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "unknown_codes": [
-            NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
+            *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS],
+            "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "red_flag_codes": ["FLOOD_001"],
         "caveats": sorted(
             [
-            "Screening fixture only; confirm locally.",
-            *[NOT_EVALUATED_CAVEATS[domain] for domain in NOT_EVALUATED_DOMAINS],
+                "Screening fixture only; confirm locally.",
+                *[NOT_EVALUATED_CAVEATS[domain] for domain in NOT_EVALUATED_DOMAINS],
+                "No zoning source data was available for this area. "
+                "Zoning use classification requires verification with the "
+                "relevant county planning or zoning authority.",
             ]
         ),
         "artifact_metadata": {
@@ -148,11 +162,11 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
                 "ruleset_version": "0.1",
             },
             "cost_metrics": {
-                "evidence_count": 7,
-                "claim_count": 7,
-                "unknown_count": 6,
+                "evidence_count": 8,
+                "claim_count": 8,
+                "unknown_count": 7,
                 "red_flag_count": 1,
-                "verification_task_count": 7,
+                "verification_task_count": 8,
                 "estimated_total_usd_cents": 0,
                 "compute_usd_cents": 0,
                 "storage_usd_cents": 0,
@@ -233,8 +247,8 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
         "intent_code": "homestead_feasibility",
         "source_manifest": {
             "source_count": 2,
-            "evidence_count": 6,
-            "claim_count": 6,
+            "evidence_count": 7,
+            "claim_count": 7,
             "ruleset_id": "homestead_mvp_v0_1",
             "ruleset_version": "0.1",
             "source_names": [
@@ -271,20 +285,34 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
                 }
                 for domain in parcel_domains_not_evaluated
             ],
+            {
+                "evidence_type": "source_failure",
+                "evidence_code": "ZONING_NOT_SCREENED",
+                "domain": "zoning",
+                "method_code": "zoning_not_screened",
+                "confidence": "unknown",
+                "is_source_failure": True,
+                "observed_value": {"failure_reason": "zoning_not_screened"},
+            },
         ],
         "claim_codes": [
             "PARCEL_SCREEN_001",
             *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in parcel_domains_not_evaluated],
+            "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "unknown_codes": [
             "PARCEL_SCREEN_001",
             *[NOT_EVALUATED_CLAIM_CODES[domain] for domain in parcel_domains_not_evaluated],
+            "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "red_flag_codes": [],
         "caveats": sorted(
             [
                 "County GIS parcel data; approximate only; verify with Register of Deeds.",
                 *[NOT_EVALUATED_CAVEATS[domain] for domain in parcel_domains_not_evaluated],
+                "No zoning source data was available for this area. "
+                "Zoning use classification requires verification with the "
+                "relevant county planning or zoning authority.",
             ]
         ),
         "artifact_metadata": {
@@ -299,11 +327,11 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
                 "ruleset_version": "0.1",
             },
             "cost_metrics": {
-                "evidence_count": 6,
-                "claim_count": 6,
-                "unknown_count": 6,
+                "evidence_count": 7,
+                "claim_count": 7,
+                "unknown_count": 7,
                 "red_flag_count": 0,
-                "verification_task_count": 6,
+                "verification_task_count": 7,
                 "estimated_total_usd_cents": 0,
                 "compute_usd_cents": 0,
                 "storage_usd_cents": 0,
