@@ -16,9 +16,19 @@ Chatham County, NC is the first DS-023 live-candidate county. This is a scope de
 | Source | URL | Current role |
 |---|---|---|
 | Planning Ordinances & Regulations | https://www.chathamcountync.gov/government/departments-programs-i-z/planning/ordinances-regulations | County page that links current zoning ordinance and related land-use ordinances. |
-| Zoning Ordinance PDF | https://www.chathamcountync.gov/home/showpublisheddocument/75675/639046935454470000 | Candidate current zoning ordinance document; county page labels it updated 1/20/2026. |
+| UDO (Unified Development Ordinance) | https://www.chathamcountync.gov/government/departments-programs-i-z/planning/special-topics/udo-unified-development-ordinance | **Current governing document** effective 7/1/2025; supersedes the old standalone Zoning Ordinance and 12 other ordinances. Must review UDO, not the old ZO. |
+| Zoning Ordinance PDF (legacy) | https://www.chathamcountync.gov/home/showpublisheddocument/75675/639046935454470000 | Previous standalone ZO (updated 1/20/2026 in prior recon); may be superseded by UDO — verify before using. |
 | County-Wide Zoning | https://www.chathamcountync.gov/government/departments-programs-i-z/planning/zoning-information/county-wide-zoning | Candidate authority for countywide zoning context, zoning map reference, and planning-office verification path. |
 | Public Records Requests | https://www.chathamcountync.gov/government/public-records-requests-open-government/public-records-requests | Candidate authority for public-records posture and records-request fallback. |
+
+## Web access note (2026-06-07)
+
+Chatham County website (chathamcountync.gov) returns HTTP 403 on all programmatic fetch attempts — the site uses bot protection that blocks automated access. The documents are publicly accessible via browser. This has two implications:
+
+1. The live connector cannot use direct URL fetch without bypassing bot protection (which is not permitted). A human-reviewed recorded-fixture approach is required first.
+2. Terms of use could not be programmatically retrieved. Contact the county Planning Department or use the Public Records Request page to confirm redistribution/caching/AI-use policy before any connector or report use.
+
+UDO adoption finding (from web search, 2026-06-07): The Board of Commissioners adopted the UDO on November 18, 2024, effective July 1, 2025. The UDO consolidates 13 ordinances including the Zoning Ordinance and Subdivision Regulations into a single document. Any DS-023 connector must reference the UDO, not the legacy standalone Zoning Ordinance.
 
 ## Minimum live connector scope
 
