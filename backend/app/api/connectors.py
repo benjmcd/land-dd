@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
@@ -425,18 +425,18 @@ def run_fixture_connector(
 ) -> ConnectorRunResultContract:
     if request.connector_name not in _SUPPORTED_FIXTURE_CONNECTOR_NAMES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"unsupported connector: {request.connector_name!r}",
         )
     if not _is_safe_fixture_key(request.fixture_key):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="fixture_key must be non-empty alphanumeric with underscores or hyphens",
         )
     fixture_resource = connector_fixture_resource(request.fixture_key)
     if fixture_resource is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"fixture not found: {request.fixture_key!r}",
         )
     connector = _FIXTURE_CONNECTORS[request.connector_name]
@@ -458,7 +458,7 @@ def run_fixture_connector(
             result = workflow.ingest_fixture(fixture_path)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -634,7 +634,7 @@ def _ensure_fixture_provenance(services: ApiServices) -> None:
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -686,7 +686,7 @@ def _run_compat_queue_action(
         return _connector_review_queue_item_contract(action())
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -695,7 +695,7 @@ def _compat_reviewer_id(auth: RequestAuthContext, reviewer_id: str) -> str:
     reviewer = reviewer_id.strip()
     if not reviewer:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reviewer_id is required",
         )
     if reviewer != str(auth.user_id):
@@ -709,7 +709,7 @@ def _compat_reviewer_id(auth: RequestAuthContext, reviewer_id: str) -> str:
 def _required_compat_reason(reason: str | None) -> str:
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="connector review queue reason is required",
         )
     return reason
@@ -730,7 +730,7 @@ def query_fema_nfhl_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -787,7 +787,7 @@ def query_usgs_tnm_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -844,7 +844,7 @@ def query_ssurgo_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -901,7 +901,7 @@ def query_nwi_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -958,7 +958,7 @@ def query_chatham_parcels_bbox(
         area = services.area_service.get(request.area_id)
         if area is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Area '{request.area_id}' is not registered",
             )
         area_for_bbox = _area_with_bbox_geometry(
@@ -1049,7 +1049,7 @@ def schedule_live_connector_sequence_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -1102,7 +1102,7 @@ def schedule_live_connector_sequence_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     return {
@@ -1126,7 +1126,7 @@ def schedule_fema_nfhl_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -1143,7 +1143,7 @@ def schedule_fema_nfhl_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -1163,7 +1163,7 @@ def schedule_usgs_tnm_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -1180,7 +1180,7 @@ def schedule_usgs_tnm_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -1200,7 +1200,7 @@ def schedule_nwi_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -1217,7 +1217,7 @@ def schedule_nwi_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -1237,7 +1237,7 @@ def schedule_ssurgo_bbox(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     try:
@@ -1254,7 +1254,7 @@ def schedule_ssurgo_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -1596,7 +1596,7 @@ def _required_action_reason(
     reason = _optional_action_reason(request)
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reason is required",
         )
     return reason
@@ -1610,7 +1610,7 @@ def _optional_action_reason(
     reason = request.reason.strip()
     if not reason:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reason is required",
         )
     return reason

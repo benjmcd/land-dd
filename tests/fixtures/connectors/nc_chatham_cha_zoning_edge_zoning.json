@@ -19,12 +19,11 @@
       "evidence_type": "source_observation",
       "evidence_code": "ZONING_USE_CLASSIFICATION",
       "domain": "zoning",
-      "observation": "Fixture zoning screening: unzoned or jurisdiction-edge area — residential use classification unknown.",
+      "observation": "Fixture zoning screening: parcel is in a jurisdiction-edge or unzoned area — residential use classification is indeterminate from available fixture data.",
       "observed_value": {
-        "intended_residential_use_allowed": false,
-        "intended_residential_use_prohibited": false,
         "zoning_district": "UNZONED",
-        "jurisdiction_edge": true
+        "jurisdiction_edge": true,
+        "classification_indeterminate": true
       },
       "source_id": "55555555-5555-4555-8555-555555555555",
       "dataset_version_id": "22222222-2222-4222-8222-222222222222",

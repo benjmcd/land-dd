@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 from collections import defaultdict
@@ -229,7 +229,7 @@ def create_report_run(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Area '{request.area_id}' is not registered",
         )
     if auth is not None:
@@ -247,7 +247,7 @@ def create_report_run(
             )
         except ValueError as exc:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=str(exc),
             ) from exc
         response.status_code = status.HTTP_201_CREATED
@@ -411,7 +411,7 @@ def compare_report_runs(
         run_ids = [UUID(rid) for rid in raw_ids]
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"malformed UUID in ids: {exc}",
         ) from exc
 

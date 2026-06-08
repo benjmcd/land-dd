@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -280,7 +280,7 @@ def _parse_uuid_header(value: str, header_name: str) -> UUID:
         return UUID(value.strip())
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"{header_name} header must be a UUID",
         ) from exc
 
