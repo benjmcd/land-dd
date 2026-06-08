@@ -118,7 +118,7 @@ The two-step report creation response is `202 Accepted` with `report_run_id` and
 
 ### Approve a report run
 
-The final Markdown dossier (`GET /report-runs/{id}/dossier`) is gated on approval status.
+The final Markdown dossier (`GET /report-runs/{report_run_id}/dossier`) is gated on approval status.
 A report that has not been approved returns `409 Conflict`. Approve a completed report run
 using a reviewer account that holds the `report:approve` scope:
 
