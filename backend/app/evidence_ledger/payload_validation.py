@@ -81,6 +81,20 @@ SPATIAL_INTERSECTION_KEYS = {
     "parcel_city",
     "parcel_state",
     "parcel_zip",
+    # wetland connector fields
+    "acres_approx",
+    "source_note",
+    "wetland_class",
+    "wetland_system",
+    # soils connector fields
+    "dominant_condition",
+    "dominant_map_unit",
+    "water_table_depth_cm",
+    # parcel connector fields
+    "owner_display",
+    "parcel_class",
+    "parcel_count",
+    "total_acres_approx",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",
@@ -94,16 +108,23 @@ SPATIAL_RESULT_KEYS = {
     "intersects_soil_mapunit",
     "no_public_road_adjacency",
     "public_road_adjacency",
+    # domain-specific presence indicators (wetland/soils/parcel connectors)
+    "drainage_class",
+    "parcel_count",
+    "wetland_type",
 }
 DERIVED_METRIC_KEYS = {
     "calculation_method",
     "insufficient_low_slope_buildable_area",
     "low_slope_buildable_area_sufficient",
     "low_slope_area_ratio",
+    "max_elevation_m",
     "mean_elevation_m",
     "mean_slope_pct",
     "metric_code",
+    "min_elevation_m",
     "relief_m",
+    "sample_count",
     "screening_note",
     "source_stale",
     "unit",

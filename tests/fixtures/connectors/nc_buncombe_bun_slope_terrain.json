@@ -22,6 +22,8 @@
       "observation": "Fixture terrain screening: high-relief mountain terrain — Black Mountain area, Buncombe County. Elevation samples show steep gradient; less than 15% of the area meets a low-slope buildability threshold.",
       "observed_value": {
         "metric_code": "fixture_terrain_relief_sample",
+        "value": 215,
+        "unit": "m",
         "relief_m": 215,
         "max_elevation_m": 987,
         "min_elevation_m": 772,
