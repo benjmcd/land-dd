@@ -4,6 +4,22 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-07 - Source Readiness Closure: Routing Fix + Policy Decisions
+
+**Goal:** Advance source-readiness closure lane without overclaiming or expanding scope.
+
+**Changes:**
+- `tasks/task_queue.yaml`: aligned `active_plan` to `plans/2026-06-06-source-readiness-closure.md` (was pointing to the stale private-mvp-utility-proof plan).
+- `docs/runbooks/mvp_operator.md`: fixed notation inconsistency — dossier route example now uses `{report_run_id}` consistently with other route examples.
+- `docs/source-reviews/ds-023.md`: added explicit decision to keep DS-023 pending; required policy decisions listed in a table; fail-closed behavior noted with test references.
+- `docs/source-reviews/ds-011.md`: recorded Chatham County as first candidate endpoint; field policy decision recorded (owner/name/sale-history SUPPRESSED; PIN/acreage/situs/tax-year allowed only after terms review confirmed).
+
+**Source readiness:** unchanged at `ready=5 blocked=3` (DS-011, DS-017, DS-023 blocked). DS-017 remains deferred. No registry or seed changes.
+
+**Result:** `.\scripts\verify.ps1` passed; 16 source registry tests passed; lint clean; mypy clean (235 source files). DB smoke skipped (prerequisites unavailable locally).
+
+---
+
 ## 2026-06-07 - Source Readiness Connector-Implementation Gate
 
 **Goal:** Prevent source-readiness overclaim if DS-011 or DS-023 rights are approved before a connector exists.

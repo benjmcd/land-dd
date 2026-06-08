@@ -2,6 +2,24 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-07 Source Readiness Closure: Routing Fix + Policy Decisions
+
+**Scope:** task_queue.yaml routing fix, runbook dossier route notation fix, DS-023 explicit pending decision, DS-011 field policy recording.
+
+**Commands run:**
+
+```powershell
+python scripts/source_readiness.py --priority Must --json
+cd backend; python -m pytest -q tests/source_registry/test_source_readiness.py tests/source_registry/test_source_seeds.py
+.\scripts\verify.ps1
+```
+
+**Result:** Source readiness confirmed `ready=5 blocked=3 sources=8`; 16 source registry tests passed; full verify passed (backend tests, lint clean, mypy 235 source files). DB smoke skipped (RUN_DB_SMOKE not set; prerequisites unavailable).
+
+**Residual risk:** DB-enabled verification remains environment-blocked. DS-023 and DS-011 remain pending; policy decisions recorded but no connector or registry promotion made. DS-017 deferred.
+
+---
+
 ## 2026-06-07 Source Readiness Connector-Implementation Gate
 
 **Scope:** Hardened source-readiness reporting so rights approval alone cannot mark a source connector-ready. This prevents DS-023 or DS-011 from becoming `connector_ready=true` until a connector implementation is explicitly recognized.
