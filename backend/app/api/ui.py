@@ -82,6 +82,34 @@ function submitReport() {{
     var id = data.report_run_id;
     if (id) {{
       window.location.href = '/ui/report-runs/' + id;
+    }} else if (data.status === 'pending_connector_review' && data.connector_ingest_run_id) {{
+      var queueUrl = '/ui/connector-review-queue/' + data.connector_ingest_run_id;
+      var el = document.getElementById('result');
+      var box = document.createElement('div');
+      var boxStyle = 'background:#fff3cd;border:1px solid #ffc107;'
+        + 'padding:1rem;border-radius:4px;margin-top:1rem';
+      box.setAttribute('style', boxStyle);
+      var heading = document.createElement('strong');
+      heading.appendChild(document.createTextNode('Connector Review Required'));
+      box.appendChild(heading);
+      var p1 = document.createElement('p');
+      p1.appendChild(document.createTextNode(
+        'This area requires connector data review before a report can be generated.'));
+      box.appendChild(p1);
+      var p2 = document.createElement('p');
+      p2.appendChild(document.createTextNode('Status: '));
+      var statusStrong = document.createElement('strong');
+      statusStrong.appendChild(document.createTextNode(data.connector_review_status || 'pending'));
+      p2.appendChild(statusStrong);
+      box.appendChild(p2);
+      var p3 = document.createElement('p');
+      var link = document.createElement('a');
+      link.href = queueUrl;
+      link.appendChild(document.createTextNode('View in Connector Review Queue →'));
+      p3.appendChild(link);
+      box.appendChild(p3);
+      el.innerHTML = '';
+      el.appendChild(box);
     }} else {{
       var el = document.getElementById('result');
       el.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
