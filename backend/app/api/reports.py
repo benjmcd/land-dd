@@ -391,6 +391,33 @@ def _build_comparison_summary(report: ReportRunContract) -> ReportRunComparisonS
     )
 
 
+def _parse_compare_ids(ids: str) -> list[UUID]:
+    """Parse and validate the comma-separated compare ``ids`` query value.
+
+    Module-level helper used by both the API compare route and the UI compare page
+    so the 2..4 bounds and UUID semantics stay in one place. Raises HTTPException
+    with the canonical status codes and messages on invalid input.
+    """
+    raw_ids = [part.strip() for part in ids.split(",") if part.strip()]
+    if len(raw_ids) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="at least 2 report run IDs are required for comparison",
+        )
+    if len(raw_ids) > 4:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="at most 4 report run IDs are allowed for comparison",
+        )
+    try:
+        return [UUID(rid) for rid in raw_ids]
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"malformed UUID in ids: {exc}",
+        ) from exc
+
+
 class ReportRunCompareResponse(BaseModel):
     summaries: list[ReportRunComparisonSummary]
 
@@ -460,24 +487,7 @@ def compare_report_runs(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
-    raw_ids = [part.strip() for part in ids.split(",") if part.strip()]
-    if len(raw_ids) < 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="at least 2 report run IDs are required for comparison",
-        )
-    if len(raw_ids) > 4:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="at most 4 report run IDs are allowed for comparison",
-        )
-    try:
-        run_ids = [UUID(rid) for rid in raw_ids]
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"malformed UUID in ids: {exc}",
-        ) from exc
+    run_ids = _parse_compare_ids(ids)
 
     summaries: list[ReportRunComparisonSummary] = []
     for run_id in run_ids:

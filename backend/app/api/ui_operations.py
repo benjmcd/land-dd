@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.operations import _job_queue_health_response
+from app.api.operations import JobQueueHealthResponse, _job_queue_health_response
 from app.api.reviewer_auth import REVIEWER_SCOPE_OPERATIONS_READ, require_reviewer_scope
 
 router = APIRouter(prefix="/ui/operations", tags=["ui"])
@@ -51,19 +51,15 @@ def _credential_form() -> str:
     return (
         "<form method='post' action='/ui/operations' class='auth-form'>"
         "<label>Reviewer ID:"
-        " <input type='text' name='reviewer_id' required></label>"
+        " <input type='text' name='reviewer_id' required autocomplete='off'></label>"
         "<label>Reviewer token:"
-        " <input type='password' name='reviewer_token' required></label>"
+        " <input type='password' name='reviewer_token' required autocomplete='off'></label>"
         "<button type='submit'>View Dashboard</button>"
         "</form>"
     )
 
 
-def _render_health_table(label: str, health_resp: object) -> str:
-    from app.api.operations import JobQueueHealthResponse
-
-    if not isinstance(health_resp, JobQueueHealthResponse):
-        return ""
+def _render_health_table(label: str, health_resp: JobQueueHealthResponse) -> str:
     age = (
         f"{health_resp.oldest_queued_age_seconds:.1f}s"
         if health_resp.oldest_queued_age_seconds is not None

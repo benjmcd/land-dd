@@ -8,7 +8,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Qu
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.reports import _build_comparison_summary, schedule_report_background
+from app.api.reports import (
+    _build_comparison_summary,
+    _parse_compare_ids,
+    schedule_report_background,
+)
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_APPROVE,
     REVIEWER_SCOPE_REPORT_RETRY,
@@ -173,9 +177,11 @@ def ui_report_run(
             " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
             "<label>Reviewer ID:"
             " <input type=\"text\" name=\"reviewer_id\" required"
+            " autocomplete=\"off\""
             " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
             "<label>Reviewer token:"
             " <input type=\"password\" name=\"reviewer_token\" required"
+            " autocomplete=\"off\""
             " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
             "<button type=\"submit\""
             " style=\"background:#007bff;color:white;border:none;"
@@ -209,9 +215,11 @@ def ui_report_run(
             " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
             "<label>Reviewer ID:"
             " <input type=\"text\" name=\"reviewer_id\" required"
+            " autocomplete=\"off\""
             " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
             "<label>Reviewer token:"
             " <input type=\"password\" name=\"reviewer_token\" required"
+            " autocomplete=\"off\""
             " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
             "<button type=\"submit\""
             " style=\"background:#28a745;color:white;border:none;"
@@ -450,20 +458,10 @@ def ui_compare_report_runs(
             "at least 2 report run IDs are required for comparison", 400
         )
 
-    raw_ids = [part.strip() for part in ids.split(",") if part.strip()]
-    if len(raw_ids) < 2:
-        return _error_page(
-            "at least 2 report run IDs are required for comparison", 400
-        )
-    if len(raw_ids) > 4:
-        return _error_page(
-            "at most 4 report run IDs are allowed for comparison", 400
-        )
-
     try:
-        run_ids = [UUID(rid) for rid in raw_ids]
-    except ValueError as exc:
-        return _error_page(f"malformed UUID in ids: {exc}", 422)
+        run_ids = _parse_compare_ids(ids)
+    except HTTPException as exc:
+        return _error_page(str(exc.detail), exc.status_code)
 
     summaries = []
     for run_id in run_ids:
