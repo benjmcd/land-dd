@@ -48,7 +48,12 @@ class AsyncReportJobStoreProtocol(Protocol):
 
     def health(self) -> JobQueueHealth: ...
 
-    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]: ...
+    def list_recent(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+    ) -> list[ReportJobRecord]: ...
 
 
 class AsyncReportJobStore:
@@ -100,10 +105,17 @@ class AsyncReportJobStore:
         with self._lock:
             return _health_from_records(REPORT_RUN_JOB_TYPE, tuple(self._jobs.values()))
 
-    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]:
+    def list_recent(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+    ) -> list[ReportJobRecord]:
         with self._lock:
             jobs = sorted(self._jobs.values(), key=lambda r: r.created_at, reverse=True)
-            return jobs[:limit]
+            if status is not None:
+                jobs = [r for r in jobs if r.status == status]
+            return jobs[offset : offset + limit]
 
 
 class SqlAlchemyAsyncReportJobStore:
@@ -204,20 +216,39 @@ class SqlAlchemyAsyncReportJobStore:
             error_msg=error_msg,
         )
 
-    def list_recent(self, limit: int = 50) -> list[ReportJobRecord]:
+    def list_recent(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+    ) -> list[ReportJobRecord]:
+        params: dict[str, object] = {
+            "job_type": REPORT_RUN_JOB_TYPE,
+            "limit": limit,
+            "offset": offset,
+        }
+        if status is not None:
+            params["status"] = status.value
+            sql = """
+                SELECT job_id, status, payload, last_error, created_at
+                FROM jobs.job_queue
+                WHERE job_type = :job_type
+                  AND status = CAST(:status AS jobs.job_status)
+                ORDER BY created_at DESC
+                LIMIT :limit
+                OFFSET :offset
+                """
+        else:
+            sql = """
+                SELECT job_id, status, payload, last_error, created_at
+                FROM jobs.job_queue
+                WHERE job_type = :job_type
+                ORDER BY created_at DESC
+                LIMIT :limit
+                OFFSET :offset
+                """
         with self._session_factory() as session:
-            rows = session.execute(
-                text(
-                    """
-                    SELECT job_id, status, payload, last_error, created_at
-                    FROM jobs.job_queue
-                    WHERE job_type = :job_type
-                    ORDER BY created_at DESC
-                    LIMIT :limit
-                    """
-                ),
-                {"job_type": REPORT_RUN_JOB_TYPE, "limit": limit},
-            ).mappings().all()
+            rows = session.execute(text(sql), params).mappings().all()
         return [_record_from_row(row) for row in rows]
 
     def health(self) -> JobQueueHealth:

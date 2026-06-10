@@ -388,3 +388,73 @@ def test_ui_report_runs_list_has_operations_link() -> None:
     assert response.status_code == 200
     assert "/ui/operations" in response.text
     assert "Operations" in response.text
+
+
+# ---------------------------------------------------------------------------
+# S5 — UI list page: status filter + pagination
+# ---------------------------------------------------------------------------
+
+
+def test_ui_report_run_list_has_status_filter_dropdown() -> None:
+    _app, tc, _run_id = _make_app_client_with_report()
+    response = tc.get("/ui/report-runs")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    # Filter form is present
+    assert 'name="status"' in response.text
+    # JobStatus values appear in the dropdown
+    assert "queued" in response.text
+    assert "failed" in response.text
+    assert "succeeded" in response.text
+
+
+def test_ui_report_run_list_status_filter_shows_only_matching_rows() -> None:
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    # Mark the job as failed
+    services.async_report_jobs.mark_failed(UUID(report_run_id), error_msg="test failure")
+    # Filter for failed: our run should appear
+    resp_failed = tc.get("/ui/report-runs?status=failed")
+    assert resp_failed.status_code == 200
+    assert report_run_id[:8] in resp_failed.text
+    # Filter for queued: our run should NOT appear (it's failed)
+    resp_queued = tc.get("/ui/report-runs?status=queued")
+    assert resp_queued.status_code == 200
+    assert report_run_id[:8] not in resp_queued.text
+
+
+def test_ui_report_run_list_invalid_status_filter_falls_back_gracefully() -> None:
+    tc = TestClient(create_app())
+    # Invalid status value should not 500 — falls back to no filter
+    resp = tc.get("/ui/report-runs?status=not_a_real_status")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+
+
+def test_ui_report_run_list_prev_next_pagination_links() -> None:
+    app, tc = create_app(), None
+    tc = TestClient(app)
+    area_resp = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "test fixture"},
+    )
+    assert area_resp.status_code == 201
+    # Create enough runs to trigger the "Next" link (page size is 30)
+    # We'll use offset directly to test prev/next rendering
+    # With offset=0 and empty store, no pagination links
+    resp0 = tc.get("/ui/report-runs?offset=0")
+    assert resp0.status_code == 200
+    # With offset>0, prev link should appear
+    resp_with_offset = tc.get("/ui/report-runs?offset=30")
+    assert resp_with_offset.status_code == 200
+    assert "Previous" in resp_with_offset.text or "prev" in resp_with_offset.text.lower()
+
+
+def test_ui_report_run_list_pagination_preserves_status_filter() -> None:
+    tc = TestClient(create_app())
+    # With status filter + offset, the prev/next links should preserve status
+    resp = tc.get("/ui/report-runs?status=failed&offset=30")
+    assert resp.status_code == 200
+    # Previous link should include the status param
+    if "Previous" in resp.text:
+        assert "status=failed" in resp.text

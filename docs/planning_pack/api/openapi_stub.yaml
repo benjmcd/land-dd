@@ -224,6 +224,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - report-runs
+      summary: List Report Runs
+      operationId: list_report_runs_report_runs_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/JobStatus'
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportRunListItem'
+                title: Response List Report Runs Report Runs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /report-runs/{report_run_id}/approve:
     post:
       tags:
@@ -1931,6 +1978,23 @@ paths:
       - ui
       summary: Ui Report Run List
       operationId: ui_report_run_list_ui_report_runs_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
       responses:
         '200':
           description: Successful Response
@@ -1938,6 +2002,12 @@ paths:
             text/html:
               schema:
                 type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/report-runs/{report_run_id}/approve:
     post:
       tags:
@@ -4146,6 +4216,34 @@ components:
       - removed_sources
       - evidence_count_delta
       title: ReportRunDiffResponse
+    ReportRunListItem:
+      properties:
+        report_run_id:
+          type: string
+          format: uuid
+          title: Report Run Id
+        intent_code:
+          type: string
+          title: Intent Code
+        status:
+          type: string
+          title: Status
+        created_at:
+          type: string
+          title: Created At
+        review_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Review Status
+      type: object
+      required:
+      - report_run_id
+      - intent_code
+      - status
+      - created_at
+      - review_status
+      title: ReportRunListItem
     RequiredConnectorReviewActionRequest:
       properties:
         reason:
