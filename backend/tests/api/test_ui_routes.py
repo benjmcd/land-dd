@@ -458,3 +458,74 @@ def test_ui_report_run_list_pagination_preserves_status_filter() -> None:
     # Previous link should include the status param
     if "Previous" in resp.text:
         assert "status=failed" in resp.text
+
+
+# ---------------------------------------------------------------------------
+# S6 — Evidence lineage UI
+# ---------------------------------------------------------------------------
+
+
+def test_ui_lineage_page_unknown_id_returns_html_not_found() -> None:
+    tc = TestClient(create_app())
+    resp = tc.get(f"/ui/report-runs/{uuid4()}/lineage")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "Not Found" in resp.text
+
+
+def test_ui_lineage_page_invalid_uuid_returns_422() -> None:
+    tc = TestClient(create_app())
+    resp = tc.get("/ui/report-runs/not-a-uuid/lineage")
+    assert resp.status_code == 422
+
+
+def test_ui_lineage_page_renders_claim_evidence_mapping() -> None:
+    """Lineage page renders claim->evidence and evidence->claim sections."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    resp = tc.get(f"/ui/report-runs/{report_run_id}/lineage")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    # Structural headings
+    assert "Evidence Lineage" in resp.text
+    assert "Claims" in resp.text
+    assert "Evidence" in resp.text
+    assert "Sources" in resp.text
+    # Report run ID appears in the page
+    assert report_run_id[:8] in resp.text
+
+
+def test_ui_lineage_page_shows_evidence_records() -> None:
+    """The lineage page lists at least one evidence record from the fixture report."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    resp = tc.get(f"/ui/report-runs/{report_run_id}/lineage")
+    assert resp.status_code == 200
+    # The fixture connector always generates evidence — at least one row must appear.
+    assert "No evidence records" not in resp.text
+
+
+def test_ui_lineage_page_shows_claim_records() -> None:
+    """The lineage page lists at least one claim from the fixture report."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    resp = tc.get(f"/ui/report-runs/{report_run_id}/lineage")
+    assert resp.status_code == 200
+    assert "No claims" not in resp.text
+
+
+def test_ui_lineage_page_gating_matches_api_no_auth_required() -> None:
+    """Lineage UI is accessible for any existing report, no reviewer auth needed (mirrors API)."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    # No credentials supplied — should succeed (same posture as GET /report-runs/{id}/lineage)
+    resp = tc.get(f"/ui/report-runs/{report_run_id}/lineage")
+    assert resp.status_code == 200
+    assert "Evidence Lineage" in resp.text
+
+
+def test_ui_approved_report_page_has_lineage_link() -> None:
+    """The approved report page shows a 'View evidence lineage' link."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    services.report_service.approve_report_run(UUID(report_run_id), reviewer_id="test-reviewer")
+    resp = tc.get(f"/ui/report-runs/{report_run_id}")
+    assert resp.status_code == 200
+    assert "lineage" in resp.text
+    assert f"/ui/report-runs/{report_run_id}/lineage" in resp.text
