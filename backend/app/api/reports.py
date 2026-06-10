@@ -1,7 +1,9 @@
 ﻿from __future__ import annotations
 
+import json
 import logging
 from collections import defaultdict
+from pathlib import Path
 from typing import Annotated, cast
 from uuid import UUID
 
@@ -11,6 +13,7 @@ from fastapi import (
     Depends,
     Header,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -492,6 +495,7 @@ def get_report_run_dossier(
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
     x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+    download: Annotated[bool, Query()] = False,
 ) -> Response:
     auth = _optional_report_auth_context(
         request_context,
@@ -512,7 +516,78 @@ def get_report_run_dossier(
                 detail=f"report run is not approved for delivery (review_status={report.review_status})",  # noqa: E501
             )
         dossier_md = build_rural_land_dossier(report)
-        return Response(content=dossier_md, media_type="text/markdown; charset=utf-8")
+        headers: dict[str, str] = {}
+        if download:
+            headers["Content-Disposition"] = (
+                f'attachment; filename="dossier_{report_run_id}.md"'
+            )
+        return Response(
+            content=dossier_md,
+            media_type="text/markdown; charset=utf-8",
+            headers=headers,
+        )
+    job = services.async_report_jobs.get(report_run_id)
+    if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+        return JSONResponse(
+            status_code=202,
+            content={"status": "pending", "report_run_id": str(report_run_id)},
+        )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+
+
+@router.get("/{report_run_id}/artifact")
+def get_report_run_artifact(
+    report_run_id: UUID,
+    services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> Response:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
+    report = services.report_service.get_report_run(report_run_id)
+    if report is not None:
+        if auth is not None and report.workspace_id != auth.workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="report run not found",
+            )
+        if report.review_status != ReportReviewStatus.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"report run is not approved for delivery (review_status={report.review_status})",  # noqa: E501
+            )
+        # DB mode: serve persisted artifact file if available
+        artifact_uri = report.artifact_metadata.get("machine_json_uri") or report.output_uri
+        if artifact_uri is not None:
+            artifact_path = Path(str(artifact_uri))
+            if artifact_path.exists():
+                artifact_bytes = artifact_path.read_bytes()
+                return Response(
+                    content=artifact_bytes,
+                    media_type="application/json",
+                    headers={
+                        "Content-Disposition": (
+                            f'attachment; filename="report_{report_run_id}.json"'
+                        )
+                    },
+                )
+        # In-memory mode (or missing file): serialize the contract
+        artifact_json = json.dumps(report.model_dump(mode="json"), indent=2, sort_keys=True)
+        return Response(
+            content=artifact_json.encode("utf-8"),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="report_{report_run_id}.json"'
+                )
+            },
+        )
     job = services.async_report_jobs.get(report_run_id)
     if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
         return JSONResponse(
