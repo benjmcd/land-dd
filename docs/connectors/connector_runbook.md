@@ -590,6 +590,133 @@ separate audit-event authorization ledger.
 
 ---
 
+---
+
+## Live Smoke
+
+`scripts/run_live_smoke.ps1` (Windows) and `scripts/run_live_smoke.sh` (Linux/macOS) are
+env-gated wrappers that drive the four existing `query-bbox` routes once each against a
+small Buncombe County NC bounding box (`-82.60,35.55 to -82.55,35.60`). They add no new
+connector logic; every live call goes through the already-existing API routes.
+
+### Prerequisites
+
+- Python 3.12+ available as `py -3.12` (Windows) or `python3.12` / `python3` (Linux/macOS).
+- `uvicorn` installed in the Python environment (`pip install uvicorn` or project venv).
+- Port 8103 free on localhost.
+- Network access to the four public federal endpoints:
+  - DS-001: `https://epqs.nationalmap.gov/v1/json`
+  - DS-002: `https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query`
+  - DS-003: `https://SDMDataAccess.sc.egov.usda.gov/Tabular/SDMTabularService/post.rest`
+  - DS-004: `https://www.fws.gov/wetlands/arcgis/rest/services/Wetlands_Raster/MapServer/0/query`
+
+No credentials beyond the default local reviewer account (`fixture-reviewer` /
+`fixture-token-123`) are required. The routes do not require `ENABLE_LIVE_CONNECTORS`;
+the wrapper sets it anyway for completeness with `POST /intake` paths.
+
+### Exact commands
+
+**Validate-only (no live calls — safe in CI):**
+
+```powershell
+# Prints "SKIP: live connector smoke" and exits 0.
+.\scripts\run_live_smoke.ps1
+```
+
+```bash
+./scripts/run_live_smoke.sh
+```
+
+**Full live execution (one bounded bbox, public federal APIs):**
+
+```powershell
+$env:RUN_LIVE_CONNECTOR_TESTS = '1'
+.\scripts\run_live_smoke.ps1
+```
+
+```bash
+RUN_LIVE_CONNECTOR_TESTS=1 ./scripts/run_live_smoke.sh
+```
+
+Optional overrides: `SMOKE_API_PORT` (default 8103), `SMOKE_OUTPUT_DIR`
+(default `local_artifacts`).
+
+### What the script does
+
+1. Starts the API in-process on port 8103 with in-memory storage and
+   `ENABLE_LIVE_CONNECTORS=true`.
+2. Waits for the `/health` endpoint to respond.
+3. Registers DS-001, DS-002, DS-003, and DS-004 sources from the CSV registry via
+   `POST /sources`.
+4. Registers a Buncombe NC polygon area via `POST /areas`.
+5. Calls each of the four `query-bbox` routes in order (DS-001, DS-002, DS-004, DS-003)
+   with reviewer auth headers.
+6. Writes a timestamped JSON transcript to `local_artifacts/live_smoke_<timestamp>.json`.
+7. Stops the API.
+
+The `local_artifacts/` directory is gitignored; transcripts are never committed.
+
+### What success looks like
+
+Each leg returns `HTTP 202 Accepted` with `retrieval_status` of `SUCCEEDED` or `FAILED`.
+A `FAILED` retrieval status is a first-class source-failure outcome, not a script error —
+it means the public endpoint was reachable but returned no usable data (common for
+wetland-free or out-of-service-area bboxes). The leg is counted as `PASS` as long as
+the API route returns a 2xx status with the standard response shape.
+
+Example successful leg output:
+
+```
+DS-002 FEMA NFHL: POST /connector-runs/fema-nfhl/query-bbox ... PASS (HTTP 202)
+  retrieval=SUCCEEDED ev_created=3 sf_count=0
+```
+
+Example source-failure (first-class outcome, still a leg PASS):
+
+```
+DS-001 USGS TNM: POST /connector-runs/usgs-tnm/query-bbox ... PASS (HTTP 202)
+  retrieval=FAILED ev_created=0 sf_count=1
+```
+
+A leg is `FAIL` only when the API returns a non-2xx status (e.g., 409 if a source is not
+registered, 422 for a bad bbox, or 5xx for an internal error).
+
+### What failure looks like
+
+Non-2xx HTTP responses are recorded per leg. The transcript JSON includes
+`response_summary.error_detail` for each failed leg. Common causes:
+
+- `409 source registry id DS-00X is not registered` — source seed was not applied; check
+  that `registers/data_source_registry.csv` contains the expected row and that the
+  `/sources` seed step completed successfully.
+- `422 area not found` — area registration failed; check API startup logs.
+- `503 connector reviewer auth is not configured` — `REVIEWER_ACCOUNTS` env var is not
+  set or is empty; the default value applies automatically when no `.env` overrides it.
+- Network timeout or connection error — the public federal endpoint was unreachable;
+  recorded as source-failure evidence in the transcript, not a script failure.
+
+### Source-rights restrictions
+
+All four sources carry approved-with-restrictions status. Screening language applies:
+
+- **DS-001 USGS TNM** — Public domain, non-survey, non-engineering. Results are
+  point-sample terrain-relief screening only; not surveyed elevation, not engineering
+  feasibility, not buildability, lending, appraisal, or investment advice.
+- **DS-002 FEMA NFHL** — Effective FEMA flood-hazard-zone screening only; not a final
+  legal, insurance, lending, buildability, title, water-rights, wetland, or survey
+  determination. Cite FEMA and state non-endorsement.
+- **DS-003 USDA SSURGO** — Soil screening only; not perc results, not septic approval,
+  not engineering feasibility. Results require review and produce an UNKNOWN confidence
+  claim pending human QA.
+- **DS-004 NWI (FWS)** — Wetland screening only; not a jurisdictional wetland delineation
+  and not a final regulatory or legal determination.
+
+No report produced from these connectors may assert final legal access, buildability,
+title status, water rights, wetland jurisdiction, surveyed boundaries, insurability,
+appraisal value, lending suitability, or investment advice.
+
+---
+
 ## Troubleshooting
 
 **Missing fixture file**

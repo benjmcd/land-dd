@@ -240,6 +240,68 @@ def test_success_evidence_ingests_through_real_evidence_service() -> None:
     assert created.observed_value["intersects_soil_mapunit"] is True
 
 
+def test_null_slope_and_component_percent_are_excluded_from_observed_value() -> None:
+    """Rows where slope_r or comppct_r are absent/null must not set those keys.
+
+    The payload validator rejects None for numeric fields when the key is present,
+    so the connector must omit the key entirely rather than setting it to None.
+    """
+    source = _source()
+    area_id = uuid4()
+
+    def fetch_json(_query: str, _timeout_seconds: float) -> dict[str, object]:
+        return {
+            "Table": [
+                [
+                    "mukey",
+                    "musym",
+                    "muname",
+                    "cokey",
+                    "compname",
+                    "comppct_r",
+                    "majcompflag",
+                    "hydricrating",
+                    "drainagecl",
+                    "hydgrp",
+                    "slope_r",
+                ],
+                # slope_r and comppct_r are empty strings (as SSURGO sometimes returns)
+                [
+                    "9999999",
+                    "XX",
+                    "Test unit",
+                    "12345678",
+                    "TestSoil",
+                    "",
+                    "Yes",
+                    "No",
+                    "Well drained",
+                    "A",
+                    "",
+                ],
+            ]
+        }
+
+    result = SsurgoConnector(source=source, fetch_json=fetch_json).query_bbox(
+        area_id=area_id,
+        bbox=_bbox(),
+    )
+
+    assert len(result.evidence_inputs) == 1
+    ev = result.evidence_inputs[0]
+    assert "slope_percent" not in ev.observed_value
+    assert "soil_component_percent" not in ev.observed_value
+
+    # Must also ingest successfully through the real evidence service (no validation error)
+    service = EvidenceService(
+        InMemoryEvidenceRepository(),
+        StubSourceChecker({source.source_id}),
+        StubAreaChecker({area_id}),
+    )
+    created = service.create_observation(ev)
+    assert created.evidence_id == ev.evidence_id
+
+
 def test_success_result_uses_existing_provenance_and_evidence_adapters() -> None:
     def fetch_json(_query: str, _timeout_seconds: float) -> dict[str, object]:
         return _table()
