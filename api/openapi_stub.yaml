@@ -1997,6 +1997,238 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue:
+    get:
+      tags:
+      - ui
+      summary: Ui Connector Review Queue List
+      operationId: ui_connector_review_queue_list_ui_connector_review_queue_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}:
+    get:
+      tags:
+      - ui
+      summary: Ui Connector Review Detail
+      operationId: ui_connector_review_detail_ui_connector_review_queue__ingest_run_id__get
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}/approve:
+    post:
+      tags:
+      - ui
+      summary: Ui Connector Approve
+      operationId: ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}/reject:
+    post:
+      tags:
+      - ui
+      summary: Ui Connector Reject
+      operationId: ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}/requeue:
+    post:
+      tags:
+      - ui
+      summary: Ui Connector Requeue
+      operationId: ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}/cancel:
+    post:
+      tags:
+      - ui
+      summary: Ui Connector Cancel
+      operationId: ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/connector-review-queue/{ingest_run_id}/resume-report:
+    post:
+      tags:
+      - ui
+      summary: Ui Connector Resume Report
+      operationId: ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post
+      parameters:
+      - name: ingest_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AreaContract:
@@ -2114,6 +2346,101 @@ components:
           title: Reviewer Token
       type: object
       title: Body_ui_approve_report_run_ui_report_runs__report_run_id__approve_post
+    Body_ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      title: Body_ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post
+    Body_ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      title: Body_ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post
+    Body_ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      title: Body_ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post
+    Body_ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      title: Body_ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post
+    Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        intent_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Intent Code
+      type: object
+      title: Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post
     ChathamParcelsBboxRequest:
       properties:
         xmin:

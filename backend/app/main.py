@@ -17,6 +17,7 @@ from app.api.rate_limit import RateLimitConfig, RateLimitMiddleware
 from app.api.reports import router as reports_router
 from app.api.sources import router as sources_router
 from app.api.ui import router as ui_router
+from app.api.ui_review import router as ui_review_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_json_logging
 from app.core.metrics import MetricsMiddleware, RuntimeMetrics
@@ -97,6 +98,7 @@ def create_app(
     app.include_router(operations_router)
     app.include_router(metrics_router)
     app.include_router(ui_router)
+    app.include_router(ui_review_router)
     return app
 
 
