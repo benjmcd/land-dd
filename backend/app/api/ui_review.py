@@ -14,21 +14,14 @@ from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_RUN,
     require_reviewer_scope,
 )
+from app.api.ui_shared import build_css, reviewer_credential_fields
+from app.api.ui_shared import error_page as _shared_error_page
 from app.domain.enums import IntentCode, JobStatus
 
 router = APIRouter(prefix="/ui/connector-review-queue", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
-_REVIEW_CSS = (
-    "body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto;"
-    " padding: 0 1rem; }\n"
-    "h1 { color: #2c3e50; } h2 { color: #34495e; border-bottom: 1px solid #eee; }\n"
-    "table { border-collapse: collapse; width: 100%; }\n"
-    "th, td { text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2e6; }\n"
-    "th { background: #f8f9fa; }\n"
-    "a { color: #2c3e50; }\n"
-    ".meta { background: #f8f9fa; padding: 1rem; border-radius: 4px;"
-    " font-family: monospace; font-size: 0.9rem; }\n"
+_REVIEW_CSS = build_css(
     ".action-form { border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem;"
     " margin: 0.5rem 0; }\n"
     ".action-form h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }\n"
@@ -50,9 +43,7 @@ _REVIEW_CSS = (
     ".filter-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }\n"
     ".filter-bar select, .filter-bar input { padding: 0.3rem; font-size: 0.9rem; }\n"
     ".filter-bar button { padding: 0.3rem 0.75rem; font-size: 0.9rem; cursor: pointer; }\n"
-    ".pagination { margin-top: 1rem; display: flex; gap: 1rem; }\n"
-    ".error-page { background: #f8d7da; border: 1px solid #f5c6cb; padding: 1rem;"
-    " border-radius: 4px; }\n"
+    ".pagination { margin-top: 1rem; display: flex; gap: 1rem; }\n",
 )
 
 _STATUS_OPTIONS = [s.value for s in JobStatus]
@@ -63,18 +54,7 @@ _INTENT_OPTIONS = [
 
 
 def _error_page(title: str, message: str, back_url: str, status_code: int) -> HTMLResponse:
-    body = (
-        "<!DOCTYPE html><html lang='en'>"
-        "<head><meta charset='UTF-8'>"
-        f"<title>{_html.escape(title)}</title>"
-        f"<style>{_REVIEW_CSS}</style>"
-        "</head><body>"
-        f"<div class='error-page'><h1>{_html.escape(title)}</h1>"
-        f"<p>{_html.escape(message)}</p>"
-        f"<a href='{_html.escape(back_url)}'>Back</a>"
-        "</div></body></html>"
-    )
-    return HTMLResponse(content=body, status_code=status_code)
+    return _shared_error_page(title, message, back_url, status_code, css=_REVIEW_CSS)
 
 
 @router.get("", response_class=HTMLResponse)
@@ -238,12 +218,7 @@ def ui_connector_review_detail(
     base_action_url = f"/ui/connector-review-queue/{ingest_run_id}"
 
     def _cred_fields() -> str:
-        return (
-            "<label>Reviewer ID:"
-            " <input type='text' name='reviewer_id' required autocomplete='off'></label>"
-            "<label>Reviewer token:"
-            " <input type='password' name='reviewer_token' required autocomplete='off'></label>"
-        )
+        return reviewer_credential_fields()
 
     approve_form = (
         "<div class='action-form'>"

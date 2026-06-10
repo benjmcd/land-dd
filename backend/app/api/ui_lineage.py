@@ -9,27 +9,22 @@ from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
 from app.api.reports import build_lineage_response
+from app.api.ui_shared import build_css
+from app.api.ui_shared import error_page as _shared_error_page
 
 router = APIRouter(prefix="/ui/report-runs", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
-_LINEAGE_CSS = (
-    "body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto;"
-    " padding: 0 1rem; }\n"
-    "h1 { color: #2c3e50; } h2 { color: #34495e; border-bottom: 1px solid #eee; }\n"
-    "table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }\n"
-    "th, td { text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2e6; }\n"
-    "th { background: #f8f9fa; }\n"
-    "a { color: #2c3e50; }\n"
-    ".meta { background: #f8f9fa; padding: 1rem; border-radius: 4px;"
-    " font-family: monospace; font-size: 0.9rem; margin-bottom: 1.5rem; }\n"
+_LINEAGE_CSS = build_css(
+    "table { margin-bottom: 1.5rem; }\n"
+    ".meta { margin-bottom: 1.5rem; }\n"
     ".meta div { margin-bottom: 0.25rem; }\n"
     ".tag { display: inline-block; background: #e9ecef; border-radius: 3px;"
     " padding: 0.15rem 0.4rem; font-size: 0.8rem; font-family: monospace;"
     " margin: 0.1rem; }\n"
     ".tag.unknown { background: #fff3cd; }\n"
     ".tag.source-failure { background: #f8d7da; }\n"
-    ".section-note { color: #666; font-size: 0.9rem; margin-bottom: 0.75rem; }\n"
+    ".section-note { color: #666; font-size: 0.9rem; margin-bottom: 0.75rem; }\n",
 )
 
 
@@ -45,17 +40,13 @@ def ui_report_run_lineage(
 ) -> HTMLResponse:
     report = services.report_service.get_report_run(report_run_id)
     if report is None:
-        body = (
-            "<!DOCTYPE html><html lang='en'>"
-            "<head><meta charset='UTF-8'><title>Not Found</title>"
-            f"<style>{_LINEAGE_CSS}</style></head>"
-            "<body>"
-            "<h1>Report Not Found</h1>"
-            f"<p>No report found for ID: {_html.escape(str(report_run_id))}</p>"
-            "<a href='/ui/report-runs'>Back to List</a>"
-            "</body></html>"
+        return _shared_error_page(
+            "Not Found",
+            f"No report found for ID: {_html.escape(str(report_run_id))}",
+            "/ui/report-runs",
+            200,
+            css=_LINEAGE_CSS,
         )
-        return HTMLResponse(content=body, status_code=200)
 
     lineage = build_lineage_response(report)
     run_id_esc = _html.escape(str(report_run_id))
