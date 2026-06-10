@@ -4,11 +4,11 @@ import html as _html
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.core.config import Settings
+from app.api.reviewer_auth import REVIEWER_SCOPE_REPORT_APPROVE, require_reviewer_scope
 from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
 
@@ -148,7 +148,13 @@ def ui_report_run(
             f"<br><br>"
             f"<form method=\"POST\""
             f" action=\"/ui/report-runs/{report_run_id}/approve\""
-            " style=\"display:inline\">"
+            " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
+            "<label>Reviewer ID:"
+            " <input type=\"text\" name=\"reviewer_id\" required"
+            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
+            "<label>Reviewer token:"
+            " <input type=\"password\" name=\"reviewer_token\" required"
+            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
             "<button type=\"submit\""
             " style=\"background:#28a745;color:white;border:none;"
             "padding:0.5rem 1rem;cursor:pointer;"
@@ -242,33 +248,49 @@ a {{ color: #2c3e50; }}
 def ui_approve_report_run(
     report_run_id: UUID,
     services: ServicesDep,
-) -> str:
-    settings = Settings()
-    accounts = settings.parsed_reviewer_accounts()
-    if not accounts:
-        return (
-            "<!DOCTYPE html><html><head><title>Error</title></head>"
-            "<body><h1>No reviewer accounts configured</h1>"
+    reviewer_id: Annotated[str | None, Form()] = None,
+    reviewer_token: Annotated[str | None, Form()] = None,
+) -> HTMLResponse:
+    try:
+        principal = services.reviewer_auth(
+            reviewer_id=reviewer_id,
+            reviewer_token=reviewer_token,
+        )
+        require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_APPROVE)
+    except HTTPException as exc:
+        error_body = (
+            "<!DOCTYPE html><html><head><title>Authentication Error</title></head>"
+            "<body><h1>Authentication Error</h1>"
+            "<p>Reviewer credentials are missing, invalid, or lack the required scope.</p>"
             f"<a href='/ui/report-runs/{report_run_id}'>Back</a></body></html>"
         )
-    reviewer_id = next(iter(accounts))
+        return HTMLResponse(content=error_body, status_code=exc.status_code)
     report = services.report_service.get_report_run(report_run_id)
     if report is None:
-        return (
-            "<!DOCTYPE html><html><head><title>Not Found</title></head>"
-            f"<body><h1>Report Not Found</h1><p>ID: {report_run_id}</p>"
-            "<a href='/ui/report-runs'>Back to List</a></body></html>"
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>Not Found</title></head>"
+                f"<body><h1>Report Not Found</h1><p>ID: {report_run_id}</p>"
+                "<a href='/ui/report-runs'>Back to List</a></body></html>"
+            ),
+            status_code=200,
         )
-    services.report_service.approve_report_run(report_run_id, reviewer_id=reviewer_id)
-    return (
-        "<!DOCTYPE html>"
-        "<html><head><title>Approved</title>"
-        f"<meta http-equiv='refresh' content='1;url=/ui/report-runs/{report_run_id}'>"
-        "</head>"
-        f"<body><h1>Report Approved</h1>"
-        f"<p>Approved by: {_html.escape(reviewer_id)}</p>"
-        f"<p><a href='/ui/report-runs/{report_run_id}'>View Report</a></p>"
-        "</body></html>"
+    services.report_service.approve_report_run(
+        report_run_id,
+        reviewer_id=principal.reviewer_id,
+    )
+    return HTMLResponse(
+        content=(
+            "<!DOCTYPE html>"
+            "<html><head><title>Approved</title>"
+            f"<meta http-equiv='refresh' content='1;url=/ui/report-runs/{report_run_id}'>"
+            "</head>"
+            f"<body><h1>Report Approved</h1>"
+            f"<p>Approved by: {_html.escape(principal.reviewer_id)}</p>"
+            f"<p><a href='/ui/report-runs/{report_run_id}'>View Report</a></p>"
+            "</body></html>"
+        ),
+        status_code=200,
     )
 
 
