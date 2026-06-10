@@ -634,25 +634,11 @@ def get_report_run_artifact(
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
 
 
-@router.get("/{report_run_id}/lineage", response_model=ReportLineageResponse)
-def get_report_run_lineage(
-    report_run_id: UUID,
-    services: ServicesDep,
-    request_context: Request,
-    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
-    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
-    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
-) -> ReportLineageResponse:
-    auth = _optional_report_auth_context(
-        request_context,
-        authorization=authorization,
-        x_workspace_id=x_workspace_id,
-        x_user_id=x_user_id,
-    )
-    report = services.report_service.get_report_run(report_run_id)
-    if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+def build_lineage_response(report: ReportRunContract) -> ReportLineageResponse:
+    """Compute the full lineage response for a report run contract.
 
+    Extracted for reuse by both the API route and the UI lineage page.
+    """
     # Build a map from evidence_id -> list of claim_ids that cite it
     evidence_to_claims: dict[UUID, list[UUID]] = defaultdict(list)
     all_claims = _flat_claims(report)
@@ -730,6 +716,27 @@ def get_report_run_lineage(
         evidence_lineage=evidence_lineage,
         claim_lineage=claim_lineage,
     )
+
+
+@router.get("/{report_run_id}/lineage", response_model=ReportLineageResponse)
+def get_report_run_lineage(
+    report_run_id: UUID,
+    services: ServicesDep,
+    request_context: Request,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> ReportLineageResponse:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
+    report = services.report_service.get_report_run(report_run_id)
+    if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
+    return build_lineage_response(report)
 
 
 @router.get("/{report_run_id}/diff", response_model=ReportRunDiffResponse)

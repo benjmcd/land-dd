@@ -2099,6 +2099,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/report-runs/{report_run_id}/lineage:
+    get:
+      tags:
+      - ui
+      summary: Ui Report Run Lineage
+      operationId: ui_report_run_lineage_ui_report_runs__report_run_id__lineage_get
+      parameters:
+      - name: report_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Report Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/operations:
     get:
       tags:
