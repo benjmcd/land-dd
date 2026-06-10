@@ -26,6 +26,9 @@ class ReportJobRecord:
     status: JobStatus = JobStatus.QUEUED
     error_msg: str | None = None
     retry_of_report_run_id: UUID | None = None
+    # client_idempotency_key is the caller-supplied Idempotency-Key header value
+    # (stripped, non-empty). None means this job was created without a key.
+    client_idempotency_key: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -36,7 +39,20 @@ class AsyncReportJobStoreProtocol(Protocol):
         area_id: UUID,
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
+        client_idempotency_key: str | None = None,
     ) -> ReportJobRecord: ...
+
+    def get_by_client_idempotency_key(
+        self,
+        client_idempotency_key: str,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+    ) -> ReportJobRecord | None:
+        # area_id and intent_code are accepted for symmetry with the call-site
+        # but the lookup is keyed solely by client_idempotency_key; callers are
+        # responsible for payload-mismatch checks after the lookup returns.
+        ...
 
     def get(self, report_run_id: UUID) -> ReportJobRecord | None: ...
 
@@ -60,6 +76,8 @@ class AsyncReportJobStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[UUID, ReportJobRecord] = {}
+        # Maps storage_client_key -> report_run_id for idempotency dedup
+        self._client_keys: dict[str, UUID] = {}
 
     def create(
         self,
@@ -67,16 +85,42 @@ class AsyncReportJobStore:
         area_id: UUID,
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
+        client_idempotency_key: str | None = None,
     ) -> ReportJobRecord:
-        record = ReportJobRecord(
-            report_run_id=uuid4(),
-            area_id=area_id,
-            intent_code=intent_code,
-            retry_of_report_run_id=retry_of_report_run_id,
-        )
         with self._lock:
+            if client_idempotency_key is not None:
+                storage_key = _client_storage_key(client_idempotency_key)
+                existing_id = self._client_keys.get(storage_key)
+                if existing_id is not None:
+                    existing = self._jobs.get(existing_id)
+                    if existing is not None:
+                        return existing
+            record = ReportJobRecord(
+                report_run_id=uuid4(),
+                area_id=area_id,
+                intent_code=intent_code,
+                retry_of_report_run_id=retry_of_report_run_id,
+                client_idempotency_key=client_idempotency_key,
+            )
             self._jobs[record.report_run_id] = record
+            if client_idempotency_key is not None:
+                storage_key = _client_storage_key(client_idempotency_key)
+                self._client_keys[storage_key] = record.report_run_id
         return record
+
+    def get_by_client_idempotency_key(
+        self,
+        client_idempotency_key: str,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+    ) -> ReportJobRecord | None:
+        storage_key = _client_storage_key(client_idempotency_key)
+        with self._lock:
+            job_id = self._client_keys.get(storage_key)
+            if job_id is None:
+                return None
+            return self._jobs.get(job_id)
 
     def get(self, report_run_id: UUID) -> ReportJobRecord | None:
         with self._lock:
@@ -131,12 +175,28 @@ class SqlAlchemyAsyncReportJobStore:
         area_id: UUID,
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
+        client_idempotency_key: str | None = None,
     ) -> ReportJobRecord:
+        # For client-keyed requests: check for existing job first (durable dedup).
+        if client_idempotency_key is not None:
+            existing = self.get_by_client_idempotency_key(
+                client_idempotency_key,
+                area_id=area_id,
+                intent_code=intent_code,
+            )
+            if existing is not None:
+                return existing
         record = ReportJobRecord(
             report_run_id=uuid4(),
             area_id=area_id,
             intent_code=intent_code,
             retry_of_report_run_id=retry_of_report_run_id,
+            client_idempotency_key=client_idempotency_key,
+        )
+        db_idem_key = (
+            _client_storage_key(client_idempotency_key)
+            if client_idempotency_key is not None
+            else _idempotency_key(record.report_run_id)
         )
         with self._session_factory() as session:
             session.execute(
@@ -158,6 +218,7 @@ class SqlAlchemyAsyncReportJobStore:
                         :idempotency_key,
                         1
                     )
+                    ON CONFLICT (idempotency_key) DO NOTHING
                     """
                 ),
                 {
@@ -165,11 +226,48 @@ class SqlAlchemyAsyncReportJobStore:
                     "job_type": REPORT_RUN_JOB_TYPE,
                     "status": record.status.value,
                     "payload": _json_payload(record),
-                    "idempotency_key": _idempotency_key(record.report_run_id),
+                    "idempotency_key": db_idem_key,
                 },
             )
             session.commit()
+        # If ON CONFLICT suppressed the insert (race), return the winner row.
+        if client_idempotency_key is not None:
+            winner = self.get_by_client_idempotency_key(
+                client_idempotency_key,
+                area_id=area_id,
+                intent_code=intent_code,
+            )
+            if winner is not None:
+                return winner
         return record
+
+    def get_by_client_idempotency_key(
+        self,
+        client_idempotency_key: str,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+    ) -> ReportJobRecord | None:
+        storage_key = _client_storage_key(client_idempotency_key)
+        with self._session_factory() as session:
+            row = session.execute(
+                text(
+                    """
+                    SELECT job_id, status, payload, last_error, created_at
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                      AND idempotency_key = :idempotency_key
+                    LIMIT 1
+                    """
+                ),
+                {
+                    "job_type": REPORT_RUN_JOB_TYPE,
+                    "idempotency_key": storage_key,
+                },
+            ).mappings().one_or_none()
+        if row is None:
+            return None
+        return _record_from_row(row)
 
     def get(self, report_run_id: UUID) -> ReportJobRecord | None:
         with self._session_factory() as session:
@@ -344,8 +442,8 @@ class SqlAlchemyAsyncReportJobStore:
             session.commit()
 
 
-def _payload(record: ReportJobRecord) -> dict[str, str]:
-    payload = {
+def _payload(record: ReportJobRecord) -> dict[str, str | None]:
+    payload: dict[str, str | None] = {
         "kind": REPORT_RUN_JOB_TYPE,
         "report_run_id": str(record.report_run_id),
         "area_id": str(record.area_id),
@@ -353,6 +451,8 @@ def _payload(record: ReportJobRecord) -> dict[str, str]:
     }
     if record.retry_of_report_run_id is not None:
         payload["retry_of_report_run_id"] = str(record.retry_of_report_run_id)
+    if record.client_idempotency_key is not None:
+        payload["client_idempotency_key"] = record.client_idempotency_key
     return payload
 
 
@@ -364,6 +464,11 @@ def _idempotency_key(report_run_id: UUID) -> str:
     return f"{REPORT_RUN_JOB_TYPE}:{report_run_id}"
 
 
+def _client_storage_key(client_idempotency_key: str) -> str:
+    """Storage key for a caller-supplied Idempotency-Key header value."""
+    return f"{REPORT_RUN_JOB_TYPE}:client:{client_idempotency_key}"
+
+
 def _record_from_row(row: Any) -> ReportJobRecord:
     payload = dict(row["payload"]) if isinstance(row["payload"], Mapping) else {}
     return ReportJobRecord(
@@ -373,6 +478,7 @@ def _record_from_row(row: Any) -> ReportJobRecord:
         status=JobStatus(str(row["status"])),
         error_msg=None if row["last_error"] is None else str(row["last_error"]),
         retry_of_report_run_id=_optional_payload_uuid(payload, "retry_of_report_run_id"),
+        client_idempotency_key=payload.get("client_idempotency_key"),
         created_at=row["created_at"],
     )
 

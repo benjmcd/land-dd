@@ -41,7 +41,7 @@ from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.report_contracts import ReportRunContract
 from app.reports.dossier import build_rural_land_dossier
-from app.reports.job_store import SqlAlchemyAsyncReportJobStore
+from app.reports.job_store import ReportJobRecord, SqlAlchemyAsyncReportJobStore
 
 router = APIRouter(prefix="/report-runs", tags=["report-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -222,7 +222,9 @@ def create_report_run(
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
     x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> AsyncReportRunResponse | ReportRunContract:
+    client_key = _validate_idempotency_key(idempotency_key)
     auth = _optional_report_auth_context(
         request_context,
         authorization=authorization,
@@ -255,6 +257,28 @@ def create_report_run(
             ) from exc
         response.status_code = status.HTTP_201_CREATED
         return report
+    # Note: the workspace-auth path above (auth is not None) creates a
+    # synchronous report run via report_service and does not consult the
+    # async job store. Idempotency-Key is intentionally not wired there;
+    # that path is scoped/auth-controlled and creates at most one run per call.
+    # Idempotency-Key pre-check: if a job with this key already exists, return it.
+    if client_key is not None:
+        existing = services.async_report_jobs.get_by_client_idempotency_key(
+            client_key,
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+        )
+        if existing is not None:
+            _check_idempotency_payload_match(
+                existing,
+                area_id=request.area_id,
+                intent_code=request.intent_code,
+            )
+            response.status_code = status.HTTP_200_OK
+            return AsyncReportRunResponse(
+                report_run_id=existing.report_run_id,
+                status=existing.status.value,
+            )
     if _live_connectors_enabled(request_context):
         connector_result = orchestrate_request_time_live_connectors_for_area(
             services=services,
@@ -269,14 +293,44 @@ def create_report_run(
     job = services.async_report_jobs.create(
         area_id=request.area_id,
         intent_code=request.intent_code,
+        client_idempotency_key=client_key,
     )
+    # Concurrent-race guard: if the store returned an existing record (another
+    # request won the ON CONFLICT race), verify payload match and return 200
+    # without scheduling a duplicate background task.
+    if client_key is not None and job.client_idempotency_key == client_key:
+        # pre-check above was a miss; the create() call above may have returned
+        # an existing record (race). We can detect this by asking the store again.
+        existing = services.async_report_jobs.get_by_client_idempotency_key(
+            client_key,
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+        )
+        if existing is not None and existing.report_run_id != job.report_run_id:
+            # A different job won the race; return it.
+            _check_idempotency_payload_match(
+                existing,
+                area_id=request.area_id,
+                intent_code=request.intent_code,
+            )
+            response.status_code = status.HTTP_200_OK
+            return AsyncReportRunResponse(
+                report_run_id=existing.report_run_id,
+                status=existing.status.value,
+            )
+        # Payload mismatch (race with different payload) → 409.
+        _check_idempotency_payload_match(
+            job,
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+        )
     schedule_report_background(
         background_tasks=background_tasks,
         request_context=request_context,
         services=services,
         report_run_id=job.report_run_id,
-        area_id=request.area_id,
-        intent_code=request.intent_code,
+        area_id=job.area_id,
+        intent_code=job.intent_code,
     )
     return AsyncReportRunResponse(
         report_run_id=job.report_run_id,
@@ -853,3 +907,28 @@ def _optional_report_auth_context(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
+
+
+def _validate_idempotency_key(raw: str | None) -> str | None:
+    """Strip and return the Idempotency-Key header, or None if absent/blank."""
+    if raw is None:
+        return None
+    stripped = raw.strip()
+    return stripped if stripped else None
+
+
+def _check_idempotency_payload_match(
+    existing: ReportJobRecord,
+    *,
+    area_id: UUID,
+    intent_code: IntentCode,
+) -> None:
+    """Raise 409 if the existing job was created with a different payload."""
+    if existing.area_id != area_id or existing.intent_code != intent_code:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Idempotency-Key already used with different payload "
+                f"(area_id={existing.area_id}, intent_code={existing.intent_code.value})"
+            ),
+        )

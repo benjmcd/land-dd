@@ -202,6 +202,14 @@ paths:
           - type: string
           - type: 'null'
           title: X-User-Id
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
       requestBody:
         required: true
         content:
@@ -688,12 +696,21 @@ paths:
       - intake
       summary: Intake Report
       operationId: intake_report_intake_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/IntakeRequest'
-        required: true
       responses:
         '202':
           description: Successful Response
