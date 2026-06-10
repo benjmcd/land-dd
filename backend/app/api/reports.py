@@ -367,6 +367,30 @@ class ReportRunComparisonSummary(BaseModel):
     verification_tasks_count: int
 
 
+def _build_comparison_summary(report: ReportRunContract) -> ReportRunComparisonSummary:
+    """Build a ReportRunComparisonSummary from a report contract.
+
+    Module-level helper used by both the API compare route and the UI compare page
+    so that summary construction stays in one place.
+    """
+    all_claims = _flat_claims(report)
+    high_severity = [
+        {"claim_code": c.claim_code, "domain": c.domain}
+        for c in all_claims
+        if c.severity in _RED_FLAG_BANDS
+    ]
+    return ReportRunComparisonSummary(
+        report_run_id=report.report_run_id,
+        area_id=report.area_id,
+        intent_code=report.intent_code.value,
+        claims_count=len(report.claims),
+        unknowns_count=len(report.unknowns),
+        red_flags_count=len(report.red_flags),
+        high_severity_claims=high_severity,
+        verification_tasks_count=len(report.verification_tasks),
+    )
+
+
 class ReportRunCompareResponse(BaseModel):
     summaries: list[ReportRunComparisonSummary]
 
@@ -463,24 +487,7 @@ def compare_report_runs(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"report run '{run_id}' not found",
             )
-        all_claims = _flat_claims(report)
-        high_severity = [
-            {"claim_code": c.claim_code, "domain": c.domain}
-            for c in all_claims
-            if c.severity in _RED_FLAG_BANDS
-        ]
-        summaries.append(
-            ReportRunComparisonSummary(
-                report_run_id=report.report_run_id,
-                area_id=report.area_id,
-                intent_code=report.intent_code.value,
-                claims_count=len(report.claims),
-                unknowns_count=len(report.unknowns),
-                red_flags_count=len(report.red_flags),
-                high_severity_claims=high_severity,
-                verification_tasks_count=len(report.verification_tasks),
-            )
-        )
+        summaries.append(_build_comparison_summary(report))
     return ReportRunCompareResponse(summaries=summaries)
 
 

@@ -529,3 +529,160 @@ def test_ui_approved_report_page_has_lineage_link() -> None:
     assert resp.status_code == 200
     assert "lineage" in resp.text
     assert f"/ui/report-runs/{report_run_id}/lineage" in resp.text
+
+
+# ---------------------------------------------------------------------------
+# S7 — Compare UI
+# ---------------------------------------------------------------------------
+
+
+def _make_two_report_runs() -> tuple[TestClient, str, str]:
+    """Helper: create an app + two report runs on different areas."""
+
+    tc = TestClient(create_app())
+    area1 = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "test fixture"},
+    )
+    assert area1.status_code == 201
+    area2 = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "test fixture"},
+    )
+    assert area2.status_code == 201
+
+    run1 = tc.post(
+        "/report-runs",
+        json={"area_id": area1.json()["area_id"], "intent_code": "rural_land_purchase"},
+    )
+    assert run1.status_code == 202
+    run2 = tc.post(
+        "/report-runs",
+        json={"area_id": area2.json()["area_id"], "intent_code": "rural_land_purchase"},
+    )
+    assert run2.status_code == 202
+    return tc, run1.json()["report_run_id"], run2.json()["report_run_id"]
+
+
+def test_ui_compare_two_reports_renders_table() -> None:
+    """GET /ui/compare?ids=a,b returns a 200 HTML side-by-side table."""
+    tc, run1, run2 = _make_two_report_runs()
+    resp = tc.get(f"/ui/compare?ids={run1},{run2}")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "Compare Report Runs" in resp.text
+    assert run1[:8] in resp.text
+    assert run2[:8] in resp.text
+    # Structural metric rows
+    assert "Claims" in resp.text
+    assert "Red Flags" in resp.text
+    assert "Unknowns" in resp.text
+    assert "Verification Tasks" in resp.text
+    assert "High-Severity Claims" in resp.text
+
+
+def test_ui_compare_one_id_returns_400() -> None:
+    """Fewer than 2 IDs → 400 error page."""
+    tc, run1, _ = _make_two_report_runs()
+    resp = tc.get(f"/ui/compare?ids={run1}")
+    assert resp.status_code == 400
+    assert "2" in resp.text
+
+
+def test_ui_compare_five_ids_returns_400() -> None:
+    """More than 4 IDs → 400 error page."""
+    tc = TestClient(create_app())
+    area_resp = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "test fixture"},
+    )
+    assert area_resp.status_code == 201
+    area_id = area_resp.json()["area_id"]
+    ids = []
+    for _ in range(5):
+        r = tc.post(
+            "/report-runs",
+            json={"area_id": area_id, "intent_code": "rural_land_purchase"},
+        )
+        assert r.status_code == 202
+        ids.append(r.json()["report_run_id"])
+    resp = tc.get(f"/ui/compare?ids={','.join(ids)}")
+    assert resp.status_code == 400
+    assert "4" in resp.text
+
+
+def test_ui_compare_malformed_uuid_returns_422() -> None:
+    """A malformed UUID in the ids list → 422 error page."""
+    tc, run1, _ = _make_two_report_runs()
+    resp = tc.get(f"/ui/compare?ids={run1},not-a-uuid")
+    assert resp.status_code == 422
+    assert "malformed" in resp.text.lower() or "UUID" in resp.text or "uuid" in resp.text
+
+
+def test_ui_compare_unknown_id_returns_404() -> None:
+    """An unknown report run ID in ids → 404 error page."""
+    tc, run1, _ = _make_two_report_runs()
+    missing = str(uuid4())
+    resp = tc.get(f"/ui/compare?ids={run1},{missing}")
+    assert resp.status_code == 404
+    assert "not found" in resp.text.lower()
+
+
+def test_ui_compare_counts_match_api_compare_response() -> None:
+    """The UI compare table shows the same counts as GET /report-runs/compare for the same ids."""
+    tc, run1, run2 = _make_two_report_runs()
+
+    # Fetch API response for reference
+    api_resp = tc.get(f"/report-runs/compare?ids={run1},{run2}")
+    assert api_resp.status_code == 200
+    summaries = {str(s["report_run_id"]): s for s in api_resp.json()["summaries"]}
+
+    # Fetch UI page
+    ui_resp = tc.get(f"/ui/compare?ids={run1},{run2}")
+    assert ui_resp.status_code == 200
+
+    # For each run, the claims_count, red_flags_count, and unknowns_count from the API
+    # must appear in the UI page HTML.
+    for rid in (run1, run2):
+        s = summaries[rid]
+        assert str(s["claims_count"]) in ui_resp.text
+        assert str(s["unknowns_count"]) in ui_resp.text
+        assert str(s["red_flags_count"]) in ui_resp.text
+        assert str(s["verification_tasks_count"]) in ui_resp.text
+
+
+def test_ui_compare_no_ids_returns_400() -> None:
+    """GET /ui/compare with no ids param → 400 error page."""
+    tc = TestClient(create_app())
+    resp = tc.get("/ui/compare")
+    assert resp.status_code == 400
+
+
+def test_ui_report_list_has_compare_affordance() -> None:
+    """The report list page contains checkboxes and the compare button."""
+    tc = TestClient(create_app())
+    resp = tc.get("/ui/report-runs")
+    assert resp.status_code == 200
+    assert "cmp-check" in resp.text
+    assert "goCompare" in resp.text
+    assert "Compare Selected" in resp.text
+
+
+def test_ui_report_list_checkbox_column_present_with_reports() -> None:
+    """Each report row in the list page includes a checkbox with the run id as value."""
+    tc = TestClient(create_app())
+    area_resp = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "test fixture"},
+    )
+    assert area_resp.status_code == 201
+    run_resp = tc.post(
+        "/report-runs",
+        json={"area_id": area_resp.json()["area_id"], "intent_code": "rural_land_purchase"},
+    )
+    assert run_resp.status_code == 202
+    run_id = run_resp.json()["report_run_id"]
+
+    resp = tc.get("/ui/report-runs")
+    assert resp.status_code == 200
+    assert f'value="{run_id}"' in resp.text

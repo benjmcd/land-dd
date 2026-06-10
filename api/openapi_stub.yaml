@@ -2008,6 +2008,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/compare:
+    get:
+      tags:
+      - ui
+      summary: Ui Compare Report Runs
+      description: Side-by-side comparison table for 2..4 report run IDs.
+      operationId: ui_compare_report_runs_ui_compare_get
+      parameters:
+      - name: ids
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ids
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/report-runs/{report_run_id}/approve:
     post:
       tags:
