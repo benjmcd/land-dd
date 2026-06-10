@@ -326,18 +326,24 @@ class SsurgoConnector:
                         "soil/septic/ag screening."
                     ),
                     observed_value={
-                        "intersects_soil_mapunit": True,
-                        "soil_mapunit_key": mukey,
-                        "soil_mapunit_symbol": _optional_text(row.get("musym")),
-                        "soil_mapunit_name": _optional_text(row.get("muname")),
-                        "soil_component_key": _optional_text(row.get("cokey")),
-                        "soil_component_name": _optional_text(row.get("compname")),
-                        "soil_component_percent": _optional_number(row.get("comppct_r")),
-                        "soil_major_component": _yes_no(row.get("majcompflag")),
-                        "hydric_rating": _optional_text(row.get("hydricrating")),
-                        "drainage_class": _optional_text(row.get("drainagecl")),
-                        "hydrologic_group": _optional_text(row.get("hydgrp")),
-                        "slope_percent": _optional_number(row.get("slope_r")),
+                        k: v
+                        for k, v in {
+                            "intersects_soil_mapunit": True,
+                            "soil_mapunit_key": mukey,
+                            "soil_mapunit_symbol": _optional_text(row.get("musym")),
+                            "soil_mapunit_name": _optional_text(row.get("muname")),
+                            "soil_component_key": _optional_text(row.get("cokey")),
+                            "soil_component_name": _optional_text(row.get("compname")),
+                            "soil_component_percent": _optional_number(row.get("comppct_r")),
+                            "soil_major_component": _yes_no(row.get("majcompflag")),
+                            "hydric_rating": _optional_text(row.get("hydricrating")),
+                            "drainage_class": _optional_text(row.get("drainagecl")),
+                            "hydrologic_group": _optional_text(row.get("hydgrp")),
+                            "slope_percent": _optional_number(row.get("slope_r")),
+                        }.items()
+                        if not (
+                            k in ("slope_percent", "soil_component_percent") and v is None
+                        )
                     },
                     source_id=self._source.source_id,
                     source_ingest_run_id=ingest_run_id,
