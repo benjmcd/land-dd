@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Qu
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.reports import schedule_report_background
+from app.api.reports import _build_comparison_summary, schedule_report_background
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_APPROVE,
     REVIEWER_SCOPE_REPORT_RETRY,
@@ -291,8 +291,12 @@ def ui_report_run_list(
             "succeeded": "#28a745",
             "failed": "#dc3545",
         }.get(job.status.value, "#333")
+        rid_esc = _html.escape(str(job.report_run_id))
         rows += (
             f'<tr>'
+            f'<td style="text-align:center">'
+            f'<input type="checkbox" class="cmp-check" value="{rid_esc}"'
+            f' aria-label="Select {rid_esc[:8]}"></td>'
             f'<td><a href="/ui/report-runs/{job.report_run_id}">'
             f'{_html.escape(str(job.report_run_id)[:8])}&#8230;</a></td>'
             f'<td>{_html.escape(job.intent_code.value)}</td>'
@@ -302,7 +306,7 @@ def ui_report_run_list(
             f'</tr>\n'
         )
     if not rows:
-        rows = '<tr><td colspan="4" style="color:#666">No report runs yet.</td></tr>'
+        rows = '<tr><td colspan="5" style="color:#666">No report runs yet.</td></tr>'
 
     # Build status filter dropdown
     status_options = '<option value="">All</option>\n'
@@ -351,6 +355,7 @@ th, td {{ text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2
 th {{ background: #f8f9fa; }}
 a {{ color: #2c3e50; }}
 form.filter {{ display:inline-flex; gap:0.5rem; align-items:center; margin-bottom:1rem; }}
+.cmp-bar {{ margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:center; }}
 </style>
 </head>
 <body>
@@ -364,12 +369,158 @@ form.filter {{ display:inline-flex; gap:0.5rem; align-items:center; margin-botto
   </select>
   <noscript><button type="submit">Apply</button></noscript>
 </form>
+<div class="cmp-bar">
+  <button id="cmp-btn" type="button" onclick="goCompare()"
+    style="background:#2c3e50;color:white;border:none;padding:0.4rem 1rem;
+           cursor:pointer;font-size:0.9rem;border-radius:4px">
+    Compare Selected (2&#8211;4)
+  </button>
+  <span id="cmp-msg" style="color:#666;font-size:0.9rem"></span>
+</div>
 <table>
-<thead><tr><th>ID</th><th>Intent</th><th>Status</th><th>Created</th></tr></thead>
+<thead><tr>
+  <th style="width:2rem;text-align:center">
+    <abbr title="Select 2&#8211;4 rows then click Compare">&#9745;</abbr>
+  </th>
+  <th>ID</th><th>Intent</th><th>Status</th><th>Created</th>
+</tr></thead>
 <tbody>{rows}</tbody>
 </table>
 {pagination}
+<script>
+function goCompare() {{
+  var checked = Array.from(document.querySelectorAll('.cmp-check:checked'));
+  var msg = document.getElementById('cmp-msg');
+  if (checked.length < 2) {{
+    msg.textContent = 'Select at least 2 reports.';
+    return;
+  }}
+  if (checked.length > 4) {{
+    msg.textContent = 'Select at most 4 reports.';
+    return;
+  }}
+  msg.textContent = '';
+  var ids = checked.map(function(c) {{ return c.value; }}).join(',');
+  window.location.href = '/ui/compare?ids=' + ids;
+}}
+</script>
 </body></html>"""
+
+
+_COMPARE_CSS = (
+    "body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }\n"  # noqa: E501
+    "h1 { color: #2c3e50; }\n"
+    "table { border-collapse: collapse; width: 100%; }\n"
+    "th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid #dee2e6; }\n"
+    "th { background: #f8f9fa; }\n"
+    "th.run-header a { color: #2c3e50; font-size: 0.85rem; word-break: break-all; }\n"
+    "td.metric { background: #f8f9fa; font-weight: bold; width: 180px; }\n"
+    ".warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem;"
+    " border-radius: 4px; margin-top: 2rem; font-size: 0.9rem; }\n"
+    ".error { background: #f8d7da; border: 1px solid #dc3545; padding: 1rem;"
+    " border-radius: 4px; margin-top: 1rem; }\n"
+)
+
+
+@router.get("/compare", response_class=HTMLResponse)
+def ui_compare_report_runs(
+    ids: Annotated[str | None, Query()] = None,
+    *,
+    services: ServicesDep,
+) -> HTMLResponse:
+    """Side-by-side comparison table for 2..4 report run IDs."""
+    nav = (
+        '<a href="/ui/">&#8592; Home</a>'
+        ' &nbsp;|&nbsp; <a href="/ui/report-runs">All Reports</a>'
+    )
+
+    def _error_page(message: str, http_status: int) -> HTMLResponse:
+        body = (
+            f"<!DOCTYPE html><html lang=\"en\">"
+            f"<head><meta charset=\"UTF-8\"><title>Compare Error</title>"
+            f"<style>{_COMPARE_CSS}</style></head>"
+            f"<body>{nav}<h1>Compare Report Runs</h1>"
+            f'<div class="error"><strong>Error:</strong> {_html.escape(message)}</div>'
+            f"</body></html>"
+        )
+        return HTMLResponse(content=body, status_code=http_status)
+
+    if not ids:
+        return _error_page(
+            "at least 2 report run IDs are required for comparison", 400
+        )
+
+    raw_ids = [part.strip() for part in ids.split(",") if part.strip()]
+    if len(raw_ids) < 2:
+        return _error_page(
+            "at least 2 report run IDs are required for comparison", 400
+        )
+    if len(raw_ids) > 4:
+        return _error_page(
+            "at most 4 report run IDs are allowed for comparison", 400
+        )
+
+    try:
+        run_ids = [UUID(rid) for rid in raw_ids]
+    except ValueError as exc:
+        return _error_page(f"malformed UUID in ids: {exc}", 422)
+
+    summaries = []
+    for run_id in run_ids:
+        report = services.report_service.get_report_run(run_id)
+        if report is None:
+            return _error_page(f"report run '{run_id}' not found", 404)
+        summaries.append(_build_comparison_summary(report))
+
+    # Build column headers — each links to the individual report page
+    col_headers = ""
+    for s in summaries:
+        rid_str = _html.escape(str(s.report_run_id))
+        col_headers += (
+            f'<th class="run-header">'
+            f'<a href="/ui/report-runs/{rid_str}">{rid_str[:8]}&#8230;</a>'
+            f"</th>"
+        )
+
+    def _metric_row(label: str, values: list[str]) -> str:
+        cells = "".join(f"<td>{_html.escape(v)}</td>" for v in values)
+        return f'<tr><td class="metric">{_html.escape(label)}</td>{cells}</tr>\n'
+
+    rows = ""
+    rows += _metric_row("Area ID", [str(s.area_id)[:8] + "…" for s in summaries])
+    rows += _metric_row("Intent", [s.intent_code for s in summaries])
+    rows += _metric_row("Claims", [str(s.claims_count) for s in summaries])
+    rows += _metric_row("Unknowns", [str(s.unknowns_count) for s in summaries])
+    rows += _metric_row("Red Flags", [str(s.red_flags_count) for s in summaries])
+    rows += _metric_row(
+        "Verification Tasks", [str(s.verification_tasks_count) for s in summaries]
+    )
+    rows += _metric_row(
+        "High-Severity Claims", [str(len(s.high_severity_claims)) for s in summaries]
+    )
+
+    body = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Compare Report Runs</title>
+<style>
+{_COMPARE_CSS}
+</style></head>
+<body>
+{nav}
+<h1>Compare Report Runs</h1>
+<table>
+<thead>
+<tr><th>Metric</th>{col_headers}</tr>
+</thead>
+<tbody>
+{rows}</tbody>
+</table>
+<div class="warning">
+  <strong>Screening Tool Only.</strong> Counts reflect unapproved and approved reports.
+  Report content is available only for approved reports.
+</div>
+</body></html>"""
+    return HTMLResponse(content=body, status_code=200)
 
 
 @router.post("/report-runs/{report_run_id}/approve", response_class=HTMLResponse)
