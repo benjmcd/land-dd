@@ -115,6 +115,58 @@ def test_health_counts_report_job_statuses() -> None:
     assert store.get(queued.report_run_id) is queued
 
 
+def test_list_recent_offset_paginates_results() -> None:
+    store = AsyncReportJobStore()
+    area_id = uuid4()
+    # Create 5 jobs
+    ids = [
+        store.create(area_id=area_id, intent_code=IntentCode.RURAL_LAND_PURCHASE).report_run_id
+        for _ in range(5)
+    ]
+    all_jobs = store.list_recent(limit=10, offset=0)
+    assert len(all_jobs) == 5
+    page1 = store.list_recent(limit=2, offset=0)
+    page2 = store.list_recent(limit=2, offset=2)
+    page3 = store.list_recent(limit=2, offset=4)
+    assert len(page1) == 2
+    assert len(page2) == 2
+    assert len(page3) == 1
+    # Combined pages should equal full list
+    combined = page1 + page2 + page3
+    assert [r.report_run_id for r in combined] == [r.report_run_id for r in all_jobs]
+    _ = ids  # suppress unused-variable warning
+
+
+def test_list_recent_status_filter_in_memory() -> None:
+    store = AsyncReportJobStore()
+    area_id = uuid4()
+    queued = store.create(area_id=area_id, intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    failed = store.create(area_id=area_id, intent_code=IntentCode.HOMESTEAD_FEASIBILITY)
+    store.mark_failed(failed.report_run_id, error_msg="boom")
+
+    queued_jobs = store.list_recent(limit=50, status=JobStatus.QUEUED)
+    failed_jobs = store.list_recent(limit=50, status=JobStatus.FAILED)
+
+    assert all(r.status == JobStatus.QUEUED for r in queued_jobs)
+    assert queued.report_run_id in {r.report_run_id for r in queued_jobs}
+    assert all(r.status == JobStatus.FAILED for r in failed_jobs)
+    assert failed.report_run_id in {r.report_run_id for r in failed_jobs}
+
+
+def test_list_recent_offset_beyond_end_returns_empty() -> None:
+    store = AsyncReportJobStore()
+    store.create(area_id=uuid4(), intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    result = store.list_recent(limit=10, offset=999)
+    assert result == []
+
+
+def test_list_recent_status_filter_no_match_returns_empty() -> None:
+    store = AsyncReportJobStore()
+    store.create(area_id=uuid4(), intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    result = store.list_recent(limit=10, status=JobStatus.CANCELLED)
+    assert result == []
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_job_store_persists_status_transitions() -> None:
     store = SqlAlchemyAsyncReportJobStore()
@@ -203,6 +255,42 @@ def test_sqlalchemy_job_store_health_counts_status_delta() -> None:
     finally:
         _delete_report_job(queued.report_run_id)
         _delete_report_job(failed.report_run_id)
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_job_store_list_recent_offset_and_status() -> None:
+    store = SqlAlchemyAsyncReportJobStore()
+    area_id = uuid4()
+    records = [
+        store.create(area_id=area_id, intent_code=IntentCode.RURAL_LAND_PURCHASE)
+        for _ in range(4)
+    ]
+    failed_record = records[0]
+    store.mark_failed(failed_record.report_run_id, error_msg="test")
+    try:
+        # Status filter: only failed jobs
+        failed_jobs = store.list_recent(limit=50, status=JobStatus.FAILED)
+        failed_ids = {r.report_run_id for r in failed_jobs}
+        assert failed_record.report_run_id in failed_ids
+        # Status filter: only queued jobs should not include the failed one
+        queued_jobs = store.list_recent(limit=50, status=JobStatus.QUEUED)
+        queued_ids = {r.report_run_id for r in queued_jobs}
+        assert failed_record.report_run_id not in queued_ids
+        # Offset: page 1 of 2 (limit=2) then page 2
+        all_jobs = store.list_recent(limit=50, offset=0)
+        # Filter to just our records by id set
+        our_ids = {r.report_run_id for r in records}
+        our_jobs = [r for r in all_jobs if r.report_run_id in our_ids]
+        if len(our_jobs) >= 2:
+            page1 = [r for r in store.list_recent(limit=2, offset=0) if r.report_run_id in our_ids]
+            page2 = [r for r in store.list_recent(limit=2, offset=2) if r.report_run_id in our_ids]
+            combined_ids = {r.report_run_id for r in page1 + page2}
+            # All our IDs should appear across both pages
+            for r in our_jobs[:4]:
+                assert r.report_run_id in combined_ids
+    finally:
+        for r in records:
+            _delete_report_job(r.report_run_id)
 
 
 def _delete_report_job(report_run_id: object) -> None:

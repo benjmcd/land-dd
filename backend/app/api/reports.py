@@ -384,6 +384,43 @@ class ReportRunDiffResponse(BaseModel):
     evidence_count_delta: int
 
 
+class ReportRunListItem(BaseModel):
+    report_run_id: UUID
+    intent_code: str
+    status: str
+    created_at: str
+    review_status: str | None
+
+
+@router.get("", response_model=list[ReportRunListItem])
+def list_report_runs(
+    services: ServicesDep,
+    status: Annotated[JobStatus | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[ReportRunListItem]:
+    jobs = services.async_report_jobs.list_recent(
+        limit=limit, offset=offset, status=status
+    )
+    items: list[ReportRunListItem] = []
+    for job in jobs:
+        review_status: str | None = None
+        if job.status == JobStatus.SUCCEEDED:
+            report = services.report_service.get_report_run(job.report_run_id)
+            if report is not None:
+                review_status = report.review_status.value
+        items.append(
+            ReportRunListItem(
+                report_run_id=job.report_run_id,
+                intent_code=job.intent_code.value,
+                status=job.status.value,
+                created_at=job.created_at.isoformat(),
+                review_status=review_status,
+            )
+        )
+    return items
+
+
 @router.get("/compare", response_model=ReportRunCompareResponse)
 def compare_report_runs(
     ids: str,

@@ -4,7 +4,7 @@ import html as _html
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
@@ -16,6 +16,8 @@ from app.api.reviewer_auth import (
 )
 from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
+
+_UI_PAGE_SIZE = 30
 
 router = APIRouter(prefix="/ui", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -252,8 +254,24 @@ def ui_report_run(
 
 
 @router.get("/report-runs", response_class=HTMLResponse)
-def ui_report_run_list(services: ServicesDep) -> str:
-    jobs = services.async_report_jobs.list_recent(limit=30)
+def ui_report_run_list(
+    services: ServicesDep,
+    status: Annotated[str | None, Query()] = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> str:
+    # Validate and resolve the status filter
+    status_filter: JobStatus | None = None
+    if status:
+        try:
+            status_filter = JobStatus(status)
+        except ValueError:
+            status_filter = None
+
+    jobs = services.async_report_jobs.list_recent(
+        limit=_UI_PAGE_SIZE,
+        offset=offset,
+        status=status_filter,
+    )
     rows = ""
     for job in jobs:
         review_badge = ""
@@ -262,7 +280,10 @@ def ui_report_run_list(services: ServicesDep) -> str:
             if report is not None:
                 rv = report.review_status.value
                 color = "#28a745" if rv == "approved" else "#ffc107"
-                review_badge = f' &nbsp; <span style="color:{color};font-weight:bold">{rv}</span>'
+                review_badge = (
+                    f' &nbsp; <span style="color:{color};font-weight:bold">'
+                    f'{_html.escape(rv)}</span>'
+                )
         status_color = {
             "queued": "#6c757d",
             "running": "#007bff",
@@ -272,14 +293,52 @@ def ui_report_run_list(services: ServicesDep) -> str:
         rows += (
             f'<tr>'
             f'<td><a href="/ui/report-runs/{job.report_run_id}">'
-            f'{str(job.report_run_id)[:8]}…</a></td>'
+            f'{_html.escape(str(job.report_run_id)[:8])}&#8230;</a></td>'
             f'<td>{_html.escape(job.intent_code.value)}</td>'
-            f'<td style="color:{status_color}">{job.status.value}{review_badge}</td>'
+            f'<td style="color:{status_color}">'
+            f'{_html.escape(job.status.value)}{review_badge}</td>'
             f'<td>{_html.escape(str(job.created_at)[:19])}</td>'
             f'</tr>\n'
         )
     if not rows:
         rows = '<tr><td colspan="4" style="color:#666">No report runs yet.</td></tr>'
+
+    # Build status filter dropdown
+    status_options = '<option value="">All</option>\n'
+    for js in JobStatus:
+        selected = ' selected' if status_filter == js else ''
+        status_options += (
+            f'<option value="{_html.escape(js.value)}"{selected}>'
+            f'{_html.escape(js.value)}</option>\n'
+        )
+
+    # Build query string helpers for pagination links
+    def _page_qs(new_offset: int) -> str:
+        parts = []
+        if status_filter is not None:
+            parts.append(f"status={_html.escape(status_filter.value)}")
+        parts.append(f"offset={new_offset}")
+        return "?" + "&amp;".join(parts)
+
+    prev_link = ""
+    if offset > 0:
+        prev_offset = max(0, offset - _UI_PAGE_SIZE)
+        prev_link = (
+            f'<a href="/ui/report-runs{_page_qs(prev_offset)}">&larr; Previous</a>'
+        )
+    next_link = ""
+    if len(jobs) == _UI_PAGE_SIZE:
+        next_offset = offset + _UI_PAGE_SIZE
+        next_link = (
+            f'<a href="/ui/report-runs{_page_qs(next_offset)}">Next &rarr;</a>'
+        )
+    pagination = ""
+    if prev_link or next_link:
+        sep = " &nbsp; " if (prev_link and next_link) else ""
+        pagination = (
+            f'<div style="margin-top:1rem">{prev_link}{sep}{next_link}</div>'
+        )
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Report Runs</title>
@@ -290,16 +349,25 @@ table {{ border-collapse: collapse; width: 100%; }}
 th, td {{ text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2e6; }}
 th {{ background: #f8f9fa; }}
 a {{ color: #2c3e50; }}
+form.filter {{ display:inline-flex; gap:0.5rem; align-items:center; margin-bottom:1rem; }}
 </style>
 </head>
 <body>
 <a href="/ui/">&#8592; Home</a>
 &nbsp;|&nbsp; <a href="/ui/operations">Operations Dashboard</a>
 <h1>Report Runs</h1>
+<form class="filter" method="GET" action="/ui/report-runs">
+  <label for="status-filter">Filter by status:</label>
+  <select id="status-filter" name="status" onchange="this.form.submit()">
+    {status_options}
+  </select>
+  <noscript><button type="submit">Apply</button></noscript>
+</form>
 <table>
 <thead><tr><th>ID</th><th>Intent</th><th>Status</th><th>Created</th></tr></thead>
 <tbody>{rows}</tbody>
 </table>
+{pagination}
 </body></html>"""
 
 
