@@ -2,6 +2,51 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-10 Operator-Complete Surface
+
+**Scope:** `plans/2026-06-10-operator-complete-surface.md` S1–S8 — credentialed UI
+approval, dossier/artifact export, connector review queue UI, retry + operations
+dashboard, report list API/pagination, lineage UI, compare UI, review-finding fixes,
+runbook/state updates.
+
+**Commands run (canonical interpreter `py -3.12` only; a 3.11 interpreter produces false
+OpenAPI-parity failures and must not be used for pytest):**
+
+```powershell
+.\scripts\verify.ps1                                  # baseline at worktree creation: PASS
+.\scripts\db_apply_migrations.ps1                     # fresh PostGIS volume: PASS
+python scripts\db_smoke_check.py                      # PASS
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1           # baseline: PASS
+# per-slice (each slice, before its commit):
+cd backend; py -3.12 -m pytest -q <slice tests> tests\api\test_ui_routes.py tests\test_planning_pack_schema_copies.py
+cd backend; py -3.12 -m mypy <touched files>          # clean each slice
+# ruff via Python311 ruff.exe on touched files        # clean each slice
+py -3.12 scripts\export_openapi_stub.py               # stub regenerated per route-adding slice
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1           # post-S1..S7: PASS (exit 0)
+cd backend; py -3.12 -m pytest -q tests\api\          # post review-fixes: all pass
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1           # final gate: see result below
+```
+
+**Results:**
+
+- Suite grew from 871 passed / 68 skipped (baseline) to 975+ passed after S1–S7 plus
+  additional review-fix regression tests; ruff clean; mypy clean on all touched files;
+  OpenAPI parity test green after each route-adding slice.
+- Adversarial review (3 lenses, every finding independently re-verified against code):
+  9 confirmed findings, 0 refuted findings surviving; all 9 fixed and committed in
+  `b6d6352`.
+
+**Residual risks:**
+
+- The operator UI is reachable only in the default trusted-network posture;
+  `REQUIRE_API_KEY=true` locks all `/ui` routes fail-closed (documented in runbook).
+  Browser-facing deployments behind that flag need a header-injecting reverse proxy
+  (hosted-production lane).
+- Reviewer tokens are shared local service-account secrets entered per action; no
+  sessions/CSRF tokens by design. Compare summaries (counts only) remain ungated,
+  matching the API posture (recorded decision in the plan).
+- UI list `review_status` enrichment performs a bounded per-row lookup (max one page,
+  le=100) — acceptable now, revisit if job volume grows.
 ## 2026-06-07 Source Readiness Closure: Routing Fix + Policy Decisions
 
 **Scope:** task_queue.yaml routing fix, runbook dossier route notation fix, DS-023 explicit pending decision, DS-011 field policy recording.

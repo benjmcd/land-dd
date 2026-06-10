@@ -2,6 +2,45 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-10 (Operator-complete surface — UI auth, export, review/ops/lineage/compare UI)
+
+- Plan: `plans/2026-06-10-operator-complete-surface.md` (adversarially reviewed before
+  implementation; two blocking premise errors corrected pre-implementation: the
+  connector-pending intake path creates no report job, and the connector-review UI must
+  bind to reviewer-scope auth, not workspace headers).
+- S1 (P0 security/audit fix): `POST /ui/report-runs/{id}/approve` previously approved with
+  no credential check and recorded the first configured reviewer account as `reviewed_by`
+  (falsified audit attribution). The UI approve form now requires `reviewer_id` +
+  `reviewer_token`, authenticates through `LocalServiceAccountReviewerAuth`, enforces
+  `report:approve`, returns real 401/403/503 statuses, and records the authenticated
+  reviewer. Regression test authenticates as a second (non-first) configured account.
+- S2: `GET /report-runs/{id}/dossier?download=1` (markdown attachment) and
+  `GET /report-runs/{id}/artifact` (machine-readable JSON, persisted artifact in DB mode),
+  both approved-only; forbidden-phrase assertion on artifact body; new
+  `scripts/export_openapi_stub.py` regenerates the planning-pack OpenAPI stub.
+- S3: connector review queue UI (`/ui/connector-review-queue` list with status filter +
+  pagination; item detail with approve/reject/requeue/cancel forms under
+  `connector:review`; resume-report form under `report:run`); home page now surfaces
+  `pending_connector_review` intake responses with a queue link.
+- S4: failed-report Retry form (`report:retry`, mirrors API 404/409 semantics) and
+  `/ui/operations` queue-health dashboard (`operations:read`).
+- S5: `list_recent(limit, offset, status)` across the job-store protocol and both
+  implementations; new `GET /report-runs` list endpoint (bounded le=100, status filter);
+  UI report list gains status filter + pagination.
+- S6: evidence lineage UI page `/ui/report-runs/{id}/lineage` rendering the existing
+  lineage API data (claim → evidence → source → ingest run), linked from approved reports
+  (closes the L9-004 product-surface gap).
+- S7: `/ui/compare?ids=a,b[,c,d]` side-by-side comparison reusing extracted
+  `_build_comparison_summary` + `_parse_compare_ids` helpers shared with the API route.
+- Post-implementation adversarial review (3 lenses, per-finding refutation): 9 confirmed
+  findings fixed — invalid status filter on the review-queue list no longer 500s in DB
+  mode, audit-attribution regression test hardened, dead test assertion removed,
+  missing-reason and resume-report coverage added, compare validation deduplicated,
+  credential inputs marked `autocomplete="off"`, operations table typing cleaned.
+- `docs/runbooks/mvp_operator.md` updated for all new UI flows plus the fail-closed
+  posture note: `REQUIRE_API_KEY=true` locks the entire UI by design (only `/health`,
+  `/version` public); the operator UI targets the private trusted-network posture.
+- Fixed the stale active-plan pointer in `state/PROJECT_STATE.md`.
 ---
 
 ## 2026-06-08 - Zoning Silent UNKNOWN Gap Fix

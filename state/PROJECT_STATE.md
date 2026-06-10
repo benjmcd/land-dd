@@ -404,7 +404,10 @@ source registry -> area geometry -> evidence -> claim -> report run -> API respo
 
 ## Active plan (overall)
 
-`plans/2026-06-05-l10-production-hardening.md`
+`plans/2026-06-10-operator-complete-surface.md` (completed 2026-06-10; supersedes the
+operator-surface scope of `plans/2026-06-05-l10-production-hardening.md`; builds on the
+completed `plans/2026-06-06-private-mvp-utility-proof.md`). No new active plan has been
+opened; see "Last verified state" for the next-task recommendation.
 
 ## 4-lane agent architecture (active)
 
@@ -440,6 +443,31 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 | Connector integration zone | Canonical in `LANE_OWNERSHIP.md` | CON-001 through CON-020 complete; next Level 8 connector pass needs selection |
 
 ## Last verified state
+
+Latest operator-surface verification on 2026-06-10 (branch
+`worktree-prod-advance-20260610`): the operator web UI is now workflow-complete and
+auth-consistent with the API. UI report approval requires reviewer credentials with
+`report:approve` scope and records the authenticated reviewer in `reviewed_by` and
+`review_actions` (the prior credential-free first-account approval path is removed —
+this was a falsified-attribution audit defect). New approved-only export endpoints
+serve the Markdown dossier as a download and the machine-readable JSON report artifact
+(persisted artifact in DB mode) with a forbidden-phrase regression on the artifact body.
+New UI surfaces: connector review queue list/detail with approve/reject/requeue/cancel
+and resume-report actions (reviewer-scope model), pending-connector-review intake
+surfacing, failed-report retry, operations queue-health dashboard, report list status
+filter + pagination (plus a bounded `GET /report-runs` list endpoint and job-store
+offset/status support in both implementations), evidence lineage page, and report
+comparison page sharing the API's summary/parsing helpers.
+`scripts/export_openapi_stub.py` now regenerates the planning-pack OpenAPI stub; the
+parity test is environment-sensitive and must run under `py -3.12`. Full DB-enabled
+`.\scripts\verify.ps1` passes with `RUN_DB_SMOKE=1` (suite grew from 871 to 975+ passed
+tests); a three-lens adversarial review with per-finding re-verification confirmed 9
+findings, all fixed. The UI targets the default trusted-network posture;
+`REQUIRE_API_KEY=true` locks all `/ui` routes fail-closed (runbook documents this).
+Next-task recommendation: live-connector exercise of the operator workflow end-to-end
+against the three NC counties, source-rights review progress on the four blocked Must
+sources (DS-010/011/017/023), or hosted-production lane items if infrastructure becomes
+available.
 
 Latest US-052 verification on 2026-06-05: reviewer-authenticated
 `GET /operations/queue-health` is implemented for in-memory and DB-backed report/live
