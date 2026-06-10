@@ -99,11 +99,12 @@ try {
         Write-Host 'ruff not installed; skipping lint'
     }
 
-    if (Get-Command mypy -ErrorAction SilentlyContinue) {
+    & $script:PythonExecutable -m mypy --version *> $null
+    if ($LASTEXITCODE -eq 0) {
         Write-Host '== backend typecheck =='
-        Invoke-NativeCommand -Label 'backend typecheck' -Command { mypy app tests }
+        Invoke-PythonCommand -Label 'backend typecheck' -Arguments @('-m', 'mypy', 'app', 'tests')
     } else {
-        Write-Host 'mypy not installed; skipping typecheck'
+        Write-Host 'mypy not installed for the selected Python; skipping typecheck'
     }
 }
 finally {
