@@ -168,8 +168,9 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     assert report_run.artifact_metadata["artifact_kind"] == "report_run"
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
     n_domains = len(NOT_EVALUATED_DOMAINS)
-    # 2 flood evidence records (observation + source failure) plus one per NOT_EVALUATED domain
-    assert cost_metrics["evidence_count"] == n_domains + 2
+    # 2 flood evidence records (observation + source failure), one per NOT_EVALUATED
+    # domain, plus the injected zoning source-unavailable sentinel (no zoning evidence).
+    assert cost_metrics["evidence_count"] == n_domains + 3
     assert cost_metrics["estimated_total_usd_cents"] == 0
     assert cost_metrics["paid_data_usd_cents"] == 0
     assert cost_metrics["human_review_minutes"] == 0
@@ -177,9 +178,13 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         "Fixture FEMA Flood Map",
         NOT_EVALUATED_SOURCE_NAME,
     ]
-    assert [record.domain for record in report_run.evidence[2:]] == list(NOT_EVALUATED_DOMAINS)
-    assert [claim.claim_code for claim in report_run.unknowns][-n_domains:] == [
-        NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
+    assert [record.domain for record in report_run.evidence[2:]] == [
+        *NOT_EVALUATED_DOMAINS,
+        "zoning",
+    ]
+    assert [claim.claim_code for claim in report_run.unknowns][-(n_domains + 1) :] == [
+        *(NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS),
+        "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
     ]
 
     # Verify intent_id is populated in the DB row (not NULL), confirming the

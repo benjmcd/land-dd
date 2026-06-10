@@ -74,16 +74,24 @@ def test_db_backed_api_creates_and_retrieves_persisted_report_run(
         report_run = get_response.json()
         assert report_run["artifact_metadata"]["persistence"] == "postgres+object_store"
         n_domains = len(NOT_EVALUATED_DOMAINS)
-        assert report_run["artifact_metadata"]["cost_metrics"]["evidence_count"] == n_domains
-        assert report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == n_domains
+        # One NOT_EVALUATED sentinel per domain plus the injected zoning
+        # source-unavailable sentinel (no zoning evidence exists for this area).
+        assert (
+            report_run["artifact_metadata"]["cost_metrics"]["evidence_count"] == n_domains + 1
+        )
+        assert (
+            report_run["artifact_metadata"]["cost_metrics"]["unknown_count"] == n_domains + 1
+        )
         assert report_run["artifact_metadata"]["cost_metrics"]["estimated_total_usd_cents"] == 0
         assert report_run["artifact_metadata"]["cost_metrics"]["paid_data_usd_cents"] == 0
         assert report_run["artifact_metadata"]["cost_metrics"]["human_review_minutes"] == 0
-        assert [record["domain"] for record in report_run["evidence"]] == list(
-            NOT_EVALUATED_DOMAINS
-        )
+        assert [record["domain"] for record in report_run["evidence"]] == [
+            *NOT_EVALUATED_DOMAINS,
+            "zoning",
+        ]
         assert [claim["claim_code"] for claim in report_run["unknowns"]] == [
-            NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS
+            *(NOT_EVALUATED_CLAIM_CODES[domain] for domain in NOT_EVALUATED_DOMAINS),
+            "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ]
         assert report_run["source_manifest"]["source_names"] == [
             NOT_EVALUATED_SOURCE_NAME
