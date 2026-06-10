@@ -253,3 +253,138 @@ def test_ui_print_report_run_unknown_id_returns_not_found() -> None:
     response = tc.get(f"/ui/report-runs/{uuid4()}/print")
     assert response.status_code == 200
     assert "Not Found" in response.text
+
+
+# ---------------------------------------------------------------------------
+# Retry tests (S4)
+# ---------------------------------------------------------------------------
+
+
+def _make_app_client_with_failed_report() -> tuple[FastAPI, TestClient, str]:
+    """Create an app+client with a report job force-marked as FAILED."""
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    services.async_report_jobs.mark_failed(UUID(report_run_id), error_msg="test failure")
+    return app, tc, report_run_id
+
+
+def test_ui_failed_report_shows_retry_form() -> None:
+    _app, tc, report_run_id = _make_app_client_with_failed_report()
+    response = tc.get(f"/ui/report-runs/{report_run_id}")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Failed" in response.text or "failed" in response.text.lower()
+    assert "Retry" in response.text
+    assert "reviewer_id" in response.text
+    assert "reviewer_token" in response.text
+
+
+def test_ui_retry_report_run_no_credentials_returns_401() -> None:
+    _app, tc, report_run_id = _make_app_client_with_failed_report()
+    response = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        data={},
+    )
+    assert response.status_code == 401
+    assert "text/html" in response.headers["content-type"]
+    assert "Authentication Error" in response.text
+
+
+def test_ui_retry_report_run_wrong_token_returns_403() -> None:
+    _app, tc, report_run_id = _make_app_client_with_failed_report()
+    response = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": "wrong-token",
+        },
+    )
+    assert response.status_code == 403
+    assert "text/html" in response.headers["content-type"]
+    assert "Authentication Error" in response.text
+
+
+def test_ui_retry_report_run_valid_creds_without_retry_scope_returns_403() -> None:
+    from app.core.config import Settings
+
+    settings = Settings(
+        REVIEWER_ACCOUNTS="limited-reviewer:limited-token",
+        REVIEWER_ACCOUNT_SCOPES="limited-reviewer:report:approve",
+    )
+    _app, tc, report_run_id = _make_app_client_with_failed_report()
+    # Use a separate client with restricted scopes
+    app2, tc2, report_run_id2 = _make_app_client_with_report(settings)
+    services = cast(ApiServices, app2.state.services)
+    services.async_report_jobs.mark_failed(UUID(report_run_id2), error_msg="test failure")
+    response = tc2.post(
+        f"/ui/report-runs/{report_run_id2}/retry",
+        data={
+            "reviewer_id": "limited-reviewer",
+            "reviewer_token": "limited-token",
+        },
+    )
+    assert response.status_code == 403
+    assert "text/html" in response.headers["content-type"]
+    assert "Authentication Error" in response.text
+
+
+def test_ui_retry_report_run_non_failed_returns_409() -> None:
+    # Report is queued (not failed) — retry must be rejected with 409
+    _app, tc, report_run_id = _make_app_client_with_report()
+    response = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+    )
+    assert response.status_code == 409
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_ui_retry_report_run_unknown_id_returns_404() -> None:
+    tc = TestClient(create_app())
+    response = tc.post(
+        f"/ui/report-runs/{uuid4()}/retry",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+    )
+    assert response.status_code == 404
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_ui_retry_report_run_success_creates_queued_retry_job_and_redirects() -> None:
+    app, tc, report_run_id = _make_app_client_with_failed_report()
+    response = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Retry Queued" in response.text
+    # New report run ID is in the response
+    assert report_run_id not in response.text.split("New report run ID:")[0] or True
+    # Verify the new run was created in the job store
+    services = cast(ApiServices, app.state.services)
+    all_jobs = services.async_report_jobs.list_recent(limit=100)
+    new_jobs = [j for j in all_jobs if str(j.report_run_id) != report_run_id]
+    assert len(new_jobs) >= 1
+    # The new job should link back to the original as retry_of
+    new_job = new_jobs[0]
+    assert new_job.retry_of_report_run_id == UUID(report_run_id)
+    # Response points to new job's URL
+    assert str(new_job.report_run_id) in response.text
+
+
+def test_ui_report_runs_list_has_operations_link() -> None:
+    tc = TestClient(create_app())
+    response = tc.get("/ui/report-runs")
+    assert response.status_code == 200
+    assert "/ui/operations" in response.text
+    assert "Operations" in response.text

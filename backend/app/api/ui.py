@@ -4,11 +4,16 @@ import html as _html
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.reviewer_auth import REVIEWER_SCOPE_REPORT_APPROVE, require_reviewer_scope
+from app.api.reports import schedule_report_background
+from app.api.reviewer_auth import (
+    REVIEWER_SCOPE_REPORT_APPROVE,
+    REVIEWER_SCOPE_REPORT_RETRY,
+    require_reviewer_scope,
+)
 from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
 
@@ -147,12 +152,35 @@ def ui_report_run(
             "<a href=\"/ui/\">Back to Home</a></body></html>"
         )
     if job is not None and job.status == JobStatus.FAILED:
+        error_msg = _html.escape(job.error_msg or "Unknown error")
+        job_id_esc = _html.escape(str(report_run_id))
         return (
             "<!DOCTYPE html>\n"
             "<html><head><title>Report Failed</title></head>\n"
-            f"<body><h1>Report Generation Failed</h1>"
-            f"<p>{job.error_msg or 'Unknown error'}</p>"
-            "<a href=\"/ui/\">Back to Home</a></body></html>"
+            "<body>"
+            "<h1>Report Generation Failed</h1>"
+            f"<p>{error_msg}</p>"
+            f"<p>Report ID: {job_id_esc}</p>"
+            "<a href=\"/ui/\">Back to Home</a>"
+            " &nbsp; <a href=\"/ui/report-runs\">All Reports</a>"
+            "<br><br>"
+            "<h2>Retry Report</h2>"
+            "<p>Reviewer credentials required to queue a retry.</p>"
+            f"<form method=\"POST\""
+            f" action=\"/ui/report-runs/{report_run_id}/retry\""
+            " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
+            "<label>Reviewer ID:"
+            " <input type=\"text\" name=\"reviewer_id\" required"
+            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
+            "<label>Reviewer token:"
+            " <input type=\"password\" name=\"reviewer_token\" required"
+            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
+            "<button type=\"submit\""
+            " style=\"background:#007bff;color:white;border:none;"
+            "padding:0.5rem 1rem;cursor:pointer;"
+            "font-size:1rem;border-radius:4px\">Retry Report</button>"
+            "</form>"
+            "</body></html>"
         )
     report = services.report_service.get_report_run(report_run_id)
     if report is None:
@@ -266,6 +294,7 @@ a {{ color: #2c3e50; }}
 </head>
 <body>
 <a href="/ui/">&#8592; Home</a>
+&nbsp;|&nbsp; <a href="/ui/operations">Operations Dashboard</a>
 <h1>Report Runs</h1>
 <table>
 <thead><tr><th>ID</th><th>Intent</th><th>Status</th><th>Created</th></tr></thead>
@@ -318,6 +347,79 @@ def ui_approve_report_run(
             f"<body><h1>Report Approved</h1>"
             f"<p>Approved by: {_html.escape(principal.reviewer_id)}</p>"
             f"<p><a href='/ui/report-runs/{report_run_id}'>View Report</a></p>"
+            "</body></html>"
+        ),
+        status_code=200,
+    )
+
+
+@router.post("/report-runs/{report_run_id}/retry", response_class=HTMLResponse)
+def ui_retry_report_run(
+    report_run_id: UUID,
+    background_tasks: BackgroundTasks,
+    request_context: Request,
+    services: ServicesDep,
+    reviewer_id: Annotated[str | None, Form()] = None,
+    reviewer_token: Annotated[str | None, Form()] = None,
+) -> HTMLResponse:
+    failed_url = f"/ui/report-runs/{report_run_id}"
+    try:
+        principal = services.reviewer_auth(
+            reviewer_id=reviewer_id,
+            reviewer_token=reviewer_token,
+        )
+        require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_RETRY)
+    except HTTPException as exc:
+        error_body = (
+            "<!DOCTYPE html><html><head><title>Authentication Error</title></head>"
+            "<body><h1>Authentication Error</h1>"
+            "<p>Reviewer credentials are missing, invalid, or lack the required scope.</p>"
+            f"<a href='{_html.escape(failed_url)}'>Back</a></body></html>"
+        )
+        return HTMLResponse(content=error_body, status_code=exc.status_code)
+    failed_job = services.async_report_jobs.get(report_run_id)
+    if failed_job is None:
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>Not Found</title></head>"
+                f"<body><h1>Report Job Not Found</h1><p>ID: {report_run_id}</p>"
+                "<a href='/ui/report-runs'>Back to List</a></body></html>"
+            ),
+            status_code=404,
+        )
+    if failed_job.status != JobStatus.FAILED:
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>Conflict</title></head>"
+                "<body><h1>Retry Not Available</h1>"
+                "<p>Retry requires a failed report job.</p>"
+                f"<a href='{_html.escape(failed_url)}'>Back</a></body></html>"
+            ),
+            status_code=409,
+        )
+    retry_job = services.async_report_jobs.create(
+        area_id=failed_job.area_id,
+        intent_code=failed_job.intent_code,
+        retry_of_report_run_id=failed_job.report_run_id,
+    )
+    schedule_report_background(
+        background_tasks=background_tasks,
+        request_context=request_context,
+        services=services,
+        report_run_id=retry_job.report_run_id,
+        area_id=retry_job.area_id,
+        intent_code=retry_job.intent_code,
+    )
+    new_url = f"/ui/report-runs/{retry_job.report_run_id}"
+    return HTMLResponse(
+        content=(
+            "<!DOCTYPE html>"
+            "<html><head><title>Retry Queued</title>"
+            f"<meta http-equiv='refresh' content='1;url={_html.escape(new_url)}'>"
+            "</head>"
+            "<body><h1>Retry Queued</h1>"
+            f"<p>New report run ID: {_html.escape(str(retry_job.report_run_id))}</p>"
+            f"<p><a href='{_html.escape(new_url)}'>View New Report Run</a></p>"
             "</body></html>"
         ),
         status_code=200,
