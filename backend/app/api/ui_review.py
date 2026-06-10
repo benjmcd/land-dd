@@ -84,9 +84,17 @@ def ui_connector_review_queue_list(
     limit: Annotated[int, Query(ge=1, le=100)] = 25,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> str:
+    # Validate status to prevent a DB CAST error on invalid enum values
+    status_filter: str | None = None
+    if status:
+        try:
+            status_filter = JobStatus(status).value
+        except ValueError:
+            status_filter = None
+
     items = services.connector_review_queue.list_connector_runs(
         workspace_id=None,
-        status=status,
+        status=status_filter,
         limit=limit,
         offset=offset,
     )
@@ -129,7 +137,7 @@ def ui_connector_review_queue_list(
     has_prev = offset > 0
     has_next = len(items) == limit
 
-    status_param = f"&status={_html.escape(status)}" if status else ""
+    status_param = f"&status={_html.escape(status_filter)}" if status_filter else ""
     prev_link = f"?limit={limit}&offset={prev_offset}{status_param}"
     next_link = f"?limit={limit}&offset={next_offset}{status_param}"
 
@@ -232,9 +240,9 @@ def ui_connector_review_detail(
     def _cred_fields() -> str:
         return (
             "<label>Reviewer ID:"
-            " <input type='text' name='reviewer_id' required></label>"
+            " <input type='text' name='reviewer_id' required autocomplete='off'></label>"
             "<label>Reviewer token:"
-            " <input type='password' name='reviewer_token' required></label>"
+            " <input type='password' name='reviewer_token' required autocomplete='off'></label>"
         )
 
     approve_form = (

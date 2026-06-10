@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from dataclasses import replace as _dc_replace
 from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid4
@@ -210,6 +212,17 @@ def test_ui_review_queue_list_prev_next_links() -> None:
     assert "Previous" in response.text
 
 
+def test_ui_review_queue_list_invalid_status_returns_200_not_500() -> None:
+    """GET ?status=bogus must return 200 (unfiltered list) not 500 DB CAST error."""
+    app = create_app()
+    tc = TestClient(app)
+    response = tc.get("/ui/connector-review-queue?status=bogus")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    # The invalid status is ignored; the queue list renders normally
+    assert "Connector Review Queue" in response.text
+
+
 # ---------------------------------------------------------------------------
 # Detail page tests
 # ---------------------------------------------------------------------------
@@ -418,6 +431,21 @@ def test_ui_review_reject_missing_reason_returns_422() -> None:
     assert "Reason is required" in response.text
 
 
+def test_ui_review_requeue_missing_reason_returns_422() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/requeue",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+    )
+    assert response.status_code == 422
+    assert "Reason is required" in response.text
+
+
 # ---------------------------------------------------------------------------
 # Requeue action tests
 # ---------------------------------------------------------------------------
@@ -496,6 +524,21 @@ def test_ui_review_cancel_valid_scoped_transitions_item() -> None:
     assert updated.status == JobStatus.CANCELLED
 
 
+def test_ui_review_cancel_missing_reason_returns_422() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/cancel",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+    )
+    assert response.status_code == 422
+    assert "Reason is required" in response.text
+
+
 # ---------------------------------------------------------------------------
 # Resume-report action auth tests
 # ---------------------------------------------------------------------------
@@ -540,6 +583,104 @@ def test_ui_review_resume_report_valid_token_missing_report_run_scope_returns_40
     )
     assert response.status_code == 403
     assert "Authentication Error" in response.text
+
+
+# ---------------------------------------------------------------------------
+# Resume-report action functional tests
+# ---------------------------------------------------------------------------
+
+_GEOM_FIXTURE = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"
+
+
+def _register_area_and_enqueue_succeeded(app: FastAPI) -> tuple[TestClient, ConnectorReviewQueueItem, str]:
+    """Create an area, enqueue an item, patch payload area_id, approve -> SUCCEEDED."""
+    tc = TestClient(app)
+    # Register an area via the API to get a valid area_id in the service
+    geojson = json.loads(_GEOM_FIXTURE.read_text(encoding="utf-8"))
+    area_resp = tc.post("/areas", json={"geom_geojson": geojson, "geom_source": "test fixture"})
+    assert area_resp.status_code == 201
+    area_id = area_resp.json()["area_id"]
+
+    # Enqueue a review item from the fixture
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    # Patch the payload area_id so the handler can find the registered area
+    services = cast(ApiServices, app.state.services)
+    repo = services.connector_review_queue_repo
+    new_payload = dict(item.payload)
+    new_payload["area_id"] = area_id
+    patched = _dc_replace(item, payload=new_payload)
+    repo._store[item.ingest_run_id] = patched  # type: ignore[attr-defined]
+
+    # Approve the item (transitions to SUCCEEDED)
+    services.connector_review_queue.approve_for_connector_qa(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+    )
+    updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert updated is not None and updated.status == JobStatus.SUCCEEDED
+
+    return tc, updated, area_id
+
+
+def test_ui_review_resume_report_happy_path_queues_job_and_links_report() -> None:
+    """Happy path: valid reviewer + SUCCEEDED item with registered area_id -> 200, link to report."""
+    app = create_app()
+    tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
+
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/resume-report",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            "intent_code": "rural_land_purchase",
+        },
+    )
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Report Run Queued" in response.text or "Report Queued" in response.text
+    # Response must contain a link to /ui/report-runs/<new_id>
+    assert "/ui/report-runs/" in response.text
+
+    # Verify the job was actually created
+    services = cast(ApiServices, app.state.services)
+    all_jobs = services.async_report_jobs.list_recent(limit=100)
+    assert len(all_jobs) >= 1
+
+
+def test_ui_review_resume_report_non_succeeded_item_returns_409() -> None:
+    """Connector review item not in SUCCEEDED state -> 409 error page."""
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    # Item is in NEEDS_REVIEW or QUEUED — not SUCCEEDED
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/resume-report",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            "intent_code": "rural_land_purchase",
+        },
+    )
+    assert response.status_code == 409
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_ui_review_resume_report_unknown_intent_code_returns_422() -> None:
+    """Unknown intent_code in payload -> 422 error page."""
+    app = create_app()
+    tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
+
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/resume-report",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            "intent_code": "not_a_real_intent",
+        },
+    )
+    assert response.status_code == 422
+    assert "text/html" in response.headers["content-type"]
 
 
 # ---------------------------------------------------------------------------

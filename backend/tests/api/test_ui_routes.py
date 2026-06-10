@@ -125,19 +125,38 @@ def test_ui_approve_report_run_redirects_on_success() -> None:
 
 
 def test_ui_approve_report_run_records_authenticated_reviewer_id() -> None:
-    """Audit integrity: reviewed_by must be the authenticated reviewer, not a fallback."""
-    app, tc, report_run_id = _make_app_client_with_report()
+    """Audit integrity: reviewed_by must be the authenticated reviewer, not a fallback.
+
+    Two accounts are configured so the test detects a regression to the
+    first-configured-account fallback: we authenticate as the SECOND account
+    and assert that the stored reviewed_by matches the second account.
+    """
+    _SECOND_REVIEWER_ID = "second-reviewer"
+    _SECOND_REVIEWER_TOKEN = "second-token-456"
+    settings = Settings(
+        REVIEWER_ACCOUNTS=(
+            f"{_FIXTURE_REVIEWER_ID}:{_FIXTURE_REVIEWER_TOKEN}"
+            f",{_SECOND_REVIEWER_ID}:{_SECOND_REVIEWER_TOKEN}"
+        ),
+        REVIEWER_ACCOUNT_SCOPES=(
+            f"{_FIXTURE_REVIEWER_ID}:connector:run|connector:review|operations:read"
+            f"|report:approve|report:retry|report:run"
+            f",{_SECOND_REVIEWER_ID}:connector:run|connector:review|operations:read"
+            f"|report:approve|report:retry|report:run"
+        ),
+    )
+    app, tc, report_run_id = _make_app_client_with_report(settings)
     tc.post(
         f"/ui/report-runs/{report_run_id}/approve",
         data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            "reviewer_id": _SECOND_REVIEWER_ID,
+            "reviewer_token": _SECOND_REVIEWER_TOKEN,
         },
     )
     services = cast(ApiServices, app.state.services)
     report = services.report_service.get_report_run(UUID(report_run_id))
     assert report is not None
-    assert report.reviewed_by == _FIXTURE_REVIEWER_ID
+    assert report.reviewed_by == _SECOND_REVIEWER_ID
 
 
 def test_ui_approve_report_run_unknown_id() -> None:
@@ -368,8 +387,6 @@ def test_ui_retry_report_run_success_creates_queued_retry_job_and_redirects() ->
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Retry Queued" in response.text
-    # New report run ID is in the response
-    assert report_run_id not in response.text.split("New report run ID:")[0] or True
     # Verify the new run was created in the job store
     services = cast(ApiServices, app.state.services)
     all_jobs = services.async_report_jobs.list_recent(limit=100)
