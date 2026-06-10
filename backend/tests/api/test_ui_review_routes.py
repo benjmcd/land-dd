@@ -589,10 +589,15 @@ def test_ui_review_resume_report_valid_token_missing_report_run_scope_returns_40
 # Resume-report action functional tests
 # ---------------------------------------------------------------------------
 
-_GEOM_FIXTURE = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"
+_GEOM_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"
+)
 
 
-def _register_area_and_enqueue_succeeded(app: FastAPI) -> tuple[TestClient, ConnectorReviewQueueItem, str]:
+def _register_area_and_enqueue_succeeded(
+    app: FastAPI,
+) -> tuple[TestClient, ConnectorReviewQueueItem, str]:
     """Create an area, enqueue an item, patch payload area_id, approve -> SUCCEEDED."""
     tc = TestClient(app)
     # Register an area via the API to get a valid area_id in the service
@@ -624,7 +629,7 @@ def _register_area_and_enqueue_succeeded(app: FastAPI) -> tuple[TestClient, Conn
 
 
 def test_ui_review_resume_report_happy_path_queues_job_and_links_report() -> None:
-    """Happy path: valid reviewer + SUCCEEDED item with registered area_id -> 200, link to report."""
+    """Happy path: valid reviewer + SUCCEEDED item with registered area_id -> 200."""
     app = create_app()
     tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
 
