@@ -1970,6 +1970,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/report-runs/{report_run_id}/retry:
+    post:
+      tags:
+      - ui
+      summary: Ui Retry Report Run
+      operationId: ui_retry_report_run_ui_report_runs__report_run_id__retry_post
+      parameters:
+      - name: report_run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Report Run Id
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/report-runs/{report_run_id}/print:
     get:
       tags:
@@ -1984,6 +2016,42 @@ paths:
           type: string
           format: uuid
           title: Report Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/operations:
+    get:
+      tags:
+      - ui
+      summary: Ui Operations Get
+      operationId: ui_operations_get_ui_operations_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags:
+      - ui
+      summary: Ui Operations Post
+      operationId: ui_operations_post_ui_operations_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_operations_post_ui_operations_post'
       responses:
         '200':
           description: Successful Response
@@ -2441,6 +2509,34 @@ components:
           title: Intent Code
       type: object
       title: Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post
+    Body_ui_operations_post_ui_operations_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+      type: object
+      title: Body_ui_operations_post_ui_operations_post
+    Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+      type: object
+      title: Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post
     ChathamParcelsBboxRequest:
       properties:
         xmin:
