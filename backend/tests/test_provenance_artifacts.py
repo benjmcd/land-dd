@@ -48,7 +48,7 @@ def test_production_lock_covers_declared_runtime_dependencies() -> None:
     assert {"uvicorn", "psycopg-binary", "httptools", "watchfiles", "websockets"}.issubset(
         set(lock),
     )
-    assert len(lock) == 25
+    assert len(lock) == 26
 
 
 def test_backend_sbom_matches_production_lock() -> None:
