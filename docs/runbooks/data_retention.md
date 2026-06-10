@@ -51,35 +51,73 @@ report reproducibility.
 
 ---
 
-## How to manually purge audit events
+## How to purge audit events
 
-Audit events targeted for 90-day retention live in `audit.events`. To purge events older
-than 90 days, connect to the Postgres database and run:
+Audit events targeted for 90-day retention live in `audit.events`. The in-scope
+event types are:
 
-```sql
--- Preview rows that would be deleted (dry run)
-SELECT count(*)
-FROM audit.events
-WHERE recorded_at < now() - interval '90 days';
+| Retention class       | event_type values           |
+|-----------------------|-----------------------------|
+| `audit_events`        | `created`, `superseded`     |
+| `api_key_audit_events`| `api_key_auth`              |
 
--- Delete rows older than 90 days
-DELETE FROM audit.events
-WHERE recorded_at < now() - interval '90 days';
+A purge script exists at `scripts/purge_audit_events.py`. It deletes **only** the
+in-scope event types listed above; any future event type with a different policy is
+excluded by the explicit allowlist in the script.
+
+### Step 1 — Dry run (always run first)
+
+```powershell
+.\scripts\run_purge_audit_events.ps1
 ```
 
-Before running the DELETE:
+or directly:
+
+```powershell
+py -3.12 scripts/purge_audit_events.py
+```
+
+The dry run prints the count of rows eligible for deletion per event type and the
+cutoff date. No rows are written or deleted.
+
+### Step 2 — Review output and confirm with security reviewer
+
+Before applying:
 
 1. Confirm the retention decision with the security reviewer.
 2. Back up or export the rows if required for compliance.
-3. Record the deletion in `state/WORKLOG.md` with date, row count, and approver.
+3. Record the planned deletion in `state/WORKLOG.md` with date, expected row count,
+   and approver name.
 
-There is no automated job for this procedure. It must be triggered manually.
+### Step 3 — Apply (manual operator action)
+
+```powershell
+py -3.12 scripts/purge_audit_events.py --apply
+```
+
+Custom retention window (override the 90-day default):
+
+```powershell
+py -3.12 scripts/purge_audit_events.py --apply --retention-days 90
+```
+
+The script prints the number of rows actually deleted and exits 0 on success.
+
+### Notes
+
+- There is no automated (scheduled) job for this procedure. It must be triggered
+  manually by an operator.
+- Pass `--db-url` to target a non-default database, or set the `DATABASE_URL_SYNC`
+  environment variable.
+- The script reads the default retention window from `config/data_retention.yaml`
+  and falls back to 90 days if the YAML is unreadable.
 
 ---
 
 ## Future work
 
-- Implement automated purge job for `audit.events` rows older than 90 days.
+- Schedule the purge script (`scripts/purge_audit_events.py --apply`) as a cron job
+  or operator runbook step once the operational process is agreed.
 - Provision hosted log retention / SIEM export for `audit.events`.
 - Assess GDPR/CCPA scope when user-identifying data is introduced.
 - Add retention policy enforcement tests to CI once automated deletion exists.
