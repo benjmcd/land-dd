@@ -444,7 +444,26 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
-Latest operator-surface verification on 2026-06-10 (branch
+Latest batch-round-2 verification on 2026-06-10 (merged to `main`, PRs #23–#33): the
+operator surface is merged and live on main, plus ten parallel units: source-rights
+reviews for DS-005/006/010/011/016 (DS-010 county parcels — a previously blocked Must
+source — is now approved-with-restrictions for Buncombe/Chatham/Brunswick NC), an
+audit-event retention purge tool (closing the not_yet_automated retention blocker),
+per-claim evidence identifiers in the dossier, a concurrent-user load-test scenario,
+an executed live-connector smoke for a bounded Buncombe bbox (USGS TNM/NWI/SSURGO
+succeeded with real evidence; FEMA NFHL recorded a first-class source failure; a real
+SSURGO null-field bug was found and fixed), shared UI styling consolidation, and
+Idempotency-Key support on POST /report-runs and /intake. Full DB-enabled
+`.\scripts\verify.ps1` is green on merged main; every PR passed GitHub CI before
+merge; attribution scan clean. Known CI caveat: `dependency-attestations` fails at the
+attestation publish step on pull_request events (entitlement/OIDC boundary) while the
+push-event run passes. Next-task candidates: Buncombe/Brunswick parcel connectors
+(DS-010 restrictions permitting), DS-005/006 connectors for water/enviro context,
+consolidating the unwired reports.report_runs idempotency mechanism (job_repo.py)
+with the wired job-store path, and the hosted-production lane when infrastructure
+exists.
+
+Previous operator-surface verification on 2026-06-10 (branch
 `worktree-prod-advance-20260610`): the operator web UI is now workflow-complete and
 auth-consistent with the API. UI report approval requires reviewer credentials with
 `report:approve` scope and records the authenticated reviewer in `reviewed_by` and

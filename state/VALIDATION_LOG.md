@@ -2,6 +2,46 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-10 Batch Round 2 (11 merged PRs)
+
+**Scope:** PRs #23–#33 on `benjmcd/land-dd` (operator surface landing + 10 parallel
+units: 5 source-rights reviews, retention purge, dossier evidence IDs, concurrency load
+test, live-connector smoke, UI consolidation, idempotency keys).
+
+**Verification:**
+
+- Every PR merged only after GitHub CI green (verify + db-verify + supply-chain +
+  security-scan + access-control + container-image-scan + release/image/hosted
+  readiness gates). `dependency-attestations` fails on pull_request events at the
+  attestation PUBLISH step ("Requires authentication" — entitlement/OIDC boundary,
+  documented); the push-event twin passes and artifact validation passes in both.
+- Per-unit local gates (`py -3.12` only): unit pytest suites, ruff, mypy, plus
+  unit-specific e2e (uvicorn page checks, load-test execution p95=0.078s/0% errors,
+  live smoke against real federal endpoints, isolated-DB purge tests on port 55433,
+  idempotency e2e 202→200-same-id→409).
+- Final merged main: `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` → `verify: ok`
+  (all tests incl. DB-gated, ruff clean, mypy clean, migrations/seeds 26 sources,
+  PostGIS smoke pass).
+- Attribution scan over all 25 new commits: clean (no trailers/AI attribution).
+- Pre-existing main breakage found and fixed during landing: two DB-gated
+  evidence-count tests broken by the zoning-sentinel injection commit (confirmed
+  failing on pristine origin/main with RUN_DB_SMOKE=1 before the fix).
+
+**Residual risks:**
+
+- `dependency-attestations` remains red on pull_request events until the entitlement/
+  permissions for `actions/attest` on PR runs are addressed (or the job is made
+  push-only); it does not gate merges today.
+- Live smoke showed FEMA NFHL returning no features for the test bbox (recorded as
+  source-failure evidence — verify bbox choice or FEMA service status before relying
+  on flood screening for that area).
+- DS-010/DS-011/DS-016 reviews are approved-with-restrictions: connector
+  implementations for Buncombe/Brunswick parcels and any assessor/OSM ingestion remain
+  gated on `connector_implemented` and the per-review restrictions.
+- Idempotency keys are namespaced at the wired job-store layer (jobs.job_queue); the
+  unwired reports.report_runs idempotency mechanism in job_repo.py remains a future
+  consolidation candidate.
+
 ## 2026-06-10 Operator-Complete Surface
 
 **Scope:** `plans/2026-06-10-operator-complete-surface.md` S1–S8 — credentialed UI

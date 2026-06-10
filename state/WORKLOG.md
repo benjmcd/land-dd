@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-10 (Batch round 2 — 11 PRs merged: operator surface landed + parallel production units)
+
+- Landed PR #23 (operator-complete surface rebased onto main): credentialed UI approval,
+  dossier/.json export, connector-review/ops/lineage/compare UI, report list API,
+  python-multipart declared with lock/SBOM entries, UTF-8 BOMs stripped from
+  reports.py/intake.py, and a fix for two DB-gated evidence-count tests that were broken
+  on main by the zoning-sentinel injection (confirmed failing on pristine origin/main).
+- Parallel batch units, each its own PR off main (all merged after CI green):
+  #24 DS-005 USGS Water Data + DS-006 EPA ECHO source-rights reviews; #25 DS-011 county
+  assessor review (Buncombe/Chatham/Brunswick); #26 DS-010 county GIS parcels review
+  (same counties; blocked Must source now approved-with-restrictions); #31 DS-016
+  OSM/Overture ODbL review (produced-work vs derivative-database analysis); #27
+  concurrent-user load-test scenario (p50/p95/error-rate thresholds); #28 dossier
+  per-claim evidence identifiers (claims now cite short evidence IDs, not bare counts);
+  #29 audit-event retention purge tool (dry-run default, fail-closed event-type
+  allowlist, DB-gated tests); #30 live-connector operator smoke reusing existing
+  query-bbox routes — executed live for a bounded Buncombe bbox (USGS TNM/NWI/SSURGO
+  succeeded, FEMA NFHL recorded a first-class source failure) and fixed a real SSURGO
+  null-numeric-field bug found by the live run; #32 shared UI styling/helpers module
+  (ui_shared.py) + report:approve added to the .env.example scopes; #33 Idempotency-Key
+  header for POST /report-runs and POST /intake (repeat key returns the existing run,
+  payload mismatch 409, in-memory + DB modes, OpenAPI stubs regenerated).
+- Source registry now: DS-001..DS-006, DS-010, DS-011, DS-016 reviewed; remaining
+  unreviewed sources are Later/Could priority or commercial (DS-017 blocked by design).
+- Full DB-enabled `.\scripts\verify.ps1` green on final merged main; attribution scan
+  over all 25 new commits clean (single author, no trailers).
+
 ## 2026-06-10 (Operator-complete surface — UI auth, export, review/ops/lineage/compare UI)
 
 - Plan: `plans/2026-06-10-operator-complete-surface.md` (adversarially reviewed before
