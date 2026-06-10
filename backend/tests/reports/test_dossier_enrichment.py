@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import cast
 
@@ -204,6 +205,56 @@ def test_dossier_renders_zoning_district_from_evidence() -> None:
     assert "RA" in dossier, "Expected zoning district 'RA' in dossier zoning section"
     assert "permitted" in dossier.lower() or "allowed" in dossier.lower(), (
         "Expected residential use compatibility text in dossier"
+    )
+
+
+def test_dossier_red_flag_row_contains_evidence_id_prefix() -> None:
+    """Red-flag Evidence column must show a short 8-hex prefix, not just a bare count."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            method_code="fixture_flood_overlay",
+            observation="Fixture: AE zone intersection.",
+            observed_value={"flood_zone": "AE"},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="FEMA NFHL screening only; confirm locally.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert report_run.red_flags, "Expected FLOOD_001 red flag for this test"
+
+    dossier = build_rural_land_dossier(report_run)
+
+    # The red-flag table Evidence column must include the pattern "N record(s): <hex>"
+    # Locate Section 3 (Top Red Flags) in the dossier
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    assert sec3_start != -1, "Section 3 not found"
+    section_3 = dossier[sec3_start:sec4_start]
+
+    assert re.search(r"\d+ record\(s\):\s*[0-9a-f]{8}", section_3), (
+        "Expected evidence ID prefix pattern '1 record(s): <8hexchars>' in Section 3 red flags; "
+        f"got:\n{section_3}"
+    )
+    # Verify no bare "1 record(s)" without the colon-separated IDs
+    assert "record(s)" in section_3, "Evidence column should contain 'record(s)'"
+    # Confirm the ID prefix is exactly 8 hex chars (first 8 of UUID without dashes)
+    red_flag_claim = report_run.red_flags[0]
+    expected_prefix = str(red_flag_claim.evidence_ids[0]).replace("-", "")[:8]
+    assert expected_prefix in section_3, (
+        f"Expected evidence ID prefix '{expected_prefix}' in Section 3; got:\n{section_3}"
     )
 
 

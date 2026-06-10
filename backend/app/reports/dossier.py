@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
+from uuid import UUID
 
 from app.domain.claim_contracts import ClaimContract
 from app.domain.evidence_contracts import EvidenceContract
@@ -176,6 +177,21 @@ def _source_manifest_version(report_run: ReportRunContract) -> str:
     return f"{ruleset_id}@{ruleset_version}"
 
 
+_EVIDENCE_ID_CAP = 4
+
+
+def _fmt_evidence_ids(evidence_ids: list[UUID]) -> str:
+    """Return a compact evidence-ID summary: count + first-8-hex prefixes, capped."""
+    if not evidence_ids:
+        return "none"
+    count = len(evidence_ids)
+    shown = evidence_ids[:_EVIDENCE_ID_CAP]
+    prefixes = ", ".join(str(eid).replace("-", "")[:8] for eid in shown)
+    overflow = count - len(shown)
+    suffix = f" +{overflow} more" if overflow else ""
+    return f"{count} record(s): {prefixes}{suffix}"
+
+
 def _claim_rows(claims: list[ClaimContract]) -> list[str]:
     if not claims:
         return ["| none | none | none | none | none |"]
@@ -184,11 +200,7 @@ def _claim_rows(claims: list[ClaimContract]) -> list[str]:
             severity=_cell(claim.severity.value),
             domain=_cell(claim.domain),
             claim=_cell(claim.user_safe_language or claim.assertion),
-            evidence=_cell(
-                f"{len(claim.evidence_ids)} record(s)"
-                if claim.evidence_ids
-                else "none"
-            ),
+            evidence=_cell(_fmt_evidence_ids(claim.evidence_ids)),
             verification=_cell(claim.verification_task or "none"),
         )
         for claim in claims
