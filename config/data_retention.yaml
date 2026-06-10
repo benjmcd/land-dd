@@ -14,11 +14,13 @@ retention_classes:
     data_sensitivity: internal_operational
     blocker: Deleting evidence breaks report reproducibility; MVP retains all
   - id: audit_events
-    description: Audit events in audit.events (access, evidence, etc.)
+    description: "Audit events in audit.events (evidence lifecycle: created, superseded)"
     retention_period: 90_days_target
-    deletion_approach: not_yet_automated
+    deletion_approach: automated_script_dry_run_default
+    purge_script: scripts/purge_audit_events.py
+    purge_invocation: manual_operator
     data_sensitivity: internal_audit
-    blocker: No automated deletion procedure; manual review required
+    blocker: Script exists; requires manual --apply invocation; not scheduled
   - id: connector_review_queue
     description: Connector review queue items in jobs.job_queue (type=connector_review_status)
     retention_period: indefinite_mvp
@@ -40,9 +42,11 @@ retention_classes:
   - id: api_key_audit_events
     description: API key auth events in audit.events (event_type=api_key_auth)
     retention_period: 90_days_target
-    deletion_approach: not_yet_automated
+    deletion_approach: automated_script_dry_run_default
+    purge_script: scripts/purge_audit_events.py
+    purge_invocation: manual_operator
     data_sensitivity: internal_security_audit
-    blocker: No automated purge; manual review required
+    blocker: Script exists; requires manual --apply invocation; not scheduled
 retention_blockers:
   - id: automated_deletion
     status: blocked
