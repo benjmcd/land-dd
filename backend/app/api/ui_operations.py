@@ -9,51 +9,31 @@ from fastapi.responses import HTMLResponse
 from app.api.dependencies import ApiServices, get_services
 from app.api.operations import JobQueueHealthResponse, _job_queue_health_response
 from app.api.reviewer_auth import REVIEWER_SCOPE_OPERATIONS_READ, require_reviewer_scope
+from app.api.ui_shared import build_css, reviewer_credential_fields
+from app.api.ui_shared import error_page as _shared_error_page
 
 router = APIRouter(prefix="/ui/operations", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 
-_OPS_CSS = (
-    "body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto;"
-    " padding: 0 1rem; }\n"
-    "h1 { color: #2c3e50; } h2 { color: #34495e; border-bottom: 1px solid #eee; }\n"
-    "table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }\n"
-    "th, td { text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid #dee2e6; }\n"
-    "th { background: #f8f9fa; }\n"
-    "a { color: #2c3e50; }\n"
+_OPS_CSS = build_css(
+    "table { margin-bottom: 1.5rem; }\n"
     ".auth-form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 320px;"
     " margin-top: 1rem; }\n"
     ".auth-form label { font-size: 0.95rem; }\n"
     ".auth-form input { display: block; width: 100%; padding: 0.4rem; font-size: 1rem; }\n"
     ".auth-form button { background: #2c3e50; color: white; border: none; padding: 0.5rem 1rem;"
-    " font-size: 1rem; cursor: pointer; border-radius: 4px; }\n"
-    ".error-page { background: #f8d7da; border: 1px solid #f5c6cb; padding: 1rem;"
-    " border-radius: 4px; }\n"
+    " font-size: 1rem; cursor: pointer; border-radius: 4px; }\n",
 )
 
 
 def _error_page(title: str, message: str, status_code: int) -> HTMLResponse:
-    body = (
-        "<!DOCTYPE html><html lang='en'>"
-        "<head><meta charset='UTF-8'>"
-        f"<title>{_html.escape(title)}</title>"
-        f"<style>{_OPS_CSS}</style>"
-        "</head><body>"
-        f"<div class='error-page'><h1>{_html.escape(title)}</h1>"
-        f"<p>{_html.escape(message)}</p>"
-        "<a href='/ui/operations'>Back</a>"
-        "</div></body></html>"
-    )
-    return HTMLResponse(content=body, status_code=status_code)
+    return _shared_error_page(title, message, "/ui/operations", status_code, css=_OPS_CSS)
 
 
 def _credential_form() -> str:
     return (
         "<form method='post' action='/ui/operations' class='auth-form'>"
-        "<label>Reviewer ID:"
-        " <input type='text' name='reviewer_id' required autocomplete='off'></label>"
-        "<label>Reviewer token:"
-        " <input type='password' name='reviewer_token' required autocomplete='off'></label>"
+        f"{reviewer_credential_fields()}"
         "<button type='submit'>View Dashboard</button>"
         "</form>"
     )

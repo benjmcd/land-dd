@@ -18,6 +18,7 @@ from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_RETRY,
     require_reviewer_scope,
 )
+from app.api.ui_shared import reviewer_credential_fields
 from app.domain.enums import JobStatus, ReportReviewStatus
 from app.reports.dossier import build_rural_land_dossier
 
@@ -175,14 +176,7 @@ def ui_report_run(
             f"<form method=\"POST\""
             f" action=\"/ui/report-runs/{report_run_id}/retry\""
             " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
-            "<label>Reviewer ID:"
-            " <input type=\"text\" name=\"reviewer_id\" required"
-            " autocomplete=\"off\""
-            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
-            "<label>Reviewer token:"
-            " <input type=\"password\" name=\"reviewer_token\" required"
-            " autocomplete=\"off\""
-            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
+            f"{reviewer_credential_fields()}"
             "<button type=\"submit\""
             " style=\"background:#007bff;color:white;border:none;"
             "padding:0.5rem 1rem;cursor:pointer;"
@@ -213,14 +207,7 @@ def ui_report_run(
             f"<form method=\"POST\""
             f" action=\"/ui/report-runs/{report_run_id}/approve\""
             " style=\"display:flex;flex-direction:column;gap:0.5rem;max-width:320px\">"
-            "<label>Reviewer ID:"
-            " <input type=\"text\" name=\"reviewer_id\" required"
-            " autocomplete=\"off\""
-            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
-            "<label>Reviewer token:"
-            " <input type=\"password\" name=\"reviewer_token\" required"
-            " autocomplete=\"off\""
-            " style=\"display:block;width:100%;padding:0.4rem;font-size:1rem\"></label>"
+            f"{reviewer_credential_fields()}"
             "<button type=\"submit\""
             " style=\"background:#28a745;color:white;border:none;"
             "padding:0.5rem 1rem;cursor:pointer;"
