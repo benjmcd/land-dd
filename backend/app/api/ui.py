@@ -175,7 +175,9 @@ def ui_report_run(
 <body>
 <a href="/ui/">&#8592; Back</a>&nbsp;|&nbsp;
 <a href="/ui/report-runs">All Reports</a>&nbsp;|&nbsp;
-<a href="/ui/report-runs/{report_run_id}/print">Print / Export PDF</a>
+<a href="/ui/report-runs/{report_run_id}/print">Print / Export PDF</a>&nbsp;|&nbsp;
+<a href="/report-runs/{report_run_id}/dossier?download=1">Download dossier (.md)</a>&nbsp;|&nbsp;
+<a href="/report-runs/{report_run_id}/artifact">Download report (.json)</a>
 <h1>Report Run</h1>
 <div class="meta">
   <div>ID: {report.report_run_id}</div>
