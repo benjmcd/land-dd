@@ -118,14 +118,18 @@ The two-step report creation response is `202 Accepted` with `report_run_id` and
 
 ### Approve a report run
 
-The final Markdown dossier (`GET /report-runs/{report_run_id}/dossier`) is gated on approval status.
-A report that has not been approved returns `409 Conflict`. Approve a completed report run
-using a reviewer account that holds the `report:approve` scope:
+The final Markdown dossier (`GET /report-runs/{id}/dossier`) and the machine-readable
+artifact (`GET /report-runs/{id}/artifact`) are both gated on approval status. A report
+that has not been approved returns `409 Conflict`.
 
-```bash
-X-Reviewer-Id: fixture-reviewer
-X-Reviewer-Token: fixture-token-123
-```
+**Via the web UI:** navigate to the report page (`/ui/report-runs/{id}`). When the report
+has succeeded but is not yet approved, an approval form is shown. Enter the reviewer ID
+and token (scope: `report:approve`) and submit. The authenticated reviewer identity is
+recorded in the immutable `review_actions` audit log — credentials are required and
+validated on every submission.
+
+**Via the API:** approve using reviewer headers on a reviewer account that holds the
+`report:approve` scope:
 
 ```bash
 curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
@@ -272,8 +276,154 @@ server environment (default is `trusted_headers` for local development).
 
 ## Web Interface
 
-Open `http://localhost:8000/ui/` in a browser. Submit a GeoJSON polygon and select an intent.
-The page links to the report status page, which auto-refreshes while the report is generating.
+### Deployment posture and API-key locking
+
+When `REQUIRE_API_KEY=true` is set, the API-key middleware applies to **every route**,
+including all `/ui/*` pages and file-download endpoints. The only public exceptions are
+`/health` and `/version`. This is intentional fail-closed behaviour: setting
+`REQUIRE_API_KEY=true` without a valid `X-API-Key` header will lock the entire operator
+UI, not just the JSON API. The operator web UI targets the default private trusted-network
+posture (`REQUIRE_API_KEY=false`). Do not set `REQUIRE_API_KEY=true` in environments
+where operators need browser access unless the deployment provides header injection or a
+reverse-proxy that adds the key for trusted internal clients.
+
+Reviewer tokens for UI operations are separate from API keys. Configure them via
+`REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` (see the Configuration table above and
+`.env.example`).
+
+### Home page and intake
+
+Open `http://localhost:8000/ui/` in a browser. Submit a GeoJSON polygon and select an
+intent. The page submits to `/intake` and then either:
+
+- Redirects to the report status page (`/ui/report-runs/{id}`), which auto-refreshes
+  while the report is generating; or
+- Shows a yellow banner with a link to the **Connector Review Queue** if the intake
+  response returns `status=pending_connector_review` (no report job exists yet at that
+  point — the link goes directly to the queue item).
+
+### Report list (`/ui/report-runs`)
+
+The report list shows up to 30 runs per page with a status filter dropdown and
+previous/next pagination links. The status filter accepts: `queued`, `running`,
+`succeeded`, `failed`. Each succeeded row displays its review badge (`approved` in green
+or `pending` in amber). Failed rows link to the individual report page where a retry form
+is available.
+
+A **Compare** affordance lets operators select 2–4 report runs using the checkboxes and
+open a side-by-side summary at `/ui/compare?ids=<uuid>,<uuid>[,...]`. The compare view
+shows summary counts only (claims, unknowns, red flags, verification tasks). Report
+content is gated on approval status.
+
+Programmatic access: `GET /report-runs?status=<value>&limit=<n>&offset=<n>` (max limit
+100) returns a JSON list of report run summaries.
+
+### Report page (`/ui/report-runs/{id}`)
+
+- **Queued or running:** the page auto-refreshes every 3 seconds.
+- **Failed:** shows the error message and a retry form (see below).
+- **Succeeded, not yet approved:** shows the approval form (see below).
+- **Approved:** shows the rendered dossier with nav links:
+  - **Download dossier (.md):** `GET /report-runs/{id}/dossier?download=1` — serves the
+    Markdown dossier as an attachment; approved-only (returns `409` if not approved,
+    `202` if still running, `404` if not found).
+  - **Download report (.json):** `GET /report-runs/{id}/artifact` — serves the
+    machine-readable report JSON as an attachment; approved-only with identical gating.
+    In DB-backed mode the persisted artifact file is served; in-memory mode the contract
+    is serialised at request time.
+  - **Print / Export PDF:** `/ui/report-runs/{id}/print` — print-optimised HTML page;
+    approved-only.
+  - **View evidence lineage:** see below.
+
+### Approving a report run via the UI
+
+The report page for a succeeded-but-unapproved run shows an approval form. The form
+requires **Reviewer ID** and **Reviewer token** fields (scope: `report:approve`). There
+is no session or cookie: credentials are validated per-action from the form body.
+On success the page redirects back to the report view. On credential failure the
+response carries the real HTTP status (401/403/503) and a generic error message — no
+field-level detail is leaked.
+
+The default fixture account (`fixture-reviewer` / `fixture-token-123`) does **not** hold
+`report:approve` scope in `.env.example`. Grant it explicitly via
+`REVIEWER_ACCOUNT_SCOPES` before using the UI approval form in development:
+
+```
+REVIEWER_ACCOUNT_SCOPES=fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run
+```
+
+API-based approval (unchanged) sends credentials as headers:
+
+```bash
+curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+  -H 'Content-Type: application/json' \
+  -H 'X-Reviewer-Id: fixture-reviewer' \
+  -H 'X-Reviewer-Token: fixture-token-123' \
+  -d '{"reason": "Screened and verified — approved for delivery"}'
+```
+
+### Retrying a failed report run via the UI
+
+The report page for a failed run shows a retry form. The form requires **Reviewer ID**
+and **Reviewer token** (scope: `report:retry`). On success a new report run is created
+and the page redirects to it. The original failed job is preserved.
+
+### Connector review queue (`/ui/connector-review-queue`)
+
+When an intake request returns `status=pending_connector_review`, no report job exists
+yet. The operator must action the connector review item before a report can be generated.
+
+**Queue list** (`/ui/connector-review-queue`): table of connector ingest runs with status
+filter and limit/offset pagination (default 25 per page). Columns: ingest run ID,
+connector, status, attempts, created.
+
+**Item detail** (`/ui/connector-review-queue/{ingest_run_id}`): shows payload summary,
+quality issues (blocking issues highlighted in red), and attempts/lock/timing metadata.
+
+Action forms — all require **Reviewer ID** and **Reviewer token** with scope
+`connector:review`:
+
+| Action | When to use | Reason field |
+|---|---|---|
+| **Approve for QA** | Data quality passes review | Optional |
+| **Request Fix (Reject)** | Data quality blocks use | Required |
+| **Requeue After Fix** | Underlying fixture/data has been corrected | Required |
+| **Cancel** | No further action needed | Required |
+
+After a queue item reaches `succeeded` status (approved), a **Resume Report Run** form
+appears. This form requires **Reviewer ID** and **Reviewer token** with scope
+`report:run`, and an intent selection. Submitting it creates a new report run for the
+area associated with the approved connector run and redirects to the report page.
+
+### Operations dashboard (`/ui/operations`)
+
+Navigate to `/ui/operations`. Enter **Reviewer ID** and **Reviewer token** (scope:
+`operations:read`) and submit the form. The page renders queue-health tables for report
+jobs and live connector jobs (total, queued, running, succeeded, failed, cancelled, needs
+review, oldest queued age). The dashboard is read-only; it does not lease work, retry
+jobs, or call live sources.
+
+Equivalent API call:
+
+```bash
+curl -s http://localhost:8000/operations/queue-health \
+  -H 'X-Reviewer-Id: fixture-reviewer' \
+  -H 'X-Reviewer-Token: fixture-token-123'
+```
+
+### Evidence lineage (`/ui/report-runs/{id}/lineage`)
+
+Linked from approved report pages as **View evidence lineage**. Renders three tables:
+
+- **Sources → Ingest Runs** — each data source and the ingest run chain that produced
+  its evidence.
+- **Claims → Evidence** — each claim and the evidence record IDs that support it.
+- **Evidence → Claims** — each evidence record, its source, and the claims that cite it.
+  `UNKNOWN` evidence (no data) is highlighted amber; `SOURCE_FAILURE` evidence is
+  highlighted red.
+
+The lineage page applies the same access gating as the lineage API
+(`GET /report-runs/{id}/lineage`).
 
 ---
 
@@ -511,6 +661,8 @@ future work items.
 | County/vendor sources not ready | Parcel, assessor, commercial parcel, and local zoning sources still require jurisdiction/vendor/license decisions before production connector use |
 | Single-process default | In-memory stores are not shared across multiple workers or processes |
 | No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode, but there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
+| `REQUIRE_API_KEY=true` locks the operator UI | When `REQUIRE_API_KEY=true` is set, the API-key middleware applies to every route including all `/ui/*` pages; only `/health` and `/version` remain public. The UI targets the default private trusted-network posture (`REQUIRE_API_KEY=false`). |
+| UI reviewer auth is stateless per-action | The UI approval, retry, connector-review, and operations forms submit `reviewer_id` + `reviewer_token` in the form body on every action. There are no sessions or cookies. Tokens are validated via the same reviewer-auth service as API header tokens. |
 | No persistence by default | In-memory repositories reset on restart; use DATABASE_URL for persistence |
 | Repo-local alert rules only | Alert rules are validated as artifacts, but no hosted alert manager, dashboard, pager, or named on-call rotation exists |
 | Supply-chain scan limits | CI runs Python dependency vulnerability scanning, validates and attests the repo-local production lock/SBOM, pins the backend base image by OCI index digest, scans the locally built backend image for critical/high CVEs, and validates the image-publication and hosted-deployment boundaries, but there is no hosted deployment or published-registry image attestation |
@@ -536,6 +688,35 @@ future work items.
 **`status: failed` in report response**
 - Check `caveats` field in the response for the error message.
 - Common causes: area not registered (should not occur via /intake), rule engine misconfiguration.
+
+**UI approval form returns 401 or 403**
+- Credentials are missing, wrong, or the reviewer account does not hold `report:approve` scope.
+- Check `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` in the server environment.
+  The default fixture account in `.env.example` does not include `report:approve`; add it
+  explicitly before testing UI approval in development.
+- 503 means reviewer accounts are not configured at all.
+
+**UI returns 401/403 on every page (locked out)**
+- `REQUIRE_API_KEY=true` is set. The API-key middleware blocks all routes except `/health`
+  and `/version`, including all `/ui/*` pages. Either disable `REQUIRE_API_KEY` for
+  private-network operator use, or configure the reverse proxy to inject the
+  `X-API-Key` header for trusted operator clients.
+
+**Intake response shows `pending_connector_review` but no report link**
+- This is expected when a live connector run requires review before a report can be
+  generated. The home page renders a banner with a link to
+  `/ui/connector-review-queue/{connector_ingest_run_id}`. Action the item in the queue,
+  then use the **Resume Report Run** form on the approved queue detail page.
+
+**Connector review action returns 409**
+- The queue item is not in a state that allows the requested action (e.g. trying to
+  approve an item that is already cancelled, or resuming a report from a non-succeeded
+  item). Navigate back to the queue detail page to check the current status.
+
+**Download link returns 409**
+- `GET /report-runs/{id}/dossier?download=1` or `GET /report-runs/{id}/artifact` returns
+  `409 Conflict` when the report has not been approved. Approve the report first via the
+  UI approval form or the API.
 
 **Verification:**
 
