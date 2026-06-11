@@ -60,5 +60,18 @@ python scripts\db_smoke_check.py
 $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
+If the local PostgreSQL client is not installed, the migration wrappers fall back to
+the `postgis/postgis:16-3.4` Docker image for `psql`. When mapping Postgres to a
+non-default host port, set both sync and app URLs before DB-backed tests:
+
+```powershell
+$env:DB_PORT='55432'
+docker compose up -d db
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence'
+$env:RUN_DB_SMOKE='1'
+.\scripts\verify.ps1
+```
+
 CI has a separate PostGIS-backed job that runs the full gate with
 `RUN_DB_SMOKE=1`. The default CI job remains the fast non-DB gate.

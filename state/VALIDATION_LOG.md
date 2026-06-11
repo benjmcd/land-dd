@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Docker-Only DB Verification Path Hardening
+
+**Scope:** Make DB migration verification usable on Docker-only Windows machines and
+avoid false success from the repo-local `local_artifacts/psql` shim when Postgres is
+mapped to a non-default host port.
+
+**Commands run:**
+
+```powershell
+docker run --rm --add-host=host.docker.internal:host-gateway postgis/postgis:16-3.4 psql postgresql://land:land@host.docker.internal:55432/land_diligence -v ON_ERROR_STOP=1 -c "SELECT 1"
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; py -3.12 .\scripts\db_smoke_check.py
+cd backend; py -3.12 -m pytest tests\test_db_migration_scripts.py -q --tb=short
+$null = [scriptblock]::Create((Get-Content .\scripts\db_apply_migrations.ps1 -Raw))
+& 'C:\Program Files\Git\bin\bash.exe' -n ./scripts/db_apply_migrations.sh
+cd backend; ruff check tests\test_db_migration_scripts.py
+cd backend; py -3.12 -m mypy tests\test_db_migration_scripts.py
+cd backend; $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence'; py -3.12 -m pytest -q tests\reports\test_job_store.py tests\api\test_report_runs_db.py tests\api\test_async_report_runs.py tests\api\test_intake.py tests\api\test_connector_review_queue_db.py --tb=short
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence'; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Dockerized `psql` connectivity to Compose PostGIS passed with `SELECT 1`.
+- `db_apply_migrations.ps1` applied all migrations and seeds through Docker fallback
+  without the prior localhost connection errors from `local_artifacts/psql`.
+- DB smoke passed against Docker PostGIS.
+- Static migration-script regression passed; PowerShell parse passed; Git Bash syntax
+  check passed for the POSIX wrapper.
+- Focused DB-backed job/report/intake/connector-review API suite passed.
+- Full DB-enabled `.\scripts\verify.ps1` passed: workspace validation ok;
+  migrations/seeds applied; backend tests passed; ruff clean; mypy clean on 288 source
+  files; DB smoke passed.
+- Post-edit Must source-readiness remained `sources=8 ready=7 blocked=1`; release
+  readiness passed; default `.\scripts\verify.ps1` passed with DB smoke skipped as
+  expected; `git diff --check` reported only the existing CRLF normalization warning
+  for `state/PROJECT_STATE.md`.
+
+**Residual risks:**
+
+- Alternate host ports require both `DATABASE_URL_SYNC` and `DATABASE_URL`; setting only
+  the sync URL leaves app-level DB tests pointed at the default app URL.
+- Hosted production blockers remain unchanged: full user auth/RBAC, hosted deployment,
+  hosted billing/log retention/alerting, automatic key rotation, and DS-017 vendor
+  selection are still outside this proof.
+
 ## 2026-06-11 Signed-Token Report Create Idempotency Hardening
 
 **Scope:** Harden signed-token `POST /report-runs` so repeated `Idempotency-Key`

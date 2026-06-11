@@ -766,6 +766,11 @@ docker compose up -d db
 .\scripts\db_apply_migrations.ps1
 ```
 
+The migration scripts can use a Dockerized `psql` client when no local PostgreSQL
+client is installed. If Postgres is mapped to a non-default host port, set both
+`DATABASE_URL_SYNC` and `DATABASE_URL` before running DB-backed tests or
+`.\scripts\verify.ps1`.
+
 For the fixture regression suite, in-memory services are used and no DB is required.
 
 ### 2. Fixture-backed AOI intake

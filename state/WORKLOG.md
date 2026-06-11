@@ -2,13 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Docker-only DB verification path hardening)
+
+- Hardened `scripts/db_apply_migrations.ps1` and `.sh` so machines without a real `psql` client can apply migrations through Dockerized `postgis/postgis:16-3.4`.
+- The Windows wrapper now ignores the repo-local `local_artifacts/psql` shim for migration application, avoiding false-positive success when an alternate host DB port is used.
+- Added a static regression test for the migration-script Docker fallback and documented that alternate-port DB-backed tests must set both `DATABASE_URL_SYNC` and `DATABASE_URL`.
+- Full DB-enabled verification passed against Docker PostGIS on host port `55432`: migrations/seeds applied, backend tests passed, ruff clean, mypy clean on 288 source files, and DB smoke passed. Post-edit default verification also passed.
+
 ## 2026-06-11 (Signed-token report create idempotency hardening)
 
 - Closed a production API ergonomics gap in signed-token `POST /report-runs`: `Idempotency-Key` now replays the same authenticated report instead of creating duplicate synchronous reports.
 - Authenticated idempotency keys are scoped by workspace and user before they reach the existing job-store ledger, so separate principals can reuse the same raw key without cross-principal replay.
 - Reusing a signed-token idempotency key with a different area or intent now returns `409 Conflict`, matching the unauthenticated async path's payload-mismatch behavior.
 - Updated the operator runbook and private MVP readiness note to document the replay behavior while preserving the accepted sync/async response-shape divergence risk.
-- Verification so far: signed-token auth/idempotency focused tests passed after an initial red proof; broader report/API/readiness tests passed with expected DB-gated skips; touched ruff/mypy checks passed. Full workspace verification is recorded in `state/VALIDATION_LOG.md`.
+- Verification: signed-token auth/idempotency focused tests passed after an initial red proof; broader report/API/readiness tests passed with expected DB-gated skips; touched ruff/mypy checks passed; full workspace verification is recorded in `state/VALIDATION_LOG.md`.
 
 ## 2026-06-11 (DS-015 NC geologic map-unit connector - 15/25 connector-ready)
 
