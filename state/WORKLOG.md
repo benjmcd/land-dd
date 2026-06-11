@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Cost-monitoring shared validator extraction)
+
+- Extracted the duplicated cost-monitoring validation logic from `scripts/run_cost_monitoring_check.ps1` and `.sh` into `scripts/cost_monitoring_check.py`.
+- Kept the Windows and POSIX cost-monitoring wrappers as thin launchers that call the same shared validator and preserve the existing `cost monitoring check: ok` success token.
+- Updated `MANIFEST.md`, the cost-monitoring runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused cost-monitoring artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope remains validate-only; hosted billing integration, production unit-cost thresholds, nonzero spend authorization, and paid-vendor enablement remain out of scope.
+
 ## 2026-06-11 (Release-package shared validator extraction)
 
 - Extracted the duplicated release-package validation logic from `scripts/run_release_package_check.ps1` and `.sh` into `scripts/release_package_check.py`.

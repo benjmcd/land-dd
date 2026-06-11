@@ -37,6 +37,9 @@ Run from the repository root:
 .\scripts\run_cost_monitoring_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/cost_monitoring_check.py` so
+local and CI validation use the same validate-only logic.
+
 The check is validate-only. It verifies that:
 
 - all Level 10 cost categories are present in `config/ops_cost_monitoring.yaml`;

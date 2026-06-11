@@ -80,6 +80,7 @@ def test_cost_monitoring_runbook_records_limits_and_validation() -> None:
 
     for phrase in (
         "run_cost_monitoring_check.ps1",
+        "scripts/cost_monitoring_check.py",
         "cost_metrics",
         "compute",
         "storage",
@@ -95,5 +96,13 @@ def test_cost_monitoring_runbook_records_limits_and_validation() -> None:
 
 
 def test_cost_monitoring_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "cost_monitoring_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_cost_monitoring_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_cost_monitoring_check.sh").is_file()
+
+
+def test_cost_monitoring_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_cost_monitoring_check.ps1", "run_cost_monitoring_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "cost_monitoring_check.py" in script
