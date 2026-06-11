@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 
-import app.connectors.epa_echo as epa_echo_module
 from app.connectors.epa_echo import (
     EPA_ECHO_CONNECTOR_NAME,
     EPA_FRS_REST_URL,
@@ -228,6 +227,7 @@ def test_facilities_found_does_not_prove_contamination_in_caveat() -> None:
         source=_source(), fetch_json=_mock_facilities_found
     ).query_bbox(area_id=area_id, bbox=_bbox())
     evidence = result.evidence_inputs[0]
+    assert evidence.caveat is not None
     assert "does not prove subject-property contamination" in evidence.caveat
 
 

@@ -70,11 +70,35 @@ from app.connectors.chatham_zoning_recorded import (
     ChathamZoningConnectorResult,
     ChathamZoningRecordedConnector,
 )
+from app.connectors.epa_echo import (
+    EPA_ECHO_CAVEAT,
+    EPA_ECHO_CONNECTOR_NAME,
+    EPA_ECHO_MAX_BBOX_DEGREES,
+    EPA_ECHO_METHOD_CODE,
+    EPA_ECHO_SPATIAL_PRECISION_METERS,
+    EPA_FRS_REST_URL,
+    EpaEchoBbox,
+    EpaEchoConnector,
+    EpaEchoConnectorError,
+    EpaEchoConnectorResult,
+)
 from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionError,
     ConnectorEvidenceIngestionResult,
     EvidenceIngestionPort,
+)
+from app.connectors.fcc_broadband import (
+    FCC_BROADBAND_API_URL,
+    FCC_BROADBAND_CAVEAT,
+    FCC_BROADBAND_CONNECTOR_NAME,
+    FCC_BROADBAND_MAX_BBOX_DEGREES,
+    FCC_BROADBAND_METHOD_CODE,
+    FCC_BROADBAND_SPATIAL_PRECISION_METERS,
+    FccBroadbandBbox,
+    FccBroadbandConnector,
+    FccBroadbandConnectorError,
+    FccBroadbandConnectorResult,
 )
 from app.connectors.fema_nfhl import (
     FEMA_NFHL_CAVEAT,
@@ -237,18 +261,6 @@ from app.connectors.usgs_water_monitoring import (
     UsgsWaterConnectorError,
     UsgsWaterConnectorResult,
     UsgsWaterMonitoringConnector,
-)
-from app.connectors.epa_echo import (
-    EPA_ECHO_CAVEAT,
-    EPA_ECHO_CONNECTOR_NAME,
-    EPA_ECHO_MAX_BBOX_DEGREES,
-    EPA_ECHO_METHOD_CODE,
-    EPA_ECHO_SPATIAL_PRECISION_METERS,
-    EPA_FRS_REST_URL,
-    EpaEchoBbox,
-    EpaEchoConnector,
-    EpaEchoConnectorError,
-    EpaEchoConnectorResult,
 )
 from app.connectors.wetlands_fixture import (
     StaticWetlandsFixtureConnector,
@@ -442,6 +454,16 @@ __all__ = [
     "EpaEchoConnector",
     "EpaEchoConnectorError",
     "EpaEchoConnectorResult",
+    "FCC_BROADBAND_API_URL",
+    "FCC_BROADBAND_CAVEAT",
+    "FCC_BROADBAND_CONNECTOR_NAME",
+    "FCC_BROADBAND_MAX_BBOX_DEGREES",
+    "FCC_BROADBAND_METHOD_CODE",
+    "FCC_BROADBAND_SPATIAL_PRECISION_METERS",
+    "FccBroadbandBbox",
+    "FccBroadbandConnector",
+    "FccBroadbandConnectorError",
+    "FccBroadbandConnectorResult",
     "WetlandsFixtureConnectorResult",
     "ZoningFixtureConnectorResult",
     "build_connector_review_handoff",

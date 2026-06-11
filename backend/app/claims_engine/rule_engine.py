@@ -1540,7 +1540,10 @@ class RuleEngine:
             area_id=area_id,
             claim_code=rule.claim_code,
             domain=rule.domain,
-            assertion="Environmental hazard screening found regulated facilities in proximity to the area.",
+            assertion=(
+                "Environmental hazard screening found regulated facilities "
+                "in proximity to the area."
+            ),
             user_safe_language=user_safe_language,
             severity=rule.severity_on_fail,
             confidence=_lowest_confidence(evidence_records),
@@ -1608,7 +1611,10 @@ class RuleEngine:
             area_id=area_id,
             claim_code=ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
             domain=rule.domain,
-            assertion="Environmental hazard evidence requires human review before rule interpretation.",
+            assertion=(
+                "Environmental hazard evidence requires human review "
+                "before rule interpretation."
+            ),
             user_safe_language=user_safe_language,
             severity=SeverityBand.UNKNOWN,
             confidence=_lowest_confidence(evidence_records),

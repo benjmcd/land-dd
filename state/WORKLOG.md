@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-021 FCC Broadband Map connector — 11/25 connector-ready)
+
+- DS-021 FCC Broadband Data Collection: `FccBroadbandConnector.query_bbox()` via public BDC API (`GET /api/public/map/listAvailability?latitude=&longitude=&unit_count=1`); `broadband` domain added (evidence-only, NOT in NOT_EVALUATED_DOMAINS); `POST /connector-runs/fcc-broadband/query-bbox` operator route; wired into request-time orchestration after DS-006.
+- `SOURCE_OBSERVATION_ALLOWED_KEYS` extended with 8 broadband fields (`has_any_broadband`, `has_high_speed_broadband`, `provider_count`, `max_download_mbps`, `max_upload_mbps`, `technology_types`, `fcc_bdc_lat`, `fcc_bdc_lon`).
+- Dossier section 12 (Internet/Connectivity) added; old sections 12–15 renumbered to 13–16. Source appendix now at `## 16.`.
+- Source review `docs/source-reviews/ds-021.md` written; registry row updated (`approved-with-restrictions`); `db/seeds/002_seed_source_registry.sql` updated; `connector_inventory.py` DS-021 entry added (`immediate_operator_api` + `request_time_orchestration`).
+- Pre-existing E501 lint in `epa_echo.py`, `rule_engine.py`, `dossier.py`, `test_rule_engine.py`, `test_dossier_enrichment.py` fixed as discovered. Import sorts in `connectors.py`, `dependencies.py`, `live_connectors.py`, `__init__.py` auto-fixed.
+- Source readiness: 11/25 connector-ready (7/8 Must, 3/x Should, 1/x Could).
+- 1313+ tests pass, mypy clean, ruff clean. `verify.ps1` green.
+
+## 2026-06-11 (Dossier confidence band + jurisdiction surfacing + DS-012 review)
+
+- Confidence band: replaced the always-"low" `_confidence_band()` with a structural-exclusion approach.  Added `_STRUCTURAL_DOMAINS` (soil_septic, parcels, resource_context, market_context, assessor) and `_STRUCTURAL_EVIDENCE_CODES` (ZONING_NOT_SCREENED sentinel).  Band is now 'unknown' when no non-structural evidence exists, 'medium' when core connectors ran with clear results, 'low' only when a core connector failed or produced ambiguous data.  3 new enrichment tests (medium/low/unknown). 1232 tests, mypy clean. Committed: `98afd51`.
+- Section 2 Jurisdiction: surfaced county name from `parcel_county` evidence field; added `parcel_county` to `SPATIAL_INTERSECTION_KEYS` whitelist; added `parcel_county: "X County, NC"` to all three county parcel connectors (Chatham, Buncombe, Brunswick); new enrichment test. Committed in prior session.
+- Section 8 Soil/Septic: surfaced SSURGO map unit names via `_soil_septic_result()`; corrected `_domain_verification`/`_domain_caveats` domain from `'soil'` → `'soil_septic'`. 2 new enrichment tests. Committed in prior session.
+- DS-012 NC county recorder (deeds/easements): source review written; status = blocked — no public REST API for NC county deed portals (iDocMarket/Laredo web-UI only). Registry updated. Committed in prior session.
+
 ## 2026-06-11 (Dossier Section 8 SSURGO surfacing fix + DS-013 blocked source review)
 
 - Section 8 (Soil/Septic): replaced hardcoded "not evaluated" with `_soil_septic_result()` which deduplicates by `soil_mapunit_key` and renders `soil_mapunit_name`/`soil_mapunit_symbol` from DS-003 SSURGO evidence; corrected `_domain_verification` and `_domain_caveats` calls from wrong domain `'soil'` to `'soil_septic'`; added caveats line to Section 8 (was missing while sections 7, 9, 11 had it).

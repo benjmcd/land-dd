@@ -1170,7 +1170,10 @@ def make_env_hazard_evidence(
     source_stale: bool = False,
 ) -> EvidenceContract:
     observed_value: dict[str, object] = {
-        "env_hazard_status": "regulated_facilities_found" if has_env_hazard_proximity else "no_regulated_facilities_found",
+        "env_hazard_status": (
+            "regulated_facilities_found" if has_env_hazard_proximity
+            else "no_regulated_facilities_found"
+        ),
         "regulated_facility_count": 2 if has_env_hazard_proximity else 0,
         "has_env_hazard_proximity": has_env_hazard_proximity,
     }

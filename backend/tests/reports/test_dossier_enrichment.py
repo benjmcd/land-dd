@@ -480,7 +480,10 @@ def test_dossier_renders_ssurgo_mapunit_from_evidence() -> None:
             evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
             domain="soil_septic",
             method_code="live_usda_ssurgo_soil_mapunit_query",
-            observation="USDA NRCS SSURGO mapunit intersects the query area for soil/septic/ag screening.",
+            observation=(
+                "USDA NRCS SSURGO mapunit intersects the query area "
+                "for soil/septic/ag screening."
+            ),
             observed_value={
                 "intersects_soil_mapunit": True,
                 "soil_mapunit_key": "123456",

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
 from urllib.request import urlopen
 from uuid import UUID, uuid5
 
@@ -27,35 +25,44 @@ from app.domain.source_contracts import (
     SourceRetrievalStatus,
 )
 
-EPA_ECHO_CONNECTOR_NAME = "epa_echo_live"
-EPA_ECHO_METHOD_CODE = "live_epa_echo_frs_facility_screen"
-EPA_ECHO_METHOD_VERSION = "0.1.0"
-EPA_FRS_REST_URL = "https://ofmpub.epa.gov/frs_public2/frs_rest_services.get_facilities"
-EPA_ECHO_MAX_BBOX_DEGREES = 0.5
-EPA_ECHO_SPATIAL_PRECISION_METERS = 500.0
-EPA_ECHO_CAVEAT = (
-    "EPA ECHO facility-proximity screening only. A nearby regulated facility does not "
-    "prove subject-property contamination, plume extent, exposure pathway, or legal "
-    "liability. ECHO reflects records in EPA program databases; unreported or "
-    "non-federally-regulated releases are outside scope. ECHO data may lag source "
-    "entry by one week to three months. EPA warrants no accuracy, completeness, or "
-    "currency of ECHO data. A Phase I/II ESA is required for regulatory and "
-    "transactional environmental due diligence. Data: U.S. Environmental Protection "
-    "Agency / ECHO (echo.epa.gov); cite facility IDs, retrieval date, and ECHO "
-    "data-refresh date with every use."
+FCC_BROADBAND_CONNECTOR_NAME = "fcc_broadband_live"
+FCC_BROADBAND_METHOD_CODE = "live_fcc_bdc_availability_screen"
+FCC_BROADBAND_METHOD_VERSION = "0.1.0"
+FCC_BROADBAND_API_URL = "https://broadbandmap.fcc.gov/api/public/map/listAvailability"
+FCC_BROADBAND_MAX_BBOX_DEGREES = 0.5
+FCC_BROADBAND_SPATIAL_PRECISION_METERS = 1000.0
+FCC_BROADBAND_CAVEAT = (
+    "FCC Broadband Data Collection availability screening only. Provider-reported coverage "
+    "does not guarantee service availability at every location; rural coverage claims are "
+    "frequently overstated by ISPs. Verify availability directly with providers before "
+    "purchasing or developing a parcel. Satellite broadband (including low-earth-orbit "
+    "services) may be available regardless of this screen. Data: Federal Communications "
+    "Commission Broadband Data Collection (broadbandmap.fcc.gov); cite retrieval date "
+    "with every use."
 )
 
-_NAMESPACE = UUID("b4e2c7a1-5d3f-4b19-8e06-2a9d7c4f1b82")
+_NAMESPACE = UUID("d7f2a4c1-8e3b-4a27-9f15-6b8c3e7d2a91")
+
+_TECH_NAMES: dict[int, str] = {
+    10: "dsl", 11: "dsl", 12: "dsl",
+    40: "cable", 41: "cable", 42: "cable",
+    50: "fiber",
+    60: "satellite",
+    61: "fixed_wireless", 62: "fixed_wireless", 70: "fixed_wireless",
+    300: "lte", 301: "lte", 302: "lte",
+}
+_HIGH_SPEED_TECHS: frozenset[int] = frozenset({40, 41, 42, 50})  # cable and fiber
+_HIGH_SPEED_MBPS_THRESHOLD = 100
 
 JsonFetcher = Callable[[str, float], Mapping[str, object]]
 
 
-class EpaEchoConnectorError(ValueError):
-    """Raised when an EPA ECHO connector request is invalid before source I/O."""
+class FccBroadbandConnectorError(ValueError):
+    """Raised when an FCC Broadband connector request is invalid before source I/O."""
 
 
 @dataclass(frozen=True)
-class EpaEchoBbox:
+class FccBroadbandBbox:
     xmin: float
     ymin: float
     xmax: float
@@ -63,17 +70,17 @@ class EpaEchoBbox:
 
     def __post_init__(self) -> None:
         if self.xmin >= self.xmax:
-            raise EpaEchoConnectorError("bbox xmin must be less than xmax")
+            raise FccBroadbandConnectorError("bbox xmin must be less than xmax")
         if self.ymin >= self.ymax:
-            raise EpaEchoConnectorError("bbox ymin must be less than ymax")
+            raise FccBroadbandConnectorError("bbox ymin must be less than ymax")
         if not (-180 <= self.xmin <= 180 and -180 <= self.xmax <= 180):
-            raise EpaEchoConnectorError("bbox longitude values must be within EPSG:4326")
+            raise FccBroadbandConnectorError("bbox longitude values must be within EPSG:4326")
         if not (-90 <= self.ymin <= 90 and -90 <= self.ymax <= 90):
-            raise EpaEchoConnectorError("bbox latitude values must be within EPSG:4326")
-        if self.xmax - self.xmin > EPA_ECHO_MAX_BBOX_DEGREES:
-            raise EpaEchoConnectorError("bbox longitude span exceeds EPA ECHO limit")
-        if self.ymax - self.ymin > EPA_ECHO_MAX_BBOX_DEGREES:
-            raise EpaEchoConnectorError("bbox latitude span exceeds EPA ECHO limit")
+            raise FccBroadbandConnectorError("bbox latitude values must be within EPSG:4326")
+        if self.xmax - self.xmin > FCC_BROADBAND_MAX_BBOX_DEGREES:
+            raise FccBroadbandConnectorError("bbox longitude span exceeds FCC Broadband limit")
+        if self.ymax - self.ymin > FCC_BROADBAND_MAX_BBOX_DEGREES:
+            raise FccBroadbandConnectorError("bbox latitude span exceeds FCC Broadband limit")
 
     @property
     def fingerprint(self) -> str:
@@ -85,24 +92,24 @@ class EpaEchoBbox:
 
 
 @dataclass(frozen=True)
-class EpaEchoConnectorResult:
+class FccBroadbandConnectorResult:
     retrieval_run: SourceRetrievalRunContract
     evidence_inputs: tuple[EvidenceContract, ...]
     observability_log: ConnectorRunObservabilityLog
     request_url: str
 
 
-class EpaEchoConnector:
-    """Bounded EPA ECHO FRS facility-proximity screening connector.
+class FccBroadbandConnector:
+    """Bounded FCC Broadband Data Collection availability screening connector.
 
-    Queries the EPA Facility Registry Service REST API for regulated facilities
-    within a search radius derived from a bounding box. Emits source-failure
-    evidence for network errors or malformed responses so a missing result never
-    becomes an implicit 'no hazard found' conclusion.
+    Queries the FCC BDC public API for broadband provider availability at the
+    center point of a bounding box. Emits source-failure evidence for network
+    errors or malformed responses so a missing result never becomes an implicit
+    'no broadband available' conclusion.
     """
 
-    connector_name = EPA_ECHO_CONNECTOR_NAME
-    domain = "env_hazard"
+    connector_name = FCC_BROADBAND_CONNECTOR_NAME
+    domain = "broadband"
 
     def __init__(
         self,
@@ -114,8 +121,8 @@ class EpaEchoConnector:
         self._source = source
         self._fetch_json = fetch_json or _fetch_json
         self._policy = policy or ConnectorPolicy(
-            rate_limit_per_minute=3,
-            timeout_seconds=30.0,
+            rate_limit_per_minute=10,
+            timeout_seconds=20.0,
             max_retries=0,
             retry_backoff_seconds=0.0,
         )
@@ -124,28 +131,26 @@ class EpaEchoConnector:
         self,
         *,
         area_id: UUID,
-        bbox: EpaEchoBbox,
-    ) -> EpaEchoConnectorResult:
+        bbox: FccBroadbandBbox,
+    ) -> FccBroadbandConnectorResult:
         log = new_observability_log()
         started_at = _utcnow()
-        center_lat, center_lon, radius_miles = _bbox_center_and_radius_miles(bbox)
+        lat, lon = _bbox_center(bbox)
+        source_registry_id = str(self._source.metadata.get("source_registry_id", ""))
         ingest_run_id = _stable_uuid(
             "retrieval",
-            str(self._source.metadata.get("source_registry_id", "")),
+            source_registry_id,
             str(area_id),
             bbox.fingerprint,
         )
-        request_url = _build_query_url(
-            lat=center_lat,
-            lon=center_lon,
-            radius_miles=radius_miles,
-        )
+        request_url = _build_request_url(lat, lon)
+
         log.record(
             ConnectorObservabilityEvent(
                 event_type=ConnectorEventType.run_started,
                 connector_name=self.connector_name,
                 ingest_run_id=ingest_run_id,
-                message="starting EPA ECHO FRS facility proximity query",
+                message="starting FCC BDC broadband availability query",
                 timestamp=started_at,
             )
         )
@@ -162,13 +167,12 @@ class EpaEchoConnector:
                 request_url=request_url,
                 started_at=started_at,
                 log=log,
-                failure_reason="epa_echo_request_error",
+                failure_reason="fcc_broadband_request_error",
                 error_message=str(exc),
-                retryable=True,
             )
 
-        results = payload.get("Results")
-        if not isinstance(results, Mapping):
+        availability_list = payload.get("availability")
+        if not isinstance(availability_list, list):
             return self._source_failure_result(
                 area_id=area_id,
                 bbox=bbox,
@@ -176,13 +180,37 @@ class EpaEchoConnector:
                 request_url=request_url,
                 started_at=started_at,
                 log=log,
-                failure_reason="epa_echo_malformed_response",
-                error_message="EPA FRS response missing 'Results' object",
-                retryable=True,
+                failure_reason="fcc_broadband_malformed_response",
+                error_message="FCC BDC response missing 'availability' list",
             )
 
-        facility_count = _parse_facility_count(results)
-        has_proximity = facility_count > 0
+        provider_count = len(availability_list)
+        technology_types = sorted(
+            set(
+                _TECH_NAMES.get(int(r.get("technology", 0)), "other")
+                for r in availability_list
+                if r.get("technology") is not None
+            )
+        )
+        max_download_mbps: int | None = max(
+            (int(r["max_download_speed"]) for r in availability_list
+             if r.get("max_download_speed")),
+            default=None,
+        )
+        max_upload_mbps: int | None = max(
+            (int(r["max_upload_speed"]) for r in availability_list if r.get("max_upload_speed")),
+            default=None,
+        )
+        has_any_broadband = provider_count > 0
+        has_high_speed_broadband = any(
+            int(r.get("technology", 0)) in _HIGH_SPEED_TECHS
+            or (
+                r.get("max_download_speed") is not None
+                and int(r["max_download_speed"]) >= _HIGH_SPEED_MBPS_THRESHOLD
+            )
+            for r in availability_list
+        )
+
         finished_at = _utcnow()
 
         retrieval_run = SourceRetrievalRunContract(
@@ -191,73 +219,59 @@ class EpaEchoConnector:
             status=SourceRetrievalStatus.SUCCEEDED,
             started_at=started_at,
             finished_at=finished_at,
-            row_count=facility_count,
+            row_count=provider_count,
             error_count=0,
             warning_count=0,
             log_uri=request_url,
             metrics={
                 "source_registry_id": self._source.metadata.get("source_registry_id"),
-                "regulated_facility_count": facility_count,
-                "center_lat": center_lat,
-                "center_lon": center_lon,
-                "radius_miles": radius_miles,
+                "provider_count": provider_count,
+                "fcc_bdc_lat": lat,
+                "fcc_bdc_lon": lon,
                 "accessed_at": finished_at.isoformat(),
             },
         )
 
-        if has_proximity:
-            confidence = ConfidenceBand.MEDIUM
-            observed_value: dict[str, object] = {
-                "has_env_hazard_proximity": True,
-                "env_hazard_status": "regulated_facilities_found",
-                "regulated_facility_count": facility_count,
-                "epa_echo_bbox": bbox.bbox_str,
-            }
-            observation = (
-                f"EPA ECHO FRS query found {facility_count} regulated "
-                "facility/facilities in proximity to the query area."
-            )
-            evidence_code = "ENV_HAZ_FACILITY_SCREEN"
-        else:
-            confidence = ConfidenceBand.LOW
-            observed_value = {
-                "no_env_hazard_proximity": True,
-                "env_hazard_status": "no_regulated_facilities_found",
-                "regulated_facility_count": 0,
-                "epa_echo_bbox": bbox.bbox_str,
-            }
-            observation = (
-                "EPA ECHO FRS query found no regulated facilities "
-                "in proximity to the query area."
-            )
-            evidence_code = "ENV_HAZ_FACILITY_SCREEN"
+        observed_value: dict[str, object] = {
+            "has_any_broadband": has_any_broadband,
+            "has_high_speed_broadband": has_high_speed_broadband,
+            "provider_count": provider_count,
+            "max_download_mbps": max_download_mbps,
+            "max_upload_mbps": max_upload_mbps,
+            "technology_types": technology_types,
+            "fcc_bdc_lat": lat,
+            "fcc_bdc_lon": lon,
+        }
 
         evidence = EvidenceContract(
             evidence_id=_stable_uuid(
                 "evidence",
-                str(self._source.metadata.get("source_registry_id", "")),
+                source_registry_id,
                 str(area_id),
                 bbox.fingerprint,
-                str(has_proximity),
+                str(has_any_broadband),
             ),
             area_id=area_id,
             evidence_type=EvidenceType.SOURCE_OBSERVATION,
-            evidence_code=evidence_code,
+            evidence_code="FCC_BROADBAND_AVAILABILITY_SCREEN",
             domain=self.domain,
-            observation=observation,
+            observation=(
+                f"FCC BDC availability screen: {provider_count} provider(s) reported; "
+                f"technologies: {technology_types}"
+            ),
             observed_value=observed_value,
             source_id=self._source.source_id,
             source_ingest_run_id=ingest_run_id,
-            method_code=EPA_ECHO_METHOD_CODE,
-            method_version=EPA_ECHO_METHOD_VERSION,
-            confidence=confidence,
-            caveat=EPA_ECHO_CAVEAT,
+            method_code=FCC_BROADBAND_METHOD_CODE,
+            method_version=FCC_BROADBAND_METHOD_VERSION,
+            confidence=ConfidenceBand.LOW,
+            caveat=FCC_BROADBAND_CAVEAT,
             is_source_failure=False,
             source_date=_utcnow().date().isoformat(),
             observed_at=finished_at,
             geometry_geojson=None,
             geometry_srid=4326,
-            spatial_precision_meters=EPA_ECHO_SPATIAL_PRECISION_METERS,
+            spatial_precision_meters=FCC_BROADBAND_SPATIAL_PRECISION_METERS,
         )
 
         log.record(
@@ -265,7 +279,7 @@ class EpaEchoConnector:
                 event_type=ConnectorEventType.evidence_stored,
                 connector_name=self.connector_name,
                 ingest_run_id=ingest_run_id,
-                message=f"EPA ECHO env_hazard evidence: {evidence.evidence_id}",
+                message=f"FCC broadband evidence: {evidence.evidence_id}",
                 timestamp=finished_at,
             )
         )
@@ -274,11 +288,11 @@ class EpaEchoConnector:
                 event_type=ConnectorEventType.run_succeeded,
                 connector_name=self.connector_name,
                 ingest_run_id=ingest_run_id,
-                message=f"EPA ECHO facility screen: facility_count={facility_count}",
+                message=f"FCC BDC availability screen: provider_count={provider_count}",
                 timestamp=finished_at,
             )
         )
-        return EpaEchoConnectorResult(
+        return FccBroadbandConnectorResult(
             retrieval_run=retrieval_run,
             evidence_inputs=(evidence,),
             observability_log=log,
@@ -289,16 +303,16 @@ class EpaEchoConnector:
         self,
         *,
         area_id: UUID,
-        bbox: EpaEchoBbox,
+        bbox: FccBroadbandBbox,
         ingest_run_id: UUID,
         request_url: str,
         started_at: datetime,
         log: ConnectorRunObservabilityLog,
         failure_reason: str,
         error_message: str,
-        retryable: bool,
-    ) -> EpaEchoConnectorResult:
+    ) -> FccBroadbandConnectorResult:
         finished_at = _utcnow()
+        source_registry_id = str(self._source.metadata.get("source_registry_id", ""))
         retrieval_run = SourceRetrievalRunContract(
             ingest_run_id=ingest_run_id,
             connector_name=self.connector_name,
@@ -311,37 +325,35 @@ class EpaEchoConnector:
             log_uri=request_url,
             metrics={
                 "source_registry_id": self._source.metadata.get("source_registry_id"),
-                "regulated_facility_count": 0,
+                "provider_count": 0,
                 "failure_reason": failure_reason,
                 "error_message": error_message,
-                "retryable": retryable,
                 "accessed_at": finished_at.isoformat(),
             },
         )
         evidence = EvidenceContract(
             evidence_id=_stable_uuid(
                 "source-failure",
-                str(self._source.metadata.get("source_registry_id", "")),
+                source_registry_id,
                 str(area_id),
                 bbox.fingerprint,
                 failure_reason,
             ),
             area_id=area_id,
             evidence_type=EvidenceType.SOURCE_FAILURE,
-            evidence_code="ENV_HAZ_SOURCE_UNAVAILABLE",
+            evidence_code="BROADBAND_SOURCE_UNAVAILABLE",
             domain=self.domain,
-            observation="EPA ECHO facility proximity query did not produce usable source data.",
+            observation="FCC BDC broadband availability query did not produce usable source data.",
             observed_value={
                 "failure_reason": failure_reason,
                 "error_message": error_message,
-                "retryable": retryable,
             },
             source_id=self._source.source_id,
             source_ingest_run_id=ingest_run_id,
-            method_code=EPA_ECHO_METHOD_CODE,
-            method_version=EPA_ECHO_METHOD_VERSION,
+            method_code=FCC_BROADBAND_METHOD_CODE,
+            method_version=FCC_BROADBAND_METHOD_VERSION,
             confidence=ConfidenceBand.UNKNOWN,
-            caveat=EPA_ECHO_CAVEAT,
+            caveat=FCC_BROADBAND_CAVEAT,
             is_source_failure=True,
             observed_at=finished_at,
         )
@@ -350,7 +362,7 @@ class EpaEchoConnector:
                 event_type=ConnectorEventType.source_failure_stored,
                 connector_name=self.connector_name,
                 ingest_run_id=ingest_run_id,
-                message=f"EPA ECHO source failure: {failure_reason}",
+                message=f"FCC broadband source failure: {failure_reason}",
                 timestamp=finished_at,
             )
         )
@@ -363,7 +375,7 @@ class EpaEchoConnector:
                 timestamp=finished_at,
             )
         )
-        return EpaEchoConnectorResult(
+        return FccBroadbandConnectorResult(
             retrieval_run=retrieval_run,
             evidence_inputs=(evidence,),
             observability_log=log,
@@ -371,39 +383,14 @@ class EpaEchoConnector:
         )
 
 
-def _build_query_url(*, lat: float, lon: float, radius_miles: float) -> str:
-    params = urlencode({
-        "output": "JSON",
-        "lat83": f"{lat:.6f}",
-        "long83": f"{lon:.6f}",
-        "search_radius": f"{radius_miles:.2f}",
-    })
-    return f"{EPA_FRS_REST_URL}?{params}"
-
-
-def _bbox_center_and_radius_miles(bbox: EpaEchoBbox) -> tuple[float, float, float]:
+def _bbox_center(bbox: FccBroadbandBbox) -> tuple[float, float]:
     lat = (bbox.ymin + bbox.ymax) / 2.0
     lon = (bbox.xmin + bbox.xmax) / 2.0
-    lat_span_miles = (bbox.ymax - bbox.ymin) * 69.0
-    lon_span_miles = (bbox.xmax - bbox.xmin) * 69.0 * math.cos(math.radians(lat))
-    radius = math.sqrt((lat_span_miles / 2.0) ** 2 + (lon_span_miles / 2.0) ** 2)
-    radius = max(0.5, min(radius, 25.0))
-    return lat, lon, radius
+    return lat, lon
 
 
-def _parse_facility_count(results: Mapping[str, object]) -> int:
-    total = results.get("TotalFacilityCount")
-    if total is not None:
-        try:
-            count = int(str(total))
-            if count >= 0:
-                return count
-        except (ValueError, TypeError):
-            pass
-    facilities = results.get("FRSFacility")
-    if isinstance(facilities, list):
-        return len(facilities)
-    return 0
+def _build_request_url(lat: float, lon: float) -> str:
+    return f"{FCC_BROADBAND_API_URL}?latitude={lat:.6f}&longitude={lon:.6f}&unit_count=1"
 
 
 def _fetch_json(url: str, timeout_seconds: float) -> Mapping[str, object]:
@@ -411,7 +398,7 @@ def _fetch_json(url: str, timeout_seconds: float) -> Mapping[str, object]:
         payload = response.read().decode("utf-8")
     parsed = json.loads(payload)
     if not isinstance(parsed, Mapping):
-        raise ValueError("EPA FRS response root must be a JSON object")
+        raise ValueError("FCC BDC response root must be a JSON object")
     return cast(Mapping[str, object], parsed)
 
 
@@ -424,14 +411,15 @@ def _utcnow() -> datetime:
 
 
 __all__ = [
-    "EPA_ECHO_CAVEAT",
-    "EPA_ECHO_CONNECTOR_NAME",
-    "EPA_ECHO_MAX_BBOX_DEGREES",
-    "EPA_ECHO_METHOD_CODE",
-    "EPA_ECHO_SPATIAL_PRECISION_METERS",
-    "EPA_FRS_REST_URL",
-    "EpaEchoBbox",
-    "EpaEchoConnector",
-    "EpaEchoConnectorError",
-    "EpaEchoConnectorResult",
+    "FCC_BROADBAND_API_URL",
+    "FCC_BROADBAND_CAVEAT",
+    "FCC_BROADBAND_CONNECTOR_NAME",
+    "FCC_BROADBAND_MAX_BBOX_DEGREES",
+    "FCC_BROADBAND_METHOD_CODE",
+    "FCC_BROADBAND_SPATIAL_PRECISION_METERS",
+    "FccBroadbandBbox",
+    "FccBroadbandConnector",
+    "FccBroadbandConnectorError",
+    "FccBroadbandConnectorResult",
+    "JsonFetcher",
 ]

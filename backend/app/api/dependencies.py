@@ -29,6 +29,8 @@ from app.connectors import (
 from app.connectors.brunswick_parcels import JsonFetcher as BrunswickParcelsJsonFetcher
 from app.connectors.buncombe_parcels import JsonFetcher as BuncombeParcelsJsonFetcher
 from app.connectors.chatham_parcels import JsonFetcher as ChathamParcelsJsonFetcher
+from app.connectors.epa_echo import JsonFetcher as EpaEchoJsonFetcher
+from app.connectors.fcc_broadband import JsonFetcher as FccBroadbandJsonFetcher
 from app.connectors.fema_nfhl import JsonFetcher
 from app.connectors.live_jobs import (
     InMemoryLiveConnectorJobStore,
@@ -39,7 +41,6 @@ from app.connectors.nwi import NwiJsonFetcher
 from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
 from app.connectors.ssurgo import SsurgoJsonFetcher
 from app.connectors.usgs_tnm import UsgsTnmJsonFetcher
-from app.connectors.epa_echo import JsonFetcher as EpaEchoJsonFetcher
 from app.connectors.usgs_water_monitoring import JsonFetcher as UsgsWaterJsonFetcher
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
@@ -87,6 +88,7 @@ class ApiServices:
     osm_road_access_fetch_json: OsmRoadAccessJsonFetcher | None = None
     usgs_water_fetch_json: UsgsWaterJsonFetcher | None = None
     epa_echo_fetch_json: EpaEchoJsonFetcher | None = None
+    fcc_broadband_fetch_json: FccBroadbandJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

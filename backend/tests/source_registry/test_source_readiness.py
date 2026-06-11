@@ -64,6 +64,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-010",
         "DS-011",
         "DS-016",
+        "DS-021",
         "DS-023",
     ]
     usgs = next(record for record in records if record.source_registry_id == "DS-001")

@@ -118,7 +118,7 @@ def _assert_no_forbidden_phrases(dossier: str) -> None:
 
 def _assert_dossier_structure(dossier: str) -> None:
     assert "## 1. Executive Summary" in dossier
-    assert "## 15. Source Appendix" in dossier
+    assert "## 16. Source Appendix" in dossier
     # screening disclaimer always present
     assert "Screening output only" in dossier
     # not-determined language always appears in at least one section
@@ -127,7 +127,7 @@ def _assert_dossier_structure(dossier: str) -> None:
 
 def _assert_source_citation(dossier: str) -> None:
     # Source Appendix must be non-empty (at minimum the NOT_EVALUATED source appears)
-    appendix_start = dossier.find("## 15. Source Appendix")
+    appendix_start = dossier.find("## 16. Source Appendix")
     assert appendix_start >= 0
     appendix_text = dossier[appendix_start:]
     assert NOT_EVALUATED_SOURCE_NAME in appendix_text or "screening input" in appendix_text, (

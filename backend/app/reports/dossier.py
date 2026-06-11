@@ -114,26 +114,31 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Caveats: {_domain_caveats(report_run, {'env_hazard'})}",
         f"- Required verification: {_domain_verification(report_run, 'env_hazard')}",
         "",
-        "## 12. Market Context",
+        "## 12. Internet / Connectivity",
+        f"- Broadband availability: {_broadband_result(report_run)}",
+        f"- Caveats: {_domain_caveats(report_run, {'broadband'})}",
+        f"- Required verification: {_domain_verification(report_run, 'broadband')}",
+        "",
+        "## 13. Market Context",
         "",
         "- Price/acre: not evaluated",
         "- Nearby comps/listings: not evaluated",
         "- Liquidity context: unknown",
         "- Caveats: no appraisal, valuation, or investment conclusion is provided",
         "",
-        "## 13. Unknowns",
+        "## 14. Unknowns",
         "",
         "| Domain | Unknown | Why unknown | How to resolve |",
         "|---|---|---|---|",
         *_unknown_rows(report_run),
         "",
-        "## 14. Verification Plan",
+        "## 15. Verification Plan",
         "",
         "| Priority | Task | Who to contact | Evidence to request |",
         "|---|---|---|---|",
         *_verification_rows(report_run),
         "",
-        "## 15. Source Appendix",
+        "## 16. Source Appendix",
         "",
         "| Source | Version/date | Use | Caveat | URL |",
         "|---|---|---|---|---|",
@@ -513,10 +518,41 @@ def _env_hazard_result(report_run: ReportRunContract) -> str:
     return "; ".join(parts) if parts else _domain_summary(report_run, "env_hazard")
 
 
-def _soil_septic_result(report_run: ReportRunContract) -> str:
-    records = [r for r in report_run.evidence if r.domain == "soil_septic" and not r.is_source_failure]
+def _broadband_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence
+               if r.domain == "broadband" and not r.is_source_failure]
     if not records:
-        failures = [r for r in report_run.evidence if r.domain == "soil_septic" and r.is_source_failure]
+        failures = [r for r in report_run.evidence
+                    if r.domain == "broadband" and r.is_source_failure]
+        if failures:
+            return "source failure — broadband availability data unavailable"
+        return "not evaluated"
+    record = records[0]
+    parts: list[str] = []
+    provider_count = record.observed_value.get("provider_count")
+    max_dl = record.observed_value.get("max_download_mbps")
+    tech_types = record.observed_value.get("technology_types")
+    has_any = record.observed_value.get("has_any_broadband")
+    has_high = record.observed_value.get("has_high_speed_broadband")
+    if has_any is False:
+        return "no providers reported in FCC BDC for this area"
+    if provider_count is not None:
+        parts.append(f"{provider_count} provider(s) reported")
+    if tech_types and isinstance(tech_types, list) and tech_types:
+        parts.append("technologies: " + ", ".join(str(t) for t in tech_types))
+    if max_dl is not None:
+        parts.append(f"max download: {max_dl} Mbps")
+    if has_high:
+        parts.append("high-speed available (≥100 Mbps or fiber/cable)")
+    return "; ".join(parts) if parts else "broadband data available (see source appendix)"
+
+
+def _soil_septic_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence
+               if r.domain == "soil_septic" and not r.is_source_failure]
+    if not records:
+        failures = [r for r in report_run.evidence
+                    if r.domain == "soil_septic" and r.is_source_failure]
         if failures:
             return "source failure — soil data unavailable"
         return "not evaluated"

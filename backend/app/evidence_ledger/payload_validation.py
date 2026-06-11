@@ -60,6 +60,15 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "has_env_hazard_proximity",
     "no_env_hazard_proximity",
     "regulated_facility_count",
+    # broadband connector fields (DS-021)
+    "fcc_bdc_lat",
+    "fcc_bdc_lon",
+    "has_any_broadband",
+    "has_high_speed_broadband",
+    "max_download_mbps",
+    "max_upload_mbps",
+    "provider_count",
+    "technology_types",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
