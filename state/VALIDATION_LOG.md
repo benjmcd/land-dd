@@ -2,6 +2,40 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Interrupted Tail Cleanup - OSM/NOAA Tests + Release Readiness
+
+**Scope:** Re-audit the interrupted Claude session tail, resolve OSM road-access API test failures, bring NOAA/OSM API tests into the local test surface, and align release-readiness proof with current Must-source readiness.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\connectors\test_osm_road_access_connector.py tests\api\test_osm_road_access_connector_api.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\connectors\test_noaa_climate_connector.py tests\api\test_noaa_climate_connector_api.py tests\connectors\test_osm_road_access_connector.py tests\api\test_osm_road_access_connector_api.py -q --tb=short
+py -3.12 scripts\source_readiness.py --priority Must
+py -3.12 scripts\source_readiness.py
+.\scripts\run_release_readiness_check.ps1
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\test_release_readiness_artifacts.py tests\connectors\test_osm_road_access_connector.py tests\api\test_osm_road_access_connector_api.py tests\connectors\test_noaa_climate_connector.py tests\api\test_noaa_climate_connector_api.py -q --tb=short
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- OSM road-access connector/API focused tests passed (`30 passed`).
+- NOAA + OSM connector/API focused tests passed (`69 passed`).
+- Source-readiness CLI reported Must `sources=8 ready=7 blocked=1`; only DS-017 remains blocked at Must priority.
+- Source-readiness CLI reported all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS remains blocked and is the next public-source candidate.
+- Release-readiness proof passed after updating expected Must counts to `ready=7 blocked=1`.
+- Combined source-readiness/release-readiness/OSM/NOAA focused tests passed (`83 passed`).
+- `git diff --check` reported no whitespace errors; it warned that `state/PROJECT_STATE.md` line endings will normalize from CRLF to LF when Git next touches it.
+- Default `.\scripts\verify.ps1` passed: workspace validation and structural invariants ok; backend tests green; ruff clean; mypy clean on 275 source files; DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- DB smoke was not run in this pass; run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available.
+- DS-017 remains blocked by vendor/license/cost decision.
+- DS-022 Census TIGER/ACS remains blocked until source review, field policy, registry/seed updates, connector inventory, connector/API tests, and source-readiness proof are completed.
+
 ## 2026-06-11 DS-010 Buncombe/Brunswick + DS-023 + DS-011 connector closure
 
 **Scope:** DS-023 ChathamZoningRecordedConnector orchestration wiring; DS-010 live connectors for Buncombe and Brunswick counties; DS-011 explicit AssessorNotEvaluatedConnector.

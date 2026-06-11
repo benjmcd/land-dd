@@ -246,7 +246,6 @@ class OsmRoadAccessConnector:
                 "has_public_road_adjacency": False,
                 "public_road_adjacency": False,
                 "no_public_road_adjacency": True,
-                "road_distance_m": None,
                 "road_count": 0,
                 "osm_query_bbox": bbox.overpass_bbox,
                 "lookup_type": "live_overpass",

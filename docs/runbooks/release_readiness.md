@@ -31,7 +31,7 @@ The check is validate-only. It verifies that:
   `container-image-scan`, `access-control`, `image-publication`, `hosted-deployment`, and
   `release-readiness` jobs;
 - the `release-readiness` CI job runs the POSIX readiness proof;
-- current Must-source readiness remains explicit about `sources=8 ready=6 blocked=2`;
+- current Must-source readiness remains explicit about `sources=8 ready=7 blocked=1`;
 - the local release package boundary and builders are validated by
   `scripts/run_release_package_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;
@@ -65,8 +65,8 @@ The check is validate-only. It verifies that:
   created by this proof.
 - No published registry-image attestation, signed image SBOM, or SLSA provenance
   attestation exists yet.
-- County assessor, commercial parcel vendor, and local zoning sources remain blocked
-  until jurisdiction, license, cost, source-rights, and connector-surface decisions
-  are made. Chatham County parcels (DS-010) are ready only for immediate operator
-  API and request-time orchestration surfaces; durable live-job support is not
-  claimed for DS-010.
+- Commercial parcel vendor data (DS-017) remains blocked until vendor, license, cost,
+  source-rights, and connector-surface decisions are made. DS-011 is connector-ready
+  only as explicit not-evaluated source-failure evidence, not live assessor data.
+  DS-010 parcel connectors are ready only for immediate operator API and request-time
+  orchestration surfaces; durable live-job support is not claimed for DS-010.

@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Interrupted tail cleanup - OSM API tests + release-readiness drift)
+
+- Re-reviewed interrupted Claude tail against live repo state. Current source readiness is Must `sources=8 ready=7 blocked=1` (DS-017 only) and all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS remains the next public-source candidate.
+- Fixed OSM road-access no-roads API path: `OsmRoadAccessConnector` now omits unknown `road_distance_m` instead of emitting `None`, preserving `no_public_road_adjacency=true` and `road_count=0` so evidence-ledger validation accepts the succeeded no-road result.
+- Updated OSM API tests to match the connector's canonical evidence contract: `EvidenceType.SPATIAL_INTERSECTION`, domain `access`, and no `road_distance_m` field for no-road evidence.
+- Added interrupted-tail NOAA/OSM API test coverage files to the worktree and verified NOAA/OSM connector/API focused tests.
+- Updated source-readiness closure plan, release-readiness scripts/tests/runbook, `tasks/task_queue.yaml`, and `state/PROJECT_STATE.md` to align with Must `ready=7 blocked=1` and all-priority `ready=12 blocked=13`.
+- Verification: OSM focused tests passed (`30 passed`); NOAA+OSM connector/API tests passed (`69 passed`); release-readiness proof passed; combined focused test set passed (`83 passed`); default `.\scripts\verify.ps1` passed with backend tests, ruff, mypy, and structural checks green. DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-11 (DS-020 NOAA NWS climate connector — 12/25 connector-ready)
 
 - DS-020 NOAA NWS: `NoaaClimateConnector.query_bbox()` via NOAA NWS `api.weather.gov/points/{lat},{lon}`; domain `climate`; evidence code `NWS_CLIMATE_ZONE` (SOURCE_OBSERVATION, ConfidenceBand.HIGH); two-call chain: points → forecast zone name (graceful fallback); mandatory `Accept: application/geo+json` + `User-Agent` headers.

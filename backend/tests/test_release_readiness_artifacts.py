@@ -144,7 +144,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "image-publication",
         "hosted-deployment",
         "release-readiness",
-        "sources=8 ready=6 blocked=2",
+        "sources=8 ready=7 blocked=1",
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
@@ -172,7 +172,7 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
         for source in payload["sources"]
         if source["connector_ready"] is False
     }
-    assert {"DS-017"}.issubset(blocked)
+    assert blocked == {"DS-017"}
     assert "DS-011" not in blocked
     ds010 = next(
         source
@@ -194,9 +194,10 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     ):
         script = script_path.read_text(encoding="utf-8")
 
-        assert "ready_count\") == 6" in script or 'ready_count") == 6' in script
-        assert "blocked_count\") == 2" in script or 'blocked_count") == 2' in script
-        assert '{"DS-011", "DS-017"}' in script
+        assert "ready_count\") == 7" in script or 'ready_count") == 7' in script
+        assert "blocked_count\") == 1" in script or 'blocked_count") == 1' in script
+        assert '{"DS-017"}' in script
+        assert '{"DS-011", "DS-017"}' not in script
         assert '{"DS-011", "DS-017", "DS-023"}' not in script
 
 

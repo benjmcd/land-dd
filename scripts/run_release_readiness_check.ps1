@@ -185,14 +185,14 @@ def validate_source_readiness() -> None:
     )
     payload = json.loads(result.stdout)
     require(payload.get("source_count") == 8, "Must source count changed without release catalog update")
-    require(payload.get("ready_count") == 6, "Must ready count changed without release catalog update")
-    require(payload.get("blocked_count") == 2, "Must blocked count changed without release catalog update")
+    require(payload.get("ready_count") == 7, "Must ready count changed without release catalog update")
+    require(payload.get("blocked_count") == 1, "Must blocked count changed without release catalog update")
     blocked = {
         str(source.get("source_registry_id"))
         for source in payload.get("sources", [])
         if source.get("connector_ready") is False
     }
-    require({"DS-011", "DS-017"}.issubset(blocked), "expected Must-source blockers missing")
+    require(blocked == {"DS-017"}, "expected Must-source blocker set changed")
 
 
 def validate_runbook() -> None:
@@ -210,7 +210,7 @@ def validate_runbook() -> None:
         "image-publication",
         "hosted-deployment",
         "release-readiness",
-        "sources=8 ready=5 blocked=3",
+        "sources=8 ready=7 blocked=1",
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",

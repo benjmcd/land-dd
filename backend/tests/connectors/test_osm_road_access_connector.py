@@ -185,7 +185,7 @@ def test_no_road_emits_low_confidence_spatial_intersection_evidence() -> None:
     assert evidence.observed_value["has_public_road_adjacency"] is False
     assert evidence.observed_value["public_road_adjacency"] is False
     assert evidence.observed_value["no_public_road_adjacency"] is True
-    assert evidence.observed_value["road_distance_m"] is None
+    assert "road_distance_m" not in evidence.observed_value
     assert evidence.observed_value["road_count"] == 0
 
 

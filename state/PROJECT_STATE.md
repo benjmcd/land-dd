@@ -1,10 +1,22 @@
 # Project State
 
+## Current checkpoint (2026-06-11 tail cleanup)
+
+Authoritative current source-readiness checks:
+
+- Must priority: `sources=8 ready=7 blocked=1`; DS-017 Commercial parcel vendor is the only Must blocker.
+- All priorities: `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS is the next public-source candidate to review/implement after the interrupted DS-020/OSM tail cleanup.
+- Active plan: `plans/2026-06-06-source-readiness-closure.md`.
+- Tail cleanup in this pass: OSM road-access no-road evidence now omits unknown `road_distance_m` so ledger validation succeeds; OSM API tests assert the connector's canonical `SPATIAL_INTERSECTION` / `access` evidence contract; release-readiness proof now expects Must `ready=7 blocked=1`.
+- DB smoke remains a separate proof: default verification does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
+
+Older entries below remain historical unless they match the checks above.
+
 ## MILESTONE_MAP status block
 
 ```text
 Current milestone: Level 10 - Production Hardening (partial)
-Milestone status: PARTIAL PASS for settings-backed scoped reviewer auth, production API-key middleware with raw-or-sha256 configured secrets, configured static API-key lifecycle specs, and structured API-key auth audit logs plus DB-backed API-key auth events, default-off rate limiting, backend Docker/Compose service, structured JSON logging, structured runtime metrics, container build/runtime smoke, fail-closed connector source-use preflight, source-readiness audit reporting, reviewed source-rights candidates (DS-001 USGS The National Map, DS-002 FEMA NFHL, DS-003 USDA Web Soil Survey/SSURGO, and DS-004 National Wetlands Inventory), bounded DS-001 USGS TNM EPQS connector-layer terrain-relief screening plus controlled DS-001 API/operator invocation, explicit durable DS-001 live connector scheduling, and request-time DS-001 orchestration, bounded DS-002 FEMA NFHL live connector, bounded DS-003 USDA SSURGO connector plus controlled DS-003 API/operator invocation, explicit durable DS-003 live connector scheduling, and request-time DS-003 report integration with an UNKNOWN SSURGO screening-review claim, bounded DS-004 National Wetlands Inventory connector, controlled DS-002 API/operator invocation, controlled DS-004 API/operator invocation, explicit durable DS-002 and DS-004 live connector scheduling, read-only live connector job status API, bounded supervised live connector worker command, opt-in Compose live connector worker profile, connector review closeout actions, durable connector reviewer action history, approved connector evidence report gating, in-memory and DB-backed connector-to-report operator regressions, request-time DS-001, DS-002, DS-004, and DS-003 orchestration for intake/report-run flows, file-backed DS-004 raw response fixture corpus, API 422 deprecation cleanup, live connector sequence scheduling, failed report job retry with lineage, backup/restore proof, repo-local alert-rule catalog with validate-only proof, CI supply-chain dependency vulnerability scanning and update hygiene, backend production dependency lock/SBOM provenance proof, backend dependency lock/SBOM artifact attestation proof, backend container image/base-image scan proof, digest-pinned backend Docker base-image proof, repo-local cost monitoring catalog with validate-only guardrails and report zero-dollar cost attribution, repo-local release readiness catalog with validate-only proof, local release package ZIP/manifest builder with validate-only proof, repo-local image publication readiness catalog with validate-only proof, repo-local hosted deployment readiness catalog with validate-only proof, repo-local access-control posture catalog with validate-only proof, scoped local reviewer authorization with raw-or-sha256 configured service-account tokens for protected operator routes, explicit post-approval connector report resume, SQLAlchemy source placeholder URL hardening, and DB-backed async report job persistence; DS-010 County GIS parcels reviewed and connector-ready for all three private-MVP counties (Chatham, Buncombe, Brunswick) with county-dispatch orchestration; DS-023 (Chatham County UDO zoning) reviewed, approved-with-restrictions, and connector-ready; DS-023 Brunswick County UDO zoning connector-ready (BrunswickZoningRecordedConnector, 12 base + 5 overlay districts per UDO rev 2024-08-19, wired into request-time orchestration and operator API POST /connector-runs/brunswick-zoning/query-district); DS-011 connector-ready (AssessorNotEvaluatedConnector records explicit ASSESSOR_NOT_EVALUATED SOURCE_FAILURE evidence in the ledger for every area query; source readiness now 7/8 Must); DS-016 OSM road access connector-ready (OsmRoadAccessConnector via Overpass API, immediate_operator_api + request_time_orchestration, road_access domain wired with ROAD_001 hard-gate); DS-005 USGS Water Monitoring connector-ready (UsgsWaterMonitoringConnector via USGS NWIS REST, immediate_operator_api + request_time_orchestration, water domain promoted from NOT_EVALUATED — NOT_EVALUATED_DOMAINS now 5); DS-006 EPA ECHO connector-ready (EpaEchoConnector via EPA FRS REST, immediate_operator_api + request_time_orchestration, env_hazard domain promoted from NOT_EVALUATED — ENV_G001 gate uses env_hazard_facility_proximity condition, severity=high, 3 req/min rate limit); source readiness now 11/25 connector-ready (7/8 Must, 3/x Should, 1/x Could — DS-021 FCC Broadband added); DS-017 remains blocked by vendor/license decision. Lane 3 (Chatham Parcel/Zoning Utility Slice) complete: PARCEL_SCREEN_G001 rule, _parcel_screen_claim(), _is_county_parcel_screen_evidence(), and _parcel_zoning() dossier field wired; 880 tests pass. Lane 4 (Chatham Orchestration Loop Wiring + Dossier Acreage Fallback) complete: ChathamParcelsOrchestrationResult in union, conditional orchestration via _source_registry_id_available(), _parcel_acreage() total_acres_approx fallback; 882 tests pass. Lane 5 (Chatham Parcel Report Regression + Dossier Zoning Assertion) complete: report regression covers COUNTY_PARCEL_INTERSECTION -> PARCEL_SCREEN_001 plus non-parcel NOT_EVALUATED claims; dossier Section 2 asserts parcel zoning; 883 tests pass. Source-readiness closure routing fix: task_queue.yaml active_plan now points to plans/2026-06-06-source-readiness-closure.md (was private-mvp-utility-proof); DS-023 explicit pending decision and DS-011 Chatham field policy recorded; operator runbook dossier route notation fixed ({report_run_id} consistent); source readiness unchanged at ready=5 blocked=3.
+Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=12 blocked=13. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, and DS-020 NOAA NWS climate/weather. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-022 Census TIGER/ACS is the next public-source candidate; DS-017 remains vendor/license blocked.
 Last verified: 2026-06-11
 Verification command(s):
 - cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/test_release_readiness_artifacts.py
@@ -378,12 +390,15 @@ Completion evidence:
 - scripts/run_backup_restore_check.sh
 - docs/runbooks/backup_restore.md
 Next lowest-dependency task:
-- US-073 through US-082 complete (load test, security scan, data retention, checklists, DB
-  pool, performance runbook, lineage/compare/diff APIs). 794 tests pass, 216 mypy files clean.
-- Remaining achievable L10 work: review remaining blocked `Must` sources, add concurrency
-  load test (locust/k6), wire operator report export (PDF/JSON artifact download), or add
-  Web UI improvements for the operator workflow. Hosted auth/RBAC, billing, and log
-  retention remain blocked on external infrastructure.
+- Finish the interrupted tail cleanup: keep OSM/NOAA connector API tests in the repo test
+  surface, keep release-readiness scripts/runbook aligned to Must `sources=8 ready=7
+  blocked=1`, and run focused plus default verification.
+- Next source-readiness expansion candidate: DS-022 Census TIGER/ACS, because it is public
+  and non-vendor-blocked. Start with source review/terms/field policy before registry,
+  seed, connector inventory, connector/API, or report changes.
+- Remaining L10 hardening: DB-enabled local verifier proof, hosted auth/RBAC, secret-manager
+  integration, key rotation, hosted log retention, billing reconciliation, image publication
+  attestation, hosted deployment proof, hosted alerting, and recovery/ops drills.
 Do not work on yet:
 - Live connectors other than DS-001 USGS TNM, DS-002 FEMA NFHL, DS-003 SSURGO, DS-004 NWI,
   DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-010 county GIS parcels (Chatham/Buncombe/Brunswick),
@@ -405,10 +420,8 @@ source registry -> area geometry -> evidence -> claim -> report run -> API respo
 
 ## Active plan (overall)
 
-`plans/2026-06-10-operator-complete-surface.md` (completed 2026-06-10; supersedes the
-operator-surface scope of `plans/2026-06-05-l10-production-hardening.md`; builds on the
-completed `plans/2026-06-06-private-mvp-utility-proof.md`). No new active plan has been
-opened; see "Last verified state" for the next-task recommendation.
+`plans/2026-06-06-source-readiness-closure.md` is active for the current tail cleanup and
+next source-readiness pass. The operator-complete surface plan remains completed history.
 
 ## 4-lane agent architecture (active)
 
@@ -849,18 +862,21 @@ with `DS-010`, `DS-011`, `DS-017`, and `DS-023` blocked.
 
 ## Active lane: Source Readiness Closure (2026-06-07)
 
-Goal: continue DS-011/DS-023 closure and DB-proof unblock without overclaiming
-private MVP or Level 10 production readiness.
+Goal: keep source-readiness truth aligned with live repo evidence, complete interrupted
+OSM/NOAA/release-readiness tail cleanup, and choose the next public-source pass without
+overclaiming private MVP or Level 10 production readiness.
 
 Current state:
 
 | Item | Status | Evidence |
 |---|---|---|
-| DB-enabled local verifier | blocked locally | `RUN_DB_SMOKE=1 .\scripts\verify.ps1` fails at `psql not found`; no local `docker`, `psql`, `pg_dump`, or Postgres listener found |
-| DS-011 County assessor | pending | Official candidate county sources identified; no endpoint/terms/field policy/connector selected |
+| DB-enabled local verifier | separate proof | Run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available; default verify does not prove DB smoke |
+| DS-011 County assessor | connector-ready as not-evaluated evidence | `AssessorNotEvaluatedConnector.query_area()` records explicit ASSESSOR_NOT_EVALUATED SOURCE_FAILURE evidence; this is not live assessor data |
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
-| DS-023 Local zoning ordinance PDFs | connector-ready, wired | ChathamZoningRecordedConnector wired into orchestration and API 2026-06-10; silent post-DS-010 step; POST /connector-runs/chatham-zoning/query-district endpoint added |
-| DS-023 orchestration wiring | complete | `orchestrate_chatham_zoning_for_area()`, `_extract_chatham_parcel_zoning_code()`, payload validation allowlist extended, OpenAPI stubs regenerated |
+| DS-020 NOAA NWS climate/weather | connector-ready | Bounded point/forecast-zone connector; administrative weather-zone context only, not climate normals or agricultural risk conclusions |
+| DS-022 Census TIGER/ACS | blocked | Next public-source candidate; needs source review, field policy, registry/seed updates, connector inventory, connector/API tests, and readiness proof |
+| DS-023 Local zoning ordinance PDFs | connector-ready, wired | Recorded-fixture zoning district connectors for reviewed county UDO tables; no live PDF retrieval or legal zoning conclusion claimed |
+| DS-023 orchestration wiring | complete | Chatham/Brunswick zoning recorded-fixture orchestration and operator routes wired |
 | DS-010 Buncombe parcel connector | complete | `buncombe_parcels.py`; ArcGIS property_bc_dis MapServer/1; pinnum/Acreage (no zoning field); county dispatch via centroid bounds |
 | DS-010 Brunswick parcel connector | complete | `brunswick_parcels.py`; ArcGIS TaxParcels FeatureServer/0; PIN/CALCAC/Zoning; county dispatch; zoning available |
 | DS-010 county dispatch | complete | `_classify_area_county()` with NC coordinate bounds; Buncombe/Brunswick orchestration functions wired; API routes added |
@@ -879,21 +895,20 @@ Key artifacts:
 - `scripts/source_readiness.py`
 - `backend/tests/source_registry/test_source_readiness.py`
 
-Current Must-source readiness: `sources=8 ready=6 blocked=2`. DS-001, DS-002,
-DS-003, DS-004, DS-010, and DS-023 are connector-ready. DS-011 and DS-017 remain
-not connector-ready. DS-023 closure uses a recorded-fixture approach for Chatham
-County UDO (effective 2025-07-01) — district-code lookup only; no raw PDF
-redistribution; screens at `immediate_operator_api` and
-`request_time_orchestration` surfaces. DS-010 readiness is scoped to
-`immediate_operator_api` and `request_time_orchestration`; durable live-job
-support is not claimed for DS-010.
+Current Must-source readiness: `sources=8 ready=7 blocked=1`. DS-001, DS-002,
+DS-003, DS-004, DS-010, DS-011, and DS-023 are connector-ready. DS-017 remains
+blocked by license/cost/vendor decision. DS-023 readiness uses recorded-fixture
+district-code lookup only; no raw PDF redistribution, live amendment tracking, or
+legal zoning conclusion is claimed. DS-010 readiness is scoped to
+`immediate_operator_api` and `request_time_orchestration`; durable live-job support
+is not claimed for DS-010. Current all-priority readiness: `sources=25 ready=12
+blocked=13`; DS-022 remains the next public-source candidate.
 
-Last verified: 2026-06-10 — DS-010 Buncombe/Brunswick parcel connectors complete
-(commit 5b4ca12); 1071 passed, 78 skipped; ruff clean; mypy clean over 254 source
-files; `.\scripts\verify.ps1` → `verify: ok`; DB smoke skipped. DS-010 now covers
-all three private-MVP counties (Chatham, Buncombe, Brunswick) with county dispatch.
-DS-011 remains blocked (machine-access terms not reviewed). DS-017 remains blocked
-by license/cost decision.
+Last verified in this pass: 2026-06-11 focused OSM/NOAA connector API tests passed,
+source readiness reported Must `ready=7 blocked=1`, release-readiness proof passed,
+release-readiness artifact tests passed, and default `.\scripts\verify.ps1` passed
+with backend tests, ruff, mypy, and structural checks green. DB smoke was skipped
+because `RUN_DB_SMOKE=1` was not set.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 
@@ -949,9 +964,9 @@ Key artifacts:
 - `docs/source-reviews/ds-010.md`, `ds-011.md`, `ds-023.md`
 - `registers/data_source_registry.csv` DS-010 row updated
 - `db/seeds/002_seed_source_registry.sql` DS-010 entry updated
-- Must-source readiness: sources=8 ready=5 blocked=3
+- Historical 2026-06-06 source-readiness snapshot recorded here is superseded by the current checkpoint above.
 
-Last verified: 2026-06-06 — `py -3.12 scripts/source_readiness.py --priority Must` → `ready=5 blocked=3`; `.\scripts\verify.ps1` → `verify: ok`; ruff clean; mypy clean 233 source files.
+Last verified for this historical lane: 2026-06-06; current source-readiness counts are recorded at the top of this file.
 
 Prior lane (L10 production hardening) plans remain in `plans/` for reference. Production
 hardening continues as a separate blocked lane and does not gate private MVP utility proof.
