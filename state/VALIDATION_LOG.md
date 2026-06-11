@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 DS-010 Buncombe/Brunswick + DS-023 + DS-011 connector closure
+
+**Scope:** DS-023 ChathamZoningRecordedConnector orchestration wiring; DS-010 live connectors for Buncombe and Brunswick counties; DS-011 explicit AssessorNotEvaluatedConnector.
+
+**Commands run:**
+
+```powershell
+.\scripts\verify.ps1  # post DS-023 wiring: PASS
+.\scripts\verify.ps1  # post DS-010 Buncombe/Brunswick: PASS (1071 tests)
+.\scripts\verify.ps1  # post DS-011 connector + query_area rename fix: PASS
+```
+
+**Results:**
+
+- `.\scripts\verify.ps1` green on final state: all tests pass, ruff clean, mypy clean (257 source files), structural invariants ok, db smoke skipped (no local Docker).
+- DS-023 orchestration wired; conditioned on DS-023 registry availability and Chatham county dispatch.
+- DS-010 covers all three private-MVP counties (Chatham existing + Buncombe + Brunswick); county dispatch via bbox centroid; full test suites for all three.
+- DS-011 `AssessorNotEvaluatedConnector` records explicit SOURCE_FAILURE evidence (code: ASSESSOR_NOT_EVALUATED, is_source_failure=True) for every area; source readiness 7/8.
+- Structural invariant fix: `query` method renamed `query_area` to avoid false positive in legacy `.query()` SQLAlchemy detection check.
+
+**Residual risks:**
+
+- DS-011 does not query a live county assessor — it records the absence as explicit ledger evidence. This is the correct MVP-scope behavior per the source review (machine-access terms not reviewed).
+- Buncombe parcel connector has no zoning field (not available in property_bc_dis/MapServer/1 service). Separate Buncombe zoning service research would be needed to close zoning for that county.
+- Brunswick TaxParcels returns Zoning field in parcel evidence; no Brunswick UDO recorded-fixture connector implemented (a future candidate following the Chatham UDO pattern).
+- DS-017 (commercial parcel vendor) remains fully blocked by vendor/license business decision.
+- DB smoke not run locally (no Docker). CI DB-enabled path covers this gate.
+
 ## 2026-06-10 Batch Round 2 (11 merged PRs)
 
 **Scope:** PRs #23–#33 on `benjmcd/land-dd` (operator surface landing + 10 parallel

@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-010 Buncombe/Brunswick + DS-023 + DS-011 connector closure — source readiness 7/8)
+
+- DS-023 Chatham UDO zoning recorded-fixture connector wired into orchestration: `orchestrate_chatham_zoning_for_area()` called only for Chatham county, conditioned on DS-023 availability; `POST /connector-runs/chatham-zoning/query` API route; state files updated. Committed: `48b3397`, `58087f7`.
+- DS-010 Buncombe and Brunswick live ArcGIS connectors implemented:
+  - Buncombe: `property_bc_dis/MapServer/1`, fields `pinnum`/`Acreage` (no zoning in service).
+  - Brunswick: `TaxParcels/FeatureServer/0`, fields `PIN`/`CALCAC`/`Zoning`.
+  - `_classify_area_county()` centroid-based county dispatch added to `live_connectors.py`.
+  - Routes: `POST /connector-runs/buncombe-parcels/query-bbox`, `POST /connector-runs/brunswick-parcels/query-bbox`.
+  - Tests: 15 Buncombe connector + 5 API; 22 Brunswick connector + 5 API.
+  - Committed: `5b4ca12`, `964974c`.
+- DS-011 explicit NOT_EVALUATED assessor connector implemented:
+  - `AssessorNotEvaluatedConnector.query_area()` — no network; records `ASSESSOR_NOT_EVALUATED` SOURCE_FAILURE evidence attributed to DS-011 for every area.
+  - Wired into request-time orchestration and `POST /connector-runs/assessor-not-evaluated/query`.
+  - Source readiness: 6/8 → 7/8 (only DS-017 blocked).
+  - `query_area` name chosen over `query` to satisfy structural invariant against legacy `.query()` SQLAlchemy pattern.
+  - Committed: `bba45e5`, `420356f`.
+- `.\scripts\verify.ps1` green: all tests pass, ruff clean, mypy clean (257 source files).
+
 ## 2026-06-10 (Batch round 2 — 11 PRs merged: operator surface landed + parallel production units)
 
 - Landed PR #23 (operator-complete surface rebased onto main): credentialed UI approval,
