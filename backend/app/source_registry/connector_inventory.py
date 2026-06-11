@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
+from app.connectors.brunswick_parcels import BRUNSWICK_PARCELS_CONNECTOR_NAME
 from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
+from app.connectors.buncombe_parcels import BUNCOMBE_PARCELS_CONNECTOR_NAME
 from app.connectors.epa_echo import EPA_ECHO_CONNECTOR_NAME
 from app.connectors.fcc_broadband import FCC_BROADBAND_CONNECTOR_NAME
 from app.connectors.osm_road_access import OSM_ROAD_ACCESS_CONNECTOR_NAME
@@ -55,6 +57,16 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-010": SourceConnectorInventoryEntry(
         source_registry_id="DS-010",
         connector_name="chatham_parcels_live",
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-010-buncombe": SourceConnectorInventoryEntry(
+        source_registry_id="DS-010",
+        connector_name=BUNCOMBE_PARCELS_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-010-brunswick": SourceConnectorInventoryEntry(
+        source_registry_id="DS-010",
+        connector_name=BRUNSWICK_PARCELS_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-011": SourceConnectorInventoryEntry(
