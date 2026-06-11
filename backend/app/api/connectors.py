@@ -34,6 +34,7 @@ from app.api.live_connectors import (
     DS_023_REGISTRY_ID,
     orchestrate_assessor_not_evaluated_for_area,
     orchestrate_brunswick_parcels_for_area,
+    orchestrate_brunswick_zoning_for_area,
     orchestrate_buncombe_parcels_for_area,
     orchestrate_chatham_parcels_for_area,
     orchestrate_chatham_zoning_for_area,
@@ -423,6 +424,23 @@ class ChathamZoningQueryRequest(BaseModel):
 
 
 class ChathamZoningQueryResponse(BaseModel):
+    connector_name: str
+    ingest_run_id: UUID
+    retrieval_status: str
+    evidence_code: str
+    zoning_code: str | None
+    district_name: str | None
+    use_category: str | None
+    residential_use_screening: str
+    source_registry_id: str
+
+
+class BrunswickZoningQueryRequest(BaseModel):
+    area_id: UUID
+    zoning_code: str | None = None
+
+
+class BrunswickZoningQueryResponse(BaseModel):
     connector_name: str
     ingest_run_id: UUID
     retrieval_status: str
@@ -1212,6 +1230,50 @@ def query_chatham_zoning_district(
                     zoning_code = raw
                     break
     result = orchestrate_chatham_zoning_for_area(
+        services=services, area=area, zoning_code=zoning_code
+    )
+    evidence = result.evidence_inputs[0]
+    return {
+        "connector_name": result.retrieval_run.connector_name,
+        "ingest_run_id": result.retrieval_run.ingest_run_id,
+        "retrieval_status": result.retrieval_run.status.value,
+        "evidence_code": evidence.evidence_code,
+        "zoning_code": evidence.observed_value.get("zoning_code"),
+        "district_name": evidence.observed_value.get("district_name"),
+        "use_category": evidence.observed_value.get("use_category"),
+        "residential_use_screening": evidence.observed_value.get(
+            "residential_use_screening", "UNKNOWN"
+        ),
+        "source_registry_id": DS_023_REGISTRY_ID,
+    }
+
+
+@router.post(
+    "/brunswick-zoning/query-district",
+    response_model=BrunswickZoningQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def query_brunswick_zoning_district(
+    request: BrunswickZoningQueryRequest,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> dict[str, object]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
+    area = services.area_service.get(request.area_id)
+    if area is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Area '{request.area_id}' is not registered",
+        )
+    zoning_code = request.zoning_code
+    if zoning_code is None:
+        for evidence in services.evidence_service.list_by_area(request.area_id):
+            if evidence.domain == "parcels" and not evidence.is_source_failure:
+                raw = evidence.observed_value.get("parcel_zoning")
+                if isinstance(raw, str) and raw:
+                    zoning_code = raw
+                    break
+    result = orchestrate_brunswick_zoning_for_area(
         services=services, area=area, zoning_code=zoning_code
     )
     evidence = result.evidence_inputs[0]

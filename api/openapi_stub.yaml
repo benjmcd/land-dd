@@ -1110,6 +1110,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/brunswick-zoning/query-district:
+    post:
+      tags:
+      - connector-runs
+      summary: Query Brunswick Zoning District
+      operationId: query_brunswick_zoning_district_connector_runs_brunswick_zoning_query_district_post
+      parameters:
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrunswickZoningQueryRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrunswickZoningQueryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /connector-runs/assessor-not-evaluated/query:
     post:
       tags:
@@ -2969,6 +3011,69 @@ components:
       - source_registry_id
       - request_url
       title: BrunswickParcelsQueryResponse
+    BrunswickZoningQueryRequest:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        zoning_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Zoning Code
+      type: object
+      required:
+      - area_id
+      title: BrunswickZoningQueryRequest
+    BrunswickZoningQueryResponse:
+      properties:
+        connector_name:
+          type: string
+          title: Connector Name
+        ingest_run_id:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+        retrieval_status:
+          type: string
+          title: Retrieval Status
+        evidence_code:
+          type: string
+          title: Evidence Code
+        zoning_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Zoning Code
+        district_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: District Name
+        use_category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Use Category
+        residential_use_screening:
+          type: string
+          title: Residential Use Screening
+        source_registry_id:
+          type: string
+          title: Source Registry Id
+      type: object
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - evidence_code
+      - zoning_code
+      - district_name
+      - use_category
+      - residential_use_screening
+      - source_registry_id
+      title: BrunswickZoningQueryResponse
     BuncombeParcelsQueryRequest:
       properties:
         area_id:
