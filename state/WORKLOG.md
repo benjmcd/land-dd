@@ -1845,6 +1845,34 @@ Append concise entries. Do not rely on chat history.
 
 ---
 
+## 2026-06-11 — DS-011 Connector-Ready + DS-023 Brunswick Zoning Connector
+
+**Goal:** (1) Commit DS-011 AssessorNotEvaluatedConnector fix (renamed `query` → `query_area` to avoid structural invariant false positive). (2) Implement BrunswickZoningRecordedConnector for Brunswick County UDO.
+
+**Approach:**
+- DS-011: Renamed connector method to `query_area()` to match the `query_bbox()` naming convention and avoid the `\.query\(` structural invariant check. Updated `live_connectors.py` call site and all 17 test occurrences. Committed as `420356f`.
+- DS-023 Brunswick: Researched Brunswick County UDO (official PDF, most recent revision 2024-08-19; 12 base districts + 5 overlay districts per Section 4.1). Implemented `BrunswickZoningRecordedConnector` following the Chatham pattern exactly. Three result paths: `_known_district_result()` (LOW confidence), `_needs_review_result()` (UNKNOWN), `_unknown_result()` (UNKNOWN). All paths return `SourceRetrievalStatus.SUCCEEDED`. Wired into `orchestrate_request_time_live_connectors_for_area()` — fires for Brunswick county after parcels, dispatching alongside existing Chatham path. Added `POST /connector-runs/brunswick-zoning/query-district` operator endpoint. Renamed `_extract_chatham_parcel_zoning_code` → `_extract_parcel_zoning_code` (both Chatham and Brunswick use the same parcel evidence structure). Updated DS-023 source review to record Brunswick recorded-fixture approval. DS-023-brunswick entry added to connector inventory.
+
+**Brunswick UDO districts (Section 4.1, rev 2024-08-19):**
+- Base: RR, R-7500, R-6000, SBR-6000, MR-3200 (residential); C-LD, N-C, C-I (commercial); RU-I, I-G (industrial); MI, CP (special purpose)
+- Overlay: CZ, ED, PD, TO, WQP
+
+**Changes:**
+- `backend/app/connectors/brunswick_zoning_recorded.py` — new recorded-fixture connector
+- `backend/tests/connectors/test_brunswick_zoning_connector.py` — 17 connector tests
+- `backend/app/connectors/__init__.py` — 7 new Brunswick zoning exports
+- `backend/app/source_registry/connector_inventory.py` — DS-023-brunswick entry added
+- `backend/app/api/live_connectors.py` — orchestration wired, `_extract_parcel_zoning_code` renamed, `orchestrate_brunswick_zoning_for_area()` added
+- `backend/app/api/connectors.py` — BrunswickZoningQueryRequest/Response, POST /brunswick-zoning/query-district route, import added
+- `backend/tests/api/test_brunswick_zoning_connector_api.py` — 5 API tests
+- `api/openapi_stub.yaml`, `docs/planning_pack/api/openapi_stub.yaml` — regenerated
+- `docs/source-reviews/ds-023.md` — Brunswick County recorded-fixture approval recorded
+- `state/PROJECT_STATE.md` — DS-011 closure updated; Brunswick zoning connector-ready noted
+
+**Result:** 1113 passed, 78 skipped; ruff clean; mypy clean (260 source files); `.\scripts\verify.ps1` → `verify: ok`. Commits: 95f6a10 (Brunswick zoning connector), 788d57b (API route + stubs).
+
+---
+
 ## 2026-06-03 (initial)
 
 - Created dual-agent workspace structure for Codex and Claude Code.
