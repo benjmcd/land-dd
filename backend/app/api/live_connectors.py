@@ -11,6 +11,8 @@ from app.connectors import (
     BrunswickParcelsBbox,
     BrunswickParcelsConnector,
     BrunswickParcelsConnectorError,
+    BrunswickZoningConnectorResult,
+    BrunswickZoningRecordedConnector,
     BuncombeParcelsBbox,
     BuncombeParcelsConnector,
     BuncombeParcelsConnectorError,
@@ -159,15 +161,16 @@ def orchestrate_request_time_live_connectors_for_area(
         if parcels_result is not None:
             if not parcels_result.report_ready:
                 return parcels_result
-            if county == "chatham" and _source_registry_id_available(
-                services, DS_023_REGISTRY_ID
-            ):
-                zoning_code = _extract_chatham_parcel_zoning_code(
-                    services, area.area_id
-                )
-                orchestrate_chatham_zoning_for_area(
-                    services=services, area=area, zoning_code=zoning_code
-                )
+            if _source_registry_id_available(services, DS_023_REGISTRY_ID):
+                zoning_code = _extract_parcel_zoning_code(services, area.area_id)
+                if county == "chatham":
+                    orchestrate_chatham_zoning_for_area(
+                        services=services, area=area, zoning_code=zoning_code
+                    )
+                elif county == "brunswick":
+                    orchestrate_brunswick_zoning_for_area(
+                        services=services, area=area, zoning_code=zoning_code
+                    )
     if _source_registry_id_available(services, DS_011_REGISTRY_ID):
         orchestrate_assessor_not_evaluated_for_area(services=services, area=area)
     return None
@@ -625,7 +628,28 @@ def orchestrate_chatham_zoning_for_area(
     return connector_result
 
 
-def _extract_chatham_parcel_zoning_code(
+def orchestrate_brunswick_zoning_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    zoning_code: str | None,
+) -> BrunswickZoningConnectorResult:
+    source = get_source_by_registry_id(services, DS_023_REGISTRY_ID)
+    connector_result = BrunswickZoningRecordedConnector().query_district(
+        area_id=area.area_id,
+        zoning_code=zoning_code,
+        source=source,
+    )
+    ConnectorRetrievalProvenanceAdapter(
+        SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+    ).record(connector_result)
+    ConnectorEvidenceIngestionAdapter(
+        services.evidence_service,
+    ).ingest(connector_result)
+    return connector_result
+
+
+def _extract_parcel_zoning_code(
     services: ApiServices,
     area_id: UUID,
 ) -> str | None:
@@ -822,6 +846,7 @@ __all__ = [
     "orchestrate_assessor_not_evaluated_for_area",
     "orchestrate_buncombe_parcels_for_area",
     "orchestrate_brunswick_parcels_for_area",
+    "orchestrate_brunswick_zoning_for_area",
     "orchestrate_chatham_parcels_for_area",
     "orchestrate_chatham_zoning_for_area",
     "orchestrate_fema_nfhl_for_area",

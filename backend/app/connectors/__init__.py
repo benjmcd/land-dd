@@ -22,6 +22,15 @@ from app.connectors.brunswick_parcels import (
     BrunswickParcelsConnectorError,
     BrunswickParcelsConnectorResult,
 )
+from app.connectors.brunswick_zoning_recorded import (
+    BRUNSWICK_ZONING_CAVEAT,
+    BRUNSWICK_ZONING_CONNECTOR_NAME,
+    BRUNSWICK_ZONING_METHOD_CODE,
+    BRUNSWICK_ZONING_UDO_EFFECTIVE,
+    BRUNSWICK_ZONING_UDO_URL,
+    BrunswickZoningConnectorResult,
+    BrunswickZoningRecordedConnector,
+)
 from app.connectors.buildability_fixture import (
     BuildabilityFixtureConnectorResult,
     StaticBuildabilityFixtureConnector,
@@ -222,6 +231,13 @@ __all__ = [
     "ASSESSOR_NOT_EVALUATED_METHOD_CODE",
     "AssessorNotEvaluatedConnector",
     "AssessorNotEvaluatedConnectorResult",
+    "BRUNSWICK_ZONING_CAVEAT",
+    "BRUNSWICK_ZONING_CONNECTOR_NAME",
+    "BRUNSWICK_ZONING_METHOD_CODE",
+    "BRUNSWICK_ZONING_UDO_EFFECTIVE",
+    "BRUNSWICK_ZONING_UDO_URL",
+    "BrunswickZoningConnectorResult",
+    "BrunswickZoningRecordedConnector",
     "BUNCOMBE_PARCELS_CAVEAT",
     "BUNCOMBE_PARCELS_CONNECTOR_NAME",
     "BUNCOMBE_PARCELS_MAX_BBOX_DEGREES",

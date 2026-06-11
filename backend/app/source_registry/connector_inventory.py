@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
+from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-023": SourceConnectorInventoryEntry(
         source_registry_id="DS-023",
         connector_name="chatham_zoning_udo_recorded",
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-023-brunswick": SourceConnectorInventoryEntry(
+        source_registry_id="DS-023",
+        connector_name=BRUNSWICK_ZONING_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
 }
