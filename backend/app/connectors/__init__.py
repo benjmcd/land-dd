@@ -18,6 +18,16 @@ from app.connectors.chatham_parcels import (
     ChathamParcelsConnectorError,
     ChathamParcelsConnectorResult,
 )
+from app.connectors.chatham_zoning_recorded import (
+    CHATHAM_ZONING_CAVEAT,
+    CHATHAM_ZONING_CONNECTOR_NAME,
+    CHATHAM_ZONING_METHOD_CODE,
+    CHATHAM_ZONING_UDO_EFFECTIVE,
+    CHATHAM_ZONING_UDO_URL,
+    ChathamZoningConnectorError,
+    ChathamZoningConnectorResult,
+    ChathamZoningRecordedConnector,
+)
 from app.connectors.evidence_ingestion import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorEvidenceIngestionError,
@@ -184,6 +194,14 @@ __all__ = [
     "ChathamParcelsConnector",
     "ChathamParcelsConnectorError",
     "ChathamParcelsConnectorResult",
+    "CHATHAM_ZONING_CAVEAT",
+    "CHATHAM_ZONING_CONNECTOR_NAME",
+    "CHATHAM_ZONING_METHOD_CODE",
+    "CHATHAM_ZONING_UDO_EFFECTIVE",
+    "CHATHAM_ZONING_UDO_URL",
+    "ChathamZoningConnectorError",
+    "ChathamZoningConnectorResult",
+    "ChathamZoningRecordedConnector",
     "CONNECTOR_REVIEW_STATUS_JOB_TYPE",
     "ConnectorEvidenceIngestionAdapter",
     "ConnectorEvidenceIngestionError",

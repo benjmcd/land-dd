@@ -10,6 +10,8 @@ from app.connectors import (
     ChathamParcelsBbox,
     ChathamParcelsConnector,
     ChathamParcelsConnectorError,
+    ChathamZoningConnectorResult,
+    ChathamZoningRecordedConnector,
     ConnectorEvidenceIngestionAdapter,
     ConnectorFixtureQualityProfile,
     ConnectorRetrievalProvenanceAdapter,
@@ -48,6 +50,7 @@ DS_002_REGISTRY_ID = "DS-002"
 DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_010_REGISTRY_ID = "DS-010"
+DS_023_REGISTRY_ID = "DS-023"
 
 
 @dataclass(frozen=True)
@@ -124,6 +127,11 @@ def orchestrate_request_time_live_connectors_for_area(
         chatham_result = orchestrate_chatham_parcels_for_area(services=services, area=area)
         if not chatham_result.report_ready:
             return chatham_result
+        if _source_registry_id_available(services, DS_023_REGISTRY_ID):
+            zoning_code = _extract_chatham_parcel_zoning_code(services, area.area_id)
+            orchestrate_chatham_zoning_for_area(
+                services=services, area=area, zoning_code=zoning_code
+            )
     return None
 
 
@@ -422,6 +430,39 @@ def orchestrate_chatham_parcels_for_area(
     )
 
 
+def orchestrate_chatham_zoning_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    zoning_code: str | None,
+) -> ChathamZoningConnectorResult:
+    source = get_source_by_registry_id(services, DS_023_REGISTRY_ID)
+    connector_result = ChathamZoningRecordedConnector().query_district(
+        area_id=area.area_id,
+        zoning_code=zoning_code,
+        source=source,
+    )
+    ConnectorRetrievalProvenanceAdapter(
+        SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+    ).record(connector_result)
+    ConnectorEvidenceIngestionAdapter(
+        services.evidence_service,
+    ).ingest(connector_result)
+    return connector_result
+
+
+def _extract_chatham_parcel_zoning_code(
+    services: ApiServices,
+    area_id: UUID,
+) -> str | None:
+    for evidence in services.evidence_service.list_by_area(area_id):
+        if evidence.domain == "parcels" and not evidence.is_source_failure:
+            zoning = evidence.observed_value.get("parcel_zoning")
+            if isinstance(zoning, str) and zoning:
+                return zoning
+    return None
+
+
 def get_source_by_registry_id(
     services: ApiServices,
     source_registry_id: str,
@@ -546,6 +587,7 @@ __all__ = [
     "DS_003_REGISTRY_ID",
     "DS_004_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
+    "DS_023_REGISTRY_ID",
     "ChathamParcelsOrchestrationResult",
     "FemaNfhlOrchestrationResult",
     "NwiOrchestrationResult",
@@ -556,6 +598,7 @@ __all__ = [
     "get_source_by_registry_id",
     "nwi_bbox_from_area",
     "orchestrate_chatham_parcels_for_area",
+    "orchestrate_chatham_zoning_for_area",
     "orchestrate_fema_nfhl_for_area",
     "orchestrate_nwi_for_area",
     "orchestrate_request_time_live_connectors_for_area",

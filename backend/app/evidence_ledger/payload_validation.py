@@ -39,6 +39,17 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "water_context_status",
     "zone",
     "zoning_district",
+    # zoning connector fields (DS-023)
+    "district_name",
+    "lookup_type",
+    "note",
+    "reason",
+    "residential_use_screening",
+    "udo_effective",
+    "udo_note",
+    "udo_source_url",
+    "use_category",
+    "zoning_code",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
