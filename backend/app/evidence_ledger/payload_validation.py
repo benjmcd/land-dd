@@ -7,9 +7,12 @@ from app.domain.evidence_contracts import EvidenceContract
 
 SOURCE_FAILURE_ALLOWED_KEYS = {
     "attempted_url",
+    "connector",
     "error_code",
     "error_message",
     "failure_reason",
+    "not_evaluated",
+    "reason",
     "retryable",
     "status_code",
 }

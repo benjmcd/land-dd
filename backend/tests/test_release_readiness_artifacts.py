@@ -165,14 +165,15 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
     payload = json.loads(result.stdout)
 
     assert payload["source_count"] == 8
-    assert payload["ready_count"] == 6
-    assert payload["blocked_count"] == 2
+    assert payload["ready_count"] == 7
+    assert payload["blocked_count"] == 1
     blocked = {
         source["source_registry_id"]
         for source in payload["sources"]
         if source["connector_ready"] is False
     }
-    assert {"DS-011", "DS-017"}.issubset(blocked)
+    assert {"DS-017"}.issubset(blocked)
+    assert "DS-011" not in blocked
     ds010 = next(
         source
         for source in payload["sources"]

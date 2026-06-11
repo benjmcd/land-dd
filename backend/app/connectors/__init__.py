@@ -2,6 +2,13 @@ from app.connectors.access_fixture import (
     AccessFixtureConnectorResult,
     StaticAccessFixtureConnector,
 )
+from app.connectors.assessor_not_evaluated import (
+    ASSESSOR_NOT_EVALUATED_CAVEAT,
+    ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME,
+    ASSESSOR_NOT_EVALUATED_METHOD_CODE,
+    AssessorNotEvaluatedConnector,
+    AssessorNotEvaluatedConnectorResult,
+)
 from app.connectors.brunswick_parcels import (
     BRUNSWICK_PARCELS_CAVEAT,
     BRUNSWICK_PARCELS_CONNECTOR_NAME,
@@ -210,6 +217,11 @@ from app.connectors.zoning_fixture import (
 )
 
 __all__ = [
+    "ASSESSOR_NOT_EVALUATED_CAVEAT",
+    "ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME",
+    "ASSESSOR_NOT_EVALUATED_METHOD_CODE",
+    "AssessorNotEvaluatedConnector",
+    "AssessorNotEvaluatedConnectorResult",
     "BUNCOMBE_PARCELS_CAVEAT",
     "BUNCOMBE_PARCELS_CONNECTOR_NAME",
     "BUNCOMBE_PARCELS_MAX_BBOX_DEGREES",

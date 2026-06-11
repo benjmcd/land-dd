@@ -30,7 +30,9 @@ from app.api.live_connectors import (
     DS_003_REGISTRY_ID,
     DS_004_REGISTRY_ID,
     DS_010_REGISTRY_ID,
+    DS_011_REGISTRY_ID,
     DS_023_REGISTRY_ID,
+    orchestrate_assessor_not_evaluated_for_area,
     orchestrate_brunswick_parcels_for_area,
     orchestrate_buncombe_parcels_for_area,
     orchestrate_chatham_parcels_for_area,
@@ -50,6 +52,7 @@ from app.api.reviewer_auth import (
     require_reviewer_scope,
 )
 from app.connectors import (
+    ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME,
     ConnectorFixtureQualityProfile,
     ConnectorRunReviewStatus,
     FixtureConnectorProtocol,
@@ -1224,6 +1227,58 @@ def query_chatham_zoning_district(
             "residential_use_screening", "UNKNOWN"
         ),
         "source_registry_id": DS_023_REGISTRY_ID,
+    }
+
+
+class AssessorNotEvaluatedQueryRequest(BaseModel):
+    area_id: UUID
+
+
+class AssessorNotEvaluatedQueryResponse(BaseModel):
+    connector_name: str
+    ingest_run_id: UUID
+    retrieval_status: str
+    evidence_code: str
+    source_registry_id: str
+
+
+@router.post(
+    "/assessor-not-evaluated/query",
+    response_model=AssessorNotEvaluatedQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def query_assessor_not_evaluated(
+    request: AssessorNotEvaluatedQueryRequest,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> dict[str, object]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
+    area = services.area_service.get(request.area_id)
+    if area is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Area '{request.area_id}' is not registered",
+        )
+    orchestrate_assessor_not_evaluated_for_area(services=services, area=area)
+    assessor_evidence = next(
+        (
+            e
+            for e in services.evidence_service.list_by_area(request.area_id)
+            if e.domain == "assessor" and e.evidence_code == "ASSESSOR_NOT_EVALUATED"
+        ),
+        None,
+    )
+    if assessor_evidence is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Assessor evidence not found after ingestion",
+        )
+    return {
+        "connector_name": ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME,
+        "ingest_run_id": assessor_evidence.source_ingest_run_id,
+        "retrieval_status": "succeeded",
+        "evidence_code": assessor_evidence.evidence_code,
+        "source_registry_id": DS_011_REGISTRY_ID,
     }
 
 

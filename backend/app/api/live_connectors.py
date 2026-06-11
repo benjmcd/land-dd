@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 
 from app.api.dependencies import ApiServices
 from app.connectors import (
+    AssessorNotEvaluatedConnector,
     BrunswickParcelsBbox,
     BrunswickParcelsConnector,
     BrunswickParcelsConnectorError,
@@ -60,6 +61,7 @@ DS_002_REGISTRY_ID = "DS-002"
 DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_010_REGISTRY_ID = "DS-010"
+DS_011_REGISTRY_ID = "DS-011"
 DS_023_REGISTRY_ID = "DS-023"
 
 # NC private-MVP county coordinate bounds (WGS84, approximate centroid check)
@@ -166,6 +168,8 @@ def orchestrate_request_time_live_connectors_for_area(
                 orchestrate_chatham_zoning_for_area(
                     services=services, area=area, zoning_code=zoning_code
                 )
+    if _source_registry_id_available(services, DS_011_REGISTRY_ID):
+        orchestrate_assessor_not_evaluated_for_area(services=services, area=area)
     return None
 
 
@@ -582,6 +586,24 @@ def orchestrate_brunswick_parcels_for_area(
     )
 
 
+def orchestrate_assessor_not_evaluated_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+) -> None:
+    source = get_source_by_registry_id(services, DS_011_REGISTRY_ID)
+    connector_result = AssessorNotEvaluatedConnector().query(
+        area_id=area.area_id,
+        source=source,
+    )
+    ConnectorRetrievalProvenanceAdapter(
+        SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+    ).record(connector_result)
+    ConnectorEvidenceIngestionAdapter(
+        services.evidence_service,
+    ).ingest(connector_result)
+
+
 def orchestrate_chatham_zoning_for_area(
     *,
     services: ApiServices,
@@ -784,6 +806,7 @@ __all__ = [
     "DS_003_REGISTRY_ID",
     "DS_004_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
+    "DS_011_REGISTRY_ID",
     "DS_023_REGISTRY_ID",
     "ChathamParcelsOrchestrationResult",
     "FemaNfhlOrchestrationResult",
@@ -796,6 +819,7 @@ __all__ = [
     "chatham_parcels_bbox_from_area",
     "get_source_by_registry_id",
     "nwi_bbox_from_area",
+    "orchestrate_assessor_not_evaluated_for_area",
     "orchestrate_buncombe_parcels_for_area",
     "orchestrate_brunswick_parcels_for_area",
     "orchestrate_chatham_parcels_for_area",

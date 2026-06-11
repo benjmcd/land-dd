@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
+
 
 @dataclass(frozen=True)
 class SourceConnectorInventoryEntry:
@@ -38,6 +40,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-010": SourceConnectorInventoryEntry(
         source_registry_id="DS-010",
         connector_name="chatham_parcels_live",
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-011": SourceConnectorInventoryEntry(
+        source_registry_id="DS-011",
+        connector_name=ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-023": SourceConnectorInventoryEntry(

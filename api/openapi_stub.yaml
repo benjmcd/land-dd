@@ -1110,6 +1110,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/assessor-not-evaluated/query:
+    post:
+      tags:
+      - connector-runs
+      summary: Query Assessor Not Evaluated
+      operationId: query_assessor_not_evaluated_connector_runs_assessor_not_evaluated_query_post
+      parameters:
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessorNotEvaluatedQueryRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessorNotEvaluatedQueryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /connector-runs/live-sequence/schedule-bbox:
     post:
       tags:
@@ -2626,6 +2668,42 @@ components:
       - buffer
       - generated_candidate
       title: AreaType
+    AssessorNotEvaluatedQueryRequest:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+      type: object
+      required:
+      - area_id
+      title: AssessorNotEvaluatedQueryRequest
+    AssessorNotEvaluatedQueryResponse:
+      properties:
+        connector_name:
+          type: string
+          title: Connector Name
+        ingest_run_id:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+        retrieval_status:
+          type: string
+          title: Retrieval Status
+        evidence_code:
+          type: string
+          title: Evidence Code
+        source_registry_id:
+          type: string
+          title: Source Registry Id
+      type: object
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - evidence_code
+      - source_registry_id
+      title: AssessorNotEvaluatedQueryResponse
     AsyncReportRunResponse:
       properties:
         report_run_id:
