@@ -2,6 +2,46 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Data-Retention Shared Validator Extraction
+
+**Scope:** Remove duplicated/asymmetric data-retention validation logic from
+Windows/POSIX wrappers by centralizing the checks in `scripts/data_retention_check.py`.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\data_retention_check.py
+.\scripts\run_data_retention_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_data_retention_check.sh
+cd backend; py -3.12 -m pytest tests\test_data_retention_artifacts.py -q --tb=short
+cd backend; ruff check ..\scripts\data_retention_check.py tests\test_data_retention_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\data_retention_check.py tests\test_data_retention_artifacts.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Shared data-retention validator passed directly.
+- Windows and POSIX data-retention wrappers passed with `PASS`.
+- Focused data-retention artifact tests passed: 11 tests.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Release-readiness proof still passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This slice is intended to reduce validation drift only; it does
+not enable automated deletion, run audit purges, or change retention policy. DB-backed
+proof still requires an explicit `RUN_DB_SMOKE=1` run with a live PostgreSQL/PostGIS
+runtime.
+
 ## 2026-06-11 Supply-Chain Shared Validator Extraction
 
 **Scope:** Remove duplicated supply-chain validation logic from Windows/POSIX

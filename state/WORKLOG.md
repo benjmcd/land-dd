@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Data-retention shared validator extraction)
+
+- Extracted the data-retention validation logic from `scripts/run_data_retention_check.ps1` and `.sh` into `scripts/data_retention_check.py`.
+- Kept the Windows and POSIX data-retention wrappers as thin launchers that call the same shared validator and preserve the existing `PASS` success token from the validator.
+- Updated `MANIFEST.md`, the data-retention runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused data-retention artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope remains validate-only; automated deletion is not enabled, and audit purges remain manual operator actions.
+
 ## 2026-06-11 (Supply-chain shared validator extraction)
 
 - Extracted the duplicated supply-chain validation logic from `scripts/run_supply_chain_check.ps1` and `.sh` into `scripts/supply_chain_check.py`.

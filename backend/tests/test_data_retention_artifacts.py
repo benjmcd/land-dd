@@ -58,6 +58,7 @@ def test_data_retention_runbook_exists_and_mentions_90_days() -> None:
 
 
 def test_data_retention_validation_and_purge_scripts_exist() -> None:
+    assert (REPO_ROOT / "scripts" / "data_retention_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_data_retention_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_data_retention_check.sh").is_file()
     assert (REPO_ROOT / "scripts" / "purge_audit_events.py").is_file()
@@ -65,13 +66,21 @@ def test_data_retention_validation_and_purge_scripts_exist() -> None:
     assert (REPO_ROOT / "scripts" / "run_purge_audit_events.sh").is_file()
 
 
-def test_data_retention_checks_validate_purge_tooling() -> None:
+def test_data_retention_validator_validates_purge_tooling() -> None:
+    script = (REPO_ROOT / "scripts" / "data_retention_check.py").read_text(
+        encoding="utf-8"
+    )
+    assert "purge_audit_events.py" in script
+    assert "run_purge_audit_events.ps1" in script
+    assert "run_purge_audit_events.sh" in script
+    assert "audit purge tooling: exists and documented" in script
+
+
+def test_data_retention_wrappers_delegate_to_shared_validator() -> None:
     for script_name in ("run_data_retention_check.ps1", "run_data_retention_check.sh"):
         script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
-        assert "purge_audit_events.py" in script
-        assert "run_purge_audit_events.ps1" in script
-        assert "run_purge_audit_events.sh" in script
-        assert "audit purge tooling: exists and documented" in script
+
+        assert "data_retention_check.py" in script
 
 
 def test_data_retention_posix_check_honors_python_bin() -> None:
@@ -79,8 +88,7 @@ def test_data_retention_posix_check_honors_python_bin() -> None:
         encoding="utf-8"
     )
     assert 'PYTHON_BIN="${PYTHON_BIN:-python}"' in script
-    assert '"$PYTHON_BIN" -c' in script
-    assert '"$PYTHON_BIN" - <<' in script
+    assert '"$PYTHON_BIN" ./scripts/data_retention_check.py' in script
 
 
 def test_purge_wrappers_are_dry_run_by_default() -> None:

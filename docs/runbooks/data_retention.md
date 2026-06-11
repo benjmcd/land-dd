@@ -133,6 +133,9 @@ Validate this runbook and the retention catalog with:
 .\scripts\run_data_retention_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/data_retention_check.py` so local
+and CI validation use the same validate-only logic.
+
 ---
 
 ## Contact
