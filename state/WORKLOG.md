@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Access-control shared validator extraction)
+
+- Extracted the duplicated access-control validation logic from `scripts/run_access_control_check.ps1` and `.sh` into `scripts/access_control_check.py`.
+- Kept the Windows and POSIX access-control wrappers as thin launchers that call the same shared validator and preserve the existing `access-control check: ok` success token.
+- Updated `MANIFEST.md`, the access-control runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused access-control artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Full user RBAC, OAuth/OIDC, hosted identity, automatic key rotation, and external secret-manager integration remain production blockers.
+
 ## 2026-06-11 (Private-MVP workspace validation wiring)
 
 - Wired `scripts/private_mvp_readiness_check.py` into both Windows and POSIX workspace validation so the selected NC county private-MVP boundary is covered by `.\scripts\verify.ps1` and `./scripts/verify.sh`.

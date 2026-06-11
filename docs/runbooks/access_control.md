@@ -31,6 +31,8 @@ Run from the repository root:
 
 The check is validate-only. It verifies that:
 
+- the Windows and POSIX wrappers delegate to the shared
+  `scripts/access_control_check.py` validator;
 - the access-control catalog names current controls and production blockers;
 - referenced authority files exist;
 - API-key middleware still uses `X-API-Key`, keeps only `/health` and `/version`

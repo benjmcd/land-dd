@@ -53,6 +53,7 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
 
     for phrase in (
         "run_access_control_check.ps1",
+        "scripts/access_control_check.py",
         "validate-only",
         "X-API-Key",
         "X-Reviewer-Id",
@@ -103,5 +104,13 @@ def test_access_control_ci_job_runs_validate_only_proof() -> None:
 
 
 def test_access_control_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "access_control_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_access_control_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_access_control_check.sh").is_file()
+
+
+def test_access_control_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_access_control_check.ps1", "run_access_control_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "access_control_check.py" in script

@@ -2,6 +2,49 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Access-Control Shared Validator Extraction
+
+**Scope:** Remove duplicated access-control validation logic from Windows/POSIX
+wrappers by centralizing the checks in `scripts/access_control_check.py`.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\access_control_check.py
+.\scripts\run_access_control_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_access_control_check.sh
+cd backend; py -3.12 -m pytest tests\test_access_control_artifacts.py -q --tb=short
+cd backend; ruff check ..\scripts\access_control_check.py tests\test_access_control_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\access_control_check.py tests\test_access_control_artifacts.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Shared access-control validator passed directly.
+- Windows and POSIX access-control wrappers passed with `access-control check: ok`.
+- Focused access-control artifact tests passed: 5 tests.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Release-readiness proof still passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This reduces validation drift only. It does not implement full user RBAC,
+  OAuth/OIDC, hosted identity, automatic key rotation, external secret-manager
+  integration, or hosted auth operations.
+- DB-backed proof still requires an explicit `RUN_DB_SMOKE=1` run with a live
+  PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 Private-MVP Workspace Validation Wiring
 
 **Scope:** Make the private-MVP readiness proof part of workspace validation so
