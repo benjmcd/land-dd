@@ -422,6 +422,50 @@ def test_dossier_renders_env_hazard_facilities_from_evidence() -> None:
     )
 
 
+def test_dossier_renders_jurisdiction_from_parcel_county_evidence() -> None:
+    """parcel_county in observed_value must appear as Jurisdiction in Section 2."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "parcels")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="COUNTY_PARCEL_INTERSECTION",
+            domain="parcels",
+            method_code="county_parcel_overlay",
+            observation="Parcel boundary intersects the area of interest",
+            observed_value={
+                "intersects": True,
+                "parcel_county": "Chatham County, NC",
+                "parcel_pin": "12345",
+                "parcel_acres": 5.0,
+                "parcel_zoning": "RA",
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Parcel screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec2_start = dossier.find("## 2. Area Identity")
+    sec3_start = dossier.find("## 3.")
+    assert sec2_start != -1, "Section 2 not found in dossier"
+    section_2 = dossier[sec2_start:sec3_start]
+    assert "Chatham County, NC" in section_2, (
+        "Expected 'Chatham County, NC' in Section 2 Jurisdiction; got:\n" + section_2
+    )
+    assert "Jurisdiction: unknown" not in section_2, (
+        "Section 2 must not show 'unknown' when parcel_county is present"
+    )
+
+
 def test_dossier_renders_ssurgo_mapunit_from_evidence() -> None:
     """intersects_soil_mapunit=True + soil_mapunit_name must appear in Section 8."""
     source_service, area_service, evidence_service, report_service = _make_services()

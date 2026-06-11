@@ -281,6 +281,7 @@ class ChathamParcelsConnector:
                 observation="Parcel boundary intersects the area of interest",
                 observed_value={
                     "intersects": True,
+                    "parcel_county": "Chatham County, NC",
                     "parcel_pin": props.get("PIN"),
                     "parcel_acres": props.get("ACRES"),
                     "parcel_zoning": props.get("ZONING"),

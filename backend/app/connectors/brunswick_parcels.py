@@ -281,6 +281,7 @@ class BrunswickParcelsConnector:
                 observation="Parcel boundary intersects the area of interest",
                 observed_value={
                     "intersects": True,
+                    "parcel_county": "Brunswick County, NC",
                     "parcel_pin": props.get("PIN"),
                     "parcel_acres": props.get("CALCAC"),
                     "parcel_zoning": props.get("Zoning"),

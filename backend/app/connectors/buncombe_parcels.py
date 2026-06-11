@@ -281,6 +281,7 @@ class BuncombeParcelsConnector:
                 observation="Parcel boundary intersects the area of interest",
                 observed_value={
                     "intersects": True,
+                    "parcel_county": "Buncombe County, NC",
                     "parcel_pin": props.get("pinnum"),
                     "parcel_acres": props.get("Acreage"),
                     "parcel_zoning": None,

@@ -92,6 +92,7 @@ SPATIAL_INTERSECTION_KEYS = {
     "soil_mapunit_name",
     "soil_mapunit_symbol",
     "parcel_pin",
+    "parcel_county",
     "parcel_owner",
     "parcel_land_value",
     "parcel_bldg_value",
