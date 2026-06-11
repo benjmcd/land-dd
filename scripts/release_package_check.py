@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = (
     "config/release_package.yaml",
     "docs/runbooks/release_package.md",
+    "scripts/build_release_package.py",
     "scripts/build_release_package.ps1",
     "scripts/build_release_package.sh",
     "scripts/release_package_check.py",
@@ -133,22 +134,28 @@ def validate_catalog() -> None:
 
 
 def validate_builders() -> None:
+    builder = read_text("scripts/build_release_package.py")
+    for phrase in (
+        "release_package.yaml",
+        "zipfile.ZipFile",
+        '"x"',
+        "release_package_manifest_v1",
+        "pushes_registry_image",
+        "creates_hosted_deployment",
+        "includes_secrets",
+        "sha256_file",
+    ):
+        require(phrase in builder, f"build_release_package.py missing phrase: {phrase}")
+    require("rmtree" not in builder, "build_release_package.py must not delete staging trees")
+    require("unlink(" not in builder, "build_release_package.py must not delete files")
+    require("remove(" not in builder, "build_release_package.py must not remove files")
+
     for script_name in ("build_release_package.ps1", "build_release_package.sh"):
         text = read_text(f"scripts/{script_name}")
-        for phrase in (
-            "release_package.yaml",
-            "zipfile.ZipFile",
-            '"x"',
-            "release_package_manifest_v1",
-            "pushes_registry_image",
-            "creates_hosted_deployment",
-            "includes_secrets",
-            "sha256_file",
-        ):
-            require(phrase in text, f"{script_name} missing phrase: {phrase}")
-        require("rmtree" not in text, f"{script_name} must not delete staging trees")
-        require("unlink(" not in text, f"{script_name} must not delete files")
-        require("remove(" not in text, f"{script_name} must not remove files")
+        require(
+            "build_release_package.py" in text,
+            f"{script_name} must delegate to build_release_package.py",
+        )
 
 
 def validate_runbook() -> None:
@@ -156,6 +163,7 @@ def validate_runbook() -> None:
     for phrase in (
         "run_release_package_check.ps1",
         "scripts/release_package_check.py",
+        "scripts/build_release_package.py",
         "validate-only",
         "build_release_package.ps1",
         "local_artifacts/releases",

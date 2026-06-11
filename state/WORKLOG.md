@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Release-package builder extraction)
+
+- Extracted duplicated release-package ZIP/manifest builder logic from `scripts/build_release_package.ps1` and `.sh` into `scripts/build_release_package.py`.
+- Kept the Windows and POSIX package builders as thin launchers that call the same shared builder.
+- Updated `MANIFEST.md`, the release-package runbook, package validator, and artifact tests to route to the shared builder and prove wrapper delegation.
+- Verification: builder compile proof, Windows/POSIX release-package validators, focused release-package artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope did not create a release ZIP/manifest, delete outputs, push images, deploy, or publish artifacts.
+
 ## 2026-06-11 (Incident-rollback shared validator extraction)
 
 - Extracted the incident/rollback validation logic from `scripts/run_incident_rollback_check.ps1` and `.sh` into `scripts/incident_rollback_check.py`.

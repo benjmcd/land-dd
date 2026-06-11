@@ -57,23 +57,31 @@ def test_release_package_catalog_covers_local_package_boundary() -> None:
     )
 
 
-def test_release_package_builders_create_local_zip_manifest_without_delete_or_push() -> None:
+def test_release_package_builder_creates_local_zip_manifest_without_delete_or_push() -> None:
+    script = (REPO_ROOT / "scripts" / "build_release_package.py").read_text(
+        encoding="utf-8",
+    )
+    for phrase in (
+        "release_package.yaml",
+        "zipfile.ZipFile",
+        '"x"',
+        "release_package_manifest_v1",
+        "pushes_registry_image",
+        "creates_hosted_deployment",
+        "includes_secrets",
+        "sha256_file",
+    ):
+        assert phrase in script
+    assert "rmtree" not in script
+    assert "unlink(" not in script
+    assert "remove(" not in script
+
+
+def test_release_package_builder_wrappers_delegate_to_shared_builder() -> None:
     for script_name in ("build_release_package.ps1", "build_release_package.sh"):
         script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
-        for phrase in (
-            "release_package.yaml",
-            "zipfile.ZipFile",
-            '"x"',
-            "release_package_manifest_v1",
-            "pushes_registry_image",
-            "creates_hosted_deployment",
-            "includes_secrets",
-            "sha256_file",
-        ):
-            assert phrase in script
-        assert "rmtree" not in script
-        assert "unlink(" not in script
-        assert "remove(" not in script
+
+        assert "build_release_package.py" in script
 
 
 def test_release_package_runbook_records_validation_workflow_and_limits() -> None:
@@ -84,6 +92,7 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
     for phrase in (
         "run_release_package_check.ps1",
         "scripts/release_package_check.py",
+        "scripts/build_release_package.py",
         "validate-only",
         "build_release_package.ps1",
         "local_artifacts/releases",
@@ -97,6 +106,7 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
 
 
 def test_release_package_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "build_release_package.py").is_file()
     assert (REPO_ROOT / "scripts" / "build_release_package.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "build_release_package.sh").is_file()
     assert (REPO_ROOT / "scripts" / "release_package_check.py").is_file()

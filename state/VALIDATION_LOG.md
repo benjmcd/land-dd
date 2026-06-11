@@ -2,6 +2,46 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Release-Package Builder Extraction
+
+**Scope:** Remove duplicated release-package ZIP/manifest builder logic from
+Windows/POSIX wrappers by centralizing it in `scripts/build_release_package.py`.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m py_compile .\scripts\build_release_package.py
+.\scripts\run_release_package_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_package_check.sh
+cd backend; py -3.12 -m pytest tests\test_release_package_artifacts.py -q --tb=short
+cd backend; ruff check ..\scripts\build_release_package.py ..\scripts\release_package_check.py tests\test_release_package_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\build_release_package.py ..\scripts\release_package_check.py tests\test_release_package_artifacts.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Shared release-package builder compiled.
+- Windows and POSIX release-package validators passed with `release package check: ok`.
+- Focused release-package artifact tests passed: 6 tests.
+- Focused ruff passed.
+- Focused mypy passed over 3 source files.
+- Release-readiness proof still passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This slice is intended to reduce builder drift only; it does not
+create a release ZIP/manifest, delete outputs, push images, deploy, or publish
+artifacts. DB-backed proof still requires an explicit `RUN_DB_SMOKE=1` run with a live
+PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 Incident-Rollback Shared Validator Extraction
 
 **Scope:** Remove duplicated/asymmetric incident/rollback validation logic from

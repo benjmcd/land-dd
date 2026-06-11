@@ -22,6 +22,8 @@ The check is validate-only. It verifies that:
 
 - the Windows and POSIX wrappers delegate to the shared
   `scripts/release_package_check.py` validator;
+- the Windows and POSIX package builders delegate to the shared
+  `scripts/build_release_package.py` builder;
 - `config/release_package.yaml` uses schema `release_package_v1`;
 - every declared include path exists;
 - excluded path parts cover `.git`, caches, `local_artifacts`, and `worktrees`;
