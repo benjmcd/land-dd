@@ -124,6 +124,14 @@ SPATIAL_INTERSECTION_KEYS = {
     "monitoring_station_count",
     "water_context_status",
     "usgs_water_bbox",
+    "plausible_water_context",
+    "no_plausible_water_context",
+    # env_hazard connector fields (DS-006)
+    "epa_echo_bbox",
+    "env_hazard_status",
+    "has_env_hazard_proximity",
+    "no_env_hazard_proximity",
+    "regulated_facility_count",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",
@@ -141,6 +149,12 @@ SPATIAL_RESULT_KEYS = {
     "drainage_class",
     "parcel_count",
     "wetland_type",
+    # water monitoring presence indicators (DS-005)
+    "plausible_water_context",
+    "no_plausible_water_context",
+    # env_hazard presence indicators (DS-006)
+    "has_env_hazard_proximity",
+    "no_env_hazard_proximity",
 }
 DERIVED_METRIC_KEYS = {
     "calculation_method",
@@ -260,6 +274,10 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         "no_public_road_adjacency",
         "public_road_adjacency",
         "soil_major_component",
+        "plausible_water_context",
+        "no_plausible_water_context",
+        "has_env_hazard_proximity",
+        "no_env_hazard_proximity",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"spatial_intersection observed_value '{key}' must be boolean")
@@ -270,6 +288,8 @@ def _validate_spatial_intersection(evidence: EvidenceContract) -> None:
         "road_distance_m",
         "slope_percent",
         "soil_component_percent",
+        "monitoring_station_count",
+        "regulated_facility_count",
     ):
         if key in evidence.observed_value:
             _require_non_negative_number(evidence.observed_value[key], key)

@@ -299,3 +299,165 @@ def test_dossier_renders_parcel_acreage_from_evidence() -> None:
     assert "Zoning designation: RA" in section_2, (
         "Expected parcel zoning 'RA' in Section 2 area identity; got: " + section_2
     )
+
+
+def test_dossier_renders_water_monitoring_stations_from_evidence() -> None:
+    """plausible_water_context=True + monitoring_station_count must appear in Section 9."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "water")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="WATER_MONITORING_STATION_SCREEN",
+            domain="water",
+            method_code="fixture_water_monitoring_bbox",
+            observation="3 USGS monitoring stations detected in screening bbox.",
+            observed_value={
+                "plausible_water_context": True,
+                "no_plausible_water_context": False,
+                "monitoring_station_count": 3,
+                "water_context_status": "monitoring_stations_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USGS NWIS screening only; verify active station status.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec9_start = dossier.find("## 9. Water Context")
+    sec10_start = dossier.find("## 10.")
+    assert sec9_start != -1, "Section 9 not found in dossier"
+    section_9 = dossier[sec9_start:sec10_start]
+    assert "3 monitoring station(s) detected in screening bbox" in section_9, (
+        "Expected station count text in Section 9; got:\n" + section_9
+    )
+
+
+def test_dossier_renders_water_no_monitoring_from_evidence() -> None:
+    """no_plausible_water_context=True must appear as a negative result in Section 9."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "water")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="WATER_MONITORING_STATION_SCREEN",
+            domain="water",
+            method_code="fixture_water_monitoring_bbox",
+            observation="No USGS monitoring stations detected in screening bbox.",
+            observed_value={
+                "plausible_water_context": False,
+                "no_plausible_water_context": True,
+                "monitoring_station_count": 0,
+                "water_context_status": "no_monitoring_stations_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USGS NWIS screening only.",
+            is_negative_evidence=True,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec9_start = dossier.find("## 9. Water Context")
+    sec10_start = dossier.find("## 10.")
+    assert sec9_start != -1, "Section 9 not found in dossier"
+    section_9 = dossier[sec9_start:sec10_start]
+    assert "no monitoring stations detected in screening bbox" in section_9, (
+        "Expected negative monitoring text in Section 9; got:\n" + section_9
+    )
+
+
+def test_dossier_renders_env_hazard_facilities_from_evidence() -> None:
+    """has_env_hazard_proximity=True + regulated_facility_count must appear in Section 11."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "env_hazard")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ENV_HAZARD_PROXIMITY_SCREEN",
+            domain="env_hazard",
+            method_code="fixture_env_hazard_bbox",
+            observation="2 regulated facilities detected in screening bbox.",
+            observed_value={
+                "has_env_hazard_proximity": True,
+                "no_env_hazard_proximity": False,
+                "regulated_facility_count": 2,
+                "env_hazard_status": "regulated_facilities_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="EPA ECHO screening only; verify current facility status.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec11_start = dossier.find("## 11. Environmental")
+    sec12_start = dossier.find("## 12.")
+    assert sec11_start != -1, "Section 11 not found in dossier"
+    section_11 = dossier[sec11_start:sec12_start]
+    assert "2 regulated facility/facilities detected in screening bbox" in section_11, (
+        "Expected facility count text in Section 11; got:\n" + section_11
+    )
+
+
+def test_dossier_renders_env_hazard_no_facilities_from_evidence() -> None:
+    """no_env_hazard_proximity=True must appear as a negative result in Section 11."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "env_hazard")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ENV_HAZARD_PROXIMITY_SCREEN",
+            domain="env_hazard",
+            method_code="fixture_env_hazard_bbox",
+            observation="No regulated facilities detected in screening bbox.",
+            observed_value={
+                "has_env_hazard_proximity": False,
+                "no_env_hazard_proximity": True,
+                "regulated_facility_count": 0,
+                "env_hazard_status": "no_regulated_facilities_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="EPA ECHO screening only.",
+            is_negative_evidence=True,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec11_start = dossier.find("## 11. Environmental")
+    sec12_start = dossier.find("## 12.")
+    assert sec11_start != -1, "Section 11 not found in dossier"
+    section_11 = dossier[sec11_start:sec12_start]
+    assert "no regulated facilities detected in screening bbox" in section_11, (
+        "Expected negative facility text in Section 11; got:\n" + section_11
+    )

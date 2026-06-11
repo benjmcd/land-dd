@@ -92,9 +92,9 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 9. Water Context",
         "",
-        "- Nearby wells/monitoring: not evaluated",
-        "- Groundwater/surface water context: unknown",
+        f"- Nearby monitoring stations: {_water_monitoring_result(report_run)}",
         "- Water-rights status: not determined",
+        f"- Caveats: {_domain_caveats(report_run, {'water'})}",
         f"- Required verification: {_domain_verification(report_run, 'water')}",
         "",
         "## 10. Zoning / Land Use",
@@ -108,10 +108,10 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 11. Environmental / Compliance Hazards",
         "",
-        "- Nearby regulated facilities: not evaluated",
+        f"- Nearby regulated facilities: {_env_hazard_result(report_run)}",
         "- Known contamination/remediation context: unknown",
-        "- Caveats: screening category not complete for beta until sources are approved",
-        "- Required verification: review approved environmental/compliance sources",
+        f"- Caveats: {_domain_caveats(report_run, {'env_hazard'})}",
+        f"- Required verification: {_domain_verification(report_run, 'env_hazard')}",
         "",
         "## 12. Market Context",
         "",
@@ -421,6 +421,61 @@ def _buildability_constraint(report_run: ReportRunContract) -> str:
     if failures:
         return "terrain data unavailable — source failure recorded; manual verification required"
     return "screening data available; interpret with caveat"
+
+
+def _water_monitoring_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "water" and not r.is_source_failure]
+    if not records:
+        failures = [r for r in report_run.evidence if r.domain == "water" and r.is_source_failure]
+        if failures:
+            return "source failure — water monitoring data unavailable"
+        return "not evaluated"
+    parts: list[str] = []
+    for record in records:
+        station_count = record.observed_value.get("monitoring_station_count")
+        has_context = record.observed_value.get("plausible_water_context")
+        no_context = record.observed_value.get("no_plausible_water_context")
+        if has_context is True and station_count is not None:
+            n = int(station_count)  # type: ignore[call-overload]
+            parts.append(f"{n} monitoring station(s) detected in screening bbox")
+        elif has_context is True:
+            parts.append("monitoring stations detected in screening bbox")
+        elif no_context is True:
+            parts.append("no monitoring stations detected in screening bbox")
+        else:
+            parts.append(_cell(record.observation))
+    return "; ".join(parts) if parts else _domain_summary(report_run, "water")
+
+
+def _env_hazard_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence if r.domain == "env_hazard" and not r.is_source_failure
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence if r.domain == "env_hazard" and r.is_source_failure
+        ]
+        if failures:
+            return "source failure — environmental hazard data unavailable"
+        return "not evaluated"
+    parts: list[str] = []
+    for record in records:
+        facility_count = record.observed_value.get("regulated_facility_count")
+        has_proximity = record.observed_value.get("has_env_hazard_proximity")
+        no_proximity = record.observed_value.get("no_env_hazard_proximity")
+        if has_proximity is True:
+            if facility_count is not None and int(facility_count) > 0:  # type: ignore[call-overload]
+                count = int(facility_count)  # type: ignore[call-overload]
+                parts.append(
+                    f"{count} regulated facility/facilities detected in screening bbox"
+                )
+            else:
+                parts.append("regulated facilities detected in screening bbox")
+        elif no_proximity is True:
+            parts.append("no regulated facilities detected in screening bbox")
+        else:
+            parts.append(_cell(record.observation))
+    return "; ".join(parts) if parts else _domain_summary(report_run, "env_hazard")
 
 
 def _unknown_rows(report_run: ReportRunContract) -> list[str]:
