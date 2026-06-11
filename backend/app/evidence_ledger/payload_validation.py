@@ -69,6 +69,15 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "max_upload_mbps",
     "provider_count",
     "technology_types",
+    # climate connector fields (DS-020)
+    "has_nws_coverage",
+    "nws_forecast_zone",
+    "nws_forecast_zone_name",
+    "nws_nearest_city",
+    "nws_nearest_state",
+    "nws_office_code",
+    "nws_radar_station",
+    "timezone",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",

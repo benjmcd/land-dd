@@ -1055,3 +1055,110 @@ def test_dossier_renders_zoning_source_failure() -> None:
         "Expected 'source failure' text in Section 10 when zoning data unavailable; got:\n"
         + section_10
     )
+
+
+def test_dossier_renders_nws_climate_zone_from_evidence() -> None:
+    """NWS climate zone evidence must appear in Section 13 climate section."""
+    from app.connectors.noaa_climate import NOAA_CLIMATE_CAVEAT
+
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "climate")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="NWS_CLIMATE_ZONE",
+            domain="climate",
+            method_code="live_noaa_nws_point_query",
+            observation="NOAA NWS point query: office=RAH, zone=NCZ087, timezone=America/New_York",
+            observed_value={
+                "has_nws_coverage": True,
+                "nws_office_code": "RAH",
+                "nws_forecast_zone": "NCZ087",
+                "nws_forecast_zone_name": "Southern Chatham",
+                "timezone": "America/New_York",
+                "nws_radar_station": "KRAX",
+            },
+            confidence=ConfidenceBand.HIGH,
+            caveat=NOAA_CLIMATE_CAVEAT,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec13_start = dossier.find("## 13. Climate")
+    sec14_start = dossier.find("## 14.")
+    assert sec13_start != -1, "Section 13 (Climate) not found"
+    section_13 = dossier[sec13_start:sec14_start]
+    assert "NCZ087" in section_13, (
+        "Expected forecast zone NCZ087 in Section 13; got:\n" + section_13
+    )
+    assert "Southern Chatham" in section_13, (
+        "Expected zone name 'Southern Chatham' in Section 13; got:\n" + section_13
+    )
+    assert "RAH" in section_13, (
+        "Expected office code RAH in Section 13; got:\n" + section_13
+    )
+
+
+def test_dossier_shows_not_evaluated_for_climate_with_no_evidence() -> None:
+    """With no climate evidence, Section 13 climate line must say 'not evaluated'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec13_start = dossier.find("## 13. Climate")
+    sec14_start = dossier.find("## 14.")
+    assert sec13_start != -1, "Section 13 (Climate) not found"
+    section_13 = dossier[sec13_start:sec14_start]
+    assert "not evaluated" in section_13.split("NWS forecast zone:")[1][:80], (
+        "Expected 'not evaluated' when no climate evidence; got:\n" + section_13
+    )
+
+
+def test_dossier_renders_noaa_nws_source_failure() -> None:
+    """NOAA NWS source failure must show 'source failure' in Section 13 climate line."""
+    from app.connectors.noaa_climate import NOAA_CLIMATE_CAVEAT
+
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "climate")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="NOAA_NWS_SOURCE_FAILURE",
+        domain="climate",
+        method_code="live_noaa_nws_point_query",
+        observation="NOAA NWS point query did not produce usable source data.",
+        observed_value={
+            "failure_reason": "noaa_nws_request_error",
+            "error_message": "HTTP 503",
+            "retryable": True,
+        },
+        caveat=NOAA_CLIMATE_CAVEAT,
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec13_start = dossier.find("## 13. Climate")
+    sec14_start = dossier.find("## 14.")
+    assert sec13_start != -1, "Section 13 (Climate) not found"
+    section_13 = dossier[sec13_start:sec14_start]
+    assert "source failure" in section_13, (
+        "Expected 'source failure' text in Section 13 when NOAA NWS data unavailable; got:\n"
+        + section_13
+    )

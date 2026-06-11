@@ -37,6 +37,7 @@ from app.connectors.live_jobs import (
     LiveConnectorJobStoreProtocol,
     SqlAlchemyLiveConnectorJobStore,
 )
+from app.connectors.noaa_climate import JsonFetcher as NoaaClimateJsonFetcher
 from app.connectors.nwi import NwiJsonFetcher
 from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
 from app.connectors.ssurgo import SsurgoJsonFetcher
@@ -89,6 +90,7 @@ class ApiServices:
     usgs_water_fetch_json: UsgsWaterJsonFetcher | None = None
     epa_echo_fetch_json: EpaEchoJsonFetcher | None = None
     fcc_broadband_fetch_json: FccBroadbandJsonFetcher | None = None
+    noaa_climate_fetch_json: NoaaClimateJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

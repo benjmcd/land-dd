@@ -120,26 +120,32 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Caveats: {_domain_caveats(report_run, {'broadband'})}",
         f"- Required verification: {_domain_verification(report_run, 'broadband')}",
         "",
-        "## 13. Market Context",
+        "## 13. Climate / Weather Context",
+        "",
+        f"- NWS forecast zone: {_climate_result(report_run)}",
+        f"- Caveats: {_domain_caveats(report_run, {'climate'})}",
+        f"- Required verification: {_domain_verification(report_run, 'climate')}",
+        "",
+        "## 14. Market Context",
         "",
         "- Price/acre: not evaluated",
         "- Nearby comps/listings: not evaluated",
         "- Liquidity context: unknown",
         "- Caveats: no appraisal, valuation, or investment conclusion is provided",
         "",
-        "## 14. Unknowns",
+        "## 15. Unknowns",
         "",
         "| Domain | Unknown | Why unknown | How to resolve |",
         "|---|---|---|---|",
         *_unknown_rows(report_run),
         "",
-        "## 15. Verification Plan",
+        "## 16. Verification Plan",
         "",
         "| Priority | Task | Who to contact | Evidence to request |",
         "|---|---|---|---|",
         *_verification_rows(report_run),
         "",
-        "## 16. Source Appendix",
+        "## 17. Source Appendix",
         "",
         "| Source | Version/date | Use | Caveat | URL |",
         "|---|---|---|---|---|",
@@ -574,6 +580,31 @@ def _env_hazard_result(report_run: ReportRunContract) -> str:
         else:
             parts.append(_cell(record.observation))
     return "; ".join(parts) if parts else _domain_summary(report_run, "env_hazard")
+
+
+def _climate_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "climate" and not r.is_source_failure]
+    if not records:
+        failures = [r for r in report_run.evidence if r.domain == "climate" and r.is_source_failure]
+        if failures:
+            return "source failure — NOAA NWS climate data unavailable"
+        return "not evaluated"
+    rec = records[0]
+    v = rec.observed_value or {}
+    zone = str(v.get("nws_forecast_zone", ""))
+    zone_name = str(v.get("nws_forecast_zone_name", ""))
+    office = str(v.get("nws_office_code", ""))
+    timezone = str(v.get("timezone", ""))
+    radar = str(v.get("nws_radar_station", ""))
+    zone_str = f"{zone} ({zone_name})" if zone and zone_name else zone or "covered"
+    parts = [f"NWS zone {zone_str}"]
+    if office:
+        parts.append(f"office {office}")
+    if timezone:
+        parts.append(f"timezone {timezone}")
+    if radar:
+        parts.append(f"radar {radar}")
+    return ", ".join(parts)
 
 
 def _broadband_result(report_run: ReportRunContract) -> str:

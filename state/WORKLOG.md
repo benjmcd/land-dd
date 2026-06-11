@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-020 NOAA NWS climate connector — 12/25 connector-ready)
+
+- DS-020 NOAA NWS: `NoaaClimateConnector.query_bbox()` via NOAA NWS `api.weather.gov/points/{lat},{lon}`; domain `climate`; evidence code `NWS_CLIMATE_ZONE` (SOURCE_OBSERVATION, ConfidenceBand.HIGH); two-call chain: points → forecast zone name (graceful fallback); mandatory `Accept: application/geo+json` + `User-Agent` headers.
+- Source review `docs/source-reviews/ds-020.md` written; review status `approved-with-restrictions`; registry + seed updated; connector_inventory DS-020 entry added (`immediate_operator_api` + `request_time_orchestration`).
+- Dossier: new Section 13 "Climate / Weather Context" inserted; old Sections 13–16 (Market Context, Unknowns, Verification Plan, Source Appendix) renumbered to 14–17.
+- payload_validation extended with 8 NWS keys; `POST /connector-runs/noaa-climate/query-bbox` operator route added; OpenAPI stubs regenerated.
+- 3 new enrichment tests (NWS zone positive, not-evaluated, source-failure); overclaim test `## 16.` → `## 17.`; source_readiness test ordered list updated with DS-020.
+- Source readiness: 12/25 connector-ready (7/8 Must, 3 Should, 1 Could, 1 Later). verify.ps1 green (272 source files, all tests pass).
+
+## 2026-06-11 (DS-007/DS-009 registry status fix + DS-010 connector inventory gap fix)
+
+- DS-007 BLM MLRS and DS-009 NZA: source review docs were written in a prior session but the CSV Review Status column was not updated from 'pending'. Fixed both to 'blocked'; updated DS-007 license fields from 'unknown' to 'likely public domain' based on the source review.
+- DS-010 connector inventory gap: BuncombeParcelsConnector and BrunswickParcelsConnector were wired in live_connectors.py but absent from IMPLEMENTED_SOURCE_CONNECTORS. Added DS-010-buncombe and DS-010-brunswick entries following the DS-023-brunswick precedent. Committed: 6b4da2e.
+- verify.ps1 green (1287+ tests pass, mypy clean).
+
 ## 2026-06-11 (Dossier source-failure surfacing audit + enrichment test matrix completion)
 
 - Audited all dossier result helper functions for the source-failure surfacing bug pattern: several helpers returned `"not evaluated"` even when domain-scoped `source_failure` evidence existed, unlike `_water_monitoring_result`/`_broadband_result`/`_wetland_result` which check failures explicitly. Fixed: `_buildability_summary`, `_flood_zone_result`, `_zoning_district_result`.
