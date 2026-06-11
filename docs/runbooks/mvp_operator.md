@@ -116,6 +116,20 @@ curl -s -X POST http://localhost:8000/report-runs \
 The two-step report creation response is `202 Accepted` with `report_run_id` and
 `status="queued"`.
 
+### Idempotent report creation
+
+`POST /report-runs` accepts an optional `Idempotency-Key` header. Reusing the same
+non-blank key with the same area and intent returns the original report run instead of
+creating a duplicate. Reusing the same key with a different area or intent returns
+`409 Conflict`.
+
+Signed-token report creation scopes the key to the authenticated workspace and user, so
+two different principals can reuse the same raw key without replaying each other's
+report. The signed-token path still returns `201 Created` with a full
+`ReportRunContract` on the first request and `200 OK` with the same contract on replay.
+The unauthenticated operator path returns `202 Accepted` on first queueing and `200 OK`
+with the same queued job on replay.
+
 ### Approve a report run
 
 The final Markdown dossier (`GET /report-runs/{id}/dossier`) and the machine-readable

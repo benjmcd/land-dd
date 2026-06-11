@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Signed-token report create idempotency hardening)
+
+- Closed a production API ergonomics gap in signed-token `POST /report-runs`: `Idempotency-Key` now replays the same authenticated report instead of creating duplicate synchronous reports.
+- Authenticated idempotency keys are scoped by workspace and user before they reach the existing job-store ledger, so separate principals can reuse the same raw key without cross-principal replay.
+- Reusing a signed-token idempotency key with a different area or intent now returns `409 Conflict`, matching the unauthenticated async path's payload-mismatch behavior.
+- Updated the operator runbook and private MVP readiness note to document the replay behavior while preserving the accepted sync/async response-shape divergence risk.
+- Verification so far: signed-token auth/idempotency focused tests passed after an initial red proof; broader report/API/readiness tests passed with expected DB-gated skips; touched ruff/mypy checks passed. Full workspace verification is recorded in `state/VALIDATION_LOG.md`.
+
 ## 2026-06-11 (DS-015 NC geologic map-unit connector - 15/25 connector-ready)
 
 - DS-015 State geological survey promoted only for bounded NCGS 1985 statewide geologic map-unit context from the Map Units FeatureServer layer; no landslide/sinkhole/radon hazard, mineral-resource, engineering/geotechnical, buildability, appraisal, lending, insurance, or investment conclusion is implemented or allowed.

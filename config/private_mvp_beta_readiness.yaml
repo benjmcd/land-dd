@@ -111,7 +111,7 @@ private_mvp_beta:
 
   sync_async_create_divergence:
     status: accepted_with_risk
-    evidence: backend/app/api/reports.py (create_report_run handler, lines 208-278)
+    evidence: backend/app/api/reports.py (create_report_run handler and authenticated idempotency helper)
     risk: >
       Authenticated requests (valid signed token + workspace headers) receive 201 CREATED
       with a full ReportRunContract synchronously. Unauthenticated requests receive 202
@@ -121,8 +121,9 @@ private_mvp_beta:
       unified — likely to 202 with a polling endpoint — before hosted production.
     note: >
       The two paths share the same POST /report-runs endpoint but differ in response
-      shape, status code, and execution model. No client-facing documentation currently
-      describes the conditional behavior.
+      shape, status code, and execution model. Both paths now support
+      Idempotency-Key replay; signed-token replay is scoped to the authenticated
+      workspace and user, and the operator runbook documents the conditional behavior.
 
   ds017_not_required:
     status: complete

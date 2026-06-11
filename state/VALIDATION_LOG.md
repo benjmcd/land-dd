@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Signed-Token Report Create Idempotency Hardening
+
+**Scope:** Harden signed-token `POST /report-runs` so repeated `Idempotency-Key`
+requests do not create duplicate synchronous reports. Keep the unauthenticated async
+operator path unchanged and preserve existing report semantics.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\api\test_report_auth.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\api\test_report_auth.py tests\api\test_idempotency_key.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\api\test_report_auth.py tests\api\test_idempotency_key.py tests\api\test_async_report_runs.py tests\api\test_report_run_list.py tests\api\test_report_dossier.py tests\api\test_report_export.py tests\api\test_report_lineage.py tests\api\test_report_comparison.py tests\test_private_mvp_readiness.py -q --tb=short
+cd backend; ruff check app\api\reports.py tests\api\test_report_auth.py tests\api\test_idempotency_key.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy app\api\reports.py tests\api\test_report_auth.py tests\api\test_idempotency_key.py tests\test_private_mvp_readiness.py
+.\scripts\verify.ps1
+py -3.12 .\scripts\source_readiness.py --json
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+```
+
+**Results:**
+
+- Initial red proof passed as expected: `tests\api\test_report_auth.py` failed before
+  implementation because the second signed-token idempotent create returned `201` and
+  payload mismatch did not return `409`.
+- Added regressions for signed-token idempotency replay, matching-principal payload
+  mismatch, and cross-principal raw-key reuse.
+- Focused signed-token/idempotency tests passed after implementation; DB-gated
+  idempotency tests remained skipped because `RUN_DB_SMOKE=1` was not set.
+- Broader report/API/readiness set passed with three expected DB-gated skips.
+- Focused ruff passed; focused mypy passed on four touched source/test files.
+- Default `.\scripts\verify.ps1` passed: workspace validation and structural invariants
+  ok; backend tests passed; ruff clean; mypy clean on 287 source files; DB smoke skipped
+  because `RUN_DB_SMOKE=1` was not set.
+- Source-readiness remained unchanged: all-priority `sources=25 ready=16 blocked=9`;
+  Must `sources=8 ready=7 blocked=1` with DS-017 as the only Must blocker.
+- Release-readiness proof passed.
+- `git diff --check` exited clean; it warned that `state/PROJECT_STATE.md` line endings
+  will normalize when Git next touches the file.
+
+**Residual risks:**
+
+- The signed-token path still returns a synchronous `ReportRunContract` while the
+  unauthenticated operator path returns async job status; this accepted private-MVP
+  divergence remains documented in `config/private_mvp_beta_readiness.yaml`.
+- DB smoke was not run in this pass. Run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`
+  only when PostgreSQL/PostGIS prerequisites are available.
+- DS-017 remains blocked by vendor/license/cost decision.
+
 ## 2026-06-11 DS-015 NC Geologic Map-Unit Connector
 
 **Scope:** Promote DS-015 only for bounded NCGS 1985 statewide geologic map-unit context from the Map Units layer; do not infer landslide/sinkhole/radon hazards, mineral resources or rights, engineering/geotechnical suitability, buildability, appraisal, lending, insurance, or investment suitability.

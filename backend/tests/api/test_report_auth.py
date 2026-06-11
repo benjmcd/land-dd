@@ -86,6 +86,88 @@ def test_signed_report_identity_token_binds_report_scope() -> None:
     )
 
 
+def test_signed_report_create_idempotency_replays_same_report() -> None:
+    client = signed_token_client()
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = bearer_headers(workspace_id, user_id)
+    area_id = create_area(client, headers)
+    payload = {"area_id": area_id, "intent_code": "homestead_feasibility"}
+    key = str(uuid4())
+
+    first = client.post(
+        "/report-runs",
+        json=payload,
+        headers={**headers, "Idempotency-Key": key},
+    )
+    second = client.post(
+        "/report-runs",
+        json=payload,
+        headers={**headers, "Idempotency-Key": key},
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert first.json()["report_run_id"] == second.json()["report_run_id"]
+    assert second.json()["workspace_id"] == workspace_id
+    assert second.json()["requested_by"] == user_id
+
+
+def test_signed_report_create_idempotency_rejects_payload_mismatch() -> None:
+    client = signed_token_client()
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+    headers = bearer_headers(workspace_id, user_id)
+    area_id_1 = create_area(client, headers)
+    area_id_2 = create_area(client, headers)
+    key = str(uuid4())
+
+    first = client.post(
+        "/report-runs",
+        json={"area_id": area_id_1, "intent_code": "homestead_feasibility"},
+        headers={**headers, "Idempotency-Key": key},
+    )
+    second = client.post(
+        "/report-runs",
+        json={"area_id": area_id_2, "intent_code": "homestead_feasibility"},
+        headers={**headers, "Idempotency-Key": key},
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert "different payload" in second.json()["detail"]
+
+
+def test_signed_report_create_idempotency_is_principal_scoped() -> None:
+    client = signed_token_client()
+    workspace_a = str(uuid4())
+    workspace_b = str(uuid4())
+    user_a = str(uuid4())
+    user_b = str(uuid4())
+    headers_a = bearer_headers(workspace_a, user_a)
+    headers_b = bearer_headers(workspace_b, user_b)
+    area_a = create_area(client, headers_a)
+    area_b = create_area(client, headers_b)
+    key = str(uuid4())
+
+    first = client.post(
+        "/report-runs",
+        json={"area_id": area_a, "intent_code": "homestead_feasibility"},
+        headers={**headers_a, "Idempotency-Key": key},
+    )
+    second = client.post(
+        "/report-runs",
+        json={"area_id": area_b, "intent_code": "homestead_feasibility"},
+        headers={**headers_b, "Idempotency-Key": key},
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["report_run_id"] != second.json()["report_run_id"]
+    assert first.json()["workspace_id"] == workspace_a
+    assert second.json()["workspace_id"] == workspace_b
+
+
 def test_signed_report_identity_token_rejects_missing_invalid_and_mismatch() -> None:
     client = signed_token_client()
     workspace_id = str(uuid4())

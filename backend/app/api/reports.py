@@ -243,24 +243,17 @@ def create_report_run(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="area not found",
             )
-        try:
-            report = services.report_service.create_report_run(
-                area_id=request.area_id,
-                intent_code=request.intent_code,
-                workspace_id=auth.workspace_id,
-                requested_by=auth.user_id,
-            )
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=str(exc),
-            ) from exc
-        response.status_code = status.HTTP_201_CREATED
-        return report
+        return _create_authenticated_report_run(
+            request=request,
+            services=services,
+            auth=auth,
+            response=response,
+            client_key=client_key,
+        )
     # Note: the workspace-auth path above (auth is not None) creates a
-    # synchronous report run via report_service and does not consult the
-    # async job store. Idempotency-Key is intentionally not wired there;
-    # that path is scoped/auth-controlled and creates at most one run per call.
+    # synchronous report run via report_service. When Idempotency-Key is
+    # supplied, that path uses the async job store as a principal-scoped
+    # idempotency ledger and replays the stored report.
     # Idempotency-Key pre-check: if a job with this key already exists, return it.
     if client_key is not None:
         existing = services.async_report_jobs.get_by_client_idempotency_key(
@@ -336,6 +329,114 @@ def create_report_run(
         report_run_id=job.report_run_id,
         status="queued",
     )
+
+
+def _create_authenticated_report_run(
+    *,
+    request: ReportRunCreateRequest,
+    services: ApiServices,
+    auth: RequestAuthContext,
+    response: Response,
+    client_key: str | None,
+) -> ReportRunContract:
+    scoped_client_key = (
+        _authenticated_idempotency_key(client_key, auth=auth)
+        if client_key is not None
+        else None
+    )
+    if scoped_client_key is not None:
+        existing = services.async_report_jobs.get_by_client_idempotency_key(
+            scoped_client_key,
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+        )
+        if existing is not None:
+            return _replay_authenticated_idempotent_report(
+                existing=existing,
+                request=request,
+                services=services,
+                auth=auth,
+                response=response,
+            )
+        job = services.async_report_jobs.create(
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+            client_idempotency_key=scoped_client_key,
+        )
+        existing_report = services.report_service.get_report_run(job.report_run_id)
+        if existing_report is not None:
+            return _replay_authenticated_idempotent_report(
+                existing=job,
+                request=request,
+                services=services,
+                auth=auth,
+                response=response,
+            )
+        report_run_id = job.report_run_id
+    else:
+        job = None
+        report_run_id = None
+    try:
+        report = services.report_service.create_report_run(
+            area_id=request.area_id,
+            intent_code=request.intent_code,
+            report_run_id=report_run_id,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
+        )
+    except ValueError as exc:
+        if job is not None:
+            services.async_report_jobs.mark_failed(job.report_run_id, error_msg=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        if job is not None:
+            services.async_report_jobs.mark_failed(job.report_run_id, error_msg=str(exc))
+        raise
+    if job is not None:
+        services.async_report_jobs.mark_succeeded(job.report_run_id)
+    response.status_code = status.HTTP_201_CREATED
+    return report
+
+
+def _replay_authenticated_idempotent_report(
+    *,
+    existing: ReportJobRecord,
+    request: ReportRunCreateRequest,
+    services: ApiServices,
+    auth: RequestAuthContext,
+    response: Response,
+) -> ReportRunContract:
+    _check_idempotency_payload_match(
+        existing,
+        area_id=request.area_id,
+        intent_code=request.intent_code,
+    )
+    report = services.report_service.get_report_run(existing.report_run_id)
+    if report is None:
+        detail = "Idempotency-Key is already in use for an unfinished report run"
+        if existing.status == JobStatus.FAILED:
+            detail = "Idempotency-Key is already associated with a failed report run"
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
+    if report.workspace_id != auth.workspace_id or report.requested_by != auth.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Idempotency-Key is already associated with another principal",
+        )
+    if existing.status != JobStatus.SUCCEEDED:
+        services.async_report_jobs.mark_succeeded(existing.report_run_id)
+    response.status_code = status.HTTP_200_OK
+    return report
+
+
+def _authenticated_idempotency_key(
+    client_key: str,
+    *,
+    auth: RequestAuthContext,
+) -> str:
+    return f"auth:{auth.workspace_id}:{auth.user_id}:{client_key}"
 
 
 class ReportApproveRequest(BaseModel):
