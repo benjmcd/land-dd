@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-008 USGS MRDS mineral occurrence connector - 14/25 connector-ready)
+
+- DS-008 USGS MRDS promoted only for bounded historical mineral-occurrence screening; no mineral-rights, mine-hazard, resource-value, extraction, environmental-liability, buildability, appraisal, lending, insurance, or investment conclusions are implemented or allowed.
+- Source review `docs/source-reviews/ds-008.md` added; registry and SQL seed updated to `approved-with-restrictions` with USGS/MRDS attribution, historical/stale-data caveats, and no bulk redistribution in the connector path. Planning-pack DS-008 mirror rows were also updated to avoid a stale reference contradiction.
+- Added `UsgsMrdsConnector.query_bbox()` for official MRDS WFS `mrds` records with WFS 1.0.0 bbox requests, compact evidence fields, bounded bbox/feature limits, source-failure evidence for request/parse/WFS exceptions, and fail-closed truncation behavior when `max_features` is reached.
+- Added reviewer-authenticated `POST /connector-runs/usgs-mrds/query-bbox`, request-time orchestration, connector inventory entry, evidence payload validation keys, focused connector/API/readiness tests, and regenerated OpenAPI stubs.
+- Source readiness now reports Must `sources=8 ready=7 blocked=1`, Later `sources=8 ready=3 blocked=5`, and all-priority `sources=25 ready=14 blocked=11`; DS-017 remains the only Must blocker.
+- Verification: DS-008 focused tests passed (`21 passed`); OpenAPI parity passed (`3 passed`); source registry readiness/seed tests passed (`16 passed`); release-readiness proof passed; focused ruff/mypy passed; default `.\scripts\verify.ps1` passed with backend tests, ruff, mypy on 281 source files, and structural checks green. DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-11 (DS-022 Census TIGERweb geography connector - 13/25 connector-ready)
 
 - DS-022 Census TIGER/ACS promoted only for bounded TIGERweb tract/block-group geography context; ACS demographics, protected-class analytics, neighborhood desirability, market/investment/lending suitability, and residential steering remain excluded.

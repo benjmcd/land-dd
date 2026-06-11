@@ -49,6 +49,9 @@ from app.connectors import (
     SsurgoBbox,
     SsurgoConnector,
     SsurgoConnectorError,
+    UsgsMrdsBbox,
+    UsgsMrdsConnector,
+    UsgsMrdsConnectorError,
     UsgsTnmBbox,
     UsgsTnmConnectorError,
     UsgsTnmElevationConnector,
@@ -73,6 +76,7 @@ from app.connectors.result import ConnectorResult
 from app.connectors.retrieval_provenance import ConnectorRetrievalProvenanceResult
 from app.connectors.review_queue import ConnectorReviewQueueItem
 from app.connectors.ssurgo import SSURGO_MAX_ROWS
+from app.connectors.usgs_mrds import USGS_MRDS_MAX_FEATURES
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS
 from app.domain.area_contracts import AreaContract
 from app.domain.enums import JobStatus
@@ -84,6 +88,7 @@ DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_005_REGISTRY_ID = "DS-005"
 DS_006_REGISTRY_ID = "DS-006"
+DS_008_REGISTRY_ID = "DS-008"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
 DS_016_REGISTRY_ID = "DS-016"
@@ -170,6 +175,14 @@ class EpaEchoOrchestrationResult:
 
 
 @dataclass(frozen=True)
+class UsgsMrdsOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
+@dataclass(frozen=True)
 class FccBroadbandOrchestrationResult:
     ingest_run_id: UUID
     queue_item: ConnectorReviewQueueItem
@@ -202,6 +215,7 @@ RequestTimeLiveConnectorResult = (
     | OsmRoadAccessOrchestrationResult
     | UsgsWaterOrchestrationResult
     | EpaEchoOrchestrationResult
+    | UsgsMrdsOrchestrationResult
     | FccBroadbandOrchestrationResult
     | NoaaClimateOrchestrationResult
     | CensusTigerOrchestrationResult
@@ -230,6 +244,10 @@ def orchestrate_request_time_live_connectors_for_area(
         echo_result = orchestrate_epa_echo_for_area(services=services, area=area)
         if not echo_result.report_ready:
             return echo_result
+    if _source_registry_id_available(services, DS_008_REGISTRY_ID):
+        mrds_result = orchestrate_usgs_mrds_for_area(services=services, area=area)
+        if not mrds_result.report_ready:
+            return mrds_result
     if _source_registry_id_available(services, DS_020_REGISTRY_ID):
         climate_result = orchestrate_noaa_climate_for_area(services=services, area=area)
         if not climate_result.report_ready:
@@ -682,6 +700,65 @@ def orchestrate_epa_echo_for_area(
     services.connector_review_statuses[packet.ingest_run_id] = review_status
     queue_item = services.connector_review_queue.enqueue_review_status(review_status)
     return EpaEchoOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
+def orchestrate_usgs_mrds_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    max_features: int = USGS_MRDS_MAX_FEATURES,
+) -> UsgsMrdsOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_008_REGISTRY_ID)
+    try:
+        connector_result = UsgsMrdsConnector(
+            source=source,
+            fetch_text=services.usgs_mrds_fetch_text,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=usgs_mrds_bbox_from_area(area),
+            max_features=max_features,
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except UsgsMrdsConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return UsgsMrdsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
         report_ready=_queue_item_approved_for_report(queue_item),
@@ -1215,6 +1292,18 @@ def epa_echo_bbox_from_area(area: AreaContract) -> EpaEchoBbox:
     )
 
 
+def usgs_mrds_bbox_from_area(area: AreaContract) -> UsgsMrdsBbox:
+    coordinates = _coordinates_for_bbox(area, "USGS MRDS")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return UsgsMrdsBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def noaa_climate_bbox_from_area(area: AreaContract) -> NoaaClimateBbox:
     coordinates = _coordinates_for_bbox(area, "NOAA Climate")
     xs = [position[0] for position in coordinates]
@@ -1353,6 +1442,7 @@ __all__ = [
     "DS_004_REGISTRY_ID",
     "DS_005_REGISTRY_ID",
     "DS_006_REGISTRY_ID",
+    "DS_008_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
     "DS_011_REGISTRY_ID",
     "DS_016_REGISTRY_ID",
@@ -1369,6 +1459,7 @@ __all__ = [
     "NwiOrchestrationResult",
     "OsmRoadAccessOrchestrationResult",
     "SsurgoOrchestrationResult",
+    "UsgsMrdsOrchestrationResult",
     "UsgsTnmOrchestrationResult",
     "UsgsWaterOrchestrationResult",
     "bbox_from_area",
@@ -1396,10 +1487,12 @@ __all__ = [
     "orchestrate_osm_road_access_for_area",
     "orchestrate_request_time_live_connectors_for_area",
     "orchestrate_ssurgo_for_area",
+    "orchestrate_usgs_mrds_for_area",
     "orchestrate_usgs_tnm_for_area",
     "orchestrate_usgs_water_for_area",
     "osm_road_access_bbox_from_area",
     "ssurgo_bbox_from_area",
+    "usgs_mrds_bbox_from_area",
     "usgs_tnm_bbox_from_area",
     "usgs_water_bbox_from_area",
 ]

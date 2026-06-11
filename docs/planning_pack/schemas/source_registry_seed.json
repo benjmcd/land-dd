@@ -100,8 +100,8 @@
     "mvp_priority": "Later",
     "url": "https://mrdata.usgs.gov/mrds/",
     "use": "Mineral occurrence screening",
-    "caveats": "Systematic updates ceased; treat as historical screening",
-    "license_status": "requires_confirmation"
+    "caveats": "Historical mineral-occurrence screening only; systematic updates ceased in 2011; no mineral-rights, mine-hazard, resource-value, extraction, environmental-liability, investment, or buildability conclusions",
+    "license_status": "approved-with-restrictions"
   },
   {
     "source_id": "DS-009",

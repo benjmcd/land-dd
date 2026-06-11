@@ -31,6 +31,7 @@ from app.api.live_connectors import (
     DS_004_REGISTRY_ID,
     DS_005_REGISTRY_ID,
     DS_006_REGISTRY_ID,
+    DS_008_REGISTRY_ID,
     DS_010_REGISTRY_ID,
     DS_011_REGISTRY_ID,
     DS_016_REGISTRY_ID,
@@ -52,6 +53,7 @@ from app.api.live_connectors import (
     orchestrate_nwi_for_area,
     orchestrate_osm_road_access_for_area,
     orchestrate_ssurgo_for_area,
+    orchestrate_usgs_mrds_for_area,
     orchestrate_usgs_tnm_for_area,
     orchestrate_usgs_water_for_area,
 )
@@ -97,6 +99,11 @@ from app.connectors.osm_road_access import OsmRoadAccessConnectorError
 from app.connectors.review_handoff import ConnectorReviewDisposition
 from app.connectors.review_queue import ConnectorReviewQueueItem
 from app.connectors.ssurgo import SSURGO_MAX_ROWS, SsurgoBbox
+from app.connectors.usgs_mrds import (
+    USGS_MRDS_MAX_FEATURES,
+    UsgsMrdsBbox,
+    UsgsMrdsConnectorError,
+)
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS, UsgsTnmBbox
 from app.connectors.usgs_water_monitoring import UsgsWaterConnectorError
 from app.core.config import get_settings
@@ -1425,6 +1432,105 @@ def query_fcc_broadband_bbox(
         "queue_item_status": queue_item.status.value,
         "queue_name": handoff.queue_name,
         "source_registry_id": DS_021_REGISTRY_ID,
+        "request_url": result.request_url,
+    }
+
+
+class UsgsMrdsBboxRequest(BaseModel):
+    xmin: float
+    ymin: float
+    xmax: float
+    ymax: float
+
+
+class UsgsMrdsQueryRequest(BaseModel):
+    area_id: UUID
+    bbox: UsgsMrdsBboxRequest
+    max_features: int = USGS_MRDS_MAX_FEATURES
+
+
+class UsgsMrdsQueryResponse(BaseModel):
+    connector_name: str
+    ingest_run_id: UUID
+    retrieval_status: str
+    row_count: int | None
+    error_count: int
+    evidence_input_count: int
+    evidence_created_count: int
+    evidence_skipped_count: int
+    source_failure_created_count: int
+    source_failure_skipped_count: int
+    review_required: bool
+    queue_item_status: str
+    queue_name: str
+    source_registry_id: str
+    request_url: str
+
+
+@router.post(
+    "/usgs-mrds/query-bbox",
+    response_model=UsgsMrdsQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def query_usgs_mrds_bbox(
+    request: UsgsMrdsQueryRequest,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> dict[str, object]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
+    try:
+        UsgsMrdsBbox(
+            xmin=request.bbox.xmin,
+            ymin=request.bbox.ymin,
+            xmax=request.bbox.xmax,
+            ymax=request.bbox.ymax,
+        )
+        area = services.area_service.get(request.area_id)
+        if area is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Area '{request.area_id}' is not registered",
+            )
+        area_for_bbox = _area_with_bbox_geometry(
+            area=area,
+            xmin=request.bbox.xmin,
+            ymin=request.bbox.ymin,
+            xmax=request.bbox.xmax,
+            ymax=request.bbox.ymax,
+        )
+        result = orchestrate_usgs_mrds_for_area(
+            services=services,
+            area=area_for_bbox,
+            max_features=request.max_features,
+        )
+        queue_item = result.queue_item
+        review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
+        packet = review_status.handoff.packet
+        handoff = review_status.handoff
+    except UsgsMrdsConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except HTTPException:
+        raise
+
+    return {
+        "connector_name": packet.connector_name,
+        "ingest_run_id": packet.ingest_run_id,
+        "retrieval_status": packet.retrieval_status.value,
+        "row_count": packet.row_count,
+        "error_count": packet.error_count,
+        "evidence_input_count": packet.evidence_input_count,
+        "evidence_created_count": packet.evidence_created_count,
+        "evidence_skipped_count": packet.evidence_skipped_count,
+        "source_failure_created_count": packet.source_failure_created_count,
+        "source_failure_skipped_count": packet.source_failure_skipped_count,
+        "review_required": review_status.review_required,
+        "queue_item_status": queue_item.status.value,
+        "queue_name": handoff.queue_name,
+        "source_registry_id": DS_008_REGISTRY_ID,
         "request_url": result.request_url,
     }
 

@@ -91,6 +91,21 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "primary_census_block_group_name",
     "primary_census_tract_geoid",
     "primary_census_tract_name",
+    # USGS MRDS connector fields (DS-008)
+    "has_mineral_occurrence_context",
+    "mineral_commodity_codes",
+    "mineral_deposit_ids",
+    "mineral_development_statuses",
+    "mineral_occurrence_count",
+    "mineral_rights_determined",
+    "mineral_site_names",
+    "mrds_bbox",
+    "mrds_record_urls",
+    "mrds_systematic_updates_ceased",
+    "no_mineral_occurrence_context",
+    "primary_mineral_deposit_id",
+    "primary_mineral_development_status",
+    "primary_mineral_site_name",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
@@ -268,6 +283,9 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         "no_env_hazard_proximity",
         "has_census_geography_context",
         "census_demographics_used",
+        "has_mineral_occurrence_context",
+        "mineral_rights_determined",
+        "no_mineral_occurrence_context",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"source_observation observed_value '{key}' must be boolean")
@@ -295,6 +313,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["census_block_group_count"],
             "census_block_group_count",
+        )
+    if "mineral_occurrence_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["mineral_occurrence_count"],
+            "mineral_occurrence_count",
         )
 
 

@@ -6,7 +6,7 @@ DS-004,National Wetlands Inventory,USFWS,Wetlands,Public official,US,Must,https:
 DS-005,USGS Water Data APIs,USGS,Water monitoring,Public official,US,Should,https://api.waterdata.usgs.gov/,Streamflow/groundwater/water quality context,Monitoring proximity may be weak proxy
 DS-006,EPA ECHO,EPA,Environmental compliance,Public official,US,Should,https://echo.epa.gov/resources/echo-data/about-the-data,Regulated facilities/violations/enforcement,Nearby facility does not prove subject contamination
 DS-007,BLM MLRS,BLM,Mineral/land records,Public official,Federal lands/US,Later,https://www.blm.gov/services/land-records/mlrs,Mining claims/public land records,Does not resolve private mineral rights
-DS-008,USGS MRDS,USGS,Minerals,Public/stale official,US/global selected,Later,https://mrdata.usgs.gov/mrds/,Mineral occurrence screening,Systematic updates ceased; treat as historical screening
+DS-008,USGS MRDS,USGS,Minerals,Public/stale official,US/global selected,Later,https://mrdata.usgs.gov/mrds/,Mineral occurrence screening,"Historical mineral-occurrence screening only; systematic updates ceased in 2011; no mineral-rights, mine-hazard, resource-value, extraction, environmental-liability, investment, or buildability conclusions"
 DS-009,National Zoning Atlas,NZA,Zoning,Nonprofit/open where available,US partial,Could,https://www.zoningatlas.org/,Zoning baseline where available,Coverage incomplete
 DS-010,County GIS parcels,County,Parcels,Local official/varies,County,Must,Varies,Parcel geometry and local attributes,Approximate; not survey
 DS-011,County assessor,County,Assessor/tax,Local official,County,Must,Varies,"Assessed value, tax year, situs",Schema/access varies

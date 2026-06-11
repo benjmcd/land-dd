@@ -2,6 +2,49 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 DS-008 USGS MRDS Mineral Occurrence Connector
+
+**Scope:** Promote DS-008 only for bounded historical USGS MRDS mineral-occurrence screening; do not infer mineral rights, hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending, insurance, or investment suitability.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
+py -3.12 .\scripts\source_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must
+py -3.12 .\scripts\source_readiness.py --priority Later
+cd backend; ruff check app\connectors\usgs_mrds.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py
+cd backend; py -3.12 -m mypy app\connectors\usgs_mrds.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest tests\test_planning_pack_schema_copies.py tests\api\test_openapi_contract.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- DS-008 focused connector/API/source-readiness tests passed (`21 passed`).
+- Source-readiness CLI reported all-priority `sources=25 ready=14 blocked=11`; DS-008 is now ready.
+- Source-readiness CLI reported Must `sources=8 ready=7 blocked=1`; DS-017 remains the only Must blocker.
+- Later-priority readiness reported `sources=8 ready=3 blocked=5`; DS-008, DS-020, and DS-022 are the ready Later-priority sources.
+- Focused ruff passed; focused mypy passed on 10 source/test files.
+- OpenAPI stubs were regenerated from `create_app().openapi()` and parity tests passed (`3 passed`).
+- Source registry readiness/seed tests passed (`16 passed`).
+- Release-readiness proof passed with Must `ready=7 blocked=1` unchanged.
+- `git diff --check` reported no whitespace errors; it warned that touched CSV/Markdown/OpenAPI files will normalize line endings when Git next touches them.
+- Default `.\scripts\verify.ps1` passed: workspace validation and structural invariants ok; backend tests green; ruff clean; mypy clean on 281 source files; DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+- Re-audit after sidecar review found DS-008 stale metadata in planning-pack mirror files; `docs/planning_pack/schemas/source_registry_seed.json` and `docs/planning_pack/registers/data_source_registry.csv` were updated for DS-008 only. After that mirror update, `.\scripts\verify.ps1`, `py -3.12 .\scripts\source_readiness.py`, and `git diff --check` were re-run; verify and source-readiness passed, and `git diff --check` reported no whitespace errors.
+- Final re-audit tightened the connector caveat to name buildability, appraisal, lending, and insurance nonclaims directly. DS-008 focused tests, focused ruff/mypy, `.\scripts\verify.ps1`, Later-priority source-readiness, and `git diff --check` were re-run and passed; DB smoke remained skipped.
+
+**Residual risks:**
+
+- DS-008 is historical screening context only; MRDS systematic updates have ceased, and nearby or absent MRDS records do not prove mineral ownership, hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending, insurance, or investment suitability.
+- DS-017 remains blocked by vendor/license/cost decision.
+- DB smoke was not run in this pass; run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available.
+- Remaining non-ready sources require fresh source review plus connector proof before promotion; do not promote DS-007, DS-014, DS-015, DS-024, or DS-025 from carried-forward assumptions.
+
 ## 2026-06-11 DS-022 Census TIGERweb Geography Connector
 
 **Scope:** Promote DS-022 only for bounded TIGERweb tract/block-group administrative geography context; exclude ACS demographics and protected-class/product-steering uses.

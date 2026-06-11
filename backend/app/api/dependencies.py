@@ -42,6 +42,7 @@ from app.connectors.noaa_climate import JsonFetcher as NoaaClimateJsonFetcher
 from app.connectors.nwi import NwiJsonFetcher
 from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
 from app.connectors.ssurgo import SsurgoJsonFetcher
+from app.connectors.usgs_mrds import TextFetcher as UsgsMrdsTextFetcher
 from app.connectors.usgs_tnm import UsgsTnmJsonFetcher
 from app.connectors.usgs_water_monitoring import JsonFetcher as UsgsWaterJsonFetcher
 from app.core.config import Settings, get_settings
@@ -93,6 +94,7 @@ class ApiServices:
     fcc_broadband_fetch_json: FccBroadbandJsonFetcher | None = None
     noaa_climate_fetch_json: NoaaClimateJsonFetcher | None = None
     census_tiger_fetch_json: CensusTigerJsonFetcher | None = None
+    usgs_mrds_fetch_text: UsgsMrdsTextFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

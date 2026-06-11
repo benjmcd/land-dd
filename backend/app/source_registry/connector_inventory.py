@@ -11,6 +11,7 @@ from app.connectors.epa_echo import EPA_ECHO_CONNECTOR_NAME
 from app.connectors.fcc_broadband import FCC_BROADBAND_CONNECTOR_NAME
 from app.connectors.noaa_climate import NOAA_CLIMATE_CONNECTOR_NAME
 from app.connectors.osm_road_access import OSM_ROAD_ACCESS_CONNECTOR_NAME
+from app.connectors.usgs_mrds import USGS_MRDS_CONNECTOR_NAME
 from app.connectors.usgs_water_monitoring import USGS_WATER_CONNECTOR_NAME
 
 
@@ -34,6 +35,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-006": SourceConnectorInventoryEntry(
         source_registry_id="DS-006",
         connector_name=EPA_ECHO_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-008": SourceConnectorInventoryEntry(
+        source_registry_id="DS-008",
+        connector_name=USGS_MRDS_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-001": SourceConnectorInventoryEntry(

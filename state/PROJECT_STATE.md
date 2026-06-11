@@ -1,13 +1,13 @@
 # Project State
 
-## Current checkpoint (2026-06-11 tail cleanup)
+## Current checkpoint (2026-06-11 source-readiness closure)
 
 Authoritative current source-readiness checks:
 
 - Must priority: `sources=8 ready=7 blocked=1`; DS-017 Commercial parcel vendor is the only Must blocker.
-- All priorities: `sources=25 ready=13 blocked=12`; DS-022 Census TIGER/ACS is now connector-ready for bounded TIGERweb tract/block-group geography context only. ACS demographic variables remain excluded.
+- All priorities: `sources=25 ready=14 blocked=11`; DS-008 USGS MRDS is now connector-ready for bounded historical mineral-occurrence screening only. DS-022 Census TIGER/ACS remains connector-ready for bounded TIGERweb tract/block-group geography context only. ACS demographic variables remain excluded.
 - Active plan: `plans/2026-06-06-source-readiness-closure.md`.
-- Tail cleanup in this pass: OSM road-access no-road evidence now omits unknown `road_distance_m` so ledger validation succeeds; OSM API tests assert the connector's canonical `SPATIAL_INTERSECTION` / `access` evidence contract; release-readiness proof now expects Must `ready=7 blocked=1`.
+- Current pass: OSM road-access no-road evidence now omits unknown `road_distance_m` so ledger validation succeeds; OSM API tests assert the connector's canonical `SPATIAL_INTERSECTION` / `access` evidence contract; release-readiness proof now expects Must `ready=7 blocked=1`; DS-008 MRDS is restricted to historical mineral-occurrence context and does not determine mineral rights, hazards, resource value, environmental liability, buildability, lending, appraisal, or investment suitability.
 - DB smoke remains a separate proof: default verification does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
 
 Older entries below remain historical unless they match the checks above.
@@ -16,9 +16,21 @@ Older entries below remain historical unless they match the checks above.
 
 ```text
 Current milestone: Level 10 - Production Hardening (partial)
-Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=13 blocked=12. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, DS-020 NOAA NWS climate/weather, and DS-022 Census TIGERweb geography context. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-017 remains vendor/license blocked.
+Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=14 blocked=11. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, DS-020 NOAA NWS climate/weather, DS-022 Census TIGERweb geography context, and DS-008 USGS MRDS historical mineral-occurrence context. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-017 remains vendor/license blocked.
 Last verified: 2026-06-11
 Verification command(s):
+- cd backend; py -3.12 -m pytest tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
+- py -3.12 .\scripts\source_readiness.py
+- py -3.12 .\scripts\source_readiness.py --priority Must
+- py -3.12 .\scripts\source_readiness.py --priority Later
+- cd backend; ruff check app\connectors\usgs_mrds.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py
+- cd backend; py -3.12 -m mypy app\connectors\usgs_mrds.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_usgs_mrds_connector.py tests\api\test_usgs_mrds_connector_api.py tests\source_registry\test_source_readiness.py
+- py -3.12 .\scripts\export_openapi_stub.py
+- cd backend; py -3.12 -m pytest tests\test_planning_pack_schema_copies.py tests\api\test_openapi_contract.py -q --tb=short
+- cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+- .\scripts\run_release_readiness_check.ps1
+- git diff --check
+- .\scripts\verify.ps1
 - cd backend; py -3.12 -m pytest tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
 - py -3.12 .\scripts\source_readiness.py
 - py -3.12 .\scripts\source_readiness.py --priority Must
@@ -875,14 +887,16 @@ with `DS-010`, `DS-011`, `DS-017`, and `DS-023` blocked.
 ## Active lane: Source Readiness Closure (2026-06-07)
 
 Goal: keep source-readiness truth aligned with live repo evidence, complete interrupted
-OSM/NOAA/release-readiness tail cleanup, and choose the next public-source pass without
-overclaiming private MVP or Level 10 production readiness.
+OSM/NOAA/release-readiness tail cleanup, continue public-source readiness passes, and
+choose the next source pass without overclaiming private MVP or Level 10 production
+readiness.
 
 Current state:
 
 | Item | Status | Evidence |
 |---|---|---|
 | DB-enabled local verifier | separate proof | Run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available; default verify does not prove DB smoke |
+| DS-008 USGS MRDS | connector-ready | Historical mineral-occurrence screening only; no mineral-rights, hazard, resource-value, extraction, environmental-liability, buildability, appraisal, lending, insurance, or investment conclusion claimed |
 | DS-011 County assessor | connector-ready as not-evaluated evidence | `AssessorNotEvaluatedConnector.query_area()` records explicit ASSESSOR_NOT_EVALUATED SOURCE_FAILURE evidence; this is not live assessor data |
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
 | DS-020 NOAA NWS climate/weather | connector-ready | Bounded point/forecast-zone connector; administrative weather-zone context only, not climate normals or agricultural risk conclusions |
@@ -903,6 +917,10 @@ Key artifacts:
 - `backend/app/api/live_connectors.py`
 - `backend/app/api/connectors.py`
 - `backend/app/connectors/__init__.py`
+- `backend/app/connectors/usgs_mrds.py`
+- `docs/source-reviews/ds-008.md`
+- `backend/tests/api/test_usgs_mrds_connector_api.py`
+- `backend/tests/connectors/test_usgs_mrds_connector.py`
 - `backend/app/connectors/census_tiger.py`
 - `docs/source-reviews/ds-022.md`
 - `backend/tests/api/test_census_tiger_connector_api.py`
@@ -917,16 +935,17 @@ blocked by license/cost/vendor decision. DS-023 readiness uses recorded-fixture
 district-code lookup only; no raw PDF redistribution, live amendment tracking, or
 legal zoning conclusion is claimed. DS-010 readiness is scoped to
 `immediate_operator_api` and `request_time_orchestration`; durable live-job support
-is not claimed for DS-010. Current all-priority readiness: `sources=25 ready=13
-blocked=12`; DS-022 is connector-ready only for administrative TIGERweb geography
-context, not ACS demographics or protected-class analytics.
+is not claimed for DS-010. Current all-priority readiness: `sources=25 ready=14
+blocked=11`; DS-008 is connector-ready only for historical mineral-occurrence
+screening context, and DS-022 is connector-ready only for administrative TIGERweb
+geography context, not ACS demographics or protected-class analytics.
 
-Last verified in this pass: 2026-06-11 focused DS-022 connector/API/readiness tests
+Last verified in this pass: 2026-06-11 focused DS-008 connector/API/readiness tests
 passed (`21 passed`), OpenAPI parity tests passed (`3 passed`), source registry
 readiness/seed tests passed (`16 passed`), source readiness reported all-priority
-`sources=25 ready=13 blocked=12` and Must `sources=8 ready=7 blocked=1`,
+`sources=25 ready=14 blocked=11` and Must `sources=8 ready=7 blocked=1`,
 release-readiness proof passed, and default `.\scripts\verify.ps1` passed with
-backend tests, ruff, mypy on 278 source files, and structural checks green. DB smoke
+backend tests, ruff, mypy on 281 source files, and structural checks green. DB smoke
 was skipped because `RUN_DB_SMOKE=1` was not set.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
