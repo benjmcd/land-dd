@@ -7838,3 +7838,39 @@ docker compose exec -T db psql -U land -d land_diligence_verify_20260611090306 -
 - DS-017 remains the only Must source-readiness blocker and still requires a
   vendor/license/cost/product-scope decision before implementation or formal
   deferral.
+
+---
+
+## 2026-06-11 - DB Smoke Source-Registry Proof Hardening
+
+**Scope:** `scripts/db_smoke_check.py` now validates canonical source-registry IDs
+inside Postgres instead of accepting any nonzero source count.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\scripts\test_db_smoke_check.py tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_seeds.py -q --tb=short
+cd backend; ruff check ..\scripts\db_smoke_check.py tests\scripts\test_db_smoke_check.py tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_seeds.py
+cd backend; py -3.12 -m mypy ..\scripts\db_smoke_check.py tests\scripts\test_db_smoke_check.py tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_seeds.py
+$env:DB_PORT='55432'; docker compose up -d db
+docker compose exec -T db createdb -U land land_diligence_verify_20260611091900
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence_verify_20260611091900'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611091900'; .\scripts\db_apply_migrations.ps1; py -3.12 .\scripts\db_smoke_check.py
+$env:DB_PORT='55432'; $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence_verify_20260611091900'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611091900'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused pytest passed: 18 tests.
+- Focused ruff passed.
+- Focused mypy passed over 4 source files.
+- Fresh DB smoke passed with 25 seeded source-registry rows, 25 total sources,
+  and 2 seeded intents.
+- Full DB-enabled `.\scripts\verify.ps1` passed. Final smoke reported 25 seeded
+  source-registry rows and 26 total source rows after DB tests created the
+  unsupported-screening runtime source.
+
+**Residual risk:**
+
+- This hardens DB seed proof only. It does not resolve DS-017, remote publication,
+  hosted deployment, hosted auth/RBAC, billing, key rotation, log retention, or
+  hosted alerting.

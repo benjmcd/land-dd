@@ -2082,3 +2082,22 @@ DB-enabled test suite created the unsupported-screening test source in the share
 verification runtime. Updated `state/PROJECT_STATE.md` and the active source
 readiness plan so DS-017 and remote handoff are the next explicit blockers rather
 than stale DS-022 guidance.
+
+---
+
+## 2026-06-11 - DB Smoke Source-Registry Proof Hardening
+
+**Goal:** Make DB smoke prove the canonical source-registry seed content, not just
+that `source.sources` is non-empty.
+
+**Approach:** Refactored `scripts/db_smoke_check.py` into an import-safe `main()`
+plus pure helpers that load `registers/data_source_registry.csv` and validate that
+each canonical `source_registry_id` is present exactly once in Postgres. Added
+focused unit tests for current registry loading, allowed non-registry runtime
+sources, and fail-closed missing/unexpected/duplicate registry IDs.
+
+**Result:** Focused tests, ruff, and mypy pass. Fresh Docker/PostGIS verification
+against `land_diligence_verify_20260611091900` passes; pre-suite smoke reports 25
+seeded source-registry rows and 25 total sources, and full `.\scripts\verify.ps1`
+with `RUN_DB_SMOKE=1` passes with final smoke reporting 25 seeded source-registry
+rows and 26 total sources after DB tests add one runtime source.

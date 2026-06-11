@@ -14,7 +14,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 - DS-011 County assessor is connector-ready only as an explicit `AssessorNotEvaluatedConnector`: it records ASSESSOR_NOT_EVALUATED source-failure evidence for every area. It does not query live assessor portals or expose owner/value/sale-history fields.
 - DS-023 Local zoning ordinance PDFs is connector-ready through recorded-fixture zoning district connectors for reviewed county UDO tables. It does not claim live PDF retrieval, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution.
 - DS-020 NOAA NWS climate/weather is connector-ready through the bounded point/zone API connector. It provides administrative forecast-zone context only, not climate normals, frost dates, growing-season length, or agricultural risk conclusions.
-- DB-enabled verification passed on Docker PostGIS against fresh verification database `land_diligence_verify_20260611090306` with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and `DATABASE_URL` set to the same runtime. The isolated migration/seed pass produced 25 source rows; the full-suite final smoke saw 26 rows after DB tests created the unsupported-screening test source.
+- DB-enabled verification passed on Docker PostGIS against fresh verification database `land_diligence_verify_20260611091900` with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and `DATABASE_URL` set to the same runtime. The DB smoke check now validates all 25 canonical source-registry IDs are present exactly once; the full-suite final smoke saw 25 seeded registry rows and 26 total source rows after DB tests created the unsupported-screening test source.
 
 ## Immediate pass
 
@@ -45,7 +45,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
    - Do not promote source readiness from source-review prose alone; require connector proof and source-readiness test updates.
 
 2. Re-run DB-backed verification where prerequisites exist.
-   - Completed on 2026-06-11 against Docker PostGIS on port 55432 using fresh database `land_diligence_verify_20260611090306`.
+   - Completed on 2026-06-11 against Docker PostGIS on port 55432 using fresh database `land_diligence_verify_20260611091900`.
    - Keep this as a repeatable handoff gate after future DB/schema/seed changes; do not treat default verification with skipped DB smoke as equivalent proof.
    - Record pass/fail evidence without treating skipped DB smoke as a pass.
 
