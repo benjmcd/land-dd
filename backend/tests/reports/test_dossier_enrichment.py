@@ -873,3 +873,113 @@ def test_dossier_renders_broadband_availability_from_evidence() -> None:
     assert "not evaluated" not in section_12.split("Broadband availability:")[1][:80], (
         "Section 12 must not show 'not evaluated' when broadband evidence present"
     )
+
+
+def test_dossier_shows_not_evaluated_for_buildability_with_no_evidence() -> None:
+    """With no buildability evidence, Section 6 terrain line must say 'not evaluated'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec6_start = dossier.find("## 6. Buildability")
+    sec7_start = dossier.find("## 7.")
+    assert sec6_start != -1
+    section_6 = dossier[sec6_start:sec7_start]
+    assert "not evaluated" in section_6.split("Terrain / slope screening:")[1][:80], (
+        "Expected 'not evaluated' when no buildability evidence; got:\n" + section_6
+    )
+
+
+def test_dossier_renders_buildability_source_failure() -> None:
+    """USGS TNM source failure must show 'source failure' in Section 6 terrain line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "buildability")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="USGS_TNM_EPQS_SOURCE_FAILURE",
+        domain="buildability",
+        method_code="usgs_tnm_epqs_terrain_relief_screen",
+        observation="USGS TNM EPQS query did not produce usable terrain data.",
+        observed_value={
+            "failure_reason": "usgs_tnm_request_error",
+            "error_message": "HTTP 503",
+            "retryable": True,
+        },
+        caveat="USGS TNM EPQS terrain screening only.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec6_start = dossier.find("## 6. Buildability")
+    sec7_start = dossier.find("## 7.")
+    assert sec6_start != -1
+    section_6 = dossier[sec6_start:sec7_start]
+    assert "source failure" in section_6, (
+        "Expected 'source failure' text in Section 6 when terrain data unavailable; got:\n"
+        + section_6
+    )
+
+
+def test_dossier_shows_not_evaluated_for_broadband_with_no_evidence() -> None:
+    """With no broadband evidence, Section 12 must say 'not evaluated'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec12_start = dossier.find("## 12. Internet")
+    sec13_start = dossier.find("## 13.")
+    assert sec12_start != -1
+    section_12 = dossier[sec12_start:sec13_start]
+    assert "not evaluated" in section_12.split("Broadband availability:")[1][:80], (
+        "Expected 'not evaluated' when no broadband evidence; got:\n" + section_12
+    )
+
+
+def test_dossier_renders_broadband_source_failure() -> None:
+    """FCC BDC source failure must show 'source failure' in Section 12."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "broadband")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="BROADBAND_SOURCE_UNAVAILABLE",
+        domain="broadband",
+        method_code="fcc_bdc_broadband_availability_query",
+        observation="FCC BDC query failed to return availability data.",
+        observed_value={
+            "failure_reason": "fcc_bdc_request_error",
+            "error_message": "HTTP 503",
+            "retryable": True,
+        },
+        caveat="FCC BDC broadband availability screening only.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec12_start = dossier.find("## 12. Internet")
+    sec13_start = dossier.find("## 13.")
+    assert sec12_start != -1
+    section_12 = dossier[sec12_start:sec13_start]
+    assert "source failure" in section_12, (
+        "Expected 'source failure' text in Section 12 when broadband data unavailable; got:\n"
+        + section_12
+    )

@@ -464,6 +464,12 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
         if r.domain == "buildability" and not r.is_source_failure
     ]
     if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.domain == "buildability" and r.is_source_failure
+        ]
+        if failures:
+            return "source failure — terrain data unavailable"
         return "not evaluated"
     parts: list[str] = []
     for record in records:
