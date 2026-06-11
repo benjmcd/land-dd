@@ -85,10 +85,10 @@
     "source_type": "Public official",
     "geography": "Federal lands/US",
     "mvp_priority": "Later",
-    "url": "https://www.blm.gov/services/land-records/mlrs",
-    "use": "Mining claims/public land records",
-    "caveats": "Does not resolve private mineral rights",
-    "license_status": "requires_confirmation"
+    "url": "https://gis.blm.gov/nlsdb/rest/services/Mining_Claims/MiningClaims/MapServer",
+    "use": "Active federal mining claim context",
+    "caveats": "Active BLM MLRS mining-claim geospatial context only; federal/public-land record scope; PLSS-derived geometries may be approximate, missing, or mapped only to section/county; no private mineral-rights, claim-boundary, title, mine-hazard, resource-value, extraction, environmental-liability, buildability, appraisal, lending, insurance, or investment conclusions",
+    "license_status": "approved-with-restrictions"
   },
   {
     "source_id": "DS-008",

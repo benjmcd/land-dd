@@ -8,6 +8,9 @@ from fastapi import HTTPException, status
 from app.api.dependencies import ApiServices
 from app.connectors import (
     AssessorNotEvaluatedConnector,
+    BlmMlrsBbox,
+    BlmMlrsConnector,
+    BlmMlrsConnectorError,
     BrunswickParcelsBbox,
     BrunswickParcelsConnector,
     BrunswickParcelsConnectorError,
@@ -65,6 +68,7 @@ from app.connectors import (
     build_connector_run_review_packet,
     build_connector_run_review_status,
 )
+from app.connectors.blm_mlrs import BLM_MLRS_MAX_FEATURES
 from app.connectors.brunswick_parcels import (
     BRUNSWICK_PARCELS_MAX_FEATURES as _BRUNSWICK_MAX_FEATURES,
 )
@@ -92,6 +96,7 @@ DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_005_REGISTRY_ID = "DS-005"
 DS_006_REGISTRY_ID = "DS-006"
+DS_007_REGISTRY_ID = "DS-007"
 DS_008_REGISTRY_ID = "DS-008"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
@@ -180,6 +185,14 @@ class EpaEchoOrchestrationResult:
 
 
 @dataclass(frozen=True)
+class BlmMlrsOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
+@dataclass(frozen=True)
 class UsgsMrdsOrchestrationResult:
     ingest_run_id: UUID
     queue_item: ConnectorReviewQueueItem
@@ -228,6 +241,7 @@ RequestTimeLiveConnectorResult = (
     | OsmRoadAccessOrchestrationResult
     | UsgsWaterOrchestrationResult
     | EpaEchoOrchestrationResult
+    | BlmMlrsOrchestrationResult
     | UsgsMrdsOrchestrationResult
     | NcGeologicMapOrchestrationResult
     | FccBroadbandOrchestrationResult
@@ -258,6 +272,10 @@ def orchestrate_request_time_live_connectors_for_area(
         echo_result = orchestrate_epa_echo_for_area(services=services, area=area)
         if not echo_result.report_ready:
             return echo_result
+    if _source_registry_id_available(services, DS_007_REGISTRY_ID):
+        blm_result = orchestrate_blm_mlrs_for_area(services=services, area=area)
+        if not blm_result.report_ready:
+            return blm_result
     if _source_registry_id_available(services, DS_008_REGISTRY_ID):
         mrds_result = orchestrate_usgs_mrds_for_area(services=services, area=area)
         if not mrds_result.report_ready:
@@ -718,6 +736,65 @@ def orchestrate_epa_echo_for_area(
     services.connector_review_statuses[packet.ingest_run_id] = review_status
     queue_item = services.connector_review_queue.enqueue_review_status(review_status)
     return EpaEchoOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
+def orchestrate_blm_mlrs_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    max_features: int = BLM_MLRS_MAX_FEATURES,
+) -> BlmMlrsOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_007_REGISTRY_ID)
+    try:
+        connector_result = BlmMlrsConnector(
+            source=source,
+            fetch_json=services.blm_mlrs_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=blm_mlrs_bbox_from_area(area),
+            max_features=max_features,
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except BlmMlrsConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return BlmMlrsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
         report_ready=_queue_item_approved_for_report(queue_item),
@@ -1369,6 +1446,18 @@ def epa_echo_bbox_from_area(area: AreaContract) -> EpaEchoBbox:
     )
 
 
+def blm_mlrs_bbox_from_area(area: AreaContract) -> BlmMlrsBbox:
+    coordinates = _coordinates_for_bbox(area, "BLM MLRS")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return BlmMlrsBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def usgs_mrds_bbox_from_area(area: AreaContract) -> UsgsMrdsBbox:
     coordinates = _coordinates_for_bbox(area, "USGS MRDS")
     xs = [position[0] for position in coordinates]
@@ -1531,6 +1620,7 @@ __all__ = [
     "DS_004_REGISTRY_ID",
     "DS_005_REGISTRY_ID",
     "DS_006_REGISTRY_ID",
+    "DS_007_REGISTRY_ID",
     "DS_008_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
     "DS_011_REGISTRY_ID",
@@ -1540,6 +1630,7 @@ __all__ = [
     "DS_021_REGISTRY_ID",
     "DS_022_REGISTRY_ID",
     "DS_023_REGISTRY_ID",
+    "BlmMlrsOrchestrationResult",
     "ChathamParcelsOrchestrationResult",
     "CensusTigerOrchestrationResult",
     "EpaEchoOrchestrationResult",
@@ -1553,6 +1644,7 @@ __all__ = [
     "UsgsMrdsOrchestrationResult",
     "UsgsTnmOrchestrationResult",
     "UsgsWaterOrchestrationResult",
+    "blm_mlrs_bbox_from_area",
     "bbox_from_area",
     "buncombe_parcels_bbox_from_area",
     "brunswick_parcels_bbox_from_area",
@@ -1565,6 +1657,7 @@ __all__ = [
     "noaa_climate_bbox_from_area",
     "nwi_bbox_from_area",
     "orchestrate_assessor_not_evaluated_for_area",
+    "orchestrate_blm_mlrs_for_area",
     "orchestrate_buncombe_parcels_for_area",
     "orchestrate_brunswick_parcels_for_area",
     "orchestrate_brunswick_zoning_for_area",

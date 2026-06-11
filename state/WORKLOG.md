@@ -1985,3 +1985,34 @@ Append concise entries. Do not rely on chat history.
 - Created dual-agent workspace structure for Codex and Claude Code.
 - Added thin `AGENTS.md`, `CLAUDE.md` importer, `MANIFEST.md`, plans, skills, subagents, CI, and validation scripts.
 - Preserved comprehensive planning pack under `docs/planning_pack/` as reference, not startup context.
+
+---
+
+## 2026-06-11 - DS-007 BLM MLRS Active Mining Claim Context
+
+**Goal:** Promote DS-007 from blocked to connector-ready for the narrow reviewed BLM
+MLRS Active Mining Claims MapServer layer 1 context.
+
+**Approach:** Confirmed the official BLM ArcGIS Mining Claims MapServer and Active
+Mining Claims layer, then implemented a bounded JSON connector that queries only
+reviewed active-claim fields, fails closed on service errors, malformed payloads, and
+`exceededTransferLimit=true`, and emits LOW-confidence SOURCE_OBSERVATION or
+SOURCE_FAILURE evidence with explicit caveats. Wired the connector into immediate
+operator API and request-time orchestration, added payload validation keys, source
+inventory registration, registry/seed/planning-pack updates, OpenAPI stubs, and focused
+connector/API/readiness tests.
+
+**Changes:**
+- `backend/app/connectors/blm_mlrs.py` - new connector
+- `backend/tests/connectors/test_blm_mlrs_connector.py` - 10 connector tests
+- `backend/tests/api/test_blm_mlrs_connector_api.py` - 6 API tests
+- `backend/app/api/live_connectors.py` and `backend/app/api/connectors.py` - request-time and operator route wiring
+- `backend/app/evidence_ledger/payload_validation.py` - DS-007 observed-value keys and boolean/count validation
+- `backend/app/source_registry/connector_inventory.py` - DS-007 surfaces
+- `registers/data_source_registry.csv`, `db/seeds/002_seed_source_registry.sql`, planning-pack mirrors, and `docs/source-reviews/ds-007.md` - approved-with-restrictions source record
+- `api/openapi_stub.yaml`, `docs/planning_pack/api/openapi_stub.yaml` - regenerated
+
+**Result:** Source readiness is now all-priority `sources=25 ready=16 blocked=9` and
+Later `sources=8 ready=5 blocked=3`. Must remains `sources=8 ready=7 blocked=1`
+with DS-017 as the only Must blocker. Full `.\scripts\verify.ps1` passed; DB smoke was
+skipped because `RUN_DB_SMOKE=1` was not set.

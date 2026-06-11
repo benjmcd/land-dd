@@ -7499,3 +7499,55 @@ cd backend; py -3.12 -m pytest -q
 - DS-011 remains blocked: machine-access terms not reviewed for any NC county assessor portal; DEVNET wEdge API for Chatham exists but county enablement unknown.
 - DS-017 remains blocked by vendor/license/cost decision (deferred).
 - `dependency-attestations` CI job remains red on pull_request events (OIDC entitlement boundary; documented).
+
+---
+
+## 2026-06-11 - DS-007 BLM MLRS Active Mining Claim Context
+
+**Scope:** DS-007 BLM MLRS active federal mining-claim context connector, operator
+API route, request-time orchestration, registry/readiness updates, and source review.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\connectors\test_blm_mlrs_connector.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\connectors\test_blm_mlrs_connector.py tests\api\test_blm_mlrs_connector_api.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\connectors\test_blm_mlrs_connector.py tests\api\test_blm_mlrs_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest tests\test_planning_pack_schema_copies.py tests\api\test_openapi_contract.py -q --tb=short
+cd backend; ruff check app\connectors\blm_mlrs.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_blm_mlrs_connector.py tests\api\test_blm_mlrs_connector_api.py tests\source_registry\test_source_readiness.py
+cd backend; py -3.12 -m mypy app\connectors\blm_mlrs.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_blm_mlrs_connector.py tests\api\test_blm_mlrs_connector_api.py tests\source_registry\test_source_readiness.py
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\source_readiness.py --priority Should --json
+py -3.12 .\scripts\source_readiness.py --priority Later --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- DS-007 connector/API/readiness focused tests: 22 passed.
+- OpenAPI parity/planning-pack contract tests: 3 passed.
+- Source registry readiness/seed tests: 16 passed.
+- Focused ruff: all checks passed.
+- Focused mypy: no issues in 10 source files.
+- Release-readiness proof: passed; Must remains `sources=8 ready=7 blocked=1`.
+- Source readiness: all priorities `sources=25 ready=16 blocked=9`; Later
+  `sources=8 ready=5 blocked=3`; Should `sources=6 ready=3 blocked=3`.
+- `git diff --check`: no whitespace errors; Git warned about line-ending
+  normalization for touched CSV/Markdown/OpenAPI files.
+- Full `.\scripts\verify.ps1`: `verify: ok`; backend tests, ruff, and mypy passed
+  on 287 source files.
+
+**Residual risk:**
+
+- DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+- DS-007 is active BLM federal mining-claim context only; it does not determine
+  private mineral rights, claim-boundary precision, title status, mine hazards,
+  resource value, extraction feasibility, environmental liability, buildability,
+  appraisal, lending, insurance, or investment suitability.
+- Remaining all-priority blockers are DS-009, DS-012, DS-013, DS-014, DS-017,
+  DS-018, DS-019, DS-024, and DS-025; DS-017 remains the only Must blocker.

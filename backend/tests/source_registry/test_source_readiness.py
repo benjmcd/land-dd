@@ -61,6 +61,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-004",
         "DS-005",
         "DS-006",
+        "DS-007",
         "DS-008",
         "DS-010",
         "DS-011",
@@ -88,6 +89,15 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "request_time_orchestration",
     )
     assert "durable_live_job" not in county_gis.connector_surfaces
+    blm_mlrs = next(record for record in records if record.source_registry_id == "DS-007")
+    assert blm_mlrs.blocked_fields == ()
+    assert blm_mlrs.production_use_allowed is True
+    assert blm_mlrs.connector_implemented is True
+    assert blm_mlrs.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+    assert blm_mlrs.connector_ready is True
     mrds = next(record for record in records if record.source_registry_id == "DS-008")
     assert mrds.blocked_fields == ()
     assert mrds.production_use_allowed is True

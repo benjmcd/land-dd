@@ -31,6 +31,7 @@ from app.api.live_connectors import (
     DS_004_REGISTRY_ID,
     DS_005_REGISTRY_ID,
     DS_006_REGISTRY_ID,
+    DS_007_REGISTRY_ID,
     DS_008_REGISTRY_ID,
     DS_010_REGISTRY_ID,
     DS_011_REGISTRY_ID,
@@ -41,6 +42,7 @@ from app.api.live_connectors import (
     DS_022_REGISTRY_ID,
     DS_023_REGISTRY_ID,
     orchestrate_assessor_not_evaluated_for_area,
+    orchestrate_blm_mlrs_for_area,
     orchestrate_brunswick_parcels_for_area,
     orchestrate_brunswick_zoning_for_area,
     orchestrate_buncombe_parcels_for_area,
@@ -84,6 +86,11 @@ from app.connectors import (
     evaluate_access_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_zoning_fixture_quality,
+)
+from app.connectors.blm_mlrs import (
+    BLM_MLRS_MAX_FEATURES,
+    BlmMlrsBbox,
+    BlmMlrsConnectorError,
 )
 from app.connectors.census_tiger import CensusTigerBbox, CensusTigerConnectorError
 from app.connectors.epa_echo import EpaEchoBbox, EpaEchoConnectorError
@@ -1443,6 +1450,37 @@ def query_fcc_broadband_bbox(
     }
 
 
+class BlmMlrsBboxRequest(BaseModel):
+    xmin: float
+    ymin: float
+    xmax: float
+    ymax: float
+
+
+class BlmMlrsQueryRequest(BaseModel):
+    area_id: UUID
+    bbox: BlmMlrsBboxRequest
+    max_features: int = BLM_MLRS_MAX_FEATURES
+
+
+class BlmMlrsQueryResponse(BaseModel):
+    connector_name: str
+    ingest_run_id: UUID
+    retrieval_status: str
+    row_count: int | None
+    error_count: int
+    evidence_input_count: int
+    evidence_created_count: int
+    evidence_skipped_count: int
+    source_failure_created_count: int
+    source_failure_skipped_count: int
+    review_required: bool
+    queue_item_status: str
+    queue_name: str
+    source_registry_id: str
+    request_url: str
+
+
 class UsgsMrdsBboxRequest(BaseModel):
     xmin: float
     ymin: float
@@ -1503,6 +1541,74 @@ class NcGeologicMapQueryResponse(BaseModel):
     queue_name: str
     source_registry_id: str
     request_url: str
+
+
+@router.post(
+    "/blm-mlrs/query-bbox",
+    response_model=BlmMlrsQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def query_blm_mlrs_bbox(
+    request: BlmMlrsQueryRequest,
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> dict[str, object]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
+    try:
+        BlmMlrsBbox(
+            xmin=request.bbox.xmin,
+            ymin=request.bbox.ymin,
+            xmax=request.bbox.xmax,
+            ymax=request.bbox.ymax,
+        )
+        area = services.area_service.get(request.area_id)
+        if area is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Area '{request.area_id}' is not registered",
+            )
+        area_for_bbox = _area_with_bbox_geometry(
+            area=area,
+            xmin=request.bbox.xmin,
+            ymin=request.bbox.ymin,
+            xmax=request.bbox.xmax,
+            ymax=request.bbox.ymax,
+        )
+        result = orchestrate_blm_mlrs_for_area(
+            services=services,
+            area=area_for_bbox,
+            max_features=request.max_features,
+        )
+        queue_item = result.queue_item
+        review_status = services.connector_review_statuses[result.ingest_run_id]
+        queue_item = _maybe_auto_approve(services, queue_item, review_status)
+        packet = review_status.handoff.packet
+        handoff = review_status.handoff
+    except BlmMlrsConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except HTTPException:
+        raise
+
+    return {
+        "connector_name": packet.connector_name,
+        "ingest_run_id": packet.ingest_run_id,
+        "retrieval_status": packet.retrieval_status.value,
+        "row_count": packet.row_count,
+        "error_count": packet.error_count,
+        "evidence_input_count": packet.evidence_input_count,
+        "evidence_created_count": packet.evidence_created_count,
+        "evidence_skipped_count": packet.evidence_skipped_count,
+        "source_failure_created_count": packet.source_failure_created_count,
+        "source_failure_skipped_count": packet.source_failure_skipped_count,
+        "review_required": review_status.review_required,
+        "queue_item_status": queue_item.status.value,
+        "queue_name": handoff.queue_name,
+        "source_registry_id": DS_007_REGISTRY_ID,
+        "request_url": result.request_url,
+    }
 
 
 @router.post(

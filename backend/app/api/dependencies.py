@@ -26,6 +26,7 @@ from app.connectors import (
     InMemoryConnectorReviewQueueRepository,
     SqlAlchemyConnectorReviewQueueRepository,
 )
+from app.connectors.blm_mlrs import JsonFetcher as BlmMlrsJsonFetcher
 from app.connectors.brunswick_parcels import JsonFetcher as BrunswickParcelsJsonFetcher
 from app.connectors.buncombe_parcels import JsonFetcher as BuncombeParcelsJsonFetcher
 from app.connectors.census_tiger import JsonFetcher as CensusTigerJsonFetcher
@@ -95,6 +96,7 @@ class ApiServices:
     fcc_broadband_fetch_json: FccBroadbandJsonFetcher | None = None
     noaa_climate_fetch_json: NoaaClimateJsonFetcher | None = None
     census_tiger_fetch_json: CensusTigerJsonFetcher | None = None
+    blm_mlrs_fetch_json: BlmMlrsJsonFetcher | None = None
     usgs_mrds_fetch_text: UsgsMrdsTextFetcher | None = None
     nc_geologic_map_fetch_json: NcGeologicMapJsonFetcher | None = None
 

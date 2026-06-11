@@ -60,6 +60,22 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "has_env_hazard_proximity",
     "no_env_hazard_proximity",
     "regulated_facility_count",
+    # BLM MLRS connector fields (DS-007)
+    "blm_active_mining_claim_count",
+    "blm_mlrs_bbox",
+    "blm_mlrs_case_dispositions",
+    "blm_mlrs_case_names",
+    "blm_mlrs_case_serial_numbers",
+    "blm_mlrs_case_type_numbers",
+    "blm_mlrs_data_quality_notes",
+    "blm_mlrs_layer_url",
+    "blm_mlrs_legacy_case_serial_numbers",
+    "blm_mlrs_products",
+    "blm_mlrs_recorded_acres",
+    "has_blm_active_mining_claim_context",
+    "no_blm_active_mining_claim_context",
+    "primary_blm_mlrs_case_name",
+    "primary_blm_mlrs_case_serial_number",
     # broadband connector fields (DS-021)
     "fcc_bdc_lat",
     "fcc_bdc_lon",
@@ -297,6 +313,8 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         "source_stale",
         "has_env_hazard_proximity",
         "no_env_hazard_proximity",
+        "has_blm_active_mining_claim_context",
+        "no_blm_active_mining_claim_context",
         "has_census_geography_context",
         "census_demographics_used",
         "has_mineral_occurrence_context",
@@ -324,6 +342,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["regulated_facility_count"],
             "regulated_facility_count",
+        )
+    if "blm_active_mining_claim_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["blm_active_mining_claim_count"],
+            "blm_active_mining_claim_count",
         )
     if "census_tract_count" in evidence.observed_value:
         _require_non_negative_number(

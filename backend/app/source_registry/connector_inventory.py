@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
+from app.connectors.blm_mlrs import BLM_MLRS_CONNECTOR_NAME
 from app.connectors.brunswick_parcels import BRUNSWICK_PARCELS_CONNECTOR_NAME
 from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
 from app.connectors.buncombe_parcels import BUNCOMBE_PARCELS_CONNECTOR_NAME
@@ -36,6 +37,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-006": SourceConnectorInventoryEntry(
         source_registry_id="DS-006",
         connector_name=EPA_ECHO_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-007": SourceConnectorInventoryEntry(
+        source_registry_id="DS-007",
+        connector_name=BLM_MLRS_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-008": SourceConnectorInventoryEntry(
