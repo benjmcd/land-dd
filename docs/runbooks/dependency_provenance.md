@@ -26,6 +26,9 @@ Run the validate-only proof from the repository root:
 .\scripts\run_provenance_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/provenance_check.py` so local
+and CI validation use the same validate-only logic.
+
 The check verifies:
 
 - the production lock exists and every entry is exactly pinned with a SHA-256 hash;

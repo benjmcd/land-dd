@@ -72,6 +72,7 @@ def test_backend_sbom_matches_production_lock() -> None:
 
 def test_dependency_provenance_scripts_and_runbook_exist() -> None:
     for path in (
+        REPO_ROOT / "scripts" / "provenance_check.py",
         REPO_ROOT / "scripts" / "run_provenance_check.ps1",
         REPO_ROOT / "scripts" / "run_provenance_check.sh",
         REPO_ROOT / "docs" / "runbooks" / "dependency_provenance.md",
@@ -85,6 +86,7 @@ def test_dependency_provenance_scripts_and_runbook_exist() -> None:
         "backend/requirements-prod.lock",
         "docs/sbom/backend-prod-sbom.json",
         "run_provenance_check.ps1",
+        "scripts/provenance_check.py",
         "dependency-attestations",
         "actions/attest@v4",
         "SBOM attestation",
@@ -126,3 +128,10 @@ def test_ci_attests_dependency_provenance_artifacts() -> None:
     assert "backend/requirements-prod.lock" in steps_text
     assert "docs/sbom/backend-prod-sbom.json" in steps_text
     assert "'sbom-path': 'docs/sbom/backend-prod-sbom.json'" in steps_text
+
+
+def test_provenance_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_provenance_check.ps1", "run_provenance_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "provenance_check.py" in script

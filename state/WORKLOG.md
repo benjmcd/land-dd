@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Dependency-provenance shared validator extraction)
+
+- Extracted the duplicated dependency-provenance validation logic and pip hash dry-run from `scripts/run_provenance_check.ps1` and `.sh` into `scripts/provenance_check.py`.
+- Kept the Windows and POSIX dependency-provenance wrappers as thin launchers that call the same shared validator and preserve the existing `dependency provenance check: ok` success token.
+- Updated `MANIFEST.md`, the dependency provenance runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused provenance artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope remains validate-only; new dependency approval, live GitHub attestation entitlement, hosted deployment artifacts, and registry image provenance remain out of scope.
+
 ## 2026-06-11 (Container-image-scan shared validator extraction)
 
 - Extracted the duplicated container-image-scan validation logic from `scripts/run_container_scan_check.ps1` and `.sh` into `scripts/container_scan_check.py`.
