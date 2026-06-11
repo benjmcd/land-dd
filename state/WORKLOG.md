@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Release-readiness shared validator extraction)
+
+- Extracted duplicated embedded release-readiness Python from the Windows and POSIX wrappers into `scripts/release_readiness_check.py`.
+- Kept `scripts/run_release_readiness_check.ps1` and `.sh` as thin launchers that call the same shared validator and preserve the existing `release readiness check: ok` success token.
+- Updated artifact tests to validate the shared script's source-count/DB-env assertions and prove both wrappers delegate to the shared validator.
+- Verification: shared validator syntax, focused release-readiness artifact tests, Windows/POSIX readiness wrappers, POSIX syntax, touched ruff/mypy checks, `git diff --check`, and default `.\scripts\verify.ps1` passed.
+
 ## 2026-06-11 (DB-verify CI env contract hardening)
 
 - Made the GitHub `db-verify` job explicit about both DB URLs: `DATABASE_URL_SYNC` for migration/smoke scripts and `DATABASE_URL` for app-level DB tests.

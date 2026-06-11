@@ -210,21 +210,31 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
 
 
 def test_release_readiness_scripts_expect_current_source_counts() -> None:
+    script = (REPO_ROOT / "scripts" / "release_readiness_check.py").read_text(
+        encoding="utf-8",
+    )
+
+    assert 'ready_count") == 7' in script
+    assert 'blocked_count") == 1' in script
+    assert "DATABASE_URL_SYNC" in script
+    assert "DATABASE_URL" in script
+    assert '{"DS-017"}' in script
+    assert '{"DS-011", "DS-017"}' not in script
+    assert '{"DS-011", "DS-017", "DS-023"}' not in script
+
+
+def test_release_readiness_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "run_release_readiness_check.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_release_readiness_check.sh").is_file()
+    assert (REPO_ROOT / "scripts" / "release_readiness_check.py").is_file()
+
+
+def test_release_readiness_wrappers_delegate_to_shared_validator() -> None:
     for script_path in (
         REPO_ROOT / "scripts" / "run_release_readiness_check.ps1",
         REPO_ROOT / "scripts" / "run_release_readiness_check.sh",
     ):
         script = script_path.read_text(encoding="utf-8")
 
-        assert "ready_count\") == 7" in script or 'ready_count") == 7' in script
-        assert "blocked_count\") == 1" in script or 'blocked_count") == 1' in script
-        assert "DATABASE_URL_SYNC" in script
-        assert "DATABASE_URL" in script
-        assert '{"DS-017"}' in script
-        assert '{"DS-011", "DS-017"}' not in script
-        assert '{"DS-011", "DS-017", "DS-023"}' not in script
-
-
-def test_release_readiness_scripts_exist_for_windows_and_posix() -> None:
-    assert (REPO_ROOT / "scripts" / "run_release_readiness_check.ps1").is_file()
-    assert (REPO_ROOT / "scripts" / "run_release_readiness_check.sh").is_file()
+        assert "release_readiness_check.py" in script
+        assert "release readiness check: ok" in script

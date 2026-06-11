@@ -12,6 +12,7 @@ Authoritative current source-readiness checks:
 - DB-enabled verification passed on Docker PostGIS with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC=postgresql://land:land@localhost:55432/land_diligence`, and `DATABASE_URL=postgresql+psycopg://land:land@localhost:55432/land_diligence`. Default verification still does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
 - Data-retention validation now proves the audit purge script and Windows/POSIX dry-run wrappers exist and are documented before accepting the data-retention catalog. This does not enable automated deletion; audit purges remain manual operator actions.
 - Release-readiness validation now requires the CI `db-verify` gate to pass both `DATABASE_URL_SYNC=postgresql://land:land@localhost:5432/land_diligence` and `DATABASE_URL=postgresql+psycopg://land:land@localhost:5432/land_diligence` with `RUN_DB_SMOKE=1`. This closes the prior implicit app-URL assumption in CI but does not remove the need for real DB-enabled verification when DB prerequisites are available.
+- Release-readiness validation logic is centralized in `scripts/release_readiness_check.py`; the Windows and POSIX wrappers are thin launchers for the same validator to avoid drift between local and CI proof paths.
 
 Older entries below remain historical unless they match the checks above.
 

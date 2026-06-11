@@ -2,6 +2,40 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Release-Readiness Shared Validator Extraction
+
+**Scope:** Remove duplicated release-readiness validation logic from Windows/POSIX
+wrappers by centralizing the checks in `scripts/release_readiness_check.py`.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m py_compile .\scripts\release_readiness_check.py
+cd backend; py -3.12 -m pytest tests\test_release_readiness_artifacts.py -q --tb=short
+.\scripts\run_release_readiness_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' -n ./scripts/run_release_readiness_check.sh
+cd backend; ruff check ..\scripts\release_readiness_check.py tests\test_release_readiness_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\release_readiness_check.py tests\test_release_readiness_artifacts.py
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_readiness_check.sh
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Shared validator compiled successfully.
+- Focused release-readiness artifact tests passed.
+- Windows and POSIX release-readiness wrappers passed; POSIX syntax check passed.
+- Touched ruff and mypy checks passed after adding explicit YAML/JSON type narrowing.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed, ruff clean, mypy clean on 288 source files, and DB smoke skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This reduces release-readiness wrapper drift only. It does not change the known
+  hosted production blockers or replace DB-enabled verification with a live
+  PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 DB-Verify CI Env Contract Hardening
 
 **Scope:** Make the CI DB-smoke gate and release-readiness proof explicit about
