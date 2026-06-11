@@ -1760,6 +1760,32 @@ Append concise entries. Do not rely on chat history.
   - `backend/tests/test_source_service.py`: 8 fixture-backed tests, all passing.
 - `verify.sh` passes: 14 tests, lint clean, mypy clean.
 
+## 2026-06-10 — DS-010 Buncombe and Brunswick Parcel Connectors
+
+**Goal:** Expand DS-010 parcel coverage from Chatham-only to all three private-MVP counties (Buncombe, Brunswick).
+
+**Approach:** Implemented live ArcGIS connectors for Buncombe (property_bc_dis MapServer/1, pinnum/Acreage) and Brunswick (TaxParcels FeatureServer/0, PIN/CALCAC/Zoning). Added `_classify_area_county()` centroid-based county dispatcher in `live_connectors.py` using NC coordinate bounding boxes; updated `orchestrate_request_time_live_connectors_for_area()` to dispatch to the correct per-county connector. DS-023 Chatham zoning still fires only for Chatham areas. Both connectors follow the same connector pattern, evidence protocol, review-queue path, and bbox/feature-count limits as the Chatham connector.
+
+**ArcGIS endpoint details:**
+- Buncombe: `https://gis.buncombenc.gov/arcgis/rest/services/property_bc_dis/MapServer/1/query` — fields `pinnum`, `Acreage`; no zoning field in this service
+- Brunswick: `https://bcgis.brunswickcountync.gov/arcgis/rest/services/Layers/TaxParcels/FeatureServer/0/query` — fields `PIN`, `CALCAC`, `Zoning`
+
+**Changes:**
+- `backend/app/connectors/buncombe_parcels.py` — new connector (15 unit tests)
+- `backend/app/connectors/brunswick_parcels.py` — new connector (22 unit tests)
+- `backend/app/connectors/__init__.py` — 22 new exports
+- `backend/app/api/live_connectors.py` — county bounds, `_classify_area_county()`, bbox helpers, orchestration functions, updated dispatch block
+- `backend/app/api/connectors.py` — 2 new API routes
+- `backend/app/api/dependencies.py` — BuncombeParcelsJsonFetcher / BrunswickParcelsJsonFetcher fields
+- `backend/tests/api/test_buncombe_parcels_connector_api.py` — 5 API tests
+- `backend/tests/api/test_brunswick_parcels_connector_api.py` — 5 API tests
+- `docs/source-reviews/ds-010.md` — connector gate rows updated to complete
+- OpenAPI stubs regenerated
+
+**Result:** 1071 passed, 78 skipped; ruff clean; mypy clean (254 source files); `.\scripts\verify.ps1` → `verify: ok`. Commit: 5b4ca12.
+
+---
+
 ## 2026-06-10 — DS-023 Orchestration Wiring
 
 **Goal:** Wire `ChathamZoningRecordedConnector` into request-time orchestration, the operator API, and the connectors package exports.

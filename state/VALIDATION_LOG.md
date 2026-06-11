@@ -7256,6 +7256,32 @@ cd backend; py -3.12 -m mypy app/connectors/chatham_zoning_recorded.py app/sourc
 
 ---
 
+## 2026-06-10 — DS-010 Buncombe/Brunswick Connectors (commit 5b4ca12)
+
+**Commands:**
+```
+cd backend; py -3.12 -m pytest tests/connectors/test_buncombe_parcels_connector.py -q
+cd backend; py -3.12 -m pytest tests/connectors/test_brunswick_parcels_connector.py -q
+cd backend; py -3.12 -m pytest -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+- 15 Buncombe connector unit tests: all passed
+- 22 Brunswick connector unit tests: all passed
+- Full suite: 1071 passed, 78 skipped (0 failures)
+- ruff: All checks passed
+- mypy: clean (254 source files)
+- `.\scripts\verify.ps1`: `verify: ok`
+
+**Residual risk:**
+- DB smoke skipped (no local Docker/Postgres).
+- Buncombe zoning: `parcel_zoning=None` always because the property_bc_dis service has no zoning field. If a Buncombe zoning connector is added later, it would need a separate zoning data source.
+- County dispatch uses centroid bounds (approximate). Areas spanning county lines would dispatch to whichever county contains the centroid.
+- DS-010 ArcGIS endpoints are live county services; network failures return SOURCE_FAILURE evidence (fail-closed).
+
+---
+
 ## 2026-06-10 — DS-023 Orchestration Wiring (commit 48b3397)
 
 **Commands:**

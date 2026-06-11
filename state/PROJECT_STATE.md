@@ -816,6 +816,9 @@ Current state:
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
 | DS-023 Local zoning ordinance PDFs | connector-ready, wired | ChathamZoningRecordedConnector wired into orchestration and API 2026-06-10; silent post-DS-010 step; POST /connector-runs/chatham-zoning/query-district endpoint added |
 | DS-023 orchestration wiring | complete | `orchestrate_chatham_zoning_for_area()`, `_extract_chatham_parcel_zoning_code()`, payload validation allowlist extended, OpenAPI stubs regenerated |
+| DS-010 Buncombe parcel connector | complete | `buncombe_parcels.py`; ArcGIS property_bc_dis MapServer/1; pinnum/Acreage (no zoning field); county dispatch via centroid bounds |
+| DS-010 Brunswick parcel connector | complete | `brunswick_parcels.py`; ArcGIS TaxParcels FeatureServer/0; PIN/CALCAC/Zoning; county dispatch; zoning available |
+| DS-010 county dispatch | complete | `_classify_area_county()` with NC coordinate bounds; Buncombe/Brunswick orchestration functions wired; API routes added |
 | Source readiness gate | hardened | `scripts/source_readiness.py` now reports `production_use_allowed`, `connector_implemented`, `connector_surfaces`, and `connector_ready` separately |
 
 Key artifacts:
@@ -840,11 +843,12 @@ redistribution; screens at `immediate_operator_api` and
 `immediate_operator_api` and `request_time_orchestration`; durable live-job
 support is not claimed for DS-010.
 
-Last verified: 2026-06-10 — DS-023 orchestration wiring complete (commit 48b3397);
-1024 passed, 78 skipped; ruff clean; mypy clean over 248 source files;
-`.\scripts\verify.ps1` → `verify: ok`; DB smoke skipped. DS-011 remains blocked
-(machine-access terms not reviewed for any NC county assessor portal). DS-017
-remains blocked by license/cost decision.
+Last verified: 2026-06-10 — DS-010 Buncombe/Brunswick parcel connectors complete
+(commit 5b4ca12); 1071 passed, 78 skipped; ruff clean; mypy clean over 254 source
+files; `.\scripts\verify.ps1` → `verify: ok`; DB smoke skipped. DS-010 now covers
+all three private-MVP counties (Chatham, Buncombe, Brunswick) with county dispatch.
+DS-011 remains blocked (machine-access terms not reviewed). DS-017 remains blocked
+by license/cost decision.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 
