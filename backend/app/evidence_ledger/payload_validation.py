@@ -26,6 +26,7 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "jurisdiction_boundary_proximity",
     "jurisdiction_edge",
     "municipal_jurisdiction_possible",
+    "monitoring_station_count",
     "nearby_well_log_count",
     "no_public_road_adjacency",
     "no_plausible_water_context",
@@ -109,6 +110,14 @@ SPATIAL_INTERSECTION_KEYS = {
     "parcel_class",
     "parcel_count",
     "total_acres_approx",
+    # osm road access connector fields
+    "lookup_type",
+    "osm_query_bbox",
+    "road_count",
+    # usgs water monitoring connector fields
+    "monitoring_station_count",
+    "water_context_status",
+    "usgs_water_bbox",
 }
 SPATIAL_RESULT_KEYS = {
     "flood_zone",
@@ -210,6 +219,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["nearby_well_log_count"],
             "nearby_well_log_count",
+        )
+    if "monitoring_station_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["monitoring_station_count"],
+            "monitoring_station_count",
         )
 
 

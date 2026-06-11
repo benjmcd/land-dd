@@ -229,6 +229,15 @@ from app.connectors.usgs_tnm import (
     UsgsTnmConnectorResult,
     UsgsTnmElevationConnector,
 )
+from app.connectors.usgs_water_monitoring import (
+    USGS_WATER_CAVEAT,
+    USGS_WATER_CONNECTOR_NAME,
+    USGS_WATER_METHOD_CODE,
+    UsgsWaterBbox,
+    UsgsWaterConnectorError,
+    UsgsWaterConnectorResult,
+    UsgsWaterMonitoringConnector,
+)
 from app.connectors.wetlands_fixture import (
     StaticWetlandsFixtureConnector,
     WetlandsFixtureConnectorResult,
@@ -404,6 +413,13 @@ __all__ = [
     "UsgsTnmConnectorError",
     "UsgsTnmConnectorResult",
     "UsgsTnmElevationConnector",
+    "USGS_WATER_CAVEAT",
+    "USGS_WATER_CONNECTOR_NAME",
+    "USGS_WATER_METHOD_CODE",
+    "UsgsWaterBbox",
+    "UsgsWaterConnectorError",
+    "UsgsWaterConnectorResult",
+    "UsgsWaterMonitoringConnector",
     "WetlandsFixtureConnectorResult",
     "ZoningFixtureConnectorResult",
     "build_connector_review_handoff",

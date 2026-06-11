@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
 from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
 from app.connectors.osm_road_access import OSM_ROAD_ACCESS_CONNECTOR_NAME
+from app.connectors.usgs_water_monitoring import USGS_WATER_CONNECTOR_NAME
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,11 @@ DURABLE_LIVE_JOB = "durable_live_job"
 REQUEST_TIME_ORCHESTRATION = "request_time_orchestration"
 
 IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
+    "DS-005": SourceConnectorInventoryEntry(
+        source_registry_id="DS-005",
+        connector_name=USGS_WATER_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
     "DS-001": SourceConnectorInventoryEntry(
         source_registry_id="DS-001",
         connector_name="usgs_tnm_live",

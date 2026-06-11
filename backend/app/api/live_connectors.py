@@ -40,6 +40,9 @@ from app.connectors import (
     UsgsTnmBbox,
     UsgsTnmConnectorError,
     UsgsTnmElevationConnector,
+    UsgsWaterBbox,
+    UsgsWaterConnectorError,
+    UsgsWaterMonitoringConnector,
     build_connector_review_handoff,
     build_connector_run_review_packet,
     build_connector_run_review_status,
@@ -66,6 +69,7 @@ DS_001_REGISTRY_ID = "DS-001"
 DS_002_REGISTRY_ID = "DS-002"
 DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
+DS_005_REGISTRY_ID = "DS-005"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
 DS_016_REGISTRY_ID = "DS-016"
@@ -132,6 +136,14 @@ class OsmRoadAccessOrchestrationResult:
     request_url: str
 
 
+@dataclass(frozen=True)
+class UsgsWaterOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
 RequestTimeLiveConnectorResult = (
     UsgsTnmOrchestrationResult
     | FemaNfhlOrchestrationResult
@@ -139,6 +151,7 @@ RequestTimeLiveConnectorResult = (
     | SsurgoOrchestrationResult
     | ChathamParcelsOrchestrationResult
     | OsmRoadAccessOrchestrationResult
+    | UsgsWaterOrchestrationResult
 )
 
 
@@ -156,6 +169,10 @@ def orchestrate_request_time_live_connectors_for_area(
         result = orchestrate(services=services, area=area)
         if not result.report_ready:
             return result
+    if _source_registry_id_available(services, DS_005_REGISTRY_ID):
+        water_result = orchestrate_usgs_water_for_area(services=services, area=area)
+        if not water_result.report_ready:
+            return water_result
     if _source_registry_id_available(services, DS_016_REGISTRY_ID):
         osm_result = orchestrate_osm_road_access_for_area(services=services, area=area)
         if not osm_result.report_ready:
@@ -482,6 +499,63 @@ def orchestrate_osm_road_access_for_area(
     services.connector_review_statuses[packet.ingest_run_id] = review_status
     queue_item = services.connector_review_queue.enqueue_review_status(review_status)
     return OsmRoadAccessOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
+def orchestrate_usgs_water_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+) -> UsgsWaterOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_005_REGISTRY_ID)
+    try:
+        connector_result = UsgsWaterMonitoringConnector(
+            source=source,
+            fetch_json=services.usgs_water_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=usgs_water_bbox_from_area(area),
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except UsgsWaterConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return UsgsWaterOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
         report_ready=_queue_item_approved_for_report(queue_item),
@@ -818,6 +892,18 @@ def osm_road_access_bbox_from_area(area: AreaContract) -> OsmRoadAccessBbox:
     )
 
 
+def usgs_water_bbox_from_area(area: AreaContract) -> UsgsWaterBbox:
+    coordinates = _coordinates_for_bbox(area, "USGS Water Monitoring")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return UsgsWaterBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def chatham_parcels_bbox_from_area(area: AreaContract) -> ChathamParcelsBbox:
     coordinates = _coordinates_for_bbox(area, "Chatham Parcels")
     xs = [position[0] for position in coordinates]
@@ -918,6 +1004,7 @@ __all__ = [
     "DS_002_REGISTRY_ID",
     "DS_003_REGISTRY_ID",
     "DS_004_REGISTRY_ID",
+    "DS_005_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
     "DS_011_REGISTRY_ID",
     "DS_016_REGISTRY_ID",
@@ -928,6 +1015,7 @@ __all__ = [
     "OsmRoadAccessOrchestrationResult",
     "SsurgoOrchestrationResult",
     "UsgsTnmOrchestrationResult",
+    "UsgsWaterOrchestrationResult",
     "bbox_from_area",
     "buncombe_parcels_bbox_from_area",
     "brunswick_parcels_bbox_from_area",
@@ -946,7 +1034,9 @@ __all__ = [
     "orchestrate_request_time_live_connectors_for_area",
     "orchestrate_ssurgo_for_area",
     "orchestrate_usgs_tnm_for_area",
+    "orchestrate_usgs_water_for_area",
     "osm_road_access_bbox_from_area",
     "ssurgo_bbox_from_area",
     "usgs_tnm_bbox_from_area",
+    "usgs_water_bbox_from_area",
 ]
