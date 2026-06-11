@@ -20,6 +20,8 @@ Run from the repository root:
 
 The check verifies that:
 
+- the Windows and POSIX wrappers delegate to the shared
+  `scripts/image_publication_check.py` validator;
 - `config/image_publication.yaml` points at `backend/Dockerfile` and the repo root build
   context;
 - required release, deployment smoke, container scan, and verification gates exist;

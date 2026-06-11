@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Image-publication shared validator extraction)
+
+- Extracted the duplicated image-publication validation logic from `scripts/run_image_publication_check.ps1` and `.sh` into `scripts/image_publication_check.py`.
+- Kept the Windows and POSIX image-publication wrappers as thin launchers that call the same shared validator and preserve the existing `image publication check: ok` success token.
+- Updated `MANIFEST.md`, the image-publication runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused image-publication artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Registry repository authority, hosted deployment authority, registry-image attestation authority, signed image SBOM authority, and actual image publication remain production blockers.
+
 ## 2026-06-11 (Hosted-deployment shared validator extraction)
 
 - Extracted the duplicated hosted-deployment validation logic from `scripts/run_hosted_deployment_check.ps1` and `.sh` into `scripts/hosted_deployment_check.py`.

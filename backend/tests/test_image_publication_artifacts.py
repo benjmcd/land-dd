@@ -73,6 +73,7 @@ def test_image_publication_runbook_records_validation_workflow_and_limits() -> N
 
     for phrase in (
         "run_image_publication_check.ps1",
+        "scripts/image_publication_check.py",
         "validate-only",
         "REGISTRY_IMAGE",
         "image digest",
@@ -85,5 +86,13 @@ def test_image_publication_runbook_records_validation_workflow_and_limits() -> N
 
 
 def test_image_publication_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "image_publication_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_image_publication_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_image_publication_check.sh").is_file()
+
+
+def test_image_publication_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_image_publication_check.ps1", "run_image_publication_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "image_publication_check.py" in script
