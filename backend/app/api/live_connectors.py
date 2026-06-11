@@ -30,6 +30,9 @@ from app.connectors import (
     NwiBbox,
     NwiConnector,
     NwiConnectorError,
+    OsmRoadAccessBbox,
+    OsmRoadAccessConnector,
+    OsmRoadAccessConnectorError,
     SourceProvenanceServiceRetrievalPort,
     SsurgoBbox,
     SsurgoConnector,
@@ -49,6 +52,7 @@ from app.connectors.chatham_parcels import CHATHAM_PARCELS_MAX_FEATURES
 from app.connectors.evidence_ingestion import ConnectorEvidenceIngestionResult
 from app.connectors.fema_nfhl import FEMA_NFHL_MAX_FEATURES
 from app.connectors.nwi import NWI_MAX_FEATURES
+from app.connectors.osm_road_access import OSM_ROAD_ACCESS_MAX_FEATURES
 from app.connectors.result import ConnectorResult
 from app.connectors.retrieval_provenance import ConnectorRetrievalProvenanceResult
 from app.connectors.review_queue import ConnectorReviewQueueItem
@@ -64,6 +68,7 @@ DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
+DS_016_REGISTRY_ID = "DS-016"
 DS_023_REGISTRY_ID = "DS-023"
 
 # NC private-MVP county coordinate bounds (WGS84, approximate centroid check)
@@ -119,12 +124,21 @@ class ChathamParcelsOrchestrationResult:
     request_url: str
 
 
+@dataclass(frozen=True)
+class OsmRoadAccessOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
 RequestTimeLiveConnectorResult = (
     UsgsTnmOrchestrationResult
     | FemaNfhlOrchestrationResult
     | NwiOrchestrationResult
     | SsurgoOrchestrationResult
     | ChathamParcelsOrchestrationResult
+    | OsmRoadAccessOrchestrationResult
 )
 
 
@@ -142,6 +156,10 @@ def orchestrate_request_time_live_connectors_for_area(
         result = orchestrate(services=services, area=area)
         if not result.report_ready:
             return result
+    if _source_registry_id_available(services, DS_016_REGISTRY_ID):
+        osm_result = orchestrate_osm_road_access_for_area(services=services, area=area)
+        if not osm_result.report_ready:
+            return osm_result
     if _source_registry_id_available(services, DS_010_REGISTRY_ID):
         county = _classify_area_county(area)
         if county == "chatham":
@@ -405,6 +423,65 @@ def orchestrate_ssurgo_for_area(
     services.connector_review_statuses[packet.ingest_run_id] = review_status
     queue_item = services.connector_review_queue.enqueue_review_status(review_status)
     return SsurgoOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
+def orchestrate_osm_road_access_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    max_features: int = OSM_ROAD_ACCESS_MAX_FEATURES,
+) -> OsmRoadAccessOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_016_REGISTRY_ID)
+    try:
+        connector_result = OsmRoadAccessConnector(
+            source=source,
+            fetch_json=services.osm_road_access_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=osm_road_access_bbox_from_area(area),
+            max_features=max_features,
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except OsmRoadAccessConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return OsmRoadAccessOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
         report_ready=_queue_item_approved_for_report(queue_item),
@@ -729,6 +806,18 @@ def ssurgo_bbox_from_area(area: AreaContract) -> SsurgoBbox:
     )
 
 
+def osm_road_access_bbox_from_area(area: AreaContract) -> OsmRoadAccessBbox:
+    coordinates = _coordinates_for_bbox(area, "OSM Road Access")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return OsmRoadAccessBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def chatham_parcels_bbox_from_area(area: AreaContract) -> ChathamParcelsBbox:
     coordinates = _coordinates_for_bbox(area, "Chatham Parcels")
     xs = [position[0] for position in coordinates]
@@ -831,10 +920,12 @@ __all__ = [
     "DS_004_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
     "DS_011_REGISTRY_ID",
+    "DS_016_REGISTRY_ID",
     "DS_023_REGISTRY_ID",
     "ChathamParcelsOrchestrationResult",
     "FemaNfhlOrchestrationResult",
     "NwiOrchestrationResult",
+    "OsmRoadAccessOrchestrationResult",
     "SsurgoOrchestrationResult",
     "UsgsTnmOrchestrationResult",
     "bbox_from_area",
@@ -851,9 +942,11 @@ __all__ = [
     "orchestrate_chatham_zoning_for_area",
     "orchestrate_fema_nfhl_for_area",
     "orchestrate_nwi_for_area",
+    "orchestrate_osm_road_access_for_area",
     "orchestrate_request_time_live_connectors_for_area",
     "orchestrate_ssurgo_for_area",
     "orchestrate_usgs_tnm_for_area",
+    "osm_road_access_bbox_from_area",
     "ssurgo_bbox_from_area",
     "usgs_tnm_bbox_from_area",
 ]

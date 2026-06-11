@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
 from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
+from app.connectors.osm_road_access import OSM_ROAD_ACCESS_CONNECTOR_NAME
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-011": SourceConnectorInventoryEntry(
         source_registry_id="DS-011",
         connector_name=ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-016": SourceConnectorInventoryEntry(
+        source_registry_id="DS-016",
+        connector_name=OSM_ROAD_ACCESS_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-023": SourceConnectorInventoryEntry(

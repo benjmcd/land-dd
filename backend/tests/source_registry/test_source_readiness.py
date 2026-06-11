@@ -61,6 +61,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-004",
         "DS-010",
         "DS-011",
+        "DS-016",
         "DS-023",
     ]
     usgs = next(record for record in records if record.source_registry_id == "DS-001")
@@ -176,7 +177,7 @@ def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None
     assert "ready=7" in result.stdout
 
 
-def test_source_readiness_require_ready_fails_when_selected_scope_has_none_ready() -> None:
+def test_source_readiness_require_ready_passes_for_should_priority_with_ds016_ready() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -191,5 +192,5 @@ def test_source_readiness_require_ready_fails_when_selected_scope_has_none_ready
         text=True,
     )
 
-    assert result.returncode == 2
-    assert "ready=0" in result.stdout
+    assert result.returncode == 0
+    assert "ready=1" in result.stdout

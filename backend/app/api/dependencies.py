@@ -36,6 +36,7 @@ from app.connectors.live_jobs import (
     SqlAlchemyLiveConnectorJobStore,
 )
 from app.connectors.nwi import NwiJsonFetcher
+from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
 from app.connectors.ssurgo import SsurgoJsonFetcher
 from app.connectors.usgs_tnm import UsgsTnmJsonFetcher
 from app.core.config import Settings, get_settings
@@ -81,6 +82,7 @@ class ApiServices:
     chatham_parcels_fetch_json: ChathamParcelsJsonFetcher | None = None
     buncombe_parcels_fetch_json: BuncombeParcelsJsonFetcher | None = None
     brunswick_parcels_fetch_json: BrunswickParcelsJsonFetcher | None = None
+    osm_road_access_fetch_json: OsmRoadAccessJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:
