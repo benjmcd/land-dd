@@ -33,6 +33,9 @@ Run from the repository root:
 .\scripts\run_alert_rules_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/alert_rules_check.py` so local
+and CI validation use the same validate-only logic.
+
 The check is validate-only. It verifies that the alert catalog and runbook exist, required
 high-severity and stale-data rules are present, referenced proof artifacts exist,
 `docker compose config --quiet` passes when Docker is available, source-readiness JSON has

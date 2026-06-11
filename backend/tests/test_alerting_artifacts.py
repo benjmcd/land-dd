@@ -60,6 +60,7 @@ def test_alerting_artifacts_reference_existing_runbooks_and_proofs() -> None:
         if proof.startswith(("backend/", "docs/", "registers/", "scripts/")):
             assert (REPO_ROOT / proof).exists()
 
+    assert (REPO_ROOT / "scripts" / "alert_rules_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_alert_rules_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_alert_rules_check.sh").is_file()
 
@@ -72,6 +73,7 @@ def test_alerting_runbook_names_validation_and_incident_response() -> None:
     for phrase in (
         "config/ops_alert_rules.yaml",
         "run_alert_rules_check.ps1",
+        "scripts/alert_rules_check.py",
         "docs/runbooks/incident_response.md",
         "/operations/queue-health",
         "source_readiness.py --priority Must --json",
@@ -94,3 +96,10 @@ def test_must_source_rows_have_freshness_metadata_for_alerting() -> None:
         assert row["Freshness Class"]
         if row["Review Status"] != "pending":
             assert row["Last Checked At"]
+
+
+def test_alerting_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_alert_rules_check.ps1", "run_alert_rules_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "alert_rules_check.py" in script
