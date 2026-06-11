@@ -26,6 +26,8 @@ from app.connectors import (
     InMemoryConnectorReviewQueueRepository,
     SqlAlchemyConnectorReviewQueueRepository,
 )
+from app.connectors.brunswick_parcels import JsonFetcher as BrunswickParcelsJsonFetcher
+from app.connectors.buncombe_parcels import JsonFetcher as BuncombeParcelsJsonFetcher
 from app.connectors.chatham_parcels import JsonFetcher as ChathamParcelsJsonFetcher
 from app.connectors.fema_nfhl import JsonFetcher
 from app.connectors.live_jobs import (
@@ -77,6 +79,8 @@ class ApiServices:
     nwi_fetch_json: NwiJsonFetcher | None = None
     ssurgo_fetch_json: SsurgoJsonFetcher | None = None
     chatham_parcels_fetch_json: ChathamParcelsJsonFetcher | None = None
+    buncombe_parcels_fetch_json: BuncombeParcelsJsonFetcher | None = None
+    brunswick_parcels_fetch_json: BrunswickParcelsJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

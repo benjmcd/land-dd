@@ -2,9 +2,35 @@ from app.connectors.access_fixture import (
     AccessFixtureConnectorResult,
     StaticAccessFixtureConnector,
 )
+from app.connectors.brunswick_parcels import (
+    BRUNSWICK_PARCELS_CAVEAT,
+    BRUNSWICK_PARCELS_CONNECTOR_NAME,
+    BRUNSWICK_PARCELS_MAX_BBOX_DEGREES,
+    BRUNSWICK_PARCELS_MAX_FEATURES,
+    BRUNSWICK_PARCELS_METHOD_CODE,
+    BRUNSWICK_PARCELS_SERVICE_URL,
+    BRUNSWICK_PARCELS_SPATIAL_PRECISION_METERS,
+    BrunswickParcelsBbox,
+    BrunswickParcelsConnector,
+    BrunswickParcelsConnectorError,
+    BrunswickParcelsConnectorResult,
+)
 from app.connectors.buildability_fixture import (
     BuildabilityFixtureConnectorResult,
     StaticBuildabilityFixtureConnector,
+)
+from app.connectors.buncombe_parcels import (
+    BUNCOMBE_PARCELS_CAVEAT,
+    BUNCOMBE_PARCELS_CONNECTOR_NAME,
+    BUNCOMBE_PARCELS_MAX_BBOX_DEGREES,
+    BUNCOMBE_PARCELS_MAX_FEATURES,
+    BUNCOMBE_PARCELS_METHOD_CODE,
+    BUNCOMBE_PARCELS_SERVICE_URL,
+    BUNCOMBE_PARCELS_SPATIAL_PRECISION_METERS,
+    BuncombeParcelsBbox,
+    BuncombeParcelsConnector,
+    BuncombeParcelsConnectorError,
+    BuncombeParcelsConnectorResult,
 )
 from app.connectors.chatham_parcels import (
     CHATHAM_PARCELS_CAVEAT,
@@ -184,6 +210,28 @@ from app.connectors.zoning_fixture import (
 )
 
 __all__ = [
+    "BUNCOMBE_PARCELS_CAVEAT",
+    "BUNCOMBE_PARCELS_CONNECTOR_NAME",
+    "BUNCOMBE_PARCELS_MAX_BBOX_DEGREES",
+    "BUNCOMBE_PARCELS_MAX_FEATURES",
+    "BUNCOMBE_PARCELS_METHOD_CODE",
+    "BUNCOMBE_PARCELS_SERVICE_URL",
+    "BUNCOMBE_PARCELS_SPATIAL_PRECISION_METERS",
+    "BuncombeParcelsBbox",
+    "BuncombeParcelsConnector",
+    "BuncombeParcelsConnectorError",
+    "BuncombeParcelsConnectorResult",
+    "BRUNSWICK_PARCELS_CAVEAT",
+    "BRUNSWICK_PARCELS_CONNECTOR_NAME",
+    "BRUNSWICK_PARCELS_MAX_BBOX_DEGREES",
+    "BRUNSWICK_PARCELS_MAX_FEATURES",
+    "BRUNSWICK_PARCELS_METHOD_CODE",
+    "BRUNSWICK_PARCELS_SERVICE_URL",
+    "BRUNSWICK_PARCELS_SPATIAL_PRECISION_METERS",
+    "BrunswickParcelsBbox",
+    "BrunswickParcelsConnector",
+    "BrunswickParcelsConnectorError",
+    "BrunswickParcelsConnectorResult",
     "CHATHAM_PARCELS_CAVEAT",
     "CHATHAM_PARCELS_CONNECTOR_NAME",
     "CHATHAM_PARCELS_MAX_BBOX_DEGREES",
