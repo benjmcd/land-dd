@@ -23,7 +23,28 @@ if (-not (Test-Path -Path $runbookPath -PathType Leaf)) {
 }
 Write-Host "docs/runbooks/data_retention.md: exists"
 
-# 3. Validate each retention class has required fields
+# 3. Validate purge tooling exists and is referenced by the runbook
+$purgeScriptPath = Join-Path $root 'scripts\purge_audit_events.py'
+$purgePs1Path = Join-Path $root 'scripts\run_purge_audit_events.ps1'
+$purgeShPath = Join-Path $root 'scripts\run_purge_audit_events.sh'
+foreach ($path in @($purgeScriptPath, $purgePs1Path, $purgeShPath)) {
+    if (-not (Test-Path -Path $path -PathType Leaf)) {
+        throw "$path not found"
+    }
+}
+$runbookText = Get-Content -Path $runbookPath -Raw
+foreach ($expected in @(
+    'scripts/purge_audit_events.py',
+    '.\scripts\run_purge_audit_events.ps1',
+    'py -3.12 scripts/purge_audit_events.py --apply'
+)) {
+    if (-not $runbookText.Contains($expected)) {
+        throw "data retention runbook missing expected purge reference: $expected"
+    }
+}
+Write-Host "audit purge tooling: exists and documented"
+
+# 4. Validate each retention class has required fields
 $python = @'
 from __future__ import annotations
 
@@ -44,6 +65,9 @@ catalog = yaml.safe_load((ROOT / "config" / "data_retention.yaml").read_text(enc
 require(isinstance(catalog, dict), "data_retention.yaml must be a mapping")
 require(catalog.get("schema_version") == "data_retention_v1", "unexpected schema_version")
 require(catalog.get("operator_runbook") == "docs/runbooks/data_retention.md", "operator_runbook mismatch")
+require((ROOT / "scripts" / "purge_audit_events.py").is_file(), "purge_audit_events.py missing")
+require((ROOT / "scripts" / "run_purge_audit_events.ps1").is_file(), "run_purge_audit_events.ps1 missing")
+require((ROOT / "scripts" / "run_purge_audit_events.sh").is_file(), "run_purge_audit_events.sh missing")
 
 classes = catalog.get("retention_classes")
 require(isinstance(classes, list) and len(classes) >= 6, "retention_classes must be a list with at least 6 items")

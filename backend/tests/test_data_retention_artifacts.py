@@ -57,5 +57,49 @@ def test_data_retention_runbook_exists_and_mentions_90_days() -> None:
     assert "90" in content
 
 
-def test_data_retention_check_ps1_exists() -> None:
+def test_data_retention_validation_and_purge_scripts_exist() -> None:
     assert (REPO_ROOT / "scripts" / "run_data_retention_check.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_data_retention_check.sh").is_file()
+    assert (REPO_ROOT / "scripts" / "purge_audit_events.py").is_file()
+    assert (REPO_ROOT / "scripts" / "run_purge_audit_events.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_purge_audit_events.sh").is_file()
+
+
+def test_data_retention_checks_validate_purge_tooling() -> None:
+    for script_name in ("run_data_retention_check.ps1", "run_data_retention_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+        assert "purge_audit_events.py" in script
+        assert "run_purge_audit_events.ps1" in script
+        assert "run_purge_audit_events.sh" in script
+        assert "audit purge tooling: exists and documented" in script
+
+
+def test_data_retention_posix_check_honors_python_bin() -> None:
+    script = (REPO_ROOT / "scripts" / "run_data_retention_check.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'PYTHON_BIN="${PYTHON_BIN:-python}"' in script
+    assert '"$PYTHON_BIN" -c' in script
+    assert '"$PYTHON_BIN" - <<' in script
+
+
+def test_purge_wrappers_are_dry_run_by_default() -> None:
+    powershell = (REPO_ROOT / "scripts" / "run_purge_audit_events.ps1").read_text(
+        encoding="utf-8"
+    )
+    posix = (REPO_ROOT / "scripts" / "run_purge_audit_events.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "running dry-run" in powershell
+    assert "running dry-run" in posix
+    assert "scripts/purge_audit_events.py" in powershell
+    assert "scripts/purge_audit_events.py" in posix
+    for script in (powershell, posix):
+        invocation_lines = [
+            line
+            for line in script.splitlines()
+            if "scripts/purge_audit_events.py" in line
+            and not line.strip().startswith(("Write-Host", "echo"))
+        ]
+        assert invocation_lines
+        assert all("--apply" not in line for line in invocation_lines)

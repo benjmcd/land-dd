@@ -4,13 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+PYTHON_BIN="${PYTHON_BIN:-python}"
+
 # 1. Validate config/data_retention.yaml exists and is parseable
 if [[ ! -f "config/data_retention.yaml" ]]; then
   echo "config/data_retention.yaml not found" >&2
   exit 1
 fi
 
-python -c "import yaml; yaml.safe_load(open('config/data_retention.yaml', encoding='utf-8'))"
+"$PYTHON_BIN" -c "import yaml; yaml.safe_load(open('config/data_retention.yaml', encoding='utf-8'))"
 echo "config/data_retention.yaml: parseable"
 
 # 2. Validate docs/runbooks/data_retention.md exists
@@ -20,8 +22,32 @@ if [[ ! -f "docs/runbooks/data_retention.md" ]]; then
 fi
 echo "docs/runbooks/data_retention.md: exists"
 
-# 3. Validate each retention class has required fields
-python - <<'PY'
+# 3. Validate purge tooling exists and is referenced by the runbook
+for path in \
+  "scripts/purge_audit_events.py" \
+  "scripts/run_purge_audit_events.ps1" \
+  "scripts/run_purge_audit_events.sh"
+do
+  if [[ ! -f "$path" ]]; then
+    echo "$path not found" >&2
+    exit 1
+  fi
+done
+
+for expected in \
+  "scripts/purge_audit_events.py" \
+  ".\\scripts\\run_purge_audit_events.ps1" \
+  "py -3.12 scripts/purge_audit_events.py --apply"
+do
+  if ! grep -Fq "$expected" docs/runbooks/data_retention.md; then
+    echo "data retention runbook missing expected purge reference: $expected" >&2
+    exit 1
+  fi
+done
+echo "audit purge tooling: exists and documented"
+
+# 4. Validate each retention class has required fields
+"$PYTHON_BIN" - <<'PY'
 from __future__ import annotations
 
 from pathlib import Path
@@ -41,6 +67,9 @@ catalog = yaml.safe_load((ROOT / "config" / "data_retention.yaml").read_text(enc
 require(isinstance(catalog, dict), "data_retention.yaml must be a mapping")
 require(catalog.get("schema_version") == "data_retention_v1", "unexpected schema_version")
 require(catalog.get("operator_runbook") == "docs/runbooks/data_retention.md", "operator_runbook mismatch")
+require((ROOT / "scripts" / "purge_audit_events.py").is_file(), "purge_audit_events.py missing")
+require((ROOT / "scripts" / "run_purge_audit_events.ps1").is_file(), "run_purge_audit_events.ps1 missing")
+require((ROOT / "scripts" / "run_purge_audit_events.sh").is_file(), "run_purge_audit_events.sh missing")
 
 classes = catalog.get("retention_classes")
 require(isinstance(classes, list) and len(classes) >= 6, "retention_classes must be a list with at least 6 items")

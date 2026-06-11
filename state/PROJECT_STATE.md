@@ -10,6 +10,7 @@ Authoritative current source-readiness checks:
 - Current pass: DS-007 is promoted only for BLM MLRS Active Mining Claims MapServer layer 1 context; it does not determine private mineral rights, claim-boundary precision, title status, mine hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending, insurance, or investment suitability.
 - Recent production-hardening pass: signed-token `POST /report-runs` now honors `Idempotency-Key` through a workspace/user-scoped job-store ledger, replays the same generated report on repeated matching requests, and returns `409 Conflict` for matching-principal payload mismatches. The accepted sync/async response-shape divergence remains: signed-token creates return a full `ReportRunContract`, while the unauthenticated operator path returns async job status.
 - DB-enabled verification passed on Docker PostGIS with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC=postgresql://land:land@localhost:55432/land_diligence`, and `DATABASE_URL=postgresql+psycopg://land:land@localhost:55432/land_diligence`. Default verification still does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
+- Data-retention validation now proves the audit purge script and Windows/POSIX dry-run wrappers exist and are documented before accepting the data-retention catalog. This does not enable automated deletion; audit purges remain manual operator actions.
 
 Older entries below remain historical unless they match the checks above.
 

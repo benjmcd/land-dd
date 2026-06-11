@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Data-retention purge proof hardening)
+
+- Strengthened `scripts/run_data_retention_check.ps1` and `.sh` so the validate-only data-retention proof now checks `scripts/purge_audit_events.py`, `scripts/run_purge_audit_events.ps1`, `scripts/run_purge_audit_events.sh`, and the runbook references to those purge paths.
+- Updated the POSIX data-retention check to honor `PYTHON_BIN`, matching repo verification portability conventions.
+- Expanded data-retention artifact tests to prove both retention validation wrappers exist, purge wrappers are present, and purge wrappers run dry-run by default rather than applying deletion.
+- Verification: focused data-retention artifact tests, ruff, mypy, PowerShell parse, Git Bash syntax, and both Windows/POSIX data-retention validation wrappers passed.
+
 ## 2026-06-11 (Docker-only DB verification path hardening)
 
 - Hardened `scripts/db_apply_migrations.ps1` and `.sh` so machines without a real `psql` client can apply migrations through Dockerized `postgis/postgis:16-3.4`.

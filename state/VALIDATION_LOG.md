@@ -2,6 +2,38 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Data-Retention Purge Proof Hardening
+
+**Scope:** Strengthen the Level 10 data-retention proof so it validates the audit purge
+script and dry-run wrappers instead of only checking the catalog/runbook.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\test_data_retention_artifacts.py -q --tb=short
+cd backend; ruff check tests\test_data_retention_artifacts.py
+cd backend; py -3.12 -m mypy tests\test_data_retention_artifacts.py
+$null = [scriptblock]::Create((Get-Content .\scripts\run_data_retention_check.ps1 -Raw))
+& 'C:\Program Files\Git\bin\bash.exe' -n ./scripts/run_data_retention_check.sh
+.\scripts\run_data_retention_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_data_retention_check.sh
+```
+
+**Results:**
+
+- Focused data-retention artifact tests passed.
+- Focused ruff and mypy passed.
+- PowerShell parser accepted `scripts/run_data_retention_check.ps1`; Git Bash syntax
+  accepted `scripts/run_data_retention_check.sh`.
+- Windows and POSIX data-retention validation wrappers both passed and now report
+  `audit purge tooling: exists and documented`.
+
+**Residual risks:**
+
+- Audit purge remains a manual operator action. This proof does not schedule deletion or
+  enable automated retention enforcement.
+- Hosted log retention remains blocked until hosted logging/SIEM infrastructure exists.
+
 ## 2026-06-11 Docker-Only DB Verification Path Hardening
 
 **Scope:** Make DB migration verification usable on Docker-only Windows machines and
