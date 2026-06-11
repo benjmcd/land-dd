@@ -26,5 +26,6 @@ done
 
 ./scripts/agent-context-check.sh
 "$PYTHON_BIN" scripts/check_json_files.py
+"$PYTHON_BIN" scripts/check_source_registry.py
 
 echo "workspace validation: ok"

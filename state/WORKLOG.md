@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Source-registry authority validation hardening)
+
+- Fixed `scripts/check_source_registry.py` so it reads source reviews from `docs/source-reviews`, accepts the current `needs investigation` rights vocabulary, parses SQL seed metadata from the correct column, and compares every registry row to `db/seeds/002_seed_source_registry.sql`.
+- Wired the source-registry check into both Windows and POSIX workspace validation so it is covered by `.\scripts\verify.ps1` and `./scripts/verify.sh`.
+- Re-synced `db/seeds/002_seed_source_registry.sql` from the root `registers/data_source_registry.csv`, correcting stale DB seed usage-rights and metadata for DS-005, DS-006, DS-010, DS-011, DS-012, DS-013, DS-016, DS-021, DS-023, and other non-approved rows.
+- Updated the DS-012 source review to record that the blocked registry decision is complete, not pending.
+- Verification: source-registry checker, focused source-registry tests, Windows/POSIX workspace validation, touched ruff/mypy checks, and default `.\scripts\verify.ps1` passed.
+
 ## 2026-06-11 (Release-readiness shared validator extraction)
 
 - Extracted duplicated embedded release-readiness Python from the Windows and POSIX wrappers into `scripts/release_readiness_check.py`.

@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Source-Registry Authority Validation Hardening
+
+**Scope:** Make source-registry validation active in workspace verification and
+align the SQL seed with the root registry authority without changing any source
+readiness status.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\check_source_registry.py
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+cd backend; ruff check ..\scripts\check_source_registry.py tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py
+cd backend; py -3.12 -m mypy ..\scripts\check_source_registry.py tests\source_registry\test_source_registry_check.py tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py
+.\scripts\validate_workspace.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/validate_workspace.sh
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts/check_source_registry.py` passed with `source registry check: ok (25 rows)`.
+- Focused source-registry tests passed.
+- Windows and POSIX workspace validation passed and now run the source-registry check.
+- Touched ruff and mypy checks passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok with source-registry
+  check active, backend tests passed, ruff clean, mypy clean on 289 source files, and
+  DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This hardens registry/SQL-seed consistency and stale review-file coverage only. It
+  does not promote DS-012 or DS-013; both remain blocked by their current source
+  reviews.
+- DB-backed proof still requires an explicit `RUN_DB_SMOKE=1` run with a live
+  PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 Release-Readiness Shared Validator Extraction
 
 **Scope:** Remove duplicated release-readiness validation logic from Windows/POSIX
