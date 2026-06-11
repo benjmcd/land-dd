@@ -64,6 +64,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-008",
         "DS-010",
         "DS-011",
+        "DS-015",
         "DS-016",
         "DS-020",
         "DS-021",
@@ -96,6 +97,15 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "request_time_orchestration",
     )
     assert mrds.connector_ready is True
+    nc_geology = next(record for record in records if record.source_registry_id == "DS-015")
+    assert nc_geology.blocked_fields == ()
+    assert nc_geology.production_use_allowed is True
+    assert nc_geology.connector_implemented is True
+    assert nc_geology.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+    assert nc_geology.connector_ready is True
     census_tiger = next(record for record in records if record.source_registry_id == "DS-022")
     assert census_tiger.blocked_fields == ()
     assert census_tiger.production_use_allowed is True

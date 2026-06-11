@@ -36,6 +36,9 @@ from app.connectors import (
     FemaNfhlBbox,
     FemaNfhlConnector,
     FemaNfhlConnectorError,
+    NcGeologicMapBbox,
+    NcGeologicMapConnector,
+    NcGeologicMapConnectorError,
     NoaaClimateBbox,
     NoaaClimateConnector,
     NoaaClimateConnectorError,
@@ -70,6 +73,7 @@ from app.connectors.census_tiger import CENSUS_TIGER_MAX_FEATURES
 from app.connectors.chatham_parcels import CHATHAM_PARCELS_MAX_FEATURES
 from app.connectors.evidence_ingestion import ConnectorEvidenceIngestionResult
 from app.connectors.fema_nfhl import FEMA_NFHL_MAX_FEATURES
+from app.connectors.nc_geologic_map import NC_GEOLOGIC_MAP_MAX_FEATURES
 from app.connectors.nwi import NWI_MAX_FEATURES
 from app.connectors.osm_road_access import OSM_ROAD_ACCESS_MAX_FEATURES
 from app.connectors.result import ConnectorResult
@@ -91,6 +95,7 @@ DS_006_REGISTRY_ID = "DS-006"
 DS_008_REGISTRY_ID = "DS-008"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
+DS_015_REGISTRY_ID = "DS-015"
 DS_016_REGISTRY_ID = "DS-016"
 DS_020_REGISTRY_ID = "DS-020"
 DS_021_REGISTRY_ID = "DS-021"
@@ -183,6 +188,14 @@ class UsgsMrdsOrchestrationResult:
 
 
 @dataclass(frozen=True)
+class NcGeologicMapOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
+@dataclass(frozen=True)
 class FccBroadbandOrchestrationResult:
     ingest_run_id: UUID
     queue_item: ConnectorReviewQueueItem
@@ -216,6 +229,7 @@ RequestTimeLiveConnectorResult = (
     | UsgsWaterOrchestrationResult
     | EpaEchoOrchestrationResult
     | UsgsMrdsOrchestrationResult
+    | NcGeologicMapOrchestrationResult
     | FccBroadbandOrchestrationResult
     | NoaaClimateOrchestrationResult
     | CensusTigerOrchestrationResult
@@ -248,6 +262,10 @@ def orchestrate_request_time_live_connectors_for_area(
         mrds_result = orchestrate_usgs_mrds_for_area(services=services, area=area)
         if not mrds_result.report_ready:
             return mrds_result
+    if _source_registry_id_available(services, DS_015_REGISTRY_ID):
+        geologic_result = orchestrate_nc_geologic_map_for_area(services=services, area=area)
+        if not geologic_result.report_ready:
+            return geologic_result
     if _source_registry_id_available(services, DS_020_REGISTRY_ID):
         climate_result = orchestrate_noaa_climate_for_area(services=services, area=area)
         if not climate_result.report_ready:
@@ -759,6 +777,65 @@ def orchestrate_usgs_mrds_for_area(
     services.connector_review_statuses[packet.ingest_run_id] = review_status
     queue_item = services.connector_review_queue.enqueue_review_status(review_status)
     return UsgsMrdsOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
+def orchestrate_nc_geologic_map_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    max_features: int = NC_GEOLOGIC_MAP_MAX_FEATURES,
+) -> NcGeologicMapOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_015_REGISTRY_ID)
+    try:
+        connector_result = NcGeologicMapConnector(
+            source=source,
+            fetch_json=services.nc_geologic_map_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=nc_geologic_map_bbox_from_area(area),
+            max_features=max_features,
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except NcGeologicMapConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return NcGeologicMapOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
         report_ready=_queue_item_approved_for_report(queue_item),
@@ -1304,6 +1381,18 @@ def usgs_mrds_bbox_from_area(area: AreaContract) -> UsgsMrdsBbox:
     )
 
 
+def nc_geologic_map_bbox_from_area(area: AreaContract) -> NcGeologicMapBbox:
+    coordinates = _coordinates_for_bbox(area, "NC Geologic Map")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return NcGeologicMapBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def noaa_climate_bbox_from_area(area: AreaContract) -> NoaaClimateBbox:
     coordinates = _coordinates_for_bbox(area, "NOAA Climate")
     xs = [position[0] for position in coordinates]
@@ -1445,6 +1534,7 @@ __all__ = [
     "DS_008_REGISTRY_ID",
     "DS_010_REGISTRY_ID",
     "DS_011_REGISTRY_ID",
+    "DS_015_REGISTRY_ID",
     "DS_016_REGISTRY_ID",
     "DS_020_REGISTRY_ID",
     "DS_021_REGISTRY_ID",
@@ -1455,6 +1545,7 @@ __all__ = [
     "EpaEchoOrchestrationResult",
     "FccBroadbandOrchestrationResult",
     "FemaNfhlOrchestrationResult",
+    "NcGeologicMapOrchestrationResult",
     "NoaaClimateOrchestrationResult",
     "NwiOrchestrationResult",
     "OsmRoadAccessOrchestrationResult",
@@ -1470,6 +1561,7 @@ __all__ = [
     "fcc_broadband_bbox_from_area",
     "census_tiger_bbox_from_area",
     "get_source_by_registry_id",
+    "nc_geologic_map_bbox_from_area",
     "noaa_climate_bbox_from_area",
     "nwi_bbox_from_area",
     "orchestrate_assessor_not_evaluated_for_area",
@@ -1482,6 +1574,7 @@ __all__ = [
     "orchestrate_epa_echo_for_area",
     "orchestrate_fcc_broadband_for_area",
     "orchestrate_fema_nfhl_for_area",
+    "orchestrate_nc_geologic_map_for_area",
     "orchestrate_noaa_climate_for_area",
     "orchestrate_nwi_for_area",
     "orchestrate_osm_road_access_for_area",

@@ -13,7 +13,7 @@ DS-011,County assessor,County,Assessor/tax,Local official,County,Must,Varies,"As
 DS-012,County recorder,County,Deeds/easements,Local official,County,Should,Varies,"Recorded documents, easements, covenants",Often manual/search-limited
 DS-013,State well logs,State agency,Water/wells,State official,State,Should,Varies,Nearby well context,May not prove viability
 DS-014,State water rights,State agency,Water rights,State official,State,Later,Varies,Legal water-use screening,Complex and jurisdiction-specific
-DS-015,State geological survey,State agency,Geology/minerals,State official,State,Later,Varies,Geologic hazards/resources,Varies by state
+DS-015,State geological survey,NC Geological Survey,Geology/minerals,State official,North Carolina,Later,https://services2.arcgis.com/kCu40SDxsCGcuUWO/arcgis/rest/services/Geologic_Map_of_North_Carolina/FeatureServer,Geologic map-unit context,"NCGS 1985 geologic map-unit context only; deprecated statewide 1:500,000 map digitized from 1:250,000 base maps; no hazard, mineral-resource, buildability, appraisal, lending, insurance, or investment conclusions"
 DS-016,OpenStreetMap/Overture,OSM/Overture,Roads/buildings/base map,Open community/open data,Global,Should,https://www.openstreetmap.org/,Access/infrastructure proxy,Not authoritative for legal access
 DS-017,Commercial parcel vendor,Vendor,Parcels/ownership,Commercial,US/Canada or broader,Must,TBD,Normalized parcel/ownership data,License/cost blocker
 DS-018,Commercial comps/listings vendor,Vendor,Market,Commercial,Varies,Should,TBD,Market context,License/cost/export blocker

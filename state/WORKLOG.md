@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-015 NC geologic map-unit connector - 15/25 connector-ready)
+
+- DS-015 State geological survey promoted only for bounded NCGS 1985 statewide geologic map-unit context from the Map Units FeatureServer layer; no landslide/sinkhole/radon hazard, mineral-resource, engineering/geotechnical, buildability, appraisal, lending, insurance, or investment conclusion is implemented or allowed.
+- Source review `docs/source-reviews/ds-015.md` added; registry, SQL seed, and planning-pack mirrors updated to `approved-with-restrictions` with NCGS/NC DEQ/NC CGIA attribution, deprecated/historical scale caveats, and no bulk statewide redistribution in the connector path.
+- Added `NcGeologicMapConnector.query_bbox()` for ArcGIS JSON Map Units queries with compact evidence fields, bounded bbox/feature limits, source-failure evidence for request/service/malformed responses, and fail-closed `exceededTransferLimit` behavior.
+- Added reviewer-authenticated `POST /connector-runs/nc-geologic-map/query-bbox`, request-time orchestration, connector inventory entry, evidence payload validation keys, focused connector/API/readiness tests, and regenerated OpenAPI stubs.
+- Source readiness now reports Must `sources=8 ready=7 blocked=1`, Later `sources=8 ready=4 blocked=4`, and all-priority `sources=25 ready=15 blocked=10`; DS-017 remains the only Must blocker.
+- Verification: DS-015 focused tests passed (`21 passed`); OpenAPI parity passed (`3 passed`); source registry readiness/seed tests passed (`16 passed`); release-readiness proof passed; focused ruff/mypy passed; `git diff --check` reported no whitespace errors; default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff, mypy on 284 source files, and structural checks green. DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-11 (DS-008 USGS MRDS mineral occurrence connector - 14/25 connector-ready)
 
 - DS-008 USGS MRDS promoted only for bounded historical mineral-occurrence screening; no mineral-rights, mine-hazard, resource-value, extraction, environmental-liability, buildability, appraisal, lending, insurance, or investment conclusions are implemented or allowed.

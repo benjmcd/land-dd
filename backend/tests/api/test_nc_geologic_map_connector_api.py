@@ -1,0 +1,200 @@
+from __future__ import annotations
+
+from uuid import UUID, uuid4
+
+from fastapi.testclient import TestClient
+
+from app.api.dependencies import ApiServices
+from app.domain.area_contracts import AreaContract
+from app.domain.enums import EvidenceType
+from app.domain.source_contracts import SourceContract
+from app.main import create_app
+
+_VALID_HEADERS = {
+    "X-Reviewer-Id": "fixture-reviewer",
+    "X-Reviewer-Token": "fixture-token-123",
+}
+
+
+def _area(area_id: UUID) -> AreaContract:
+    return AreaContract(
+        area_id=area_id,
+        label="NC geologic map API test area",
+        geom_geojson={
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-82.45, 35.55],
+                    [-82.44, 35.55],
+                    [-82.44, 35.56],
+                    [-82.45, 35.56],
+                    [-82.45, 35.55],
+                ]
+            ],
+        },
+        geom_source="api-test",
+        geom_validated=True,
+    )
+
+
+def _source() -> SourceContract:
+    return SourceContract(
+        name="State geological survey",
+        organization="NC Geological Survey",
+        source_type="State official",
+        domain="Geology/minerals",
+        geographic_scope="North Carolina",
+        license_status="approved-with-restrictions",
+        commercial_use_status="approved-with-restrictions",
+        redistribution_status="approved-with-restrictions",
+        cache_allowed="approved-with-restrictions",
+        export_allowed="approved-with-restrictions",
+        ai_use_allowed="restricted",
+        raw_data_allowed="approved-with-restrictions",
+        update_cadence="deprecated",
+        freshness_class="historical",
+        last_checked_at="2026-06-11",
+        review_owner="operator",
+        review_status="approved-with-restrictions",
+        metadata={"source_registry_id": "DS-015"},
+    )
+
+
+def _body(area_id: UUID) -> dict[str, object]:
+    return {
+        "area_id": str(area_id),
+        "bbox": {
+            "xmin": -82.45,
+            "ymin": 35.55,
+            "xmax": -82.44,
+            "ymax": 35.56,
+        },
+    }
+
+
+def _feature_payload() -> dict[str, object]:
+    return {
+        "features": [
+            {
+                "attributes": {
+                    "OBJECTID": 1836,
+                    "UnitLabel": "Zatm",
+                    "Belt": "Blue Ridge Belt",
+                    "Type": "Sedimentary and Metamorphic Rocks",
+                    "Formation": "Muscovite-biotite gneiss",
+                    "Description": "Locally sulfidic",
+                }
+            }
+        ]
+    }
+
+
+def _client_with_seeded_services() -> tuple[TestClient, ApiServices, UUID]:
+    app = create_app()
+    services = app.state.services
+    assert isinstance(services, ApiServices)
+    area_id = uuid4()
+    services.source_service.register(_source())
+    services.area_service.create(_area(area_id))
+    services.nc_geologic_map_fetch_json = lambda _url, _timeout_seconds: _feature_payload()
+    return TestClient(app), services, area_id
+
+
+def test_nc_geologic_map_query_bbox_returns_202_with_geologic_context() -> None:
+    client, services, area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=_body(area_id),
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["connector_name"] == "nc_geologic_map_context_live"
+    assert body["retrieval_status"] == "succeeded"
+    assert body["row_count"] == 1
+    assert body["evidence_created_count"] == 1
+    assert body["source_failure_created_count"] == 0
+    assert body["source_registry_id"] == "DS-015"
+    assert body["review_required"] is False
+    assert body["queue_item_status"] == "queued"
+
+    evidence = services.evidence_service.list_by_area(area_id)
+    assert len(evidence) == 1
+    assert evidence[0].evidence_type == EvidenceType.SOURCE_OBSERVATION
+    assert evidence[0].domain == "geology"
+    assert evidence[0].observed_value["primary_geologic_unit_label"] == "Zatm"
+    assert evidence[0].observed_value["geologic_hazard_determined"] is False
+    assert evidence[0].observed_value["buildability_determined"] is False
+
+
+def test_nc_geologic_map_query_bbox_returns_422_for_missing_area() -> None:
+    client, _services, _area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=_body(uuid4()),
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 422
+
+
+def test_nc_geologic_map_query_bbox_rejects_oversized_bbox() -> None:
+    client, _services, area_id = _client_with_seeded_services()
+    bad_body = {
+        "area_id": str(area_id),
+        "bbox": {
+            "xmin": -82.45,
+            "ymin": 35.55,
+            "xmax": -81.90,
+            "ymax": 35.56,
+        },
+    }
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=bad_body,
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 422
+
+
+def test_nc_geologic_map_query_bbox_rejects_excessive_max_features() -> None:
+    client, _services, area_id = _client_with_seeded_services()
+    body = _body(area_id)
+    body["max_features"] = 51
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=body,
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 422
+
+
+def test_nc_geologic_map_query_bbox_requires_reviewer_auth() -> None:
+    client, _services, area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=_body(area_id),
+    )
+
+    assert response.status_code == 401
+
+
+def test_nc_geologic_map_query_bbox_request_url_in_response() -> None:
+    client, _services, area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/nc-geologic-map/query-bbox",
+        json=_body(area_id),
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 202
+    assert "Geologic_Map_of_North_Carolina" in response.json()["request_url"]

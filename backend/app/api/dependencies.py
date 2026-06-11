@@ -38,6 +38,7 @@ from app.connectors.live_jobs import (
     LiveConnectorJobStoreProtocol,
     SqlAlchemyLiveConnectorJobStore,
 )
+from app.connectors.nc_geologic_map import JsonFetcher as NcGeologicMapJsonFetcher
 from app.connectors.noaa_climate import JsonFetcher as NoaaClimateJsonFetcher
 from app.connectors.nwi import NwiJsonFetcher
 from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
@@ -95,6 +96,7 @@ class ApiServices:
     noaa_climate_fetch_json: NoaaClimateJsonFetcher | None = None
     census_tiger_fetch_json: CensusTigerJsonFetcher | None = None
     usgs_mrds_fetch_text: UsgsMrdsTextFetcher | None = None
+    nc_geologic_map_fetch_json: NcGeologicMapJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

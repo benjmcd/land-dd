@@ -1152,6 +1152,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/nc-geologic-map/query-bbox:
+    post:
+      tags:
+      - connector-runs
+      summary: Query Nc Geologic Map Bbox
+      operationId: query_nc_geologic_map_bbox_connector_runs_nc_geologic_map_query_bbox_post
+      parameters:
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NcGeologicMapQueryRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NcGeologicMapQueryResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /connector-runs/noaa-climate/query-bbox:
     post:
       tags:
@@ -4995,6 +5037,112 @@ components:
       - policy_id
       - jobs
       title: LiveConnectorSequenceScheduleResponse
+    NcGeologicMapBboxRequest:
+      properties:
+        xmin:
+          type: number
+          title: Xmin
+        ymin:
+          type: number
+          title: Ymin
+        xmax:
+          type: number
+          title: Xmax
+        ymax:
+          type: number
+          title: Ymax
+      type: object
+      required:
+      - xmin
+      - ymin
+      - xmax
+      - ymax
+      title: NcGeologicMapBboxRequest
+    NcGeologicMapQueryRequest:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        bbox:
+          $ref: '#/components/schemas/NcGeologicMapBboxRequest'
+        max_features:
+          type: integer
+          title: Max Features
+          default: 50
+      type: object
+      required:
+      - area_id
+      - bbox
+      title: NcGeologicMapQueryRequest
+    NcGeologicMapQueryResponse:
+      properties:
+        connector_name:
+          type: string
+          title: Connector Name
+        ingest_run_id:
+          type: string
+          format: uuid
+          title: Ingest Run Id
+        retrieval_status:
+          type: string
+          title: Retrieval Status
+        row_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Row Count
+        error_count:
+          type: integer
+          title: Error Count
+        evidence_input_count:
+          type: integer
+          title: Evidence Input Count
+        evidence_created_count:
+          type: integer
+          title: Evidence Created Count
+        evidence_skipped_count:
+          type: integer
+          title: Evidence Skipped Count
+        source_failure_created_count:
+          type: integer
+          title: Source Failure Created Count
+        source_failure_skipped_count:
+          type: integer
+          title: Source Failure Skipped Count
+        review_required:
+          type: boolean
+          title: Review Required
+        queue_item_status:
+          type: string
+          title: Queue Item Status
+        queue_name:
+          type: string
+          title: Queue Name
+        source_registry_id:
+          type: string
+          title: Source Registry Id
+        request_url:
+          type: string
+          title: Request Url
+      type: object
+      required:
+      - connector_name
+      - ingest_run_id
+      - retrieval_status
+      - row_count
+      - error_count
+      - evidence_input_count
+      - evidence_created_count
+      - evidence_skipped_count
+      - source_failure_created_count
+      - source_failure_skipped_count
+      - review_required
+      - queue_item_status
+      - queue_name
+      - source_registry_id
+      - request_url
+      title: NcGeologicMapQueryResponse
     NoaaClimateBboxRequest:
       properties:
         xmin:

@@ -184,15 +184,15 @@
   {
     "source_id": "DS-015",
     "name": "State geological survey",
-    "organization": "State agency",
+    "organization": "NC Geological Survey",
     "domain": "Geology/minerals",
     "source_type": "State official",
-    "geography": "State",
+    "geography": "North Carolina",
     "mvp_priority": "Later",
-    "url": "Varies",
-    "use": "Geologic hazards/resources",
-    "caveats": "Varies by state",
-    "license_status": "requires_review"
+    "url": "https://services2.arcgis.com/kCu40SDxsCGcuUWO/arcgis/rest/services/Geologic_Map_of_North_Carolina/FeatureServer",
+    "use": "Geologic map-unit context",
+    "caveats": "NCGS 1985 geologic map-unit context only; deprecated statewide 1:500,000 map digitized from 1:250,000 base maps; no hazard, mineral-resource, buildability, appraisal, lending, insurance, or investment conclusions",
+    "license_status": "approved-with-restrictions"
   },
   {
     "source_id": "DS-016",

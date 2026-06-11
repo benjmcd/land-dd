@@ -2,12 +2,13 @@
 
 ## Purpose
 
-Close source-readiness gaps without overclaiming production readiness. This plan now starts from the current audited state: DS-001, DS-002, DS-003, DS-004, DS-010, DS-011, and DS-023 are Must-priority connector-ready; DS-017 remains the only Must-priority blocker. Across all priorities, the current source-readiness check reports 14/25 connector-ready, including DS-008 USGS MRDS for bounded historical mineral-occurrence screening only and DS-022 Census TIGER/ACS for bounded TIGERweb tract/block-group geography context only.
+Close source-readiness gaps without overclaiming production readiness. This plan now starts from the current audited state: DS-001, DS-002, DS-003, DS-004, DS-010, DS-011, and DS-023 are Must-priority connector-ready; DS-017 remains the only Must-priority blocker. Across all priorities, the current source-readiness check reports 15/25 connector-ready, including DS-015 NC Geological Survey for bounded 1985 geologic map-unit context only, DS-008 USGS MRDS for bounded historical mineral-occurrence screening only, and DS-022 Census TIGER/ACS for bounded TIGERweb tract/block-group geography context only.
 
 ## Current facts
 
 - Must-priority source readiness is `sources=8 ready=7 blocked=1`; DS-017 Commercial parcel vendor remains blocked by vendor/license selection and is not required for the private MVP unless product scope changes.
-- All-priority source readiness is `sources=25 ready=14 blocked=11`; DS-008 USGS MRDS is connector-ready only for bounded historical mineral-occurrence context. It does not determine mineral rights, mine hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending suitability, insurance, or investment suitability.
+- All-priority source readiness is `sources=25 ready=15 blocked=10`; DS-015 NC Geological Survey is connector-ready only for bounded NCGS 1985 statewide geologic map-unit context. It does not determine landslide/sinkhole/radon hazards, mineral resources or rights, engineering/geotechnical suitability, buildability, appraisal, lending suitability, insurance, or investment suitability.
+- DS-008 USGS MRDS is connector-ready only for bounded historical mineral-occurrence context. It does not determine mineral rights, mine hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending suitability, insurance, or investment suitability.
 - DS-022 Census TIGER/ACS is connector-ready only for administrative TIGERweb geography context. ACS demographic variables, protected-class analytics, neighborhood desirability, market/investment/lending suitability, and residential steering remain excluded.
 - DS-011 County assessor is connector-ready only as an explicit `AssessorNotEvaluatedConnector`: it records ASSESSOR_NOT_EVALUATED source-failure evidence for every area. It does not query live assessor portals or expose owner/value/sale-history fields.
 - DS-023 Local zoning ordinance PDFs is connector-ready through recorded-fixture zoning district connectors for reviewed county UDO tables. It does not claim live PDF retrieval, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution.
@@ -36,7 +37,8 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 1. Select the next non-Must source-readiness candidate from live registry evidence.
    - DS-008 USGS MRDS is complete for historical mineral-occurrence screening only.
    - DS-022 Census TIGER/ACS is complete for TIGERweb geography context only.
-   - Re-select the next non-Must source from current registry evidence; do not assume DS-015, DS-014, or DS-007 is unblocked without a fresh source review and connector proof.
+   - DS-015 NC Geological Survey is complete for NCGS 1985 geologic map-unit context only.
+   - Re-select the next non-Must source from current registry evidence; do not assume DS-007, DS-014, DS-024, or DS-025 is unblocked without a fresh source review and connector proof.
    - Prioritize remaining public/government sources only after source authority, field policy, cache/export behavior, attribution, caveats, connector inventory, and connector/API tests are scoped.
    - Do not promote source readiness from source-review prose alone; require connector proof and source-readiness test updates.
 
@@ -75,7 +77,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 
 - OSM and NOAA connector/API tests pass and are part of the repo test surface.
 - Release-readiness scripts, runbook, source-readiness tests, and source-readiness CLI agree on Must `sources=8 ready=7 blocked=1`.
-- `state/PROJECT_STATE.md` and `state/VALIDATION_LOG.md` clearly identify DS-017 as the only Must blocker, DS-008 as connector-ready for historical mineral-occurrence context only, DS-022 as connector-ready for TIGERweb geography context only, and DB smoke as skipped unless `RUN_DB_SMOKE=1` prerequisites are present.
+- `state/PROJECT_STATE.md` and `state/VALIDATION_LOG.md` clearly identify DS-017 as the only Must blocker, DS-015 as connector-ready for NCGS 1985 geologic map-unit context only, DS-008 as connector-ready for historical mineral-occurrence context only, DS-022 as connector-ready for TIGERweb geography context only, and DB smoke as skipped unless `RUN_DB_SMOKE=1` prerequisites are present.
 - Focused connector/API/source-readiness/release-readiness checks pass.
 - `git diff --check` passes.
 - Default `.\scripts\verify.ps1` passes, or any failure is recorded with a specific blocker.

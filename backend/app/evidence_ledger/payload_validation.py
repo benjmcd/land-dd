@@ -106,6 +106,22 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "primary_mineral_deposit_id",
     "primary_mineral_development_status",
     "primary_mineral_site_name",
+    # NC geologic map connector fields (DS-015)
+    "buildability_determined",
+    "geologic_belts",
+    "geologic_descriptions",
+    "geologic_formations",
+    "geologic_hazard_determined",
+    "geologic_types",
+    "geologic_unit_count",
+    "geologic_unit_labels",
+    "has_geologic_map_context",
+    "nc_geologic_map_bbox",
+    "nc_geologic_map_deprecated",
+    "nc_geologic_map_year",
+    "no_geologic_map_context",
+    "primary_geologic_formation",
+    "primary_geologic_unit_label",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
@@ -286,6 +302,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         "has_mineral_occurrence_context",
         "mineral_rights_determined",
         "no_mineral_occurrence_context",
+        "buildability_determined",
+        "geologic_hazard_determined",
+        "has_geologic_map_context",
+        "nc_geologic_map_deprecated",
+        "no_geologic_map_context",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"source_observation observed_value '{key}' must be boolean")
@@ -318,6 +339,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["mineral_occurrence_count"],
             "mineral_occurrence_count",
+        )
+    if "geologic_unit_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["geologic_unit_count"],
+            "geologic_unit_count",
         )
 
 
