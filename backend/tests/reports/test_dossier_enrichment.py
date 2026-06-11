@@ -552,6 +552,111 @@ def test_dossier_renders_soil_source_failure_from_evidence() -> None:
     )
 
 
+def test_dossier_confidence_band_medium_when_core_connector_succeeded() -> None:
+    """Confidence band must be 'medium' when a core connector ran with clear results."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            method_code="fixture_flood_overlay",
+            observation="AE zone intersection.",
+            observed_value={"flood_zone_code": "AE", "intersection_ratio": 0.5},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="FEMA NFHL screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec1_start = dossier.find("## 1.")
+    sec2_start = dossier.find("## 2.")
+    assert sec1_start != -1
+    section_1 = dossier[sec1_start:sec2_start]
+    assert "Confidence band: medium" in section_1, (
+        "Expected 'medium' confidence band when core flood connector succeeded; "
+        "structural unknowns (soil_septic/parcels/resource_context/market_context/assessor) "
+        "must not drag it to 'low'. Got:\n" + section_1
+    )
+
+
+def test_dossier_confidence_band_low_when_core_connector_failed() -> None:
+    """Confidence band must be 'low' when a core domain connector reports a source failure."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="FEMA_NFHL_SOURCE_FAILURE",
+        domain="flood",
+        method_code="fixture_flood_overlay",
+        observation="FEMA NFHL query failed.",
+        observed_value={"failure_reason": "http_error", "retryable": True},
+        caveat="FEMA NFHL screening; verify offline.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec1_start = dossier.find("## 1.")
+    sec2_start = dossier.find("## 2.")
+    assert sec1_start != -1
+    section_1 = dossier[sec1_start:sec2_start]
+    assert "Confidence band: low" in section_1, (
+        "Expected 'low' confidence band when core flood connector failed (non-structural "
+        "UNKNOWN claim present); got:\n" + section_1
+    )
+
+
+def test_dossier_confidence_band_unknown_when_no_core_evidence() -> None:
+    """Confidence band must be 'unknown' when only structural domains have evidence."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "parcels")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="COUNTY_PARCEL_INTERSECTION",
+            domain="parcels",
+            method_code="county_parcel_overlay",
+            observation="Parcel boundary intersects the area of interest",
+            observed_value={"intersects": True, "parcel_pin": "12345"},
+            confidence=ConfidenceBand.LOW,
+            caveat="Parcel screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec1_start = dossier.find("## 1.")
+    sec2_start = dossier.find("## 2.")
+    assert sec1_start != -1
+    section_1 = dossier[sec1_start:sec2_start]
+    assert "Confidence band: unknown" in section_1, (
+        "Expected 'unknown' confidence band when only parcel (structural) evidence is "
+        "present and no core domain connectors ran; got:\n" + section_1
+    )
+
+
 def test_dossier_renders_env_hazard_no_facilities_from_evidence() -> None:
     """no_env_hazard_proximity=True must appear as a negative result in Section 11."""
     source_service, area_service, evidence_service, report_service = _make_services()

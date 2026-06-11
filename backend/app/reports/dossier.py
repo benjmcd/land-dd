@@ -151,12 +151,37 @@ def _overall_suitability(report_run: ReportRunContract) -> str:
     return "screening_clear"
 
 
+_STRUCTURAL_DOMAINS = frozenset({
+    "soil_septic",       # always screening-grade; UNKNOWN is by design
+    "parcels",           # always screening-grade; UNKNOWN is by design
+    "resource_context",  # permanently not evaluated in this version
+    "market_context",    # permanently not evaluated in this version
+    "assessor",          # permanently not evaluated in this version
+})
+# Sentinel evidence codes injected by the report service when no connector ran for a domain.
+_STRUCTURAL_EVIDENCE_CODES = frozenset({
+    "ZONING_NOT_SCREENED",  # added when no zoning connector was dispatched for an area
+})
+
+
 def _confidence_band(report_run: ReportRunContract) -> str:
-    if report_run.unknowns:
-        return "low"
-    if report_run.evidence:
+    structural_ids = {
+        r.evidence_id
+        for r in report_run.evidence
+        if r.domain in _STRUCTURAL_DOMAINS or r.evidence_code in _STRUCTURAL_EVIDENCE_CODES
+    }
+    non_structural_evidence = [
+        r for r in report_run.evidence if r.evidence_id not in structural_ids
+    ]
+    if not non_structural_evidence:
+        return "unknown"
+    non_structural_unknowns = [
+        claim for claim in report_run.unknowns
+        if not all(eid in structural_ids for eid in claim.evidence_ids)
+    ]
+    if not non_structural_unknowns:
         return "medium"
-    return "unknown"
+    return "low"
 
 
 def _recommended_next_action(report_run: ReportRunContract) -> str:
