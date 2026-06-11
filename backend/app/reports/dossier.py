@@ -79,9 +79,9 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 7. Flood and Wetlands Screen",
         "",
         f"- FEMA/NFHL result: {_flood_zone_result(report_run)}",
-        f"- USFWS/NWI result: {_domain_summary(report_run, 'wetland')}",
-        f"- Caveats: {_domain_caveats(report_run, {'flood', 'wetland'})}",
-        f"- Required verification: {_domain_verification(report_run, 'flood')}",
+        f"- USFWS/NWI result: {_wetland_result(report_run)}",
+        f"- Caveats: {_domain_caveats(report_run, {'flood', 'wetlands'})}",
+        f"- Required verification: {_domain_verification_multi(report_run, {'flood', 'wetlands'})}",
         "",
         "## 8. Soil / Septic Proxy",
         "",
@@ -379,6 +379,51 @@ def _flood_zone_result(report_run: ReportRunContract) -> str:
         else:
             parts.append(_cell(record.observation))
     return "; ".join(parts) if parts else _domain_summary(report_run, "flood")
+
+
+def _wetland_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "wetlands" and not r.is_source_failure
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.domain == "wetlands" and r.is_source_failure
+        ]
+        if failures:
+            return "source failure — NWI wetland data unavailable"
+        return "not evaluated"
+    total_area_sq_m = 0.0
+    wetland_types: list[str] = []
+    for record in records:
+        area = record.observed_value.get("mapped_wetland_area_sq_m")
+        if area is not None:
+            total_area_sq_m += float(area)  # type: ignore[arg-type]
+        wtype = record.observed_value.get("wetland_type")
+        if isinstance(wtype, str) and wtype and wtype not in wetland_types:
+            wetland_types.append(wtype)
+    parts: list[str] = [f"{len(records)} mapped wetland/deepwater feature(s) intersect query area"]
+    if total_area_sq_m > 0:
+        parts.append(f"~{total_area_sq_m / 4047:.2f} mapped acres")
+    if wetland_types:
+        parts.append("types: " + ", ".join(wetland_types[:3]))
+    return "; ".join(parts)
+
+
+def _domain_verification_multi(report_run: ReportRunContract, domains: set[str]) -> str:
+    tasks = sorted(
+        {
+            claim.verification_task.strip()
+            for claim in report_run.claims
+            if claim.domain in domains
+            and claim.verification_task is not None
+            and claim.verification_task.strip()
+        }
+    )
+    if not tasks:
+        return "not specified"
+    return "; ".join(_cell(task) for task in tasks)
 
 
 def _zoning_district_result(report_run: ReportRunContract) -> str:

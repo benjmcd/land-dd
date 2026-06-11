@@ -699,3 +699,67 @@ def test_dossier_renders_env_hazard_no_facilities_from_evidence() -> None:
     assert "no regulated facilities detected in screening bbox" in section_11, (
         "Expected negative facility text in Section 11; got:\n" + section_11
     )
+
+
+def test_dossier_renders_nwi_wetland_features_from_evidence() -> None:
+    """NWI intersects_mapped_wetlands=True must appear in Section 7 wetlands line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "wetlands")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="NWI_WETLAND_INTERSECTION",
+            domain="wetlands",
+            method_code="live_usfws_nwi_wetland_intersection_query",
+            observation="USFWS NWI: mapped wetland feature intersects query area.",
+            observed_value={
+                "intersects_mapped_wetlands": True,
+                "wetland_type": "Freshwater Emergent Wetland",
+                "mapped_wetland_area_sq_m": 4047.0,
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USFWS NWI screening only; not jurisdictional delineation.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec7_start = dossier.find("## 7. Flood")
+    sec8_start = dossier.find("## 8.")
+    assert sec7_start != -1, "Section 7 not found in dossier"
+    section_7 = dossier[sec7_start:sec8_start]
+    assert "1 mapped wetland" in section_7, (
+        "Expected wetland feature count in Section 7; got:\n" + section_7
+    )
+    assert "Freshwater Emergent Wetland" in section_7, (
+        "Expected wetland type in Section 7; got:\n" + section_7
+    )
+    assert "not evaluated" not in section_7.split("USFWS/NWI result:")[1][:80], (
+        "Section 7 NWI line must not show 'not evaluated' when wetland evidence present"
+    )
+
+
+def test_dossier_shows_not_evaluated_for_wetlands_with_no_evidence() -> None:
+    """With no wetland evidence, Section 7 NWI line must say 'not evaluated'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec7_start = dossier.find("## 7. Flood")
+    sec8_start = dossier.find("## 8.")
+    assert sec7_start != -1
+    section_7 = dossier[sec7_start:sec8_start]
+    assert "USFWS/NWI result: not evaluated" in section_7, (
+        "Expected 'not evaluated' when no wetland evidence; got:\n" + section_7
+    )
