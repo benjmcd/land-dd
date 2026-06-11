@@ -51,12 +51,12 @@ def queue_health(
     require_reviewer_scope(principal, REVIEWER_SCOPE_OPERATIONS_READ)
     return OperationsQueueHealthResponse(
         schema_version="operations_queue_health_v1",
-        report_jobs=_job_queue_health_response(services.async_report_jobs.health()),
-        live_connector_jobs=_job_queue_health_response(services.live_connector_jobs.health()),
+        report_jobs=job_queue_health_response(services.async_report_jobs.health()),
+        live_connector_jobs=job_queue_health_response(services.live_connector_jobs.health()),
     )
 
 
-def _job_queue_health_response(health: JobQueueHealth) -> JobQueueHealthResponse:
+def job_queue_health_response(health: JobQueueHealth) -> JobQueueHealthResponse:
     return JobQueueHealthResponse(
         job_type=health.job_type,
         total=health.total,
