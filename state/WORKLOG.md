@@ -1760,6 +1760,24 @@ Append concise entries. Do not rely on chat history.
   - `backend/tests/test_source_service.py`: 8 fixture-backed tests, all passing.
 - `verify.sh` passes: 14 tests, lint clean, mypy clean.
 
+## 2026-06-10 — DS-023 Orchestration Wiring
+
+**Goal:** Wire `ChathamZoningRecordedConnector` into request-time orchestration, the operator API, and the connectors package exports.
+
+**Approach:** Added `orchestrate_chatham_zoning_for_area()` as a silent post-DS-010 step in `orchestrate_request_time_live_connectors_for_area()` — DS-023 fires only when DS-010 is available and succeeds, extracting the parcel zoning code from existing DS-010 evidence. Added `POST /connector-runs/chatham-zoning/query-district` operator endpoint with `reviewer:connector:run` scope gate. Extended payload validation allowlist with DS-023 zoning fields. Regenerated OpenAPI stubs.
+
+**Changes:**
+- `backend/app/connectors/__init__.py` — export 8 chatham_zoning symbols
+- `backend/app/api/live_connectors.py` — `DS_023_REGISTRY_ID`, `orchestrate_chatham_zoning_for_area()`, `_extract_chatham_parcel_zoning_code()`, orchestration wiring
+- `backend/app/api/connectors.py` — `ChathamZoningQueryRequest`, `ChathamZoningQueryResponse`, `POST /connector-runs/chatham-zoning/query-district`
+- `backend/app/evidence_ledger/payload_validation.py` — 10 zoning `observed_value` keys added to allowlist
+- `backend/tests/api/test_chatham_zoning_connector_api.py` — 5 new API tests
+- `api/openapi_stub.yaml`, `docs/planning_pack/api/openapi_stub.yaml` — regenerated
+
+**Result:** 1024 passed, 78 skipped; ruff clean; mypy clean (248 source files); `.\scripts\verify.ps1` → `verify: ok`. Commit: 48b3397.
+
+---
+
 ## 2026-06-10 — DS-023 Recorded-Fixture Connector Closure
 
 **Goal:** Advance DS-023 (Local zoning ordinance PDFs — Chatham County UDO) from `pending` to `connector-ready` using the recorded-fixture approach identified in `docs/source-reviews/ds-023-chatham-live-scope.md`.

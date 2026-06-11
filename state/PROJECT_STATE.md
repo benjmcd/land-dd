@@ -814,7 +814,8 @@ Current state:
 | DB-enabled local verifier | blocked locally | `RUN_DB_SMOKE=1 .\scripts\verify.ps1` fails at `psql not found`; no local `docker`, `psql`, `pg_dump`, or Postgres listener found |
 | DS-011 County assessor | pending | Official candidate county sources identified; no endpoint/terms/field policy/connector selected |
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
-| DS-023 Local zoning ordinance PDFs | connector-ready | ChathamZoningRecordedConnector implemented 2026-06-10; approved-with-restrictions; sources=8 ready=6 blocked=2 |
+| DS-023 Local zoning ordinance PDFs | connector-ready, wired | ChathamZoningRecordedConnector wired into orchestration and API 2026-06-10; silent post-DS-010 step; POST /connector-runs/chatham-zoning/query-district endpoint added |
+| DS-023 orchestration wiring | complete | `orchestrate_chatham_zoning_for_area()`, `_extract_chatham_parcel_zoning_code()`, payload validation allowlist extended, OpenAPI stubs regenerated |
 | Source readiness gate | hardened | `scripts/source_readiness.py` now reports `production_use_allowed`, `connector_implemented`, `connector_surfaces`, and `connector_ready` separately |
 
 Key artifacts:
@@ -823,6 +824,10 @@ Key artifacts:
 - `docs/source-reviews/ds-023.md`
 - `docs/source-reviews/ds-023-chatham-live-scope.md`
 - `backend/app/source_registry/connector_inventory.py`
+- `backend/app/api/live_connectors.py`
+- `backend/app/api/connectors.py`
+- `backend/app/connectors/__init__.py`
+- `backend/tests/api/test_chatham_zoning_connector_api.py`
 - `scripts/source_readiness.py`
 - `backend/tests/source_registry/test_source_readiness.py`
 
@@ -835,11 +840,11 @@ redistribution; screens at `immediate_operator_api` and
 `immediate_operator_api` and `request_time_orchestration`; durable live-job
 support is not claimed for DS-010.
 
-Last verified: 2026-06-10 — focused source-readiness, release-readiness, and
-chatham-zoning-connector tests pass (1019 passed, 78 skipped); ruff clean; mypy
-clean over 247 source files; `.\scripts\verify.ps1` → `verify: ok`; DB smoke
-skipped. DS-011 remains blocked (machine-access terms not reviewed for any NC
-county assessor portal). DS-017 remains blocked by license/cost decision.
+Last verified: 2026-06-10 — DS-023 orchestration wiring complete (commit 48b3397);
+1024 passed, 78 skipped; ruff clean; mypy clean over 248 source files;
+`.\scripts\verify.ps1` → `verify: ok`; DB smoke skipped. DS-011 remains blocked
+(machine-access terms not reviewed for any NC county assessor portal). DS-017
+remains blocked by license/cost decision.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 

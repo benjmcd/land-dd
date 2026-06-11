@@ -7254,6 +7254,32 @@ cd backend; py -3.12 -m mypy app/connectors/chatham_zoning_recorded.py app/sourc
 - mypy: clean (no output)
 - `.\scripts\verify.ps1`: `verify: ok` (1019 passed, 78 skipped; ruff clean; mypy clean over 247 source files; DB smoke skipped)
 
+---
+
+## 2026-06-10 — DS-023 Orchestration Wiring (commit 48b3397)
+
+**Commands:**
+```
+cd backend; py -3.12 -m pytest tests/api/test_chatham_zoning_connector_api.py -q
+cd backend; py -3.12 -m pytest -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- 5 new chatham zoning connector API tests: all passed
+- Full suite: 1024 passed, 78 skipped (0 failures)
+- ruff: All checks passed
+- mypy: clean (no output, 248 source files)
+- `.\scripts\verify.ps1`: `verify: ok`
+
+**Residual risk:**
+
+- DB smoke skipped (no local Docker/Postgres).
+- DS-023 orchestration fires only when DS-010 is available; in practice, Chatham parcel evidence must already be present. Correct behaviour — zoning lookup requires a parcel zoning code.
+- DS-011 remains blocked (machine-access terms not reviewed for any NC county assessor portal).
+- DS-017 remains blocked by license/cost decision.
+
 **Residual risk:**
 
 - DB smoke skipped (no local Docker/Postgres). DS-023 connector is recorded-fixture only; no DB persistence path differs from other fixture connectors.
