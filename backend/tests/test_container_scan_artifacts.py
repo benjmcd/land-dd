@@ -86,6 +86,7 @@ def test_container_image_scan_runbook_records_validation_and_limits() -> None:
         "DOCKERHUB_USERNAME",
         "DOCKERHUB_TOKEN",
         "backend/Dockerfile",
+        "scripts/container_scan_check.py",
         "local://land-diligence-backend:${{ github.sha }}",
         "critical and high severity CVEs",
         "exit-code: true",
@@ -102,7 +103,15 @@ def test_container_image_scan_runbook_records_validation_and_limits() -> None:
 
 def test_container_image_scan_scripts_exist() -> None:
     for path in (
+        REPO_ROOT / "scripts" / "container_scan_check.py",
         REPO_ROOT / "scripts" / "run_container_scan_check.ps1",
         REPO_ROOT / "scripts" / "run_container_scan_check.sh",
     ):
         assert path.is_file()
+
+
+def test_container_image_scan_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_container_scan_check.ps1", "run_container_scan_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "container_scan_check.py" in script

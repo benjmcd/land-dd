@@ -26,6 +26,9 @@ Run the static container scan configuration proof from the repository root:
 .\scripts\run_container_scan_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/container_scan_check.py` so local
+and CI validation use the same validate-only logic.
+
 The check is validate-only. It verifies that:
 
 - `.github/workflows/ci.yml` has a `container-image-scan` job.

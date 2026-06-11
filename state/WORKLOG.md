@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Container-image-scan shared validator extraction)
+
+- Extracted the duplicated container-image-scan validation logic from `scripts/run_container_scan_check.ps1` and `.sh` into `scripts/container_scan_check.py`.
+- Kept the Windows and POSIX container-image-scan wrappers as thin launchers that call the same shared validator and preserve the existing `container image scan check: ok` success token.
+- Updated `MANIFEST.md`, the container image scan runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused container image scan artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope remains validate-only; registry image publication, signed image SBOM, SLSA provenance attestation, and CVE-clean production image claims remain out of scope.
+
 ## 2026-06-11 (Alert-rules shared validator extraction)
 
 - Extracted the duplicated alert-rules validation logic from `scripts/run_alert_rules_check.ps1` and `.sh` into `scripts/alert_rules_check.py`.
