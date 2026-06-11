@@ -2060,3 +2060,25 @@ connector/API/readiness tests.
 Later `sources=8 ready=5 blocked=3`. Must remains `sources=8 ready=7 blocked=1`
 with DS-017 as the only Must blocker. Full `.\scripts\verify.ps1` passed; DB smoke was
 skipped because `RUN_DB_SMOKE=1` was not set.
+
+---
+
+## 2026-06-11 - Fresh DB-Enabled Verification and State Cleanup
+
+**Goal:** Prove the current source-registry and seed state against an isolated
+PostGIS runtime and remove stale next-task guidance from project state.
+
+**Approach:** Started Docker PostGIS on port 55432, created fresh verification
+database `land_diligence_verify_20260611090306`, applied migrations/seeds, ran DB
+smoke before the full suite, then ran the canonical DB-enabled verifier with both
+sync and async DB URLs pointed at the same database. The default Compose database
+had older state with 30 source rows, so it was not used as isolated proof.
+
+**Result:** Fresh migration/seed smoke reported 25 seeded sources and 2 seeded
+intents. Full `.\scripts\verify.ps1` with `RUN_DB_SMOKE=1` passed: workspace
+validation ok, backend tests passed, ruff clean, mypy clean over 289 source files,
+and final DB smoke passed. The final smoke reported 26 source rows because the
+DB-enabled test suite created the unsupported-screening test source in the shared
+verification runtime. Updated `state/PROJECT_STATE.md` and the active source
+readiness plan so DS-017 and remote handoff are the next explicit blockers rather
+than stale DS-022 guidance.

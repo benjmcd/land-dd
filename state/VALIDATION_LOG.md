@@ -7793,3 +7793,48 @@ git diff --check
   appraisal, lending, insurance, or investment suitability.
 - Remaining all-priority blockers are DS-009, DS-012, DS-013, DS-014, DS-017,
   DS-018, DS-019, DS-024, and DS-025; DS-017 remains the only Must blocker.
+
+---
+
+## 2026-06-11 - Fresh DB-Enabled Verification and State Cleanup
+
+**Scope:** Fresh Docker/PostGIS verification for the current source-registry seed
+state plus state/log cleanup after source-readiness closure.
+
+**Commands run:**
+
+```powershell
+$env:DB_PORT='55432'; docker compose up -d db
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence'; py -3.12 .\scripts\db_smoke_check.py
+docker compose exec -T db createdb -U land land_diligence_verify_20260611090306
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence_verify_20260611090306'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611090306'; .\scripts\db_apply_migrations.ps1
+$env:DB_PORT='55432'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence_verify_20260611090306'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611090306'; py -3.12 .\scripts\db_smoke_check.py
+$env:DB_PORT='55432'; $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55432/land_diligence_verify_20260611090306'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611090306'; .\scripts\verify.ps1
+docker compose exec -T db psql -U land -d land_diligence_verify_20260611090306 -c "select source_id, name from source.sources order by source_id;"
+```
+
+**Results:**
+
+- Default Compose database migration/smoke passed but reported 30 source rows,
+  proving it contained older shared state and should not be treated as isolated
+  seed proof.
+- Fresh verification database migration/seed pass inserted 25 source-registry rows.
+- Fresh pre-suite DB smoke passed: PostGIS 3.4, 9 schemas, 18 required tables,
+  11 required column groups, 2 required enums, 8 required foreign keys, 25 seeded
+  sources, and 2 seeded intents.
+- Full DB-enabled `.\scripts\verify.ps1` passed against
+  `land_diligence_verify_20260611090306`: workspace validation ok, backend tests
+  passed, ruff clean, mypy clean over 289 source files, DB smoke passed, and
+  `verify: ok`.
+- Final smoke during full verification reported 26 source rows because the DB
+  test suite created `Land Diligence MVP - Unsupported Screening Categories` in
+  the shared verification runtime after the pre-suite isolated seed proof.
+
+**Residual risk:**
+
+- Docker PostGIS remains a local proof only, not hosted deployment proof.
+- `main` remains ahead of `origin/main`; remote handoff is still a separate step.
+- DS-017 remains the only Must source-readiness blocker and still requires a
+  vendor/license/cost/product-scope decision before implementation or formal
+  deferral.

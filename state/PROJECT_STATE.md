@@ -9,7 +9,7 @@ Authoritative current source-readiness checks:
 - Active plan: `plans/2026-06-06-source-readiness-closure.md`.
 - Current pass: DS-007 is promoted only for BLM MLRS Active Mining Claims MapServer layer 1 context; it does not determine private mineral rights, claim-boundary precision, title status, mine hazards, resource value, extraction feasibility, environmental liability, buildability, appraisal, lending, insurance, or investment suitability.
 - Recent production-hardening pass: signed-token `POST /report-runs` now honors `Idempotency-Key` through a workspace/user-scoped job-store ledger, replays the same generated report on repeated matching requests, and returns `409 Conflict` for matching-principal payload mismatches. The accepted sync/async response-shape divergence remains: signed-token creates return a full `ReportRunContract`, while the unauthenticated operator path returns async job status.
-- DB-enabled verification passed on Docker PostGIS with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC=postgresql://land:land@localhost:55432/land_diligence`, and `DATABASE_URL=postgresql+psycopg://land:land@localhost:55432/land_diligence`. Default verification still does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
+- DB-enabled verification passed on Docker PostGIS with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC=postgresql://land:land@localhost:55432/land_diligence_verify_20260611090306`, and `DATABASE_URL=postgresql+psycopg://land:land@localhost:55432/land_diligence_verify_20260611090306`. The fresh verification database had 25 seeded source-registry rows immediately after migrations/seeds; full-suite DB tests added one unsupported-screening test source before the final smoke check, so the final smoke reported 26 source rows without changing the registry seed authority. Default verification still does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
 - Data-retention validation now proves the audit purge script and Windows/POSIX dry-run wrappers exist and are documented before accepting the data-retention catalog. This does not enable automated deletion; audit purges remain manual operator actions.
 - Release-readiness validation now requires the CI `db-verify` gate to pass both `DATABASE_URL_SYNC=postgresql://land:land@localhost:5432/land_diligence` and `DATABASE_URL=postgresql+psycopg://land:land@localhost:5432/land_diligence` with `RUN_DB_SMOKE=1`. This closes the prior implicit app-URL assumption in CI but does not remove the need for real DB-enabled verification when DB prerequisites are available.
 - Release-readiness validation logic is centralized in `scripts/release_readiness_check.py`; the Windows and POSIX wrappers are thin launchers for the same validator to avoid drift between local and CI proof paths.
@@ -21,7 +21,7 @@ Older entries below remain historical unless they match the checks above.
 
 ```text
 Current milestone: Level 10 - Production Hardening (partial)
-Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=16 blocked=9. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, DS-020 NOAA NWS climate/weather, DS-022 Census TIGERweb geography context, DS-008 USGS MRDS historical mineral-occurrence context, DS-015 NCGS 1985 geologic map-unit context, and DS-007 BLM MLRS active federal mining-claim context. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-017 remains vendor/license blocked.
+Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=16 blocked=9. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, DS-020 NOAA NWS climate/weather, DS-022 Census TIGERweb geography context, DS-008 USGS MRDS historical mineral-occurrence context, DS-015 NCGS 1985 geologic map-unit context, and DS-007 BLM MLRS active federal mining-claim context. Release-readiness validation is aligned to Must ready=7 blocked=1. Fresh DB-enabled verification passed on Docker PostGIS with `RUN_DB_SMOKE=1` after migrations/seeds proved 25 source-registry rows on an isolated verification DB. DS-017 remains vendor/license blocked.
 Last verified: 2026-06-11
 Verification command(s):
 - cd backend; py -3.12 -m pytest tests\connectors\test_blm_mlrs_connector.py tests\api\test_blm_mlrs_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
@@ -432,20 +432,27 @@ Completion evidence:
 - scripts/run_backup_restore_check.sh
 - docs/runbooks/backup_restore.md
 Next lowest-dependency task:
-- Finish the interrupted tail cleanup: keep OSM/NOAA connector API tests in the repo test
-  surface, keep release-readiness scripts/runbook aligned to Must `sources=8 ready=7
-  blocked=1`, and run focused plus default verification.
-- Next source-readiness expansion candidate: DS-022 Census TIGER/ACS, because it is public
-  and non-vendor-blocked. Start with source review/terms/field policy before registry,
-  seed, connector inventory, connector/API, or report changes.
-- Remaining L10 hardening: DB-enabled local verifier proof, hosted auth/RBAC, secret-manager
-  integration, key rotation, hosted log retention, billing reconciliation, image publication
+- Decide the DS-017 Commercial parcel vendor path: either select and review a vendor
+  license/cost/field policy/entitlement boundary before implementation, or formally
+  defer DS-017 from private-MVP release gating with an ADR/plan/update and matching
+  release-readiness expectations.
+- Publish or otherwise hand off the local stack: `main` is locally ahead of
+  `origin/main`; remote handoff is not complete until the unpublished commits are
+  pushed or intentionally held local.
+- Next source-readiness expansion must start from a fresh source review for one of
+  the remaining non-ready sources. Do not assume DS-012, DS-013, DS-014, DS-024, or
+  DS-025 is unblocked without terms/source review plus connector proof.
+- Remaining L10 hardening: hosted auth/RBAC, secret-manager integration, automatic
+  key rotation, hosted log retention, billing reconciliation, image-publication
   attestation, hosted deployment proof, hosted alerting, and recovery/ops drills.
 Do not work on yet:
 - Live connectors other than DS-001 USGS TNM, DS-002 FEMA NFHL, DS-003 SSURGO, DS-004 NWI,
-  DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-010 county GIS parcels (Chatham/Buncombe/Brunswick),
-  DS-011 assessor (not-evaluated), DS-016 OSM road access, and DS-023 county zoning (Chatham/Brunswick
-  UDO) unless source rights are reviewed and the work is explicitly bounded
+  DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-007 BLM MLRS, DS-008 USGS MRDS,
+  DS-010 county GIS parcels (Chatham/Buncombe/Brunswick), DS-011 assessor
+  (not-evaluated), DS-015 NC Geological Survey, DS-016 OSM road access, DS-020 NOAA
+  NWS climate/weather, DS-021 FCC Broadband Map, DS-022 Census TIGERweb geography,
+  and DS-023 county zoning (Chatham/Brunswick UDO) unless source rights are reviewed
+  and the work is explicitly bounded
 - LLM summary generation (Level 10 scope)
 - New jurisdictions or intents until the DS-002 connector slice or another registered/licensed live connector is implemented
 - Paid APIs without explicit license review and plan approval

@@ -14,7 +14,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 - DS-011 County assessor is connector-ready only as an explicit `AssessorNotEvaluatedConnector`: it records ASSESSOR_NOT_EVALUATED source-failure evidence for every area. It does not query live assessor portals or expose owner/value/sale-history fields.
 - DS-023 Local zoning ordinance PDFs is connector-ready through recorded-fixture zoning district connectors for reviewed county UDO tables. It does not claim live PDF retrieval, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution.
 - DS-020 NOAA NWS climate/weather is connector-ready through the bounded point/zone API connector. It provides administrative forecast-zone context only, not climate normals, frost dates, growing-season length, or agricultural risk conclusions.
-- DB-enabled verification should be re-run when local PostgreSQL/PostGIS prerequisites are available; default verification does not prove DB smoke unless `RUN_DB_SMOKE=1` is set and prerequisites exist.
+- DB-enabled verification passed on Docker PostGIS against fresh verification database `land_diligence_verify_20260611090306` with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and `DATABASE_URL` set to the same runtime. The isolated migration/seed pass produced 25 source rows; the full-suite final smoke saw 26 rows after DB tests created the unsupported-screening test source.
 
 ## Immediate pass
 
@@ -45,8 +45,8 @@ Close source-readiness gaps without overclaiming production readiness. This plan
    - Do not promote source readiness from source-review prose alone; require connector proof and source-readiness test updates.
 
 2. Re-run DB-backed verification where prerequisites exist.
-   - Start PostgreSQL/PostGIS or use an equivalent configured DB runtime.
-   - Run `.\scripts\verify.ps1` with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and `DATABASE_URL` set for the same DB runtime.
+   - Completed on 2026-06-11 against Docker PostGIS on port 55432 using fresh database `land_diligence_verify_20260611090306`.
+   - Keep this as a repeatable handoff gate after future DB/schema/seed changes; do not treat default verification with skipped DB smoke as equivalent proof.
    - Record pass/fail evidence without treating skipped DB smoke as a pass.
 
 3. Preserve current source caveats through report surfaces.
