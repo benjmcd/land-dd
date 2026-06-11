@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Supply-chain shared validator extraction)
+
+- Extracted the duplicated supply-chain validation logic from `scripts/run_supply_chain_check.ps1` and `.sh` into `scripts/supply_chain_check.py`.
+- Kept the Windows and POSIX supply-chain wrappers as thin launchers that call the same shared validator and preserve the existing `supply-chain check: ok` success token.
+- Updated `MANIFEST.md`, the supply-chain runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused supply-chain artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Scope remains validate-only; live advisory scanning still runs in CI or by explicit operator action, and dependency changes/attestations remain separately governed.
+
 ## 2026-06-11 (Dependency-provenance shared validator extraction)
 
 - Extracted the duplicated dependency-provenance validation logic and pip hash dry-run from `scripts/run_provenance_check.ps1` and `.sh` into `scripts/provenance_check.py`.

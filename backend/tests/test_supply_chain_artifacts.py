@@ -96,6 +96,7 @@ def test_supply_chain_runbook_records_validation_and_limits() -> None:
     for phrase in (
         "pip-audit --local",
         "run_supply_chain_check.ps1",
+        "scripts/supply_chain_check.py",
         ".github/dependabot.yml",
         "backend/requirements-prod.lock",
         "docs/sbom/backend-prod-sbom.json",
@@ -110,3 +111,16 @@ def test_supply_chain_runbook_records_validation_and_limits() -> None:
         "base-image packages",
     ):
         assert phrase in runbook
+
+
+def test_supply_chain_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "supply_chain_check.py").is_file()
+    assert (REPO_ROOT / "scripts" / "run_supply_chain_check.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_supply_chain_check.sh").is_file()
+
+
+def test_supply_chain_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_supply_chain_check.ps1", "run_supply_chain_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "supply_chain_check.py" in script

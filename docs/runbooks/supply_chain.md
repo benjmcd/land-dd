@@ -23,6 +23,9 @@ Run the static supply-chain configuration proof from the repository root:
 .\scripts\run_supply_chain_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/supply_chain_check.py` so local
+and CI validation use the same validate-only logic.
+
 The check is validate-only. It verifies that:
 
 - `.github/workflows/ci.yml` has a `supply-chain` job.
