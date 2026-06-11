@@ -19,7 +19,7 @@ Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
 
 | Layer | Purpose | Current / future |
 |---|---|---|
-| workspace validation | instruction/file invariants | current |
+| workspace validation | instruction/file/source-registry/private-MVP invariants | current |
 | domain contract tests | evidence/claim/source invariants | current |
 | API smoke tests | health/version and future report endpoints | current/future |
 | DB migration smoke | PostGIS schema applies and core tables exist | current optional Docker |

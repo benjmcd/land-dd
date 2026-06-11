@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Private-MVP workspace validation wiring)
+
+- Wired `scripts/private_mvp_readiness_check.py` into both Windows and POSIX workspace validation so the selected NC county private-MVP boundary is covered by `.\scripts\verify.ps1` and `./scripts/verify.sh`.
+- Added focused regression coverage proving both workspace wrappers call the private-MVP validator.
+- Updated `docs/TESTING.md` so workspace validation is described as covering instruction, file, source-registry, and private-MVP invariants.
+- Verification: focused workspace/private-MVP tests, ruff, mypy, Windows/POSIX workspace validation, private-MVP wrapper, and default `.\scripts\verify.ps1` passed. DB smoke remained skipped by default because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-11 (Source-registry authority validation hardening)
 
 - Fixed `scripts/check_source_registry.py` so it reads source reviews from `docs/source-reviews`, accepts the current `needs investigation` rights vocabulary, parses SQL seed metadata from the correct column, and compares every registry row to `db/seeds/002_seed_source_registry.sql`.

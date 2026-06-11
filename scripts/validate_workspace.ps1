@@ -88,6 +88,7 @@ foreach ($path in $required) {
 
 Invoke-PythonCommand -Label 'json file check' -Arguments @('scripts/check_json_files.py')
 Invoke-PythonCommand -Label 'source registry check' -Arguments @('scripts/check_source_registry.py')
+Invoke-PythonCommand -Label 'private MVP readiness check' -Arguments @('scripts/private_mvp_readiness_check.py')
 
 # Structural invariant checks. These must hold or a prior fix has been regressed.
 Write-Host '== structural invariants =='

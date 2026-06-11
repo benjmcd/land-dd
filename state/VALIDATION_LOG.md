@@ -2,6 +2,43 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Private-MVP Workspace Validation Wiring
+
+**Scope:** Make the private-MVP readiness proof part of workspace validation so
+the selected NC county beta boundary cannot drift as a manual-only side check.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py -q --tb=short
+cd backend; ruff check tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+.\scripts\validate_workspace.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/validate_workspace.sh
+.\scripts\run_private_mvp_readiness_check.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused pytest passed: 18 tests.
+- Focused ruff passed after correcting an invalid attempt to lint non-Python
+  PowerShell/Bash wrappers.
+- Focused mypy passed over 2 source files.
+- Windows and POSIX workspace validation passed and now run the private-MVP
+  readiness check in addition to the source-registry check.
+- Private-MVP readiness wrapper passed with `private MVP readiness check: ok`.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This hardens validation wiring only. It does not make DS-017 production-ready,
+  publish local commits, or resolve hosted production gates.
+- DB-backed proof still requires an explicit `RUN_DB_SMOKE=1` run with a live
+  PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 Source-Registry Authority Validation Hardening
 
 **Scope:** Make source-registry validation active in workspace verification and

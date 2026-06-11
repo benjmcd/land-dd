@@ -26,6 +26,13 @@ def test_workspace_validation_runs_source_registry_check() -> None:
         assert "scripts/check_source_registry.py" in script
 
 
+def test_workspace_validation_runs_private_mvp_readiness_check() -> None:
+    for script_name in ("validate_workspace.ps1", "validate_workspace.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "scripts/private_mvp_readiness_check.py" in script
+
+
 def test_ds012_review_records_blocked_registry_decision() -> None:
     review = (REPO_ROOT / "docs" / "source-reviews" / "ds-012.md").read_text(
         encoding="utf-8",
