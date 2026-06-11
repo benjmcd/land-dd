@@ -7874,3 +7874,40 @@ $env:DB_PORT='55432'; $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql:
 - This hardens DB seed proof only. It does not resolve DS-017, remote publication,
   hosted deployment, hosted auth/RBAC, billing, key rotation, log retention, or
   hosted alerting.
+
+---
+
+## 2026-06-11 - Private MVP Readiness Validator
+
+**Scope:** Validate-only private-MVP readiness proof for the selected NC county beta
+boundary, preserving DS-017 as a full release blocker.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\private_mvp_readiness_check.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; py -3.12 -m pytest tests\test_private_mvp_readiness.py tests\test_release_readiness_artifacts.py tests\source_registry\test_source_readiness.py -q --tb=short
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py tests\test_release_readiness_artifacts.py tests\source_registry\test_source_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py tests\test_release_readiness_artifacts.py tests\source_registry\test_source_readiness.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+```
+
+**Results:**
+
+- Private MVP readiness validator passed directly and through the PowerShell wrapper.
+- Focused pytest passed: 30 tests.
+- Focused ruff passed.
+- Focused mypy passed over 4 source files.
+- Release-readiness proof still passed with full release blockers preserved.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the only
+  Must blocker.
+
+**Residual risk:**
+
+- This does not make DS-017 production-ready and does not alter full release readiness.
+- Remote publication remains incomplete because local `main` is still ahead of
+  `origin/main`.
+- Hosted production gates remain blocked: hosted auth/RBAC, hosted deployment, billing,
+  key rotation, hosted log retention, and hosted alerting.

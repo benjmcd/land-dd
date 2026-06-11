@@ -61,6 +61,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 
 2. Production hardening.
    - Close hosted production gates separately from private-MVP proof: hosted auth/RBAC, secret-manager integration, key rotation, hosted log retention, billing reconciliation, published image attestation, deployment proof, hosted alerting, and operational recovery drills.
+   - Use `scripts/run_private_mvp_readiness_check.ps1` for the selected NC county private-MVP beta boundary; it must keep DS-017 blocked for full release readiness while confirming DS-017 and hosted-production gates do not block the private-MVP utility proof.
    - Every validate-only action must fail closed on missing runtime and must not seed or generate artifacts.
 
 3. Product completeness.

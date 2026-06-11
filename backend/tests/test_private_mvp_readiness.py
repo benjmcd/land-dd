@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +46,12 @@ def readiness() -> dict[str, Any]:
 
 def test_readiness_yaml_loads(readiness: dict[str, Any]) -> None:
     assert isinstance(readiness, dict), "Readiness YAML must be a mapping"
+
+
+def test_readiness_catalog_metadata(readiness: dict[str, Any]) -> None:
+    assert readiness["schema_version"] == "private_mvp_beta_readiness_v1"
+    assert readiness["operator_runbook"] == "docs/runbooks/mvp_operator.md"
+    assert readiness["validation"] == "scripts/run_private_mvp_readiness_check.ps1"
 
 
 def test_private_mvp_beta_section_exists(readiness: dict[str, Any]) -> None:
@@ -138,3 +146,32 @@ def test_hosted_production_items_are_blocked(readiness: dict[str, Any]) -> None:
             "explicitly document it is not required for private MVP; "
             f"got {item.get('status')!r}"
         )
+
+
+def test_private_mvp_readiness_validator_and_wrappers_exist() -> None:
+    assert (ROOT / "scripts" / "private_mvp_readiness_check.py").is_file()
+    assert (ROOT / "scripts" / "run_private_mvp_readiness_check.ps1").is_file()
+    assert (ROOT / "scripts" / "run_private_mvp_readiness_check.sh").is_file()
+
+
+def test_private_mvp_readiness_validator_passes() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/private_mvp_readiness_check.py"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout == ""
+
+
+def test_private_mvp_readiness_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in (
+        "run_private_mvp_readiness_check.ps1",
+        "run_private_mvp_readiness_check.sh",
+    ):
+        script = (ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "private_mvp_readiness_check.py" in script
+        assert "private MVP readiness check: ok" in script

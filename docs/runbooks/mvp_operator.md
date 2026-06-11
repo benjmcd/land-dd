@@ -748,6 +748,16 @@ This path proves the end-to-end pipeline for North Carolina private MVP counties
 (Buncombe, Chatham, Brunswick) using only official/public or fixture-backed sources.
 No API keys, paid vendors, or live DB are required.
 
+Validate the private-MVP gate catalog before handing off a private beta build:
+
+```powershell
+.\scripts\run_private_mvp_readiness_check.ps1
+```
+
+This proof is validate-only. It keeps DS-017 Commercial parcel vendor and hosted
+production work blocked for full release readiness while confirming those blockers do
+not gate the selected NC county private-MVP utility proof.
+
 ### Geography and scope
 
 - **Counties:** Buncombe, Chatham, Brunswick (NC)

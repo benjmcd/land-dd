@@ -11,6 +11,10 @@
 #   blocked   — cannot proceed; documented blocker
 #   accepted_with_risk — risk acknowledged and accepted; documented in risk field
 
+schema_version: private_mvp_beta_readiness_v1
+operator_runbook: docs/runbooks/mvp_operator.md
+validation: scripts/run_private_mvp_readiness_check.ps1
+
 private_mvp_beta:
 
   geography_selected:

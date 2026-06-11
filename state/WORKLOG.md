@@ -2101,3 +2101,24 @@ against `land_diligence_verify_20260611091900` passes; pre-suite smoke reports 2
 seeded source-registry rows and 25 total sources, and full `.\scripts\verify.ps1`
 with `RUN_DB_SMOKE=1` passes with final smoke reporting 25 seeded source-registry
 rows and 26 total sources after DB tests add one runtime source.
+
+---
+
+## 2026-06-11 - Private MVP Readiness Validator
+
+**Goal:** Make the DS-017/private-MVP boundary executable without weakening full
+release readiness.
+
+**Approach:** Added `scripts/private_mvp_readiness_check.py` plus Windows/POSIX
+wrappers. The validator checks `config/private_mvp_beta_readiness.yaml` metadata,
+requires private-MVP gates to be complete or accepted-with-risk, requires hosted
+production items to stay blocked/out of scope for private MVP, validates the DS-017
+registry row remains `Must` and blocked for source-rights statuses, and confirms the
+full release catalog still carries the `non_ready_must_sources` blocker with DS-017 as
+the only Must source-readiness blocker. The MVP operator runbook and MANIFEST now route
+to the proof.
+
+**Result:** `.\scripts\run_private_mvp_readiness_check.ps1` passes. Focused pytest,
+ruff, and mypy pass across private-MVP, release-readiness, and source-readiness proof
+surfaces. DS-017 remains blocked for full release readiness; private-MVP utility proof
+remains explicitly separate.
