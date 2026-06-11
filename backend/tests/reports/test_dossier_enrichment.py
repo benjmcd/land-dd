@@ -763,3 +763,113 @@ def test_dossier_shows_not_evaluated_for_wetlands_with_no_evidence() -> None:
     assert "USFWS/NWI result: not evaluated" in section_7, (
         "Expected 'not evaluated' when no wetland evidence; got:\n" + section_7
     )
+
+
+def test_dossier_renders_buildability_terrain_from_evidence() -> None:
+    """USGS TNM terrain relief/slope evidence must appear in Section 6 buildability."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "buildability")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.DERIVED_METRIC,
+            evidence_code="USGS_TNM_EPQS_RELIEF_SCREEN",
+            domain="buildability",
+            method_code="usgs_tnm_epqs_terrain_relief_screen",
+            observation="USGS TNM terrain screening: moderate slope area.",
+            observed_value={
+                "metric_code": "tnm_epqs_sampled_relief_m",
+                "value": 12.5,
+                "unit": "m",
+                "relief_m": 12.5,
+                "mean_slope_pct": 6.3,
+                "low_slope_area_ratio": 0.68,
+                "insufficient_low_slope_buildable_area": False,
+            },
+            confidence=ConfidenceBand.MEDIUM,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec6_start = dossier.find("## 6. Buildability")
+    sec7_start = dossier.find("## 7.")
+    assert sec6_start != -1, "Section 6 not found"
+    section_6 = dossier[sec6_start:sec7_start]
+    assert "terrain relief" in section_6, (
+        "Expected terrain relief in Section 6; got:\n" + section_6
+    )
+    assert "mean slope" in section_6, (
+        "Expected mean slope in Section 6; got:\n" + section_6
+    )
+    assert "low-slope buildable area" in section_6, (
+        "Expected buildable area ratio in Section 6; got:\n" + section_6
+    )
+    assert "no slope constraint" in section_6, (
+        "Expected no-constraint text in Section 6; got:\n" + section_6
+    )
+    assert "not evaluated" not in section_6.split("Terrain / slope screening:")[1][:80], (
+        "Section 6 must not show 'not evaluated' when buildability evidence present"
+    )
+
+
+def test_dossier_renders_broadband_availability_from_evidence() -> None:
+    """FCC BDC broadband evidence must appear in Section 12 connectivity."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "broadband")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="FCC_BROADBAND_AVAILABILITY_SCREEN",
+            domain="broadband",
+            method_code="fcc_bdc_broadband_availability_query",
+            observation="FCC BDC: 4 provider(s) offer service at this location.",
+            observed_value={
+                "has_any_broadband": True,
+                "has_high_speed_broadband": True,
+                "provider_count": 4,
+                "technology_types": ["fiber", "cable"],
+                "max_download_mbps": 1000,
+                "max_upload_mbps": 100,
+                "fcc_bdc_lat": 35.85,
+                "fcc_bdc_lon": -79.05,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Provider-reported availability; confirm on-site.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec12_start = dossier.find("## 12. Internet")
+    sec13_start = dossier.find("## 13.")
+    assert sec12_start != -1, "Section 12 not found"
+    section_12 = dossier[sec12_start:sec13_start]
+    assert "4 provider(s)" in section_12, (
+        "Expected provider count in Section 12; got:\n" + section_12
+    )
+    assert "fiber" in section_12, (
+        "Expected technology type in Section 12; got:\n" + section_12
+    )
+    assert "1000" in section_12, (
+        "Expected max download Mbps in Section 12; got:\n" + section_12
+    )
+    assert "high-speed" in section_12, (
+        "Expected high-speed indicator in Section 12; got:\n" + section_12
+    )
+    assert "not evaluated" not in section_12.split("Broadband availability:")[1][:80], (
+        "Section 12 must not show 'not evaluated' when broadband evidence present"
+    )

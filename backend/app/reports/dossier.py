@@ -115,6 +115,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Required verification: {_domain_verification(report_run, 'env_hazard')}",
         "",
         "## 12. Internet / Connectivity",
+        "",
         f"- Broadband availability: {_broadband_result(report_run)}",
         f"- Caveats: {_domain_caveats(report_run, {'broadband'})}",
         f"- Required verification: {_domain_verification(report_run, 'broadband')}",
