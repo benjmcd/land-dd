@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Dossier Section 8 SSURGO surfacing fix + DS-013 blocked source review)
+
+- Section 8 (Soil/Septic): replaced hardcoded "not evaluated" with `_soil_septic_result()` which deduplicates by `soil_mapunit_key` and renders `soil_mapunit_name`/`soil_mapunit_symbol` from DS-003 SSURGO evidence; corrected `_domain_verification` and `_domain_caveats` calls from wrong domain `'soil'` to `'soil_septic'`; added caveats line to Section 8 (was missing while sections 7, 9, 11 had it).
+- 2 new dossier enrichment tests (SSURGO mapunit name surfacing; SSURGO source failure). 1228 tests pass, mypy clean on 120 source files.
+- Committed: `9b40dd4`.
+- DS-013 NC State Well Logs source review written and committed: NC OneMap ArcGIS service returns Error 499 "Token Required"; no public unauthenticated endpoint confirmed; all registry fields set to blocked; connector gates all not-applicable. Committed: `ceff1b4`.
+
+## 2026-06-11 (Dossier sections 9/11 surfacing — water monitoring + env_hazard evidence now rendered)
+
+- Section 9 (Water Context): replaced hardcoded "not evaluated" with `_water_monitoring_result()` which renders monitoring station counts/status from DS-005 evidence; added caveats and verification tasks from live claims.
+- Section 11 (Environmental / Compliance Hazards): replaced hardcoded "not evaluated" with `_env_hazard_result()` which renders regulated facility counts/status from DS-006 evidence; added domain caveats and `_domain_verification`.
+- `_env_hazard_caveats` rendered via existing `_domain_caveats(report_run, {'env_hazard'})`.
+- 4 new dossier enrichment tests (water found/not-found, env_hazard found/not-found). 1226 tests pass.
+- Committed: `1542dbc`.
+
 ## 2026-06-11 (DS-016 OSM road access + DS-005 USGS water monitoring + DS-006 EPA ECHO connectors — 10/25 total connector-ready)
 
 - DS-016 OSM road access: `OsmRoadAccessConnector.query_bbox()` via Overpass API; `road_access` claims engine wired (ROAD_001 hard-gate + NOT_EVALUATED for missing evidence); `POST /connector-runs/osm-road-access/query-bbox` operator route; wired into request-time orchestration. Payload validation extended with `has_road_access`, `no_road_access`, `road_proximity_status`, `road_proximity_meters`, `osm_road_count`, `road_types`, `osm_road_bbox`. Committed: `af940bf`.

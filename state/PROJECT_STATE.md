@@ -445,6 +445,18 @@ See `LANE_OWNERSHIP.md` for ownership boundaries.
 
 ## Last verified state
 
+Dossier Section 8 (Soil/Septic) SSURGO surfacing fix on 2026-06-11: Section 8 was
+hardcoding "Soil map units: not evaluated" even when SSURGO evidence (domain
+`soil_septic`, evidence code `SSURGO_SOIL_MAPUNIT_INTERSECTION`) was present. Added
+`_soil_septic_result()` helper that reads `soil_mapunit_name`/`soil_mapunit_symbol`/
+`soil_mapunit_key` observed_value keys and renders a deduplicated mapunit list; also
+fixed `_domain_verification` and `_domain_caveats` calls from wrong domain string
+`'soil'` to `'soil_septic'`. Added caveats line to Section 8. Two new tests
+(`test_dossier_renders_ssurgo_mapunit_from_evidence`,
+`test_dossier_renders_soil_source_failure_from_evidence`). 1228 tests pass, mypy
+clean on 120 source files. Committed `9b40dd4`. DS-013 NC well logs blocked review
+also committed (`ceff1b4`).
+
 Latest DS-016/DS-005/DS-006 connector verification on 2026-06-11: three Should-priority
 live connectors are implemented and all 1222 tests pass with mypy clean over 120 source
 files. DS-016 OSM road access (`OsmRoadAccessConnector` via Overpass API) and DS-005 USGS
@@ -457,10 +469,12 @@ NOT_EVALUATED_DOMAINS to a real evaluation domain: ENV_G001 now gates on
 validation, connector inventory, live-connector orchestration, API route, openapi_stub,
 source-readiness tests, and rule-engine tests are all updated. Source readiness: 7/8
 Must (DS-017 remains blocked by vendor/license), 3 Should (DS-005, DS-006, DS-016)
-connector-ready; 10/25 total connector-ready. Next-task candidates: remaining Should
-sources (DS-007 NLCD land cover, DS-008 USDA crop layer — both public), dossier/report
-surfacing of env_hazard claims in the operator UI, or consolidating the job_repo.py
-idempotency path.
+connector-ready; 10/25 total connector-ready. Next-task candidates: DS-012 county
+recorder source-rights review + connector (Should, county deeds/easements, NC counties),
+DS-013 state well logs source-rights review + connector (Should, NC Division of Water
+Resources), dossier/report surfacing of water/env_hazard/road-access claims, or
+consolidating the job_repo.py idempotency path. DS-017 (Must, commercial parcel) and
+DS-018 (Should, commercial comps) remain blocked by license/cost.
 
 Latest batch-round-2 verification on 2026-06-10 (merged to `main`, PRs #23–#33): the
 operator surface is merged and live on main, plus ten parallel units: source-rights
