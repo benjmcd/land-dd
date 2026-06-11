@@ -66,6 +66,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-016",
         "DS-020",
         "DS-021",
+        "DS-022",
         "DS-023",
     ]
     usgs = next(record for record in records if record.source_registry_id == "DS-001")
@@ -85,6 +86,15 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "request_time_orchestration",
     )
     assert "durable_live_job" not in county_gis.connector_surfaces
+    census_tiger = next(record for record in records if record.source_registry_id == "DS-022")
+    assert census_tiger.blocked_fields == ()
+    assert census_tiger.production_use_allowed is True
+    assert census_tiger.connector_implemented is True
+    assert census_tiger.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+    assert census_tiger.connector_ready is True
 
 
 def test_ds011_assessor_not_evaluated_connector_is_implemented() -> None:

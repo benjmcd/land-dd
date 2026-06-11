@@ -2,6 +2,45 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 DS-022 Census TIGERweb Geography Connector
+
+**Scope:** Promote DS-022 only for bounded TIGERweb tract/block-group administrative geography context; exclude ACS demographics and protected-class/product-steering uses.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
+py -3.12 .\scripts\source_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must
+py -3.12 .\scripts\source_readiness.py --priority Later
+cd backend; ruff check app\connectors\census_tiger.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py
+cd backend; py -3.12 -m mypy app\connectors\census_tiger.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest tests\test_planning_pack_schema_copies.py tests\api\test_openapi_contract.py -q --tb=short
+cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- DS-022 focused connector/API/source-readiness tests passed (`21 passed`).
+- Source-readiness CLI reported all-priority `sources=25 ready=13 blocked=12`; DS-022 is now ready.
+- Source-readiness CLI reported Must `sources=8 ready=7 blocked=1`; DS-017 remains the only Must blocker.
+- Later-priority readiness reported `sources=8 ready=2 blocked=6`; DS-020 and DS-022 are the ready Later-priority sources.
+- Focused ruff passed after import sorting and one line wrap; focused mypy passed on 10 source/test files.
+- OpenAPI stubs were regenerated from `create_app().openapi()` and parity tests passed (`3 passed`).
+- Source registry readiness/seed tests passed (`16 passed`).
+- Release-readiness proof passed with Must `ready=7 blocked=1` unchanged.
+- Default `.\scripts\verify.ps1` passed: workspace validation and structural invariants ok; backend tests green; ruff clean; mypy clean on 278 source files; DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- DS-022 uses TIGERweb administrative geography only; no ACS demographics, protected-class analytics, neighborhood desirability, market/investment/lending suitability, or residential steering are implemented or allowed.
+- DS-017 remains blocked by vendor/license/cost decision.
+- DB smoke was not run in this pass; run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available.
+
 ## 2026-06-11 Interrupted Tail Cleanup - OSM/NOAA Tests + Release Readiness
 
 **Scope:** Re-audit the interrupted Claude session tail, resolve OSM road-access API test failures, bring NOAA/OSM API tests into the local test surface, and align release-readiness proof with current Must-source readiness.
@@ -24,7 +63,7 @@ git diff --check
 - OSM road-access connector/API focused tests passed (`30 passed`).
 - NOAA + OSM connector/API focused tests passed (`69 passed`).
 - Source-readiness CLI reported Must `sources=8 ready=7 blocked=1`; only DS-017 remains blocked at Must priority.
-- Source-readiness CLI reported all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS remains blocked and is the next public-source candidate.
+- Source-readiness CLI reported then-current all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS was still blocked at that point.
 - Release-readiness proof passed after updating expected Must counts to `ready=7 blocked=1`.
 - Combined source-readiness/release-readiness/OSM/NOAA focused tests passed (`83 passed`).
 - `git diff --check` reported no whitespace errors; it warned that `state/PROJECT_STATE.md` line endings will normalize from CRLF to LF when Git next touches it.
@@ -34,7 +73,7 @@ git diff --check
 
 - DB smoke was not run in this pass; run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1` only when PostgreSQL/PostGIS prerequisites are available.
 - DS-017 remains blocked by vendor/license/cost decision.
-- DS-022 Census TIGER/ACS remains blocked until source review, field policy, registry/seed updates, connector inventory, connector/API tests, and source-readiness proof are completed.
+- At that point, DS-022 Census TIGER/ACS remained blocked until source review, field policy, registry/seed updates, connector inventory, connector/API tests, and source-readiness proof were completed.
 
 ## 2026-06-11 DS-010 Buncombe/Brunswick + DS-023 + DS-011 connector closure
 

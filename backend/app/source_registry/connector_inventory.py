@@ -6,6 +6,7 @@ from app.connectors.assessor_not_evaluated import ASSESSOR_NOT_EVALUATED_CONNECT
 from app.connectors.brunswick_parcels import BRUNSWICK_PARCELS_CONNECTOR_NAME
 from app.connectors.brunswick_zoning_recorded import BRUNSWICK_ZONING_CONNECTOR_NAME
 from app.connectors.buncombe_parcels import BUNCOMBE_PARCELS_CONNECTOR_NAME
+from app.connectors.census_tiger import CENSUS_TIGER_CONNECTOR_NAME
 from app.connectors.epa_echo import EPA_ECHO_CONNECTOR_NAME
 from app.connectors.fcc_broadband import FCC_BROADBAND_CONNECTOR_NAME
 from app.connectors.noaa_climate import NOAA_CLIMATE_CONNECTOR_NAME
@@ -88,6 +89,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
     "DS-021": SourceConnectorInventoryEntry(
         source_registry_id="DS-021",
         connector_name=FCC_BROADBAND_CONNECTOR_NAME,
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
+    "DS-022": SourceConnectorInventoryEntry(
+        source_registry_id="DS-022",
+        connector_name=CENSUS_TIGER_CONNECTOR_NAME,
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
     "DS-023": SourceConnectorInventoryEntry(

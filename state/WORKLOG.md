@@ -2,13 +2,22 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-022 Census TIGERweb geography connector - 13/25 connector-ready)
+
+- DS-022 Census TIGER/ACS promoted only for bounded TIGERweb tract/block-group geography context; ACS demographics, protected-class analytics, neighborhood desirability, market/investment/lending suitability, and residential steering remain excluded.
+- Source review `docs/source-reviews/ds-022.md` added; registry and SQL seed updated to `approved-with-restrictions` with Census attribution/non-endorsement and no re-identification caveats.
+- Added `CensusTigerConnector.query_bbox()` for TIGERweb Tracts_Blocks layers 0 and 1 with `returnGeometry=false`, bounded bbox/feature limits, source-failure evidence for request/malformed/truncated responses, and explicit transfer-limit fail-closed behavior.
+- Added reviewer-authenticated `POST /connector-runs/census-tiger/query-bbox`, request-time orchestration, connector inventory entry, evidence payload validation keys, focused connector/API/readiness tests, and regenerated OpenAPI stubs.
+- Source readiness now reports Must `sources=8 ready=7 blocked=1` and all-priority `sources=25 ready=13 blocked=12`; DS-017 remains the only Must blocker.
+- Verification: DS-022 focused tests passed (`21 passed`); OpenAPI parity passed (`3 passed`); source registry readiness/seed tests passed (`16 passed`); release-readiness proof passed; default `.\scripts\verify.ps1` passed with backend tests, ruff, mypy on 278 source files, and structural checks green. DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-11 (Interrupted tail cleanup - OSM API tests + release-readiness drift)
 
-- Re-reviewed interrupted Claude tail against live repo state. Current source readiness is Must `sources=8 ready=7 blocked=1` (DS-017 only) and all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS remains the next public-source candidate.
+- Re-reviewed interrupted Claude tail against then-live repo state. At that point, source readiness was Must `sources=8 ready=7 blocked=1` (DS-017 only) and all-priority `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS was the next public-source candidate.
 - Fixed OSM road-access no-roads API path: `OsmRoadAccessConnector` now omits unknown `road_distance_m` instead of emitting `None`, preserving `no_public_road_adjacency=true` and `road_count=0` so evidence-ledger validation accepts the succeeded no-road result.
 - Updated OSM API tests to match the connector's canonical evidence contract: `EvidenceType.SPATIAL_INTERSECTION`, domain `access`, and no `road_distance_m` field for no-road evidence.
 - Added interrupted-tail NOAA/OSM API test coverage files to the worktree and verified NOAA/OSM connector/API focused tests.
-- Updated source-readiness closure plan, release-readiness scripts/tests/runbook, `tasks/task_queue.yaml`, and `state/PROJECT_STATE.md` to align with Must `ready=7 blocked=1` and all-priority `ready=12 blocked=13`.
+- Updated source-readiness closure plan, release-readiness scripts/tests/runbook, `tasks/task_queue.yaml`, and `state/PROJECT_STATE.md` to align with then-current Must `ready=7 blocked=1` and all-priority `ready=12 blocked=13`.
 - Verification: OSM focused tests passed (`30 passed`); NOAA+OSM connector/API tests passed (`69 passed`); release-readiness proof passed; combined focused test set passed (`83 passed`); default `.\scripts\verify.ps1` passed with backend tests, ruff, mypy, and structural checks green. DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
 
 ## 2026-06-11 (DS-020 NOAA NWS climate connector — 12/25 connector-ready)

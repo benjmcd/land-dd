@@ -78,6 +78,19 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "nws_office_code",
     "nws_radar_station",
     "timezone",
+    # Census TIGER connector fields (DS-022)
+    "census_block_group_count",
+    "census_block_group_geoids",
+    "census_demographics_used",
+    "census_tiger_bbox",
+    "census_tiger_vintage",
+    "census_tract_count",
+    "census_tract_geoids",
+    "has_census_geography_context",
+    "primary_census_block_group_geoid",
+    "primary_census_block_group_name",
+    "primary_census_tract_geoid",
+    "primary_census_tract_name",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
@@ -253,6 +266,8 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         "source_stale",
         "has_env_hazard_proximity",
         "no_env_hazard_proximity",
+        "has_census_geography_context",
+        "census_demographics_used",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"source_observation observed_value '{key}' must be boolean")
@@ -270,6 +285,16 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["regulated_facility_count"],
             "regulated_facility_count",
+        )
+    if "census_tract_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["census_tract_count"],
+            "census_tract_count",
+        )
+    if "census_block_group_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["census_block_group_count"],
+            "census_block_group_count",
         )
 
 

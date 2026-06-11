@@ -5,7 +5,7 @@
 Authoritative current source-readiness checks:
 
 - Must priority: `sources=8 ready=7 blocked=1`; DS-017 Commercial parcel vendor is the only Must blocker.
-- All priorities: `sources=25 ready=12 blocked=13`; DS-022 Census TIGER/ACS is the next public-source candidate to review/implement after the interrupted DS-020/OSM tail cleanup.
+- All priorities: `sources=25 ready=13 blocked=12`; DS-022 Census TIGER/ACS is now connector-ready for bounded TIGERweb tract/block-group geography context only. ACS demographic variables remain excluded.
 - Active plan: `plans/2026-06-06-source-readiness-closure.md`.
 - Tail cleanup in this pass: OSM road-access no-road evidence now omits unknown `road_distance_m` so ledger validation succeeds; OSM API tests assert the connector's canonical `SPATIAL_INTERSECTION` / `access` evidence contract; release-readiness proof now expects Must `ready=7 blocked=1`.
 - DB smoke remains a separate proof: default verification does not prove DB readiness unless `RUN_DB_SMOKE=1` is set and PostgreSQL/PostGIS prerequisites are available.
@@ -16,9 +16,21 @@ Older entries below remain historical unless they match the checks above.
 
 ```text
 Current milestone: Level 10 - Production Hardening (partial)
-Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=12 blocked=13. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, and DS-020 NOAA NWS climate/weather. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-022 Census TIGER/ACS is the next public-source candidate; DS-017 remains vendor/license blocked.
+Milestone status: PARTIAL PASS for Level 10 hardening and source-readiness closure. Current source readiness is Must sources=8 ready=7 blocked=1 (DS-017 only) and all-priority sources=25 ready=13 blocked=12. Recent connector-ready additions include DS-011 explicit not-evaluated assessor evidence, DS-016 OSM road access, DS-005 USGS water monitoring, DS-006 EPA ECHO, DS-021 FCC Broadband, DS-020 NOAA NWS climate/weather, and DS-022 Census TIGERweb geography context. Release-readiness validation is aligned to Must ready=7 blocked=1. DB smoke remains a separate RUN_DB_SMOKE=1 proof when PostgreSQL/PostGIS prerequisites are available. DS-017 remains vendor/license blocked.
 Last verified: 2026-06-11
 Verification command(s):
+- cd backend; py -3.12 -m pytest tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py -q --tb=short
+- py -3.12 .\scripts\source_readiness.py
+- py -3.12 .\scripts\source_readiness.py --priority Must
+- py -3.12 .\scripts\source_readiness.py --priority Later
+- cd backend; ruff check app\connectors\census_tiger.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py
+- cd backend; py -3.12 -m mypy app\connectors\census_tiger.py app\connectors\__init__.py app\api\dependencies.py app\api\live_connectors.py app\api\connectors.py app\evidence_ledger\payload_validation.py app\source_registry\connector_inventory.py tests\connectors\test_census_tiger_connector.py tests\api\test_census_tiger_connector_api.py tests\source_registry\test_source_readiness.py
+- py -3.12 .\scripts\export_openapi_stub.py
+- cd backend; py -3.12 -m pytest tests\test_planning_pack_schema_copies.py tests\api\test_openapi_contract.py -q --tb=short
+- cd backend; py -3.12 -m pytest tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py -q --tb=short
+- .\scripts\run_release_readiness_check.ps1
+- py -3.12 .\scripts\source_readiness.py --priority Must --json
+- .\scripts\verify.ps1
 - cd backend; py -3.12 -m pytest -q tests/source_registry/test_source_readiness.py tests/test_release_readiness_artifacts.py
 - py -3.12 .\scripts\source_readiness.py --priority Must --json
 - .\scripts\run_release_readiness_check.ps1
@@ -874,7 +886,7 @@ Current state:
 | DS-011 County assessor | connector-ready as not-evaluated evidence | `AssessorNotEvaluatedConnector.query_area()` records explicit ASSESSOR_NOT_EVALUATED SOURCE_FAILURE evidence; this is not live assessor data |
 | DS-017 Commercial parcel vendor | blocked | Vendor/license/cost decision deferred; not required for private MVP |
 | DS-020 NOAA NWS climate/weather | connector-ready | Bounded point/forecast-zone connector; administrative weather-zone context only, not climate normals or agricultural risk conclusions |
-| DS-022 Census TIGER/ACS | blocked | Next public-source candidate; needs source review, field policy, registry/seed updates, connector inventory, connector/API tests, and readiness proof |
+| DS-022 Census TIGER/ACS | connector-ready | Bounded TIGERweb tract/block-group geography context only; ACS demographic variables, protected-class analytics, neighborhood desirability, market/investment/lending suitability, and residential steering are excluded |
 | DS-023 Local zoning ordinance PDFs | connector-ready, wired | Recorded-fixture zoning district connectors for reviewed county UDO tables; no live PDF retrieval or legal zoning conclusion claimed |
 | DS-023 orchestration wiring | complete | Chatham/Brunswick zoning recorded-fixture orchestration and operator routes wired |
 | DS-010 Buncombe parcel connector | complete | `buncombe_parcels.py`; ArcGIS property_bc_dis MapServer/1; pinnum/Acreage (no zoning field); county dispatch via centroid bounds |
@@ -891,6 +903,10 @@ Key artifacts:
 - `backend/app/api/live_connectors.py`
 - `backend/app/api/connectors.py`
 - `backend/app/connectors/__init__.py`
+- `backend/app/connectors/census_tiger.py`
+- `docs/source-reviews/ds-022.md`
+- `backend/tests/api/test_census_tiger_connector_api.py`
+- `backend/tests/connectors/test_census_tiger_connector.py`
 - `backend/tests/api/test_chatham_zoning_connector_api.py`
 - `scripts/source_readiness.py`
 - `backend/tests/source_registry/test_source_readiness.py`
@@ -901,14 +917,17 @@ blocked by license/cost/vendor decision. DS-023 readiness uses recorded-fixture
 district-code lookup only; no raw PDF redistribution, live amendment tracking, or
 legal zoning conclusion is claimed. DS-010 readiness is scoped to
 `immediate_operator_api` and `request_time_orchestration`; durable live-job support
-is not claimed for DS-010. Current all-priority readiness: `sources=25 ready=12
-blocked=13`; DS-022 remains the next public-source candidate.
+is not claimed for DS-010. Current all-priority readiness: `sources=25 ready=13
+blocked=12`; DS-022 is connector-ready only for administrative TIGERweb geography
+context, not ACS demographics or protected-class analytics.
 
-Last verified in this pass: 2026-06-11 focused OSM/NOAA connector API tests passed,
-source readiness reported Must `ready=7 blocked=1`, release-readiness proof passed,
-release-readiness artifact tests passed, and default `.\scripts\verify.ps1` passed
-with backend tests, ruff, mypy, and structural checks green. DB smoke was skipped
-because `RUN_DB_SMOKE=1` was not set.
+Last verified in this pass: 2026-06-11 focused DS-022 connector/API/readiness tests
+passed (`21 passed`), OpenAPI parity tests passed (`3 passed`), source registry
+readiness/seed tests passed (`16 passed`), source readiness reported all-priority
+`sources=25 ready=13 blocked=12` and Must `sources=8 ready=7 blocked=1`,
+release-readiness proof passed, and default `.\scripts\verify.ps1` passed with
+backend tests, ruff, mypy on 278 source files, and structural checks green. DB smoke
+was skipped because `RUN_DB_SMOKE=1` was not set.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 

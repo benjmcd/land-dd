@@ -28,6 +28,7 @@ from app.connectors import (
 )
 from app.connectors.brunswick_parcels import JsonFetcher as BrunswickParcelsJsonFetcher
 from app.connectors.buncombe_parcels import JsonFetcher as BuncombeParcelsJsonFetcher
+from app.connectors.census_tiger import JsonFetcher as CensusTigerJsonFetcher
 from app.connectors.chatham_parcels import JsonFetcher as ChathamParcelsJsonFetcher
 from app.connectors.epa_echo import JsonFetcher as EpaEchoJsonFetcher
 from app.connectors.fcc_broadband import JsonFetcher as FccBroadbandJsonFetcher
@@ -91,6 +92,7 @@ class ApiServices:
     epa_echo_fetch_json: EpaEchoJsonFetcher | None = None
     fcc_broadband_fetch_json: FccBroadbandJsonFetcher | None = None
     noaa_climate_fetch_json: NoaaClimateJsonFetcher | None = None
+    census_tiger_fetch_json: CensusTigerJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

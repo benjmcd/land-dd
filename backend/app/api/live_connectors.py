@@ -16,6 +16,9 @@ from app.connectors import (
     BuncombeParcelsBbox,
     BuncombeParcelsConnector,
     BuncombeParcelsConnectorError,
+    CensusTigerBbox,
+    CensusTigerConnector,
+    CensusTigerConnectorError,
     ChathamParcelsBbox,
     ChathamParcelsConnector,
     ChathamParcelsConnectorError,
@@ -60,6 +63,7 @@ from app.connectors.brunswick_parcels import (
     BRUNSWICK_PARCELS_MAX_FEATURES as _BRUNSWICK_MAX_FEATURES,
 )
 from app.connectors.buncombe_parcels import BUNCOMBE_PARCELS_MAX_FEATURES as _BUNCOMBE_MAX_FEATURES
+from app.connectors.census_tiger import CENSUS_TIGER_MAX_FEATURES
 from app.connectors.chatham_parcels import CHATHAM_PARCELS_MAX_FEATURES
 from app.connectors.evidence_ingestion import ConnectorEvidenceIngestionResult
 from app.connectors.fema_nfhl import FEMA_NFHL_MAX_FEATURES
@@ -85,6 +89,7 @@ DS_011_REGISTRY_ID = "DS-011"
 DS_016_REGISTRY_ID = "DS-016"
 DS_020_REGISTRY_ID = "DS-020"
 DS_021_REGISTRY_ID = "DS-021"
+DS_022_REGISTRY_ID = "DS-022"
 DS_023_REGISTRY_ID = "DS-023"
 
 # NC private-MVP county coordinate bounds (WGS84, approximate centroid check)
@@ -180,6 +185,14 @@ class NoaaClimateOrchestrationResult:
     request_url: str
 
 
+@dataclass(frozen=True)
+class CensusTigerOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
 RequestTimeLiveConnectorResult = (
     UsgsTnmOrchestrationResult
     | FemaNfhlOrchestrationResult
@@ -191,6 +204,7 @@ RequestTimeLiveConnectorResult = (
     | EpaEchoOrchestrationResult
     | FccBroadbandOrchestrationResult
     | NoaaClimateOrchestrationResult
+    | CensusTigerOrchestrationResult
 )
 
 
@@ -224,6 +238,10 @@ def orchestrate_request_time_live_connectors_for_area(
         broadband_result = orchestrate_fcc_broadband_for_area(services=services, area=area)
         if not broadband_result.report_ready:
             return broadband_result
+    if _source_registry_id_available(services, DS_022_REGISTRY_ID):
+        census_result = orchestrate_census_tiger_for_area(services=services, area=area)
+        if not census_result.report_ready:
+            return census_result
     if _source_registry_id_available(services, DS_016_REGISTRY_ID):
         osm_result = orchestrate_osm_road_access_for_area(services=services, area=area)
         if not osm_result.report_ready:
@@ -785,6 +803,65 @@ def orchestrate_fcc_broadband_for_area(
     )
 
 
+def orchestrate_census_tiger_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+    max_features: int = CENSUS_TIGER_MAX_FEATURES,
+) -> CensusTigerOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_022_REGISTRY_ID)
+    try:
+        connector_result = CensusTigerConnector(
+            source=source,
+            fetch_json=services.census_tiger_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=census_tiger_bbox_from_area(area),
+            max_features=max_features,
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except CensusTigerConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return CensusTigerOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
 def orchestrate_chatham_parcels_for_area(
     *,
     services: ApiServices,
@@ -1162,6 +1239,18 @@ def fcc_broadband_bbox_from_area(area: AreaContract) -> FccBroadbandBbox:
     )
 
 
+def census_tiger_bbox_from_area(area: AreaContract) -> CensusTigerBbox:
+    coordinates = _coordinates_for_bbox(area, "Census TIGER")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return CensusTigerBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
 def chatham_parcels_bbox_from_area(area: AreaContract) -> ChathamParcelsBbox:
     coordinates = _coordinates_for_bbox(area, "Chatham Parcels")
     xs = [position[0] for position in coordinates]
@@ -1269,8 +1358,10 @@ __all__ = [
     "DS_016_REGISTRY_ID",
     "DS_020_REGISTRY_ID",
     "DS_021_REGISTRY_ID",
+    "DS_022_REGISTRY_ID",
     "DS_023_REGISTRY_ID",
     "ChathamParcelsOrchestrationResult",
+    "CensusTigerOrchestrationResult",
     "EpaEchoOrchestrationResult",
     "FccBroadbandOrchestrationResult",
     "FemaNfhlOrchestrationResult",
@@ -1286,6 +1377,7 @@ __all__ = [
     "chatham_parcels_bbox_from_area",
     "epa_echo_bbox_from_area",
     "fcc_broadband_bbox_from_area",
+    "census_tiger_bbox_from_area",
     "get_source_by_registry_id",
     "noaa_climate_bbox_from_area",
     "nwi_bbox_from_area",
@@ -1295,6 +1387,7 @@ __all__ = [
     "orchestrate_brunswick_zoning_for_area",
     "orchestrate_chatham_parcels_for_area",
     "orchestrate_chatham_zoning_for_area",
+    "orchestrate_census_tiger_for_area",
     "orchestrate_epa_echo_for_area",
     "orchestrate_fcc_broadband_for_area",
     "orchestrate_fema_nfhl_for_area",
