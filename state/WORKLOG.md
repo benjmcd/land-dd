@@ -2,6 +2,22 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Dossier source-failure surfacing audit + enrichment test matrix completion)
+
+- Audited all dossier result helper functions for the source-failure surfacing bug pattern: several helpers returned `"not evaluated"` even when domain-scoped `source_failure` evidence existed, unlike `_water_monitoring_result`/`_broadband_result`/`_wetland_result` which check failures explicitly. Fixed: `_buildability_summary`, `_flood_zone_result`, `_zoning_district_result`.
+- Added Section 12 (Internet/Connectivity) missing blank line after heading.
+- Added 10 enrichment tests completing the positive/negative/failure matrix for Sections 6, 7, 9, 10, 11, 12: buildability terrain (positive, not-evaluated, source-failure), broadband availability (positive, not-evaluated, source-failure), FEMA flood source-failure, zoning source-failure.
+- All 1287 tests pass; mypy clean on 271 source files; `verify.ps1` green. Commits: `beb6d27`, `2de2124`, `47daa2e`.
+
+## 2026-06-11 (Dossier Section 7 wetland domain mismatch fix + NWI evidence surfacing)
+
+- Section 7 (Flood and Wetlands Screen): NWI/USFWS evidence was silently never displayed because the dossier queried domain `'wetland'` (singular) but the NWI connector and ruleset use `'wetlands'` (plural). The field was showing "not evaluated" even when NWI evidence existed.
+- Added `_wetland_result()`: reads `has_wetland_intersection`, `wetland_feature_count`, `mapped_wetland_acres`, `wetland_classification_labels` from `domain='wetlands'` evidence; renders feature count, acreage, and wetland type list if found, else "USFWS/NWI result: not evaluated".
+- Added `_domain_verification_multi()`: checks both `'flood'` and `'wetlands'` domains for verification tasks.
+- Fixed `_domain_caveats` call from `{'flood','wetland'}` → `{'flood','wetlands'}`.
+- 2 new enrichment tests: `test_dossier_renders_nwi_wetland_features_from_evidence` and `test_dossier_shows_not_evaluated_for_wetlands_with_no_evidence`.
+- `verify.ps1` green (1313+ tests, mypy clean). Committed `d8f8619`.
+
 ## 2026-06-11 (DS-021 FCC Broadband Map connector — 11/25 connector-ready)
 
 - DS-021 FCC Broadband Data Collection: `FccBroadbandConnector.query_bbox()` via public BDC API (`GET /api/public/map/listAvailability?latitude=&longitude=&unit_count=1`); `broadband` domain added (evidence-only, NOT in NOT_EVALUATED_DOMAINS); `POST /connector-runs/fcc-broadband/query-bbox` operator route; wired into request-time orchestration after DS-006.
