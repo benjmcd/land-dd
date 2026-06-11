@@ -20,6 +20,8 @@ Run from the repository root:
 
 The check verifies that:
 
+- the Windows and POSIX wrappers delegate to the shared
+  `scripts/hosted_deployment_check.py` validator;
 - `config/hosted_deployment.yaml` links to the image-publication and release-readiness
   catalogs;
 - required local gates exist before any hosted handoff;

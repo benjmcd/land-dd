@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Hosted-deployment shared validator extraction)
+
+- Extracted the duplicated hosted-deployment validation logic from `scripts/run_hosted_deployment_check.ps1` and `.sh` into `scripts/hosted_deployment_check.py`.
+- Kept the Windows and POSIX hosted-deployment wrappers as thin launchers that call the same shared validator and preserve the existing `hosted deployment check: ok` success token.
+- Updated `MANIFEST.md`, the hosted-deployment runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused hosted-deployment artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. Hosted platform, DNS/TLS, secrets manager, database instance, registry digest, billing, alerting, and hosted deployment evidence remain production blockers.
+
 ## 2026-06-11 (Access-control shared validator extraction)
 
 - Extracted the duplicated access-control validation logic from `scripts/run_access_control_check.ps1` and `.sh` into `scripts/access_control_check.py`.

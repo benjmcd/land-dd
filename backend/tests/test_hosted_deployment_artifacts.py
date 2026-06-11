@@ -98,6 +98,7 @@ def test_hosted_deployment_runbook_records_validation_workflow_and_limits() -> N
 
     for phrase in (
         "run_hosted_deployment_check.ps1",
+        "scripts/hosted_deployment_check.py",
         "validate-only",
         "PUBLIC_BASE_URL",
         "IMAGE_DIGEST",
@@ -111,5 +112,13 @@ def test_hosted_deployment_runbook_records_validation_workflow_and_limits() -> N
 
 
 def test_hosted_deployment_scripts_exist_for_windows_and_posix() -> None:
+    assert (REPO_ROOT / "scripts" / "hosted_deployment_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_hosted_deployment_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_hosted_deployment_check.sh").is_file()
+
+
+def test_hosted_deployment_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_hosted_deployment_check.ps1", "run_hosted_deployment_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "hosted_deployment_check.py" in script
