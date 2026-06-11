@@ -175,6 +175,25 @@ class TestIntakeIdempotencyInMemory:
         assert r2.status_code == 200
         assert r1.json()["report_run_id"] == r2.json()["report_run_id"]
 
+    def test_same_key_different_intent_creates_distinct_runs_on_intake(self) -> None:
+        client = TestClient(create_app())
+        key = str(uuid4())
+
+        r1 = client.post(
+            "/intake",
+            json={"area_geojson": _valid_geojson(), "intent_code": "rural_land_purchase"},
+            headers={"Idempotency-Key": key},
+        )
+        r2 = client.post(
+            "/intake",
+            json={"area_geojson": _valid_geojson(), "intent_code": "homestead_feasibility"},
+            headers={"Idempotency-Key": key},
+        )
+
+        assert r1.status_code == 202
+        assert r2.status_code == 202
+        assert r1.json()["report_run_id"] != r2.json()["report_run_id"]
+
     def test_no_key_creates_distinct_runs(self) -> None:
         client = TestClient(create_app())
         payload = {"area_geojson": _valid_geojson(), "intent_code": "rural_land_purchase"}

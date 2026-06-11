@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.operations import JobQueueHealthResponse, _job_queue_health_response
+from app.api.operations import JobQueueHealthResponse, job_queue_health_response
 from app.api.reviewer_auth import REVIEWER_SCOPE_OPERATIONS_READ, require_reviewer_scope
 from app.api.ui_shared import build_css, reviewer_credential_fields
 from app.api.ui_shared import error_page as _shared_error_page
@@ -104,8 +104,8 @@ def ui_operations_post(
             exc.status_code,
         )
 
-    report_health = _job_queue_health_response(services.async_report_jobs.health())
-    connector_health = _job_queue_health_response(services.live_connector_jobs.health())
+    report_health = job_queue_health_response(services.async_report_jobs.health())
+    connector_health = job_queue_health_response(services.live_connector_jobs.health())
 
     report_table = _render_health_table("Report Jobs", report_health)
     connector_table = _render_health_table("Live Connector Jobs", connector_health)

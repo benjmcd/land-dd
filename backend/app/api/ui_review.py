@@ -52,6 +52,15 @@ _INTENT_OPTIONS = [
     ("homestead_feasibility", "Homestead Feasibility"),
 ]
 
+_CONNECTOR_STATUS_COLORS: dict[str, str] = {
+    "queued": "#6c757d",
+    "running": "#007bff",
+    "succeeded": "#28a745",
+    "failed": "#dc3545",
+    "cancelled": "#6c757d",
+    "needs_review": "#ffc107",
+}
+
 
 def _error_page(title: str, message: str, back_url: str, status_code: int) -> HTMLResponse:
     return _shared_error_page(title, message, back_url, status_code, css=_REVIEW_CSS)
@@ -87,15 +96,7 @@ def ui_connector_review_queue_list(
 
     rows = ""
     for item in items:
-        status_colors = {
-            "queued": "#6c757d",
-            "running": "#007bff",
-            "succeeded": "#28a745",
-            "failed": "#dc3545",
-            "cancelled": "#6c757d",
-            "needs_review": "#ffc107",
-        }
-        status_color = status_colors.get(item.status.value, "#333")
+        status_color = _CONNECTOR_STATUS_COLORS.get(item.status.value, "#333")
         connector_name = _html.escape(str(item.payload.get("connector_name", "")))
         created_str = _html.escape(str(item.created_at)[:19])
         rows += (
@@ -196,15 +197,7 @@ def ui_connector_review_detail(
         issues_html = "<p style='color:#666'>No quality issues recorded.</p>"
 
     # Metadata
-    status_colors = {
-        "queued": "#6c757d",
-        "running": "#007bff",
-        "succeeded": "#28a745",
-        "failed": "#dc3545",
-        "cancelled": "#6c757d",
-        "needs_review": "#ffc107",
-    }
-    status_color = status_colors.get(item.status.value, "#333")
+    status_color = _CONNECTOR_STATUS_COLORS.get(item.status.value, "#333")
 
     locked_by = _html.escape(str(item.locked_by or ""))
     locked_at = _html.escape(str(item.locked_at or ""))
@@ -217,14 +210,11 @@ def ui_connector_review_detail(
     # Action forms
     base_action_url = f"/ui/connector-review-queue/{ingest_run_id}"
 
-    def _cred_fields() -> str:
-        return reviewer_credential_fields()
-
     approve_form = (
         "<div class='action-form'>"
         "<h3>Approve for QA</h3>"
         f"<form method='post' action='{base_action_url}/approve'>"
-        f"{_cred_fields()}"
+        f"{reviewer_credential_fields()}"
         "<label>Reason (optional):"
         " <textarea name='reason'></textarea></label>"
         "<button type='submit' class='btn-approve'>Approve</button>"
@@ -235,7 +225,7 @@ def ui_connector_review_detail(
         "<div class='action-form'>"
         "<h3>Request Fixture Fix (Reject)</h3>"
         f"<form method='post' action='{base_action_url}/reject'>"
-        f"{_cred_fields()}"
+        f"{reviewer_credential_fields()}"
         "<label>Reason (required):"
         " <textarea name='reason' required></textarea></label>"
         "<button type='submit' class='btn-reject'>Request Fix</button>"
@@ -246,7 +236,7 @@ def ui_connector_review_detail(
         "<div class='action-form'>"
         "<h3>Requeue After Fix</h3>"
         f"<form method='post' action='{base_action_url}/requeue'>"
-        f"{_cred_fields()}"
+        f"{reviewer_credential_fields()}"
         "<label>Reason (required):"
         " <textarea name='reason' required></textarea></label>"
         "<button type='submit' class='btn-requeue'>Requeue</button>"
@@ -257,7 +247,7 @@ def ui_connector_review_detail(
         "<div class='action-form'>"
         "<h3>Cancel Review</h3>"
         f"<form method='post' action='{base_action_url}/cancel'>"
-        f"{_cred_fields()}"
+        f"{reviewer_credential_fields()}"
         "<label>Reason (required):"
         " <textarea name='reason' required></textarea></label>"
         "<button type='submit' class='btn-cancel'>Cancel</button>"
@@ -277,7 +267,7 @@ def ui_connector_review_detail(
             "<div class='action-form'>"
             "<h3>Create Report Run</h3>"
             f"<form method='post' action='{base_action_url}/resume-report'>"
-            f"{_cred_fields()}"
+            f"{reviewer_credential_fields()}"
             "<label>Intent:"
             f" <select name='intent_code'>{intent_options}</select></label>"
             "<button type='submit' class='btn-resume'>Resume Report</button>"
