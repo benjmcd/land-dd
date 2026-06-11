@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (Release-package shared validator extraction)
+
+- Extracted the duplicated release-package validation logic from `scripts/run_release_package_check.ps1` and `.sh` into `scripts/release_package_check.py`.
+- Kept the Windows and POSIX release-package wrappers as thin launchers that call the same shared validator and preserve the existing `release package check: ok` success token.
+- Updated `MANIFEST.md`, the release-package runbook, and artifact tests to route to the shared validator and prove wrapper delegation.
+- Verification: direct shared validator, Windows/POSIX wrappers, focused release-package artifact tests, touched ruff/mypy checks, release-readiness proof, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. The release package remains local and validate-only; pushing, deploying, publishing, overwrite/delete behavior, and hosted release readiness remain out of scope.
+
 ## 2026-06-11 (Image-publication shared validator extraction)
 
 - Extracted the duplicated image-publication validation logic from `scripts/run_image_publication_check.ps1` and `.sh` into `scripts/image_publication_check.py`.

@@ -83,6 +83,7 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
 
     for phrase in (
         "run_release_package_check.ps1",
+        "scripts/release_package_check.py",
         "validate-only",
         "build_release_package.ps1",
         "local_artifacts/releases",
@@ -98,5 +99,13 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
 def test_release_package_scripts_exist_for_windows_and_posix() -> None:
     assert (REPO_ROOT / "scripts" / "build_release_package.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "build_release_package.sh").is_file()
+    assert (REPO_ROOT / "scripts" / "release_package_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_release_package_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_release_package_check.sh").is_file()
+
+
+def test_release_package_wrappers_delegate_to_shared_validator() -> None:
+    for script_name in ("run_release_package_check.ps1", "run_release_package_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "release_package_check.py" in script

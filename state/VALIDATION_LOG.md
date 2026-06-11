@@ -2,6 +2,49 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 Release-Package Shared Validator Extraction
+
+**Scope:** Remove duplicated release-package validation logic from Windows/POSIX
+wrappers by centralizing the checks in `scripts/release_package_check.py`.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\release_package_check.py
+.\scripts\run_release_package_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_package_check.sh
+cd backend; py -3.12 -m pytest tests\test_release_package_artifacts.py -q --tb=short
+cd backend; ruff check ..\scripts\release_package_check.py tests\test_release_package_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\release_package_check.py tests\test_release_package_artifacts.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Shared release-package validator passed directly.
+- Windows and POSIX release-package wrappers passed with `release package check: ok`.
+- Focused release-package artifact tests passed: 5 tests.
+- Focused ruff passed after line-length cleanup in the extracted validator.
+- Focused mypy passed over 2 source files.
+- Release-readiness proof still passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This reduces validation drift only. It does not build a package, push or deploy
+  artifacts, publish attestations, overwrite existing package outputs, or prove
+  hosted release readiness.
+- DB-backed proof still requires an explicit `RUN_DB_SMOKE=1` run with a live
+  PostgreSQL/PostGIS runtime.
+
 ## 2026-06-11 Image-Publication Shared Validator Extraction
 
 **Scope:** Remove duplicated image-publication validation logic from Windows/POSIX
