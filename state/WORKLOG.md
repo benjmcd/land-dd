@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DB-verify CI env contract hardening)
+
+- Made the GitHub `db-verify` job explicit about both DB URLs: `DATABASE_URL_SYNC` for migration/smoke scripts and `DATABASE_URL` for app-level DB tests.
+- Strengthened Windows and POSIX release-readiness checks so they parse `.github/workflows/ci.yml` and fail if `db-verify` stops passing `RUN_DB_SMOKE`, `DATABASE_URL_SYNC`, or `DATABASE_URL` to `./scripts/verify.sh`.
+- Added regression coverage for the CI DB-smoke env contract and updated the release-readiness runbook operator command to set both URLs.
+- Verification: focused release-readiness artifact tests, Windows/POSIX readiness wrappers, POSIX syntax check, touched ruff/mypy checks, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed.
+
 ## 2026-06-11 (Data-retention purge proof hardening)
 
 - Strengthened `scripts/run_data_retention_check.ps1` and `.sh` so the validate-only data-retention proof now checks `scripts/purge_audit_events.py`, `scripts/run_purge_audit_events.ps1`, `scripts/run_purge_audit_events.sh`, and the runbook references to those purge paths.

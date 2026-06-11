@@ -86,6 +86,8 @@ REQUIRED_BLOCKERS = {
     "full_user_auth_rbac",
     "hosted_alerting",
 }
+EXPECTED_DB_SYNC_URL = "postgresql://land:land@localhost:5432/land_diligence"
+EXPECTED_DB_APP_URL = "postgresql+psycopg://land:land@localhost:5432/land_diligence"
 
 
 def require(condition: bool, message: str) -> None:
@@ -106,6 +108,22 @@ def step_text(job: dict[str, Any], job_name: str) -> str:
         for step in steps
         if isinstance(step, dict)
     )
+
+
+def validate_db_verify_job(job: dict[str, Any]) -> None:
+    steps = job.get("steps")
+    require(isinstance(steps, list) and steps, "db-verify job has no steps")
+    verify_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict) and step.get("run") == "./scripts/verify.sh"
+    ]
+    require(len(verify_steps) == 1, "db-verify job must run verify.sh exactly once")
+    env = verify_steps[0].get("env")
+    require(isinstance(env, dict), "db-verify verify step env missing")
+    require(env.get("RUN_DB_SMOKE") == "1", "db-verify must enable DB smoke")
+    require(env.get("DATABASE_URL_SYNC") == EXPECTED_DB_SYNC_URL, "db-verify sync DB URL mismatch")
+    require(env.get("DATABASE_URL") == EXPECTED_DB_APP_URL, "db-verify app DB URL mismatch")
 
 
 catalog = yaml.safe_load((ROOT / "config" / "release_readiness.yaml").read_text(encoding="utf-8"))
@@ -145,6 +163,7 @@ require(isinstance(ci, dict), "ci workflow must be a mapping")
 jobs = ci.get("jobs")
 require(isinstance(jobs, dict), "ci workflow jobs missing")
 require(REQUIRED_CI_JOBS.issubset(set(jobs)), f"missing CI jobs: {sorted(REQUIRED_CI_JOBS - set(jobs))}")
+validate_db_verify_job(jobs["db-verify"])
 job = jobs["release-readiness"]
 permissions = job.get("permissions")
 require(isinstance(permissions, dict), "release-readiness permissions missing")
@@ -205,6 +224,8 @@ for phrase in (
     "image-publication",
     "hosted-deployment",
     "release-readiness",
+    "DATABASE_URL_SYNC",
+    "DATABASE_URL",
     "sources=8 ready=7 blocked=1",
     "build_release_package.ps1",
     "run_image_publication_check.ps1",

@@ -2,6 +2,46 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-11 DB-Verify CI Env Contract Hardening
+
+**Scope:** Make the CI DB-smoke gate and release-readiness proof explicit about
+both DB URLs required for DB-enabled verification: sync script URL and app runtime
+URL.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\test_release_readiness_artifacts.py -q --tb=short
+.\scripts\run_release_readiness_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' -n ./scripts/run_release_readiness_check.sh
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+cd backend; ruff check tests\test_release_readiness_artifacts.py
+cd backend; py -3.12 -m mypy tests\test_release_readiness_artifacts.py
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_readiness_check.sh
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused release-readiness artifact tests passed.
+- Windows and POSIX release-readiness wrappers passed; POSIX syntax check passed.
+- Touched ruff and mypy checks passed.
+- Must source-readiness remained `sources=8 ready=7 blocked=1`, with DS-017 as
+  the only Must blocker.
+- `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed, ruff clean, mypy clean on 288 source files, and DB smoke skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:**
+
+- This proof hardens the CI/release-readiness contract. It does not replace a real
+  DB-enabled gate with `RUN_DB_SMOKE=1` and available PostgreSQL/PostGIS runtime.
+- Hosted production blockers remain unchanged: full user auth/RBAC, hosted
+  deployment, hosted billing/log retention/alerting, automatic key rotation, and
+  DS-017 vendor selection remain outside this proof.
+
 ## 2026-06-11 Data-Retention Purge Proof Hardening
 
 **Scope:** Strengthen the Level 10 data-retention proof so it validates the audit purge

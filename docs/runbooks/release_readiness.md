@@ -30,6 +30,8 @@ The check is validate-only. It verifies that:
 - CI contains `verify`, `db-verify`, `supply-chain`, `dependency-attestations`,
   `container-image-scan`, `access-control`, `image-publication`, `hosted-deployment`, and
   `release-readiness` jobs;
+- `db-verify` explicitly passes both `DATABASE_URL_SYNC` and `DATABASE_URL` when
+  `RUN_DB_SMOKE='1'` is enabled;
 - the `release-readiness` CI job runs the POSIX readiness proof;
 - current Must-source readiness remains explicit about `sources=8 ready=7 blocked=1`;
 - the local release package boundary and builders are validated by
@@ -41,7 +43,13 @@ The check is validate-only. It verifies that:
 ## Operator Workflow
 
 1. Run `.\scripts\run_release_readiness_check.ps1` before any release candidate handoff.
-2. Run the full DB-enabled gate: `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`.
+2. Run the full DB-enabled gate with both sync and app URLs set:
+   ```powershell
+   $env:RUN_DB_SMOKE='1'
+   $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:5432/land_diligence'
+   $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:5432/land_diligence'
+   .\scripts\verify.ps1
+   ```
 3. Run `.\scripts\run_deployment_smoke.ps1` against an isolated Compose project before
    calling a backend image deployable.
 4. Treat any failed required proof as a release blocker until fixed or explicitly

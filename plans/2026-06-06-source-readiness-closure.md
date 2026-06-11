@@ -46,7 +46,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 
 2. Re-run DB-backed verification where prerequisites exist.
    - Start PostgreSQL/PostGIS or use an equivalent configured DB runtime.
-   - Run `$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1`.
+   - Run `.\scripts\verify.ps1` with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and `DATABASE_URL` set for the same DB runtime.
    - Record pass/fail evidence without treating skipped DB smoke as a pass.
 
 3. Preserve current source caveats through report surfaces.
@@ -78,7 +78,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 ## Acceptance criteria
 
 - OSM and NOAA connector/API tests pass and are part of the repo test surface.
-- Release-readiness scripts, runbook, source-readiness tests, and source-readiness CLI agree on Must `sources=8 ready=7 blocked=1`.
+- Release-readiness scripts, runbook, source-readiness tests, and source-readiness CLI agree on Must `sources=8 ready=7 blocked=1`, and release-readiness proof requires CI `db-verify` to set both `DATABASE_URL_SYNC` and `DATABASE_URL` when DB smoke is enabled.
 - `state/PROJECT_STATE.md` and `state/VALIDATION_LOG.md` clearly identify DS-017 as the only Must blocker, DS-007 as connector-ready for active federal mining-claim context only, DS-015 as connector-ready for NCGS 1985 geologic map-unit context only, DS-008 as connector-ready for historical mineral-occurrence context only, DS-022 as connector-ready for TIGERweb geography context only, and DB smoke as skipped unless `RUN_DB_SMOKE=1` prerequisites are present.
 - Focused connector/API/source-readiness/release-readiness checks pass.
 - `git diff --check` passes.

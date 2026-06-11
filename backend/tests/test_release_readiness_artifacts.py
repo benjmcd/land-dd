@@ -35,6 +35,8 @@ REQUIRED_BLOCKERS = {
     "full_user_auth_rbac",
     "hosted_alerting",
 }
+EXPECTED_DB_SYNC_URL = "postgresql://land:land@localhost:5432/land_diligence"
+EXPECTED_DB_APP_URL = "postgresql+psycopg://land:land@localhost:5432/land_diligence"
 
 
 def test_release_readiness_catalog_covers_required_checks_and_blockers() -> None:
@@ -78,6 +80,24 @@ def test_ci_has_release_readiness_job() -> None:
     assert "python -m pip install PyYAML" in steps_text
     assert 'python -m pip install -e "backend[dev]"' in steps_text
     assert "./scripts/run_release_readiness_check.sh" in steps_text
+
+
+def test_ci_db_verify_sets_explicit_db_smoke_urls() -> None:
+    ci = yaml.safe_load(
+        (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8",
+        ),
+    )
+    job = ci["jobs"]["db-verify"]
+    verify_steps = [
+        step for step in job["steps"] if step.get("run") == "./scripts/verify.sh"
+    ]
+
+    assert len(verify_steps) == 1
+    env = verify_steps[0]["env"]
+    assert env["RUN_DB_SMOKE"] == "1"
+    assert env["DATABASE_URL_SYNC"] == EXPECTED_DB_SYNC_URL
+    assert env["DATABASE_URL"] == EXPECTED_DB_APP_URL
 
 
 def test_ci_has_image_publication_job() -> None:
@@ -144,6 +164,8 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "image-publication",
         "hosted-deployment",
         "release-readiness",
+        "DATABASE_URL_SYNC",
+        "DATABASE_URL",
         "sources=8 ready=7 blocked=1",
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
@@ -196,6 +218,8 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
 
         assert "ready_count\") == 7" in script or 'ready_count") == 7' in script
         assert "blocked_count\") == 1" in script or 'blocked_count") == 1' in script
+        assert "DATABASE_URL_SYNC" in script
+        assert "DATABASE_URL" in script
         assert '{"DS-017"}' in script
         assert '{"DS-011", "DS-017"}' not in script
         assert '{"DS-011", "DS-017", "DS-023"}' not in script
