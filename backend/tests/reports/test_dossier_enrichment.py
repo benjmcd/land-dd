@@ -422,6 +422,92 @@ def test_dossier_renders_env_hazard_facilities_from_evidence() -> None:
     )
 
 
+def test_dossier_renders_ssurgo_mapunit_from_evidence() -> None:
+    """intersects_soil_mapunit=True + soil_mapunit_name must appear in Section 8."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area for soil/septic/ag screening.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "123456",
+                "soil_mapunit_symbol": "CmB",
+                "soil_mapunit_name": "Cecil sandy loam",
+                "soil_component_name": "Cecil",
+                "drainage_class": "well drained",
+                "hydric_rating": "No",
+                "hydrologic_group": "B",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only; not a site-specific soil report.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    assert sec8_start != -1, "Section 8 not found in dossier"
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "Cecil sandy loam" in section_8, (
+        "Expected mapunit name 'Cecil sandy loam' in Section 8; got:\n" + section_8
+    )
+    assert "1 map unit(s)" in section_8, (
+        "Expected map unit count in Section 8; got:\n" + section_8
+    )
+    assert "not evaluated" not in section_8, (
+        "Section 8 must not show 'not evaluated' when SSURGO evidence is present"
+    )
+
+
+def test_dossier_renders_soil_source_failure_from_evidence() -> None:
+    """SSURGO source failure must appear as a failure message in Section 8."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="SSURGO_SOURCE_FAILURE",
+        domain="soil_septic",
+        method_code="live_usda_ssurgo_soil_mapunit_query",
+        observation="USDA NRCS SSURGO query did not produce usable source data.",
+        observed_value={
+            "attempted_url": "https://SDMDataAccess.sc.egov.usda.gov/Tabular/post.rest",
+            "failure_reason": "ssurgo_http_error",
+            "error_message": "HTTP 503",
+            "retryable": True,
+        },
+        caveat="USDA NRCS SSURGO screening only.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    assert sec8_start != -1, "Section 8 not found in dossier"
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "source failure" in section_8, (
+        "Expected 'source failure' text in Section 8 when SSURGO fails; got:\n" + section_8
+    )
+
+
 def test_dossier_renders_env_hazard_no_facilities_from_evidence() -> None:
     """no_env_hazard_proximity=True must appear as a negative result in Section 11."""
     source_service, area_service, evidence_service, report_service = _make_services()

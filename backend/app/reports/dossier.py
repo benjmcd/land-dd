@@ -85,10 +85,11 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 8. Soil / Septic Proxy",
         "",
-        "- Soil map units: not evaluated",
+        f"- Soil map units: {_soil_septic_result(report_run)}",
         "- Drainage/limitation notes: unknown",
         "- Septic proxy confidence: unknown",
-        f"- Required verification: {_domain_verification(report_run, 'soil')}",
+        f"- Caveats: {_domain_caveats(report_run, {'soil_septic'})}",
+        f"- Required verification: {_domain_verification(report_run, 'soil_septic')}",
         "",
         "## 9. Water Context",
         "",
@@ -476,6 +477,41 @@ def _env_hazard_result(report_run: ReportRunContract) -> str:
         else:
             parts.append(_cell(record.observation))
     return "; ".join(parts) if parts else _domain_summary(report_run, "env_hazard")
+
+
+def _soil_septic_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "soil_septic" and not r.is_source_failure]
+    if not records:
+        failures = [r for r in report_run.evidence if r.domain == "soil_septic" and r.is_source_failure]
+        if failures:
+            return "source failure — soil data unavailable"
+        return "not evaluated"
+    seen_keys: set[str] = set()
+    mapunit_labels: list[str] = []
+    for record in records:
+        mukey = record.observed_value.get("soil_mapunit_key")
+        if not isinstance(mukey, str):
+            continue
+        if mukey in seen_keys:
+            continue
+        seen_keys.add(mukey)
+        muname = record.observed_value.get("soil_mapunit_name")
+        musym = record.observed_value.get("soil_mapunit_symbol")
+        label = (
+            str(muname) if isinstance(muname, str)
+            else (str(musym) if isinstance(musym, str) else mukey)
+        )
+        mapunit_labels.append(label)
+    count = len(seen_keys) if seen_keys else len(records)
+    if mapunit_labels:
+        shown = mapunit_labels[:3]
+        overflow = len(mapunit_labels) - len(shown)
+        suffix = f" +{overflow} more" if overflow else ""
+        return (
+            f"{count} map unit(s): {', '.join(shown)}{suffix}"
+            " (SSURGO screening; not a site-specific soil report)"
+        )
+    return f"{count} soil map unit(s) intersecting screening bbox (SSURGO screening)"
 
 
 def _unknown_rows(report_run: ReportRunContract) -> list[str]:
