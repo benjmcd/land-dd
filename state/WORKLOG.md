@@ -1760,6 +1760,29 @@ Append concise entries. Do not rely on chat history.
   - `backend/tests/test_source_service.py`: 8 fixture-backed tests, all passing.
 - `verify.sh` passes: 14 tests, lint clean, mypy clean.
 
+## 2026-06-10 — DS-023 Recorded-Fixture Connector Closure
+
+**Goal:** Advance DS-023 (Local zoning ordinance PDFs — Chatham County UDO) from `pending` to `connector-ready` using the recorded-fixture approach identified in `docs/source-reviews/ds-023-chatham-live-scope.md`.
+
+**Approach:** Implemented `ChathamZoningRecordedConnector` in `backend/app/connectors/chatham_zoning_recorded.py` with the Chatham County UDO district table (13 codes, effective 2025-07-01). All policy decisions for the recorded-fixture path resolved (no raw PDF redistribution; district-classification data only; snippet excerpts with required caveat; UNZONED/municipal edge encoded fail-closed; amendment dates recorded in connector constants; zoning map layer deferred). Updated DS-023 in connector inventory, source registry CSV, seed SQL, and test expectations.
+
+**Changes:**
+- `backend/app/connectors/chatham_zoning_recorded.py` — new recorded-fixture connector
+- `backend/tests/connectors/test_chatham_zoning_connector.py` — 13 tests
+- `backend/app/source_registry/connector_inventory.py` — DS-023 added
+- `registers/data_source_registry.csv` — DS-023 row advanced to approved-with-restrictions
+- `db/seeds/002_seed_source_registry.sql` — DS-023 license_status updated
+- `backend/tests/source_registry/test_source_readiness.py` — ready_count 5→6, blocked_count 3→2, DS-023 connector-ready
+- `backend/tests/test_release_readiness_artifacts.py` — counts and blocked set updated
+- `scripts/run_release_readiness_check.ps1` — counts updated
+- `scripts/run_release_readiness_check.sh` — counts updated
+- `docs/runbooks/release_readiness.md` — ready=5→6, blocked=3→2
+- `docs/source-reviews/ds-023.md` — review_status advanced, all policy decisions resolved
+
+**Result:** 1019 passed, 78 skipped; ruff clean; mypy clean (247 source files); `.\scripts\verify.ps1` → `verify: ok`. Must-source readiness: `sources=8 ready=6 blocked=2`.
+
+---
+
 ## 2026-06-03 (initial)
 
 - Created dual-agent workspace structure for Codex and Claude Code.

@@ -144,7 +144,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "image-publication",
         "hosted-deployment",
         "release-readiness",
-        "sources=8 ready=5 blocked=3",
+        "sources=8 ready=6 blocked=2",
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
@@ -165,14 +165,14 @@ def test_release_readiness_source_blockers_remain_explicit() -> None:
     payload = json.loads(result.stdout)
 
     assert payload["source_count"] == 8
-    assert payload["ready_count"] == 5
-    assert payload["blocked_count"] == 3
+    assert payload["ready_count"] == 6
+    assert payload["blocked_count"] == 2
     blocked = {
         source["source_registry_id"]
         for source in payload["sources"]
         if source["connector_ready"] is False
     }
-    assert {"DS-011", "DS-017", "DS-023"}.issubset(blocked)
+    assert {"DS-011", "DS-017"}.issubset(blocked)
     ds010 = next(
         source
         for source in payload["sources"]
@@ -193,10 +193,10 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     ):
         script = script_path.read_text(encoding="utf-8")
 
-        assert "ready_count\") == 5" in script or 'ready_count") == 5' in script
-        assert "blocked_count\") == 3" in script or 'blocked_count") == 3' in script
-        assert '{"DS-011", "DS-017", "DS-023"}' in script
-        assert '{"DS-010", "DS-011", "DS-017", "DS-023"}' not in script
+        assert "ready_count\") == 6" in script or 'ready_count") == 6' in script
+        assert "blocked_count\") == 2" in script or 'blocked_count") == 2' in script
+        assert '{"DS-011", "DS-017"}' in script
+        assert '{"DS-011", "DS-017", "DS-023"}' not in script
 
 
 def test_release_readiness_scripts_exist_for_windows_and_posix() -> None:

@@ -60,6 +60,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-003",
         "DS-004",
         "DS-010",
+        "DS-023",
     ]
     usgs = next(record for record in records if record.source_registry_id == "DS-001")
     assert usgs.blocked_fields == ()
@@ -84,21 +85,12 @@ def test_readiness_requires_connector_implementation_after_rights_approval() -> 
     readiness = _load_readiness_module()
     seed_module = _load_seed_module()
 
+    # DS-011 has rights approved-with-restrictions but no connector implemented —
+    # machine-access terms not reviewed for any county assessor portal.
     source = next(
         source
         for source in seed_module.load_registry_sources()
-        if source.metadata["source_registry_id"] == "DS-023"
-    ).model_copy(
-        update={
-            "license_status": "approved-with-restrictions",
-            "commercial_use_status": "approved-with-restrictions",
-            "redistribution_status": "approved-with-restrictions",
-            "cache_allowed": "restricted",
-            "export_allowed": "restricted",
-            "raw_data_allowed": "restricted",
-            "ai_use_allowed": "restricted",
-            "review_status": "approved-with-restrictions",
-        },
+        if source.metadata["source_registry_id"] == "DS-011"
     )
 
     record = readiness.build_readiness_records([source])[0]
@@ -129,8 +121,8 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
     assert payload["schema_version"] == "source_readiness_v1"
     assert payload["priority"] == "Must"
     assert payload["source_count"] == 8
-    assert payload["ready_count"] == 5
-    assert payload["blocked_count"] == 3
+    assert payload["ready_count"] == 6
+    assert payload["blocked_count"] == 2
     ready_sources = [
         source for source in payload["sources"] if source["connector_ready"] is True
     ]
@@ -140,14 +132,16 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
         "DS-003",
         "DS-004",
         "DS-010",
+        "DS-023",
     ]
     ds023 = next(
         source
         for source in payload["sources"]
         if source["source_registry_id"] == "DS-023"
     )
-    assert ds023["connector_implemented"] is False
-    assert ds023["connector_surfaces"] == []
+    assert ds023["connector_implemented"] is True
+    assert "immediate_operator_api" in ds023["connector_surfaces"]
+    assert ds023["connector_ready"] is True
 
 
 def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None:
@@ -166,7 +160,7 @@ def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None
     )
 
     assert result.returncode == 0
-    assert "ready=5" in result.stdout
+    assert "ready=6" in result.stdout
 
 
 def test_source_readiness_require_ready_fails_when_selected_scope_has_none_ready() -> None:

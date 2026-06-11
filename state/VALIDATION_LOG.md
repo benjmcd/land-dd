@@ -7225,3 +7225,39 @@ mypy app tests
 
 - DB smoke unverified until Docker is running.
 - `InMemorySourceRepository.exists_by_name_org` treats `None == None` as duplicate (stricter than Postgres `UNIQUE(name, organization)` which allows multiple NULL-org rows). Resolve when SQLAlchemy repo is added.
+
+---
+
+## 2026-06-10 DS-023 Recorded-Fixture Connector Closure
+
+**Scope:** DS-023 Chatham County UDO recorded-fixture connector implementation and source readiness advancement from `ready=5 blocked=3` to `ready=6 blocked=2`.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests/connectors/test_chatham_zoning_connector.py -q --tb=short
+cd backend; py -3.12 -m pytest tests/source_registry/test_source_readiness.py -q --tb=short
+cd backend; py -3.12 -m pytest tests/test_release_readiness_artifacts.py -q --tb=short
+cd backend; py -3.12 -m pytest -q --tb=short
+py -3.11 -m ruff check backend/app/connectors/chatham_zoning_recorded.py backend/app/source_registry/connector_inventory.py backend/tests/connectors/test_chatham_zoning_connector.py
+cd backend; py -3.12 -m mypy app/connectors/chatham_zoning_recorded.py app/source_registry/connector_inventory.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- 13 chatham zoning connector tests: all passed
+- 11 source readiness tests: all passed
+- 8 release readiness artifact tests: all passed
+- Full suite: 1019 passed, 78 skipped (0 failures)
+- ruff: All checks passed
+- mypy: clean (no output)
+- `.\scripts\verify.ps1`: `verify: ok` (1019 passed, 78 skipped; ruff clean; mypy clean over 247 source files; DB smoke skipped)
+
+**Residual risk:**
+
+- DB smoke skipped (no local Docker/Postgres). DS-023 connector is recorded-fixture only; no DB persistence path differs from other fixture connectors.
+- Live PDF connector for Chatham (and Buncombe/Brunswick) remains blocked by HTTP 403 on programmatic county-site access and unreviewed document-reuse terms.
+- DS-011 remains blocked: machine-access terms not reviewed for any NC county assessor portal; DEVNET wEdge API for Chatham exists but county enablement unknown.
+- DS-017 remains blocked by vendor/license/cost decision (deferred).
+- `dependency-attestations` CI job remains red on pull_request events (OIDC entitlement boundary; documented).

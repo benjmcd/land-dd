@@ -182,14 +182,14 @@ result = subprocess.run(
 )
 source_readiness = json.loads(result.stdout)
 require(source_readiness.get("source_count") == 8, "Must source count changed")
-require(source_readiness.get("ready_count") == 5, "Must ready count changed")
-require(source_readiness.get("blocked_count") == 3, "Must blocked count changed")
+require(source_readiness.get("ready_count") == 6, "Must ready count changed")
+require(source_readiness.get("blocked_count") == 2, "Must blocked count changed")
 blocked = {
     str(source.get("source_registry_id"))
     for source in source_readiness.get("sources", [])
     if source.get("connector_ready") is False
 }
-require({"DS-011", "DS-017", "DS-023"}.issubset(blocked), "expected source blockers missing")
+require({"DS-011", "DS-017"}.issubset(blocked), "expected source blockers missing")
 
 runbook = (ROOT / "docs" / "runbooks" / "release_readiness.md").read_text(encoding="utf-8")
 for phrase in (
@@ -205,7 +205,7 @@ for phrase in (
     "image-publication",
     "hosted-deployment",
     "release-readiness",
-    "sources=8 ready=5 blocked=3",
+    "sources=8 ready=6 blocked=2",
     "build_release_package.ps1",
     "run_image_publication_check.ps1",
     "run_hosted_deployment_check.ps1",

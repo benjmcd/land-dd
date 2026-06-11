@@ -40,6 +40,11 @@ IMPLEMENTED_SOURCE_CONNECTORS: dict[str, SourceConnectorInventoryEntry] = {
         connector_name="chatham_parcels_live",
         surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
     ),
+    "DS-023": SourceConnectorInventoryEntry(
+        source_registry_id="DS-023",
+        connector_name="chatham_zoning_udo_recorded",
+        surfaces=(IMMEDIATE_OPERATOR_API, REQUEST_TIME_ORCHESTRATION),
+    ),
 }
 
 
