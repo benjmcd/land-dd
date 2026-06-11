@@ -60,6 +60,7 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
         "DS-003",
         "DS-004",
         "DS-005",
+        "DS-006",
         "DS-010",
         "DS-011",
         "DS-016",
@@ -178,7 +179,7 @@ def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None
     assert "ready=7" in result.stdout
 
 
-def test_source_readiness_require_ready_passes_for_should_with_ds005_and_ds016() -> None:
+def test_source_readiness_require_ready_passes_for_should_with_ds005_ds006_ds016() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -194,4 +195,4 @@ def test_source_readiness_require_ready_passes_for_should_with_ds005_and_ds016()
     )
 
     assert result.returncode == 0
-    assert "ready=2" in result.stdout
+    assert "ready=3" in result.stdout

@@ -64,10 +64,10 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           verification_task: Verify soil and septic feasibility with local professionals.
         - code: HG-ENV-001
           domain: env_hazard
-          severity_on_fail: informational
-          condition: env_hazard_unsupported
-          claim_code: ENV_HAZ_NOT_EVALUATED
-          verification_task: Review environmental hazard records.
+          severity_on_fail: high
+          condition: env_hazard_facility_proximity
+          claim_code: ENV_001
+          verification_task: Review EPA ECHO facility records and conduct Phase I ESA.
         - code: HG-RESOURCE-001
           domain: resource_context
           severity_on_fail: informational

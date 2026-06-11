@@ -58,10 +58,10 @@ ruleset:
       verification_task: Verify soil and septic feasibility with perc testing, county health department records, and a septic engineer.
     - code: ENV_G001
       domain: env_hazard
-      severity_on_fail: unknown
-      condition: env_hazard_unsupported
-      claim_code: ENV_HAZ_NOT_EVALUATED
-      verification_task: Review EPA, state environmental agency, and local environmental records before relying on this category.
+      severity_on_fail: high
+      condition: env_hazard_facility_proximity
+      claim_code: ENV_001
+      verification_task: Review EPA ECHO facility records, state environmental agency, and conduct Phase I ESA before relying on this screening.
     - code: RESOURCE_G001
       domain: resource_context
       severity_on_fail: unknown

@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-11 (DS-016 OSM road access + DS-005 USGS water monitoring + DS-006 EPA ECHO connectors — 10/25 total connector-ready)
+
+- DS-016 OSM road access: `OsmRoadAccessConnector.query_bbox()` via Overpass API; `road_access` claims engine wired (ROAD_001 hard-gate + NOT_EVALUATED for missing evidence); `POST /connector-runs/osm-road-access/query-bbox` operator route; wired into request-time orchestration. Payload validation extended with `has_road_access`, `no_road_access`, `road_proximity_status`, `road_proximity_meters`, `osm_road_count`, `road_types`, `osm_road_bbox`. Committed: `af940bf`.
+- DS-005 USGS water monitoring: `UsgsWaterMonitoringConnector.query_bbox()` via USGS NWIS REST API; `water` domain promoted from NOT_EVALUATED (NOT_EVALUATED_DOMAINS shrunk from 6 to 5); `POST /connector-runs/usgs-water/query-bbox` operator route; wired into request-time orchestration. Fixed OSM payload-validation gap found during review. Committed: `77a8ece`.
+- DS-006 EPA ECHO: `EpaEchoConnector.query_bbox()` via EPA FRS REST API (3 req/min; bbox → centroid+radius up to 25 miles); `env_hazard` domain promoted from NOT_EVALUATED (NOT_EVALUATED_DOMAINS now 5); ENV_G001 gate updated to `env_hazard_facility_proximity` condition, severity=high, claim_code=ENV_001; payload validation extended with `has_env_hazard_proximity`, `no_env_hazard_proximity`, `regulated_facility_count`, `env_hazard_status`, `epa_echo_bbox`; `POST /connector-runs/epa-echo/query-bbox` operator route; wired into request-time orchestration. 20+ connector unit tests, 5+ API tests, rule-engine env_hazard tests, source-readiness updated to 10 ready, openapi_stub refreshed. Committed: this entry.
+- Source readiness: 7/8 Must (DS-017 blocked by vendor/license), 3 Should (DS-005, DS-006, DS-016) connector-ready; 10/25 total connector-ready.
+- All 1222 tests pass; mypy clean on 120 source files.
+
 ## 2026-06-11 (DS-010 Buncombe/Brunswick + DS-023 + DS-011 connector closure — source readiness 7/8)
 
 - DS-023 Chatham UDO zoning recorded-fixture connector wired into orchestration: `orchestrate_chatham_zoning_for_area()` called only for Chatham county, conditioned on DS-023 availability; `POST /connector-runs/chatham-zoning/query` API route; state files updated. Committed: `48b3397`, `58087f7`.

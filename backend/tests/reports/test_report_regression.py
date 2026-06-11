@@ -88,8 +88,8 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
         "intent_code": "homestead_feasibility",
         "source_manifest": {
             "source_count": 2,
-            "evidence_count": 8,
-            "claim_count": 8,
+            "evidence_count": 7,
+            "claim_count": 7,
             "ruleset_id": "homestead_mvp_v0_1",
             "ruleset_version": "0.1",
             "source_names": [
@@ -162,11 +162,11 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
                 "ruleset_version": "0.1",
             },
             "cost_metrics": {
-                "evidence_count": 8,
-                "claim_count": 8,
-                "unknown_count": 7,
+                "evidence_count": 7,
+                "claim_count": 7,
+                "unknown_count": 6,
                 "red_flag_count": 1,
-                "verification_task_count": 8,
+                "verification_task_count": 7,
                 "estimated_total_usd_cents": 0,
                 "compute_usd_cents": 0,
                 "storage_usd_cents": 0,
@@ -247,8 +247,8 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
         "intent_code": "homestead_feasibility",
         "source_manifest": {
             "source_count": 2,
-            "evidence_count": 7,
-            "claim_count": 7,
+            "evidence_count": 6,
+            "claim_count": 6,
             "ruleset_id": "homestead_mvp_v0_1",
             "ruleset_version": "0.1",
             "source_names": [
@@ -327,11 +327,11 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
                 "ruleset_version": "0.1",
             },
             "cost_metrics": {
-                "evidence_count": 7,
-                "claim_count": 7,
-                "unknown_count": 7,
+                "evidence_count": 6,
+                "claim_count": 6,
+                "unknown_count": 6,
                 "red_flag_count": 0,
-                "verification_task_count": 7,
+                "verification_task_count": 6,
                 "estimated_total_usd_cents": 0,
                 "compute_usd_cents": 0,
                 "storage_usd_cents": 0,

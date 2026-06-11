@@ -24,6 +24,9 @@ from app.connectors import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorFixtureQualityProfile,
     ConnectorRetrievalProvenanceAdapter,
+    EpaEchoBbox,
+    EpaEchoConnector,
+    EpaEchoConnectorError,
     FemaNfhlBbox,
     FemaNfhlConnector,
     FemaNfhlConnectorError,
@@ -70,6 +73,7 @@ DS_002_REGISTRY_ID = "DS-002"
 DS_003_REGISTRY_ID = "DS-003"
 DS_004_REGISTRY_ID = "DS-004"
 DS_005_REGISTRY_ID = "DS-005"
+DS_006_REGISTRY_ID = "DS-006"
 DS_010_REGISTRY_ID = "DS-010"
 DS_011_REGISTRY_ID = "DS-011"
 DS_016_REGISTRY_ID = "DS-016"
@@ -144,6 +148,14 @@ class UsgsWaterOrchestrationResult:
     request_url: str
 
 
+@dataclass(frozen=True)
+class EpaEchoOrchestrationResult:
+    ingest_run_id: UUID
+    queue_item: ConnectorReviewQueueItem
+    report_ready: bool
+    request_url: str
+
+
 RequestTimeLiveConnectorResult = (
     UsgsTnmOrchestrationResult
     | FemaNfhlOrchestrationResult
@@ -152,6 +164,7 @@ RequestTimeLiveConnectorResult = (
     | ChathamParcelsOrchestrationResult
     | OsmRoadAccessOrchestrationResult
     | UsgsWaterOrchestrationResult
+    | EpaEchoOrchestrationResult
 )
 
 
@@ -173,6 +186,10 @@ def orchestrate_request_time_live_connectors_for_area(
         water_result = orchestrate_usgs_water_for_area(services=services, area=area)
         if not water_result.report_ready:
             return water_result
+    if _source_registry_id_available(services, DS_006_REGISTRY_ID):
+        echo_result = orchestrate_epa_echo_for_area(services=services, area=area)
+        if not echo_result.report_ready:
+            return echo_result
     if _source_registry_id_available(services, DS_016_REGISTRY_ID):
         osm_result = orchestrate_osm_road_access_for_area(services=services, area=area)
         if not osm_result.report_ready:
@@ -563,6 +580,63 @@ def orchestrate_usgs_water_for_area(
     )
 
 
+def orchestrate_epa_echo_for_area(
+    *,
+    services: ApiServices,
+    area: AreaContract,
+) -> EpaEchoOrchestrationResult:
+    source = get_source_by_registry_id(services, DS_006_REGISTRY_ID)
+    try:
+        connector_result = EpaEchoConnector(
+            source=source,
+            fetch_json=services.epa_echo_fetch_json,
+        ).query_bbox(
+            area_id=area.area_id,
+            bbox=epa_echo_bbox_from_area(area),
+        )
+        retrieval_provenance = ConnectorRetrievalProvenanceAdapter(
+            SourceProvenanceServiceRetrievalPort(services.source_provenance_service),
+        ).record(connector_result)
+        evidence_ingestion = ConnectorEvidenceIngestionAdapter(
+            services.evidence_service,
+        ).ingest(connector_result)
+    except EpaEchoConnectorError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    workflow_result = ApiConnectorIngestWorkflowResult(
+        connector_result=connector_result,
+        retrieval_provenance=retrieval_provenance,
+        evidence_ingestion=evidence_ingestion,
+    )
+    packet = build_connector_run_review_packet(workflow_result)
+    handoff = build_connector_review_handoff(packet)
+    quality = ConnectorFixtureQualityProfile(
+        connector_name=packet.connector_name,
+        evidence_count=packet.evidence_input_count,
+        source_failure_count=(
+            packet.source_failure_created_count + packet.source_failure_skipped_count
+        ),
+        issues=(),
+    )
+    review_status = build_connector_run_review_status(handoff, quality)
+    services.connector_review_statuses[packet.ingest_run_id] = review_status
+    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    return EpaEchoOrchestrationResult(
+        ingest_run_id=packet.ingest_run_id,
+        queue_item=queue_item,
+        report_ready=_queue_item_approved_for_report(queue_item),
+        request_url=connector_result.request_url,
+    )
+
+
 def orchestrate_chatham_parcels_for_area(
     *,
     services: ApiServices,
@@ -897,6 +971,18 @@ def usgs_water_bbox_from_area(area: AreaContract) -> UsgsWaterBbox:
     xs = [position[0] for position in coordinates]
     ys = [position[1] for position in coordinates]
     return UsgsWaterBbox(
+        xmin=min(xs),
+        ymin=min(ys),
+        xmax=max(xs),
+        ymax=max(ys),
+    )
+
+
+def epa_echo_bbox_from_area(area: AreaContract) -> EpaEchoBbox:
+    coordinates = _coordinates_for_bbox(area, "EPA ECHO")
+    xs = [position[0] for position in coordinates]
+    ys = [position[1] for position in coordinates]
+    return EpaEchoBbox(
         xmin=min(xs),
         ymin=min(ys),
         xmax=max(xs),

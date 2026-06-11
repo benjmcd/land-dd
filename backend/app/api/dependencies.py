@@ -39,6 +39,7 @@ from app.connectors.nwi import NwiJsonFetcher
 from app.connectors.osm_road_access import JsonFetcher as OsmRoadAccessJsonFetcher
 from app.connectors.ssurgo import SsurgoJsonFetcher
 from app.connectors.usgs_tnm import UsgsTnmJsonFetcher
+from app.connectors.epa_echo import JsonFetcher as EpaEchoJsonFetcher
 from app.connectors.usgs_water_monitoring import JsonFetcher as UsgsWaterJsonFetcher
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
@@ -85,6 +86,7 @@ class ApiServices:
     brunswick_parcels_fetch_json: BrunswickParcelsJsonFetcher | None = None
     osm_road_access_fetch_json: OsmRoadAccessJsonFetcher | None = None
     usgs_water_fetch_json: UsgsWaterJsonFetcher | None = None
+    epa_echo_fetch_json: EpaEchoJsonFetcher | None = None
 
     @property
     def connector_review_queue_repo(self) -> ConnectorReviewQueueRepository:

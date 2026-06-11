@@ -5,7 +5,13 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.claims_engine.rule_engine import DEFAULT_RULESET_PATH, RuleEngine, load_ruleset
+from app.claims_engine.rule_engine import (
+    DEFAULT_RULESET_PATH,
+    ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
+    ENV_HAZARD_STALE_CLAIM_CODE,
+    RuleEngine,
+    load_ruleset,
+)
 from app.domain.enums import ConfidenceBand, EvidenceType, SeverityBand
 from app.domain.evidence_contracts import EvidenceContract
 
@@ -1155,6 +1161,182 @@ def test_evaluate_ignores_low_risk_and_superseded_flood_evidence() -> None:
     engine = RuleEngine.from_file()
 
     assert engine.evaluate([low_risk, superseded]) == []
+
+
+def make_env_hazard_evidence(
+    area_id: UUID,
+    has_env_hazard_proximity: bool = True,
+    no_env_hazard_proximity: bool | None = None,
+    source_stale: bool = False,
+) -> EvidenceContract:
+    observed_value: dict[str, object] = {
+        "env_hazard_status": "regulated_facilities_found" if has_env_hazard_proximity else "no_regulated_facilities_found",
+        "regulated_facility_count": 2 if has_env_hazard_proximity else 0,
+        "has_env_hazard_proximity": has_env_hazard_proximity,
+    }
+    if no_env_hazard_proximity is not None:
+        observed_value["no_env_hazard_proximity"] = no_env_hazard_proximity
+    if source_stale:
+        observed_value["source_stale"] = True
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ENV_HAZ_FACILITY_SCREEN",
+        domain="env_hazard",
+        observation="Fixture env_hazard source screens facility proximity.",
+        observed_value=observed_value,
+        method_code="fixture_env_hazard_screen",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="Fixture env-hazard screening only; verify with Phase I ESA.",
+    )
+
+
+def make_env_hazard_failure(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="ENV_HAZ_SOURCE_UNAVAILABLE",
+        domain="env_hazard",
+        observation="Fixture env_hazard source request failed.",
+        observed_value={"failure_reason": "fixture_test_failure", "retryable": False},
+        method_code="fixture_env_hazard_screen",
+        confidence=ConfidenceBand.UNKNOWN,
+        is_source_failure=True,
+    )
+
+
+def test_load_ruleset_exposes_versioned_env_hazard_gate() -> None:
+    ruleset = load_ruleset(DEFAULT_RULESET_PATH)
+    rule = ruleset.hard_gate_for_condition("env_hazard_facility_proximity")
+    assert rule.code == "ENV_G001"
+    assert rule.claim_code == "ENV_001"
+    assert rule.domain == "env_hazard"
+
+
+def test_evaluate_creates_env_hazard_claim_from_proximity_evidence() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_env_hazard_evidence(area_id, has_env_hazard_proximity=True)
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    proximity_claims = [c for c in env_claims if c.claim_code == "ENV_001"]
+    assert len(proximity_claims) == 1
+    claim = proximity_claims[0]
+    assert claim.rule_code == "ENV_G001"
+    assert claim.severity == SeverityBand.HIGH
+    assert claim.confidence == ConfidenceBand.MEDIUM
+    assert "does not prove subject-property contamination" in claim.user_safe_language
+
+
+def test_evaluate_ignores_no_env_hazard_proximity_evidence() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_env_hazard_evidence(
+        area_id, has_env_hazard_proximity=False, no_env_hazard_proximity=True
+    )
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    assert all(c.claim_code != "ENV_001" for c in env_claims)
+
+
+def test_evaluate_routes_internally_conflicting_env_hazard_evidence_to_review() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    # Both has_env_hazard_proximity=True AND no_env_hazard_proximity=True in the same record
+    evidence = make_env_hazard_evidence(
+        area_id, has_env_hazard_proximity=True, no_env_hazard_proximity=True
+    )
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    review_claims = [c for c in env_claims if c.claim_code == ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE]
+    assert len(review_claims) >= 1
+
+
+def test_evaluate_creates_unknown_claim_from_env_hazard_source_failure() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_env_hazard_failure(area_id)
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    unknown_claims = [c for c in env_claims if c.claim_code == "ENV_SOURCE_UNAVAILABLE_UNKNOWN"]
+    assert len(unknown_claims) == 1
+    claim = unknown_claims[0]
+    assert claim.rule_code == "ENV_G001"
+    assert "does not prove contamination" in claim.user_safe_language.lower()
+
+
+def test_evaluate_creates_needs_review_claim_from_incomplete_env_hazard_evidence() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    # Evidence with no has_env_hazard_proximity and no no_env_hazard_proximity keys
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ENV_HAZ_FACILITY_SCREEN",
+        domain="env_hazard",
+        observation="Incomplete env_hazard evidence.",
+        observed_value={"env_hazard_status": "unknown"},
+        method_code="fixture_env_hazard_screen",
+        confidence=ConfidenceBand.MEDIUM,
+    )
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    review_claims = [c for c in env_claims if c.claim_code == ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE]
+    assert len(review_claims) >= 1
+
+
+def test_evaluate_creates_stale_env_hazard_review_claim_from_fixture_signal() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_env_hazard_evidence(area_id, has_env_hazard_proximity=True, source_stale=True)
+
+    claims = engine.evaluate([evidence])
+
+    env_claims = [c for c in claims if c.domain == "env_hazard"]
+    stale_claims = [c for c in env_claims if c.claim_code == ENV_HAZARD_STALE_CLAIM_CODE]
+    assert len(stale_claims) == 1
+
+
+def test_evaluate_env_hazard_outputs_are_deterministic_when_input_order_changes() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    proximity_ev = make_env_hazard_evidence(area_id, has_env_hazard_proximity=True)
+    no_proximity_ev = make_env_hazard_evidence(
+        area_id, has_env_hazard_proximity=False, no_env_hazard_proximity=True
+    )
+    failure_ev = make_env_hazard_failure(area_id)
+    stale_ev = make_env_hazard_evidence(area_id, has_env_hazard_proximity=True, source_stale=True)
+
+    order_a = [proximity_ev, no_proximity_ev, failure_ev, stale_ev]
+    order_b = [stale_ev, failure_ev, proximity_ev, no_proximity_ev]
+
+    claims_a = engine.evaluate(order_a)
+    claims_b = engine.evaluate(order_b)
+
+    env_a = {c.claim_code for c in claims_a if c.domain == "env_hazard"}
+    env_b = {c.claim_code for c in claims_b if c.domain == "env_hazard"}
+    assert env_a == env_b
+    # Should produce at minimum proximity, unknown, needs-review, stale codes
+    expected = {
+        "ENV_001",
+        "ENV_SOURCE_UNAVAILABLE_UNKNOWN",
+        ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
+        ENV_HAZARD_STALE_CLAIM_CODE,
+    }
+    assert expected.issubset(env_a)
 
 
 def test_load_ruleset_rejects_invalid_severity(tmp_path: Path) -> None:

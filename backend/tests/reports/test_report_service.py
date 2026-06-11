@@ -195,8 +195,8 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     assert report_run.source_manifest["ruleset_id"] == "homestead_mvp_v0_1"
     assert report_run.source_manifest["ruleset_version"] == "0.1"
     assert str(source.source_id) in cast(list[str], report_run.source_manifest["source_ids"])
-    assert report_run.source_manifest["evidence_count"] == 9
-    assert report_run.source_manifest["claim_count"] == 10
+    assert report_run.source_manifest["evidence_count"] == 8
+    assert report_run.source_manifest["claim_count"] == 9
     assert report_run.source_manifest["source_count"] == 2
     assert NOT_EVALUATED_SOURCE_NAME in cast(list[str], report_run.source_manifest["source_names"])
     source_details = cast(list[dict[str, Any]], report_run.source_manifest["source_details"])
@@ -224,9 +224,9 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
         "ruleset_version": "0.1",
     }
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
-    assert cost_metrics["evidence_count"] == 9
-    assert cost_metrics["claim_count"] == 10
-    assert cost_metrics["unknown_count"] == 9
+    assert cost_metrics["evidence_count"] == 8
+    assert cost_metrics["claim_count"] == 9
+    assert cost_metrics["unknown_count"] == 8
     assert cost_metrics["red_flag_count"] == 1
     assert cost_metrics["estimated_total_usd_cents"] == 0
     assert cost_metrics["compute_usd_cents"] == 0
@@ -260,7 +260,7 @@ def test_create_report_run_is_repeatable_for_same_fixture_evidence() -> None:
         claim.claim_id for claim in first_run.claims
     ]
     assert claim_service.list_by_area(area.area_id) == first_run.claims
-    assert len(evidence_service.list_by_area(area.area_id)) == 8
+    assert len(evidence_service.list_by_area(area.area_id)) == 7
     assert [record.domain for record in evidence_service.list_by_area(area.area_id)[1:]] == [
         *NOT_EVALUATED_DOMAINS, "zoning"
     ]
@@ -294,15 +294,15 @@ def test_create_report_run_without_source_evidence_surfaces_not_evaluated_unknow
         "Zoning use classification requires verification with the "
         "relevant county planning or zoning authority.",
     }
-    assert report_run.source_manifest["evidence_count"] == 7
-    assert report_run.source_manifest["claim_count"] == 7
+    assert report_run.source_manifest["evidence_count"] == 6
+    assert report_run.source_manifest["claim_count"] == 6
     assert report_run.source_manifest["source_count"] == 1
     assert report_run.source_manifest["source_names"] == [NOT_EVALUATED_SOURCE_NAME]
     assert [source.name for source in source_service.list_all()] == [NOT_EVALUATED_SOURCE_NAME]
     cost_metrics = cast(dict[str, Any], report_run.artifact_metadata["cost_metrics"])
-    assert cost_metrics["evidence_count"] == 7
-    assert cost_metrics["claim_count"] == 7
-    assert cost_metrics["unknown_count"] == 7
+    assert cost_metrics["evidence_count"] == 6
+    assert cost_metrics["claim_count"] == 6
+    assert cost_metrics["unknown_count"] == 6
     assert cost_metrics["red_flag_count"] == 0
     assert cost_metrics["estimated_total_usd_cents"] == 0
     assert cost_metrics["human_review_minutes"] == 0
@@ -328,7 +328,7 @@ def test_create_report_run_excludes_unapproved_connector_evidence() -> None:
         "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
     ]
     assert report_run.red_flags == []
-    assert report_run.source_manifest["evidence_count"] == 7
+    assert report_run.source_manifest["evidence_count"] == 6
 
 
 def test_create_report_run_includes_approved_connector_evidence() -> None:
@@ -364,7 +364,7 @@ def test_create_report_run_includes_approved_connector_evidence() -> None:
     assert "FLOOD_001" in [claim.claim_code for claim in report_run.claims]
     assert report_run.red_flags[0].claim_code == "FLOOD_001"
     assert "FEMA NFHL screening only; confirm locally." in report_run.caveats
-    assert report_run.source_manifest["evidence_count"] == 8
+    assert report_run.source_manifest["evidence_count"] == 7
 
 
 def test_create_report_run_rejects_unregistered_area() -> None:

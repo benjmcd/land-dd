@@ -54,6 +54,12 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "udo_source_url",
     "use_category",
     "zoning_code",
+    # env_hazard connector fields (DS-006)
+    "epa_echo_bbox",
+    "env_hazard_status",
+    "has_env_hazard_proximity",
+    "no_env_hazard_proximity",
+    "regulated_facility_count",
 }
 SPATIAL_INTERSECTION_KEYS = {
     "flood_zone",
@@ -212,6 +218,8 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         "no_plausible_water_context",
         "plausible_water_context",
         "source_stale",
+        "has_env_hazard_proximity",
+        "no_env_hazard_proximity",
     ):
         if key in evidence.observed_value and not isinstance(evidence.observed_value[key], bool):
             raise ValueError(f"source_observation observed_value '{key}' must be boolean")
@@ -224,6 +232,11 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
         _require_non_negative_number(
             evidence.observed_value["monitoring_station_count"],
             "monitoring_station_count",
+        )
+    if "regulated_facility_count" in evidence.observed_value:
+        _require_non_negative_number(
+            evidence.observed_value["regulated_facility_count"],
+            "regulated_facility_count",
         )
 
 

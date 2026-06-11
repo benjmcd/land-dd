@@ -9,7 +9,6 @@ NOT_EVALUATED_SOURCE_NAME = "Land Diligence MVP - Unsupported Screening Categori
 NOT_EVALUATED_SOURCE_ORG = "internal"
 NOT_EVALUATED_DOMAINS = (
     "soil_septic",
-    "env_hazard",
     "resource_context",
     "market_context",
     "parcels",
@@ -18,7 +17,6 @@ NOT_EVALUATED_DOMAINS = (
 
 NOT_EVALUATED_CLAIM_CODES = {
     "soil_septic": "SOIL_NOT_EVALUATED",
-    "env_hazard": "ENV_HAZ_NOT_EVALUATED",
     "resource_context": "RESOURCE_NOT_EVALUATED",
     "market_context": "MARKET_OUT_OF_SCOPE",
     "parcels": "PARCEL_NOT_EVALUATED",
@@ -31,11 +29,6 @@ NOT_EVALUATED_CAVEATS = {
         "tool version. A perc test, county health department consultation, and "
         "septic engineer assessment are required before any septic or building "
         "determination."
-    ),
-    "env_hazard": (
-        "Environmental hazard sources are not supported in this screening tool "
-        "version. Review EPA, state environmental agency records, and appropriate "
-        "professional due-diligence materials before relying on this category."
     ),
     "resource_context": (
         "Mineral, timber, water-rights, and resource-context sources are not "

@@ -23,7 +23,7 @@ WATER_CONTEXT_CONDITION = "no_plausible_water_context_or_source_unavailable"
 WETLAND_MAPPED_CONDITION = "material_intersection_with_mapped_wetlands"
 SLOPE_INSUFFICIENT_CONDITION = "insufficient_low_slope_buildable_area"
 SOIL_SEPTIC_CONDITION = "soil_septic_unsupported"
-ENV_HAZARD_CONDITION = "env_hazard_unsupported"
+ENV_HAZARD_CONDITION = "env_hazard_facility_proximity"
 RESOURCE_CONTEXT_CONDITION = "resource_context_unsupported"
 MARKET_CONTEXT_CONDITION = "market_context_out_of_scope"
 PARCELS_NOT_EVALUATED_CONDITION = "parcels_not_evaluated"
@@ -31,7 +31,6 @@ PARCELS_SCREEN_CONDITION = "county_parcel_screen_identified"
 ASSESSOR_NOT_EVALUATED_CONDITION = "assessor_not_evaluated"
 NOT_EVALUATED_CONDITIONS_BY_DOMAIN = {
     "soil_septic": SOIL_SEPTIC_CONDITION,
-    "env_hazard": ENV_HAZARD_CONDITION,
     "resource_context": RESOURCE_CONTEXT_CONDITION,
     "market_context": MARKET_CONTEXT_CONDITION,
     "parcels": PARCELS_NOT_EVALUATED_CONDITION,
@@ -57,6 +56,10 @@ SLOPE_NEEDS_REVIEW_CLAIM_CODE = "SLOPE_EVIDENCE_NEEDS_REVIEW"
 SLOPE_STALE_CLAIM_CODE = "SLOPE_STALE_EVIDENCE_NEEDS_REVIEW"
 FLOOD_NEEDS_REVIEW_CLAIM_CODE = "FLOOD_EVIDENCE_NEEDS_REVIEW"
 FLOOD_STALE_CLAIM_CODE = "FLOOD_STALE_EVIDENCE_NEEDS_REVIEW"
+ENV_HAZARD_PROXIMITY_KEYS = ("has_env_hazard_proximity",)
+ENV_HAZARD_NO_PROXIMITY_KEYS = ("no_env_hazard_proximity",)
+ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE = "ENV_EVIDENCE_NEEDS_REVIEW"
+ENV_HAZARD_STALE_CLAIM_CODE = "ENV_STALE_EVIDENCE_NEEDS_REVIEW"
 
 
 @dataclass(frozen=True)
@@ -106,6 +109,7 @@ class RuleEngine:
         flood_rule = self._ruleset.hard_gate_for_condition(FLOOD_HIGH_RISK_CONDITION)
         slope_rule = self._ruleset.hard_gate_for_condition(SLOPE_INSUFFICIENT_CONDITION)
         wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
+        env_hazard_rule = self._ruleset.hard_gate_for_condition(ENV_HAZARD_CONDITION)
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
             for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
@@ -266,6 +270,30 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_county_parcel_screen_evidence(evidence)
+            ]
+            env_hazard_proximity = [
+                evidence for evidence in area_evidence
+                if _is_env_hazard_proximity_evidence(evidence)
+            ]
+            env_hazard_no_proximity = [
+                evidence for evidence in area_evidence
+                if _is_env_hazard_no_proximity_evidence(evidence)
+            ]
+            env_hazard_conflicting = [
+                evidence for evidence in area_evidence
+                if _is_conflicting_env_hazard_evidence(evidence)
+            ]
+            env_hazard_incomplete = [
+                evidence for evidence in area_evidence
+                if _is_incomplete_env_hazard_evidence(evidence)
+            ]
+            env_hazard_failures = [
+                evidence for evidence in area_evidence
+                if _is_env_hazard_source_failure(evidence)
+            ]
+            stale_env_hazard_evidence = [
+                evidence for evidence in area_evidence
+                if _is_stale_env_hazard_evidence(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -480,6 +508,36 @@ class RuleEngine:
                         area_id,
                         parcel_screen_rule,
                         county_parcel_screen,
+                    )
+                )
+            if env_hazard_proximity:
+                claims.append(
+                    self._env_hazard_proximity_claim(area_id, env_hazard_rule, env_hazard_proximity)
+                )
+            if env_hazard_failures:
+                claims.append(
+                    self._env_hazard_unknown_claim(area_id, env_hazard_rule, env_hazard_failures)
+                )
+            if env_hazard_conflicting or env_hazard_incomplete or (
+                env_hazard_proximity and (env_hazard_no_proximity or env_hazard_failures)
+            ):
+                claims.append(
+                    self._env_hazard_needs_review_claim(
+                        area_id,
+                        env_hazard_rule,
+                        _dedupe_evidence_records([
+                            *env_hazard_conflicting,
+                            *env_hazard_proximity,
+                            *env_hazard_no_proximity,
+                            *env_hazard_incomplete,
+                            *env_hazard_failures,
+                        ]),
+                    )
+                )
+            if stale_env_hazard_evidence:
+                claims.append(
+                    self._env_hazard_stale_claim(
+                        area_id, env_hazard_rule, stale_env_hazard_evidence
                     )
                 )
             for domain in NOT_EVALUATED_DOMAINS:
@@ -1459,6 +1517,148 @@ class RuleEngine:
             verification_task=rule.verification_task,
         )
 
+    def _env_hazard_proximity_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "EPA ECHO facility-proximity screening indicates regulated facilities near "
+            "the area. A nearby regulated facility does not prove subject-property "
+            "contamination, plume extent, exposure pathway, or legal liability. ECHO data "
+            "may lag source entry. A Phase I/II ESA is required for regulatory and "
+            "transactional environmental due diligence."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion="Environmental hazard screening found regulated facilities in proximity to the area.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _env_hazard_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Environmental hazard screening remains unknown because the EPA ECHO "
+            "source evidence failed or was unavailable. A nearby regulated facility "
+            "does not prove contamination. A Phase I/II ESA is required for regulatory "
+            "and transactional environmental due diligence."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code="ENV_SOURCE_UNAVAILABLE_UNKNOWN",
+            domain=rule.domain,
+            assertion="Environmental hazard source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _env_hazard_needs_review_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Environmental hazard screening evidence is conflicting or incomplete and "
+            "requires human review. A nearby regulated facility does not prove "
+            "contamination. A Phase I/II ESA is required for regulatory and transactional "
+            "environmental due diligence."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("needs-review", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Environmental hazard evidence requires human review before rule interpretation.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Resolve conflicting or incomplete environmental hazard screening "
+                "evidence before relying on this result."
+            ),
+        )
+
+    def _env_hazard_stale_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Environmental hazard screening evidence is marked stale and should be "
+            "refreshed before relying on facility-proximity results. A nearby regulated "
+            "facility does not prove contamination."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("stale", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=ENV_HAZARD_STALE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Environmental hazard evidence freshness requires review.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.INFORMATIONAL,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=(
+                "Refresh stale environmental hazard screening source evidence before "
+                "final interpretation."
+            ),
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -1911,6 +2111,79 @@ def _is_stale_flood_evidence(evidence: EvidenceContract) -> bool:
     )
 
 
+def _is_env_hazard_proximity_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "env_hazard" or _is_env_hazard_source_failure(evidence):
+        return False
+    if _is_conflicting_env_hazard_evidence(evidence):
+        return False
+    has_proximity = any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_PROXIMITY_KEYS
+    )
+    no_proximity_false = any(
+        evidence.observed_value.get(key) is not None
+        and _observed_false(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_NO_PROXIMITY_KEYS
+    )
+    return has_proximity or no_proximity_false
+
+
+def _is_env_hazard_no_proximity_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "env_hazard" or _is_env_hazard_source_failure(evidence):
+        return False
+    if any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_PROXIMITY_KEYS
+    ):
+        return False
+    return any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_NO_PROXIMITY_KEYS
+    )
+
+
+def _is_incomplete_env_hazard_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "env_hazard" or _is_env_hazard_source_failure(evidence):
+        return False
+    has_proximity_signal = any(
+        evidence.observed_value.get(key) is not None
+        for key in ENV_HAZARD_PROXIMITY_KEYS
+    )
+    has_no_proximity_signal = any(
+        evidence.observed_value.get(key) is not None
+        for key in ENV_HAZARD_NO_PROXIMITY_KEYS
+    )
+    return not has_proximity_signal and not has_no_proximity_signal
+
+
+def _is_conflicting_env_hazard_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "env_hazard" or _is_env_hazard_source_failure(evidence):
+        return False
+    has_proximity = any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_PROXIMITY_KEYS
+    )
+    has_no_proximity = any(
+        _observed_bool(evidence.observed_value.get(key))
+        for key in ENV_HAZARD_NO_PROXIMITY_KEYS
+    )
+    return has_proximity and has_no_proximity
+
+
+def _is_env_hazard_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "env_hazard" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_stale_env_hazard_evidence(evidence: EvidenceContract) -> bool:
+    return (
+        evidence.domain == "env_hazard"
+        and not _is_env_hazard_source_failure(evidence)
+        and _observed_bool(evidence.observed_value.get("source_stale"))
+    )
+
+
 def _flood_zone_values(evidence: EvidenceContract) -> list[str]:
     values: list[str] = []
     for key in ("flood_zone", "flood_zones", "flood_zone_code", "zone"):
@@ -1993,6 +2266,11 @@ def _lowest_confidence(evidence_records: list[EvidenceContract]) -> ConfidenceBa
 
 __all__ = [
     "DEFAULT_RULESET_PATH",
+    "ENV_HAZARD_CONDITION",
+    "ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE",
+    "ENV_HAZARD_NO_PROXIMITY_KEYS",
+    "ENV_HAZARD_PROXIMITY_KEYS",
+    "ENV_HAZARD_STALE_CLAIM_CODE",
     "HardGateRule",
     "RuleEngine",
     "RuleSet",
