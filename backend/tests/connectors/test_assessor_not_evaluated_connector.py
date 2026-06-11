@@ -33,13 +33,13 @@ def test_query_returns_assessor_not_evaluated_connector_result() -> None:
     connector = AssessorNotEvaluatedConnector()
     source = _make_source()
 
-    result = connector.query(area_id=_AREA_ID, source=source)
+    result = connector.query_area(area_id=_AREA_ID, source=source)
 
     assert isinstance(result, AssessorNotEvaluatedConnectorResult)
 
 
 def test_retrieval_run_connector_name() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
 
@@ -47,7 +47,7 @@ def test_retrieval_run_connector_name() -> None:
 
 
 def test_retrieval_run_status_succeeded() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
 
@@ -55,7 +55,7 @@ def test_retrieval_run_status_succeeded() -> None:
 
 
 def test_evidence_inputs_has_exactly_one_element() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
 
@@ -63,7 +63,7 @@ def test_evidence_inputs_has_exactly_one_element() -> None:
 
 
 def test_evidence_code_is_assessor_not_evaluated() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -72,7 +72,7 @@ def test_evidence_code_is_assessor_not_evaluated() -> None:
 
 
 def test_evidence_domain_is_assessor() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -81,7 +81,7 @@ def test_evidence_domain_is_assessor() -> None:
 
 
 def test_evidence_is_source_failure_is_true() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -90,7 +90,7 @@ def test_evidence_is_source_failure_is_true() -> None:
 
 
 def test_evidence_observed_value_not_evaluated_is_true() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -99,7 +99,7 @@ def test_evidence_observed_value_not_evaluated_is_true() -> None:
 
 
 def test_evidence_observed_value_reason() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -110,8 +110,8 @@ def test_evidence_observed_value_reason() -> None:
 def test_evidence_ids_are_deterministic_for_same_area_and_source() -> None:
     source = _make_source()
 
-    result1 = AssessorNotEvaluatedConnector().query(area_id=_AREA_ID, source=source)
-    result2 = AssessorNotEvaluatedConnector().query(area_id=_AREA_ID, source=source)
+    result1 = AssessorNotEvaluatedConnector().query_area(area_id=_AREA_ID, source=source)
+    result2 = AssessorNotEvaluatedConnector().query_area(area_id=_AREA_ID, source=source)
 
     assert result1.retrieval_run.ingest_run_id == result2.retrieval_run.ingest_run_id
     assert result1.evidence_inputs[0].evidence_id == result2.evidence_inputs[0].evidence_id
@@ -122,14 +122,14 @@ def test_different_area_id_produces_different_evidence_id() -> None:
     area_id_a = uuid4()
     area_id_b = uuid4()
 
-    result_a = AssessorNotEvaluatedConnector().query(area_id=area_id_a, source=source)
-    result_b = AssessorNotEvaluatedConnector().query(area_id=area_id_b, source=source)
+    result_a = AssessorNotEvaluatedConnector().query_area(area_id=area_id_a, source=source)
+    result_b = AssessorNotEvaluatedConnector().query_area(area_id=area_id_b, source=source)
 
     assert result_a.evidence_inputs[0].evidence_id != result_b.evidence_inputs[0].evidence_id
 
 
 def test_evidence_caveat_contains_assessed_value_is_not_market_value() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -139,7 +139,7 @@ def test_evidence_caveat_contains_assessed_value_is_not_market_value() -> None:
 
 
 def test_evidence_type_is_source_failure() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -148,7 +148,7 @@ def test_evidence_type_is_source_failure() -> None:
 
 
 def test_evidence_confidence_is_unknown() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -157,7 +157,7 @@ def test_evidence_confidence_is_unknown() -> None:
 
 
 def test_evidence_method_code() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
     evidence = result.evidence_inputs[0]
@@ -166,7 +166,7 @@ def test_evidence_method_code() -> None:
 
 
 def test_retrieval_run_metrics_contain_source_registry_id() -> None:
-    result = AssessorNotEvaluatedConnector().query(
+    result = AssessorNotEvaluatedConnector().query_area(
         area_id=_AREA_ID, source=_make_source()
     )
 

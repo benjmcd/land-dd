@@ -43,7 +43,7 @@ class AssessorNotEvaluatedConnector:
     connector_name = ASSESSOR_NOT_EVALUATED_CONNECTOR_NAME
     domain = "assessor"
 
-    def query(
+    def query_area(
         self,
         *,
         area_id: UUID,

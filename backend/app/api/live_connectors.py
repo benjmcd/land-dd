@@ -592,7 +592,7 @@ def orchestrate_assessor_not_evaluated_for_area(
     area: AreaContract,
 ) -> None:
     source = get_source_by_registry_id(services, DS_011_REGISTRY_ID)
-    connector_result = AssessorNotEvaluatedConnector().query(
+    connector_result = AssessorNotEvaluatedConnector().query_area(
         area_id=area.area_id,
         source=source,
     )
