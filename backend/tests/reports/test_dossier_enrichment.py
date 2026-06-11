@@ -983,3 +983,75 @@ def test_dossier_renders_broadband_source_failure() -> None:
         "Expected 'source failure' text in Section 12 when broadband data unavailable; got:\n"
         + section_12
     )
+
+
+def test_dossier_renders_fema_flood_source_failure() -> None:
+    """FEMA NFHL source failure must show 'source failure' in Section 7 flood line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="FEMA_NFHL_SOURCE_FAILURE",
+        domain="flood",
+        method_code="live_fema_nfhl_flood_zone_query",
+        observation="FEMA NFHL query did not produce usable flood zone data.",
+        observed_value={
+            "failure_reason": "fema_nfhl_request_error",
+            "error_message": "HTTP 503",
+            "retryable": True,
+        },
+        caveat="FEMA NFHL flood zone screening only.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec7_start = dossier.find("## 7. Flood")
+    sec8_start = dossier.find("## 8.")
+    assert sec7_start != -1, "Section 7 not found"
+    section_7 = dossier[sec7_start:sec8_start]
+    assert "source failure" in section_7, (
+        "Expected 'source failure' text in Section 7 flood line when FEMA data unavailable; "
+        "got:\n" + section_7
+    )
+
+
+def test_dossier_renders_zoning_source_failure() -> None:
+    """Zoning source failure must show 'source failure' in Section 10 zoning district line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="ZONING_SOURCE_FAILURE",
+        domain="zoning",
+        method_code="live_zoning_query",
+        observation="Zoning data query did not produce usable results.",
+        observed_value={
+            "failure_reason": "zoning_request_error",
+            "error_message": "service unavailable",
+            "retryable": True,
+        },
+        caveat="Zoning screening only; verify with county planning.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    assert sec10_start != -1, "Section 10 not found"
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "source failure" in section_10, (
+        "Expected 'source failure' text in Section 10 when zoning data unavailable; got:\n"
+        + section_10
+    )

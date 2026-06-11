@@ -364,6 +364,9 @@ def _access_road_result(report_run: ReportRunContract) -> str:
 def _flood_zone_result(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence if r.domain == "flood" and not r.is_source_failure]
     if not records:
+        failures = [r for r in report_run.evidence if r.domain == "flood" and r.is_source_failure]
+        if failures:
+            return "source failure — FEMA NFHL data unavailable"
         return "not evaluated"
     parts: list[str] = []
     for record in records:
@@ -430,6 +433,9 @@ def _domain_verification_multi(report_run: ReportRunContract, domains: set[str])
 def _zoning_district_result(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
     if not records:
+        failures = [r for r in report_run.evidence if r.domain == "zoning" and r.is_source_failure]
+        if failures:
+            return "source failure — zoning data unavailable"
         return "not evaluated"
     parts: list[str] = []
     for record in records:
