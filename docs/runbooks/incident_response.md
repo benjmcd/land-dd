@@ -207,6 +207,9 @@ py -3.12 .\scripts\source_readiness.py --priority Must --json
 .\scripts\run_incident_rollback_check.ps1
 ```
 
+The Windows and POSIX wrappers delegate to `scripts/incident_rollback_check.py` so
+local and CI validation use the same validate-only logic.
+
 For connector incidents, also confirm:
 
 - source-failure evidence exists for failed source calls;

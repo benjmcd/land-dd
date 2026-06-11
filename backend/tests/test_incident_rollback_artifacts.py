@@ -27,7 +27,30 @@ def test_incident_response_runbook_names_required_l10_ops_elements() -> None:
         assert phrase in runbook
 
 
-def test_incident_rollback_checks_reference_current_proof_scripts() -> None:
+def test_incident_rollback_validation_scripts_exist() -> None:
+    assert (REPO_ROOT / "scripts" / "incident_rollback_check.py").is_file()
+    assert (REPO_ROOT / "scripts" / "run_incident_rollback_check.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_incident_rollback_check.sh").is_file()
+
+
+def test_incident_rollback_validator_references_current_proof_scripts() -> None:
+    script = (REPO_ROOT / "scripts" / "incident_rollback_check.py").read_text(
+        encoding="utf-8",
+    )
+
+    for phrase in (
+        "docs",
+        "runbooks",
+        "incident_response.md",
+        "run_deployment_smoke",
+        "run_backup_restore_check",
+        "source_readiness.py",
+        "incident/rollback check: ok",
+    ):
+        assert phrase in script
+
+
+def test_incident_rollback_wrappers_delegate_to_shared_validator() -> None:
     powershell = (REPO_ROOT / "scripts" / "run_incident_rollback_check.ps1").read_text(
         encoding="utf-8",
     )
@@ -36,10 +59,4 @@ def test_incident_rollback_checks_reference_current_proof_scripts() -> None:
     )
 
     for script in (powershell, posix):
-        assert "docs" in script
-        assert "runbooks" in script
-        assert "incident_response.md" in script
-        assert "run_deployment_smoke" in script
-        assert "run_backup_restore_check" in script
-        assert "source_readiness.py" in script
-        assert "incident/rollback check: ok" in script
+        assert "incident_rollback_check.py" in script
