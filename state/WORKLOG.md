@@ -2292,3 +2292,11 @@ ruff/mypy, targeted and broader source-readiness/private-MVP tests, Must
 source-readiness JSON, release-readiness validator, docs-only stale phrase audit,
 `git diff --check`, and default `.\scripts\verify.ps1` passed. Local DB smoke was
 not run in this slice; DS-017 and hosted-production blockers remain unchanged.
+
+## 2026-06-12 (Selected-county operator utility closure — Milestones C & D)
+
+- Wired `StaticParcelFixtureConnector` and all remaining connector types into `scripts/generate_dossier.py --connector all` so operators get parcel identity (PIN, county, acreage, zoning designation) in the dossier alongside the existing flood/access/zoning/soils/terrain/wetlands/buildability sections.
+- Fixed `backend/app/evidence_ledger/payload_validation.py`: added `classification_indeterminate` to `SOURCE_OBSERVATION_ALLOWED_KEYS` and its boolean type guard so the Chatham zoning-edge fixture (UNZONED/boundary case) no longer fails payload validation.
+- Updated three Chatham parcel fixture files to include `parcel_pin`, `parcel_county`, and `parcel_zoning` so dossier Sections 2/10 populate correctly instead of showing "unknown".
+- Updated `backend/tests/private_mvp/test_mvp_regression.py`: updated parcel assertion to accept either evaluated or NOT_EVALUATED parcels; added `test_chatham_zoning_edge_mvp_regression` (Milestone C canonical case: parcel + recorded zoning + assessor NOT_EVALUATED); expanded Brunswick regression to include soils and wetlands in the coastal-flood AOI; added `test_brunswick_jurisdiction_regression` (wetlands + zoning) and `test_brunswick_wetlands_soils_regression` (access + flood + soils + wetlands).
+- Verification: all 6 private-MVP fixture-smoke regression tests pass with `RUN_DB_SMOKE=1`; full test suite 1436 passed / 79 skipped; ruff clean; mypy clean (290 source files). DS-017 and hosted-production blockers unchanged.

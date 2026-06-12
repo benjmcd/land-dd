@@ -8810,3 +8810,38 @@ py -3.12 .\scripts\source_readiness.py --priority Must --json
   `origin/main`.
 - Hosted production gates remain blocked: hosted auth/RBAC, hosted deployment, billing,
   key rotation, hosted log retention, and hosted alerting.
+
+## 2026-06-12 Selected-County Operator Utility Closure (Milestones C & D)
+
+**Scope:** Close the selected-county operator utility transition by wiring parcel
+connector support into the dossier generator CLI, fixing a payload validation gap
+for the `classification_indeterminate` zoning field, populating parcel identity
+fields in Chatham fixture files, adding the canonical Milestone C regression test
+(Chatham zoning-edge: parcel + recorded zoning + assessor NOT_EVALUATED), and
+expanding Brunswick coverage to three AOI cases. Does not change source-readiness
+counts, live connectors, DB schema, public APIs, report semantics, DS-017, or
+hosted-production blockers.
+
+**Commands run:**
+
+```powershell
+$env:RUN_DB_SMOKE = "1"
+cd backend; py -3.12 -m pytest tests\private_mvp\test_mvp_regression.py -v
+cd backend; py -3.12 -m pytest --tb=short
+cd backend; ruff check .
+cd backend; py -3.12 -m mypy app tests
+```
+
+**Results:**
+
+- All 6 private-MVP fixture-smoke regression tests passed with `RUN_DB_SMOKE=1`.
+- Full test suite: 1436 passed, 79 skipped.
+- Ruff clean.
+- Mypy clean (290 source files).
+
+**Residual risk:**
+
+- DS-017 remains the only Must blocker; this work does not affect full release readiness.
+- Remote publication incomplete: local `main` is ahead of `origin/main` by 4 commits.
+- Hosted production gates remain blocked: hosted auth/RBAC, hosted deployment, billing,
+  key rotation, hosted log retention, and hosted alerting.
