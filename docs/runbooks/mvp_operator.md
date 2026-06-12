@@ -671,8 +671,8 @@ future work items.
 | Limitation | Impact |
 |---|---|
 | In-memory job store | Job status is lost on server restart; pending jobs cannot be recovered |
-| Live connectors are bounded and review-gated | Reviewed DS-001, DS-002, DS-003, and DS-004 public-source connectors are available, but outputs remain screening-only and cannot assert legal/buildability/title/water/wetland jurisdiction conclusions |
-| County/vendor sources not ready | Parcel, assessor, commercial parcel, and local zoning sources still require jurisdiction/vendor/license decisions before production connector use |
+| Live connectors are bounded and review-gated | Reviewed Must-priority paths now include DS-001, DS-002, DS-003, and DS-004 public-source connectors, DS-010 selected-county parcel connectors, the DS-011 assessor NOT_EVALUATED sentinel, and DS-023 Chatham/Brunswick recorded-fixture zoning. Outputs remain screening-only and cannot assert legal/buildability/title/water/wetland jurisdiction conclusions. |
+| County/vendor coverage is intentionally scoped | DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick selected-county operator flows; DS-011 assessor remains explicit NOT_EVALUATED evidence, not live assessor data; DS-017 commercial parcel vendor remains blocked; DS-023 covers Chatham/Brunswick recorded-fixture zoning only. Buncombe zoning and all other counties remain NOT_EVALUATED. |
 | Single-process default | In-memory stores are not shared across multiple workers or processes |
 | No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode, but there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
 | `REQUIRE_API_KEY=true` locks the operator UI | When `REQUIRE_API_KEY=true` is set, the API-key middleware applies to every route including all `/ui/*` pages; only `/health` and `/version` remain public. The UI targets the default private trusted-network posture (`REQUIRE_API_KEY=false`). |
@@ -762,10 +762,13 @@ not gate the selected NC county private-MVP utility proof.
 
 - **Counties:** Buncombe, Chatham, Brunswick (NC)
 - **Intent:** `homestead_feasibility` / `rural_land_purchase`
-- **Connector domains:** `flood` (StaticFloodFixtureConnector), `access`
-  (StaticAccessFixtureConnector), `zoning` (StaticZoningFixtureConnector)
-- **NOT_EVALUATED domains:** `parcels`, `assessor` — recorded as explicit unknowns;
-  no cadastral or tax data is asserted
+- **Connector domains:** fixture regression exercises `flood`, `access`, `zoning`,
+  `parcels`, `terrain`, `wetlands`, `soils`, and `buildability` as declared per
+  case in `tests/fixtures/golden_aois/manifest.yaml`.
+- **NOT_EVALUATED domains:** case-specific per manifest. Assessor remains
+  NOT_EVALUATED in fixture regression; parcels are NOT_EVALUATED for fixture
+  cases without parcel fixtures. Selected-county DS-010 live connectors are
+  reviewed separately and still exclude owner/value/title fields.
 
 ### 1. DB startup (optional — in-memory is sufficient for fixture regression)
 
@@ -825,8 +828,8 @@ workflow = build_fixture_workflow_with_public_services(
 result = workflow.ingest_fixture("tests/fixtures/connectors/nc_buncombe_bun_slope_flood.json")
 ```
 
-Repeat for access (`StaticAccessFixtureConnector` + `evaluate_access_fixture_quality`)
-and zoning (`StaticZoningFixtureConnector` + `evaluate_zoning_fixture_quality`) as
+Repeat for each manifest-declared fixture domain by pairing the matching
+`Static*FixtureConnector` with its `evaluate_*_fixture_quality` function as
 applicable per the case manifest in `tests/fixtures/golden_aois/manifest.yaml`.
 
 ### 4. Report creation and review/approval gate
@@ -888,11 +891,13 @@ All three county tests (Buncombe, Chatham, Brunswick) must pass.
 | Domain | Status | Reason |
 |---|---|---|
 | `flood` | fixture-backed | StaticFloodFixtureConnector; confirm with county flood-plain manager |
-| `access` | fixture-backed | StaticAccessFixtureConnector; road presence ≠ legal access |
-| `zoning` | fixture-backed | StaticZoningFixtureConnector; requires county planning confirmation |
-| `parcels` | NOT_EVALUATED | No machine-queryable county parcel connector; recorded as unknown |
-| `assessor` | NOT_EVALUATED | No machine-queryable assessor connector; recorded as unknown |
-| `terrain/slope` | live-connector only | DS-001 USGS TNM; not included in fixture regression |
-| `wetlands` | live-connector only | DS-004 NWI; not included in fixture regression |
+| `access` | fixture-backed | StaticAccessFixtureConnector; road presence does not prove legal access |
+| `zoning` | fixture-backed / recorded-fixture source path | StaticZoningFixtureConnector in regression; DS-023 Chatham/Brunswick recorded-fixture connectors are reviewed separately and still require county Planning confirmation |
+| `parcels` | fixture-backed where present / selected-county live path | StaticParcelFixtureConnector in Chatham fixture cases; Buncombe/Brunswick fixture cases may still record parcel unknowns. DS-010 live connectors are limited to selected-county operator flows and exclude owner/value/title fields |
+| `assessor` | NOT_EVALUATED sentinel | No live assessor connector; DS-011 records explicit ASSESSOR_NOT_EVALUATED evidence and no owner/value/sale-history data is asserted |
+| `terrain/slope` | fixture-backed / live source path | StaticTerrainFixtureConnector in Buncombe regression cases; DS-001 USGS TNM remains screening-only |
+| `wetlands` | fixture-backed / live source path | StaticWetlandsFixtureConnector in Brunswick regression cases; DS-004 NWI remains screening-only and is not a jurisdictional determination |
+| `soils` | fixture-backed | StaticSoilsFixtureConnector in Brunswick regression cases; not septic suitability |
+| `buildability` | fixture-backed | StaticBuildabilityFixtureConnector records screening constraints only; not a buildability conclusion |
 | Appraisal/value | never | Not provided — outside scope; use licensed appraiser |
 | Legal access | never | Not asserted — road proximity only; confirm with title/surveyor |

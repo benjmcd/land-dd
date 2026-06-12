@@ -33,6 +33,25 @@ Close source-readiness gaps without overclaiming production readiness. This plan
    - Update `state/VALIDATION_LOG.md` with fresh commands, results, and residual risks.
    - Keep older historical log entries as history, but make the top/current state unambiguous.
 
+4. Close 2026-06-12 source-authority drift.
+   - Align DS-010 registry, SQL seed, source review, and operator runbook text with the current Buncombe/Chatham/Brunswick selected-county connector-ready state.
+   - Align DS-023 registry, SQL seed, source review, and operator runbook text with the current Chatham/Brunswick recorded-fixture zoning scope while keeping Buncombe zoning and live PDF ingestion out of scope.
+   - Add focused regression checks that reject stale Must-readiness and selected-county claims in the canonical registry/review/runbook artifacts.
+
+5. Add aggregate connector-scope readiness metadata.
+   - Preserve the current source-level ready/blocked counts and existing `connector_implemented`, `connector_surfaces`, and `connector_ready` semantics.
+   - Add source-readiness output fields that list every implemented connector and every explicit scope note for a source, so DS-010 and DS-023 no longer depend on a single primary connector entry to explain selected-county readiness.
+   - Keep this slice read-only with respect to database schema, public API routes, report semantics, connector execution, and source-review/license decisions.
+
+6. Promote aggregate scope metadata into the private-MVP gate.
+   - Extend `scripts/private_mvp_readiness_check.py` so the selected-county private-MVP validator requires DS-010 and DS-023 aggregate connector names and scope notes in Must source-readiness JSON.
+   - Keep this validate-only: it must not seed data, write artifacts, execute connectors, or weaken DS-017/full-release blockers.
+
+7. Close private-MVP readiness catalog drift.
+   - Align `config/private_mvp_beta_readiness.yaml` with the current selected-county regression and utility-closure proof surfaces.
+   - Require current DS-010/DS-011/DS-023 selected-county scope phrases and reject stale catalog phrases in the private-MVP validator and tests.
+   - Preserve the separation between fixture regression, selected-county connector utility, DB smoke, DS-017, and hosted-production blockers.
+
 ## Mid-term pass
 
 1. Select the next non-Must source-readiness candidate from live registry evidence.
@@ -84,3 +103,21 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 - Focused connector/API/source-readiness/release-readiness checks pass.
 - `git diff --check` passes.
 - Default `.\scripts\verify.ps1` passes, or any failure is recorded with a specific blocker.
+
+## Decision log
+
+- 2026-06-12: Treat `registers/data_source_registry.csv` as the canonical usage-rights metadata authority, with `db/seeds/002_seed_source_registry.sql` as the seed mirror and source-review/runbook prose as derived operator-facing documentation. This pass is limited to source-authority alignment and tests; it does not change schema, API contracts, connector behavior, source-readiness semantics, report semantics, or production-readiness claims.
+- 2026-06-12: Source-readiness remains source-level for pass/fail counts, but connector inventory must now expose aggregate connector names and scope notes for multi-county sources. This is the narrowest next step toward non-fragile county/source alignment without creating a new registry schema or changing connector runtime behavior.
+- 2026-06-12: The private-MVP readiness gate should enforce aggregate DS-010/DS-023 connector scope metadata because that is the operator-facing proof boundary for selected-county truthfulness. Pytest-only coverage is useful but too indirect for handoff/validation workflows.
+- 2026-06-12: The private-MVP readiness catalog is an operator-facing authority surface, not just a passive manifest. It must be guarded against stale DS-010/DS-011/DS-023 scope prose the same way runbook and source-registry prose are guarded, while still avoiding a broad schema change.
+
+## Progress log
+
+- 2026-06-12: Live repo, CI, source-readiness scripts, private-MVP/release-readiness checks, focused tests, and default verification were audited. Remaining actionable drift is stale DS-010/DS-023 registry/review/runbook prose and missing tests for those exact stale claims.
+- 2026-06-12: DS-010/DS-023 registry, SQL seed, source reviews, and operator runbook were aligned to current selected-county source truth. Added stale-phrase guards in source-registry/private-MVP tests and the private-MVP readiness validator. Source-registry check, private-MVP readiness check, Must/all-priority source-readiness JSON, focused tests, focused ruff/mypy, release-readiness check, source-registry test suite, `git diff --check`, and default `.\scripts\verify.ps1` passed; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+- 2026-06-12: Began aggregate connector-scope readiness slice after confirming `source_readiness.py` only used one primary connector entry per source ID while DS-010 and DS-023 have multiple county-specific inventory entries.
+- 2026-06-12: Aggregate connector-scope readiness metadata landed. `source_readiness.py --json` now emits `connector_names` and `connector_scope_notes`; DS-010 exposes Chatham/Buncombe/Brunswick parcel connectors and DS-023 exposes Chatham/Brunswick recorded-zoning connectors without changing source-level ready/blocked counts. Focused tests, ruff/mypy, private-MVP and release-readiness validators, combined source/private-MVP tests, `git diff --check`, and default `.\scripts\verify.ps1` passed; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+- 2026-06-12: Began private-MVP validator hardening so aggregate DS-010/DS-023 connector scope metadata is enforced by `scripts/run_private_mvp_readiness_check.ps1`, not only by tests.
+- 2026-06-12: Private-MVP validator hardening landed. `scripts/private_mvp_readiness_check.py` now requires DS-010 and DS-023 aggregate connector names and scope-note fragments from Must source-readiness JSON; a negative-path test proves the validator rejects a missing selected-county DS-010 connector. Private-MVP tests, private-MVP readiness validator, focused ruff/mypy, release-readiness validator, combined source/private-MVP tests, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+- 2026-06-12: Private-MVP readiness catalog drift was closed. `config/private_mvp_beta_readiness.yaml` now cites both `test_mvp_regression.py` and `test_utility_closure.py`, describes DS-010 as selected-county parcel connector-ready, DS-011 as an assessor NOT_EVALUATED sentinel, and DS-023 as Chatham/Brunswick recorded-fixture UDO lookup only. The private-MVP validator and tests now require these current phrases, reject stale catalog phrases, and treat selected-county connector-name order as non-authoritative while still failing on missing, unexpected, or duplicate names. Focused private-MVP tests, private-MVP readiness validator, focused ruff/mypy, combined source/private-MVP tests, release-readiness validator, Must source-readiness JSON, and stale-phrase re-audit passed; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+- 2026-06-12: Pre-push validation repeated after the order-insensitive connector-name guard. Focused private-MVP tests, combined source/private-MVP tests, private-MVP and release-readiness validators, focused ruff/mypy, Must source-readiness JSON, stale-phrase re-audit, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB-enabled smoke was not run because Docker Desktop's Linux engine was unavailable; do not treat this as DB proof.

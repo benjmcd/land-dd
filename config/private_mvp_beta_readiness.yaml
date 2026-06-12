@@ -50,14 +50,16 @@ private_mvp_beta:
     status: complete
     evidence: >
       backend/tests/private_mvp/test_mvp_regression.py
-      (RUN_DB_SMOKE=1-gated; uses InMemory repos — StaticFloodFixtureConnector,
-      StaticAccessFixtureConnector; 3 county AOI regression tests: Buncombe flood/access,
-      Chatham parcels/zoning, Brunswick coastal/wetlands; all assert NOT_EVALUATED unknowns
-      and no forbidden phrases)
+      (RUN_DB_SMOKE=1-gated; uses InMemory repos; 3 county AOI smoke cases:
+      Buncombe flood/access/buildability/terrain, Chatham flood/access, and
+      Brunswick flood), plus backend/tests/private_mvp/test_utility_closure.py
+      (RUN_DB_SMOKE=1-gated; Chatham parcel fixture utility and Brunswick
+      wetlands/soils fixture utility). Tests assert explicit NOT_EVALUATED
+      unknowns where applicable and no forbidden phrases.
     note: >
-      Fixture-backed regression (in-memory repos) exercises the connector ingest workflow
-      for each county case and asserts report shape. NOT a DB-backed regression — uses
-      InMemory repositories. See db_backed_regression_path for residual risk.
+      Fixture-backed regression and utility-closure tests exercise connector ingest
+      workflows and report shape in in-memory repositories. NOT a DB-backed
+      regression. See db_backed_regression_path for DB-backed approval-gate proof.
 
   db_backed_regression_path:
     status: complete
@@ -76,15 +78,25 @@ private_mvp_beta:
   ds010_011_023_selected_county_behavior:
     status: complete
     evidence: >
-      backend/app/claims_engine/not_evaluated.py (parcels and assessor in NOT_EVALUATED_DOMAINS),
-      backend/app/claims_engine/rule_engine.py (NOT_EVALUATED_CONDITIONS_BY_DOMAIN),
-      tests/fixtures/golden_aois/manifest.yaml
+      scripts/source_readiness.py --priority Must --json (DS-010 aggregate
+      connector_names: chatham_parcels_live, buncombe_parcels_live,
+      brunswick_parcels_live; DS-023 aggregate connector_names:
+      chatham_zoning_udo_recorded, brunswick_zoning_udo_recorded),
+      backend/app/source_registry/connector_inventory.py,
+      backend/app/connectors/assessor_not_evaluated.py,
+      tests/fixtures/golden_aois/manifest.yaml,
+      backend/tests/private_mvp/test_utility_closure.py
     note: >
-      DS-010 (county GIS parcels) and DS-011 (county assessor): added to
-      NOT_EVALUATED_DOMAINS — parcels and assessor evidence is recorded as
-      NOT_EVALUATED with explicit unknown in the report.
-      DS-023 (local zoning PDFs): covered by fixture-backed zoning connector
-      (StaticZoningFixtureConnector) for private MVP regression.
+      DS-010 selected-county parcel connectors are ready for
+      Buncombe/Chatham/Brunswick immediate operator API and request-time
+      orchestration, with no owner/value/title fields and no durable live-job
+      support claim. Fixture cases without parcel evidence still record parcels
+      as NOT_EVALUATED.
+      DS-011 uses the AssessorNotEvaluatedConnector sentinel only; no live
+      assessor portal, owner, value, or sale-history data is asserted.
+      DS-023 is ready only for Chatham/Brunswick recorded-fixture UDO district
+      lookup; Buncombe zoning, live PDF ingestion, full-text redistribution, and
+      legal zoning interpretation remain out of scope.
 
   ds010_source_review_gate:
     status: complete
@@ -187,8 +199,9 @@ private_mvp_beta:
     note: >
       Operator runbook updated with private MVP path: DB startup, fixture-backed
       AOI intake, report creation, review/approval, Markdown dossier retrieval,
-      and known limitations (terrain/wetlands as live-connector-only,
-      parcels/assessor as NOT_EVALUATED for fixture regression).
+      selected-county DS-010/DS-023 scope, DS-011 assessor sentinel status, and
+      known limitations that separate fixture regression, selected-county live
+      connector paths, DS-017, DB smoke, and hosted-production blockers.
 
 hosted_production:
   # These gates are NOT required for private MVP beta.

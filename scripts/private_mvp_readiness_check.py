@@ -43,6 +43,67 @@ REQUIRED_FILES = (
     "scripts/source_readiness.py",
     "scripts/run_mvp_regression.ps1",
 )
+RUNBOOK_REQUIRED_CURRENT_PHRASES = (
+    "Private MVP Utility Proof",
+    "fixture-backed, no paid vendors",
+    "Buncombe, Chatham, Brunswick",
+    "NOT_EVALUATED domains",
+    "No API keys, paid vendors, or live DB are required",
+    ".\\scripts\\run_mvp_regression.ps1",
+    "County/vendor coverage is intentionally scoped",
+    "DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick",
+    "DS-011 assessor remains explicit NOT_EVALUATED evidence",
+    "DS-023 covers Chatham/Brunswick recorded-fixture zoning only",
+)
+RUNBOOK_STALE_PHRASES = (
+    "County/vendor sources not ready",
+    "Parcel, assessor, commercial parcel, and local zoning sources still require",
+    "No machine-queryable county parcel connector",
+    "No machine-queryable assessor connector; recorded as unknown",
+    "| `terrain/slope` | live-connector only |",
+    "| `wetlands` | live-connector only |",
+)
+CATALOG_REQUIRED_CURRENT_PHRASES = (
+    "backend/tests/private_mvp/test_utility_closure.py",
+    "DS-010 selected-county parcel connectors are ready",
+    "AssessorNotEvaluatedConnector sentinel",
+    "DS-023 is ready only for Chatham/Brunswick recorded-fixture UDO district",
+    "selected-county DS-010/DS-023 scope",
+)
+CATALOG_STALE_PHRASES = (
+    "Chatham parcels/zoning, Brunswick coastal/wetlands",
+    "DS-010 (county GIS parcels) and DS-011 (county assessor): added to",
+    "DS-023 (local zoning PDFs): covered by fixture-backed zoning connector",
+    "terrain/wetlands as live-connector-only",
+    "parcels/assessor as NOT_EVALUATED for fixture regression",
+)
+EXPECTED_SELECTED_COUNTY_SOURCE_SCOPES: dict[str, dict[str, tuple[str, ...]]] = {
+    "DS-010": {
+        "connector_names": (
+            "chatham_parcels_live",
+            "buncombe_parcels_live",
+            "brunswick_parcels_live",
+        ),
+        "scope_note_fragments": (
+            "Chatham County NC parcel screening only",
+            "Buncombe County NC parcel screening only",
+            "Brunswick County NC parcel screening only",
+            "no owner/value/title fields",
+            "durable live-job support not claimed",
+        ),
+    },
+    "DS-023": {
+        "connector_names": (
+            "chatham_zoning_udo_recorded",
+            "brunswick_zoning_udo_recorded",
+        ),
+        "scope_note_fragments": (
+            "Chatham County NC recorded-fixture UDO district lookup only",
+            "Brunswick County NC recorded-fixture UDO district lookup only",
+            "not live PDF ingestion or legal zoning advice",
+        ),
+    },
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -121,6 +182,16 @@ def validate_catalog_metadata(catalog: dict[str, Any]) -> None:
         catalog.get("validation") == "scripts/run_private_mvp_readiness_check.ps1",
         "private MVP validation command mismatch",
     )
+    catalog_text = (ROOT / "config" / "private_mvp_beta_readiness.yaml").read_text(
+        encoding="utf-8",
+    )
+    for phrase in CATALOG_REQUIRED_CURRENT_PHRASES:
+        require(phrase in catalog_text, f"private MVP catalog missing phrase: {phrase}")
+    for phrase in CATALOG_STALE_PHRASES:
+        require(
+            phrase not in catalog_text,
+            f"private MVP catalog has stale phrase: {phrase}",
+        )
 
 
 def validate_private_mvp_gates(catalog: dict[str, Any]) -> None:
@@ -229,21 +300,67 @@ def validate_full_release_stays_blocked() -> None:
         if isinstance(source, dict) and source.get("connector_ready") is False
     }
     require(blocked == {"DS-017"}, "full release Must blocker set must remain DS-017")
+    validate_selected_county_source_scopes(sources)
+
+
+def validate_selected_county_source_scopes(sources: list[Any]) -> None:
+    sources_by_id = {
+        str(source.get("source_registry_id")): source
+        for source in sources
+        if isinstance(source, dict)
+    }
+    for source_id, expected in EXPECTED_SELECTED_COUNTY_SOURCE_SCOPES.items():
+        source = require_mapping(
+            sources_by_id.get(source_id),
+            f"{source_id} missing from Must source readiness output",
+        )
+        connector_names = require_list(
+            source.get("connector_names"),
+            f"{source_id} connector_names missing from source readiness output",
+        )
+        actual_names = [str(name) for name in connector_names]
+        expected_names = set(expected["connector_names"])
+        missing_names = sorted(expected_names - set(actual_names))
+        unexpected_names = sorted(set(actual_names) - expected_names)
+        duplicate_names = sorted(
+            name
+            for name in set(actual_names)
+            if actual_names.count(name) > 1
+        )
+        require(
+            not duplicate_names,
+            f"{source_id} connector_names must not contain duplicates: {duplicate_names}",
+        )
+        require(
+            not missing_names and not unexpected_names,
+            (
+                f"{source_id} connector_names mismatch; "
+                f"missing={missing_names}, unexpected={unexpected_names}"
+            ),
+        )
+        scope_notes = require_list(
+            source.get("connector_scope_notes"),
+            f"{source_id} connector_scope_notes missing from source readiness output",
+        )
+        scope_note_text = "\n".join(str(note) for note in scope_notes)
+        for fragment in expected["scope_note_fragments"]:
+            require(
+                str(fragment) in scope_note_text,
+                f"{source_id} connector_scope_notes missing fragment: {fragment}",
+            )
 
 
 def validate_operator_runbook() -> None:
     runbook = (ROOT / "docs" / "runbooks" / "mvp_operator.md").read_text(
         encoding="utf-8",
     )
-    for phrase in (
-        "Private MVP Utility Proof",
-        "fixture-backed, no paid vendors",
-        "Buncombe, Chatham, Brunswick",
-        "NOT_EVALUATED domains",
-        "No API keys, paid vendors, or live DB are required",
-        ".\\scripts\\run_mvp_regression.ps1",
-    ):
+    for phrase in RUNBOOK_REQUIRED_CURRENT_PHRASES:
         require(phrase in runbook, f"MVP operator runbook missing phrase: {phrase}")
+    for phrase in RUNBOOK_STALE_PHRASES:
+        require(
+            phrase not in runbook,
+            f"MVP operator runbook has stale phrase: {phrase}",
+        )
 
 
 def main() -> int:

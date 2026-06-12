@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Private-MVP readiness catalog drift closure)
+
+- Updated `config/private_mvp_beta_readiness.yaml` so the fixture-regression path cites both `backend/tests/private_mvp/test_mvp_regression.py` and `backend/tests/private_mvp/test_utility_closure.py`.
+- Replaced stale DS-010/DS-011/DS-023 catalog prose with current selected-county scope: DS-010 parcel connectors are ready for Buncombe/Chatham/Brunswick immediate operator API and request-time orchestration, DS-011 is the assessor NOT_EVALUATED sentinel only, and DS-023 is Chatham/Brunswick recorded-fixture UDO lookup only.
+- Added private-MVP validator and test guards that require current catalog phrases, reject stale catalog phrases, and treat selected-county connector-name order as non-authoritative while still failing on missing, unexpected, or duplicate names.
+- Verification: private-MVP tests (18), private-MVP readiness validator, focused ruff/mypy, combined source/private-MVP tests (41), release-readiness validator, Must source-readiness JSON, and stale-phrase re-audits passed. DB smoke remains separate and skipped in default verify unless `RUN_DB_SMOKE=1` and PostgreSQL/PostGIS prerequisites are available.
+
+## 2026-06-12 (Private-MVP scope-gate hardening)
+
+- Extended `scripts/private_mvp_readiness_check.py` so the selected-county private-MVP validator requires DS-010 and DS-023 aggregate connector names and bounded scope-note fragments from Must source-readiness JSON.
+- Added a negative-path private-MVP test proving the validator rejects a missing selected-county DS-010 connector instead of merely passing on current happy-path output.
+- Verification: private-MVP tests, private-MVP readiness validator, focused ruff/mypy, release-readiness validator, combined source/private-MVP tests, Must source-readiness JSON, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB smoke remains separate and skipped in default verify unless `RUN_DB_SMOKE=1` and PostgreSQL/PostGIS prerequisites are available.
+
+## 2026-06-12 (Aggregate connector-scope readiness metadata)
+
+- Extended `SourceConnectorInventoryEntry` with bounded `scope_note` text and added an aggregate inventory lookup that returns every connector entry for a source ID.
+- Updated `scripts/source_readiness.py` to emit `connector_names` and `connector_scope_notes` while preserving existing source-level ready/blocked counts and connector-ready semantics.
+- Added tests proving DS-010 exposes Chatham/Buncombe/Brunswick parcel connectors and DS-023 exposes Chatham/Brunswick recorded-zoning connectors in source-readiness records and JSON.
+- Verification: focused source-readiness/source-registry tests, focused ruff/mypy, Must/all-priority source-readiness JSON, private-MVP and release-readiness validators, combined source/private-MVP tests, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB smoke remains separate and skipped in default verify unless `RUN_DB_SMOKE=1` and PostgreSQL/PostGIS prerequisites are available.
+
+## 2026-06-12 (Source-authority drift closure)
+
+- Aligned DS-010 source registry and SQL seed caveats with the current Buncombe/Chatham/Brunswick selected-county parcel connector state; durable live-job support and other counties remain out of scope.
+- Aligned DS-023 source registry and SQL seed caveats with the current Chatham/Brunswick recorded-fixture zoning scope; Buncombe zoning and live PDF ingestion remain out of scope.
+- Updated DS-010/DS-023 source-review prose and the private-MVP operator runbook so operator-facing limitations no longer describe parcels/zoning as generally unready.
+- Added source-registry and private-MVP runbook drift guards, and strengthened the private-MVP readiness validator to reject stale source-status phrases.
+- Verification: source-registry check, private-MVP readiness validator, Must/all-priority source-readiness JSON, focused source-registry/private-MVP tests, focused ruff/mypy, release-readiness proof, source-registry readiness/seed tests, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB smoke remains separate and skipped in default verify unless `RUN_DB_SMOKE=1` and PostgreSQL/PostGIS prerequisites are available.
+
 ## 2026-06-11 (Release-package builder extraction)
 
 - Extracted duplicated release-package ZIP/manifest builder logic from `scripts/build_release_package.ps1` and `.sh` into `scripts/build_release_package.py`.
@@ -2083,7 +2111,7 @@ Append concise entries. Do not rely on chat history.
 - `docs/runbooks/release_readiness.md` — ready=5→6, blocked=3→2
 - `docs/source-reviews/ds-023.md` — review_status advanced, all policy decisions resolved
 
-**Result:** 1019 passed, 78 skipped; ruff clean; mypy clean (247 source files); `.\scripts\verify.ps1` → `verify: ok`. Must-source readiness: `sources=8 ready=6 blocked=2`.
+**Result:** 1019 passed, 78 skipped; ruff clean; mypy clean (247 source files); `.\scripts\verify.ps1` → `verify: ok`. Historical Must-source readiness at that point: `sources=8 ready=6 blocked=2`; superseded by the current top-of-file state of `sources=8 ready=7 blocked=1` with DS-017 as the only Must blocker.
 
 ---
 

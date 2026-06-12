@@ -2,6 +2,204 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Private-MVP Readiness Catalog Drift Closure
+
+**Scope:** Align `config/private_mvp_beta_readiness.yaml` with current
+selected-county source utility proof and add validate-only text guards against
+stale DS-010/DS-011/DS-023 private-MVP scope claims. This does not change
+connector runtime behavior, database schema, public APIs, report semantics, or
+DS-017/full-release blockers.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_private_mvp_readiness.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+rg -n --glob '!scripts/private_mvp_readiness_check.py' --glob '!backend/tests/test_private_mvp_readiness.py' <CATALOG_STALE_PHRASES pattern> .
+git diff --check
+.\scripts\verify.ps1
+docker version
+```
+
+**Results:**
+
+- Private-MVP readiness tests passed: 18 tests.
+- Private-MVP readiness validator passed and now rejects stale catalog phrasing
+  while requiring current utility-closure/source-scope phrases. Selected-county
+  connector-name checks are order-insensitive but still fail on missing,
+  unexpected, or duplicate names.
+- Focused ruff passed over the changed source-readiness/private-MVP source and
+  test files.
+- Focused mypy passed over 6 source/test files.
+- Combined source/private-MVP suite passed: 41 tests.
+- Release-readiness validator passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- Stale-phrase re-audit found no public-facing occurrences outside the
+  intentional validator/test deny-lists.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for touched
+  CSV/SQL/state/catalog files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+- DB-enabled smoke was not run in this pre-push pass because Docker Desktop's
+  Linux engine was unavailable (`docker version` could not connect to
+  `dockerDesktopLinuxEngine`). This remains a separate `RUN_DB_SMOKE=1` proof
+  requirement when Docker/PostGIS prerequisites are available.
+
+**Residual risks:** This closes catalog truthfulness drift only. It does not add a
+first-class per-county source-registry schema, run DB smoke, add new county
+coverage, execute live connectors, close DS-017, or resolve hosted-production
+blockers.
+
+## 2026-06-12 Private-MVP Scope-Gate Hardening
+
+**Scope:** Extend the private-MVP validate-only gate so it requires DS-010 and
+DS-023 aggregate connector names and bounded scope notes in Must source-readiness
+JSON. This moves selected-county scope protection from pytest-only coverage into
+the operator handoff validator without changing connector runtime behavior,
+database schema, public APIs, report semantics, or DS-017/full-release blockers.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_private_mvp_readiness.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+.\scripts\run_release_readiness_check.ps1
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Private-MVP readiness tests passed: 16 tests, including a negative-path test
+  that rejects a missing selected-county DS-010 connector.
+- Private-MVP readiness validator passed and now fails closed when DS-010/DS-023
+  aggregate `connector_names` or required `connector_scope_notes` fragments are
+  missing.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Release-readiness validator passed.
+- Combined source/private-MVP suite passed: 39 tests.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for touched
+  CSV/SQL/state files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This validator hardening still uses source-level readiness
+records plus aggregate connector metadata; it is not a full first-class
+per-county source-registry schema. It does not add new county coverage, run
+connectors, seed data, prove DB smoke, or close hosted-production blockers.
+
+## 2026-06-12 Aggregate Connector-Scope Readiness Metadata
+
+**Scope:** Add backward-compatible source-readiness JSON fields that expose all
+implemented connector names and scope notes per source ID, especially DS-010 and
+DS-023 multi-county readiness. Source-level ready/blocked counts, connector
+runtime behavior, public API routes, database schema, report semantics, and
+license decisions were not changed.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_registry_check.py
+cd backend; ruff check app\source_registry\connector_inventory.py ..\scripts\source_readiness.py tests\source_registry\test_source_readiness.py tests\source_registry\test_source_registry_check.py
+cd backend; py -3.12 -m mypy app\source_registry\connector_inventory.py ..\scripts\source_readiness.py tests\source_registry\test_source_readiness.py tests\source_registry\test_source_registry_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\source_readiness.py --json
+.\scripts\run_private_mvp_readiness_check.ps1
+.\scripts\run_release_readiness_check.ps1
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused source-readiness/source-registry tests passed: 13 tests.
+- Focused ruff passed.
+- Focused mypy passed over 4 source files.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- Must JSON now exposes all DS-010 connector names
+  (`chatham_parcels_live`, `buncombe_parcels_live`,
+  `brunswick_parcels_live`) and all DS-023 connector names
+  (`chatham_zoning_udo_recorded`, `brunswick_zoning_udo_recorded`) with bounded
+  scope notes.
+- All-priority source readiness remains `sources=25 ready=16 blocked=9`.
+- Private-MVP and release-readiness validators passed.
+- Combined source/private-MVP test suite passed: 38 tests.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for touched
+  CSV/SQL/state files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This is an aggregate metadata hardening step, not a full
+county-readiness schema. It does not enforce per-county readiness in the source
+registry CSV, add Buncombe zoning, add live PDF ingestion, change connector
+dispatch, prove hosted production, or run a fresh DB smoke check.
+
+## 2026-06-12 Source-Authority Drift Closure
+
+**Scope:** Align DS-010/DS-023 registry, seed, source-review, and operator-runbook
+source-status language with current selected-county readiness without changing
+schema, API, connector behavior, report semantics, or readiness-count semantics.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\check_source_registry.py
+.\scripts\run_private_mvp_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+py -3.12 .\scripts\source_readiness.py --json
+.\scripts\run_release_readiness_check.ps1
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py tests\source_registry\test_source_registry_check.py
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Source registry check passed: `source registry check: ok (25 rows)`.
+- Private-MVP readiness validator passed and now rejects stale operator-runbook
+  source-status phrases.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- All-priority source readiness remains `sources=25 ready=16 blocked=9`.
+- Focused source-registry/private-MVP tests passed: 21 tests.
+- Focused ruff passed.
+- Focused mypy passed over 3 source files.
+- Release-readiness proof passed.
+- Source-registry readiness/seed/check tests passed: 22 tests.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for the
+  touched CSV/SQL files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This is a source-authority alignment and drift-test slice
+only. It does not add county coverage, live PDF ingestion, live assessor data,
+DS-017 vendor approval, hosted deployment proof, or a fresh local DB smoke run.
+An earlier local Docker/PostGIS attempt on this machine was blocked by Docker
+Desktop Linux engine availability; DB-backed proof remains the separate
+`RUN_DB_SMOKE=1` gate when prerequisites are available.
+
 ## 2026-06-11 Release-Package Builder Extraction
 
 **Scope:** Remove duplicated release-package ZIP/manifest builder logic from

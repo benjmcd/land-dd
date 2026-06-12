@@ -151,6 +151,48 @@ def test_ds011_assessor_not_evaluated_connector_is_implemented() -> None:
     assert record.blocked_fields == ()
 
 
+def test_readiness_records_expose_aggregate_selected_county_connector_scopes() -> None:
+    readiness = _load_readiness_module()
+    seed_module = _load_seed_module()
+
+    records = readiness.build_readiness_records(seed_module.load_registry_sources())
+    county_gis = next(record for record in records if record.source_registry_id == "DS-010")
+    zoning = next(record for record in records if record.source_registry_id == "DS-023")
+
+    assert county_gis.connector_names == (
+        "chatham_parcels_live",
+        "buncombe_parcels_live",
+        "brunswick_parcels_live",
+    )
+    assert county_gis.connector_scope_notes == (
+        "Chatham County NC parcel screening only; no owner/value/title fields; "
+        "durable live-job support not claimed.",
+        "Buncombe County NC parcel screening only; no owner/value/title fields; "
+        "durable live-job support not claimed.",
+        "Brunswick County NC parcel screening only; no owner/value/title fields; "
+        "durable live-job support not claimed.",
+    )
+    assert county_gis.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+
+    assert zoning.connector_names == (
+        "chatham_zoning_udo_recorded",
+        "brunswick_zoning_udo_recorded",
+    )
+    assert zoning.connector_scope_notes == (
+        "Chatham County NC recorded-fixture UDO district lookup only; not live "
+        "PDF ingestion or legal zoning advice.",
+        "Brunswick County NC recorded-fixture UDO district lookup only; not live "
+        "PDF ingestion or legal zoning advice.",
+    )
+    assert zoning.connector_surfaces == (
+        "immediate_operator_api",
+        "request_time_orchestration",
+    )
+
+
 def test_source_readiness_json_reports_blocked_sources() -> None:
     result = subprocess.run(
         [
@@ -192,6 +234,17 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
     assert ds011["connector_implemented"] is True
     assert "immediate_operator_api" in ds011["connector_surfaces"]
     assert ds011["connector_ready"] is True
+    ds010 = next(
+        source
+        for source in payload["sources"]
+        if source["source_registry_id"] == "DS-010"
+    )
+    assert ds010["connector_names"] == [
+        "chatham_parcels_live",
+        "buncombe_parcels_live",
+        "brunswick_parcels_live",
+    ]
+    assert len(ds010["connector_scope_notes"]) == 3
     ds023 = next(
         source
         for source in payload["sources"]
@@ -199,6 +252,11 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
     )
     assert ds023["connector_implemented"] is True
     assert "immediate_operator_api" in ds023["connector_surfaces"]
+    assert ds023["connector_names"] == [
+        "chatham_zoning_udo_recorded",
+        "brunswick_zoning_udo_recorded",
+    ]
+    assert len(ds023["connector_scope_notes"]) == 2
     assert ds023["connector_ready"] is True
 
 

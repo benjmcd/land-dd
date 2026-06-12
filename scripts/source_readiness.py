@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from db.seeds.source_registry_seeds import (  # type: ignore[import-not-found]  
 
 from app.domain.source_contracts import SourceContract  # noqa: E402
 from app.source_registry.connector_inventory import (  # noqa: E402
-    source_connector_inventory_entry,
+    source_connector_inventory_entries,
 )
 from app.source_registry.usage_rights import (  # noqa: E402
     source_production_use_blocking_fields,
@@ -38,6 +39,8 @@ class SourceReadinessRecord:
     production_use_allowed: bool
     connector_implemented: bool
     connector_surfaces: tuple[str, ...]
+    connector_names: tuple[str, ...]
+    connector_scope_notes: tuple[str, ...]
     connector_ready: bool
     blocked_fields: tuple[str, ...]
 
@@ -114,11 +117,22 @@ def main() -> int:
 def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
     source_registry_id = str(source.metadata["source_registry_id"])
     usage_blocked_fields = source_production_use_blocking_fields(source)
-    connector_inventory = source_connector_inventory_entry(source_registry_id)
-    connector_surfaces = (
-        () if connector_inventory is None else connector_inventory.surfaces
+    connector_inventory_entries = source_connector_inventory_entries(source_registry_id)
+    connector_surfaces = _dedupe_ordered(
+        surface
+        for connector_inventory in connector_inventory_entries
+        for surface in connector_inventory.surfaces
     )
-    connector_implemented = connector_inventory is not None
+    connector_names = tuple(
+        connector_inventory.connector_name
+        for connector_inventory in connector_inventory_entries
+    )
+    connector_scope_notes = tuple(
+        connector_inventory.scope_note
+        for connector_inventory in connector_inventory_entries
+        if connector_inventory.scope_note
+    )
+    connector_implemented = bool(connector_inventory_entries)
     blocked_fields = (
         usage_blocked_fields
         if connector_implemented
@@ -136,9 +150,22 @@ def _source_to_readiness(source: SourceContract) -> SourceReadinessRecord:
         production_use_allowed=usage_blocked_fields == (),
         connector_implemented=connector_implemented,
         connector_surfaces=connector_surfaces,
+        connector_names=connector_names,
+        connector_scope_notes=connector_scope_notes,
         connector_ready=blocked_fields == (),
         blocked_fields=blocked_fields,
     )
+
+
+def _dedupe_ordered(values: Iterable[str]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        ordered.append(value)
+    return tuple(ordered)
 
 
 if __name__ == "__main__":

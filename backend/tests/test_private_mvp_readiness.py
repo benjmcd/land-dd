@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
@@ -10,6 +12,18 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 READINESS_YAML = ROOT / "config" / "private_mvp_beta_readiness.yaml"
+RUNBOOK_PATH = ROOT / "docs" / "runbooks" / "mvp_operator.md"
+
+
+def _load_validator_module() -> ModuleType:
+    module_path = ROOT / "scripts" / "private_mvp_readiness_check.py"
+    spec = importlib.util.spec_from_file_location("private_mvp_readiness", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 EXPECTED_PRIVATE_MVP_GATES = {
     "geography_selected",
@@ -166,6 +180,78 @@ def test_private_mvp_readiness_validator_passes() -> None:
     assert result.stdout == ""
 
 
+def test_private_mvp_validator_rejects_missing_selected_county_connector() -> None:
+    validator = _load_validator_module()
+    validate_scopes = validator.validate_selected_county_source_scopes
+    sources = [
+        {
+            "source_registry_id": "DS-010",
+            "connector_names": ["chatham_parcels_live", "buncombe_parcels_live"],
+            "connector_scope_notes": [
+                "Chatham County NC parcel screening only",
+                "Buncombe County NC parcel screening only",
+                "Brunswick County NC parcel screening only",
+                "no owner/value/title fields",
+                "durable live-job support not claimed",
+            ],
+        },
+        {
+            "source_registry_id": "DS-023",
+            "connector_names": [
+                "chatham_zoning_udo_recorded",
+                "brunswick_zoning_udo_recorded",
+            ],
+            "connector_scope_notes": [
+                "Chatham County NC recorded-fixture UDO district lookup only",
+                "Brunswick County NC recorded-fixture UDO district lookup only",
+                "not live PDF ingestion or legal zoning advice",
+            ],
+        },
+    ]
+
+    with pytest.raises(SystemExit) as exc_info:
+        validate_scopes(sources)
+
+    assert "DS-010 connector_names mismatch" in str(exc_info.value)
+    assert "brunswick_parcels_live" in str(exc_info.value)
+
+
+def test_private_mvp_validator_accepts_selected_county_connector_names_in_any_order() -> None:
+    validator = _load_validator_module()
+    validate_scopes = validator.validate_selected_county_source_scopes
+    sources = [
+        {
+            "source_registry_id": "DS-010",
+            "connector_names": [
+                "brunswick_parcels_live",
+                "chatham_parcels_live",
+                "buncombe_parcels_live",
+            ],
+            "connector_scope_notes": [
+                "Chatham County NC parcel screening only",
+                "Buncombe County NC parcel screening only",
+                "Brunswick County NC parcel screening only",
+                "no owner/value/title fields",
+                "durable live-job support not claimed",
+            ],
+        },
+        {
+            "source_registry_id": "DS-023",
+            "connector_names": [
+                "brunswick_zoning_udo_recorded",
+                "chatham_zoning_udo_recorded",
+            ],
+            "connector_scope_notes": [
+                "Chatham County NC recorded-fixture UDO district lookup only",
+                "Brunswick County NC recorded-fixture UDO district lookup only",
+                "not live PDF ingestion or legal zoning advice",
+            ],
+        },
+    ]
+
+    validate_scopes(sources)
+
+
 def test_private_mvp_readiness_wrappers_delegate_to_shared_validator() -> None:
     for script_name in (
         "run_private_mvp_readiness_check.ps1",
@@ -175,3 +261,47 @@ def test_private_mvp_readiness_wrappers_delegate_to_shared_validator() -> None:
 
         assert "private_mvp_readiness_check.py" in script
         assert "private MVP readiness check: ok" in script
+
+
+def test_operator_runbook_tracks_current_selected_county_source_scope() -> None:
+    runbook = RUNBOOK_PATH.read_text(encoding="utf-8")
+
+    for phrase in (
+        "County/vendor coverage is intentionally scoped",
+        "DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick",
+        "DS-011 assessor remains explicit NOT_EVALUATED evidence",
+        "DS-023 covers Chatham/Brunswick recorded-fixture zoning only",
+    ):
+        assert phrase in runbook
+
+    for stale_phrase in (
+        "County/vendor sources not ready",
+        "Parcel, assessor, commercial parcel, and local zoning sources still require",
+        "No machine-queryable county parcel connector",
+        "No machine-queryable assessor connector; recorded as unknown",
+        "| `terrain/slope` | live-connector only |",
+        "| `wetlands` | live-connector only |",
+    ):
+        assert stale_phrase not in runbook
+
+
+def test_private_mvp_catalog_tracks_current_selected_county_source_scope() -> None:
+    catalog = READINESS_YAML.read_text(encoding="utf-8")
+
+    for phrase in (
+        "backend/tests/private_mvp/test_utility_closure.py",
+        "DS-010 selected-county parcel connectors are ready",
+        "AssessorNotEvaluatedConnector sentinel",
+        "DS-023 is ready only for Chatham/Brunswick recorded-fixture UDO district",
+        "selected-county DS-010/DS-023 scope",
+    ):
+        assert phrase in catalog
+
+    for stale_phrase in (
+        "Chatham parcels/zoning, Brunswick coastal/wetlands",
+        "DS-010 (county GIS parcels) and DS-011 (county assessor): added to",
+        "DS-023 (local zoning PDFs): covered by fixture-backed zoning connector",
+        "terrain/wetlands as live-connector-only",
+        "parcels/assessor as NOT_EVALUATED for fixture regression",
+    ):
+        assert stale_phrase not in catalog
