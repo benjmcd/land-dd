@@ -155,9 +155,11 @@ private_mvp_beta:
     status: complete
     evidence: >
       backend/tests/private_mvp/test_mvp_regression.py
-      (RUN_DB_SMOKE=1-gated; uses InMemory repos; 3 county AOI smoke cases:
-      Buncombe flood/access/buildability/terrain, Chatham flood/access, and
-      Brunswick flood), plus backend/tests/private_mvp/test_utility_closure.py
+      (RUN_DB_SMOKE=1-gated; uses InMemory repos; 9 AOI cases covering all
+      golden AOIs: Buncombe bun_slope/bun_access/bun_flood, Chatham
+      cha_rural_use/cha_zoning_edge/cha_parcel_tax, Brunswick
+      bru_coastal_flood/bru_jurisdiction/bru_wetlands_soils), plus
+      backend/tests/private_mvp/test_utility_closure.py
       (RUN_DB_SMOKE=1-gated; Chatham parcel fixture utility and Brunswick
       wetlands/soils fixture utility). Tests assert explicit NOT_EVALUATED
       unknowns where applicable and no forbidden phrases.
