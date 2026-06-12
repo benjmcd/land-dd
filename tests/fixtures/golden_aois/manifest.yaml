@@ -27,7 +27,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Buncombe County
+      - Fixture-only flood screening for Buncombe County
       - does not confirm legal access
       - Assessor and tax data were not available
     forbidden_claims:
@@ -54,7 +54,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Buncombe County
+      - Fixture-only flood screening for Buncombe County
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -105,7 +105,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Chatham County
+      - Fixture-only flood screening for Chatham County
       - does not confirm legal access
       - Parcel boundaries are approximate
       - Assessor and tax data were not available
@@ -159,7 +159,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Chatham County
+      - Fixture-only flood screening for Chatham County
       - does not confirm legal access
       - Parcel boundaries are approximate
       - Assessor and tax data were not available
@@ -187,7 +187,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Brunswick County
+      - Fixture-only flood screening for Brunswick County
       - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
@@ -216,7 +216,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - Mapped flood data for Brunswick County
+      - Fixture-only flood screening for Brunswick County
       - does not confirm legal access
       - Parcel boundaries are approximate
       - Assessor and tax data were not available

@@ -66,6 +66,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Apparent road adjacency: {_access_road_result(report_run)}",
         "- Public/private/unknown road context: unknown",
         "- Legal access conclusion: not determined",
+        f"- Caveats: {_domain_caveats(report_run, {'access'})}",
         f"- Required verification: {_domain_verification(report_run, 'access')}",
         "",
         "Required language:",

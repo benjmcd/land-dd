@@ -1166,6 +1166,41 @@ def test_dossier_shows_not_evaluated_for_climate_with_no_evidence() -> None:
     )
 
 
+def test_dossier_renders_access_caveat_in_section5() -> None:
+    """Access evidence caveat text must appear in Section 5 Access Screen."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "access")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ACCESS_ROAD_ADJACENCY_SCREEN",
+            domain="access",
+            method_code="fixture_access_road_adjacency_overlay",
+            observation="Public road adjacency found.",
+            observed_value={"has_public_road_adjacency": True, "road_distance_m": 0.0},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="Road presence does not confirm legal access, right-of-way, or easements.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec5_start = dossier.find("## 5. Access Screen")
+    sec6_start = dossier.find("## 6.")
+    assert sec5_start != -1, "Section 5 not found in dossier"
+    section_5 = dossier[sec5_start:sec6_start]
+    assert "Road presence does not confirm legal access" in section_5, (
+        "Expected access caveat text in Section 5 Access Screen; got:\n" + section_5
+    )
+
+
 def test_dossier_renders_noaa_nws_source_failure() -> None:
     """NOAA NWS source failure must show 'source failure' in Section 13 climate line."""
     from app.connectors.noaa_climate import NOAA_CLIMATE_CAVEAT
