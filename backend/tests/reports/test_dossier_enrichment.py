@@ -1237,3 +1237,233 @@ def test_dossier_renders_noaa_nws_source_failure() -> None:
         "Expected 'source failure' text in Section 13 when NOAA NWS data unavailable; got:\n"
         + section_13
     )
+
+
+def test_dossier_renders_census_geography_tract_in_area_identity() -> None:
+    """Census tract GEOID must appear in Section 2 Area Identity."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "census_geography")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="CENSUS_TIGER_GEOGRAPHY_CONTEXT",
+            domain="census_geography",
+            method_code="live_census_tiger_geography_query",
+            observation="Census TIGERweb query found 1 tract(s).",
+            observed_value={
+                "primary_census_tract_geoid": "37021060200",
+                "primary_census_block_group_geoid": "370210602001",
+                "census_tract_count": 1,
+                "census_demographics_used": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec2_start = dossier.find("## 2. Area Identity")
+    sec3_start = dossier.find("## 3.")
+    section_2 = dossier[sec2_start:sec3_start]
+    assert "37021060200" in section_2, (
+        "Expected census tract GEOID in Section 2; got:\n" + section_2
+    )
+
+
+def test_dossier_renders_blm_mining_claims_in_section14() -> None:
+    """BLM active mining claim count must appear in Section 14."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "minerals")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT",
+            domain="minerals",
+            method_code="live_blm_mlrs_mining_claims_query",
+            observation="BLM MLRS query found 3 active mining claim record(s).",
+            observed_value={
+                "blm_active_mining_claim_count": 3,
+                "has_blm_active_mining_claim_context": True,
+                "mineral_rights_determined": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec14_start = dossier.find("## 14. Resource")
+    sec15_start = dossier.find("## 15.")
+    assert sec14_start != -1, "Section 14 (Resource) not found"
+    section_14 = dossier[sec14_start:sec15_start]
+    assert "3 active federal mining claim" in section_14, (
+        "Expected BLM mining claim count in Section 14; got:\n" + section_14
+    )
+
+
+def test_dossier_renders_mrds_mineral_occurrences_in_section14() -> None:
+    """USGS MRDS mineral occurrence count must appear in Section 14."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "minerals")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="MRDS_MINERAL_OCCURRENCE_SCREEN",
+            domain="minerals",
+            method_code="live_usgs_mrds_wfs_query",
+            observation="USGS MRDS WFS query found 7 historical mineral occurrence record(s).",
+            observed_value={
+                "mineral_occurrence_count": 7,
+                "has_mineral_occurrence_context": True,
+                "mineral_rights_determined": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec14_start = dossier.find("## 14. Resource")
+    sec15_start = dossier.find("## 15.")
+    assert sec14_start != -1
+    section_14 = dossier[sec14_start:sec15_start]
+    assert "7 historical mineral occurrence" in section_14, (
+        "Expected MRDS occurrence count in Section 14; got:\n" + section_14
+    )
+
+
+def test_dossier_renders_ncgs_geologic_unit_in_section14() -> None:
+    """NCGS geologic unit label must appear in Section 14."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "geology")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="NC_GEOLOGIC_MAP_UNIT_CONTEXT",
+            domain="geology",
+            method_code="live_nc_geologic_map_query",
+            observation="NCGS 1985 geologic map query found 1 map unit(s).",
+            observed_value={
+                "primary_geologic_unit_label": "Cha",
+                "primary_geologic_formation": "Chauga River Formation",
+                "nc_geologic_map_deprecated": True,
+                "geologic_hazard_determined": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec14_start = dossier.find("## 14. Resource")
+    sec15_start = dossier.find("## 15.")
+    assert sec14_start != -1
+    section_14 = dossier[sec14_start:sec15_start]
+    assert "Chauga River Formation" in section_14, (
+        "Expected NCGS formation name in Section 14; got:\n" + section_14
+    )
+
+
+def test_dossier_renders_terrain_fixture_domain_in_buildability_section() -> None:
+    """Evidence with domain 'terrain' must appear in Section 6 Buildability Screen."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "terrain")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.DERIVED_METRIC,
+            evidence_code="TERRAIN_RELIEF_SCREEN",
+            domain="terrain",
+            method_code="fixture_terrain_relief_sample",
+            observation="Fixture terrain screening: high-relief mountain terrain.",
+            observed_value={
+                "metric_code": "fixture_terrain_relief_sample",
+                "value": 215,
+                "unit": "m",
+                "relief_m": 215,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec6_start = dossier.find("## 6. Buildability")
+    sec7_start = dossier.find("## 7.")
+    assert sec6_start != -1
+    section_6 = dossier[sec6_start:sec7_start]
+    assert "215" in section_6, (
+        "Expected terrain relief value in Section 6 Buildability; got:\n" + section_6
+    )
+
+
+def test_dossier_renders_soils_fixture_domain_in_soil_section() -> None:
+    """Evidence with domain 'soils' must appear in Section 8 Soil/Septic Proxy."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soils")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SOIL_SURVEY_SCREEN",
+            domain="soils",
+            method_code="fixture_soils_survey_screen",
+            observation="Fixture soil survey: hydric soils.",
+            observed_value={
+                "dominant_map_unit": "Murville sand",
+                "drainage_class": "Very poorly drained",
+                "hydric_rating": "yes",
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    assert sec8_start != -1
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "Murville sand" in section_8, (
+        "Expected soils fixture map unit in Section 8; got:\n" + section_8
+    )
