@@ -22,6 +22,8 @@
       "observation": "Fixture terrain screening: hilly terrain with moderate-to-steep relief — remote north Buncombe County. Elevation samples indicate significant slope; access route grades may be challenging.",
       "observed_value": {
         "metric_code": "fixture_terrain_relief_sample",
+        "value": 142,
+        "unit": "m",
         "relief_m": 142,
         "max_elevation_m": 823,
         "min_elevation_m": 681,

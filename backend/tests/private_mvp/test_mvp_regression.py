@@ -335,3 +335,75 @@ def test_chatham_zoning_edge_mvp_regression() -> None:
             ),
         ],
     )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_chatham_parcel_tax_regression() -> None:
+    _run_mvp_case(
+        geom_file="cha_parcel_tax.geojson",
+        connector_fixtures=[
+            (
+                "nc_chatham_cha_parcel_tax_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
+                "nc_chatham_cha_parcel_tax_flood.json",
+                StaticFloodFixtureConnector,
+                evaluate_flood_fixture_quality,
+            ),
+            (
+                "nc_chatham_cha_parcel_tax_access.json",
+                StaticAccessFixtureConnector,
+                evaluate_access_fixture_quality,
+            ),
+        ],
+    )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_buncombe_access_regression() -> None:
+    _run_mvp_case(
+        geom_file="bun_access.geojson",
+        connector_fixtures=[
+            (
+                "nc_buncombe_bun_access_access.json",
+                StaticAccessFixtureConnector,
+                evaluate_access_fixture_quality,
+            ),
+            (
+                "nc_buncombe_bun_access_buildability.json",
+                StaticBuildabilityFixtureConnector,
+                evaluate_buildability_fixture_quality,
+            ),
+            (
+                "nc_buncombe_bun_access_terrain.json",
+                StaticTerrainFixtureConnector,
+                evaluate_terrain_fixture_quality,
+            ),
+        ],
+    )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_buncombe_flood_regression() -> None:
+    _run_mvp_case(
+        geom_file="bun_flood.geojson",
+        connector_fixtures=[
+            (
+                "nc_buncombe_bun_flood_buildability.json",
+                StaticBuildabilityFixtureConnector,
+                evaluate_buildability_fixture_quality,
+            ),
+            (
+                "nc_buncombe_bun_flood_flood.json",
+                StaticFloodFixtureConnector,
+                evaluate_flood_fixture_quality,
+            ),
+            (
+                "nc_buncombe_bun_flood_terrain.json",
+                StaticTerrainFixtureConnector,
+                evaluate_terrain_fixture_quality,
+            ),
+        ],
+    )

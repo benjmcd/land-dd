@@ -22,6 +22,8 @@
       "observation": "Fixture terrain screening: moderate relief in mountain floodplain setting — French Broad River area, Buncombe County. Elevation samples reflect lower valley terrain with nearby steep gradients.",
       "observed_value": {
         "metric_code": "fixture_terrain_relief_sample",
+        "value": 85,
+        "unit": "m",
         "relief_m": 85,
         "max_elevation_m": 636,
         "min_elevation_m": 551,
