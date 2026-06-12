@@ -1,6 +1,19 @@
 # Project State
 
-## Current checkpoint (2026-06-12 dossier parcel caveat + golden AOI gate removal)
+## Current checkpoint (2026-06-12 dossier mineral/geology section + manifest-driven tests)
+
+New dossier Section 14 "Resource / Geologic Context" surfaces evidence from BLM MLRS
+(domain `minerals`), USGS MRDS (domain `minerals`), and NCGS geologic map (domain `geology`)
+connectors that previously stored evidence in the ledger but never appeared in output.
+Helpers `_mineral_mining_result`, `_mineral_occurrence_result`, `_geologic_context_result` added.
+Former sections 14–17 renumbered to 15–18; `test_report_overclaim.py` updated to match.
+Manifest-driven parametrized test suite `tests/private_mvp/test_manifest_driven.py` (18 tests)
+created: verifies all 9 golden AOI `expected_caveats` phrases appear and all `forbidden_claims`
+phrases are absent. Access caveats surfaced in Section 5, assessor line added to Section 2,
+zoning caveats surfaced in Section 10. Manifest flood phrases aligned to actual fixture text.
+Full suite: 1529 passed, 73 skipped; ruff/mypy clean.
+
+## Previous checkpoint (2026-06-12 dossier parcel caveat + golden AOI gate removal)
 
 Four domain quality test files (buildability/terrain/soils/wetlands) added with 34 tests
 covering failure fixtures, wrong connector name, timing bounds, and spatial geometry checks.

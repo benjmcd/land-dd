@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Dossier minerals/geology section + manifest-driven golden tests)
+
+- Added Section 14 "Resource / Geologic Context" to dossier surfacing BLM MLRS
+  (domain `minerals`, `BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT`), USGS MRDS
+  (domain `minerals`, `MRDS_MINERAL_OCCURRENCE_SCREEN`), and NCGS geologic map
+  (domain `geology`, `NC_GEOLOGIC_MAP_UNIT_CONTEXT`) evidence that was previously
+  stored in the ledger but never surfaced in dossier output.
+  Renumbered former sections 14–17 to 15–18. Updated `test_report_overclaim.py`
+  to reference `## 18. Source Appendix`. Helpers: `_mineral_mining_result`,
+  `_mineral_occurrence_result`, `_geologic_context_result`. Commit: 9080dbe.
+- Created manifest-driven parametrized test suite
+  `backend/tests/private_mvp/test_manifest_driven.py` (18 tests): for all 9 golden
+  AOI cases, verifies every `expected_caveats` phrase appears in the dossier and
+  every `forbidden_claims` phrase is absent.
+- Surfaced assessor and zoning caveats in dossier: added
+  "Assessor and tax data were not available" hardcoded line to Section 2, added
+  `_domain_caveats(report_run, {'zoning'})` to Section 10. Commit: c65f115.
+- Surfaced access caveats in dossier Section 5 via `_domain_caveats`. Aligned
+  manifest flood phrases from stale "Mapped flood data" to actual
+  "Fixture-only flood screening" text. Fixed BUN-access expected_caveats phrase.
+  Commit: 5a46804.
+- Verification: 1529 passed, 73 skipped; ruff/mypy clean.
+
 ## 2026-06-12 (Dossier parcel caveat + golden AOI test gate removal)
 
 - Removed `@_SKIP_FIXTURE_SMOKE` / `RUN_DB_SMOKE=1` gate from all 9 regression tests in

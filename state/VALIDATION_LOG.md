@@ -2,6 +2,31 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Dossier Minerals/Geology Section + Manifest-Driven Tests
+
+**Scope:** Surface BLM/MRDS/NCGS evidence (domains `minerals`, `geology`) in new
+dossier Section 14; add manifest-driven parametrized test suite for all 9 golden AOI
+cases; surface access/assessor/zoning caveats; align manifest flood phrases.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests/reports/test_report_overclaim.py tests/reports/test_dossier_enrichment.py tests/private_mvp/test_manifest_driven.py --tb=short
+cd backend; ruff check app/reports/dossier.py tests/reports/test_report_overclaim.py
+cd backend; py -3.12 -m mypy app/reports/dossier.py tests/reports/test_report_overclaim.py
+cd backend; py -3.12 -m pytest --tb=short
+```
+
+**Results:**
+- Targeted dossier/overclaim/manifest tests: all passed
+- ruff: clean; mypy: clean
+- Full suite: 1529 passed, 73 skipped
+
+**Residual risk:**
+- `minerals` and `geology` domains are not in `_STRUCTURAL_DOMAINS`; live evidence from
+  these connectors will reduce confidence band as expected.
+- Section 14 lines show "not evaluated" when no BLM/MRDS/NCGS connector has run.
+
 ## 2026-06-12 Dossier Parcel Caveat + Golden AOI Test Gate Removal
 
 **Scope:** Remove unnecessary `RUN_DB_SMOKE=1` skip gate from 11 golden AOI / utility
