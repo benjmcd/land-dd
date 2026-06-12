@@ -80,7 +80,7 @@ cases:
     expected_not_evaluated_domains: [assessor]
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
-      - does not confirm legal access
+      - Legal access requires confirmation
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
