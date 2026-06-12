@@ -128,11 +128,7 @@ def _resolve_fixture_path(aoi_path: Path, connector: str) -> Path:
     fixture_name = f"nc_{county}_{aoi_stem}_{connector}.json"
     fixture_path = CONNECTOR_DIR / fixture_name
     if not fixture_path.exists():
-        raise FileNotFoundError(
-            f"Connector fixture not found: {fixture_path}\n"
-            f"Available fixtures in {CONNECTOR_DIR}:\n"
-            + "\n".join(f"  {p.name}" for p in sorted(CONNECTOR_DIR.glob("*.json")))
-        )
+        raise FileNotFoundError(f"Connector fixture not found: {fixture_path}")
     return fixture_path
 
 
