@@ -2,6 +2,13 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Structured selected-county source-scope catalog)
+
+- Added structured `selected_county_source_scope` data to `config/private_mvp_beta_readiness.yaml` for DS-010, DS-011, and DS-023.
+- Updated `scripts/private_mvp_readiness_check.py` so the private-MVP gate validates connector names, required source-readiness surfaces, and scope-note fragments from the structured catalog instead of hardcoding selected-county scope only in the validator.
+- Added tests proving the structured catalog exists, incomplete selected-county scope declarations fail closed, connector-name order is non-authoritative, and stale selected-county prose remains rejected.
+- Verification: private-MVP tests (20), private-MVP readiness validator, focused ruff/mypy, combined source/private-MVP tests (43), release-readiness validator, Must source-readiness JSON, stale-phrase re-audit, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB smoke was skipped by default and remains separate unless `RUN_DB_SMOKE=1` and PostgreSQL/PostGIS prerequisites are available.
+
 ## 2026-06-12 (Private-MVP readiness catalog drift closure)
 
 - Updated `config/private_mvp_beta_readiness.yaml` so the fixture-regression path cites both `backend/tests/private_mvp/test_mvp_regression.py` and `backend/tests/private_mvp/test_utility_closure.py`.

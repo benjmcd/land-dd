@@ -15,6 +15,61 @@ schema_version: private_mvp_beta_readiness_v1
 operator_runbook: docs/runbooks/mvp_operator.md
 validation: scripts/run_private_mvp_readiness_check.ps1
 
+selected_county_source_scope:
+  DS-010:
+    source_registry_id: DS-010
+    connector_names:
+      - chatham_parcels_live
+      - buncombe_parcels_live
+      - brunswick_parcels_live
+    required_surfaces:
+      - immediate_operator_api
+      - request_time_orchestration
+    scope_note_fragments:
+      - Chatham County NC parcel screening only
+      - Buncombe County NC parcel screening only
+      - Brunswick County NC parcel screening only
+      - no owner/value/title fields
+      - durable live-job support not claimed
+    out_of_scope:
+      - owner/value/title fields
+      - durable live-job support
+      - counties outside Buncombe/Chatham/Brunswick
+
+  DS-011:
+    source_registry_id: DS-011
+    connector_names:
+      - county_assessor_not_evaluated
+    required_surfaces:
+      - immediate_operator_api
+      - request_time_orchestration
+    scope_note_fragments:
+      - Assessor NOT_EVALUATED sentinel only
+      - no live assessor portal query
+      - no owner/value/sale-history data
+    out_of_scope:
+      - live assessor portal query
+      - owner/value/sale-history fields
+      - tax appraisal or lending-suitability conclusions
+
+  DS-023:
+    source_registry_id: DS-023
+    connector_names:
+      - chatham_zoning_udo_recorded
+      - brunswick_zoning_udo_recorded
+    required_surfaces:
+      - immediate_operator_api
+      - request_time_orchestration
+    scope_note_fragments:
+      - Chatham County NC recorded-fixture UDO district lookup only
+      - Brunswick County NC recorded-fixture UDO district lookup only
+      - not live PDF ingestion or legal zoning advice
+    out_of_scope:
+      - Buncombe zoning
+      - live PDF ingestion
+      - full-text redistribution
+      - legal zoning interpretation
+
 private_mvp_beta:
 
   geography_selected:

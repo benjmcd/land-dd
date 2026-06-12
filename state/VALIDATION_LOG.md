@@ -2,6 +2,54 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Structured Selected-County Source-Scope Catalog
+
+**Scope:** Move DS-010/DS-011/DS-023 selected-county private-MVP source-scope
+requirements from validator hardcoding and prose-only checks into structured
+`config/private_mvp_beta_readiness.yaml` data. The validator now reads that
+catalog section and checks Must source-readiness JSON for required connector
+names, required surfaces, and bounded scope-note fragments. This does not change
+source-readiness counts, connector runtime behavior, DB schema, public APIs,
+report semantics, DS-017, or hosted-production blockers.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_private_mvp_readiness.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\source_registry\test_source_seeds.py tests\source_registry\test_source_registry_check.py tests\test_private_mvp_readiness.py
+.\scripts\run_release_readiness_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+rg -n --glob '!scripts/private_mvp_readiness_check.py' --glob '!backend/tests/test_private_mvp_readiness.py' <CATALOG_STALE_PHRASES pattern> .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Private-MVP readiness tests passed: 20 tests.
+- Private-MVP readiness validator passed from structured DS-010/DS-011/DS-023
+  catalog data.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Combined source/private-MVP suite passed: 43 tests.
+- Release-readiness validator passed.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only Must blocker.
+- Stale-phrase re-audit found no public-facing occurrences outside the
+  intentional validator/test deny-lists.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for touched
+  catalog/state files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source files,
+  and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This is a structured catalog hardening step, not a full
+first-class per-county readiness schema. It does not add county coverage, execute
+connectors, run DB smoke, close DS-017, or resolve hosted-production blockers.
+
 ## 2026-06-12 Private-MVP Readiness Catalog Drift Closure
 
 **Scope:** Align `config/private_mvp_beta_readiness.yaml` with current

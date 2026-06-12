@@ -68,6 +68,36 @@ def test_readiness_catalog_metadata(readiness: dict[str, Any]) -> None:
     assert readiness["validation"] == "scripts/run_private_mvp_readiness_check.ps1"
 
 
+def test_selected_county_source_scope_is_structured(readiness: dict[str, Any]) -> None:
+    scope = readiness["selected_county_source_scope"]
+    assert set(scope) == {"DS-010", "DS-011", "DS-023"}
+
+    assert scope["DS-010"]["connector_names"] == [
+        "chatham_parcels_live",
+        "buncombe_parcels_live",
+        "brunswick_parcels_live",
+    ]
+    assert scope["DS-010"]["required_surfaces"] == [
+        "immediate_operator_api",
+        "request_time_orchestration",
+    ]
+    assert "no owner/value/title fields" in scope["DS-010"]["scope_note_fragments"]
+    assert "durable live-job support" in scope["DS-010"]["out_of_scope"]
+
+    assert scope["DS-011"]["connector_names"] == [
+        "county_assessor_not_evaluated",
+    ]
+    assert "no live assessor portal query" in scope["DS-011"]["scope_note_fragments"]
+    assert "owner/value/sale-history fields" in scope["DS-011"]["out_of_scope"]
+
+    assert scope["DS-023"]["connector_names"] == [
+        "chatham_zoning_udo_recorded",
+        "brunswick_zoning_udo_recorded",
+    ]
+    assert "Buncombe zoning" in scope["DS-023"]["out_of_scope"]
+    assert "legal zoning interpretation" in scope["DS-023"]["out_of_scope"]
+
+
 def test_private_mvp_beta_section_exists(readiness: dict[str, Any]) -> None:
     assert "private_mvp_beta" in readiness, (
         "private_mvp_beta section missing from readiness YAML"
@@ -183,6 +213,9 @@ def test_private_mvp_readiness_validator_passes() -> None:
 def test_private_mvp_validator_rejects_missing_selected_county_connector() -> None:
     validator = _load_validator_module()
     validate_scopes = validator.validate_selected_county_source_scopes
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        validator.load_catalog(),
+    )
     sources = [
         {
             "source_registry_id": "DS-010",
@@ -193,6 +226,19 @@ def test_private_mvp_validator_rejects_missing_selected_county_connector() -> No
                 "Brunswick County NC parcel screening only",
                 "no owner/value/title fields",
                 "durable live-job support not claimed",
+            ],
+        },
+        {
+            "source_registry_id": "DS-011",
+            "connector_names": ["county_assessor_not_evaluated"],
+            "connector_surfaces": [
+                "immediate_operator_api",
+                "request_time_orchestration",
+            ],
+            "connector_scope_notes": [
+                "Assessor NOT_EVALUATED sentinel only",
+                "no live assessor portal query",
+                "no owner/value/sale-history data",
             ],
         },
         {
@@ -210,7 +256,7 @@ def test_private_mvp_validator_rejects_missing_selected_county_connector() -> No
     ]
 
     with pytest.raises(SystemExit) as exc_info:
-        validate_scopes(sources)
+        validate_scopes(sources, selected_county_scope)
 
     assert "DS-010 connector_names mismatch" in str(exc_info.value)
     assert "brunswick_parcels_live" in str(exc_info.value)
@@ -219,6 +265,9 @@ def test_private_mvp_validator_rejects_missing_selected_county_connector() -> No
 def test_private_mvp_validator_accepts_selected_county_connector_names_in_any_order() -> None:
     validator = _load_validator_module()
     validate_scopes = validator.validate_selected_county_source_scopes
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        validator.load_catalog(),
+    )
     sources = [
         {
             "source_registry_id": "DS-010",
@@ -226,6 +275,10 @@ def test_private_mvp_validator_accepts_selected_county_connector_names_in_any_or
                 "brunswick_parcels_live",
                 "chatham_parcels_live",
                 "buncombe_parcels_live",
+            ],
+            "connector_surfaces": [
+                "request_time_orchestration",
+                "immediate_operator_api",
             ],
             "connector_scope_notes": [
                 "Chatham County NC parcel screening only",
@@ -236,10 +289,26 @@ def test_private_mvp_validator_accepts_selected_county_connector_names_in_any_or
             ],
         },
         {
+            "source_registry_id": "DS-011",
+            "connector_names": ["county_assessor_not_evaluated"],
+            "connector_surfaces": [
+                "request_time_orchestration",
+                "immediate_operator_api",
+            ],
+            "connector_scope_notes": [
+                "Assessor NOT_EVALUATED sentinel only; no live assessor portal "
+                "query and no owner/value/sale-history data.",
+            ],
+        },
+        {
             "source_registry_id": "DS-023",
             "connector_names": [
                 "brunswick_zoning_udo_recorded",
                 "chatham_zoning_udo_recorded",
+            ],
+            "connector_surfaces": [
+                "request_time_orchestration",
+                "immediate_operator_api",
             ],
             "connector_scope_notes": [
                 "Chatham County NC recorded-fixture UDO district lookup only",
@@ -249,7 +318,22 @@ def test_private_mvp_validator_accepts_selected_county_connector_names_in_any_or
         },
     ]
 
-    validate_scopes(sources)
+    validate_scopes(sources, selected_county_scope)
+
+
+def test_private_mvp_validator_rejects_incomplete_structured_source_scope() -> None:
+    validator = _load_validator_module()
+    catalog = validator.load_catalog()
+    catalog["selected_county_source_scope"] = {
+        "DS-010": catalog["selected_county_source_scope"]["DS-010"],
+        "DS-023": catalog["selected_county_source_scope"]["DS-023"],
+    }
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_scope_catalog(catalog)
+
+    assert "selected_county_source_scope source IDs mismatch" in str(exc_info.value)
+    assert "DS-011" in str(exc_info.value)
 
 
 def test_private_mvp_readiness_wrappers_delegate_to_shared_validator() -> None:
@@ -285,17 +369,8 @@ def test_operator_runbook_tracks_current_selected_county_source_scope() -> None:
         assert stale_phrase not in runbook
 
 
-def test_private_mvp_catalog_tracks_current_selected_county_source_scope() -> None:
+def test_private_mvp_catalog_rejects_stale_selected_county_source_scope_prose() -> None:
     catalog = READINESS_YAML.read_text(encoding="utf-8")
-
-    for phrase in (
-        "backend/tests/private_mvp/test_utility_closure.py",
-        "DS-010 selected-county parcel connectors are ready",
-        "AssessorNotEvaluatedConnector sentinel",
-        "DS-023 is ready only for Chatham/Brunswick recorded-fixture UDO district",
-        "selected-county DS-010/DS-023 scope",
-    ):
-        assert phrase in catalog
 
     for stale_phrase in (
         "Chatham parcels/zoning, Brunswick coastal/wetlands",
