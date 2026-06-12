@@ -38,6 +38,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Jurisdiction: {_jurisdiction_from_evidence(report_run)}",
         f"- Acreage: {_parcel_acreage(report_run)}",
         f"- Zoning designation: {_parcel_zoning(report_run)}",
+        f"- Parcel data caveats: {_domain_caveats(report_run, {'parcels'})}",
         f"- Area ID: {report_run.area_id}",
         "- Geometry confidence: unknown",
         f"- Intent: {report_run.intent_code.value}",

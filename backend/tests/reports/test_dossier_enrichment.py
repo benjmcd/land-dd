@@ -301,6 +301,46 @@ def test_dossier_renders_parcel_acreage_from_evidence() -> None:
     )
 
 
+def test_dossier_renders_parcel_caveat_in_area_identity() -> None:
+    """Parcel evidence caveat text must appear in Section 2 Area Identity."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "parcels")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="COUNTY_PARCEL_INTERSECTION",
+            domain="parcels",
+            method_code="county_parcel_overlay",
+            observation="Parcel boundary intersects the area of interest.",
+            observed_value={
+                "intersects": True,
+                "parcel_pin": "0099887",
+                "parcel_acres": 4.75,
+                "parcel_zoning": "RA",
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Parcel boundaries are approximate; not survey-grade.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    section_2_start = dossier.find("## 2.")
+    section_3_start = dossier.find("## 3.")
+    assert section_2_start != -1
+    section_2 = dossier[section_2_start:section_3_start]
+    assert "Parcel boundaries are approximate" in section_2, (
+        "Expected parcel caveat text in Section 2 area identity; got: " + section_2
+    )
+
+
 def test_dossier_renders_water_monitoring_stations_from_evidence() -> None:
     """plausible_water_context=True + monitoring_station_count must appear in Section 9."""
     source_service, area_service, evidence_service, report_service = _make_services()
