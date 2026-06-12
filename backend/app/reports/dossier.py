@@ -130,26 +130,35 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Caveats: {_domain_caveats(report_run, {'climate'})}",
         f"- Required verification: {_domain_verification(report_run, 'climate')}",
         "",
-        "## 14. Market Context",
+        "## 14. Resource / Geologic Context",
+        "",
+        f"- BLM active mining claims: {_mineral_mining_result(report_run)}",
+        f"- Historical mineral occurrences: {_mineral_occurrence_result(report_run)}",
+        f"- Geologic map unit context: {_geologic_context_result(report_run)}",
+        "- Mineral rights status: not determined — consult title search",
+        f"- Caveats: {_domain_caveats(report_run, {'minerals', 'geology'})}",
+        f"- Required verification: {_domain_verification_multi(report_run, {'minerals', 'geology'})}",  # noqa: E501
+        "",
+        "## 15. Market Context",
         "",
         "- Price/acre: not evaluated",
         "- Nearby comps/listings: not evaluated",
         "- Liquidity context: unknown",
         "- Caveats: no appraisal, valuation, or investment conclusion is provided",
         "",
-        "## 15. Unknowns",
+        "## 16. Unknowns",
         "",
         "| Domain | Unknown | Why unknown | How to resolve |",
         "|---|---|---|---|",
         *_unknown_rows(report_run),
         "",
-        "## 16. Verification Plan",
+        "## 17. Verification Plan",
         "",
         "| Priority | Task | Who to contact | Evidence to request |",
         "|---|---|---|---|",
         *_verification_rows(report_run),
         "",
-        "## 17. Source Appendix",
+        "## 18. Source Appendix",
         "",
         "| Source | Version/date | Use | Caveat | URL |",
         "|---|---|---|---|---|",
@@ -675,6 +684,71 @@ def _soil_septic_result(report_run: ReportRunContract) -> str:
             " (SSURGO screening; not a site-specific soil report)"
         )
     return f"{count} soil map unit(s) intersecting screening bbox (SSURGO screening)"
+
+
+def _mineral_mining_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "minerals" and not r.is_source_failure
+        and r.evidence_code == "BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT"
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.evidence_code == "BLM_MLRS_SOURCE_FAILURE"
+        ]
+        return "source failure — BLM MLRS data unavailable" if failures else "not evaluated"
+    record = records[0]
+    count = record.observed_value.get("blm_active_mining_claim_count")
+    if count is not None:
+        return f"{count} active federal mining claim record(s) in query bbox (BLM MLRS)"
+    return _cell(record.observation)
+
+
+def _mineral_occurrence_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "minerals" and not r.is_source_failure
+        and r.evidence_code == "MRDS_MINERAL_OCCURRENCE_SCREEN"
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.evidence_code == "USGS_MRDS_SOURCE_FAILURE"
+        ]
+        return "source failure — USGS MRDS data unavailable" if failures else "not evaluated"
+    record = records[0]
+    count = record.observed_value.get("mineral_occurrence_count")
+    if count is not None:
+        return (
+            f"{count} historical mineral occurrence record(s) in query bbox"
+            " (USGS MRDS — systematic updates ceased 2011)"
+        )
+    return _cell(record.observation)
+
+
+def _geologic_context_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "geology" and not r.is_source_failure
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.evidence_code == "NC_GEOLOGIC_MAP_SOURCE_FAILURE"
+        ]
+        if failures:
+            return "source failure — NCGS geologic map data unavailable"
+        return "not evaluated"
+    record = records[0]
+    parts: list[str] = []
+    unit = record.observed_value.get("primary_geologic_unit_label")
+    formation = record.observed_value.get("primary_geologic_formation")
+    if unit:
+        parts.append(f"primary unit: {unit}")
+    if formation:
+        parts.append(f"formation: {formation}")
+    return "; ".join(parts) if parts else _cell(record.observation)
 
 
 def _unknown_rows(report_run: ReportRunContract) -> list[str]:
