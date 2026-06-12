@@ -33,25 +33,26 @@
 - **Report caveat:** Mapped road data for Chatham County, NC indicates probable access routes. Road presence on a map does not confirm legal access, right-of-way, easement, or maintenance obligation. Requires confirmation by a title professional and licensed surveyor.
 
 ### Zoning (DS-023)
-- **Queryability class:** fixture-backed (StaticZoningFixtureConnector) for private MVP regression
+- **Queryability class:** fixture-backed for regression and selected-county recorded-fixture UDO district lookup for immediate operator API and request-time orchestration
 - **Source authority:** Chatham County Planning zoning GIS layer
+- **Private MVP stance:** DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only. It is not live PDF ingestion, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution.
 - **Known caveats:** Portions of Chatham County may be unzoned or subject to a zoning jurisdiction edge between the county and incorporated municipalities. Source date matters; zoning classifications change through local ordinance.
-- **Private MVP note:** Zoning/unzoned edge cases are a stress test for this county. The fixture connector uses representative mapped zoning data; unzoned parcels produce a sentinel claim.
-- **Report caveat:** Mapped zoning data for Chatham County, NC indicates the applicable zoning classification as of the data retrieval date. Portions of the county may be unzoned or in a transitional jurisdiction. Requires confirmation by the Chatham County Planning office for current zoning status, pending amendments, and any applicable overlay districts.
+- **Private MVP note:** Zoning/unzoned edge cases are a stress test for this county. The fixture/recorded connector uses representative mapped zoning data; unzoned parcels produce a sentinel claim.
+- **Report caveat:** Chatham County zoning screening indicates a recorded/mapped classification when evidence is present. It does not confirm zoning entitlement, permitted use, variance status, overlay applicability, or permit-ready status; confirm with Chatham County Planning.
 
 ### Parcels / cadastral (DS-010)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Chatham County GIS CAMA parcel layer — local official; download available via open data portal
-- **Private MVP stance:** No machine-queryable county parcel connection is wired for private MVP. Parcel geometry and attributes are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** selected-county live connector for immediate operator API and request-time orchestration; fixture utility cases include parcel evidence, and fixture cases without parcel evidence still record NOT_EVALUATED
+- **Source authority:** Chatham County GIS CAMA parcel layer - local official; download available via open data portal
+- **Private MVP stance:** DS-010 is connector-ready for Chatham County parcel screening only. No owner/value/title fields are exposed; durable live-job support and counties outside Buncombe/Chatham/Brunswick are not claimed.
 - **Known caveats:** Parcel boundaries are approximate; not survey-grade. Parcel/tax/easement ambiguity is a key stress scenario for Chatham County.
-- **Report caveat:** Parcel boundary and cadastral data for Chatham County, NC was not available through the data pipeline for this analysis. Parcel information requires confirmation by the Chatham County Register of Deeds and a licensed surveyor.
+- **Report caveat:** Chatham County parcel screening data, when present, is approximate and not survey-grade. It does not confirm legal boundary, easements, title, ownership, value, or buildability; confirm with county records, a title professional, and a licensed surveyor. If parcel evidence is absent for a fixture case, the report must surface an explicit NOT_EVALUATED unknown.
 
 ### Assessor / tax (DS-011)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Chatham County Tax Administration — local official
-- **Private MVP stance:** No machine-queryable assessor connection is wired for private MVP. Assessed value, tax year, and situs are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** AssessorNotEvaluatedConnector sentinel for immediate operator API and request-time orchestration; no live assessor portal query
+- **Source authority:** Chatham County Tax Administration - local official
+- **Private MVP stance:** DS-011 records explicit ASSESSOR_NOT_EVALUATED source-failure evidence. No owner, assessed value, sale-history, appraisal, or lending-suitability data is asserted.
 - **Known caveats:** Tax schema and access vary; requires county-specific API or data feed. Easements and deed restrictions are not captured by assessor data alone.
-- **Report caveat:** Assessor and tax data for Chatham County, NC was not available through the data pipeline for this analysis. Tax and easement records require confirmation by the Chatham County Tax Administration and Register of Deeds.
+- **Report caveat:** Assessor and tax data for Chatham County, NC is not evaluated by the current private-MVP pipeline. Tax records, owner information, assessed value, sale history, and easements require confirmation by Chatham County Tax Administration, Register of Deeds, and qualified professionals.
 
 ### Commercial parcel vendor (DS-017)
 - **Queryability class:** blocked / not required for private MVP

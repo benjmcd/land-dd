@@ -57,6 +57,11 @@ Close source-readiness gaps without overclaiming production readiness. This plan
    - Validate connector names, required source-readiness surfaces, and scope-note fragments from the structured catalog instead of hardcoding the selected-county scope only in the validator.
    - Keep stale-prose deny-list checks as a guardrail, but do not use exact current prose as the primary proof of source-scope truth.
 
+9. Align selected-county source manifests with structured scope.
+   - Update Buncombe/Chatham/Brunswick source manifests so DS-010, DS-011, and DS-023 language matches the structured private-MVP source scope and current source-readiness output.
+   - Add private-MVP validator/test coverage that rejects stale manifest phrases such as no machine-queryable parcel/assessor path and “not available through the data pipeline” where current selected-county scope is more precise.
+   - Keep this docs/validation-only: no source-readiness count changes, connector execution changes, API changes, report semantics changes, DB schema changes, or DS-017/hosted-production changes.
+
 ## Mid-term pass
 
 1. Select the next non-Must source-readiness candidate from live registry evidence.
@@ -116,6 +121,7 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 - 2026-06-12: The private-MVP readiness gate should enforce aggregate DS-010/DS-023 connector scope metadata because that is the operator-facing proof boundary for selected-county truthfulness. Pytest-only coverage is useful but too indirect for handoff/validation workflows.
 - 2026-06-12: The private-MVP readiness catalog is an operator-facing authority surface, not just a passive manifest. It must be guarded against stale DS-010/DS-011/DS-023 scope prose the same way runbook and source-registry prose are guarded, while still avoiding a broad schema change.
 - 2026-06-12: The selected-county source boundary should be declared as structured catalog data before introducing a broader per-county readiness schema. This is the narrowest non-fragility step: it keeps current source-level readiness semantics while making the private-MVP gate less dependent on exact prose.
+- 2026-06-12: County source manifests are operator-facing authority surfaces. They must track the structured selected-county scope and current source-readiness output rather than preserving older fixture-only/no-connector language.
 
 ## Progress log
 
@@ -129,3 +135,5 @@ Close source-readiness gaps without overclaiming production readiness. This plan
 - 2026-06-12: Pre-push validation repeated after the order-insensitive connector-name guard. Focused private-MVP tests, combined source/private-MVP tests, private-MVP and release-readiness validators, focused ruff/mypy, Must source-readiness JSON, stale-phrase re-audit, `git diff --check`, and default `.\scripts\verify.ps1` passed. DB-enabled smoke was not run because Docker Desktop's Linux engine was unavailable; do not treat this as DB proof.
 - 2026-06-12: Began structured selected-county source-scope catalog slice. Current target is `config/private_mvp_beta_readiness.yaml`, `scripts/private_mvp_readiness_check.py`, and private-MVP tests only; schema, connector runtime, source-readiness counts, public API, report semantics, DS-017, and hosted-production gates stay unchanged.
 - 2026-06-12: Structured selected-county source-scope catalog slice landed locally. `config/private_mvp_beta_readiness.yaml` now declares DS-010, DS-011, and DS-023 connector names, required source-readiness surfaces, scope-note fragments, and out-of-scope boundaries; `scripts/private_mvp_readiness_check.py` consumes that structured catalog for the selected-county gate. Focused private-MVP tests, private-MVP readiness validator, focused ruff/mypy, combined source/private-MVP tests, release-readiness validator, Must source-readiness JSON, stale-phrase re-audit, `git diff --check`, and default `.\scripts\verify.ps1` passed; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+- 2026-06-12: Began selected-county source-manifest alignment slice after finding Buncombe/Chatham/Brunswick manifests still described DS-010 and DS-011 as no machine-queryable connection / not available through the data pipeline. Scope is limited to manifest prose and private-MVP validation guards.
+- 2026-06-12: Selected-county source-manifest alignment slice landed locally. Buncombe/Chatham/Brunswick manifests now track the structured DS-010/DS-011/DS-023 private-MVP boundary, including Buncombe DS-023 out-of-scope status, Chatham/Brunswick recorded-fixture zoning readiness, selected-county parcel connector readiness, and assessor NOT_EVALUATED sentinel behavior. The private-MVP validator now fails closed on stale manifest no-connector / unavailable-pipeline language. Focused private-MVP tests, private-MVP readiness validator, focused ruff/mypy, targeted and broader source-readiness/private-MVP tests, stale manifest phrase audit, `git diff --check`, and default `.\scripts\verify.ps1` passed; `git diff --check` emitted only CRLF-to-LF normalization warnings for touched Markdown files, and DB smoke remains a separate `RUN_DB_SMOKE=1` gate.

@@ -13,6 +13,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 READINESS_YAML = ROOT / "config" / "private_mvp_beta_readiness.yaml"
 RUNBOOK_PATH = ROOT / "docs" / "runbooks" / "mvp_operator.md"
+MANIFEST_PATHS = (
+    ROOT / "docs" / "geographies" / "nc" / "buncombe" / "source_manifest.md",
+    ROOT / "docs" / "geographies" / "nc" / "chatham" / "source_manifest.md",
+    ROOT / "docs" / "geographies" / "nc" / "brunswick" / "source_manifest.md",
+)
 
 
 def _load_validator_module() -> ModuleType:
@@ -367,6 +372,32 @@ def test_operator_runbook_tracks_current_selected_county_source_scope() -> None:
         "| `wetlands` | live-connector only |",
     ):
         assert stale_phrase not in runbook
+
+
+def test_county_source_manifests_track_structured_selected_county_scope() -> None:
+    validator = _load_validator_module()
+
+    validator.validate_county_source_manifests()
+
+    manifest_text = "\n".join(path.read_text(encoding="utf-8") for path in MANIFEST_PATHS)
+    for phrase in (
+        "No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed",
+        "DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only",
+        "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only",
+        "DS-010 is connector-ready for Buncombe County parcel screening only",
+        "DS-010 is connector-ready for Chatham County parcel screening only",
+        "DS-010 is connector-ready for Brunswick County parcel screening only",
+        "AssessorNotEvaluatedConnector sentinel",
+    ):
+        assert phrase in manifest_text
+
+    for stale_phrase in (
+        "No machine-queryable county parcel connection is wired for private MVP",
+        "No machine-queryable assessor connection is wired for private MVP",
+        "was not available through the data pipeline",
+        "fixture-backed (StaticZoningFixtureConnector) for private MVP regression",
+    ):
+        assert stale_phrase not in manifest_text
 
 
 def test_private_mvp_catalog_rejects_stale_selected_county_source_scope_prose() -> None:

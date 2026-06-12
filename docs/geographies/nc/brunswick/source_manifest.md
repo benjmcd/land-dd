@@ -36,25 +36,26 @@
 - **Report caveat:** Mapped road data for Brunswick County, NC indicates probable access routes. Coastal access routes may be subject to flood, tidal, or seasonal closures not reflected in mapped data. Requires confirmation by a title professional and licensed surveyor.
 
 ### Zoning (DS-023)
-- **Queryability class:** fixture-backed (StaticZoningFixtureConnector) for private MVP regression
+- **Queryability class:** fixture-backed for regression and selected-county recorded-fixture UDO district lookup for immediate operator API and request-time orchestration
 - **Source authority:** Brunswick County Planning zoning GIS layer; incorporated municipalities (e.g., Southport, Oak Island, Leland) maintain separate zoning jurisdictions
+- **Private MVP stance:** DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only. It is not live PDF ingestion, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution.
 - **Known caveats:** Municipal-vs-county zoning jurisdiction is a key stress scenario for Brunswick County. Incorporated areas are regulated by municipal ordinances, not county zoning. AOIs near municipal boundaries require jurisdiction verification.
-- **Private MVP note:** The jurisdiction stress case tests detection of municipal-vs-county zoning boundary ambiguity. The fixture connector uses representative mapped zoning data; boundary-adjacent parcels produce a jurisdiction-ambiguity caveat.
-- **Report caveat:** Mapped zoning data for Brunswick County, NC indicates the applicable zoning jurisdiction and classification as of the data retrieval date. AOIs near incorporated municipality boundaries may fall under municipal rather than county zoning jurisdiction. Requires confirmation by the Brunswick County Planning office or the relevant municipal planning department for current zoning status, jurisdiction, and pending amendments.
+- **Private MVP note:** The jurisdiction stress case tests detection of municipal-vs-county zoning boundary ambiguity. The fixture/recorded connector uses representative mapped zoning data; boundary-adjacent parcels produce a jurisdiction-ambiguity caveat.
+- **Report caveat:** Brunswick County zoning screening indicates a recorded/mapped jurisdiction and classification when evidence is present. It does not confirm zoning entitlement, permitted use, variance status, overlay applicability, municipal jurisdiction, or permit-ready status; confirm with Brunswick County Planning or the relevant municipal planning department.
 
 ### Parcels / cadastral (DS-010)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Brunswick County GIS parcel layer — local official; download available via county GIS portal
-- **Private MVP stance:** No machine-queryable county parcel connection is wired for private MVP. Parcel geometry and attributes are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** selected-county live connector for immediate operator API and request-time orchestration; fixture regression cases without parcel evidence still record NOT_EVALUATED
+- **Source authority:** Brunswick County GIS parcel layer - local official; download available via county GIS portal
+- **Private MVP stance:** DS-010 is connector-ready for Brunswick County parcel screening only. No owner/value/title fields are exposed; durable live-job support and counties outside Buncombe/Chatham/Brunswick are not claimed.
 - **Known caveats:** Coastal parcel boundaries may include tidal or water-adjacent areas requiring survey-grade verification.
-- **Report caveat:** Parcel boundary and cadastral data for Brunswick County, NC was not available through the data pipeline for this analysis. Coastal parcel information requires confirmation by the Brunswick County Register of Deeds and a licensed surveyor.
+- **Report caveat:** Brunswick County parcel screening data, when present, is approximate and not survey-grade. It does not confirm legal boundary, easements, title, ownership, value, CAMA status, or buildability; confirm with county records, a title professional, and a licensed surveyor. If parcel evidence is absent for a fixture case, the report must surface an explicit NOT_EVALUATED unknown.
 
 ### Assessor / tax (DS-011)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Brunswick County Tax Administration — local official
-- **Private MVP stance:** No machine-queryable assessor connection is wired for private MVP. Assessed value, tax year, and situs are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** AssessorNotEvaluatedConnector sentinel for immediate operator API and request-time orchestration; no live assessor portal query
+- **Source authority:** Brunswick County Tax Administration - local official
+- **Private MVP stance:** DS-011 records explicit ASSESSOR_NOT_EVALUATED source-failure evidence. No owner, assessed value, sale-history, appraisal, or lending-suitability data is asserted.
 - **Known caveats:** Tax schema and access vary; coastal-area properties may have supplemental assessments or coastal management overlay records.
-- **Report caveat:** Assessor and tax data for Brunswick County, NC was not available through the data pipeline for this analysis. Tax records require confirmation by the Brunswick County Tax Administration office.
+- **Report caveat:** Assessor and tax data for Brunswick County, NC is not evaluated by the current private-MVP pipeline. Tax records, owner information, assessed value, sale history, and supplemental assessments require confirmation by Brunswick County Tax Administration and qualified professionals.
 
 ### Commercial parcel vendor (DS-017)
 - **Queryability class:** blocked / not required for private MVP

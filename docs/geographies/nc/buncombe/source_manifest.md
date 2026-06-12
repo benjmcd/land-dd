@@ -33,24 +33,25 @@
 - **Report caveat:** Mapped road data for Buncombe County, NC indicates probable access routes. Road presence on a map does not confirm legal access, right-of-way, easement, or maintenance obligation. Requires confirmation by a title professional and licensed surveyor.
 
 ### Zoning (DS-023)
-- **Queryability class:** fixture-backed (StaticZoningFixtureConnector) for private MVP regression
+- **Queryability class:** out of current DS-023 selected-county recorded-fixture scope; Buncombe zoning remains NOT_EVALUATED unless separately supplied and reviewed
 - **Source authority:** Buncombe County Planning and Development zoning GIS layer
+- **Private MVP stance:** No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed. Chatham and Brunswick recorded-fixture zoning are the only DS-023 selected-county connector-ready paths.
 - **Known caveats:** Zoning classifications change through local ordinance; source date matters. Mapped zoning indicates the official classification at the time of data retrieval; does not confirm zoning entitlements, variances, conditional uses, or development-permit status.
-- **Report caveat:** Mapped zoning data for Buncombe County, NC indicates the applicable zoning classification as of the data retrieval date. Requires confirmation by the Buncombe County Planning and Development office for current zoning status, pending amendments, and any applicable overlay districts.
+- **Report caveat:** Buncombe County zoning is not evaluated by the current selected-county DS-023 source path. Any zoning classification, entitlement, overlay, variance, or permit status requires confirmation by the Buncombe County Planning and Development office.
 
 ### Parcels / cadastral (DS-010)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Buncombe County GIS parcel layer — local official; download available
-- **Private MVP stance:** No machine-queryable county parcel connection is wired for private MVP. Parcel geometry and attributes are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** selected-county live connector for immediate operator API and request-time orchestration; fixture regression cases without parcel evidence still record NOT_EVALUATED
+- **Source authority:** Buncombe County GIS parcel layer - local official; download available
+- **Private MVP stance:** DS-010 is connector-ready for Buncombe County parcel screening only. No owner/value/title fields are exposed; durable live-job support and counties outside Buncombe/Chatham/Brunswick are not claimed.
 - **Known caveats:** Parcel boundaries are approximate; not survey-grade. Does not confirm legal boundary, easements, or title.
-- **Report caveat:** Parcel boundary and cadastral data for Buncombe County, NC was not available through the data pipeline for this analysis. Parcel information requires confirmation by the Buncombe County Register of Deeds and a licensed surveyor.
+- **Report caveat:** Buncombe County parcel screening data, when present, is approximate and not survey-grade. It does not confirm legal boundary, easements, title, ownership, value, or buildability; confirm with county records, a title professional, and a licensed surveyor. If parcel evidence is absent for a fixture case, the report must surface an explicit NOT_EVALUATED unknown.
 
 ### Assessor / tax (DS-011)
-- **Queryability class:** deferred — NOT_EVALUATED for private MVP fixture regression
-- **Source authority:** Buncombe County Tax Administration — local official
-- **Private MVP stance:** No machine-queryable assessor connection is wired for private MVP. Assessed value, tax year, and situs are recorded as NOT_EVALUATED with an explicit unknown in the report.
+- **Queryability class:** AssessorNotEvaluatedConnector sentinel for immediate operator API and request-time orchestration; no live assessor portal query
+- **Source authority:** Buncombe County Tax Administration - local official
+- **Private MVP stance:** DS-011 records explicit ASSESSOR_NOT_EVALUATED source-failure evidence. No owner, assessed value, sale-history, appraisal, or lending-suitability data is asserted.
 - **Known caveats:** Assessed value is not market value. Schema and access vary; requires county-specific API or data feed.
-- **Report caveat:** Assessor and tax data for Buncombe County, NC was not available through the data pipeline for this analysis. Tax records require confirmation by the Buncombe County Tax Administration office.
+- **Report caveat:** Assessor and tax data for Buncombe County, NC is not evaluated by the current private-MVP pipeline. Tax records, owner information, assessed value, and sale history require confirmation by the Buncombe County Tax Administration office and must not be inferred from the sentinel.
 
 ### Commercial parcel vendor (DS-017)
 - **Queryability class:** blocked / not required for private MVP

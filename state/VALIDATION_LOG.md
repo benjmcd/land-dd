@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Selected-County Source Manifest Alignment
+
+**Scope:** Align Buncombe, Chatham, and Brunswick source manifests with the
+structured DS-010/DS-011/DS-023 private-MVP selected-county scope. The manifests
+now distinguish current parcel connector readiness, assessor NOT_EVALUATED
+sentinels, Chatham/Brunswick recorded-fixture zoning readiness, and Buncombe
+zoning out-of-scope status. This does not change source-readiness counts,
+connector execution, DB schema, public APIs, report semantics, DS-017, or hosted
+production blockers.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_private_mvp_readiness.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+rg -n <COUNTY_MANIFEST_STALE_PHRASES pattern> .\docs\geographies
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m pytest -q tests\source_registry tests\test_private_mvp_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\run_release_readiness_check.ps1
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Private-MVP readiness tests passed: 21 tests.
+- Private-MVP readiness validator passed and now validates county source
+  manifest required phrases while rejecting stale no-connector / unavailable
+  pipeline language.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Stale manifest phrase search found no matches under `docs/geographies`.
+- Targeted source-readiness/private-MVP tests passed: 28 tests.
+- Broader `tests/source_registry` plus private-MVP tests passed with one existing
+  skipped test.
+- Harness correction: `tests\test_source_readiness.py` is not present in this
+  checkout; the combined source-readiness scope was rerun with the current
+  `tests\source_registry\...` paths.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains
+  the only Must blocker.
+- Release-readiness validator passed.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for touched
+  Markdown files and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source
+  files, and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This closes source-manifest truthfulness drift only. It does
+not add a first-class per-county readiness schema, run DB smoke, add county
+coverage, execute connectors, close DS-017, or resolve hosted-production
+blockers.
+
 ## 2026-06-12 Structured Selected-County Source-Scope Catalog
 
 **Scope:** Move DS-010/DS-011/DS-023 selected-county private-MVP source-scope

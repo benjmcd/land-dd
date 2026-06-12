@@ -2248,3 +2248,26 @@ to the proof.
 ruff, and mypy pass across private-MVP, release-readiness, and source-readiness proof
 surfaces. DS-017 remains blocked for full release readiness; private-MVP utility proof
 remains explicitly separate.
+
+---
+
+## 2026-06-12 - Selected-County Source Manifest Alignment
+
+**Goal:** Keep Buncombe, Chatham, and Brunswick source manifests aligned with the
+structured DS-010/DS-011/DS-023 selected-county private-MVP source scope.
+
+**Approach:** Updated the county manifest DS-010, DS-011, and DS-023 sections to
+replace stale no-connector / unavailable-pipeline language with the current
+selected-county boundary: DS-010 parcel screening is connector-ready for the
+selected counties, DS-011 remains an explicit `AssessorNotEvaluatedConnector`
+sentinel, DS-023 recorded-fixture zoning is connector-ready only for
+Chatham/Brunswick, and Buncombe zoning remains out of the current DS-023 scope.
+Added the same invariant to `scripts/private_mvp_readiness_check.py` and focused
+private-MVP tests so manifest drift fails the operator readiness gate.
+
+**Result:** Private-MVP tests, the private-MVP readiness wrapper, focused
+ruff/mypy, targeted source-readiness/private-MVP tests, broader source-registry
+plus private-MVP tests, stale manifest phrase audit, `git diff --check`, and
+default `.\scripts\verify.ps1` passed. `git diff --check` emitted only
+CRLF-to-LF normalization warnings for touched Markdown files. DB smoke was not
+run in this slice; DS-017 and hosted-production blockers remain unchanged.

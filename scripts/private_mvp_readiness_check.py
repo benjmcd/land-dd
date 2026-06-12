@@ -70,6 +70,29 @@ CATALOG_STALE_PHRASES = (
     "terrain/wetlands as live-connector-only",
     "parcels/assessor as NOT_EVALUATED for fixture regression",
 )
+COUNTY_MANIFEST_REQUIRED_PHRASES = {
+    "docs/geographies/nc/buncombe/source_manifest.md": (
+        "No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed",
+        "DS-010 is connector-ready for Buncombe County parcel screening only",
+        "AssessorNotEvaluatedConnector sentinel",
+    ),
+    "docs/geographies/nc/chatham/source_manifest.md": (
+        "DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only",
+        "DS-010 is connector-ready for Chatham County parcel screening only",
+        "AssessorNotEvaluatedConnector sentinel",
+    ),
+    "docs/geographies/nc/brunswick/source_manifest.md": (
+        "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only",
+        "DS-010 is connector-ready for Brunswick County parcel screening only",
+        "AssessorNotEvaluatedConnector sentinel",
+    ),
+}
+COUNTY_MANIFEST_STALE_PHRASES = (
+    "No machine-queryable county parcel connection is wired for private MVP",
+    "No machine-queryable assessor connection is wired for private MVP",
+    "was not available through the data pipeline",
+    "fixture-backed (StaticZoningFixtureConnector) for private MVP regression",
+)
 REQUIRED_SELECTED_COUNTY_SOURCE_IDS = {"DS-010", "DS-011", "DS-023"}
 
 
@@ -425,6 +448,23 @@ def validate_operator_runbook() -> None:
         )
 
 
+def validate_county_source_manifests() -> None:
+    for path_text, required_phrases in COUNTY_MANIFEST_REQUIRED_PHRASES.items():
+        path = ROOT / path_text
+        require(path.is_file(), f"county source manifest missing: {path_text}")
+        manifest = path.read_text(encoding="utf-8")
+        for phrase in required_phrases:
+            require(
+                phrase in manifest,
+                f"county source manifest {path_text} missing phrase: {phrase}",
+            )
+        for phrase in COUNTY_MANIFEST_STALE_PHRASES:
+            require(
+                phrase not in manifest,
+                f"county source manifest {path_text} has stale phrase: {phrase}",
+            )
+
+
 def main() -> int:
     validate_required_files()
     catalog = load_catalog()
@@ -435,6 +475,7 @@ def main() -> int:
     validate_ds017_boundary(catalog)
     validate_full_release_stays_blocked(selected_county_scope)
     validate_operator_runbook()
+    validate_county_source_manifests()
     return 0
 
 
