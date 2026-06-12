@@ -199,6 +199,11 @@ def test_buncombe_mvp_regression() -> None:
         geom_file="bun_slope.geojson",
         connector_fixtures=[
             (
+                "nc_buncombe_bun_slope_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
                 "nc_buncombe_bun_slope_flood.json",
                 StaticFloodFixtureConnector,
                 evaluate_flood_fixture_quality,
@@ -367,6 +372,11 @@ def test_buncombe_access_regression() -> None:
         geom_file="bun_access.geojson",
         connector_fixtures=[
             (
+                "nc_buncombe_bun_access_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
                 "nc_buncombe_bun_access_access.json",
                 StaticAccessFixtureConnector,
                 evaluate_access_fixture_quality,
@@ -390,6 +400,11 @@ def test_buncombe_flood_regression() -> None:
     _run_mvp_case(
         geom_file="bun_flood.geojson",
         connector_fixtures=[
+            (
+                "nc_buncombe_bun_flood_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
             (
                 "nc_buncombe_bun_flood_buildability.json",
                 StaticBuildabilityFixtureConnector,

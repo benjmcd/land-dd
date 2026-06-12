@@ -22,13 +22,13 @@ cases:
       access: nc_buncombe_bun_slope_access.json
       buildability: nc_buncombe_bun_slope_buildability.json
       terrain: nc_buncombe_bun_slope_terrain.json
-    expected_connector_workflow_domains: [flood, access, buildability, terrain]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_buncombe_bun_slope_parcels.json
+    expected_connector_workflow_domains: [flood, access, buildability, terrain, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Buncombe County
       - does not confirm legal access
-      - Parcel boundary and cadastral data were not available
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -49,12 +49,12 @@ cases:
       flood: nc_buncombe_bun_flood_flood.json
       buildability: nc_buncombe_bun_flood_buildability.json
       terrain: nc_buncombe_bun_flood_terrain.json
-    expected_connector_workflow_domains: [flood, buildability, terrain]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_buncombe_bun_flood_parcels.json
+    expected_connector_workflow_domains: [flood, buildability, terrain, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Buncombe County
-      - Parcel boundary and cadastral data were not available
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -75,12 +75,12 @@ cases:
       access: nc_buncombe_bun_access_access.json
       buildability: nc_buncombe_bun_access_buildability.json
       terrain: nc_buncombe_bun_access_terrain.json
-    expected_connector_workflow_domains: [access, buildability, terrain]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_buncombe_bun_access_parcels.json
+    expected_connector_workflow_domains: [access, buildability, terrain, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - does not confirm legal access
-      - Parcel boundary and cadastral data were not available
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"

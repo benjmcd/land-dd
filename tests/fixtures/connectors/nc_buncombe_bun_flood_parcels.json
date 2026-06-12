@@ -1,0 +1,52 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e2e2e2e2-e2e2-4e2e-8e2e-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_flood_parcels",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "e2e2e2e2-e2e2-4e2e-8e2e-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "PARCEL_INTERSECTION_SCREEN",
+      "domain": "parcels",
+      "observation": "Fixture parcel screening: Buncombe County parcel intersection — mountain floodplain stress case (French Broad River area). AOI intersects 1 parcel in river floodplain corridor.",
+      "observed_value": {
+        "parcel_count": 1,
+        "parcel_pin": "9650-57-1832-FX",
+        "parcel_county": "Buncombe County, NC",
+        "parcel_zoning": null,
+        "owner_display": "NOT_SHOWN",
+        "parcel_class": "rural_residential",
+        "total_acres_approx": 38.2,
+        "source_note": "Fixture parcel data for Buncombe County floodplain stress case. Zoning not available from Buncombe County GIS parcel layer."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only parcel data for Buncombe County. Parcel boundaries are approximate; not survey-grade. Ownership, easements, and recorded instruments require confirmation by the Buncombe County Register of Deeds and a licensed surveyor. Acreage and classification are indicative only. Zoning is not available from the Buncombe County GIS parcel layer; verify land use with Buncombe County Planning.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-82.570, 35.555], [-82.550, 35.555], [-82.550, 35.565], [-82.570, 35.565], [-82.570, 35.555]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 50.0
+    }
+  ]
+}
