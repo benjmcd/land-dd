@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Minerals/broadband rule engine + dossier no-access test)
+
+- Added `minerals` domain hard-gate rules to `ruleset_homestead_mvp.yaml` and
+  `rule_engine.py`: MINERALS_G001 (`blm_active_mining_claims_present`, severity=low)
+  fires `MINERALS_ACTIVE_CLAIMS_001`; MINERALS_G002 (`minerals_source_unavailable`,
+  severity=unknown) fires `MINERALS_SOURCE_UNAVAILABLE` (suppressed when active present).
+  4 new predicate helpers, 4 new claim methods. Commit: 67c8836.
+- Added `broadband` domain hard-gate rules: BROADBAND_G001
+  (`no_broadband_service_detected`, severity=low) fires `BROADBAND_NO_ACCESS_001` when
+  `has_any_broadband=False`; BROADBAND_G002 (`broadband_source_unavailable`,
+  severity=unknown) fires `BROADBAND_SOURCE_UNAVAILABLE` (suppressed when no-access
+  evidence present). Same pattern as minerals. Commit: 67c8836.
+- Updated `resource_context` NOT_EVALUATED caveat text to note BLM federal mining-claims
+  screen is provided under `minerals` domain and does not determine private mineral rights.
+- Fixed `_MINIMAL_RULESET_YAML` in `test_forbidden_language.py` to include all 4 new
+  rules; fixed ruff I001 in 4 fixture-quality test files; fixed E501 in Chatham zoning test.
+- Added 8 rule-engine tests (minerals + broadband active/zero/failure/suppression).
+- Added dossier enrichment test `test_dossier_renders_broadband_no_access_from_evidence`
+  verifying `has_any_broadband=False` renders "no providers reported in FCC BDC" in
+  Section 12. Commit: 6d28713.
+- Full suite: 1544 passed, 73 skipped; ruff/mypy clean (297 source files). .\scripts\verify.ps1 ok.
+
 ## 2026-06-12 (Domain surfacing pass — terrain/soils/census/minerals/geology + enrichment tests)
 
 - Extended dossier Section 6 (Buildability) to read from both `buildability` and `terrain`

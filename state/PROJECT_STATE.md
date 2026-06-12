@@ -1,6 +1,28 @@
 # Project State
 
-## Current checkpoint (2026-06-12 full domain surfacing pass)
+## Current checkpoint (2026-06-12 minerals/broadband rule engine + dossier coverage)
+
+Rule engine now covers all implemented connector domains:
+- `minerals` domain: two new hard-gate rules (MINERALS_G001 `blm_active_mining_claims_present`
+  severity=low; MINERALS_G002 `minerals_source_unavailable` severity=unknown). Active BLM
+  mining-claim evidence fires `MINERALS_ACTIVE_CLAIMS_001`; source failure fires
+  `MINERALS_SOURCE_UNAVAILABLE` (suppressed when active evidence present). 8 new rule-engine
+  tests covering active/zero/failure/suppression for both minerals and broadband.
+- `broadband` domain: two new hard-gate rules (BROADBAND_G001 `no_broadband_service_detected`
+  severity=low; BROADBAND_G002 `broadband_source_unavailable` severity=unknown). FCC no-access
+  evidence (`has_any_broadband=False`) fires `BROADBAND_NO_ACCESS_001`; source failure fires
+  `BROADBAND_SOURCE_UNAVAILABLE` (suppressed when no-access evidence present).
+- `resource_context` NOT_EVALUATED caveat updated to distinguish BLM federal mining-claims
+  screen (separate `minerals` domain) from private mineral rights (not evaluated).
+- `_MINIMAL_RULESET_YAML` in `test_forbidden_language.py` updated with all 4 new rules.
+- Ruff I001 fixed in 4 fixture-quality test files; E501 fixed in Chatham zoning test.
+- Dossier enrichment test added for broadband no-access rendering (`has_any_broadband=False`).
+- Full suite: 1544 passed, 73 skipped; ruff/mypy clean (297 source files).
+- All connector domains (`minerals`, `broadband`, `geology`, `census_geography`, `climate`)
+  are now accounted for — `geology`/`census_geography`/`climate` are informational-only
+  with no advisory claims needed.
+
+## Previous checkpoint (2026-06-12 full domain surfacing pass)
 
 All connector evidence domains now surface in the dossier:
 - New Section 14 "Resource / Geologic Context": surfaces BLM MLRS (`minerals`), USGS MRDS
@@ -17,8 +39,6 @@ All connector evidence domains now surface in the dossier:
   verifies all 9 golden AOI `expected_caveats` and `forbidden_claims`.
 - 6 new enrichment tests for all new helpers; total enrichment tests: 37.
 - Full suite: 1535 passed, 73 skipped; ruff/mypy clean.
-- Known gap: `minerals` and `geology` domains have no rule-engine rules — evidence surfaces
-  in dossier but no advisory claims are generated when mining claims or occurrences found.
 
 ## Previous checkpoint (2026-06-12 dossier mineral/geology section + manifest-driven tests)
 

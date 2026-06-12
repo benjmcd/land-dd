@@ -2,6 +2,29 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Minerals/Broadband Rule Engine + Dossier No-Access Test
+
+**Scope:** Add `minerals`/`broadband` rule-engine hard-gate rules; fix lint; add dossier
+broadband no-access enrichment test.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests/claims_engine/test_rule_engine.py tests/claims_engine/test_forbidden_language.py --tb=short
+cd backend; py -3.12 -m pytest tests/reports/test_dossier_enrichment.py::test_dossier_renders_broadband_no_access_from_evidence
+.\scripts\verify.ps1
+```
+
+**Results:**
+- Targeted claims-engine + forbidden-language tests: all passed
+- Dossier broadband no-access test: passed
+- Full suite: 1544 passed, 73 skipped; ruff clean; mypy clean (297 source files)
+
+**Residual risk:**
+- Rule engine fires advisory claims (LOW/UNKNOWN) for minerals/broadband; these appear in
+  the dossier claims section but carry no implications beyond "verify with professionals."
+- `geology`/`census_geography`/`climate` domains remain informational-only (no claims).
+
 ## 2026-06-12 Dossier Minerals/Geology Section + Manifest-Driven Tests
 
 **Scope:** Surface BLM/MRDS/NCGS evidence (domains `minerals`, `geology`) in new
