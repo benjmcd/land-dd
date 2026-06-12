@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a101",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/parcel_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_parcel_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a102",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "PARCEL_SOURCE_UNAVAILABLE",
+      "domain": "parcels",
+      "observation": "Fixture parcel source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_parcel_source_unavailable",
+        "error_message": "Fixture parcel source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only parcel screening; parcel source was unavailable.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}
