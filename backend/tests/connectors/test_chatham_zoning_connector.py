@@ -5,10 +5,10 @@ from uuid import UUID
 from pydantic import HttpUrl
 
 from app.connectors.chatham_zoning_recorded import (
+    _CHATHAM_UDO_DISTRICTS,
     CHATHAM_ZONING_CONNECTOR_NAME,
     CHATHAM_ZONING_UDO_EFFECTIVE,
     ChathamZoningRecordedConnector,
-    _CHATHAM_UDO_DISTRICTS,
 )
 from app.domain.enums import AuthorityLevel, ConfidenceBand, EvidenceType
 from app.domain.source_contracts import SourceContract, SourceRetrievalStatus
@@ -235,9 +235,9 @@ def test_all_residential_districts_have_consistent_screening() -> None:
     for code in residential_codes:
         result = connector.query_district(area_id=_AREA_ID, zoning_code=code, source=source)
         evidence = result.evidence_inputs[0]
-        assert evidence.observed_value["residential_use_screening"] == "ALLOWED_WITH_RESTRICTIONS", (
-            f"Expected ALLOWED_WITH_RESTRICTIONS for residential district {code!r}, "
-            f"got {evidence.observed_value['residential_use_screening']!r}"
+        got = evidence.observed_value["residential_use_screening"]
+        assert got == "ALLOWED_WITH_RESTRICTIONS", (
+            f"Expected ALLOWED_WITH_RESTRICTIONS for residential district {code!r}, got {got!r}"
         )
 
     industrial_codes = ["I", "I-1", "I-2"]

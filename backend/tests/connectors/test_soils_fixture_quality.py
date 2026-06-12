@@ -4,11 +4,11 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from app.connectors.soils_fixture import StaticSoilsFixtureConnector
 from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     evaluate_soils_fixture_quality,
 )
+from app.connectors.soils_fixture import StaticSoilsFixtureConnector
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
 

@@ -4,11 +4,11 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from app.connectors.terrain_fixture import StaticTerrainFixtureConnector
 from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     evaluate_terrain_fixture_quality,
 )
+from app.connectors.terrain_fixture import StaticTerrainFixtureConnector
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
 
