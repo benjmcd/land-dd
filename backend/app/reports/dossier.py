@@ -36,6 +36,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         f"- Parcel ID/APN: {_parcel_id(report_run)}",
         f"- Jurisdiction: {_jurisdiction_from_evidence(report_run)}",
+        f"- Census geography: {_census_geography_result(report_run)}",
         f"- Acreage: {_parcel_acreage(report_run)}",
         f"- Zoning designation: {_parcel_zoning(report_run)}",
         f"- Parcel data caveats: {_domain_caveats(report_run, {'parcels'})}",
@@ -359,6 +360,28 @@ def _jurisdiction_from_evidence(report_run: ReportRunContract) -> str:
             if isinstance(county, str) and county.strip():
                 return county.strip()
     return "unknown"
+
+
+def _census_geography_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "census_geography" and not r.is_source_failure
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence
+            if r.evidence_code == "CENSUS_TIGER_SOURCE_FAILURE"
+        ]
+        return "source failure — Census TIGERweb data unavailable" if failures else "not evaluated"
+    record = records[0]
+    parts: list[str] = []
+    tract = record.observed_value.get("primary_census_tract_geoid")
+    bg = record.observed_value.get("primary_census_block_group_geoid")
+    if tract:
+        parts.append(f"tract {tract}")
+    if bg:
+        parts.append(f"block group {bg}")
+    return "; ".join(parts) if parts else _cell(record.observation)
 
 
 def _access_road_result(report_run: ReportRunContract) -> str:
