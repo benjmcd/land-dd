@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Domain surfacing pass — terrain/soils/census/minerals/geology + enrichment tests)
+
+- Extended dossier Section 6 (Buildability) to read from both `buildability` and `terrain`
+  domains via `_BUILDABILITY_DOMAINS` frozenset. Fixture connectors use `terrain`, live
+  USGS TNM uses `buildability`; both now surface correctly.
+- Extended dossier Section 8 (Soil/Septic) to read from both `soil_septic` and `soils`
+  domains via `_SOIL_DOMAINS` frozenset. Added soils-fixture key path
+  (`dominant_map_unit`/`drainage_class`) alongside the SSURGO path. Fixed
+  BRU-wetlands-soils soils fixture caveat to avoid forbidden phrase
+  "septic suitability" (changed to "on-site septic determination"). Commit: 8989abd.
+- Added `_census_geography_result` helper and Census geography line in Section 2 (Area
+  Identity) surfacing census tract/block-group GEOIDs from `census_geography` domain.
+  CensusTigerConnector evidence was stored but never displayed. Commit: f437b13.
+- Added 6 new enrichment tests (total now 37): census_geography, BLM mining claims,
+  USGS MRDS mineral occurrences, NCGS geologic unit, terrain domain in buildability,
+  soils domain in soil section. Commit: 66b7887.
+- Full suite: 1535 passed, 73 skipped; ruff/mypy clean.
+
 ## 2026-06-12 (Dossier minerals/geology section + manifest-driven golden tests)
 
 - Added Section 14 "Resource / Geologic Context" to dossier surfacing BLM MLRS

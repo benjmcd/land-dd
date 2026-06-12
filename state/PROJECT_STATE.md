@@ -1,6 +1,26 @@
 # Project State
 
-## Current checkpoint (2026-06-12 dossier mineral/geology section + manifest-driven tests)
+## Current checkpoint (2026-06-12 full domain surfacing pass)
+
+All connector evidence domains now surface in the dossier:
+- New Section 14 "Resource / Geologic Context": surfaces BLM MLRS (`minerals`), USGS MRDS
+  (`minerals`), NCGS geologic map (`geology`) evidence. Section renumbering: former 14–17
+  → 15–18. `test_report_overclaim.py` updated.
+- Section 2 (Area Identity): `_census_geography_result` helper surfaces Census TIGERweb
+  tract/block-group GEOIDs from `census_geography` domain.
+- Section 6 (Buildability): `_BUILDABILITY_DOMAINS = {'buildability', 'terrain'}` — fixture
+  connectors' `terrain` domain now surfaces alongside live USGS TNM `buildability` domain.
+- Section 8 (Soil/Septic): `_SOIL_DOMAINS = {'soil_septic', 'soils'}` — fixture connectors'
+  `soils` domain now surfaces alongside live SSURGO `soil_septic` domain; soils-fixture key
+  path (`dominant_map_unit`/`drainage_class`) added.
+- 18-test manifest-driven parametrized suite in `tests/private_mvp/test_manifest_driven.py`
+  verifies all 9 golden AOI `expected_caveats` and `forbidden_claims`.
+- 6 new enrichment tests for all new helpers; total enrichment tests: 37.
+- Full suite: 1535 passed, 73 skipped; ruff/mypy clean.
+- Known gap: `minerals` and `geology` domains have no rule-engine rules — evidence surfaces
+  in dossier but no advisory claims are generated when mining claims or occurrences found.
+
+## Previous checkpoint (2026-06-12 dossier mineral/geology section + manifest-driven tests)
 
 New dossier Section 14 "Resource / Geologic Context" surfaces evidence from BLM MLRS
 (domain `minerals`), USGS MRDS (domain `minerals`), and NCGS geologic map (domain `geology`)
