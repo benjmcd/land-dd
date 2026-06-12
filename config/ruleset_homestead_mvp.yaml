@@ -92,6 +92,18 @@ ruleset:
       condition: assessor_not_evaluated
       claim_code: ASSESSOR_NOT_EVALUATED
       verification_task: Confirm assessed value, tax year, and ownership information with the county Tax Administration office. Assessed value is not market value.
+    - code: BROADBAND_G001
+      domain: broadband
+      severity_on_fail: low
+      condition: no_broadband_service_detected
+      claim_code: BROADBAND_NO_ACCESS_001
+      verification_task: Verify broadband availability directly with local internet service providers; FCC data may lag actual availability, especially for fixed wireless and newer fiber deployments.
+    - code: BROADBAND_G002
+      domain: broadband
+      severity_on_fail: unknown
+      condition: broadband_source_unavailable
+      claim_code: BROADBAND_SOURCE_UNAVAILABLE
+      verification_task: FCC broadband availability data could not be retrieved. Verify internet connectivity options with local ISPs before relying on this area for remote work or farm operations.
     - code: MINERALS_G001
       domain: minerals
       severity_on_fail: low

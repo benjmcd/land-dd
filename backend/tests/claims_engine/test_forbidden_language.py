@@ -98,6 +98,18 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: assessor_not_evaluated
           claim_code: ASSESSOR_NOT_EVALUATED
           verification_task: Confirm tax records with county Tax Administration office.
+        - code: BROADBAND_G001
+          domain: broadband
+          severity_on_fail: low
+          condition: no_broadband_service_detected
+          claim_code: BROADBAND_NO_ACCESS_001
+          verification_task: Verify broadband with local ISPs.
+        - code: BROADBAND_G002
+          domain: broadband
+          severity_on_fail: unknown
+          condition: broadband_source_unavailable
+          claim_code: BROADBAND_SOURCE_UNAVAILABLE
+          verification_task: Verify internet connectivity with local ISPs.
         - code: MINERALS_G001
           domain: minerals
           severity_on_fail: low

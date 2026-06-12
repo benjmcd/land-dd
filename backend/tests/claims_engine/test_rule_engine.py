@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.claims_engine.rule_engine import (
+    BROADBAND_NO_ACCESS_CLAIM_CODE,
+    BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE,
     DEFAULT_RULESET_PATH,
     ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
     ENV_HAZARD_STALE_CLAIM_CODE,
@@ -1433,6 +1435,106 @@ def test_minerals_source_failure_suppressed_when_active_claims_present() -> None
     assert any(c.claim_code == MINERALS_ACTIVE_CLAIM_CODE for c in mineral_claims)
     assert not any(
         c.claim_code == MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE for c in mineral_claims
+    )
+
+
+def make_broadband_no_access_evidence(
+    area_id: UUID,
+    *,
+    confidence: ConfidenceBand = ConfidenceBand.LOW,
+) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="FCC_BROADBAND_AVAILABILITY",
+        domain="broadband",
+        observation="FCC broadband: no providers reported in this area.",
+        observed_value={"has_any_broadband": False, "provider_count": 0},
+        method_code="fixture_fcc_broadband_screen",
+        confidence=confidence,
+        caveat="FCC broadband data may lag real availability for fixed wireless.",
+        is_negative_evidence=True,
+    )
+
+
+def make_broadband_failure_evidence(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="FCC_BROADBAND_SOURCE_FAILURE",
+        domain="broadband",
+        observation="FCC broadband source request failed.",
+        observed_value={},
+        method_code="fixture_fcc_broadband_screen",
+        confidence=ConfidenceBand.UNKNOWN,
+        caveat="FCC endpoint unavailable.",
+        is_source_failure=True,
+    )
+
+
+def test_broadband_no_access_claim_generated() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_broadband_no_access_evidence(area_id)
+
+    claims = engine.evaluate([evidence])
+
+    bb_claims = [c for c in claims if c.domain == "broadband"]
+    no_access = [c for c in bb_claims if c.claim_code == BROADBAND_NO_ACCESS_CLAIM_CODE]
+    assert len(no_access) == 1
+    assert no_access[0].severity == SeverityBand.LOW
+    assert no_access[0].verification_required is True
+
+
+def test_broadband_with_access_generates_no_claim() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="FCC_BROADBAND_AVAILABILITY",
+        domain="broadband",
+        observation="FCC broadband: providers available.",
+        observed_value={"has_any_broadband": True, "provider_count": 3},
+        method_code="fixture_fcc_broadband_screen",
+        confidence=ConfidenceBand.LOW,
+        caveat="FCC data may lag.",
+    )
+
+    claims = engine.evaluate([evidence])
+
+    no_access = [c for c in claims if c.claim_code == BROADBAND_NO_ACCESS_CLAIM_CODE]
+    assert len(no_access) == 0
+
+
+def test_broadband_source_failure_generates_unknown_claim() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_broadband_failure_evidence(area_id)
+
+    claims = engine.evaluate([evidence])
+
+    bb_claims = [c for c in claims if c.domain == "broadband"]
+    unknown = [c for c in bb_claims if c.claim_code == BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE]
+    assert len(unknown) == 1
+    assert unknown[0].severity == SeverityBand.UNKNOWN
+
+
+def test_broadband_failure_suppressed_when_no_access_present() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    no_access_ev = make_broadband_no_access_evidence(area_id)
+    failure_ev = make_broadband_failure_evidence(area_id)
+
+    claims = engine.evaluate([no_access_ev, failure_ev])
+
+    bb_claims = [c for c in claims if c.domain == "broadband"]
+    assert any(c.claim_code == BROADBAND_NO_ACCESS_CLAIM_CODE for c in bb_claims)
+    assert not any(
+        c.claim_code == BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE for c in bb_claims
     )
 
 

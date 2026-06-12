@@ -64,6 +64,10 @@ MINERALS_ACTIVE_CLAIM_CONDITION = "blm_active_mining_claims_present"
 MINERALS_SOURCE_UNAVAILABLE_CONDITION = "minerals_source_unavailable"
 MINERALS_ACTIVE_CLAIM_CODE = "MINERALS_ACTIVE_CLAIMS_001"
 MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE = "MINERALS_SOURCE_UNAVAILABLE"
+BROADBAND_NO_ACCESS_CONDITION = "no_broadband_service_detected"
+BROADBAND_SOURCE_UNAVAILABLE_CONDITION = "broadband_source_unavailable"
+BROADBAND_NO_ACCESS_CLAIM_CODE = "BROADBAND_NO_ACCESS_001"
+BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE = "BROADBAND_SOURCE_UNAVAILABLE"
 
 
 @dataclass(frozen=True)
@@ -119,6 +123,12 @@ class RuleEngine:
         )
         minerals_unavailable_rule = self._ruleset.hard_gate_for_condition(
             MINERALS_SOURCE_UNAVAILABLE_CONDITION
+        )
+        broadband_no_access_rule = self._ruleset.hard_gate_for_condition(
+            BROADBAND_NO_ACCESS_CONDITION
+        )
+        broadband_unavailable_rule = self._ruleset.hard_gate_for_condition(
+            BROADBAND_SOURCE_UNAVAILABLE_CONDITION
         )
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
@@ -312,6 +322,14 @@ class RuleEngine:
             minerals_failures = [
                 evidence for evidence in area_evidence
                 if _is_minerals_source_failure(evidence)
+            ]
+            broadband_no_access = [
+                evidence for evidence in area_evidence
+                if _is_broadband_no_access_evidence(evidence)
+            ]
+            broadband_failures = [
+                evidence for evidence in area_evidence
+                if _is_broadband_source_failure(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -566,6 +584,18 @@ class RuleEngine:
                 claims.append(
                     self._minerals_unknown_claim(
                         area_id, minerals_unavailable_rule, minerals_failures
+                    )
+                )
+            if broadband_no_access:
+                claims.append(
+                    self._broadband_no_access_claim(
+                        area_id, broadband_no_access_rule, broadband_no_access
+                    )
+                )
+            if broadband_failures and not broadband_no_access:
+                claims.append(
+                    self._broadband_unknown_claim(
+                        area_id, broadband_unavailable_rule, broadband_failures
                     )
                 )
             for domain in NOT_EVALUATED_DOMAINS:
@@ -1760,6 +1790,73 @@ class RuleEngine:
             verification_task=rule.verification_task,
         )
 
+    def _broadband_no_access_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "FCC broadband availability screening indicates no broadband providers "
+            "reported for this area. FCC data may lag actual availability, especially "
+            "for fixed wireless and newer deployments. Verify directly with local ISPs "
+            "before relying on this area for remote work or connected farm operations."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=BROADBAND_NO_ACCESS_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="FCC broadband screening found no broadband service reported for this area.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _broadband_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Broadband availability screening remains unknown because FCC source data "
+            "failed or was unavailable. Verify internet connectivity options with local "
+            "ISPs before relying on this area for remote work or farm operations."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Broadband availability source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -2285,6 +2382,18 @@ def _is_stale_env_hazard_evidence(evidence: EvidenceContract) -> bool:
     )
 
 
+def _is_broadband_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "broadband" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_broadband_no_access_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "broadband" or _is_broadband_source_failure(evidence):
+        return False
+    return _observed_false(evidence.observed_value.get("has_any_broadband"))
+
+
 def _is_minerals_source_failure(evidence: EvidenceContract) -> bool:
     return evidence.domain == "minerals" and (
         evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
@@ -2379,6 +2488,10 @@ def _lowest_confidence(evidence_records: list[EvidenceContract]) -> ConfidenceBa
 
 
 __all__ = [
+    "BROADBAND_NO_ACCESS_CLAIM_CODE",
+    "BROADBAND_NO_ACCESS_CONDITION",
+    "BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE",
+    "BROADBAND_SOURCE_UNAVAILABLE_CONDITION",
     "DEFAULT_RULESET_PATH",
     "ENV_HAZARD_CONDITION",
     "ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE",
