@@ -20,12 +20,14 @@ from app.connectors import (
     StaticFloodFixtureConnector,
     StaticParcelFixtureConnector,
     StaticTerrainFixtureConnector,
+    StaticZoningFixtureConnector,
     build_fixture_workflow_with_public_services,
     evaluate_access_fixture_quality,
     evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_parcel_fixture_quality,
     evaluate_terrain_fixture_quality,
+    evaluate_zoning_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
 from app.domain.enums import IntentCode, JobStatus
@@ -249,6 +251,25 @@ def test_brunswick_mvp_regression() -> None:
                 "nc_brunswick_bru_coastal_flood_flood.json",
                 StaticFloodFixtureConnector,
                 evaluate_flood_fixture_quality,
+            ),
+        ],
+    )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_chatham_zoning_edge_mvp_regression() -> None:
+    _run_mvp_case(
+        geom_file="cha_zoning_edge.geojson",
+        connector_fixtures=[
+            (
+                "nc_chatham_cha_zoning_edge_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
+                "nc_chatham_cha_zoning_edge_zoning.json",
+                StaticZoningFixtureConnector,
+                evaluate_zoning_fixture_quality,
             ),
         ],
     )
