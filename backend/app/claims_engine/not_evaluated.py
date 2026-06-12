@@ -31,9 +31,12 @@ NOT_EVALUATED_CAVEATS = {
         "determination."
     ),
     "resource_context": (
-        "Mineral, timber, water-rights, and resource-context sources are not "
-        "supported in this screening tool version. Consult title, state resource "
-        "records, and qualified local professionals for resource due diligence."
+        "Private mineral rights, timber rights, water rights, and resource-context "
+        "sources are not supported in this screening tool version. Note: limited "
+        "federal mining claims screening (BLM MLRS) is provided separately under "
+        "the minerals domain and does not determine private mineral rights ownership. "
+        "Consult title, state resource records, and qualified local professionals "
+        "for resource due diligence."
     ),
     "market_context": (
         "Market context was not evaluated. This screening tool provides no "
