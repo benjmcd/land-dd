@@ -1,0 +1,52 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "f2f2f2f2-f2f2-4f2f-8f2f-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_wetlands_soils_parcels",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "f2f2f2f2-f2f2-4f2f-8f2f-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "PARCEL_INTERSECTION_SCREEN",
+      "domain": "parcels",
+      "observation": "Fixture parcel screening: Brunswick County parcel intersection — wetlands/soils/septic-proxy stress case. AOI intersects 1 parcel with substantial wetland acreage.",
+      "observed_value": {
+        "parcel_count": 1,
+        "parcel_pin": "1390-00042-FX",
+        "parcel_county": "Brunswick County, NC",
+        "parcel_zoning": "RA",
+        "owner_display": "NOT_SHOWN",
+        "parcel_class": "forest_wetland",
+        "total_acres_approx": 61.0,
+        "source_note": "Fixture parcel data for Brunswick County wetlands/soils stress case. Zoning from Brunswick County GIS parcel layer."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only parcel data for Brunswick County. Parcel boundaries are approximate; not survey-grade. Ownership, easements, and recorded instruments require confirmation by the Brunswick County Register of Deeds and a licensed surveyor. Acreage and zoning classification are indicative only; verify land use with Brunswick County Planning.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-78.320, 33.995], [-78.300, 33.995], [-78.300, 34.005], [-78.320, 34.005], [-78.320, 33.995]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 50.0
+    }
+  ]
+}

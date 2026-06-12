@@ -257,6 +257,11 @@ def test_brunswick_mvp_regression() -> None:
         geom_file="bru_coastal_flood.geojson",
         connector_fixtures=[
             (
+                "nc_brunswick_bru_coastal_flood_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
                 "nc_brunswick_bru_coastal_flood_flood.json",
                 StaticFloodFixtureConnector,
                 evaluate_flood_fixture_quality,
@@ -281,6 +286,11 @@ def test_brunswick_jurisdiction_regression() -> None:
         geom_file="bru_jurisdiction.geojson",
         connector_fixtures=[
             (
+                "nc_brunswick_bru_jurisdiction_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
+            (
                 "nc_brunswick_bru_jurisdiction_wetlands.json",
                 StaticWetlandsFixtureConnector,
                 evaluate_wetlands_fixture_quality,
@@ -299,6 +309,11 @@ def test_brunswick_wetlands_soils_regression() -> None:
     _run_mvp_case(
         geom_file="bru_wetlands_soils.geojson",
         connector_fixtures=[
+            (
+                "nc_brunswick_bru_wetlands_soils_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
             (
                 "nc_brunswick_bru_wetlands_soils_access.json",
                 StaticAccessFixtureConnector,

@@ -182,9 +182,10 @@ cases:
       flood: nc_brunswick_bru_coastal_flood_flood.json
       wetlands: nc_brunswick_bru_coastal_flood_wetlands.json
       soils: nc_brunswick_bru_coastal_flood_soils.json
-    expected_connector_workflow_domains: [flood, wetlands, soils]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_brunswick_bru_coastal_flood_parcels.json
+    expected_connector_workflow_domains: [flood, wetlands, soils, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Brunswick County
       - Parcel boundary and cadastral data were not available
@@ -210,9 +211,10 @@ cases:
       access: nc_brunswick_bru_wetlands_soils_access.json
       wetlands: nc_brunswick_bru_wetlands_soils_wetlands.json
       soils: nc_brunswick_bru_wetlands_soils_soils.json
-    expected_connector_workflow_domains: [flood, access, wetlands, soils]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_brunswick_bru_wetlands_soils_parcels.json
+    expected_connector_workflow_domains: [flood, access, wetlands, soils, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Brunswick County
       - does not confirm legal access
@@ -237,9 +239,10 @@ cases:
     connector_fixture_files:
       zoning: nc_brunswick_bru_jurisdiction_zoning.json
       wetlands: nc_brunswick_bru_jurisdiction_wetlands.json
-    expected_connector_workflow_domains: [zoning, wetlands]
-    expected_not_evaluated_domains: [parcels, assessor]
-    expected_unknowns: [parcels_not_evaluated, assessor_not_evaluated]
+      parcels: nc_brunswick_bru_jurisdiction_parcels.json
+    expected_connector_workflow_domains: [zoning, wetlands, parcels]
+    expected_not_evaluated_domains: [assessor]
+    expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Requires confirmation by Brunswick County Planning
       - Parcel boundary and cadastral data were not available
