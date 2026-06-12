@@ -22,6 +22,8 @@
       "observation": "Fixture parcel screening: Chatham County parcel intersection — parcel/tax/easement stress case. AOI intersects 2 parcels; ownership and assessed value suppressed per field policy.",
       "observed_value": {
         "parcel_count": 2,
+        "parcel_pin": "0091-00017-FX",
+        "parcel_county": "Chatham County, NC",
         "owner_display": "NOT_SHOWN",
         "parcel_class": "rural/agricultural",
         "total_acres_approx": 85.3,
