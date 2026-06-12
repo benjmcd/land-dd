@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Structured Selected-County Manifest Scope Catalog
+
+**Scope:** Move selected-county source-manifest validation expectations from
+hardcoded validator phrase maps into structured
+`config/private_mvp_beta_readiness.yaml` data. The validator now reads
+`selected_county_manifest_scope` for Buncombe/Chatham/Brunswick manifest paths,
+required DS-010/DS-011/DS-023 source fragments, and shared stale-fragment denials.
+This does not change source-readiness counts, connector execution, DB schema,
+public APIs, report semantics, manifest prose, DS-017, or hosted-production
+blockers.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_private_mvp_readiness.py
+.\scripts\run_private_mvp_readiness_check.ps1
+cd backend; ruff check ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m mypy ..\scripts\private_mvp_readiness_check.py tests\test_private_mvp_readiness.py
+cd backend; py -3.12 -m pytest -q tests\source_registry\test_source_readiness.py tests\test_private_mvp_readiness.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+.\scripts\run_release_readiness_check.ps1
+cd backend; py -3.12 -m pytest -q tests\source_registry tests\test_private_mvp_readiness.py
+rg -n <COUNTY_MANIFEST_STALE_FRAGMENTS pattern> .\docs\geographies
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Private-MVP readiness tests passed: 23 tests.
+- Private-MVP readiness validator passed and is now catalog-driven for
+  selected-county manifest paths, required source fragments, and stale-fragment
+  denials.
+- Focused ruff passed.
+- Focused mypy passed over 2 source files.
+- Targeted source-readiness/private-MVP tests passed: 30 tests.
+- Must source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains
+  the only Must blocker.
+- Release-readiness validator passed.
+- Broader `tests/source_registry` plus private-MVP tests passed with one existing
+  skipped test.
+- Stale manifest phrase search found no matches under `docs/geographies`; stale
+  phrases now appear only in the catalog deny-list and tests that assert it.
+- `git diff --check` passed with CRLF-to-LF normalization warnings for the
+  touched readiness catalog and project-state file and no whitespace errors.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests
+  passed with expected DB-gated skips, ruff clean, mypy clean on 290 source
+  files, and DB smoke skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risks:** This is a catalog-driven manifest guard, not a first-class
+per-county source-readiness schema. It does not add county coverage, execute
+connectors, run local DB smoke, close DS-017, or resolve hosted-production
+blockers.
+
 ## 2026-06-12 Selected-County Source Manifest Alignment
 
 **Scope:** Align Buncombe, Chatham, and Brunswick source manifests with the

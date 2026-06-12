@@ -13,11 +13,12 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 READINESS_YAML = ROOT / "config" / "private_mvp_beta_readiness.yaml"
 RUNBOOK_PATH = ROOT / "docs" / "runbooks" / "mvp_operator.md"
-MANIFEST_PATHS = (
-    ROOT / "docs" / "geographies" / "nc" / "buncombe" / "source_manifest.md",
-    ROOT / "docs" / "geographies" / "nc" / "chatham" / "source_manifest.md",
-    ROOT / "docs" / "geographies" / "nc" / "brunswick" / "source_manifest.md",
-)
+MANIFEST_PATHS_BY_KEY = {
+    "buncombe_nc": ROOT / "docs" / "geographies" / "nc" / "buncombe" / "source_manifest.md",
+    "chatham_nc": ROOT / "docs" / "geographies" / "nc" / "chatham" / "source_manifest.md",
+    "brunswick_nc": ROOT / "docs" / "geographies" / "nc" / "brunswick" / "source_manifest.md",
+}
+MANIFEST_PATHS = tuple(MANIFEST_PATHS_BY_KEY.values())
 
 
 def _load_validator_module() -> ModuleType:
@@ -101,6 +102,37 @@ def test_selected_county_source_scope_is_structured(readiness: dict[str, Any]) -
     ]
     assert "Buncombe zoning" in scope["DS-023"]["out_of_scope"]
     assert "legal zoning interpretation" in scope["DS-023"]["out_of_scope"]
+
+
+def test_selected_county_manifest_scope_is_structured(readiness: dict[str, Any]) -> None:
+    scope = readiness["selected_county_manifest_scope"]
+    assert set(scope["stale_fragments"]) >= {
+        "No machine-queryable county parcel connection is wired for private MVP",
+        "No machine-queryable assessor connection is wired for private MVP",
+        "was not available through the data pipeline",
+    }
+
+    counties = scope["counties"]
+    assert set(counties) == set(MANIFEST_PATHS_BY_KEY)
+    for county_key, manifest_path in MANIFEST_PATHS_BY_KEY.items():
+        county_scope = counties[county_key]
+        assert county_scope["source_manifest"] == str(
+            manifest_path.relative_to(ROOT).as_posix(),
+        )
+        assert set(county_scope["source_fragments"]) == {"DS-010", "DS-011", "DS-023"}
+
+    assert (
+        "No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed"
+        in counties["buncombe_nc"]["source_fragments"]["DS-023"]
+    )
+    assert (
+        "DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only"
+        in counties["chatham_nc"]["source_fragments"]["DS-023"]
+    )
+    assert (
+        "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only"
+        in counties["brunswick_nc"]["source_fragments"]["DS-023"]
+    )
 
 
 def test_private_mvp_beta_section_exists(readiness: dict[str, Any]) -> None:
@@ -341,6 +373,23 @@ def test_private_mvp_validator_rejects_incomplete_structured_source_scope() -> N
     assert "DS-011" in str(exc_info.value)
 
 
+def test_private_mvp_validator_rejects_incomplete_manifest_scope_catalog() -> None:
+    validator = _load_validator_module()
+    catalog = validator.load_catalog()
+    del catalog["selected_county_manifest_scope"]["counties"]["buncombe_nc"][
+        "source_fragments"
+    ]["DS-023"]
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_manifest_scope_catalog(catalog)
+
+    assert "selected_county_manifest_scope.counties.buncombe_nc" in str(
+        exc_info.value,
+    )
+    assert "source IDs mismatch" in str(exc_info.value)
+    assert "DS-023" in str(exc_info.value)
+
+
 def test_private_mvp_readiness_wrappers_delegate_to_shared_validator() -> None:
     for script_name in (
         "run_private_mvp_readiness_check.ps1",
@@ -376,27 +425,21 @@ def test_operator_runbook_tracks_current_selected_county_source_scope() -> None:
 
 def test_county_source_manifests_track_structured_selected_county_scope() -> None:
     validator = _load_validator_module()
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(
+        validator.load_catalog(),
+    )
 
-    validator.validate_county_source_manifests()
+    validator.validate_county_source_manifests(manifest_scope)
+
+    counties = manifest_scope["counties"]
+    for county_scope in counties.values():
+        manifest = (ROOT / county_scope["source_manifest"]).read_text(encoding="utf-8")
+        for fragments in county_scope["source_fragments"].values():
+            for phrase in fragments:
+                assert phrase in manifest
 
     manifest_text = "\n".join(path.read_text(encoding="utf-8") for path in MANIFEST_PATHS)
-    for phrase in (
-        "No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed",
-        "DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only",
-        "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only",
-        "DS-010 is connector-ready for Buncombe County parcel screening only",
-        "DS-010 is connector-ready for Chatham County parcel screening only",
-        "DS-010 is connector-ready for Brunswick County parcel screening only",
-        "AssessorNotEvaluatedConnector sentinel",
-    ):
-        assert phrase in manifest_text
-
-    for stale_phrase in (
-        "No machine-queryable county parcel connection is wired for private MVP",
-        "No machine-queryable assessor connection is wired for private MVP",
-        "was not available through the data pipeline",
-        "fixture-backed (StaticZoningFixtureConnector) for private MVP regression",
-    ):
+    for stale_phrase in manifest_scope["stale_fragments"]:
         assert stale_phrase not in manifest_text
 
 

@@ -70,30 +70,12 @@ CATALOG_STALE_PHRASES = (
     "terrain/wetlands as live-connector-only",
     "parcels/assessor as NOT_EVALUATED for fixture regression",
 )
-COUNTY_MANIFEST_REQUIRED_PHRASES = {
-    "docs/geographies/nc/buncombe/source_manifest.md": (
-        "No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed",
-        "DS-010 is connector-ready for Buncombe County parcel screening only",
-        "AssessorNotEvaluatedConnector sentinel",
-    ),
-    "docs/geographies/nc/chatham/source_manifest.md": (
-        "DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only",
-        "DS-010 is connector-ready for Chatham County parcel screening only",
-        "AssessorNotEvaluatedConnector sentinel",
-    ),
-    "docs/geographies/nc/brunswick/source_manifest.md": (
-        "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only",
-        "DS-010 is connector-ready for Brunswick County parcel screening only",
-        "AssessorNotEvaluatedConnector sentinel",
-    ),
-}
-COUNTY_MANIFEST_STALE_PHRASES = (
-    "No machine-queryable county parcel connection is wired for private MVP",
-    "No machine-queryable assessor connection is wired for private MVP",
-    "was not available through the data pipeline",
-    "fixture-backed (StaticZoningFixtureConnector) for private MVP regression",
-)
 REQUIRED_SELECTED_COUNTY_SOURCE_IDS = {"DS-010", "DS-011", "DS-023"}
+REQUIRED_SELECTED_COUNTY_MANIFEST_KEYS = {
+    "buncombe_nc",
+    "chatham_nc",
+    "brunswick_nc",
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -131,6 +113,15 @@ def require_text_list(value: Any, message: str) -> tuple[str, ...]:
             raise SystemExit(f"{message} item {index} must be non-empty text")
         text_values.append(item)
     return tuple(text_values)
+
+
+def require_text_tuple(value: Any, message: str) -> tuple[str, ...]:
+    if not isinstance(value, tuple):
+        raise SystemExit(message)
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            raise SystemExit(f"{message} item {index} must be non-empty text")
+    return value
 
 
 def require_file(path_text: str) -> None:
@@ -260,6 +251,105 @@ def validate_selected_county_source_scope_catalog(
             "out_of_scope": out_of_scope,
         }
     return scope
+
+
+def validate_selected_county_manifest_scope_catalog(
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    raw_scope = require_mapping(
+        catalog.get("selected_county_manifest_scope"),
+        "selected_county_manifest_scope section missing",
+    )
+    stale_fragments = require_text_list(
+        raw_scope.get("stale_fragments"),
+        "selected_county_manifest_scope.stale_fragments missing",
+    )
+    duplicates = _duplicates(stale_fragments)
+    require(
+        not duplicates,
+        (
+            "selected_county_manifest_scope.stale_fragments must not contain "
+            f"duplicates: {duplicates}"
+        ),
+    )
+
+    raw_counties = require_mapping(
+        raw_scope.get("counties"),
+        "selected_county_manifest_scope.counties missing",
+    )
+    missing = REQUIRED_SELECTED_COUNTY_MANIFEST_KEYS - set(raw_counties)
+    unexpected = set(raw_counties) - REQUIRED_SELECTED_COUNTY_MANIFEST_KEYS
+    require(
+        not missing and not unexpected,
+        (
+            "selected_county_manifest_scope county keys mismatch; "
+            f"missing={sorted(missing)}, unexpected={sorted(unexpected)}"
+        ),
+    )
+
+    counties: dict[str, dict[str, Any]] = {}
+    for county_key in sorted(REQUIRED_SELECTED_COUNTY_MANIFEST_KEYS):
+        raw_county = require_mapping(
+            raw_counties.get(county_key),
+            f"selected_county_manifest_scope.counties.{county_key} must be a mapping",
+        )
+        county_label = require_text(
+            raw_county.get("county_label"),
+            f"selected_county_manifest_scope.counties.{county_key}.county_label missing",
+        )
+        source_manifest = require_text(
+            raw_county.get("source_manifest"),
+            f"selected_county_manifest_scope.counties.{county_key}.source_manifest missing",
+        )
+        raw_fragments = require_mapping(
+            raw_county.get("source_fragments"),
+            (
+                "selected_county_manifest_scope.counties."
+                f"{county_key}.source_fragments missing"
+            ),
+        )
+        missing_sources = REQUIRED_SELECTED_COUNTY_SOURCE_IDS - set(raw_fragments)
+        unexpected_sources = set(raw_fragments) - REQUIRED_SELECTED_COUNTY_SOURCE_IDS
+        require(
+            not missing_sources and not unexpected_sources,
+            (
+                "selected_county_manifest_scope.counties."
+                f"{county_key}.source_fragments source IDs mismatch; "
+                f"missing={sorted(missing_sources)}, "
+                f"unexpected={sorted(unexpected_sources)}"
+            ),
+        )
+
+        source_fragments: dict[str, tuple[str, ...]] = {}
+        for source_id in sorted(REQUIRED_SELECTED_COUNTY_SOURCE_IDS):
+            fragments = require_text_list(
+                raw_fragments.get(source_id),
+                (
+                    "selected_county_manifest_scope.counties."
+                    f"{county_key}.source_fragments.{source_id} missing"
+                ),
+            )
+            duplicates = _duplicates(fragments)
+            require(
+                not duplicates,
+                (
+                    "selected_county_manifest_scope.counties."
+                    f"{county_key}.source_fragments.{source_id} "
+                    f"must not contain duplicates: {duplicates}"
+                ),
+            )
+            source_fragments[source_id] = fragments
+
+        counties[county_key] = {
+            "county_label": county_label,
+            "source_manifest": source_manifest,
+            "source_fragments": source_fragments,
+        }
+
+    return {
+        "stale_fragments": stale_fragments,
+        "counties": counties,
+    }
 
 
 def validate_private_mvp_gates(catalog: dict[str, Any]) -> None:
@@ -448,17 +538,48 @@ def validate_operator_runbook() -> None:
         )
 
 
-def validate_county_source_manifests() -> None:
-    for path_text, required_phrases in COUNTY_MANIFEST_REQUIRED_PHRASES.items():
+def validate_county_source_manifests(manifest_scope: dict[str, Any]) -> None:
+    stale_fragments = require_text_tuple(
+        manifest_scope.get("stale_fragments"),
+        "selected_county_manifest_scope.stale_fragments missing",
+    )
+    counties = require_mapping(
+        manifest_scope.get("counties"),
+        "selected_county_manifest_scope.counties missing",
+    )
+    for county_key, raw_county in counties.items():
+        county = require_mapping(
+            raw_county,
+            f"selected_county_manifest_scope.counties.{county_key} invalid",
+        )
+        path_text = require_text(
+            county.get("source_manifest"),
+            f"selected_county_manifest_scope.counties.{county_key}.source_manifest missing",
+        )
+        source_fragments = require_mapping(
+            county.get("source_fragments"),
+            (
+                "selected_county_manifest_scope.counties."
+                f"{county_key}.source_fragments missing"
+            ),
+        )
         path = ROOT / path_text
         require(path.is_file(), f"county source manifest missing: {path_text}")
         manifest = path.read_text(encoding="utf-8")
-        for phrase in required_phrases:
-            require(
-                phrase in manifest,
-                f"county source manifest {path_text} missing phrase: {phrase}",
+        for source_id, raw_fragments in source_fragments.items():
+            fragments = require_text_tuple(
+                raw_fragments,
+                (
+                    "selected_county_manifest_scope.counties."
+                    f"{county_key}.source_fragments.{source_id} missing"
+                ),
             )
-        for phrase in COUNTY_MANIFEST_STALE_PHRASES:
+            for phrase in fragments:
+                require(
+                    phrase in manifest,
+                    f"county source manifest {path_text} missing phrase: {phrase}",
+                )
+        for phrase in stale_fragments:
             require(
                 phrase not in manifest,
                 f"county source manifest {path_text} has stale phrase: {phrase}",
@@ -470,12 +591,13 @@ def main() -> int:
     catalog = load_catalog()
     validate_catalog_metadata(catalog)
     selected_county_scope = validate_selected_county_source_scope_catalog(catalog)
+    manifest_scope = validate_selected_county_manifest_scope_catalog(catalog)
     validate_private_mvp_gates(catalog)
     validate_hosted_production_scope(catalog)
     validate_ds017_boundary(catalog)
     validate_full_release_stays_blocked(selected_county_scope)
     validate_operator_runbook()
-    validate_county_source_manifests()
+    validate_county_source_manifests(manifest_scope)
     return 0
 
 

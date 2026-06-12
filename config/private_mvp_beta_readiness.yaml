@@ -70,6 +70,56 @@ selected_county_source_scope:
       - full-text redistribution
       - legal zoning interpretation
 
+selected_county_manifest_scope:
+  stale_fragments:
+    - No machine-queryable county parcel connection is wired for private MVP
+    - No machine-queryable assessor connection is wired for private MVP
+    - was not available through the data pipeline
+    - fixture-backed (StaticZoningFixtureConnector) for private MVP regression
+
+  counties:
+    buncombe_nc:
+      county_label: Buncombe County, NC
+      source_manifest: docs/geographies/nc/buncombe/source_manifest.md
+      source_fragments:
+        DS-010:
+          - DS-010 is connector-ready for Buncombe County parcel screening only
+          - If parcel evidence is absent for a fixture case
+        DS-011:
+          - AssessorNotEvaluatedConnector sentinel
+          - ASSESSOR_NOT_EVALUATED source-failure evidence
+        DS-023:
+          - No Buncombe DS-023 recorded-fixture UDO lookup or live PDF connector is currently claimed
+          - Buncombe County zoning is not evaluated
+
+    chatham_nc:
+      county_label: Chatham County, NC
+      source_manifest: docs/geographies/nc/chatham/source_manifest.md
+      source_fragments:
+        DS-010:
+          - DS-010 is connector-ready for Chatham County parcel screening only
+          - If parcel evidence is absent for a fixture case
+        DS-011:
+          - AssessorNotEvaluatedConnector sentinel
+          - ASSESSOR_NOT_EVALUATED source-failure evidence
+        DS-023:
+          - DS-023 is connector-ready for Chatham County recorded-fixture UDO district lookup only
+          - It is not live PDF ingestion, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution
+
+    brunswick_nc:
+      county_label: Brunswick County, NC
+      source_manifest: docs/geographies/nc/brunswick/source_manifest.md
+      source_fragments:
+        DS-010:
+          - DS-010 is connector-ready for Brunswick County parcel screening only
+          - If parcel evidence is absent for a fixture case
+        DS-011:
+          - AssessorNotEvaluatedConnector sentinel
+          - ASSESSOR_NOT_EVALUATED source-failure evidence
+        DS-023:
+          - DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only
+          - It is not live PDF ingestion, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution
+
 private_mvp_beta:
 
   geography_selected:

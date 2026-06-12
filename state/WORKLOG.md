@@ -2271,3 +2271,24 @@ plus private-MVP tests, stale manifest phrase audit, `git diff --check`, and
 default `.\scripts\verify.ps1` passed. `git diff --check` emitted only
 CRLF-to-LF normalization warnings for touched Markdown files. DB smoke was not
 run in this slice; DS-017 and hosted-production blockers remain unchanged.
+
+---
+
+## 2026-06-12 - Structured Selected-County Manifest Scope Catalog
+
+**Goal:** Make selected-county source-manifest validation catalog-driven instead
+of hardcoded in the private-MVP validator.
+
+**Approach:** Added `selected_county_manifest_scope` to
+`config/private_mvp_beta_readiness.yaml`, with Buncombe/Chatham/Brunswick
+manifest paths, required DS-010/DS-011/DS-023 source fragments, and shared stale
+fragment denials. Refactored `scripts/private_mvp_readiness_check.py` to validate
+that structured catalog section, then check each manifest from the parsed
+catalog data. Updated private-MVP tests for the structured catalog and a
+negative-path incomplete-county-source case.
+
+**Result:** Private-MVP tests, the private-MVP readiness wrapper, focused
+ruff/mypy, targeted and broader source-readiness/private-MVP tests, Must
+source-readiness JSON, release-readiness validator, docs-only stale phrase audit,
+`git diff --check`, and default `.\scripts\verify.ps1` passed. Local DB smoke was
+not run in this slice; DS-017 and hosted-production blockers remain unchanged.
