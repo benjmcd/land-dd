@@ -98,6 +98,18 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: assessor_not_evaluated
           claim_code: ASSESSOR_NOT_EVALUATED
           verification_task: Confirm tax records with county Tax Administration office.
+        - code: MINERALS_G001
+          domain: minerals
+          severity_on_fail: low
+          condition: blm_active_mining_claims_present
+          claim_code: MINERALS_ACTIVE_CLAIMS_001
+          verification_task: Verify mineral rights through title search.
+        - code: MINERALS_G002
+          domain: minerals
+          severity_on_fail: unknown
+          condition: minerals_source_unavailable
+          claim_code: MINERALS_SOURCE_UNAVAILABLE
+          verification_task: Verify through title search and federal mineral records.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.

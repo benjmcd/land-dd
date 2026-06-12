@@ -60,6 +60,10 @@ ENV_HAZARD_PROXIMITY_KEYS = ("has_env_hazard_proximity",)
 ENV_HAZARD_NO_PROXIMITY_KEYS = ("no_env_hazard_proximity",)
 ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE = "ENV_EVIDENCE_NEEDS_REVIEW"
 ENV_HAZARD_STALE_CLAIM_CODE = "ENV_STALE_EVIDENCE_NEEDS_REVIEW"
+MINERALS_ACTIVE_CLAIM_CONDITION = "blm_active_mining_claims_present"
+MINERALS_SOURCE_UNAVAILABLE_CONDITION = "minerals_source_unavailable"
+MINERALS_ACTIVE_CLAIM_CODE = "MINERALS_ACTIVE_CLAIMS_001"
+MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE = "MINERALS_SOURCE_UNAVAILABLE"
 
 
 @dataclass(frozen=True)
@@ -110,6 +114,12 @@ class RuleEngine:
         slope_rule = self._ruleset.hard_gate_for_condition(SLOPE_INSUFFICIENT_CONDITION)
         wetland_rule = self._ruleset.hard_gate_for_condition(WETLAND_MAPPED_CONDITION)
         env_hazard_rule = self._ruleset.hard_gate_for_condition(ENV_HAZARD_CONDITION)
+        minerals_active_rule = self._ruleset.hard_gate_for_condition(
+            MINERALS_ACTIVE_CLAIM_CONDITION
+        )
+        minerals_unavailable_rule = self._ruleset.hard_gate_for_condition(
+            MINERALS_SOURCE_UNAVAILABLE_CONDITION
+        )
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
             for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
@@ -294,6 +304,14 @@ class RuleEngine:
             stale_env_hazard_evidence = [
                 evidence for evidence in area_evidence
                 if _is_stale_env_hazard_evidence(evidence)
+            ]
+            minerals_active = [
+                evidence for evidence in area_evidence
+                if _is_minerals_active_evidence(evidence)
+            ]
+            minerals_failures = [
+                evidence for evidence in area_evidence
+                if _is_minerals_source_failure(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -538,6 +556,16 @@ class RuleEngine:
                 claims.append(
                     self._env_hazard_stale_claim(
                         area_id, env_hazard_rule, stale_env_hazard_evidence
+                    )
+                )
+            if minerals_active:
+                claims.append(
+                    self._minerals_active_claim(area_id, minerals_active_rule, minerals_active)
+                )
+            if minerals_failures and not minerals_active:
+                claims.append(
+                    self._minerals_unknown_claim(
+                        area_id, minerals_unavailable_rule, minerals_failures
                     )
                 )
             for domain in NOT_EVALUATED_DOMAINS:
@@ -1665,6 +1693,73 @@ class RuleEngine:
             ),
         )
 
+    def _minerals_active_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "BLM MLRS screening indicates active federal mining claims in the area bbox. "
+            "Active mining claims may affect surface use, development rights, and access. "
+            "This is a geospatial bounding-box screen only and does not determine parcel-level "
+            "mineral rights ownership. Verify through title search and consult a title attorney."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("positive", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=MINERALS_ACTIVE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="BLM MLRS screening found active federal mining claims in the query area.",
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=_lowest_confidence(evidence_records),
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
+    def _minerals_unknown_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Minerals/mining screening remains unknown because BLM MLRS or USGS MRDS "
+            "source data failed or was unavailable. Verify through title search and "
+            "appropriate state or federal mineral records."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id("unknown", rule, area_id, evidence_ids),
+            area_id=area_id,
+            claim_code=MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE,
+            domain=rule.domain,
+            assertion="Minerals/mining source data could not be evaluated for this area.",
+            user_safe_language=user_safe_language,
+            severity=SeverityBand.UNKNOWN,
+            confidence=ConfidenceBand.UNKNOWN,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -2190,6 +2285,19 @@ def _is_stale_env_hazard_evidence(evidence: EvidenceContract) -> bool:
     )
 
 
+def _is_minerals_source_failure(evidence: EvidenceContract) -> bool:
+    return evidence.domain == "minerals" and (
+        evidence.is_source_failure or evidence.evidence_type == EvidenceType.SOURCE_FAILURE
+    )
+
+
+def _is_minerals_active_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "minerals" or _is_minerals_source_failure(evidence):
+        return False
+    count = _observed_number(evidence.observed_value.get("blm_active_mining_claim_count"))
+    return count is not None and count > 0
+
+
 def _flood_zone_values(evidence: EvidenceContract) -> list[str]:
     values: list[str] = []
     for key in ("flood_zone", "flood_zones", "flood_zone_code", "zone"):
@@ -2278,6 +2386,10 @@ __all__ = [
     "ENV_HAZARD_PROXIMITY_KEYS",
     "ENV_HAZARD_STALE_CLAIM_CODE",
     "HardGateRule",
+    "MINERALS_ACTIVE_CLAIM_CODE",
+    "MINERALS_ACTIVE_CLAIM_CONDITION",
+    "MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE",
+    "MINERALS_SOURCE_UNAVAILABLE_CONDITION",
     "RuleEngine",
     "RuleSet",
     "load_ruleset",

@@ -92,6 +92,18 @@ ruleset:
       condition: assessor_not_evaluated
       claim_code: ASSESSOR_NOT_EVALUATED
       verification_task: Confirm assessed value, tax year, and ownership information with the county Tax Administration office. Assessed value is not market value.
+    - code: MINERALS_G001
+      domain: minerals
+      severity_on_fail: low
+      condition: blm_active_mining_claims_present
+      claim_code: MINERALS_ACTIVE_CLAIMS_001
+      verification_task: Verify mineral rights status through title search; active federal mining claims may affect surface use, access, and development. Consult a title attorney.
+    - code: MINERALS_G002
+      domain: minerals
+      severity_on_fail: unknown
+      condition: minerals_source_unavailable
+      claim_code: MINERALS_SOURCE_UNAVAILABLE
+      verification_task: BLM MLRS and/or USGS MRDS mining/mineral data could not be retrieved. Verify through title search and appropriate state or federal mineral records.
   scoring:
     output: bands_not_raw_score
     weights:

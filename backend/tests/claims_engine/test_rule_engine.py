@@ -9,6 +9,8 @@ from app.claims_engine.rule_engine import (
     DEFAULT_RULESET_PATH,
     ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
     ENV_HAZARD_STALE_CLAIM_CODE,
+    MINERALS_ACTIVE_CLAIM_CODE,
+    MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE,
     RuleEngine,
     load_ruleset,
 )
@@ -1340,6 +1342,98 @@ def test_evaluate_env_hazard_outputs_are_deterministic_when_input_order_changes(
         ENV_HAZARD_STALE_CLAIM_CODE,
     }
     assert expected.issubset(env_a)
+
+
+def make_minerals_active_evidence(
+    area_id: UUID,
+    *,
+    blm_active_mining_claim_count: int = 3,
+    confidence: ConfidenceBand = ConfidenceBand.LOW,
+) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT",
+        domain="minerals",
+        observation=f"BLM MLRS: {blm_active_mining_claim_count} active mining claim(s) in bbox.",
+        observed_value={"blm_active_mining_claim_count": blm_active_mining_claim_count},
+        method_code="fixture_blm_mlrs_screen",
+        confidence=confidence,
+        caveat="BLM MLRS bounding-box screen only; does not determine parcel-level mineral rights.",
+        is_negative_evidence=False,
+    )
+
+
+def make_minerals_failure_evidence(area_id: UUID) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_FAILURE,
+        evidence_code="BLM_MLRS_SOURCE_FAILURE",
+        domain="minerals",
+        observation="BLM MLRS source request failed.",
+        observed_value={},
+        method_code="fixture_blm_mlrs_screen",
+        confidence=ConfidenceBand.UNKNOWN,
+        caveat="BLM MLRS endpoint unavailable.",
+        is_source_failure=True,
+    )
+
+
+def test_minerals_active_claim_generated_when_blm_count_positive() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_minerals_active_evidence(area_id, blm_active_mining_claim_count=2)
+
+    claims = engine.evaluate([evidence])
+
+    mineral_claims = [c for c in claims if c.domain == "minerals"]
+    active_claims = [c for c in mineral_claims if c.claim_code == MINERALS_ACTIVE_CLAIM_CODE]
+    assert len(active_claims) == 1
+    assert active_claims[0].severity == SeverityBand.LOW
+    assert active_claims[0].verification_required is True
+
+
+def test_minerals_zero_count_generates_no_active_claim() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_minerals_active_evidence(area_id, blm_active_mining_claim_count=0)
+
+    claims = engine.evaluate([evidence])
+
+    active_claims = [c for c in claims if c.claim_code == MINERALS_ACTIVE_CLAIM_CODE]
+    assert len(active_claims) == 0
+
+
+def test_minerals_source_failure_generates_unknown_claim() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_minerals_failure_evidence(area_id)
+
+    claims = engine.evaluate([evidence])
+
+    mineral_claims = [c for c in claims if c.domain == "minerals"]
+    unknown_claims = [
+        c for c in mineral_claims if c.claim_code == MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE
+    ]
+    assert len(unknown_claims) == 1
+    assert unknown_claims[0].severity == SeverityBand.UNKNOWN
+
+
+def test_minerals_source_failure_suppressed_when_active_claims_present() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    active_ev = make_minerals_active_evidence(area_id, blm_active_mining_claim_count=1)
+    failure_ev = make_minerals_failure_evidence(area_id)
+
+    claims = engine.evaluate([active_ev, failure_ev])
+
+    mineral_claims = [c for c in claims if c.domain == "minerals"]
+    assert any(c.claim_code == MINERALS_ACTIVE_CLAIM_CODE for c in mineral_claims)
+    assert not any(
+        c.claim_code == MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE for c in mineral_claims
+    )
 
 
 def test_load_ruleset_rejects_invalid_severity(tmp_path: Path) -> None:
