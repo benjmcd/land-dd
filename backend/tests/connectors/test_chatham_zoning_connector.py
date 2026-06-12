@@ -8,6 +8,7 @@ from app.connectors.chatham_zoning_recorded import (
     CHATHAM_ZONING_CONNECTOR_NAME,
     CHATHAM_ZONING_UDO_EFFECTIVE,
     ChathamZoningRecordedConnector,
+    _CHATHAM_UDO_DISTRICTS,
 )
 from app.domain.enums import AuthorityLevel, ConfidenceBand, EvidenceType
 from app.domain.source_contracts import SourceContract, SourceRetrievalStatus
@@ -209,3 +210,41 @@ def test_planned_development_returns_needs_review() -> None:
     evidence = result.evidence_inputs[0]
     assert evidence.evidence_code == "ZONING_USE_CLASSIFICATION"
     assert evidence.observed_value["residential_use_screening"] == "NEEDS_REVIEW"
+
+
+def test_all_districts_are_known() -> None:
+    connector = ChathamZoningRecordedConnector()
+    source = _make_source()
+
+    for code in _CHATHAM_UDO_DISTRICTS:
+        result = connector.query_district(area_id=_AREA_ID, zoning_code=code, source=source)
+        evidence = result.evidence_inputs[0]
+        assert evidence.evidence_code == "ZONING_USE_CLASSIFICATION", (
+            f"Expected ZONING_USE_CLASSIFICATION for district {code!r}, "
+            f"got {evidence.evidence_code!r}"
+        )
+        assert evidence.observed_value["district_name"] is not None
+        assert evidence.observed_value["use_category"] is not None
+
+
+def test_all_residential_districts_have_consistent_screening() -> None:
+    connector = ChathamZoningRecordedConnector()
+    source = _make_source()
+
+    residential_codes = ["RA", "RR", "R-1", "R-2", "R-3", "MHP"]
+    for code in residential_codes:
+        result = connector.query_district(area_id=_AREA_ID, zoning_code=code, source=source)
+        evidence = result.evidence_inputs[0]
+        assert evidence.observed_value["residential_use_screening"] == "ALLOWED_WITH_RESTRICTIONS", (
+            f"Expected ALLOWED_WITH_RESTRICTIONS for residential district {code!r}, "
+            f"got {evidence.observed_value['residential_use_screening']!r}"
+        )
+
+    industrial_codes = ["I", "I-1", "I-2"]
+    for code in industrial_codes:
+        result = connector.query_district(area_id=_AREA_ID, zoning_code=code, source=source)
+        evidence = result.evidence_inputs[0]
+        assert evidence.observed_value["residential_use_screening"] == "UNLIKELY_VERIFY", (
+            f"Expected UNLIKELY_VERIFY for industrial district {code!r}, "
+            f"got {evidence.observed_value['residential_use_screening']!r}"
+        )

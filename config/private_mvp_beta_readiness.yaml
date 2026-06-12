@@ -197,10 +197,12 @@ private_mvp_beta:
       DS-010 selected-county parcel connectors are ready for
       Buncombe/Chatham/Brunswick immediate operator API and request-time
       orchestration, with no owner/value/title fields and no durable live-job
-      support claim. All 9 golden AOI fixture cases now carry parcel fixtures;
-      parcels is no longer NOT_EVALUATED for any Buncombe, Chatham, or Brunswick
+      support claim. All 9 golden AOI fixture cases carry parcel fixtures;
+      parcels is not NOT_EVALUATED for any Buncombe, Chatham, or Brunswick
       golden AOI. Buncombe parcel fixtures record parcel_zoning=null (the Buncombe
-      County GIS parcel layer does not expose a zoning field).
+      County GIS parcel layer does not expose a zoning field). Brunswick parcel
+      fixtures record parcel_zoning from the GIS layer (RA or R-20 per case;
+      the Brunswick GIS parcel layer exposes a Zoning field).
       DS-011 uses the AssessorNotEvaluatedConnector sentinel only; no live
       assessor portal, owner, value, or sale-history data is asserted.
       DS-023 is ready only for Chatham/Brunswick recorded-fixture UDO district
