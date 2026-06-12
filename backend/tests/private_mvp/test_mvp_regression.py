@@ -18,11 +18,13 @@ from app.connectors import (
     StaticAccessFixtureConnector,
     StaticBuildabilityFixtureConnector,
     StaticFloodFixtureConnector,
+    StaticParcelFixtureConnector,
     StaticTerrainFixtureConnector,
     build_fixture_workflow_with_public_services,
     evaluate_access_fixture_quality,
     evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_parcel_fixture_quality,
     evaluate_terrain_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
@@ -151,8 +153,12 @@ def _run_mvp_case(
     assert report_run.status == JobStatus.SUCCEEDED
 
     unknown_codes = {claim.claim_code for claim in report_run.unknowns}
-    assert NOT_EVALUATED_CLAIM_CODES["parcels"] in unknown_codes, (
-        f"PARCEL_NOT_EVALUATED missing from unknowns; got {sorted(unknown_codes)}"
+    parcel_evidence = [
+        r for r in report_run.evidence
+        if r.domain == "parcels" and not r.is_source_failure
+    ]
+    assert NOT_EVALUATED_CLAIM_CODES["parcels"] in unknown_codes or parcel_evidence, (
+        f"Expected parcel NOT_EVALUATED claim or evidence; got unknowns={sorted(unknown_codes)}"
     )
     assert NOT_EVALUATED_CLAIM_CODES["assessor"] in unknown_codes, (
         f"ASSESSOR_NOT_EVALUATED missing from unknowns; got {sorted(unknown_codes)}"
@@ -215,6 +221,11 @@ def test_chatham_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="cha_rural_use.geojson",
         connector_fixtures=[
+            (
+                "nc_chatham_cha_rural_use_parcels.json",
+                StaticParcelFixtureConnector,
+                evaluate_parcel_fixture_quality,
+            ),
             (
                 "nc_chatham_cha_rural_use_flood.json",
                 StaticFloodFixtureConnector,

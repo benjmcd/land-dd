@@ -28,14 +28,24 @@ sys.path.insert(0, str(BACKEND_DIR))
 from app.api.dependencies import create_api_services  # noqa: E402
 from app.connectors import (  # noqa: E402
     StaticAccessFixtureConnector,
+    StaticBuildabilityFixtureConnector,
     StaticFloodFixtureConnector,
+    StaticParcelFixtureConnector,
+    StaticSoilsFixtureConnector,
+    StaticTerrainFixtureConnector,
+    StaticWetlandsFixtureConnector,
     StaticZoningFixtureConnector,
     build_connector_review_handoff,
     build_connector_run_review_packet,
     build_connector_run_review_status,
     build_fixture_workflow_with_public_lane_services,
     evaluate_access_fixture_quality,
+    evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_parcel_fixture_quality,
+    evaluate_soils_fixture_quality,
+    evaluate_terrain_fixture_quality,
+    evaluate_wetlands_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
 from app.connectors.fixture_resources import (  # noqa: E402
@@ -60,18 +70,28 @@ _AOI_PREFIX_TO_COUNTY: dict[str, str] = {
     "bru": "brunswick",
 }
 
-_CONNECTOR_CHOICES = ("flood", "access", "zoning", "all")
+_CONNECTOR_CHOICES = ("flood", "access", "zoning", "parcels", "buildability", "soils", "terrain", "wetlands", "all")
 
 _CONNECTOR_CLS = {
     "flood": StaticFloodFixtureConnector,
     "access": StaticAccessFixtureConnector,
     "zoning": StaticZoningFixtureConnector,
+    "parcels": StaticParcelFixtureConnector,
+    "buildability": StaticBuildabilityFixtureConnector,
+    "soils": StaticSoilsFixtureConnector,
+    "terrain": StaticTerrainFixtureConnector,
+    "wetlands": StaticWetlandsFixtureConnector,
 }
 
 _QUALITY_EVALUATORS = {
     "flood": evaluate_flood_fixture_quality,
     "access": evaluate_access_fixture_quality,
     "zoning": evaluate_zoning_fixture_quality,
+    "parcels": evaluate_parcel_fixture_quality,
+    "buildability": evaluate_buildability_fixture_quality,
+    "soils": evaluate_soils_fixture_quality,
+    "terrain": evaluate_terrain_fixture_quality,
+    "wetlands": evaluate_wetlands_fixture_quality,
 }
 
 _INTENT_MAP: dict[str, IntentCode] = {
@@ -203,7 +223,7 @@ def main() -> int:  # noqa: C901
 
     if args.connector == "all":
         # Run all three connectors in sequence; warn-and-continue on missing fixtures
-        _CONNECTOR_SEQUENCE = ("flood", "access", "zoning")
+        _CONNECTOR_SEQUENCE = ("parcels", "flood", "access", "zoning", "buildability", "soils", "terrain", "wetlands")
         total_evidence = 0
         for connector_name in _CONNECTOR_SEQUENCE:
             print(

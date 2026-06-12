@@ -44,6 +44,7 @@ SOURCE_OBSERVATION_ALLOWED_KEYS = {
     "zone",
     "zoning_district",
     # zoning connector fields (DS-023)
+    "classification_indeterminate",
     "district_name",
     "lookup_type",
     "note",
@@ -304,6 +305,7 @@ def _validate_source_observation(evidence: EvidenceContract) -> None:
             f"{', '.join(sorted(unknown_keys))}"
         )
     for key in (
+        "classification_indeterminate",
         "intended_residential_use_allowed",
         "intended_residential_use_prohibited",
         "jurisdiction_edge",
