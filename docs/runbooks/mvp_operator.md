@@ -253,10 +253,11 @@ py -3.12 scripts/generate_dossier.py \
   --output /tmp/bru_dossier.md
 ```
 
-`--connector all` runs flood, access, and zoning in sequence. Missing fixtures for a
-given AOI are warned and skipped — the dossier is still produced from whichever
-connectors succeeded. Evidence from each connector is auto-approved for connector QA
-when the quality profile is `READY_FOR_CONNECTOR_QA`.
+`--connector all` runs parcels, flood, access, zoning, buildability, soils, terrain,
+and wetlands in sequence. Missing fixtures for a given AOI are warned and skipped —
+the dossier is still produced from whichever connectors succeeded. Evidence from each
+connector is auto-approved for connector QA when the quality profile is
+`READY_FOR_CONNECTOR_QA`.
 
 Available AOI fixtures (9 cases): `tests/fixtures/golden_aois/*.geojson`.
 Available connector fixtures: `tests/fixtures/connectors/*.json`.
@@ -766,9 +767,10 @@ not gate the selected NC county private-MVP utility proof.
   `parcels`, `terrain`, `wetlands`, `soils`, and `buildability` as declared per
   case in `tests/fixtures/golden_aois/manifest.yaml`.
 - **NOT_EVALUATED domains:** case-specific per manifest. Assessor remains
-  NOT_EVALUATED in fixture regression; parcels are NOT_EVALUATED for fixture
-  cases without parcel fixtures. Selected-county DS-010 live connectors are
-  reviewed separately and still exclude owner/value/title fields.
+  NOT_EVALUATED in all fixture regression cases. Parcel fixtures are now
+  present for all 9 golden AOIs, so parcel identity populates in every
+  dossier. Selected-county DS-010 live connectors are reviewed separately
+  and still exclude owner/value/title fields.
 
 ### 1. DB startup (optional — in-memory is sufficient for fixture regression)
 
@@ -893,7 +895,7 @@ All three county tests (Buncombe, Chatham, Brunswick) must pass.
 | `flood` | fixture-backed | StaticFloodFixtureConnector; confirm with county flood-plain manager |
 | `access` | fixture-backed | StaticAccessFixtureConnector; road presence does not prove legal access |
 | `zoning` | fixture-backed / recorded-fixture source path | StaticZoningFixtureConnector in regression; DS-023 Chatham/Brunswick recorded-fixture connectors are reviewed separately and still require county Planning confirmation |
-| `parcels` | fixture-backed where present / selected-county live path | StaticParcelFixtureConnector in Chatham fixture cases; Buncombe/Brunswick fixture cases may still record parcel unknowns. DS-010 live connectors are limited to selected-county operator flows and exclude owner/value/title fields |
+| `parcels` | fixture-backed across all 9 AOIs / selected-county live path | StaticParcelFixtureConnector in all regression cases; parcel PIN, county, acreage, and zoning designation populate in the dossier where the fixture carries those fields. DS-010 live connectors are limited to selected-county operator flows and exclude owner/value/title fields |
 | `assessor` | NOT_EVALUATED sentinel | No live assessor connector; DS-011 records explicit ASSESSOR_NOT_EVALUATED evidence and no owner/value/sale-history data is asserted |
 | `terrain/slope` | fixture-backed / live source path | StaticTerrainFixtureConnector in Buncombe regression cases; DS-001 USGS TNM remains screening-only |
 | `wetlands` | fixture-backed / live source path | StaticWetlandsFixtureConnector in Brunswick regression cases; DS-004 NWI remains screening-only and is not a jurisdictional determination |
