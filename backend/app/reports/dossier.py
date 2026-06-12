@@ -78,7 +78,8 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         f"- Terrain / slope screening: {_buildability_summary(report_run)}",
         f"- Terrain constraints: {_buildability_constraint(report_run)}",
-        f"- Required verification: {_domain_verification(report_run, 'buildability')}",
+        f"- Caveats: {_domain_caveats(report_run, {'buildability', 'terrain'})}",
+        f"- Required verification: {_domain_verification_multi(report_run, {'buildability', 'terrain'})}",  # noqa: E501
         "",
         "## 7. Flood and Wetlands Screen",
         "",
@@ -92,8 +93,8 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Soil map units: {_soil_septic_result(report_run)}",
         "- Drainage/limitation notes: unknown",
         "- Septic proxy confidence: unknown",
-        f"- Caveats: {_domain_caveats(report_run, {'soil_septic'})}",
-        f"- Required verification: {_domain_verification(report_run, 'soil_septic')}",
+        f"- Caveats: {_domain_caveats(report_run, {'soil_septic', 'soils'})}",
+        f"- Required verification: {_domain_verification_multi(report_run, {'soil_septic', 'soils'})}",  # noqa: E501
         "",
         "## 9. Water Context",
         "",
@@ -506,15 +507,18 @@ def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
     return "not determined"
 
 
+_BUILDABILITY_DOMAINS = frozenset({"buildability", "terrain"})
+
+
 def _buildability_summary(report_run: ReportRunContract) -> str:
     records = [
         r for r in report_run.evidence
-        if r.domain == "buildability" and not r.is_source_failure
+        if r.domain in _BUILDABILITY_DOMAINS and not r.is_source_failure
     ]
     if not records:
         failures = [
             r for r in report_run.evidence
-            if r.domain == "buildability" and r.is_source_failure
+            if r.domain in _BUILDABILITY_DOMAINS and r.is_source_failure
         ]
         if failures:
             return "source failure — terrain data unavailable"
@@ -544,7 +548,7 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
 def _buildability_constraint(report_run: ReportRunContract) -> str:
     records = [
         r for r in report_run.evidence
-        if r.domain == "buildability" and not r.is_source_failure
+        if r.domain in _BUILDABILITY_DOMAINS and not r.is_source_failure
     ]
     if not records:
         return "not determined"
@@ -556,7 +560,7 @@ def _buildability_constraint(report_run: ReportRunContract) -> str:
             return "no slope constraint detected in screening (confirm with survey before construction)"  # noqa: E501
     failures = [
         r for r in report_run.evidence
-        if r.domain == "buildability" and r.is_source_failure
+        if r.domain in _BUILDABILITY_DOMAINS and r.is_source_failure
     ]
     if failures:
         return "terrain data unavailable — source failure recorded; manual verification required"
@@ -672,12 +676,15 @@ def _broadband_result(report_run: ReportRunContract) -> str:
     return "; ".join(parts) if parts else "broadband data available (see source appendix)"
 
 
+_SOIL_DOMAINS = frozenset({"soil_septic", "soils"})
+
+
 def _soil_septic_result(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence
-               if r.domain == "soil_septic" and not r.is_source_failure]
+               if r.domain in _SOIL_DOMAINS and not r.is_source_failure]
     if not records:
         failures = [r for r in report_run.evidence
-                    if r.domain == "soil_septic" and r.is_source_failure]
+                    if r.domain in _SOIL_DOMAINS and r.is_source_failure]
         if failures:
             return "source failure — soil data unavailable"
         return "not evaluated"
@@ -685,18 +692,26 @@ def _soil_septic_result(report_run: ReportRunContract) -> str:
     mapunit_labels: list[str] = []
     for record in records:
         mukey = record.observed_value.get("soil_mapunit_key")
-        if not isinstance(mukey, str):
-            continue
-        if mukey in seen_keys:
-            continue
-        seen_keys.add(mukey)
-        muname = record.observed_value.get("soil_mapunit_name")
-        musym = record.observed_value.get("soil_mapunit_symbol")
-        label = (
-            str(muname) if isinstance(muname, str)
-            else (str(musym) if isinstance(musym, str) else mukey)
-        )
-        mapunit_labels.append(label)
+        if isinstance(mukey, str):
+            if mukey in seen_keys:
+                continue
+            seen_keys.add(mukey)
+            muname = record.observed_value.get("soil_mapunit_name")
+            musym = record.observed_value.get("soil_mapunit_symbol")
+            label = (
+                str(muname) if isinstance(muname, str)
+                else (str(musym) if isinstance(musym, str) else mukey)
+            )
+            mapunit_labels.append(label)
+        else:
+            # soils-fixture schema: dominant_map_unit / drainage_class
+            dominant = record.observed_value.get("dominant_map_unit")
+            drainage = record.observed_value.get("drainage_class")
+            if isinstance(dominant, str):
+                label = dominant
+                if isinstance(drainage, str):
+                    label += f" ({drainage})"
+                mapunit_labels.append(label)
     count = len(seen_keys) if seen_keys else len(records)
     if mapunit_labels:
         shown = mapunit_labels[:3]
@@ -704,9 +719,9 @@ def _soil_septic_result(report_run: ReportRunContract) -> str:
         suffix = f" +{overflow} more" if overflow else ""
         return (
             f"{count} map unit(s): {', '.join(shown)}{suffix}"
-            " (SSURGO screening; not a site-specific soil report)"
+            " (screening only; not a site-specific soil report)"
         )
-    return f"{count} soil map unit(s) intersecting screening bbox (SSURGO screening)"
+    return f"{count} soil map unit(s) intersecting screening bbox (screening only)"
 
 
 def _mineral_mining_result(report_run: ReportRunContract) -> str:
