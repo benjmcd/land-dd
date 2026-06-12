@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d401",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_soils_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/soils_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_soils_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d402",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "SOILS_SOURCE_UNAVAILABLE",
+      "domain": "soils",
+      "observation": "Fixture soils source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_soils_source_unavailable",
+        "error_message": "Fixture soils source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_soils_survey_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only soils screening; soils source was unavailable.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c301",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_terrain_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/terrain_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_terrain_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c302",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "TERRAIN_SOURCE_UNAVAILABLE",
+      "domain": "terrain",
+      "observation": "Fixture terrain source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_terrain_source_unavailable",
+        "error_message": "Fixture terrain source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_terrain_relief_sample",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only terrain screening; terrain source was unavailable.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}

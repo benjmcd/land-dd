@@ -1,0 +1,45 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e501",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_wetlands_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/wetlands_failure",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "fixture_wetlands_source_unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e502",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "WETLANDS_SOURCE_UNAVAILABLE",
+      "domain": "wetlands",
+      "observation": "Fixture wetlands source unavailable.",
+      "observed_value": {
+        "failure_reason": "fixture_wetlands_source_unavailable",
+        "error_message": "Fixture wetlands source unavailable.",
+        "retryable": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_wetlands_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Fixture-only wetlands screening; wetlands source was unavailable.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": null,
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}
