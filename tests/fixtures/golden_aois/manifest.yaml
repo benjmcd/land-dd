@@ -107,7 +107,7 @@ cases:
     expected_caveats:
       - Mapped flood data for Chatham County
       - does not confirm legal access
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -133,7 +133,7 @@ cases:
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Requires confirmation by Chatham County Planning
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -161,7 +161,7 @@ cases:
     expected_caveats:
       - Mapped flood data for Chatham County
       - does not confirm legal access
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -188,7 +188,7 @@ cases:
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Mapped flood data for Brunswick County
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -218,7 +218,7 @@ cases:
     expected_caveats:
       - Mapped flood data for Brunswick County
       - does not confirm legal access
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
@@ -245,7 +245,7 @@ cases:
     expected_unknowns: [assessor_not_evaluated]
     expected_caveats:
       - Requires confirmation by Brunswick County Planning
-      - Parcel boundary and cadastral data were not available
+      - Parcel boundaries are approximate
       - Assessor and tax data were not available
     forbidden_claims:
       - "You can build here"
