@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 from uuid import UUID
-
-import pytest
 
 from app.area_geometry.area_repo import InMemoryAreaRepository
 from app.area_geometry.service import AreaService
@@ -57,15 +54,6 @@ FORBIDDEN_PHRASES = (
     "This land is safe",
     "This property is worth",
 )
-
-_SKIP_FIXTURE_SMOKE = pytest.mark.skipif(
-    os.getenv("RUN_DB_SMOKE") != "1",
-    reason=(
-        "Fixture MVP regression not enabled (set RUN_DB_SMOKE=1 to run;"
-        " uses InMemory repos, not a Postgres-backed test)"
-    ),
-)
-
 
 class _InMemoryRetrievalPort:
     def __init__(self) -> None:
@@ -193,7 +181,6 @@ def _run_mvp_case(
     assert "not determined" in dossier_lower or "not evaluated" in dossier_lower
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_buncombe_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="bun_slope.geojson",
@@ -227,7 +214,6 @@ def test_buncombe_mvp_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_chatham_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="cha_rural_use.geojson",
@@ -251,7 +237,6 @@ def test_chatham_mvp_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_brunswick_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="bru_coastal_flood.geojson",
@@ -280,7 +265,6 @@ def test_brunswick_mvp_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_brunswick_jurisdiction_regression() -> None:
     _run_mvp_case(
         geom_file="bru_jurisdiction.geojson",
@@ -304,7 +288,6 @@ def test_brunswick_jurisdiction_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_brunswick_wetlands_soils_regression() -> None:
     _run_mvp_case(
         geom_file="bru_wetlands_soils.geojson",
@@ -338,7 +321,6 @@ def test_brunswick_wetlands_soils_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_chatham_zoning_edge_mvp_regression() -> None:
     _run_mvp_case(
         geom_file="cha_zoning_edge.geojson",
@@ -357,7 +339,6 @@ def test_chatham_zoning_edge_mvp_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_chatham_parcel_tax_regression() -> None:
     _run_mvp_case(
         geom_file="cha_parcel_tax.geojson",
@@ -381,7 +362,6 @@ def test_chatham_parcel_tax_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_buncombe_access_regression() -> None:
     _run_mvp_case(
         geom_file="bun_access.geojson",
@@ -410,7 +390,6 @@ def test_buncombe_access_regression() -> None:
     )
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_buncombe_flood_regression() -> None:
     _run_mvp_case(
         geom_file="bun_flood.geojson",

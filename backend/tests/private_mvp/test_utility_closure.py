@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 from uuid import UUID
-
-import pytest
 
 from app.area_geometry.area_repo import InMemoryAreaRepository
 from app.area_geometry.service import AreaService
@@ -49,15 +46,6 @@ FORBIDDEN_PHRASES = (
     "This property is worth",
 )
 
-_SKIP_FIXTURE_SMOKE = pytest.mark.skipif(
-    os.getenv("RUN_DB_SMOKE") != "1",
-    reason=(
-        "Utility closure regression not enabled (set RUN_DB_SMOKE=1 to run;"
-        " uses InMemory repos, not a Postgres-backed test)"
-    ),
-)
-
-
 class _InMemoryRetrievalPort:
     def __init__(self) -> None:
         self._store: dict[UUID, SourceRetrievalRunContract] = {}
@@ -91,7 +79,6 @@ def _load_geometry(path: Path) -> dict[str, object]:
     return data
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_chatham_parcel_utility() -> None:
     """Chatham parcel utility: parcel evidence present; assessor still NOT_EVALUATED."""
     source_service, area_service, evidence_service, claim_service = _make_services()
@@ -179,7 +166,6 @@ def test_chatham_parcel_utility() -> None:
     assert "## 1. Executive Summary" in dossier
 
 
-@_SKIP_FIXTURE_SMOKE
 def test_brunswick_wetlands_soils_utility() -> None:
     """Brunswick wetlands+soils utility: wetlands and soils evidence present."""
     source_service, area_service, evidence_service, claim_service = _make_services()
