@@ -19,14 +19,18 @@ from app.connectors import (
     StaticBuildabilityFixtureConnector,
     StaticFloodFixtureConnector,
     StaticParcelFixtureConnector,
+    StaticSoilsFixtureConnector,
     StaticTerrainFixtureConnector,
+    StaticWetlandsFixtureConnector,
     StaticZoningFixtureConnector,
     build_fixture_workflow_with_public_services,
     evaluate_access_fixture_quality,
     evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_parcel_fixture_quality,
+    evaluate_soils_fixture_quality,
     evaluate_terrain_fixture_quality,
+    evaluate_wetlands_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
@@ -251,6 +255,64 @@ def test_brunswick_mvp_regression() -> None:
                 "nc_brunswick_bru_coastal_flood_flood.json",
                 StaticFloodFixtureConnector,
                 evaluate_flood_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_coastal_flood_soils.json",
+                StaticSoilsFixtureConnector,
+                evaluate_soils_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_coastal_flood_wetlands.json",
+                StaticWetlandsFixtureConnector,
+                evaluate_wetlands_fixture_quality,
+            ),
+        ],
+    )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_brunswick_jurisdiction_regression() -> None:
+    _run_mvp_case(
+        geom_file="bru_jurisdiction.geojson",
+        connector_fixtures=[
+            (
+                "nc_brunswick_bru_jurisdiction_wetlands.json",
+                StaticWetlandsFixtureConnector,
+                evaluate_wetlands_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_jurisdiction_zoning.json",
+                StaticZoningFixtureConnector,
+                evaluate_zoning_fixture_quality,
+            ),
+        ],
+    )
+
+
+@_SKIP_FIXTURE_SMOKE
+def test_brunswick_wetlands_soils_regression() -> None:
+    _run_mvp_case(
+        geom_file="bru_wetlands_soils.geojson",
+        connector_fixtures=[
+            (
+                "nc_brunswick_bru_wetlands_soils_access.json",
+                StaticAccessFixtureConnector,
+                evaluate_access_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_wetlands_soils_flood.json",
+                StaticFloodFixtureConnector,
+                evaluate_flood_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_wetlands_soils_soils.json",
+                StaticSoilsFixtureConnector,
+                evaluate_soils_fixture_quality,
+            ),
+            (
+                "nc_brunswick_bru_wetlands_soils_wetlands.json",
+                StaticWetlandsFixtureConnector,
+                evaluate_wetlands_fixture_quality,
             ),
         ],
     )
