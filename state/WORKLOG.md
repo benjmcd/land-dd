@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Dossier parcel caveat + golden AOI test gate removal)
+
+- Removed `@_SKIP_FIXTURE_SMOKE` / `RUN_DB_SMOKE=1` gate from all 9 regression tests in
+  `test_mvp_regression.py` and both utility closure tests in `test_utility_closure.py`.
+  All 11 tests use InMemory repos; they now run unconditionally. Suite went from
+  1498→1509 passing, 84→73 skipped.
+- Added `Parcel data caveats:` line to dossier Section 2 (Area Identity) using
+  `_domain_caveats(report_run, {'parcels'})`. Parcel fixture caveat text ("approximate
+  boundaries") was stored on evidence but never surfaced in the output. Added
+  `test_dossier_renders_parcel_caveat_in_area_identity` to `test_dossier_enrichment.py`.
+- Updated golden AOI manifest `expected_caveats` for 6 Chatham/Brunswick cases:
+  replaced stale "Parcel boundary and cadastral data were not available" with
+  "Parcel boundaries are approximate" (the actual fixture caveat phrase now surfaced).
+- Added 4 failure fixture JSON files (buildability/terrain/soils/wetlands) and 4 domain
+  quality test modules (34 tests). Suite grew from 1454→1498 after these were added.
+- Commits: c77ef57 (failure fixtures + quality tests), e946d5c (skip gate removal),
+  b421d76 (dossier parcel caveat), d0561a3 (manifest caveat fix).
+- Verification: 1510 passed, 73 skipped; ruff/mypy clean on 2 source files verified.
+
 ## 2026-06-12 (Brunswick parcel fixtures + Chatham zoning coverage tests)
 
 - Added 3 Brunswick parcel fixture JSON files (bru_coastal_flood, bru_wetlands_soils, bru_jurisdiction).

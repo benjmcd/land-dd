@@ -2,6 +2,36 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Dossier Parcel Caveat + Golden AOI Test Gate Removal
+
+**Scope:** Remove unnecessary `RUN_DB_SMOKE=1` skip gate from 11 golden AOI / utility
+closure tests (all InMemory); surface parcel caveat text in dossier Section 2; fix
+6 stale `expected_caveats` entries in the golden AOI manifest; add 4 domain failure
+fixtures + 34 quality tests (buildability/terrain/soils/wetlands).
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests/private_mvp/ -v
+cd backend; py -3.12 -m pytest tests/reports/test_dossier_enrichment.py -q
+cd backend; ruff check app/reports/dossier.py tests/reports/test_dossier_enrichment.py
+cd backend; py -3.12 -m mypy app/reports/dossier.py tests/reports/test_dossier_enrichment.py
+cd backend; py -3.12 -m pytest tests/test_golden_aoi_manifest.py -q
+cd backend; py -3.12 -m pytest
+```
+
+**Results:**
+- private_mvp tests: 11 passed (was 1 without RUN_DB_SMOKE=1)
+- dossier enrichment: 30 passed (added 1 new caveat test)
+- ruff/mypy: clean
+- manifest: 16 passed
+- Full suite: 1510 passed, 73 skipped
+
+**Residual risk:**
+- Parcel caveats are fixture-only text; live connector evidence will carry different
+  caveat text. The `_domain_caveats` helper is domain-agnostic so it will work for live
+  evidence as well.
+
 ## 2026-06-12 Brunswick Parcel Fixtures + Chatham Zoning Coverage Tests
 
 **Scope:** Add parcel fixture JSON files for all 3 Brunswick golden AOI cases and

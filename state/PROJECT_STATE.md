@@ -1,13 +1,15 @@
 # Project State
 
-## Current checkpoint (2026-06-12 Brunswick/Chatham parcel fixture and zoning test closure)
+## Current checkpoint (2026-06-12 dossier parcel caveat + golden AOI gate removal)
 
-All 9 golden AOI cases now carry parcel fixture data (Buncombe 3 + Chatham 3 + Brunswick 3).
-Brunswick parcel fixtures include parcel_zoning from the GIS layer (RA/R-20 per case).
-Chatham zoning connector test coverage extended to 15 tests (added test_all_districts_are_known
-and test_all_residential_districts_have_consistent_screening, matching Brunswick's coverage style).
-Readiness YAML ds010_011_023_selected_county_behavior note updated to clarify Brunswick zoning.
-Full verify passes: 1454 passed, 84 skipped, ruff/mypy clean.
+Four domain quality test files (buildability/terrain/soils/wetlands) added with 34 tests
+covering failure fixtures, wrong connector name, timing bounds, and spatial geometry checks.
+All 11 private MVP regression and utility closure tests promoted from `RUN_DB_SMOKE=1`-gated
+to unconditional — they use InMemory repos and the gate was spurious. Dossier Section 2 now
+surfaces parcel evidence caveat text ("boundaries are approximate") via the existing
+`_domain_caveats` helper. Golden AOI manifest `expected_caveats` for 6 Chatham/Brunswick cases
+updated to reflect actual fixture caveat text rather than the stale NOT_EVALUATED sentinel phrase.
+Full suite: 1510 passed, 73 skipped; ruff/mypy clean.
 
 ## Previous checkpoint (2026-06-12 source-readiness/source-authority closure)
 
