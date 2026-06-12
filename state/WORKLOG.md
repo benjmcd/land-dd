@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Brunswick parcel fixtures + Chatham zoning coverage tests)
+
+- Added 3 Brunswick parcel fixture JSON files (bru_coastal_flood, bru_wetlands_soils, bru_jurisdiction).
+  Brunswick fixtures include parcel_zoning populated from GIS layer (RA or R-20 per case).
+- Updated golden AOI manifest: all 3 Brunswick cases now have `parcels` in connector_fixture_files
+  and expected_connector_workflow_domains; `parcels` removed from expected_not_evaluated_domains.
+- Updated regression tests: all 3 Brunswick test functions include StaticParcelFixtureConnector as first fixture.
+- All 9 golden AOI cases across Buncombe/Chatham/Brunswick now carry parcel fixture data.
+- Added test_all_districts_are_known and test_all_residential_districts_have_consistent_screening
+  to test_chatham_zoning_connector.py (15 tests, up from 13; matches Brunswick coverage style).
+- Updated readiness YAML ds010_011_023_selected_county_behavior note to clarify Brunswick zoning source.
+- Commits: 490c545 (Brunswick parcel fixtures), 1a940e5 (Chatham zoning tests + readiness note).
+- Verification: 1454 passed, 84 skipped; ruff/mypy clean on 291 source files; private-MVP readiness check passed.
+
+## 2026-06-12 (Buncombe parcel fixtures + Chatham parcels connector tests)
+
+- Added test_chatham_parcels_connector.py (16 tests) to close coverage gap on Chatham parcels live connector.
+- Added 3 Buncombe parcel fixture JSON files (bun_slope, bun_flood, bun_access); all carry parcel_zoning=null
+  (Buncombe GIS parcel layer does not expose a zoning field).
+- Updated golden AOI manifest: all 3 Buncombe cases now have parcel fixtures; parcels removed from
+  expected_not_evaluated_domains for those cases.
+- Updated regression tests for all 3 Buncombe cases to include StaticParcelFixtureConnector as first fixture.
+- Updated readiness YAML ds010_011_023_selected_county_behavior note to reflect all 9 AOIs have parcel fixtures.
+- Commits: 5088514 (Chatham parcels connector tests), b534488 (Buncombe parcel fixtures), 99840a3 (readiness note).
+- Verification: 1452 passed, 84 skipped; ruff/mypy clean.
+
 ## 2026-06-12 (Structured selected-county source-scope catalog)
 
 - Added structured `selected_county_source_scope` data to `config/private_mvp_beta_readiness.yaml` for DS-010, DS-011, and DS-023.
@@ -2300,3 +2326,13 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Updated three Chatham parcel fixture files to include `parcel_pin`, `parcel_county`, and `parcel_zoning` so dossier Sections 2/10 populate correctly instead of showing "unknown".
 - Updated `backend/tests/private_mvp/test_mvp_regression.py`: updated parcel assertion to accept either evaluated or NOT_EVALUATED parcels; added `test_chatham_zoning_edge_mvp_regression` (Milestone C canonical case: parcel + recorded zoning + assessor NOT_EVALUATED); expanded Brunswick regression to include soils and wetlands in the coastal-flood AOI; added `test_brunswick_jurisdiction_regression` (wetlands + zoning) and `test_brunswick_wetlands_soils_regression` (access + flood + soils + wetlands).
 - Verification: all 6 private-MVP fixture-smoke regression tests pass with `RUN_DB_SMOKE=1`; full test suite 1436 passed / 79 skipped; ruff clean; mypy clean (290 source files). DS-017 and hosted-production blockers unchanged.
+
+## 2026-06-12 Buncombe parcel fixtures + Chatham parcels connector unit tests
+
+- Added `backend/tests/connectors/test_chatham_parcels_connector.py`: 16 unit tests covering parcel_zoning population from ZONING field (populated, UNZONED, None), parcel_county constant, all failure modes, bbox validation, max_features guard, deterministic IDs, and evidence codes. Closes coverage gap: Buncombe and Brunswick had connector-layer unit tests but Chatham only had API-layer tests.
+- Added 3 Buncombe parcel fixture files: `nc_buncombe_bun_slope_parcels.json`, `nc_buncombe_bun_flood_parcels.json`, `nc_buncombe_bun_access_parcels.json`. All carry parcel_county="Buncombe County, NC" and parcel_zoning=null (Buncombe GIS parcel layer does not expose a zoning field).
+- Updated `tests/fixtures/golden_aois/manifest.yaml`: all three Buncombe AOIs now include parcels in connector_fixture_files and expected_connector_workflow_domains; parcels removed from expected_not_evaluated_domains.
+- Updated `backend/tests/private_mvp/test_mvp_regression.py`: all three Buncombe regression tests (bun_slope, bun_flood, bun_access) now include StaticParcelFixtureConnector.
+- Updated `config/private_mvp_beta_readiness.yaml` ds010_011_023_selected_county_behavior note: all 9 golden AOI cases now carry parcel fixtures; parcels is no longer NOT_EVALUATED for any Buncombe, Chatham, or Brunswick golden AOI.
+- CLI verified: `generate_dossier.py --connector all` on bun_slope.geojson now shows "Parcel ID/APN: 9621-21-3456-FX, Jurisdiction: Buncombe County, NC, Acreage: 82.5 acres" in dossier.
+- Verification: 1452 passed / 84 skipped; verify.ps1 ok; all 23 private-MVP readiness tests pass; 16 manifest tests pass. DS-017 and hosted-production blockers unchanged.

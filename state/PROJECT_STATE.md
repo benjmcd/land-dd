@@ -1,6 +1,15 @@
 # Project State
 
-## Current checkpoint (2026-06-12 source-readiness/source-authority closure)
+## Current checkpoint (2026-06-12 Brunswick/Chatham parcel fixture and zoning test closure)
+
+All 9 golden AOI cases now carry parcel fixture data (Buncombe 3 + Chatham 3 + Brunswick 3).
+Brunswick parcel fixtures include parcel_zoning from the GIS layer (RA/R-20 per case).
+Chatham zoning connector test coverage extended to 15 tests (added test_all_districts_are_known
+and test_all_residential_districts_have_consistent_screening, matching Brunswick's coverage style).
+Readiness YAML ds010_011_023_selected_county_behavior note updated to clarify Brunswick zoning.
+Full verify passes: 1454 passed, 84 skipped, ruff/mypy clean.
+
+## Previous checkpoint (2026-06-12 source-readiness/source-authority closure)
 
 Authoritative current source-readiness checks:
 

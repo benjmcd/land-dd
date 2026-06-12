@@ -2,6 +2,34 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Brunswick Parcel Fixtures + Chatham Zoning Coverage Tests
+
+**Scope:** Add parcel fixture JSON files for all 3 Brunswick golden AOI cases and
+extend Chatham zoning connector test coverage to match Brunswick's style. All 9
+golden AOI cases across Buncombe/Chatham/Brunswick now carry parcel fixture data.
+No connector behavior, DB schema, API contracts, or source-readiness counts changed.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\test_golden_aoi_manifest.py -q
+py -3.12 scripts\private_mvp_readiness_check.py
+cd backend; py -3.12 -m pytest tests\connectors\test_chatham_zoning_connector.py -v
+cd backend; py -3.12 -m pytest 2>&1 | Select-Object -Last 3
+.\scripts\verify.ps1
+```
+
+**Results:**
+- Golden AOI manifest validation: 16 passed
+- Private MVP readiness check: passed (no output = no failures)
+- Chatham zoning connector: 15 passed (was 13)
+- Full suite: 1454 passed, 84 skipped
+- verify.ps1: ok — 1454 passed, 84 skipped; ruff clean (291 source files); mypy clean
+
+**Residual risk:**
+- Brunswick parcel zoning values (RA, R-20) are fixture approximations, not pulled from live GIS. Acceptable for private MVP fixture regression.
+- DB smoke not run (no Docker/Postgres available); DB-backed paths require RUN_DB_SMOKE=1 with PostgreSQL/PostGIS.
+
 ## 2026-06-12 Structured Selected-County Manifest Scope Catalog
 
 **Scope:** Move selected-county source-manifest validation expectations from
