@@ -2951,3 +2951,24 @@ def test_dossier_renders_broadband_no_access_advisory_in_section_3() -> None:
     section_3 = dossier[sec3_start:sec4_start]
     assert "Advisory findings" in section_3
     assert "broadband" in section_3
+    assert "Complete advisory verification tasks" in dossier, (
+        "Recommended next action must reflect advisory-only status; got:\n"
+        + dossier[dossier.find("Recommended next action"):dossier.find("Recommended next action") + 120]
+    )
+
+
+def test_dossier_recommended_action_with_no_real_evidence() -> None:
+    """With only structural NOT_EVALUATED claims, action falls back to verification plan."""
+    source_service, area_service, _evidence_service, report_service = _make_services()
+    _registered_source(source_service, "broadband")
+    area = _registered_area(area_service)
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    action_start = dossier.find("Recommended next action:")
+    action_line = dossier[action_start:action_start + 150]
+    assert "Complete the verification plan" in action_line or "Review source appendix" in action_line, (
+        "Expected verification plan or source appendix action for no-evidence report; got:\n" + action_line
+    )

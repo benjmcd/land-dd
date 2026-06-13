@@ -230,6 +230,16 @@ def _confidence_band(report_run: ReportRunContract) -> str:
 
 
 def _recommended_next_action(report_run: ReportRunContract) -> str:
+    critical = [c for c in report_run.red_flags if c.severity.value == "critical"]
+    high = [c for c in report_run.red_flags if c.severity.value == "high"]
+    if critical:
+        domains = ", ".join(sorted({c.domain for c in critical}))
+        return f"Resolve critical issues in: {domains} — do not proceed without professional review."
+    if high:
+        domains = ", ".join(sorted({c.domain for c in high}))
+        return f"Investigate high-severity issues in: {domains} before site visits or offers."
+    if report_run.advisory_claims:
+        return "Complete advisory verification tasks; no blockers found in this screening."
     if report_run.verification_tasks:
         return "Complete the verification plan before relying on the screening output."
     return "Review source appendix and caveats before delivery."
