@@ -1644,6 +1644,34 @@ def test_evaluate_creates_soil_poor_drainage_claim_from_hydric_evidence() -> Non
     assert "hydric" in drainage_claims[0].user_safe_language.lower()
 
 
+def test_evaluate_soil_drainage_claim_includes_water_table_depth_when_present() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+        domain="soil_septic",
+        observation="USDA NRCS SSURGO mapunit intersects the query area.",
+        observed_value={
+            "intersects_soil_mapunit": True,
+            "soil_mapunit_key": "123456",
+            "drainage_class": "poorly drained",
+            "hydric_rating": "No",
+            "water_table_depth_cm": 30,
+        },
+        method_code="live_usda_ssurgo_soil_mapunit_query",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="SSURGO screening only.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+    drainage_claims = [c for c in claims if c.claim_code == SOIL_POOR_DRAINAGE_CLAIM_CODE]
+    assert len(drainage_claims) == 1
+    assert "30" in drainage_claims[0].user_safe_language
+    assert "water table" in drainage_claims[0].user_safe_language.lower()
+
+
 def test_evaluate_does_not_create_soil_drainage_claim_for_well_drained_soils() -> None:
     evidence = EvidenceContract(
         area_id=uuid4(),

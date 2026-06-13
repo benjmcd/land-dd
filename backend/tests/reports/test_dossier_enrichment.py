@@ -1043,6 +1043,7 @@ def test_dossier_renders_buildability_terrain_from_evidence() -> None:
                 "value": 12.5,
                 "unit": "m",
                 "relief_m": 12.5,
+                "mean_elevation_m": 342.0,
                 "mean_slope_pct": 6.3,
                 "low_slope_area_ratio": 0.68,
                 "insufficient_low_slope_buildable_area": False,
@@ -1065,6 +1066,12 @@ def test_dossier_renders_buildability_terrain_from_evidence() -> None:
     )
     assert "mean slope" in section_6, (
         "Expected mean slope in Section 6; got:\n" + section_6
+    )
+    assert "mean elevation" in section_6, (
+        "Expected mean elevation in Section 6; got:\n" + section_6
+    )
+    assert "342" in section_6, (
+        "Expected mean elevation value 342m in Section 6; got:\n" + section_6
     )
     assert "low-slope buildable area" in section_6, (
         "Expected buildable area ratio in Section 6; got:\n" + section_6
