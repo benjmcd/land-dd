@@ -1,6 +1,6 @@
 # Project State
 
-## Current checkpoint (2026-06-13 operator approved-path proof — 1617 tests)
+## Current checkpoint (2026-06-13 operator approved-path proof — 1627 tests)
 
 Pivot from claim-narrative enrichment (passes 4–12 were diminishing-returns polish — the handoff's "readiness theater" risk) to **operator utility**. Lane: Source-Authority Closeout → Selected-County Operator Utility Transition.
 
@@ -8,7 +8,9 @@ Pivot from claim-narrative enrichment (passes 4–12 were diminishing-returns po
 - **No-Docker approved path**: `generate_dossier.py` gains `--approve` (real `approve_report_run`) + `--artifact` (byte-identical to API serialization). One copy-runnable command yields an APPROVED selected-county dossier + JSON artifact, no server/Docker. Commit 254a893.
 - **Two new tests**: `test_operator_approved_path.py` (Chatham delta: approval state + artifact shape, not duplicating manifest caveat/forbidden coverage); `test_approved_path_http.py` (no-Docker HTTP proof the shipped `fixture-reviewer`/`fixture-token-123` credential flows 409→approve→200 + parity + 401 — previously only DB-gated).
 - **Architectural truth documented**: `connector_runbook.md` now documents the two non-interchangeable fixture corpora (generic embedded = HTTP-reachable, 3 connector types; county golden = filesystem-only, all 8 domains) and the reachability gap — the HTTP curl path CANNOT serve county dossiers in fixture mode; the script is the only no-Docker path. This subtlety nearly derailed the planning pass (confirmed via adversarial grill).
-- Full suite: 1617 passed, 73 skipped. ruff clean.
+- **§18 Source Appendix defect fixed**: columns were mislabeled — `review_status` shown under "Use", `license_status` under "Caveat" (so every source read "Caveat: approved"). Renamed to Review/License (honest labels for the data; `source_details` has no caveat field). Regression test pins the mapping. Commit follows 254a893.
+- **Stronger completion proven**: `test_manifest_driven.py` now runs the approved path + artifact assertion across ALL 9 golden AOIs — Chatham, Buncombe, Brunswick each have a representative operator-usable case reaching review_status=approved with a well-formed artifact.
+- Full suite: 1627 passed, 73 skipped. ruff clean.
 
 ## Previous checkpoint (2026-06-13 claim narrative enrichment pass 12 — 1614 tests)
 
