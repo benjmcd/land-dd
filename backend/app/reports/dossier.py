@@ -926,6 +926,32 @@ def _unknown_rows(report_run: ReportRunContract) -> list[str]:
     ]
 
 
+_DOMAIN_CONTACT: dict[str, str] = {
+    "access": "county Register of Deeds, title company, or real estate attorney",
+    "zoning": "county planning department",
+    "flood": "local floodplain administrator or FEMA map service center",
+    "wetlands": "qualified wetland delineator",
+    "buildability": "licensed surveyor or civil engineer",
+    "terrain": "licensed surveyor or civil engineer",
+    "soil_septic": "county health department or licensed septic engineer",
+    "soils": "county health department or licensed septic engineer",
+    "water": "county health department or state well permit office",
+    "env_hazard": "state environmental agency or Phase I ESA provider",
+    "minerals": "title attorney or state/federal mineral records office",
+    "geology": "state geological survey office",
+    "broadband": "local internet service providers",
+    "parcels": "county Register of Deeds and licensed surveyor",
+    "assessor": "county Tax Administration office",
+}
+
+
+def _task_contact(task: str, report_run: ReportRunContract) -> str:
+    for claim in report_run.claims:
+        if claim.verification_task and claim.verification_task.strip() == task.strip():
+            return _DOMAIN_CONTACT.get(claim.domain, "qualified local reviewer")
+    return "qualified local reviewer"
+
+
 def _verification_rows(report_run: ReportRunContract) -> list[str]:
     if not report_run.verification_tasks:
         return ["| none | none | none | none |"]
@@ -933,7 +959,7 @@ def _verification_rows(report_run: ReportRunContract) -> list[str]:
         "| {priority} | {task} | {contact} | {evidence} |".format(
             priority=index,
             task=_cell(task),
-            contact="qualified local reviewer",
+            contact=_cell(_task_contact(task, report_run)),
             evidence="source document, official response, or reviewed field note",
         )
         for index, task in enumerate(report_run.verification_tasks, start=1)

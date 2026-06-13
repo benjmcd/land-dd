@@ -1957,3 +1957,42 @@ def test_dossier_septic_proxy_confidence_medium_for_well_drained() -> None:
     assert "medium (drainage screening favorable" in section_8, (
         "Expected 'medium' septic proxy confidence for well-drained soil; got:\n" + section_8
     )
+
+
+def test_dossier_verification_plan_shows_domain_specific_contact() -> None:
+    """Verification plan Section 17 must show domain-specific contacts, not generic."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FEMA_NFHL_FLOOD_HAZARD_ZONE_INTERSECTION",
+            domain="flood",
+            method_code="fema_nfhl_live",
+            observation="AE zone intersection.",
+            observed_value={
+                "flood_zone_code": "AE",
+                "intersects_high_risk_flood_zone": True,
+                "intersection_ratio": 0.6,
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="FEMA NFHL screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec17_start = dossier.find("## 17. Verification")
+    sec18_start = dossier.find("## 18.")
+    section_17 = dossier[sec17_start:sec18_start]
+    assert "floodplain administrator" in section_17.lower(), (
+        "Flood domain verification task must list 'floodplain administrator' as contact; "
+        "got:\n" + section_17
+    )
