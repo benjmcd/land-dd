@@ -1,6 +1,15 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 6 — 1601 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 7 — 1604 tests)
+
+Three more claim enrichments and a lint fix; verify.ps1 passes clean:
+- **Env hazard proximity claim**: `_env_hazard_proximity_claim()` now surfaces `regulated_facility_count`. Commit 262f8d4.
+- **Water no-context claim**: removes legacy "in the fixture" phrasing; surfaces `monitoring_station_count` when present. Commit 8f92e70.
+- **Parcel screen claim**: surfaces `parcel_pin`, `parcel_acres`, and `parcel_county` from evidence. Commit eb9a79a.
+- **Lint fix**: E501 errors in `test_dossier_enrichment.py` fixed. Commit 3528151.
+- 4 new regression tests. verify.ps1: ok; 1604 passed, 73 skipped; ruff/mypy clean (297 source files).
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 6 — 1601 tests)
 
 Seven claim function enrichments and one dossier improvement this session:
 - **Domain-aware recommended action**: `_recommended_next_action()` replaced with logic that varies by severity: critical → lists domains, high → lists domains, advisory → advisory message, else → verification plan. Commit 6ea4fa0.

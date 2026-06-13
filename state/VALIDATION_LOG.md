@@ -2,6 +2,23 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-13 Claim Narrative Enrichment Pass 7
+
+**Scope:** 3 more claim functions enriched: env_hazard proximity (facility count), water no-context (remove "fixture" phrasing, add station count), parcel screen (PIN, acreage, county). Lint fix for E501 in dossier enrichment tests. 4 new regression tests.
+
+**Commands run:**
+```powershell
+cd backend; py -3.12 -m pytest tests/claims_engine/ tests/claims_engine/test_parcel_screening.py --tb=short
+py -3.11 -m ruff check app/claims_engine/rule_engine.py tests/claims_engine/test_rule_engine.py tests/claims_engine/test_parcel_screening.py tests/reports/test_dossier_enrichment.py
+py -3.12 -m mypy app/ --no-error-summary
+py -3.12 -m pytest
+.\scripts\verify.ps1
+```
+
+**Result:** 1604 passed, 73 skipped. ruff: All checks passed. mypy: no errors in app/. verify.ps1: ok.
+
+**Residual risk:** All enrichments conditional on evidence having expected keys. No schema changes. No new dependencies.
+
 ## 2026-06-13 Claim Narrative Enrichment Pass 6
 
 **Scope:** 7 claim functions enriched with evidence-derived narrative detail: wetland (NWI count/area/type), slope (buildable acres), flood positive (zone codes), geology not-evaluated (unit/formation), minerals active (count/case name), zoning prohibited (code/district/use). Domain-aware recommended action in dossier. 8 new regression tests.

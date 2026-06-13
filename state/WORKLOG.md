@@ -2,6 +2,17 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Claim narrative enrichment pass 7 — 1604 tests)
+
+Commits: 262f8d4, 8f92e70, eb9a79a, 3528151
+
+- Env hazard claim: `_env_hazard_proximity_claim()` surfaces regulated_facility_count.
+- Water no-context claim: removed "in the fixture" phrasing; surfaces monitoring_station_count when present.
+- Parcel screen claim: surfaces parcel PIN, acreage, and county from evidence.
+- Fix E501 lint errors in dossier enrichment test assertions.
+- 4 new regression tests (env hazard count, water station count, parcel PIN/acreage/county, fixture-not-language).
+- verify.ps1: ok; 1604 passed, 73 skipped; ruff/mypy clean (297 source files).
+
 ## 2026-06-13 (Claim narrative enrichment pass 6 — 1601 tests)
 
 Commits: 6ea4fa0, 26a9f66, 4096067, 2251de4, 85bd662, f3933eb, 26b866d
