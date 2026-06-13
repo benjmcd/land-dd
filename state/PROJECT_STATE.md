@@ -1,6 +1,30 @@
 # Project State
 
-## Current checkpoint (2026-06-13 dossier enrichment pass 3 + OSM highway types — 1570 tests)
+## Current checkpoint (2026-06-13 advisory claims + rule coverage + dossier enrichment pass 4 — 1592 tests)
+
+Eight improvements across rule engine, dossier output, and test coverage:
+- **GEOLOGY_G001 advisory rule**: new LOW-severity hard gate fires when geology
+  evidence is present but `geologic_hazard_determined: False`. Commit 6abde71.
+  Severity corrected from `informational` to `low` so it surfaces in advisory
+  findings table. Commit 0cc1f4a.
+- **Section 11 contamination context**: `_env_contamination_context()` replaces
+  hardcoded "unknown" with ECHO-derived facility count + Phase I ESA note.
+  Commit 96e06e8.
+- **Section 2 geometry confidence**: `_geometry_confidence()` replaces hardcoded
+  "unknown" with parcel county GIS source and `~50m` spatial precision note.
+  Commit 85d56d7.
+- **Section 10 zoning overlays/lot size**: `_zoning_overlay_result()` and
+  `_zoning_lot_size_result()` replace hardcoded "unknown" with "not screened"
+  messages surfacing the `udo_source_url` from zoning evidence. Commit 2e8d265.
+- **Advisory claim dossier tests**: new tests verify FLOOD_G002, SOIL_G002,
+  GEOLOGY_G001, and BROADBAND_G001 advisory claims each appear in Section 3.
+  Commits 0418e38, eb8ca04.
+- **Advisory claims regression test**: pins `advisory_claim_codes` and
+  `advisory_count` in cost_metrics when FLOOD_MODERATE_001 fires. Commit ce49829.
+- 22 new tests total this session. Full suite: 1592 passed, 73 skipped.
+- ruff/mypy clean on all changed files.
+
+## Previous checkpoint (2026-06-13 dossier enrichment pass 3 + OSM highway types — 1570 tests)
 
 Seven connector-field surfacing improvements and one connector query upgrade:
 - **NOAA nearest city/state in Section 13**: `_climate_result()` now surfaces

@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Advisory claims + rule coverage + dossier enrichment pass 4 — 1592 tests)
+
+- **GEOLOGY_G001 advisory rule**: new `geologic_hazard_not_determined` hard gate (LOW severity)
+  fires when NC geologic map evidence is present but hazard evaluation not performed. Severity
+  corrected from `informational` → `low` so it surfaces in advisory findings. Commits 6abde71, 0cc1f4a.
+- **Section 11 contamination context**: `_env_contamination_context()` replaces "unknown" with
+  ECHO-derived facility count plus Phase I ESA note; handles 0, N>0, and source-failure cases.
+  Commit 96e06e8.
+- **Section 2 geometry confidence**: `_geometry_confidence()` replaces "unknown" with parcel
+  county GIS source and `~50m` spatial precision note from parcel evidence. Commit 85d56d7.
+- **Section 10 overlays/lot size**: `_zoning_overlay_result()` and `_zoning_lot_size_result()`
+  replace "unknown" with "not screened" messages that include the UDO source URL from zoning
+  evidence; fall back gracefully when no zoning data. Commit 2e8d265.
+- **Advisory dossier tests**: tests verify FLOOD_G002, SOIL_G002, GEOLOGY_G001, BROADBAND_G001
+  advisory claims each appear in Section 3 advisory table. Commits 0418e38, eb8ca04.
+- **Advisory regression test**: pins `advisory_claim_codes` + `advisory_count` in cost_metrics
+  shape for FLOOD_MODERATE_001 path. Commit ce49829.
+- 22 new tests total. Full suite: 1592 passed, 73 skipped. ruff/mypy clean.
+
 ## 2026-06-12 (Dossier enrichment pass 2 — correctness + output quality)
 
 - **SSURGO drainage/hydric in dossier Section 8**: new helpers `_soil_drainage_result()`

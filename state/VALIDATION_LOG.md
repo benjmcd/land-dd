@@ -2,6 +2,25 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-13 Advisory Claims + Rule Coverage + Dossier Enrichment Pass 4
+
+**Scope:** GEOLOGY_G001 rule, Section 11/2/10 unknown replacement, advisory claim
+dossier tests for all LOW paths, advisory claims regression.
+
+**Commands run:**
+```powershell
+cd backend; py -3.12 -m pytest tests/reports/ tests/claims_engine/ --tb=short
+py -3.11 -m ruff check app/reports/dossier.py app/claims_engine/rule_engine.py tests/reports/
+py -3.12 -m mypy app/reports/dossier.py app/claims_engine/rule_engine.py tests/reports/
+py -3.12 -m pytest --tb=short
+```
+
+**Result:** 1592 passed, 73 skipped. ruff/mypy clean. No regressions.
+
+**Residual risk:** "Overlays" and "Minimum lot size/setbacks" in Section 10 now
+show informative "not screened/not captured" with UDO URL; no actual dimension
+data is stored in the connector. Assessor line remains hardcoded by design.
+
 ## 2026-06-12 Dossier Enrichment Pass 2 — Correctness + Output Quality
 
 **Scope:** Fix zoning canonical key gap, drainage/hydric surfacing, flood zone descriptions,
