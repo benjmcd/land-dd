@@ -198,16 +198,27 @@ class OsmRoadAccessConnector:
 
         road_count = len(elements)
         _seen_types: set[str] = set()
+        _seen_names: set[str] = set()
+        _seen_refs: set[str] = set()
         for _el in elements:
             if not isinstance(_el, Mapping):
                 continue
             _tags = cast(Mapping[str, object], _el).get("tags")
             if not isinstance(_tags, Mapping):
                 continue
-            _hw = cast(Mapping[str, object], _tags).get("highway")
+            _t = cast(Mapping[str, object], _tags)
+            _hw = _t.get("highway")
             if isinstance(_hw, str) and _hw:
                 _seen_types.add(_hw)
+            _nm = _t.get("name")
+            if isinstance(_nm, str) and _nm:
+                _seen_names.add(_nm)
+            _rf = _t.get("ref")
+            if isinstance(_rf, str) and _rf:
+                _seen_refs.add(_rf)
         highway_types: list[str] = sorted(_seen_types)
+        road_names: list[str] = sorted(_seen_names)
+        road_refs: list[str] = sorted(_seen_refs)
 
         has_road = road_count > 0
         finished_at = _utcnow()
@@ -239,6 +250,8 @@ class OsmRoadAccessConnector:
                 "road_distance_m": 0.0,
                 "road_count": road_count,
                 "highway_types": highway_types,
+                "road_names": road_names,
+                "road_refs": road_refs,
                 "osm_query_bbox": bbox.overpass_bbox,
                 "lookup_type": "live_overpass",
             }

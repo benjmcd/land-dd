@@ -374,3 +374,41 @@ def test_connector_stays_before_claims_reports_and_api() -> None:
 
 def test_default_max_features_constant_is_correct() -> None:
     assert OSM_ROAD_ACCESS_MAX_FEATURES == 500
+
+
+# --- Road names and refs ---
+
+
+def _mock_road_with_names(url: str, timeout: float) -> dict[str, object]:
+    return {
+        "elements": [
+            {"type": "way", "id": 1, "tags": {
+                "highway": "primary", "name": "Old Pittsboro Road", "ref": "NC 87"
+            }},
+            {"type": "way", "id": 2, "tags": {
+                "highway": "residential", "name": "Cedar Lane"
+            }},
+        ]
+    }
+
+
+def test_road_names_and_refs_captured_in_observed_value() -> None:
+    area_id = uuid4()
+    result = OsmRoadAccessConnector(
+        source=_source(), fetch_json=_mock_road_with_names
+    ).query_bbox(area_id=area_id, bbox=_bbox())
+
+    evidence = result.evidence_inputs[0]
+    assert evidence.observed_value["road_names"] == ["Cedar Lane", "Old Pittsboro Road"]
+    assert evidence.observed_value["road_refs"] == ["NC 87"]
+
+
+def test_road_names_empty_when_no_name_tags() -> None:
+    area_id = uuid4()
+    result = OsmRoadAccessConnector(
+        source=_source(), fetch_json=_mock_road_present
+    ).query_bbox(area_id=area_id, bbox=_bbox())
+
+    evidence = result.evidence_inputs[0]
+    assert evidence.observed_value["road_names"] == []
+    assert evidence.observed_value["road_refs"] == []

@@ -201,6 +201,8 @@ SPATIAL_INTERSECTION_KEYS = {
     "lookup_type",
     "osm_query_bbox",
     "road_count",
+    "road_names",
+    "road_refs",
     # usgs water monitoring connector fields
     "monitoring_station_count",
     "water_context_status",
