@@ -2083,3 +2083,41 @@ def test_dossier_census_tract_name_shown_when_available() -> None:
     assert "Block Group 1, Census Tract 602" in section_2, (
         "Expected block group name in Section 2; got:\n" + section_2
     )
+
+
+def test_dossier_source_appendix_shows_udo_url_when_homepage_url_absent() -> None:
+    """Source appendix must fall back to udo_source_url from evidence when homepage_url is null."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="BRUNSWICK_ZONING_DISTRICT_SCREEN",
+            domain="zoning",
+            method_code="brunswick_zoning_recorded_lookup",
+            observation="Brunswick County zoning: RR district found.",
+            observed_value={
+                "zoning_code": "RR",
+                "residential_use_screening": "ALLOWED_WITH_RESTRICTIONS",
+                "intended_residential_use_allowed": True,
+                "udo_source_url": "https://brunswick.example.gov/udo.pdf",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec18_start = dossier.find("## 18. Source Appendix")
+    section_18 = dossier[sec18_start:]
+    assert "https://brunswick.example.gov/udo.pdf" in section_18, (
+        "Source appendix must show udo_source_url when homepage_url is not set; "
+        "got:\n" + section_18
+    )

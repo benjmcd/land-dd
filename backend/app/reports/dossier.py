@@ -980,11 +980,20 @@ def _source_rows(report_run: ReportRunContract) -> list[str]:
     details = report_run.source_manifest.get("source_details")
     if not isinstance(details, list) or not details:
         return ["| unknown | unknown | screening input | none recorded | unknown |"]
+    udo_urls: dict[str, str] = {}
+    for ev in report_run.evidence:
+        sid = str(ev.source_id)
+        if sid not in udo_urls:
+            u = ev.observed_value.get("udo_source_url")
+            if isinstance(u, str) and u.startswith("http"):
+                udo_urls[sid] = u
     rows = []
     for raw_detail in details:
         if not isinstance(raw_detail, dict):
             continue
         detail = dict(raw_detail)
+        source_id = str(detail.get("source_id", ""))
+        url = detail.get("homepage_url") or udo_urls.get(source_id)
         rows.append(
             "| {source} | {version} | {use} | {caveat} | {url} |".format(
                 source=_cell(str(detail.get("name", "unknown"))),
@@ -993,7 +1002,7 @@ def _source_rows(report_run: ReportRunContract) -> list[str]:
                 ),
                 use=_cell(str(detail.get("review_status", "unknown"))),
                 caveat=_cell(str(detail.get("license_status", "unknown"))),
-                url=_cell(str(detail.get("homepage_url") or "unknown")),
+                url=_cell(str(url) if url else "unknown"),
             )
         )
     if not rows:
