@@ -1527,9 +1527,19 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        seen_zones: list[str] = []
+        seen_zone_set: set[str] = set()
+        for e in evidence_records:
+            if not e.is_source_failure:
+                for z in _flood_zone_values(e):
+                    zu = z.upper()
+                    if zu and zu not in seen_zone_set:
+                        seen_zone_set.add(zu)
+                        seen_zones.append(zu)
+        detail = f" (zone(s) found: {', '.join(seen_zones)})" if seen_zones else ""
         user_safe_language = (
-            "Flood screening evidence is conflicting or incomplete and requires human "
-            "review before interpreting floodplain constraints."
+            f"Flood screening evidence is conflicting or incomplete{detail} and requires "
+            "human review before interpreting floodplain constraints."
         )
         if caveat_text:
             user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"

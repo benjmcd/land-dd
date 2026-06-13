@@ -1150,6 +1150,8 @@ def test_evaluate_creates_needs_review_claim_for_contradictory_flood_evidence() 
     assert review_claim.confidence == ConfidenceBand.MEDIUM
     assert review_claim.verification_required is True
     assert "conflicting" in review_claim.user_safe_language
+    assert "zone(s) found:" in review_claim.user_safe_language
+    assert "AE" in review_claim.user_safe_language
     assert review_claim.evidence_ids == sorted(
         [positive.evidence_id, negative.evidence_id],
         key=str,
