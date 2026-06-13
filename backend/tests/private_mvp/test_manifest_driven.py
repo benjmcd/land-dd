@@ -33,7 +33,8 @@ from app.connectors import (
     evaluate_zoning_fixture_quality,
 )
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import IntentCode, JobStatus
+from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
+from app.domain.report_contracts import ReportRunContract
 from app.domain.source_contracts import SourceContract, SourceRetrievalRunContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
@@ -81,7 +82,9 @@ def _load_manifest_cases() -> list[dict[str, Any]]:
     return data["cases"]  # type: ignore[no-any-return]
 
 
-def _run_case(case: dict[str, Any]) -> str:
+def _build_report_run(
+    case: dict[str, Any],
+) -> tuple[ReportRunService, ReportRunContract]:
     source_service = SourceService(InMemorySourceRepository())
     area_service = AreaService(InMemoryAreaRepository())
     evidence_repo = InMemoryEvidenceRepository()
@@ -141,6 +144,11 @@ def _run_case(case: dict[str, Any]) -> str:
     assert report_run.status == JobStatus.SUCCEEDED, (
         f"Case {case['case_id']!r}: report run failed"
     )
+    return report_service, report_run
+
+
+def _run_case(case: dict[str, Any]) -> str:
+    _report_service, report_run = _build_report_run(case)
     return build_rural_land_dossier(report_run)
 
 
@@ -166,4 +174,44 @@ def test_manifest_forbidden_claims_absent_from_dossier(case: dict[str, Any]) -> 
     for phrase in case.get("forbidden_claims", []):
         assert phrase.lower() not in dossier_lower, (
             f"Case {case['case_id']!r}: forbidden phrase {phrase!r} found in dossier"
+        )
+
+
+@pytest.mark.parametrize("case", _MANIFEST_CASES, ids=lambda c: c["case_id"])
+def test_manifest_approved_path_emits_valid_artifact(case: dict[str, Any]) -> None:
+    """Every county AOI must run the approved path and emit a well-formed artifact.
+
+    This is the executable proof for the handoff's "stronger completion" target:
+    Chatham, Buncombe, and Brunswick each have a representative operator-usable
+    case that reaches review_status=approved with a machine-readable artifact
+    carrying report_run_id, source ids, and evidence-linked claims.
+    """
+    report_service, report_run = _build_report_run(case)
+
+    approved = report_service.approve_report_run(
+        report_run.report_run_id,
+        reviewer_id="operator-proof",
+        reason=f"manifest approved-path proof: {case['case_id']}",
+    )
+    assert approved is not None, f"Case {case['case_id']!r}: approval returned None"
+    assert approved.review_status == ReportReviewStatus.APPROVED
+
+    # Artifact serialization is byte-identical to the API (app/api/reports.py).
+    artifact = json.loads(
+        json.dumps(approved.model_dump(mode="json"), indent=2, sort_keys=True)
+    )
+    assert artifact["report_run_id"] == str(approved.report_run_id)
+    source_ids = artifact["source_manifest"]["source_ids"]
+    assert isinstance(source_ids, list) and source_ids, (
+        f"Case {case['case_id']!r}: artifact has no source ids"
+    )
+    all_claims = (
+        artifact.get("claims", [])
+        + artifact.get("unknowns", [])
+        + artifact.get("red_flags", [])
+    )
+    assert all_claims, f"Case {case['case_id']!r}: artifact has no claims"
+    for claim_dict in all_claims:
+        assert "evidence_ids" in claim_dict, (
+            f"Case {case['case_id']!r}: claim missing evidence_ids: {claim_dict}"
         )
