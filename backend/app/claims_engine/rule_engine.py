@@ -1414,9 +1414,18 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        zones = sorted({
+            z.upper()
+            for e in evidence_records
+            for z in _flood_zone_values(e)
+            if z.upper() in HIGH_RISK_FLOOD_ZONES
+        })
+        zone_str = ", ".join(zones) if zones else "high-risk"
         user_safe_language = (
-            "Screening evidence indicates possible floodplain constraints; "
-            "confirm flood zone, local permitting, and insurance implications."
+            f"FEMA NFHL screening detected a high-risk flood zone ({zone_str}). "
+            "This is screening only — not a flood determination or elevation "
+            "certificate. Confirm current FEMA flood map panel, flood insurance "
+            "requirements, and local floodplain permitting before building."
         )
         if caveat_text:
             user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
@@ -1426,7 +1435,10 @@ class RuleEngine:
             area_id=area_id,
             claim_code=rule.claim_code,
             domain=rule.domain,
-            assertion="Mapped screening evidence indicates high-risk flood zone intersection.",
+            assertion=(
+                f"High-risk FEMA flood zone detected ({zone_str}) — "
+                "confirm flood determination and insurance requirements."
+            ),
             user_safe_language=user_safe_language,
             severity=rule.severity_on_fail,
             confidence=_lowest_confidence(evidence_records),

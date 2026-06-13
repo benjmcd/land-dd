@@ -1567,6 +1567,26 @@ def test_evaluate_creates_flood_moderate_claim_from_x500_zone() -> None:
     assert "X500" in claim.assertion or "X500" in claim.user_safe_language
 
 
+def test_flood_positive_claim_surfaces_zone_code() -> None:
+    evidence = EvidenceContract(
+        area_id=uuid4(),
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="FLOOD_ZONE_SCREEN",
+        domain="flood",
+        observation="FEMA NFHL: Zone AE intersection.",
+        observed_value={"flood_zone_code": "AE"},
+        method_code="fema_nfhl_wfs_live",
+        confidence=ConfidenceBand.MEDIUM,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    flood_claims = [c for c in claims if c.claim_code == "FLOOD_001"]
+    assert len(flood_claims) == 1
+    lang = flood_claims[0].user_safe_language
+    assert "AE" in lang
+    assert "high-risk flood zone" in lang.lower()
+
+
 def test_evaluate_does_not_create_moderate_flood_claim_for_high_risk_zone() -> None:
     evidence = EvidenceContract(
         area_id=uuid4(),
