@@ -169,7 +169,10 @@ def test_success_query_samples_bounded_epqs_points_and_emits_relief_metric() -> 
         "metric_code": "tnm_epqs_sampled_relief_m",
         "value": 4.0,
         "unit": "m",
+        "min_elevation_m": 8.0,
+        "max_elevation_m": 12.0,
         "mean_elevation_m": 10.0,
+        "sample_count": 5,
         "calculation_method": "center_and_corner_epqs_point_sample_relief",
     }
 

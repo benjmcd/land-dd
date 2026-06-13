@@ -673,14 +673,20 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
         metric_val = record.observed_value.get("value")
         metric_unit = record.observed_value.get("unit")
         metric_code = record.observed_value.get("metric_code")
+        min_elev = record.observed_value.get("min_elevation_m")
+        max_elev = record.observed_value.get("max_elevation_m")
+        sample_n = record.observed_value.get("sample_count")
         if relief is not None:
             parts.append(f"terrain relief ~{float(relief):.0f}m")  # type: ignore[arg-type]
+        if min_elev is not None and max_elev is not None:
+            sample_suffix = f" ({int(sample_n)} samples)" if sample_n is not None else ""  # type: ignore[arg-type]
+            parts.append(f"elevation range {float(min_elev):.0f}–{float(max_elev):.0f}m{sample_suffix}")  # type: ignore[arg-type]  # noqa: E501
+        elif elev is not None:
+            parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
         if mean_slope is not None:
             parts.append(f"mean slope ~{float(mean_slope):.0f}%")  # type: ignore[arg-type]
         if ratio is not None:
             parts.append(f"{float(ratio):.0%} low-slope buildable area")  # type: ignore[arg-type]
-        if elev is not None:
-            parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
         if metric_code and metric_val is not None and metric_unit:
             parts.append(f"{metric_code}: {float(metric_val):.1f} {metric_unit}")  # type: ignore[arg-type]
     return "; ".join(parts) if parts else "; ".join(r.observation for r in records)
@@ -1025,6 +1031,11 @@ def _mineral_mining_result(report_run: ReportRunContract) -> str:
     record = records[0]
     count = record.observed_value.get("blm_active_mining_claim_count")
     if count is not None:
+        if int(count) > 0:
+            name = record.observed_value.get("primary_blm_mlrs_case_name")
+            serial = record.observed_value.get("primary_blm_mlrs_case_serial_number")
+            primary = f" (primary: {name}" + (f", #{serial})" if serial else ")") if name else ""
+            return f"{count} active federal mining claim record(s) in query bbox (BLM MLRS){primary}"  # noqa: E501
         return f"{count} active federal mining claim record(s) in query bbox (BLM MLRS)"
     return _cell(record.observation)
 

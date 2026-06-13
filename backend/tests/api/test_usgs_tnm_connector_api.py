@@ -157,7 +157,10 @@ def test_usgs_tnm_query_bbox_persists_relief_evidence_and_review_queue() -> None
         "metric_code": "tnm_epqs_sampled_relief_m",
         "value": 4.0,
         "unit": "m",
+        "min_elevation_m": 9.0,
+        "max_elevation_m": 13.0,
         "mean_elevation_m": 11.0,
+        "sample_count": 2,
         "calculation_method": "center_and_corner_epqs_point_sample_relief",
     }
 
