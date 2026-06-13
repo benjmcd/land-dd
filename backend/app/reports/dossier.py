@@ -98,8 +98,8 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 8. Soil / Septic Proxy",
         "",
         f"- Soil map units: {_soil_septic_result(report_run)}",
-        "- Drainage/limitation notes: unknown",
-        "- Septic proxy confidence: unknown",
+        f"- Drainage/limitation notes: {_soil_drainage_result(report_run)}",
+        f"- Septic proxy confidence: {_septic_proxy_confidence(report_run)}",
         f"- Caveats: {_domain_caveats(report_run, {'soil_septic', 'soils'})}",
         f"- Required verification: {_domain_verification_multi(report_run, {'soil_septic', 'soils'})}",  # noqa: E501
         "",
@@ -752,6 +752,76 @@ def _soil_septic_result(report_run: ReportRunContract) -> str:
             " (screening only; not a site-specific soil report)"
         )
     return f"{count} soil map unit(s) intersecting screening bbox (screening only)"
+
+
+def _soil_drainage_result(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain in _SOIL_DOMAINS and not r.is_source_failure
+    ]
+    if not records:
+        return "not evaluated"
+    drainage_classes: list[str] = []
+    hydro_groups: list[str] = []
+    any_hydric = False
+    seen_drain: set[str] = set()
+    seen_hydro: set[str] = set()
+    for record in records:
+        dc = record.observed_value.get("drainage_class")
+        if isinstance(dc, str) and dc not in seen_drain:
+            seen_drain.add(dc)
+            drainage_classes.append(dc)
+        hg = record.observed_value.get("hydrologic_group")
+        if isinstance(hg, str) and hg not in seen_hydro:
+            seen_hydro.add(hg)
+            hydro_groups.append(hg)
+        hr = record.observed_value.get("hydric_rating")
+        if isinstance(hr, str) and hr.lower() == "yes":
+            any_hydric = True
+    if not drainage_classes and not hydro_groups and not any_hydric:
+        return "not evaluated"
+    parts: list[str] = []
+    if drainage_classes:
+        parts.append(f"drainage: {', '.join(drainage_classes)}")
+    if hydro_groups:
+        parts.append(f"hydrologic group: {', '.join(hydro_groups)}")
+    if any_hydric:
+        parts.append("hydric soils present (screening only)")
+    return "; ".join(parts) + " — screening only; verify with perc test"
+
+
+_POOR_DRAINAGE = frozenset({"poorly drained", "very poorly drained"})
+_MARGINAL_DRAINAGE = frozenset({"somewhat poorly drained"})
+
+
+def _septic_proxy_confidence(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain in _SOIL_DOMAINS and not r.is_source_failure
+    ]
+    if not records:
+        source_failures = [r for r in report_run.evidence if r.domain in _SOIL_DOMAINS]
+        if source_failures:
+            return "unknown (soil data unavailable)"
+        return "unknown"
+    any_hydric = any(
+        str(r.observed_value.get("hydric_rating", "")).lower() == "yes"
+        for r in records
+    )
+    if any_hydric:
+        return "low (hydric soils detected — perc test required)"
+    drainage_classes = {
+        str(r.observed_value["drainage_class"]).lower()
+        for r in records
+        if isinstance(r.observed_value.get("drainage_class"), str)
+    }
+    if drainage_classes & _POOR_DRAINAGE:
+        return "low (poor drainage detected — perc test required)"
+    if drainage_classes & _MARGINAL_DRAINAGE:
+        return "medium-low (marginal drainage — perc test strongly recommended)"
+    if drainage_classes:
+        return "medium (drainage screening favorable — confirm with perc test)"
+    return "unknown"
 
 
 def _mineral_mining_result(report_run: ReportRunContract) -> str:

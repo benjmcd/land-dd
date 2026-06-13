@@ -1613,3 +1613,179 @@ def test_overall_suitability_unknown_when_non_structural_unknown() -> None:
     assert "Overall suitability band: unknown" in section_1, (
         "Expected 'unknown' suitability with non-structural UNKNOWN claim; got:\n" + section_1
     )
+
+
+def test_dossier_renders_soil_drainage_from_ssurgo_evidence() -> None:
+    """SSURGO drainage_class and hydrologic_group must appear in Section 8 drainage line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "654321",
+                "soil_mapunit_symbol": "PaA",
+                "soil_mapunit_name": "Pacolet sandy loam",
+                "drainage_class": "well drained",
+                "hydric_rating": "No",
+                "hydrologic_group": "C",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    assert sec8_start != -1
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "well drained" in section_8, (
+        "Expected 'well drained' drainage class in Section 8; got:\n" + section_8
+    )
+    assert "hydrologic group: C" in section_8, (
+        "Expected hydrologic group C in Section 8; got:\n" + section_8
+    )
+    assert "not evaluated" not in section_8.split("- Drainage")[1].split("\n")[0], (
+        "Drainage line must not say 'not evaluated' when SSURGO drainage data is present"
+    )
+
+
+def test_dossier_renders_hydric_soils_flag_when_hydric_rating_yes() -> None:
+    """hydric_rating=Yes must trigger 'hydric soils present' warning in Section 8."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "789012",
+                "soil_mapunit_name": "Roanoke fine sandy loam",
+                "drainage_class": "poorly drained",
+                "hydric_rating": "Yes",
+                "hydrologic_group": "D",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    assert sec8_start != -1
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "hydric soils present" in section_8, (
+        "Expected hydric soils warning in Section 8; got:\n" + section_8
+    )
+    assert "poorly drained" in section_8, (
+        "Expected 'poorly drained' in Section 8; got:\n" + section_8
+    )
+
+
+def test_dossier_septic_proxy_confidence_low_for_poor_drainage() -> None:
+    """SSURGO poorly-drained soil sets septic proxy confidence to 'low'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "111222",
+                "soil_mapunit_name": "Wehadkee silt loam",
+                "drainage_class": "poorly drained",
+                "hydric_rating": "No",
+                "hydrologic_group": "D",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "low (poor drainage" in section_8, (
+        "Expected 'low (poor drainage' in septic proxy confidence; got:\n" + section_8
+    )
+
+
+def test_dossier_septic_proxy_confidence_medium_for_well_drained() -> None:
+    """SSURGO well-drained soil sets septic proxy confidence to 'medium'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "333444",
+                "soil_mapunit_name": "Madison sandy clay loam",
+                "drainage_class": "well drained",
+                "hydric_rating": "No",
+                "hydrologic_group": "B",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "medium (drainage screening favorable" in section_8, (
+        "Expected 'medium' septic proxy confidence for well-drained soil; got:\n" + section_8
+    )
