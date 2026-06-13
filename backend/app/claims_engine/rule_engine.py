@@ -1067,8 +1067,20 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        station_count: int | None = None
+        for e in evidence_records:
+            if not e.is_source_failure:
+                count = e.observed_value.get("monitoring_station_count")
+                if isinstance(count, (int, float)) and not isinstance(count, bool):
+                    station_count = int(count)
+                    break
+        detail = (
+            f" ({station_count} USGS monitoring station(s) in screening bbox)"
+            if station_count is not None
+            else ""
+        )
         user_safe_language = (
-            "Water-context screening evidence is conflicting or incomplete and "
+            f"Water-context screening evidence is conflicting or incomplete{detail} and "
             "requires human review. It does not determine water rights, well yield "
             "or viability, lawful hauling, utility/service availability, potable "
             "water, or final water availability."
@@ -1396,8 +1408,34 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        seen_labels: set[str] = set()
+        wetland_labels: list[str] = []
+        total_area_sq_m = 0.0
+        non_failure = [e for e in evidence_records if not e.is_source_failure]
+        for e in non_failure:
+            area = e.observed_value.get("mapped_wetland_area_sq_m")
+            if isinstance(area, (int, float)) and not isinstance(area, bool):
+                total_area_sq_m += float(area)
+            wclass = e.observed_value.get("wetland_class")
+            wtype = e.observed_value.get("wetland_type")
+            label = (
+                str(wclass) if isinstance(wclass, str) and wclass
+                else str(wtype) if isinstance(wtype, str) and wtype
+                else None
+            )
+            if label and label not in seen_labels:
+                seen_labels.add(label)
+                wetland_labels.append(label)
+        detail_parts: list[str] = []
+        if non_failure:
+            detail_parts.append(f"{len(non_failure)} NWI feature(s) present")
+        if total_area_sq_m > 0:
+            detail_parts.append(f"~{total_area_sq_m / 4047:.2f} mapped acres")
+        if wetland_labels:
+            detail_parts.append("types: " + ", ".join(wetland_labels[:3]))
+        detail = f" ({'; '.join(detail_parts)})" if detail_parts else ""
         user_safe_language = (
-            "Wetland screening evidence is conflicting or incomplete and requires "
+            f"Wetland screening evidence is conflicting or incomplete{detail} and requires "
             "human review. Maps are screening inputs, not field delineations or "
             "jurisdictional determinations."
         )

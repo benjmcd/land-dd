@@ -848,6 +848,31 @@ def test_evaluate_creates_needs_review_claim_from_incomplete_water_evidence() ->
     assert "does not determine water rights" in claim.user_safe_language
 
 
+def test_water_needs_review_claim_surfaces_station_count() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="WATER_CONTEXT_SCREEN",
+        domain="water",
+        observation="Conflicting water context signals.",
+        observed_value={
+            "plausible_water_context": True,
+            "no_plausible_water_context": True,
+            "monitoring_station_count": 3,
+        },
+        method_code="fixture_water_context_screen",
+        confidence=ConfidenceBand.LOW,
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    claim = next((c for c in claims if c.claim_code == "WATER_EVIDENCE_NEEDS_REVIEW"), None)
+    assert claim is not None
+    assert "3 USGS monitoring station(s)" in claim.user_safe_language
+
+
 def test_evaluate_creates_stale_water_review_claim_from_fixture_signal() -> None:
     area_id = uuid4()
     stale_evidence = make_water_evidence(
@@ -994,6 +1019,36 @@ def test_evaluate_wetland_outputs_are_deterministic_when_input_order_changes() -
         "WETLAND_EVIDENCE_NEEDS_REVIEW",
         "WETLAND_STALE_EVIDENCE_NEEDS_REVIEW",
     ]
+
+
+def test_wetland_needs_review_claim_surfaces_feature_count_and_types() -> None:
+    area_id = uuid4()
+    positive = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="NWI_WETLAND_SCREEN",
+        domain="wetlands",
+        observation="NWI wetland features intersect.",
+        observed_value={
+            "intersects_mapped_wetlands": True,
+            "mapped_wetland_area_sq_m": 2000.0,
+            "wetland_class": "Palustrine",
+            "wetland_type": "Emergent",
+        },
+        method_code="fixture_nwi_wetland_screen",
+        confidence=ConfidenceBand.MEDIUM,
+    )
+    negative = make_wetland_evidence(
+        area_id=area_id, intersects_mapped_wetlands=False, confidence=ConfidenceBand.HIGH
+    )
+
+    claims = RuleEngine.from_file().evaluate([positive, negative])
+
+    claim = next((c for c in claims if c.claim_code == "WETLAND_EVIDENCE_NEEDS_REVIEW"), None)
+    assert claim is not None
+    assert "NWI feature(s) present" in claim.user_safe_language
+    assert "Palustrine" in claim.user_safe_language
 
 
 def test_evaluate_creates_slope_claim_from_insufficient_low_slope_area() -> None:
