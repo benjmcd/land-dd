@@ -234,7 +234,7 @@ def _recommended_next_action(report_run: ReportRunContract) -> str:
     high = [c for c in report_run.red_flags if c.severity.value == "high"]
     if critical:
         domains = ", ".join(sorted({c.domain for c in critical}))
-        return f"Resolve critical issues in: {domains} — do not proceed without professional review."
+        return f"Resolve critical issues in: {domains} — do not proceed without professional review."  # noqa: E501
     if high:
         domains = ", ".join(sorted({c.domain for c in high}))
         return f"Investigate high-severity issues in: {domains} before site visits or offers."

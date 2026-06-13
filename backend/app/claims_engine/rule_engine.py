@@ -1948,10 +1948,11 @@ class RuleEngine:
                 name = e.observed_value.get("primary_blm_mlrs_case_name")
                 serial = e.observed_value.get("primary_blm_mlrs_case_serial_number")
                 if isinstance(name, str) and name:
-                    case_str = f" Primary: {name}" + (f" #{serial}" if isinstance(serial, str) and serial else "") + "."
+                    serial_suffix = f" #{serial}" if isinstance(serial, str) and serial else ""
+                    case_str = f" Primary: {name}{serial_suffix}."
                 break
         user_safe_language = (
-            f"BLM MLRS screening indicates active federal mining claims in the area bbox{count_str}.{case_str} "
+            f"BLM MLRS screening indicates active federal mining claims in the area bbox{count_str}.{case_str} "  # noqa: E501
             "Active mining claims may affect surface use, development rights, and access. "
             "This is a geospatial bounding-box screen only and does not determine parcel-level "
             "mineral rights ownership. Verify through title search and consult a title attorney."
