@@ -679,6 +679,28 @@ def test_evaluate_creates_needs_review_claim_from_incomplete_zoning_evidence() -
     assert "does not determine final legal use" in claim.user_safe_language
 
 
+def test_needs_review_claim_surfaces_zone_codes_from_evidence() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ZONING_USE_SCREEN",
+        domain="zoning",
+        observation="Zoning evidence with known code but conflicting signals.",
+        observed_value={"zoning_code": "RA", "zoning_district": "Rural Agricultural"},
+        method_code="fixture_zoning_use_screen",
+        confidence=ConfidenceBand.LOW,
+        caveat="Conflicting use signals.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    claim = next((c for c in claims if c.claim_code == "ZONING_EVIDENCE_NEEDS_REVIEW"), None)
+    assert claim is not None
+    assert "code(s) found: RA" in claim.user_safe_language
+
+
 def test_evaluate_zoning_outputs_are_deterministic_when_input_order_changes() -> None:
     area_id = uuid4()
     prohibited = make_zoning_evidence(area_id=area_id)

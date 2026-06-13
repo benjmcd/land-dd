@@ -909,8 +909,19 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        seen_codes: list[str] = []
+        seen_set: set[str] = set()
+        for e in evidence_records:
+            if not e.is_source_failure:
+                code = (
+                    e.observed_value.get("zoning_code") or e.observed_value.get("zoning_district")
+                )
+                if isinstance(code, str) and code and code not in seen_set:
+                    seen_set.add(code)
+                    seen_codes.append(code)
+        detail = f" (code(s) found: {', '.join(seen_codes)})" if seen_codes else ""
         user_safe_language = (
-            "Zoning/use screening evidence is conflicting or incomplete and "
+            f"Zoning/use screening evidence is conflicting or incomplete{detail} and "
             "requires human review. It does not determine final legal use, zoning "
             "compliance, permit eligibility, vested rights, or buildability."
         )
