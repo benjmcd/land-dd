@@ -130,7 +130,7 @@ ruleset:
       verification_task: BLM MLRS and/or USGS MRDS mining/mineral data could not be retrieved. Verify through title search and appropriate state or federal mineral records.
     - code: GEOLOGY_G001
       domain: geology
-      severity_on_fail: informational
+      severity_on_fail: low
       condition: geologic_hazard_not_determined
       claim_code: GEOLOGY_NOT_EVALUATED
       verification_task: Geologic map context was retrieved but geologic hazard evaluation is not supported by this tool. Review the source appendix and consult a licensed geologist or geotechnical engineer if geologic conditions are a concern for the site.

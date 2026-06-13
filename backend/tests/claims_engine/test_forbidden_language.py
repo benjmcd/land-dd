@@ -136,7 +136,7 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           verification_task: Verify flood map panel and confirm with local floodplain administrator.
         - code: GEOLOGY_G001
           domain: geology
-          severity_on_fail: informational
+          severity_on_fail: low
           condition: geologic_hazard_not_determined
           claim_code: GEOLOGY_NOT_EVALUATED
           verification_task: Consult a licensed geologist or geotechnical engineer.
