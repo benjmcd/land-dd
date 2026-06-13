@@ -682,7 +682,7 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
         if failures:
             return "source failure — terrain data unavailable"
         return "not evaluated"
-    parts: list[str] = []
+    raw_parts: list[str] = []
     for record in records:
         relief = record.observed_value.get("relief_m")
         mean_slope = record.observed_value.get("mean_slope_pct")
@@ -694,19 +694,23 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
         min_elev = record.observed_value.get("min_elevation_m")
         max_elev = record.observed_value.get("max_elevation_m")
         sample_n = record.observed_value.get("sample_count")
+        record_parts: list[str] = []
         if relief is not None:
-            parts.append(f"terrain relief ~{float(relief):.0f}m")  # type: ignore[arg-type]
+            record_parts.append(f"terrain relief ~{float(relief):.0f}m")  # type: ignore[arg-type]
         if min_elev is not None and max_elev is not None:
             sample_suffix = f" ({int(sample_n)} samples)" if sample_n is not None else ""  # type: ignore[call-overload]
-            parts.append(f"elevation range {float(min_elev):.0f}–{float(max_elev):.0f}m{sample_suffix}")  # type: ignore[arg-type]  # noqa: E501
+            record_parts.append(f"elevation range {float(min_elev):.0f}–{float(max_elev):.0f}m{sample_suffix}")  # type: ignore[arg-type]  # noqa: E501
         elif elev is not None:
-            parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
+            record_parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
         if mean_slope is not None:
-            parts.append(f"mean slope ~{float(mean_slope):.0f}%")  # type: ignore[arg-type]
+            record_parts.append(f"mean slope ~{float(mean_slope):.0f}%")  # type: ignore[arg-type]
         if ratio is not None:
-            parts.append(f"{float(ratio):.0%} low-slope buildable area")  # type: ignore[arg-type]
-        if metric_code and metric_val is not None and metric_unit:
-            parts.append(f"{metric_code}: {float(metric_val):.1f} {metric_unit}")  # type: ignore[arg-type]
+            record_parts.append(f"{float(ratio):.0%} low-slope buildable area")  # type: ignore[arg-type]
+        if not record_parts and metric_code and metric_val is not None and metric_unit:
+            record_parts.append(f"{metric_code}: {float(metric_val):.1f} {metric_unit}")  # type: ignore[arg-type]
+        raw_parts.extend(record_parts)
+    seen: set[str] = set()
+    parts: list[str] = [p for p in raw_parts if p not in seen and not seen.add(p)]  # type: ignore[func-returns-value]
     return "; ".join(parts) if parts else "; ".join(r.observation for r in records)
 
 

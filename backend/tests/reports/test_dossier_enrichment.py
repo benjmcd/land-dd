@@ -1088,6 +1088,64 @@ def test_dossier_renders_buildability_terrain_from_evidence() -> None:
     assert "not evaluated" not in section_6.split("Terrain / slope screening:")[1][:80], (
         "Section 6 must not show 'not evaluated' when buildability evidence present"
     )
+    assert "tnm_epqs_sampled_relief_m" not in section_6, (
+        "Raw metric_code must not appear in Section 6 when structured fields are present; got:\n"
+        + section_6
+    )
+
+
+def test_dossier_buildability_dedup_suppresses_duplicate_relief_and_raw_codes() -> None:
+    """Two records sharing relief_m must yield one entry; raw metric_code suppressed."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "buildability")
+    area = _registered_area(area_service)
+
+    for ev_code, extra in [
+        ("SLOPE_SCREEN", {"metric_code": "fixture_slope_screen", "value": 38.0, "unit": "%",
+                          "mean_slope_pct": 38.0, "low_slope_area_ratio": 0.12,
+                          "mean_elevation_m": 852.0, "relief_m": 215.0}),
+        ("TERRAIN_RELIEF", {"metric_code": "fixture_terrain_relief", "value": 215.0, "unit": "m",
+                            "relief_m": 215.0, "min_elevation_m": 772.0,
+                            "max_elevation_m": 987.0, "sample_count": 5}),
+    ]:
+        evidence_service.create_observation(
+            EvidenceContract(
+                area_id=area.area_id,
+                source_id=source.source_id,
+                evidence_type=EvidenceType.DERIVED_METRIC,
+                evidence_code=ev_code,
+                domain="buildability",
+                method_code="fixture_buildability",
+                observation=f"Fixture terrain screening ({ev_code}).",
+                observed_value=extra,
+                confidence=ConfidenceBand.LOW,
+            )
+        )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec6_start = dossier.find("## 6. Buildability")
+    sec7_start = dossier.find("## 7.")
+    section_6 = dossier[sec6_start:sec7_start]
+
+    assert section_6.count("terrain relief ~215m") == 1, (
+        "Duplicate terrain-relief entry must be suppressed; got:\n" + section_6
+    )
+    assert "fixture_slope_screen" not in section_6, (
+        "Raw metric_code must not appear when structured fields are present; got:\n" + section_6
+    )
+    assert "fixture_terrain_relief" not in section_6, (
+        "Raw metric_code must not appear when structured fields are present; got:\n" + section_6
+    )
+    assert "elevation range 772" in section_6, (
+        "Elevation range must still appear; got:\n" + section_6
+    )
+    assert "mean slope ~38%" in section_6, (
+        "Mean slope must still appear; got:\n" + section_6
+    )
 
 
 def test_dossier_renders_broadband_availability_from_evidence() -> None:

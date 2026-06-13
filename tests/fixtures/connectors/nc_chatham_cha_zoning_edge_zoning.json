@@ -23,7 +23,8 @@
       "observed_value": {
         "zoning_district": "UNZONED",
         "jurisdiction_edge": true,
-        "classification_indeterminate": true
+        "classification_indeterminate": true,
+        "udo_note": "Jurisdiction-edge or unzoned area — residential use classification indeterminate; verify with Chatham County Planning."
       },
       "source_id": "55555555-5555-4555-8555-555555555555",
       "dataset_version_id": "22222222-2222-4222-8222-222222222222",
