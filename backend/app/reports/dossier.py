@@ -113,6 +113,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 10. Zoning / Land Use",
         "",
         f"- Zoning district: {_zoning_district_result(report_run)}",
+        f"- District description: {_zoning_district_note(report_run)}",
         f"- Intended-use compatibility: {_zoning_use_compatibility(report_run)}",
         "- Overlays: unknown",
         "- Minimum lot size/setbacks: unknown",
@@ -558,6 +559,16 @@ def _zoning_district_result(report_run: ReportRunContract) -> str:
     return "; ".join(parts) if parts else _domain_summary(report_run, "zoning")
 
 
+def _zoning_district_note(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
+    notes = [
+        str(r.observed_value["udo_note"])
+        for r in records
+        if r.observed_value.get("udo_note")
+    ]
+    return "; ".join(notes) if notes else "not available"
+
+
 def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
     if not records:
@@ -566,13 +577,10 @@ def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
                          for r in records)
     any_allowed = any(r.observed_value.get("intended_residential_use_allowed") is True
                       for r in records)
-    any_edge = any(r.observed_value.get("jurisdiction_edge") is True for r in records)
     if any_prohibited:
         return "residential use appears restricted (screening only; verify with county planning)"
     if any_allowed:
         return "residential use appears permitted (screening only; verify with county planning)"
-    if any_edge:
-        return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
     return "not determined"
 
 

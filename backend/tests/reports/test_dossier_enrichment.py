@@ -2395,3 +2395,85 @@ def test_dossier_access_shows_highway_types_when_present() -> None:
     assert "track" in section_5, (
         "Expected highway type 'track' in Section 5; got:\n" + section_5
     )
+
+
+def test_dossier_zoning_shows_udo_note_when_present() -> None:
+    """udo_note from zoning evidence must appear in Section 10 district description line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="ZONING_USE_CLASSIFICATION",
+            domain="zoning",
+            method_code="chatham_zoning_udo_recorded_lookup",
+            observation="Chatham UDO lookup: code 'RA' matches 'Rural Agricultural'.",
+            observed_value={
+                "zoning_code": "RA",
+                "district_name": "Rural Agricultural",
+                "use_category": "agricultural_low_intensity_residential",
+                "udo_note": "Rural agricultural and low-intensity residential. Verify with Chatham County Planning.",
+                "residential_use_screening": "ALLOWED_WITH_RESTRICTIONS",
+                "intended_residential_use_allowed": True,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Chatham County UDO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "Rural agricultural and low-intensity residential" in section_10, (
+        "Expected udo_note text in Section 10 district description; got:\n" + section_10
+    )
+    assert "District description:" in section_10, (
+        "Expected 'District description:' label in Section 10; got:\n" + section_10
+    )
+
+
+def test_dossier_zoning_district_note_not_available_when_udo_note_absent() -> None:
+    """When udo_note is absent, district description line must show 'not available'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="ZONING_USE_CLASSIFICATION",
+            domain="zoning",
+            method_code="chatham_zoning_udo_recorded_lookup",
+            observation="Chatham UDO lookup: code 'RA'.",
+            observed_value={
+                "zoning_code": "RA",
+                "district_name": "Rural Agricultural",
+                "intended_residential_use_allowed": True,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Chatham County UDO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "District description: not available" in section_10, (
+        "Expected 'District description: not available' in Section 10; got:\n" + section_10
+    )
