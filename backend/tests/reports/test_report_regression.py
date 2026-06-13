@@ -350,6 +350,69 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
     }
 
 
+def test_advisory_claim_report_artifact_semantics_are_stable() -> None:
+    """Moderate flood zone evidence fires FLOOD_G002 LOW advisory — pins advisory path shape."""
+    source_service = SourceService(InMemorySourceRepository())
+    area_service = AreaService(InMemoryAreaRepository())
+    evidence_repo = InMemoryEvidenceRepository()
+    evidence_service = EvidenceService(evidence_repo, source_service, area_service)
+    claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
+    report_service = ReportRunService(
+        source_service=source_service,
+        area_service=area_service,
+        evidence_service=evidence_service,
+        claim_service=claim_service,
+        rule_engine=RuleEngine.from_file(),
+    )
+    source = source_service.register(
+        SourceContract(
+            name="Fixture FEMA Flood Map",
+            organization="FEMA",
+            domain="flood",
+            license_status="approved",
+            commercial_use_status="approved",
+            redistribution_status="restricted",
+            cache_allowed="approved",
+            export_allowed="approved-with-restrictions",
+            raw_data_allowed="approved",
+            ai_use_allowed="restricted",
+            review_status="approved",
+        )
+    )
+    area = area_service.create(
+        AreaContract(
+            label="fixture polygon",
+            geom_geojson=load_geometry("valid_polygon.geojson"),
+            geom_source="advisory regression fixture",
+        )
+    )
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            observation="Fixture flood source intersects a moderate-risk flood zone.",
+            observed_value={"flood_zone_code": "X500"},
+            method_code="fixture_flood_overlay",
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="Screening fixture only; confirm locally.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    projection = stable_report_projection(report_run.model_dump(mode="json"))
+    assert projection["red_flag_codes"] == []
+    assert projection["advisory_claim_codes"] == ["FLOOD_MODERATE_001"]
+    assert projection["artifact_metadata"]["cost_metrics"]["advisory_count"] == 1
+    assert projection["artifact_metadata"]["cost_metrics"]["red_flag_count"] == 0
+
+
 def load_geometry(name: str) -> dict[str, object]:
     data = json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
     assert isinstance(data, dict)
