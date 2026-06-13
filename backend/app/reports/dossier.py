@@ -116,8 +116,8 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Zoning district: {_zoning_district_result(report_run)}",
         f"- District description: {_zoning_district_note(report_run)}",
         f"- Intended-use compatibility: {_zoning_use_compatibility(report_run)}",
-        "- Overlays: unknown",
-        "- Minimum lot size/setbacks: unknown",
+        f"- Overlays: {_zoning_overlay_result(report_run)}",
+        f"- Minimum lot size/setbacks: {_zoning_lot_size_result(report_run)}",
         "- Source excerpts: see source appendix",
         f"- Caveats: {_domain_caveats(report_run, {'zoning'})}",
         f"- Required verification: {_domain_verification(report_run, 'zoning')}",
@@ -605,6 +605,32 @@ def _zoning_district_note(report_run: ReportRunContract) -> str:
         if r.observed_value.get("udo_note")
     ]
     return "; ".join(notes) if notes else "not available"
+
+
+def _zoning_overlay_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
+    if not records:
+        return "not screened — no zoning data available"
+    url = next(
+        (str(r.observed_value["udo_source_url"])
+         for r in records if r.observed_value.get("udo_source_url")),
+        None,
+    )
+    suffix = f" (see {url})" if url else ""
+    return f"not geographically screened in this connector version{suffix}"
+
+
+def _zoning_lot_size_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
+    if not records:
+        return "not captured — no zoning data available"
+    url = next(
+        (str(r.observed_value["udo_source_url"])
+         for r in records if r.observed_value.get("udo_source_url")),
+        None,
+    )
+    suffix = f" (see {url})" if url else ""
+    return f"not captured in recorded fixture — see UDO for dimensional standards{suffix}"
 
 
 def _zoning_use_compatibility(report_run: ReportRunContract) -> str:

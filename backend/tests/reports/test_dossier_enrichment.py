@@ -2729,3 +2729,59 @@ def test_dossier_env_contamination_context_shows_no_facilities_when_none_found()
     sec12_start = dossier.find("## 12.")
     section_11 = dossier[sec11_start:sec12_start]
     assert "no regulated facilities in proximity" in section_11
+
+
+def test_dossier_zoning_overlay_result_surfaces_udo_url() -> None:
+    """Overlays line must reference the UDO source URL when zoning evidence is present."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="ZONING_USE_CLASSIFICATION",
+            domain="zoning",
+            method_code="chatham_zoning_udo_recorded_lookup",
+            observation="Chatham UDO lookup: code 'RA'.",
+            observed_value={
+                "zoning_code": "RA",
+                "district_name": "Rural Agricultural",
+                "intended_residential_use_allowed": True,
+                "udo_source_url": "https://example.gov/udo",
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Chatham County UDO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "not geographically screened" in section_10
+    assert "https://example.gov/udo" in section_10
+    assert "not captured in recorded fixture" in section_10
+
+
+def test_dossier_zoning_overlay_result_no_zoning_evidence() -> None:
+    """Overlays line must say 'not screened' when no zoning evidence exists."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "not screened — no zoning data available" in section_10
+    assert "not captured — no zoning data available" in section_10
