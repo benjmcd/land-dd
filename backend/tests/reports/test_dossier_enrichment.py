@@ -2899,3 +2899,42 @@ def test_dossier_renders_geology_not_evaluated_advisory_in_section_3() -> None:
     section_3 = dossier[sec3_start:sec4_start]
     assert "Advisory findings" in section_3
     assert "geology" in section_3
+
+
+def test_dossier_renders_broadband_no_access_advisory_in_section_3() -> None:
+    """No-broadband evidence must fire BROADBAND_G001 advisory visible in Section 3."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "broadband")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="FCC_BROADBAND_AVAILABILITY_SCREEN",
+            domain="broadband",
+            method_code="fcc_bdc_broadband_availability_query",
+            observation="FCC BDC: no broadband service reported at this location.",
+            observed_value={
+                "has_any_broadband": False,
+                "has_high_speed_broadband": False,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="FCC BDC broadband screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert any(c.claim_code == "BROADBAND_NO_ACCESS_001" for c in report_run.advisory_claims), (
+        "Expected BROADBAND_NO_ACCESS_001 advisory claim from no-broadband evidence"
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    section_3 = dossier[sec3_start:sec4_start]
+    assert "Advisory findings" in section_3
+    assert "broadband" in section_3
