@@ -1,6 +1,13 @@
 # Project State
 
-## Current checkpoint (2026-06-13 dossier output quality pass 10 — 1610 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 11 — 1611 tests)
+
+Three more claim narrative enrichments:
+- **Zoning needs-review zone codes**: `_zoning_needs_review_claim()` now surfaces zone code(s) from non-failure evidence in `user_safe_language`, e.g. "(code(s) found: RA)". Commit cad76c0.
+- **Flood needs-review zone codes**: `_flood_needs_review_claim()` now surfaces flood zone code(s) from non-failure evidence, e.g. "(zone(s) found: AE, X)". Commit 8bc0aee.
+- 3 new regression tests pinning enriched narratives. Full suite: 1611 passed, 73 skipped; ruff clean.
+
+## Previous checkpoint (2026-06-13 dossier output quality pass 10 — 1610 tests)
 
 Three dossier output quality fixes:
 - **Buildability dedup fix**: `_buildability_summary()` no longer emits raw `metric_code` strings (e.g. `fixture_slope_buildability_screen`) when structured fields (`relief_m`, `mean_slope_pct`, etc.) are present in the same evidence record. Also deduplicates identical entries (e.g. `terrain relief ~215m` from two records sharing `relief_m`). Commits 58f983e.

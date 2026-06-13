@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Claim narrative enrichment pass 11 — 1611 tests)
+
+Commits: cad76c0, 8bc0aee
+
+- Zoning needs-review: `_zoning_needs_review_claim()` surfaces zone code(s) from non-failure evidence, e.g. "(code(s) found: RA)".
+- Flood needs-review: `_flood_needs_review_claim()` surfaces flood zone code(s) from non-failure evidence, e.g. "(zone(s) found: AE, X)".
+- 3 new regression tests. Full suite: 1611 passed, 73 skipped; ruff clean.
+
 ## 2026-06-13 (Dossier output quality pass 10 — 1610 tests)
 
 Commits: 58f983e, f0272ef
