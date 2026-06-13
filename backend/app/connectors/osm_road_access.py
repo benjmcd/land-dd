@@ -197,13 +197,17 @@ class OsmRoadAccessConnector:
             )
 
         road_count = len(elements)
-        highway_types: list[str] = sorted({
-            str(cast(Mapping[str, object], el).get("tags", {}).get("highway", ""))
-            for el in elements
-            if isinstance(el, Mapping)
-            and isinstance(cast(Mapping[str, object], el).get("tags"), Mapping)
-            and cast(Mapping[str, object], el).get("tags", {}).get("highway")
-        })
+        _seen_types: set[str] = set()
+        for _el in elements:
+            if not isinstance(_el, Mapping):
+                continue
+            _tags = cast(Mapping[str, object], _el).get("tags")
+            if not isinstance(_tags, Mapping):
+                continue
+            _hw = cast(Mapping[str, object], _tags).get("highway")
+            if isinstance(_hw, str) and _hw:
+                _seen_types.add(_hw)
+        highway_types: list[str] = sorted(_seen_types)
 
         has_road = road_count > 0
         finished_at = _utcnow()
