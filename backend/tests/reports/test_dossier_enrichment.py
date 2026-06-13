@@ -2256,3 +2256,52 @@ def test_dossier_geologic_section_shows_types_and_belts_when_present() -> None:
     assert "Carolina slate belt" in section_14, (
         "Section 14 must show geologic belt; got:\n" + section_14
     )
+
+
+def test_dossier_climate_shows_nearest_city_when_present() -> None:
+    """nws_nearest_city and nws_nearest_state must appear in Section 13 when stored."""
+    from app.connectors.noaa_climate import NOAA_CLIMATE_CAVEAT
+
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "climate")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="NWS_CLIMATE_ZONE",
+            domain="climate",
+            method_code="live_noaa_nws_point_query",
+            observation="NOAA NWS point query: office=RAH, zone=NCZ087, nearest=Wilmington",
+            observed_value={
+                "has_nws_coverage": True,
+                "nws_office_code": "RAH",
+                "nws_forecast_zone": "NCZ087",
+                "nws_forecast_zone_name": "Southern Chatham",
+                "timezone": "America/New_York",
+                "nws_radar_station": "KRAX",
+                "nws_nearest_city": "Wilmington",
+                "nws_nearest_state": "NC",
+            },
+            confidence=ConfidenceBand.HIGH,
+            caveat=NOAA_CLIMATE_CAVEAT,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec13_start = dossier.find("## 13. Climate")
+    sec14_start = dossier.find("## 14.")
+    assert sec13_start != -1, "Section 13 (Climate) not found"
+    section_13 = dossier[sec13_start:sec14_start]
+    assert "Wilmington" in section_13, (
+        "Expected nearest city 'Wilmington' in Section 13; got:\n" + section_13
+    )
+    assert "NC" in section_13, (
+        "Expected nearest state 'NC' in Section 13; got:\n" + section_13
+    )

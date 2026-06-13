@@ -699,8 +699,14 @@ def _climate_result(report_run: ReportRunContract) -> str:
     office = str(v.get("nws_office_code", ""))
     timezone = str(v.get("timezone", ""))
     radar = str(v.get("nws_radar_station", ""))
+    nearest_city = str(v.get("nws_nearest_city", ""))
+    nearest_state = str(v.get("nws_nearest_state", ""))
     zone_str = f"{zone} ({zone_name})" if zone and zone_name else zone or "covered"
     parts = [f"NWS zone {zone_str}"]
+    if nearest_city and nearest_state:
+        parts.append(f"nearest city: {nearest_city}, {nearest_state}")
+    elif nearest_city:
+        parts.append(f"nearest city: {nearest_city}")
     if office:
         parts.append(f"office {office}")
     if timezone:
