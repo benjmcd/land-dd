@@ -180,7 +180,16 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
 def _overall_suitability(report_run: ReportRunContract) -> str:
     if report_run.red_flags:
         return "needs_review"
-    if report_run.unknowns:
+    structural_ids = {
+        r.evidence_id
+        for r in report_run.evidence
+        if r.domain in _STRUCTURAL_DOMAINS or r.evidence_code in _STRUCTURAL_EVIDENCE_CODES
+    }
+    non_structural_unknowns = [
+        claim for claim in report_run.unknowns
+        if not all(eid in structural_ids for eid in claim.evidence_ids)
+    ]
+    if non_structural_unknowns:
         return "unknown"
     return "screening_clear"
 

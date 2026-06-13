@@ -1558,3 +1558,58 @@ def test_dossier_renders_soils_fixture_domain_in_soil_section() -> None:
     assert "Murville sand" in section_8, (
         "Expected soils fixture map unit in Section 8; got:\n" + section_8
     )
+
+
+def test_overall_suitability_screening_clear_when_only_structural_unknowns() -> None:
+    """With only structural NOT_EVALUATED unknowns, suitability is 'screening_clear'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    area = _registered_area(area_service)
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec1_start = dossier.find("## 1. Executive Summary")
+    sec2_start = dossier.find("## 2.")
+    assert sec1_start != -1
+    section_1 = dossier[sec1_start:sec2_start]
+    assert "screening_clear" in section_1, (
+        "Expected 'screening_clear' suitability when only structural unknowns; got:\n"
+        + section_1
+    )
+
+
+def test_overall_suitability_unknown_when_non_structural_unknown() -> None:
+    """A real source-failure UNKNOWN claim (access domain) sets suitability to 'unknown'."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "access")
+    area = _registered_area(area_service)
+
+    evidence_service.create_source_failure(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_code="ACCESS_SOURCE_FAILURE",
+        domain="access",
+        method_code="osm_road_access_screen",
+        observation="OSM road access query failed.",
+        observed_value={
+            "failure_reason": "osm_timeout",
+            "error_message": "timeout",
+            "retryable": True,
+        },
+        caveat="OSM road access screening only.",
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec1_start = dossier.find("## 1. Executive Summary")
+    sec2_start = dossier.find("## 2.")
+    assert sec1_start != -1
+    section_1 = dossier[sec1_start:sec2_start]
+    assert "Overall suitability band: unknown" in section_1, (
+        "Expected 'unknown' suitability with non-structural UNKNOWN claim; got:\n" + section_1
+    )
