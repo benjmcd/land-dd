@@ -2,6 +2,32 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Dossier Enrichment Pass 2 — Correctness + Output Quality
+
+**Scope:** Fix zoning canonical key gap, drainage/hydric surfacing, flood zone descriptions,
+road count display, use-compatibility precedence, domain-specific verification contacts.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q --tb=no
+py -3.11 -m ruff check .
+py -3.12 -m mypy app/
+```
+
+**Results:**
+- Full suite: 1560 passed, 73 skipped; ruff clean; mypy clean (126 source files)
+
+**Residual risk:**
+- Zoning canonical key fix is a breaking change in how evidence is stored for existing
+  in-flight reports — reports generated before this fix will have `ZONING_EVIDENCE_NEEDS_REVIEW`
+  unknowns even for valid residential districts. Re-running the report for those areas will
+  produce correct results.
+- Flood zone descriptions are derived from a static lookup dict; codes not in the dict
+  show without description (graceful fallback).
+- `_task_contact` falls back to "qualified local reviewer" if domain lookup fails; existing
+  non-standard domain names won't surface domain-specific contacts.
+
 ## 2026-06-12 Advisory Claims Surface + Suitability Fix
 
 **Scope:** Surface LOW-severity advisory claims end-to-end; fix `_overall_suitability`

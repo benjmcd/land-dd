@@ -1,6 +1,32 @@
 # Project State
 
-## Current checkpoint (2026-06-12 advisory claims surface + suitability fix)
+## Current checkpoint (2026-06-12 dossier enrichment pass 2 — 1560 tests)
+
+Six dossier and correctness improvements this session:
+- **SSURGO drainage/hydric in Section 8**: `_soil_drainage_result()` and
+  `_septic_proxy_confidence()` helpers surface `drainage_class`, `hydrologic_group`,
+  `hydric_rating` from SSURGO evidence; were previously hardcoded "unknown". Commit 7576c63.
+- **Zoning canonical key fix**: Chatham/Brunswick connectors now emit
+  `intended_residential_use_allowed` / `intended_residential_use_prohibited` from
+  `residential_use_screening` mapping; rule engine was receiving no canonical keys and
+  generating ZONING_EVIDENCE_NEEDS_REVIEW for all residential districts. Commit 9854c49.
+- **Zoning district name+code display**: `_zoning_district_result()` now checks
+  `district_name` first (Chatham/Brunswick format) before `zoning_district`. Commit 384316d.
+- **Zoning use-compatibility precedence**: `_zoning_use_compatibility()` fixed to check
+  ALL records before returning — "prohibited" now beats "allowed" if any record is
+  prohibited. Brunswick canonical key tests added (parallel to Chatham). Commit 386a92c.
+- **Road count in access result**: `_access_road_result()` now surfaces `road_count` from
+  OSM evidence. Commit 6df5e91.
+- **FEMA flood zone descriptions**: `_FLOOD_ZONE_LABELS` dict maps zone codes (AE, X, VE,
+  A, etc.) to human-readable descriptions in Section 7. Commit 3c575ee.
+- **Domain-specific contacts in verification plan (Section 17)**: `_DOMAIN_CONTACT` map
+  and `_task_contact()` helper provide domain-specific contacts (floodplain administrator
+  for flood, county planning for zoning, etc.) instead of generic "qualified local reviewer".
+  Commit 4eaf2f3.
+- 12 new enrichment tests (total 50 in test_dossier_enrichment.py).
+- Full suite: 1560 passed, 73 skipped; ruff/mypy clean.
+
+## Previous checkpoint (2026-06-12 advisory claims surface + suitability fix)
 
 Advisory claims (LOW severity) now surface end-to-end:
 - `advisory_claims: list[ClaimContract]` added to `ReportRunContract`; `advisory_count`

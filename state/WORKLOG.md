@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Dossier enrichment pass 2 — correctness + output quality)
+
+- **SSURGO drainage/hydric in dossier Section 8**: new helpers `_soil_drainage_result()`
+  and `_septic_proxy_confidence()` surface `drainage_class`, `hydrologic_group`,
+  `hydric_rating` from SSURGO/soils domain evidence. Commit 7576c63.
+- **Zoning canonical key fix (major correctness)**: Chatham/Brunswick zoning connectors
+  were storing `residential_use_screening` (e.g. "ALLOWED_WITH_RESTRICTIONS") but rule
+  engine reads `intended_residential_use_allowed`/`intended_residential_use_prohibited`.
+  Added `_zoning_canonical_flags()` to both connectors; rule engine now correctly
+  classifies residential districts. API responses include new fields. Commit 9854c49.
+- **Zoning district name+code rendering**: dossier now surfaces `district_name` +
+  `zoning_code` (Chatham/Brunswick format) in Section 10. Commit 384316d.
+- **Zoning use-compatibility precedence fix**: prohibited beats allowed in multi-district
+  case. Brunswick canonical key tests added. Commit 386a92c.
+- **Road count in access Section 5**: OSM `road_count` now appears in adjacency result.
+  Commit 6df5e91.
+- **FEMA flood zone descriptions in Section 7**: `_FLOOD_ZONE_LABELS` dict added.
+  Commit 3c575ee.
+- **Domain-specific verification contacts in Section 17**: `_DOMAIN_CONTACT` map
+  provides floodplain administrator, county planning, title attorney, etc. per domain.
+  Commit 4eaf2f3.
+- 12 new enrichment tests. Full suite: 1560 passed, 73 skipped. ruff/mypy clean.
+
 ## 2026-06-12 (Advisory claims surface + overall suitability fix)
 
 - Added `advisory_claims: list[ClaimContract]` to `ReportRunContract` and
