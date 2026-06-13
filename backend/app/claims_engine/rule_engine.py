@@ -819,9 +819,23 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        zone_parts: list[str] = []
+        for e in evidence_records:
+            code = e.observed_value.get("zoning_code")
+            name = e.observed_value.get("district_name")
+            use_cat = e.observed_value.get("use_category")
+            if isinstance(code, str) and code:
+                label = code
+                if isinstance(name, str) and name:
+                    label += f" ({name})"
+                if isinstance(use_cat, str) and use_cat:
+                    label += f" — {use_cat}"
+                zone_parts.append(label)
+                break
+        zone_context = f" Screened zone: {zone_parts[0]}." if zone_parts else ""
         user_safe_language = (
-            "Zoning/use screening indicates the intended residential or homestead "
-            "use is prohibited or unsupported in the fixture. This is source-linked "
+            f"Zoning/use screening indicates the intended residential or homestead "
+            f"use is prohibited or unsupported in the fixture.{zone_context} This is source-linked "
             "screening only and does not determine final legal use, zoning "
             "compliance, permit eligibility, vested rights, or buildability."
         )

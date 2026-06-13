@@ -575,6 +575,33 @@ def test_evaluate_creates_zoning_claim_from_unsupported_intended_use() -> None:
     assert "does not determine final legal use" in claim.user_safe_language
 
 
+def test_zoning_prohibited_claim_surfaces_zone_code_and_district_name() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SOURCE_OBSERVATION,
+        evidence_code="ZONING_USE_SCREEN",
+        domain="zoning",
+        observation="Brunswick County zoning: I-1 (Light Industrial) — residential prohibited.",
+        observed_value={
+            "zoning_code": "I-1",
+            "district_name": "Light Industrial",
+            "use_category": "Industrial",
+            "intended_residential_use_prohibited": True,
+        },
+        method_code="live_brunswick_zoning_recorded",
+        confidence=ConfidenceBand.LOW,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    zoning = [c for c in claims if c.claim_code == "ZONING_001"]
+    assert len(zoning) == 1
+    lang = zoning[0].user_safe_language
+    assert "I-1" in lang
+    assert "Light Industrial" in lang
+    assert "Industrial" in lang
+
+
 def test_evaluate_ignores_allowed_zoning_use_evidence() -> None:
     area_id = uuid4()
     evidence = make_zoning_evidence(
