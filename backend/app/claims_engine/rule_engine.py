@@ -2073,8 +2073,17 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        unit_parts: list[str] = []
+        for e in evidence_records:
+            label = e.observed_value.get("primary_geologic_unit_label")
+            formation = e.observed_value.get("primary_geologic_formation")
+            if isinstance(label, str) and label:
+                unit_parts.append(label)
+            if isinstance(formation, str) and formation and formation not in unit_parts:
+                unit_parts.append(formation)
+        context = f" (screened unit: {'; '.join(unit_parts[:2])})" if unit_parts else ""
         user_safe_language = (
-            "Geologic map context was retrieved for the area but geologic hazard "
+            f"Geologic map context was retrieved for the area{context} but geologic hazard "
             "evaluation is not supported by this tool. This does not determine "
             "geologic hazard, geotechnical suitability, subsidence risk, radon "
             "potential, or engineering feasibility. Consult a licensed geologist "

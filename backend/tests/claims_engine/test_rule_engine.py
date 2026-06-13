@@ -1835,3 +1835,29 @@ def test_slope_insufficient_claim_surfaces_buildable_area_in_acres() -> None:
     assert len(slope_claims) == 1
     lang = slope_claims[0].user_safe_language
     assert "0.22" in lang or "ac low-slope" in lang
+
+
+def test_geology_not_evaluated_claim_surfaces_primary_unit_when_present() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="NC_GEOLOGIC_MAP_UNIT_CONTEXT",
+        domain="geology",
+        observation="NC geologic map unit intersects query area.",
+        observed_value={
+            "geologic_hazard_determined": False,
+            "buildability_determined": False,
+            "primary_geologic_unit_label": "GEL",
+            "primary_geologic_formation": "Metavolcanic sequence",
+        },
+        method_code="live_nc_geologic_map_unit_context",
+        confidence=ConfidenceBand.LOW,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    geology_claims = [c for c in claims if c.claim_code == GEOLOGY_NOT_EVALUATED_CLAIM_CODE]
+    assert len(geology_claims) == 1
+    lang = geology_claims[0].user_safe_language
+    assert "GEL" in lang
+    assert "Metavolcanic sequence" in lang
