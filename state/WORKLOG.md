@@ -2,6 +2,16 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Operator approved-path proof — 1617 tests)
+
+Commit: 254a893
+
+- Pivoted from claim-narrative enrichment (readiness theater) to operator utility. Verified source-authority baseline truthful (no drift) — stopped adding catalog/validator work.
+- `generate_dossier.py`: `--approve` (real approve_report_run) + `--artifact` (byte-identical to API serialization). One copy-runnable command → approved selected-county dossier + artifact, no server/Docker.
+- `test_operator_approved_path.py` (Chatham approval-state + artifact delta) and `test_approved_path_http.py` (no-Docker HTTP proof shipped fixture-reviewer credential flows 409→approve→200 + parity + 401). 
+- Documented the two fixture corpora + HTTP reachability gap in `connector_runbook.md` (the script is the only no-Docker path to a county dossier).
+- Full suite: 1617 passed, 73 skipped. ruff clean.
+
 ## 2026-06-13 (Claim narrative enrichment pass 12 — 1614 tests)
 
 Commit: 5753f26

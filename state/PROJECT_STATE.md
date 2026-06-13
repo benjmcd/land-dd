@@ -1,6 +1,16 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 12 — 1614 tests)
+## Current checkpoint (2026-06-13 operator approved-path proof — 1617 tests)
+
+Pivot from claim-narrative enrichment (passes 4–12 were diminishing-returns polish — the handoff's "readiness theater" risk) to **operator utility**. Lane: Source-Authority Closeout → Selected-County Operator Utility Transition.
+
+- **Baseline verified, no drift**: source-readiness + private-MVP readiness scripts pass. Must 7 ready / 1 blocked (DS-017 only, deferred). All 25/16/9. DS-010 Chatham/Buncombe/Brunswick connectors, DS-011 NOT_EVALUATED sentinel, DS-023 Chatham/Brunswick recorded-fixture — all truthful. Catalog/validator work is DONE; stopped adding it.
+- **No-Docker approved path**: `generate_dossier.py` gains `--approve` (real `approve_report_run`) + `--artifact` (byte-identical to API serialization). One copy-runnable command yields an APPROVED selected-county dossier + JSON artifact, no server/Docker. Commit 254a893.
+- **Two new tests**: `test_operator_approved_path.py` (Chatham delta: approval state + artifact shape, not duplicating manifest caveat/forbidden coverage); `test_approved_path_http.py` (no-Docker HTTP proof the shipped `fixture-reviewer`/`fixture-token-123` credential flows 409→approve→200 + parity + 401 — previously only DB-gated).
+- **Architectural truth documented**: `connector_runbook.md` now documents the two non-interchangeable fixture corpora (generic embedded = HTTP-reachable, 3 connector types; county golden = filesystem-only, all 8 domains) and the reachability gap — the HTTP curl path CANNOT serve county dossiers in fixture mode; the script is the only no-Docker path. This subtlety nearly derailed the planning pass (confirmed via adversarial grill).
+- Full suite: 1617 passed, 73 skipped. ruff clean.
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 12 — 1614 tests)
 
 Water and wetland needs-review claim enrichments:
 - **Water needs-review station count**: `_water_needs_review_claim()` now surfaces `monitoring_station_count` from first non-failure evidence record when present, e.g. "(3 USGS monitoring station(s) in screening bbox)". Commit 5753f26.
