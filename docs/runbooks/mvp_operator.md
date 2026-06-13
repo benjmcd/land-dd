@@ -262,6 +262,22 @@ connector is auto-approved for connector QA when the quality profile is
 Available AOI fixtures (9 cases): `tests/fixtures/golden_aois/*.geojson`.
 Available connector fixtures: `tests/fixtures/connectors/*.json`.
 
+### Operator Quickstart — approved dossier + artifact (no server, no Docker)
+
+```powershell
+py -3.12 scripts/generate_dossier.py `
+  --aoi tests/fixtures/golden_aois/cha_rural_use.geojson `
+  --intent homestead_feasibility `
+  --connector all `
+  --approve `
+  --artifact local_artifacts/cha_rural_use_report.json `
+  --output local_artifacts/cha_rural_use_dossier.md
+```
+
+This is the no-Docker, no-network operator path that produces an APPROVED selected-county dossier (Markdown) plus the machine-readable JSON artifact.
+`--approve` calls the same `approve_report_run` service method the HTTP approve endpoint uses and emits the same JSON serialization the API serves; it does not exercise the HTTP delivery gate (the API and DB-smoke tests cover that).
+`local_artifacts/` is a gitignored on-demand output location.
+
 ---
 
 ## Token Generation
@@ -847,6 +863,8 @@ curl -s -X POST http://localhost:8000/report-runs \
 ```
 
 Poll `GET /report-runs/<report_run_id>` until `"status": "succeeded"`.
+
+> Note: in default fixture mode, `POST /report-runs` does not ingest connector fixtures, so the HTTP curl path yields an evidence-poor (all-NOT_EVALUATED) dossier unless `ENABLE_LIVE_CONNECTORS=true` (network) or a DB-backed connector-run pre-ingests evidence. For a useful selected-county fixture dossier with no server, use the Operator Quickstart above.
 
 ### 4a. Approve the report run (required before dossier delivery)
 

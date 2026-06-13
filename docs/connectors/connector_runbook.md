@@ -35,6 +35,28 @@ wetland/deepwater mapping intersects a real area.
 
 ---
 
+## Two Fixture Corpora
+
+There are two separate, non-interchangeable fixture corpora. Confusing them leads to
+assuming the HTTP API can serve selected-county dossiers — it cannot.
+
+| Corpus | Location | Reachable via | Connector types | County-specific |
+|---|---|---|---|---|
+| Generic embedded | `backend/app/connectors/fixtures/*.json` (8 files) | HTTP `POST /connector-runs` → `connector_fixture_resource()` in `backend/app/connectors/fixture_resources.py` | 3 only: `fixture_access_static`, `fixture_flood_static`, `fixture_zoning_static` (see `_SUPPORTED_FIXTURE_CONNECTOR_NAMES` in `backend/app/api/connectors.py`) | No |
+| County golden | `tests/fixtures/connectors/*.json` (~47 files) | Filesystem only: `scripts/generate_dossier.py` and `backend/tests/private_mvp/test_manifest_driven.py` | All 8: flood, access, zoning, parcels, soils, terrain, wetlands, buildability | Yes (NC Buncombe / Chatham / Brunswick) |
+
+Coverage gap: the HTTP path exposes 3 connector types over generic, non-county fixtures;
+the script/test path covers all 8 domains over county golden fixtures. No HTTP endpoint
+loads the county corpus — `POST /connector-runs` resolves keys only against the embedded
+package, and `POST /report-runs` does not auto-ingest connectors unless
+`ENABLE_LIVE_CONNECTORS=true` (gated in `backend/app/api/reports.py`; default `false`).
+
+Consequence: a pure-curl operator on a default fixture-mode server cannot produce a
+selected-county, evidence-rich dossier. Use `scripts/generate_dossier.py` (see the MVP
+Operator Runbook, "Local Dossier Generation") for county dossiers.
+
+---
+
 ## Connector Interface
 
 Every connector must:

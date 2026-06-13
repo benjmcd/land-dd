@@ -12,6 +12,10 @@ Usage (from repo root)::
     py -3.12 scripts/generate_dossier.py --connector flood \\
         --aoi tests/fixtures/golden_aois/bru_coastal_flood.geojson \\
         --intent rural_land_purchase
+    py -3.12 scripts/generate_dossier.py --connector all \\
+        --aoi tests/fixtures/golden_aois/cha_rural_use.geojson \\
+        --intent homestead_feasibility --approve \\
+        --artifact local_artifacts/cha_report.json --output local_artifacts/cha_dossier.md
 """
 from __future__ import annotations
 
@@ -157,6 +161,29 @@ def main() -> int:  # noqa: C901
         "--output",
         default=None,
         help="Write dossier to this file path instead of stdout.",
+    )
+    parser.add_argument(
+        "--approve",
+        action="store_true",
+        help=(
+            "Take the report run through the approval gate via the approve_report_run "
+            "service method (sets review_status=approved)."
+        ),
+    )
+    parser.add_argument(
+        "--reviewer-id",
+        default="cli-operator",
+        help="Reviewer id recorded when --approve is set.",
+    )
+    parser.add_argument(
+        "--approve-reason",
+        default="Approved via generate_dossier CLI for fixture operator proof",
+        help="Approval reason recorded when --approve is set.",
+    )
+    parser.add_argument(
+        "--artifact",
+        default=None,
+        help="Write the machine-readable JSON artifact (same serialization the API serves) to this file path.",
     )
     args = parser.parse_args()
 
@@ -365,6 +392,29 @@ def main() -> int:  # noqa: C901
         file=sys.stderr,
     )
 
+    if args.approve:
+        # Calls the same approve_report_run service method the HTTP approve
+        # endpoint uses (app/api/reports.py); it flips review_status to approved
+        # and stamps the reviewer. It does NOT exercise the HTTP delivery gate
+        # (409 -> 200), which the API and DB-smoke tests cover.
+        approved = services.report_service.approve_report_run(
+            report_run.report_run_id,
+            reviewer_id=args.reviewer_id,
+            reason=args.approve_reason,
+        )
+        if approved is None:
+            print(
+                f"ERROR: Approval failed: report run {report_run.report_run_id} not found",
+                file=sys.stderr,
+            )
+            return 1
+        report_run = approved
+        print(
+            f"[generate_dossier] Report run approved by {args.reviewer_id} "
+            f"(review_status={report_run.review_status.value}).",
+            file=sys.stderr,
+        )
+
     # Build dossier
     dossier = build_rural_land_dossier(report_run)
 
@@ -375,6 +425,20 @@ def main() -> int:  # noqa: C901
         print(f"[generate_dossier] Dossier written to: {out_path}", file=sys.stderr)
     else:
         print(dossier)
+
+    if args.artifact:
+        # Byte-identical to the API's in-memory artifact serialization
+        # (app/api/reports.py: json.dumps(report.model_dump(mode="json"), ...)).
+        artifact_json = json.dumps(
+            report_run.model_dump(mode="json"), indent=2, sort_keys=True
+        )
+        try:
+            artifact_path = Path(args.artifact)
+            artifact_path.write_text(artifact_json, encoding="utf-8")
+        except OSError as exc:
+            print(f"ERROR: Failed to write artifact: {exc}", file=sys.stderr)
+            return 1
+        print(f"[generate_dossier] Artifact written to: {artifact_path}", file=sys.stderr)
 
     return 0
 

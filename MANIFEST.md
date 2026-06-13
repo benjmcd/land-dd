@@ -43,7 +43,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |
 | Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `.github/workflows/ci.yml` | Executable gates |
 | Deployment smoke | `scripts/run_deployment_smoke.ps1`, `scripts/run_deployment_smoke.sh` | Compose-backed deployment smoke for health, metrics, queue health, and report workflow |
-| Connector runbook | `docs/connectors/connector_runbook.md` | Connector interface, run lifecycle, failure taxonomy, quality gates |
+| Connector runbook | `docs/connectors/connector_runbook.md` | Connector interface, run lifecycle, failure taxonomy, quality gates, and the two fixture corpora (embedded API vs. county golden) and their reachability gap |
 | MVP operator runbook | `docs/runbooks/mvp_operator.md` | Startup, API workflow, configuration, known limitations |
 | Backup/restore runbook | `docs/runbooks/backup_restore.md`, `scripts/run_backup_restore_check.ps1`, `scripts/run_backup_restore_check.sh` | Restore-proof workflow for Level 10 DB recovery validation |
 | Incident/rollback runbook | `docs/runbooks/incident_response.md`, `scripts/incident_rollback_check.py`, `scripts/run_incident_rollback_check.ps1`, `scripts/run_incident_rollback_check.sh` | Severity, ownership, escalation, rollback, and recovery proof |
