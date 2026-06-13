@@ -1644,7 +1644,7 @@ class RuleEngine:
             for e in evidence_records
         )
         wt_depths = [
-            float(e.observed_value["water_table_depth_cm"])
+            float(e.observed_value["water_table_depth_cm"])  # type: ignore[arg-type]
             for e in evidence_records
             if isinstance(e.observed_value.get("water_table_depth_cm"), (int, float))
             and not isinstance(e.observed_value.get("water_table_depth_cm"), bool)

@@ -679,7 +679,7 @@ def _buildability_summary(report_run: ReportRunContract) -> str:
         if relief is not None:
             parts.append(f"terrain relief ~{float(relief):.0f}m")  # type: ignore[arg-type]
         if min_elev is not None and max_elev is not None:
-            sample_suffix = f" ({int(sample_n)} samples)" if sample_n is not None else ""  # type: ignore[arg-type]
+            sample_suffix = f" ({int(sample_n)} samples)" if sample_n is not None else ""  # type: ignore[call-overload]
             parts.append(f"elevation range {float(min_elev):.0f}–{float(max_elev):.0f}m{sample_suffix}")  # type: ignore[arg-type]  # noqa: E501
         elif elev is not None:
             parts.append(f"mean elevation ~{float(elev):.0f}m")  # type: ignore[arg-type]
@@ -1031,7 +1031,7 @@ def _mineral_mining_result(report_run: ReportRunContract) -> str:
     record = records[0]
     count = record.observed_value.get("blm_active_mining_claim_count")
     if count is not None:
-        if int(count) > 0:
+        if int(count) > 0:  # type: ignore[call-overload]
             name = record.observed_value.get("primary_blm_mlrs_case_name")
             serial = record.observed_value.get("primary_blm_mlrs_case_serial_number")
             primary = f" (primary: {name}" + (f", #{serial})" if serial else ")") if name else ""
