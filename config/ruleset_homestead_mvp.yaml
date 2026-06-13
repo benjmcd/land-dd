@@ -32,6 +32,12 @@ ruleset:
       condition: material_intersection_with_high_risk_flood_zone
       claim_code: FLOOD_001
       verification_task: Confirm flood zone and insurance/building implications with local floodplain administrator.
+    - code: FLOOD_G002
+      domain: flood
+      severity_on_fail: low
+      condition: material_intersection_with_moderate_or_undetermined_flood_zone
+      claim_code: FLOOD_MODERATE_001
+      verification_task: Verify current FEMA flood map panel and confirm flood risk designation with local floodplain administrator. Consider flood insurance implications.
     - code: WETLAND_G001
       domain: wetlands
       severity_on_fail: high

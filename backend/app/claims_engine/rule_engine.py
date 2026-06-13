@@ -73,6 +73,9 @@ SOIL_POOR_DRAINAGE_CLAIM_CODE = "SOIL_POOR_DRAINAGE_001"
 _SSURGO_POOR_DRAINAGE = frozenset({
     "poorly drained", "very poorly drained", "somewhat poorly drained"
 })
+FLOOD_MODERATE_CONDITION = "material_intersection_with_moderate_or_undetermined_flood_zone"
+FLOOD_MODERATE_CLAIM_CODE = "FLOOD_MODERATE_001"
+_MODERATE_RISK_FLOOD_ZONES = frozenset({"X500", "B", "D"})
 
 
 @dataclass(frozen=True)
@@ -138,6 +141,7 @@ class RuleEngine:
         soil_poor_drainage_rule = self._ruleset.hard_gate_for_condition(
             SOIL_POOR_DRAINAGE_CONDITION
         )
+        flood_moderate_rule = self._ruleset.hard_gate_for_condition(FLOOD_MODERATE_CONDITION)
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
             for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
@@ -283,6 +287,11 @@ class RuleEngine:
                 evidence
                 for evidence in area_evidence
                 if _is_negative_flood_evidence(evidence)
+            ]
+            flood_moderate = [
+                evidence
+                for evidence in area_evidence
+                if _is_moderate_risk_flood_evidence(evidence)
             ]
             stale_evidence = [
                 evidence
@@ -541,6 +550,10 @@ class RuleEngine:
             if stale_evidence:
                 claims.append(
                     self._flood_stale_claim(area_id, flood_rule, stale_evidence)
+                )
+            if flood_moderate:
+                claims.append(
+                    self._flood_moderate_claim(area_id, flood_moderate_rule, flood_moderate)
                 )
             if soil_screening:
                 claims.append(
@@ -1474,6 +1487,51 @@ class RuleEngine:
             ),
         )
 
+    def _flood_moderate_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        zones = sorted({
+            z.upper()
+            for e in evidence_records
+            for z in _flood_zone_values(e)
+            if z.upper() in _MODERATE_RISK_FLOOD_ZONES
+        })
+        zone_str = ", ".join(zones) if zones else "moderate/undetermined"
+        user_safe_language = (
+            f"FEMA NFHL screening detected a moderate or undetermined flood risk zone "
+            f"({zone_str}). This is screening only — not a flood determination or elevation "
+            "certificate. Verify current FEMA flood map panel, consider flood insurance "
+            "implications, and confirm with local floodplain administrator before building."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id(
+                "flood-moderate", rule, area_id, evidence_ids
+            ),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=(
+                f"Moderate or undetermined FEMA flood zone detected ({zone_str}) — "
+                "verify with floodplain administrator."
+            ),
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=ConfidenceBand.LOW,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _not_evaluated_claim(
         self,
         area_id: UUID,
@@ -2343,6 +2401,15 @@ def _is_negative_flood_evidence(evidence: EvidenceContract) -> bool:
         return _observed_false(high_risk_intersection)
     zones = _flood_zone_values(evidence)
     return bool(zones) and all(zone.upper() not in HIGH_RISK_FLOOD_ZONES for zone in zones)
+
+
+def _is_moderate_risk_flood_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "flood" or evidence.is_source_failure:
+        return False
+    for zone in _flood_zone_values(evidence):
+        if zone.upper() in _MODERATE_RISK_FLOOD_ZONES:
+            return True
+    return False
 
 
 def _is_flood_source_failure(evidence: EvidenceContract) -> bool:

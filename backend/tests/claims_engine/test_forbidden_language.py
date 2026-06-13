@@ -128,6 +128,12 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: soil_poor_or_hydric_drainage_detected
           claim_code: SOIL_POOR_DRAINAGE_001
           verification_task: Conduct perc testing and consult a licensed septic engineer.
+        - code: FLOOD_G002
+          domain: flood
+          severity_on_fail: low
+          condition: material_intersection_with_moderate_or_undetermined_flood_zone
+          claim_code: FLOOD_MODERATE_001
+          verification_task: Verify current FEMA flood map and confirm with local floodplain administrator.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.

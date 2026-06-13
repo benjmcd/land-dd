@@ -11,6 +11,7 @@ from app.claims_engine.rule_engine import (
     DEFAULT_RULESET_PATH,
     ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
     ENV_HAZARD_STALE_CLAIM_CODE,
+    FLOOD_MODERATE_CLAIM_CODE,
     MINERALS_ACTIVE_CLAIM_CODE,
     MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE,
     SOIL_POOR_DRAINAGE_CLAIM_CODE,
@@ -1537,6 +1538,51 @@ def test_broadband_failure_suppressed_when_no_access_present() -> None:
     assert not any(
         c.claim_code == BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE for c in bb_claims
     )
+
+
+def test_evaluate_creates_flood_moderate_claim_from_x500_zone() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="FLOOD_ZONE_SCREEN",
+        domain="flood",
+        observation="FEMA NFHL: Zone X500 intersection.",
+        observed_value={"flood_zone_code": "X500"},
+        method_code="fema_nfhl_wfs_live",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="FEMA NFHL screening only.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+
+    moderate_claims = [c for c in claims if c.claim_code == FLOOD_MODERATE_CLAIM_CODE]
+    assert len(moderate_claims) == 1
+    claim = moderate_claims[0]
+    assert claim.area_id == area_id
+    assert claim.severity == SeverityBand.LOW
+    assert claim.verification_required is True
+    assert "X500" in claim.assertion or "X500" in claim.user_safe_language
+
+
+def test_evaluate_does_not_create_moderate_flood_claim_for_high_risk_zone() -> None:
+    evidence = EvidenceContract(
+        area_id=uuid4(),
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="FLOOD_ZONE_SCREEN",
+        domain="flood",
+        observation="FEMA NFHL: Zone AE intersection.",
+        observed_value={"flood_zone_code": "AE"},
+        method_code="fema_nfhl_wfs_live",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="FEMA NFHL screening only.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+    moderate_claims = [c for c in claims if c.claim_code == FLOOD_MODERATE_CLAIM_CODE]
+    assert len(moderate_claims) == 0
 
 
 def test_evaluate_creates_soil_poor_drainage_claim_from_poorly_drained_evidence() -> None:
