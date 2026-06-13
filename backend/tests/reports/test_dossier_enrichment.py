@@ -2352,3 +2352,46 @@ def test_dossier_broadband_shows_combined_down_up_speed() -> None:
     assert "down/up" in section_12, (
         "Expected 'down/up' label in Section 12; got:\n" + section_12
     )
+
+
+def test_dossier_access_shows_highway_types_when_present() -> None:
+    """highway_types from OSM evidence must appear in Section 5 access line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "access")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ACCESS_ROAD_ADJACENCY_SCREEN",
+            domain="access",
+            method_code="live_osm_road_adjacency_bbox_screen",
+            observation="OSM Overpass query found road ways adjacent to the query area.",
+            observed_value={
+                "has_public_road_adjacency": True,
+                "public_road_adjacency": True,
+                "road_distance_m": 0.0,
+                "road_count": 2,
+                "highway_types": ["primary", "track"],
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="OSM road screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec5_start = dossier.find("## 5. Access")
+    sec6_start = dossier.find("## 6.")
+    section_5 = dossier[sec5_start:sec6_start]
+    assert "primary" in section_5, (
+        "Expected highway type 'primary' in Section 5; got:\n" + section_5
+    )
+    assert "track" in section_5, (
+        "Expected highway type 'track' in Section 5; got:\n" + section_5
+    )

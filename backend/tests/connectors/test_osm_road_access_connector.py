@@ -51,14 +51,16 @@ def _bbox() -> OsmRoadAccessBbox:
 
 def _mock_road_present(url: str, timeout: float) -> dict[str, object]:
     return {
-        "elements": [{"type": "count", "id": 0, "tags": {"ways": "3", "total": "3"}}]
+        "elements": [
+            {"type": "way", "id": 1, "tags": {"highway": "primary"}},
+            {"type": "way", "id": 2, "tags": {"highway": "residential"}},
+            {"type": "way", "id": 3, "tags": {"highway": "primary"}},
+        ]
     }
 
 
 def _mock_no_road(url: str, timeout: float) -> dict[str, object]:
-    return {
-        "elements": [{"type": "count", "id": 0, "tags": {"ways": "0", "total": "0"}}]
-    }
+    return {"elements": []}
 
 
 def _mock_network_error(url: str, timeout: float) -> dict[str, object]:
@@ -134,6 +136,7 @@ def test_road_present_emits_spatial_intersection_evidence() -> None:
     assert evidence.observed_value["road_distance_m"] == 0.0
     assert evidence.observed_value["road_count"] == 3
     assert evidence.observed_value["lookup_type"] == "live_overpass"
+    assert evidence.observed_value["highway_types"] == ["primary", "residential"]
 
 
 def test_road_present_request_url_contains_overpass_base() -> None:
@@ -187,6 +190,7 @@ def test_no_road_emits_low_confidence_spatial_intersection_evidence() -> None:
     assert evidence.observed_value["no_public_road_adjacency"] is True
     assert "road_distance_m" not in evidence.observed_value
     assert evidence.observed_value["road_count"] == 0
+    assert evidence.observed_value["highway_types"] == []
 
 
 # --- Network error ---
@@ -238,12 +242,28 @@ def test_overpass_remark_error_returns_source_failure() -> None:
     assert evidence.evidence_code == "ACCESS_SOURCE_UNAVAILABLE"
 
 
-def test_empty_elements_returns_source_failure() -> None:
+def test_empty_elements_emits_no_road_adjacency_evidence() -> None:
     def fetch_empty(url: str, timeout: float) -> dict[str, object]:
         return {"elements": []}
 
     result = OsmRoadAccessConnector(
         source=_source(), fetch_json=fetch_empty
+    ).query_bbox(area_id=uuid4(), bbox=_bbox())
+
+    assert result.retrieval_run.status == SourceRetrievalStatus.SUCCEEDED
+    assert result.retrieval_run.row_count == 0
+    evidence = result.evidence_inputs[0]
+    assert evidence.is_source_failure is False
+    assert evidence.observed_value["has_public_road_adjacency"] is False
+    assert evidence.observed_value["highway_types"] == []
+
+
+def test_missing_elements_key_returns_source_failure() -> None:
+    def fetch_no_elements(url: str, timeout: float) -> dict[str, object]:
+        return {"version": 0.6}
+
+    result = OsmRoadAccessConnector(
+        source=_source(), fetch_json=fetch_no_elements
     ).query_bbox(area_id=uuid4(), bbox=_bbox())
 
     assert result.retrieval_run.status == SourceRetrievalStatus.FAILED

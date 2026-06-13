@@ -76,37 +76,14 @@ def _body(area_id: UUID, *, max_features: int = 500) -> dict[str, object]:
 def _overpass_roads_found(way_count: int = 3) -> dict[str, object]:
     return {
         "elements": [
-            {
-                "type": "count",
-                "id": 0,
-                "tags": {
-                    "total": str(way_count),
-                    "nodes": "0",
-                    "ways": str(way_count),
-                    "relations": "0",
-                    "areas": "0",
-                },
-            }
+            {"type": "way", "id": i + 1, "tags": {"highway": "primary"}}
+            for i in range(way_count)
         ]
     }
 
 
 def _overpass_no_roads() -> dict[str, object]:
-    return {
-        "elements": [
-            {
-                "type": "count",
-                "id": 0,
-                "tags": {
-                    "total": "0",
-                    "nodes": "0",
-                    "ways": "0",
-                    "relations": "0",
-                    "areas": "0",
-                },
-            }
-        ]
-    }
+    return {"elements": []}
 
 
 def _client_with_seeded_services(

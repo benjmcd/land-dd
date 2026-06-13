@@ -197,6 +197,7 @@ SPATIAL_INTERSECTION_KEYS = {
     "parcel_count",
     "total_acres_approx",
     # osm road access connector fields
+    "highway_types",
     "lookup_type",
     "osm_query_bbox",
     "road_count",

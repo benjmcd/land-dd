@@ -169,7 +169,7 @@ class OsmRoadAccessConnector:
             )
 
         elements = payload.get("elements")
-        if not isinstance(elements, list) or len(elements) == 0:
+        if not isinstance(elements, list):
             return self._source_failure_result(
                 area_id=area_id,
                 bbox=bbox,
@@ -178,7 +178,7 @@ class OsmRoadAccessConnector:
                 started_at=started_at,
                 log=log,
                 failure_reason="osm_road_access_malformed_response",
-                error_message="Overpass response did not include a count elements array",
+                error_message="Overpass response did not include an elements array",
                 retryable=True,
             )
 
@@ -196,16 +196,14 @@ class OsmRoadAccessConnector:
                 retryable=True,
             )
 
-        tags = cast(Mapping[str, object], elements[0]).get("tags") if isinstance(
-            elements[0], Mapping
-        ) else {}
-        if not isinstance(tags, Mapping):
-            tags = {}
-        try:
-            ways_value = cast(Mapping[str, object], tags).get("ways", 0)
-            road_count = int(str(ways_value)) if ways_value is not None else 0
-        except (TypeError, ValueError):
-            road_count = 0
+        road_count = len(elements)
+        highway_types: list[str] = sorted({
+            str(cast(Mapping[str, object], el).get("tags", {}).get("highway", ""))
+            for el in elements
+            if isinstance(el, Mapping)
+            and isinstance(cast(Mapping[str, object], el).get("tags"), Mapping)
+            and cast(Mapping[str, object], el).get("tags", {}).get("highway")
+        })
 
         has_road = road_count > 0
         finished_at = _utcnow()
@@ -236,6 +234,7 @@ class OsmRoadAccessConnector:
                 "public_road_adjacency": True,
                 "road_distance_m": 0.0,
                 "road_count": road_count,
+                "highway_types": highway_types,
                 "osm_query_bbox": bbox.overpass_bbox,
                 "lookup_type": "live_overpass",
             }
@@ -247,6 +246,7 @@ class OsmRoadAccessConnector:
                 "public_road_adjacency": False,
                 "no_public_road_adjacency": True,
                 "road_count": 0,
+                "highway_types": [],
                 "osm_query_bbox": bbox.overpass_bbox,
                 "lookup_type": "live_overpass",
             }
@@ -397,7 +397,7 @@ def _build_query_url(*, bbox: OsmRoadAccessBbox) -> str:
     query = (
         f'[out:json][timeout:25];way["highway"~"{_HIGHWAY_FILTER}"]'
         f'["access"!="private"]["access"!="no"]'
-        f"({bbox.overpass_bbox});out count;"
+        f"({bbox.overpass_bbox});out tags;"
     )
     return f"{OSM_OVERPASS_URL}?data={quote(query)}"
 
