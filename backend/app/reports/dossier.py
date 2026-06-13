@@ -98,6 +98,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 8. Soil / Septic Proxy",
         "",
         f"- Soil map units: {_soil_septic_result(report_run)}",
+        f"- Major soil components: {_soil_major_components_result(report_run)}",
         f"- Drainage/limitation notes: {_soil_drainage_result(report_run)}",
         f"- Septic proxy confidence: {_septic_proxy_confidence(report_run)}",
         f"- Caveats: {_domain_caveats(report_run, {'soil_septic', 'soils'})}",
@@ -808,6 +809,30 @@ def _soil_septic_result(report_run: ReportRunContract) -> str:
             " (screening only; not a site-specific soil report)"
         )
     return f"{count} soil map unit(s) intersecting screening bbox (screening only)"
+
+
+def _soil_major_components_result(report_run: ReportRunContract) -> str:
+    records = [r for r in report_run.evidence
+               if r.domain in _SOIL_DOMAINS and not r.is_source_failure]
+    if not records:
+        return "not evaluated"
+    seen: set[str] = set()
+    parts: list[str] = []
+    for record in records:
+        name = record.observed_value.get("soil_component_name")
+        pct = record.observed_value.get("soil_component_percent")
+        is_major = record.observed_value.get("soil_major_component")
+        if not isinstance(name, str) or is_major is not True:
+            continue
+        key = name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        label = name
+        if isinstance(pct, (int, float)) and not isinstance(pct, bool):
+            label += f" ({int(pct)}%)"
+        parts.append(label)
+    return "; ".join(parts) if parts else "not available"
 
 
 def _soil_drainage_result(report_run: ReportRunContract) -> str:

@@ -727,6 +727,56 @@ def test_dossier_renders_ssurgo_mapunit_from_evidence() -> None:
     )
 
 
+def test_dossier_soil_shows_major_component_name_and_percent() -> None:
+    """Major soil component name and percentage must appear in Section 8."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="live_usda_ssurgo_soil_mapunit_query",
+            observation="USDA NRCS SSURGO mapunit intersects the query area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "soil_mapunit_key": "789012",
+                "soil_mapunit_name": "Wilkes sandy loam",
+                "soil_component_name": "Wilkes",
+                "soil_component_percent": 65.0,
+                "soil_major_component": True,
+                "drainage_class": "well drained",
+                "hydric_rating": "No",
+                "hydrologic_group": "D",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USDA NRCS SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "Wilkes" in section_8, (
+        "Expected major component name 'Wilkes' in Section 8; got:\n" + section_8
+    )
+    assert "65%" in section_8, (
+        "Expected component percent '65%' in Section 8; got:\n" + section_8
+    )
+    assert "Major soil components:" in section_8, (
+        "Expected 'Major soil components:' label in Section 8; got:\n" + section_8
+    )
+
+
 def test_dossier_renders_soil_source_failure_from_evidence() -> None:
     """SSURGO source failure must appear as a failure message in Section 8."""
     source_service, area_service, evidence_service, report_service = _make_services()
