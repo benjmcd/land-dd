@@ -738,7 +738,10 @@ def _broadband_result(report_run: ReportRunContract) -> str:
         parts.append(f"{provider_count} provider(s) reported")
     if tech_types and isinstance(tech_types, list) and tech_types:
         parts.append("technologies: " + ", ".join(str(t) for t in tech_types))
-    if max_dl is not None:
+    max_ul = record.observed_value.get("max_upload_mbps")
+    if max_dl is not None and max_ul is not None:
+        parts.append(f"max {max_dl}/{max_ul} Mbps (down/up)")
+    elif max_dl is not None:
         parts.append(f"max download: {max_dl} Mbps")
     if has_high:
         parts.append("high-speed available (≥100 Mbps or fiber/cable)")

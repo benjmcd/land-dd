@@ -2305,3 +2305,50 @@ def test_dossier_climate_shows_nearest_city_when_present() -> None:
     assert "NC" in section_13, (
         "Expected nearest state 'NC' in Section 13; got:\n" + section_13
     )
+
+
+def test_dossier_broadband_shows_combined_down_up_speed() -> None:
+    """max_upload_mbps must appear alongside download in combined down/up format."""
+    from app.connectors.fcc_broadband import FCC_BROADBAND_CAVEAT
+
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "broadband")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="FCC_BROADBAND_AVAILABILITY_SCREEN",
+            domain="broadband",
+            method_code="fcc_bdc_broadband_availability_query",
+            observation="FCC BDC: 2 provider(s) offer service at this location.",
+            observed_value={
+                "has_any_broadband": True,
+                "has_high_speed_broadband": False,
+                "provider_count": 2,
+                "technology_types": ["dsl"],
+                "max_download_mbps": 25,
+                "max_upload_mbps": 3,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat=FCC_BROADBAND_CAVEAT,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec12_start = dossier.find("## 12. Internet")
+    sec13_start = dossier.find("## 13.")
+    assert sec12_start != -1, "Section 12 not found"
+    section_12 = dossier[sec12_start:sec13_start]
+    assert "25/3" in section_12, (
+        "Expected combined down/up speed '25/3' in Section 12; got:\n" + section_12
+    )
+    assert "down/up" in section_12, (
+        "Expected 'down/up' label in Section 12; got:\n" + section_12
+    )
