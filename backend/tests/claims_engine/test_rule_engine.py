@@ -731,6 +731,25 @@ def test_evaluate_creates_water_claim_from_no_plausible_context() -> None:
     assert "water-context screening" in claim.user_safe_language
     assert "does not determine water rights" in claim.user_safe_language
     assert "well yield or viability" in claim.user_safe_language
+    assert "in the fixture" not in claim.user_safe_language
+    assert "in the screening area" in claim.user_safe_language
+
+
+def test_water_no_context_claim_surfaces_station_count_when_present() -> None:
+    area_id = uuid4()
+    evidence = make_water_evidence(area_id=area_id)
+    evidence = EvidenceContract(
+        **{**evidence.model_dump(), "observed_value": {
+            **evidence.observed_value,
+            "monitoring_station_count": 0,
+        }}
+    )
+    engine = RuleEngine.from_file()
+
+    claims = engine.evaluate([evidence])
+
+    lang = next(c.user_safe_language for c in claims if c.claim_code == "WATER_001")
+    assert "0 USGS monitoring stations" in lang
 
 
 def test_evaluate_ignores_plausible_water_context_evidence() -> None:

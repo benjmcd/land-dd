@@ -976,11 +976,17 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        count_str = ""
+        for e in evidence_records:
+            count = e.observed_value.get("monitoring_station_count")
+            if isinstance(count, (int, float)) and not isinstance(count, bool):
+                count_str = " (0 USGS monitoring stations in screening bbox)"
+                break
         user_safe_language = (
-            "Water-context screening indicates no plausible water context in the "
-            "fixture. This is screening only and does not determine water rights, "
-            "well yield or viability, lawful hauling, utility/service availability, "
-            "potable water, or final water availability."
+            f"Water-context screening indicates no plausible water context in the "
+            f"screening area{count_str}. This is screening only and does not determine "
+            "water rights, well yield or viability, lawful hauling, utility/service "
+            "availability, potable water, or final water availability."
         )
         if caveat_text:
             user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
