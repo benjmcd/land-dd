@@ -2168,6 +2168,49 @@ def test_dossier_soil_drainage_shows_water_table_depth_when_present() -> None:
     )
 
 
+def test_dossier_soil_drainage_shows_slope_range_from_ssurgo() -> None:
+    """Soil drainage note must include mapunit slope range from SSURGO slope_percent."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    for slope, mukey in [(2.0, "aaa111"), (8.0, "bbb222")]:
+        evidence_service.create_observation(
+            EvidenceContract(
+                area_id=area.area_id,
+                source_id=source.source_id,
+                evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+                evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+                domain="soil_septic",
+                method_code="live_usda_ssurgo_soil_mapunit_query",
+                observation="USDA NRCS SSURGO mapunit intersects the query area.",
+                observed_value={
+                    "intersects_soil_mapunit": True,
+                    "soil_mapunit_key": mukey,
+                    "drainage_class": "well drained",
+                    "slope_percent": slope,
+                },
+                confidence=ConfidenceBand.MEDIUM,
+                caveat="SSURGO screening only.",
+            )
+        )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec8_start = dossier.find("## 8. Soil")
+    sec9_start = dossier.find("## 9.")
+    section_8 = dossier[sec8_start:sec9_start]
+    assert "slope" in section_8.lower(), (
+        "Section 8 must show slope range from SSURGO; got:\n" + section_8
+    )
+    assert "2" in section_8 and "8" in section_8, (
+        "Section 8 must show min and max slope values; got:\n" + section_8
+    )
+
+
 def test_dossier_geologic_section_shows_types_and_belts_when_present() -> None:
     """Section 14 geologic result must surface geologic_types and geologic_belts."""
     source_service, area_service, evidence_service, report_service = _make_services()

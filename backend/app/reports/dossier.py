@@ -812,10 +812,14 @@ def _soil_drainage_result(report_run: ReportRunContract) -> str:
         if isinstance(hr, str) and hr.lower() == "yes":
             any_hydric = True
     wt_depths: list[float] = []
+    slope_pcts: list[float] = []
     for record in records:
         wt = record.observed_value.get("water_table_depth_cm")
         if isinstance(wt, (int, float)) and not isinstance(wt, bool):
             wt_depths.append(float(wt))
+        sp = record.observed_value.get("slope_percent")
+        if isinstance(sp, (int, float)) and not isinstance(sp, bool):
+            slope_pcts.append(float(sp))
     if not drainage_classes and not hydro_groups and not any_hydric and not wt_depths:
         return "not evaluated"
     parts: list[str] = []
@@ -828,6 +832,8 @@ def _soil_drainage_result(report_run: ReportRunContract) -> str:
     if wt_depths:
         min_wt = min(wt_depths)
         parts.append(f"water table ~{min_wt:.0f}cm depth (shallowest recorded unit)")
+    if slope_pcts:
+        parts.append(f"mapunit slope range ~{min(slope_pcts):.0f}–{max(slope_pcts):.0f}%")
     return "; ".join(parts) + " — screening only; verify with perc test"
 
 
