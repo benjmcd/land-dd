@@ -2595,7 +2595,7 @@ def test_dossier_zoning_shows_udo_note_when_present() -> None:
                 "zoning_code": "RA",
                 "district_name": "Rural Agricultural",
                 "use_category": "agricultural_low_intensity_residential",
-                "udo_note": "Rural agricultural and low-intensity residential. Verify with Chatham County Planning.",
+                "udo_note": "Rural agricultural district. Verify with Chatham County Planning.",
                 "residential_use_screening": "ALLOWED_WITH_RESTRICTIONS",
                 "intended_residential_use_allowed": True,
             },
@@ -2612,7 +2612,7 @@ def test_dossier_zoning_shows_udo_note_when_present() -> None:
     sec10_start = dossier.find("## 10. Zoning")
     sec11_start = dossier.find("## 11.")
     section_10 = dossier[sec10_start:sec11_start]
-    assert "Rural agricultural and low-intensity residential" in section_10, (
+    assert "Rural agricultural district" in section_10, (
         "Expected udo_note text in Section 10 district description; got:\n" + section_10
     )
     assert "District description:" in section_10, (
@@ -2656,3 +2656,76 @@ def test_dossier_zoning_district_note_not_available_when_udo_note_absent() -> No
     assert "District description: not available" in section_10, (
         "Expected 'District description: not available' in Section 10; got:\n" + section_10
     )
+
+
+def test_dossier_env_contamination_context_shows_count_when_facilities_found() -> None:
+    """When ECHO found N > 0 facilities, contamination context must mention the count."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "env_hazard")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ENV_HAZ_FACILITY_SCREEN",
+            domain="env_hazard",
+            method_code="fixture_env_hazard_bbox",
+            observation="3 regulated facilities detected in screening bbox.",
+            observed_value={
+                "has_env_hazard_proximity": True,
+                "regulated_facility_count": 3,
+                "env_hazard_status": "regulated_facilities_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="EPA ECHO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec11_start = dossier.find("## 11. Environmental")
+    sec12_start = dossier.find("## 12.")
+    section_11 = dossier[sec11_start:sec12_start]
+    assert "3 regulated facility/facilities" in section_11
+    assert "Phase I ESA required" in section_11
+
+
+def test_dossier_env_contamination_context_shows_no_facilities_when_none_found() -> None:
+    """When ECHO found 0 facilities, contamination context must say so explicitly."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "env_hazard")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ENV_HAZ_FACILITY_SCREEN",
+            domain="env_hazard",
+            method_code="fixture_env_hazard_bbox",
+            observation="No regulated facilities detected in screening bbox.",
+            observed_value={
+                "no_env_hazard_proximity": True,
+                "regulated_facility_count": 0,
+                "env_hazard_status": "no_regulated_facilities_found",
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="EPA ECHO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec11_start = dossier.find("## 11. Environmental")
+    sec12_start = dossier.find("## 12.")
+    section_11 = dossier[sec11_start:sec12_start]
+    assert "no regulated facilities in proximity" in section_11

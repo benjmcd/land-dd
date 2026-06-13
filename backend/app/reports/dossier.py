@@ -125,7 +125,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 11. Environmental / Compliance Hazards",
         "",
         f"- Nearby regulated facilities: {_env_hazard_result(report_run)}",
-        "- Known contamination/remediation context: unknown",
+        f"- Known contamination/remediation context: {_env_contamination_context(report_run)}",
         f"- Caveats: {_domain_caveats(report_run, {'env_hazard'})}",
         f"- Required verification: {_domain_verification(report_run, 'env_hazard')}",
         "",
@@ -720,6 +720,34 @@ def _env_hazard_result(report_run: ReportRunContract) -> str:
         else:
             parts.append(_cell(record.observation))
     return "; ".join(parts) if parts else _domain_summary(report_run, "env_hazard")
+
+
+def _env_contamination_context(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence if r.domain == "env_hazard" and not r.is_source_failure
+    ]
+    if not records:
+        failures = [
+            r for r in report_run.evidence if r.domain == "env_hazard" and r.is_source_failure
+        ]
+        return "not evaluated (ECHO source unavailable)" if failures else "not evaluated"
+    for record in records:
+        fc = record.observed_value.get("regulated_facility_count")
+        if isinstance(fc, (int, float)) and not isinstance(fc, bool):
+            count = int(fc)
+            if count == 0:
+                return (
+                    "no regulated facilities in proximity (EPA ECHO FRS screening only; "
+                    "not a contamination determination)"
+                )
+            return (
+                f"{count} regulated facility/facilities in proximity — "
+                "contamination status not classified in this connector; Phase I ESA required"
+            )
+    return (
+        "regulated facility proximity data present — "
+        "contamination status not classified; Phase I ESA required"
+    )
 
 
 def _climate_result(report_run: ReportRunContract) -> str:
