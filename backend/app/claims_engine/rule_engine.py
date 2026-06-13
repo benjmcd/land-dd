@@ -1767,8 +1767,27 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        detail_parts: list[str] = []
+        for e in evidence_records:
+            pin = e.observed_value.get("parcel_pin")
+            county = e.observed_value.get("parcel_county")
+            acres = e.observed_value.get("parcel_acres") or e.observed_value.get(
+                "total_acres_approx"
+            )
+            if isinstance(pin, str) and pin:
+                detail_parts.append(f"PIN: {pin}")
+            elif pin is not None:
+                detail_parts.append(f"PIN: {pin}")
+            if isinstance(acres, (int, float)) and not isinstance(acres, bool):
+                detail_parts.append(f"~{float(acres):.1f} acres")
+            elif isinstance(acres, str) and acres:
+                detail_parts.append(f"~{acres} acres")
+            if isinstance(county, str) and county:
+                detail_parts.append(county)
+            break
+        detail = f" ({'; '.join(detail_parts)})" if detail_parts else ""
         user_safe_language = (
-            "County GIS parcel screening evidence identified for the area. "
+            f"County GIS parcel screening evidence identified for the area{detail}. "
             "Parcel boundaries, acreage, and zoning designations from county GIS "
             "are approximate only — not a survey, not a title determination, and "
             "not a buildability or legal-access determination. Verify all parcel "

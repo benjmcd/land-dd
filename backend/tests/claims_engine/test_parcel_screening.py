@@ -18,6 +18,7 @@ def _make_parcel_evidence(
     parcel_pin: str = "0060143",
     parcel_acres: float = 42.5,
     parcel_zoning: str = "RA",
+    parcel_county: str = "Chatham County, NC",
 ) -> EvidenceContract:
     return EvidenceContract(
         area_id=area_id,
@@ -30,6 +31,7 @@ def _make_parcel_evidence(
             "parcel_pin": parcel_pin,
             "parcel_acres": parcel_acres,
             "parcel_zoning": parcel_zoning,
+            "parcel_county": parcel_county,
         },
         method_code="chatham_parcels_live",
         confidence=ConfidenceBand.LOW,
@@ -132,3 +134,16 @@ def test_parcel_screen_claim_includes_caveat_from_evidence() -> None:
 
     claim = next(c for c in claims if c.claim_code == "PARCEL_SCREEN_001")
     assert "approximate" in claim.user_safe_language.lower()
+
+
+def test_parcel_screen_claim_surfaces_pin_acreage_and_county() -> None:
+    area_id = uuid4()
+    ev = _make_parcel_evidence(area_id, parcel_pin="1234567", parcel_acres=17.3)
+    engine = RuleEngine.from_file()
+
+    claims = engine.evaluate([ev])
+
+    lang = next(c.user_safe_language for c in claims if c.claim_code == "PARCEL_SCREEN_001")
+    assert "1234567" in lang
+    assert "17.3" in lang
+    assert "Chatham County, NC" in lang
