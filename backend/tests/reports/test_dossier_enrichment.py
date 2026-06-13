@@ -109,6 +109,38 @@ def test_dossier_renders_fema_flood_zone_code_from_evidence() -> None:
     assert "72%" in dossier, "Expected intersection ratio '72%' in dossier"
 
 
+def test_dossier_flood_zone_description_appears_for_known_codes() -> None:
+    """AE zone must include human-readable description in the flood section."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            method_code="fema_nfhl_live",
+            observation="AE zone intersection.",
+            observed_value={"flood_zone_code": "AE"},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="FEMA NFHL screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec7 = dossier[dossier.find("## 7."):dossier.find("## 8.")]
+    assert "1% annual chance" in sec7, (
+        "AE zone must include '1% annual chance' description; got:\n" + sec7
+    )
+
+
 def test_dossier_renders_road_adjacency_observed_from_evidence() -> None:
     """has_public_road_adjacency=True must appear as a positive road result in the dossier."""
     source_service, area_service, evidence_service, report_service = _make_services()

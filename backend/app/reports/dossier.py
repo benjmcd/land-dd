@@ -246,6 +246,18 @@ def _source_manifest_version(report_run: ReportRunContract) -> str:
     return f"{ruleset_id}@{ruleset_version}"
 
 
+_FLOOD_ZONE_LABELS: dict[str, str] = {
+    "X": "minimal flood hazard",
+    "X500": "0.2% annual chance flood zone",
+    "AE": "1% annual chance; base flood elevation available",
+    "A": "1% annual chance; no base flood elevation",
+    "AH": "1% annual chance shallow ponding",
+    "AO": "1% annual chance shallow sheet flow",
+    "VE": "coastal high hazard; base flood elevation available",
+    "V": "coastal high hazard; no base flood elevation",
+    "D": "undetermined flood hazard",
+}
+
 _EVIDENCE_ID_CAP = 4
 
 
@@ -448,7 +460,8 @@ def _flood_zone_result(report_run: ReportRunContract) -> str:
         zone_code = record.observed_value.get("flood_zone_code")
         ratio = record.observed_value.get("intersection_ratio")
         if zone_code:
-            part = f"FEMA zone {zone_code}"
+            desc = _FLOOD_ZONE_LABELS.get(str(zone_code).upper(), "")
+            part = f"FEMA zone {zone_code}" + (f" — {desc}" if desc else "")
             if ratio is not None:
                 try:
                     part += f" ({float(ratio):.0%} area intersection)"  # type: ignore[arg-type]
