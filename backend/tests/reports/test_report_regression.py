@@ -141,6 +141,7 @@ def test_fixture_report_artifact_semantics_are_stable() -> None:
             "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "red_flag_codes": ["FLOOD_001"],
+        "advisory_claim_codes": [],
         "caveats": sorted(
             [
                 "Screening fixture only; confirm locally.",
@@ -307,6 +308,7 @@ def test_chatham_parcel_report_artifact_semantics_are_stable() -> None:
             "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
         ],
         "red_flag_codes": [],
+        "advisory_claim_codes": [],
         "caveats": sorted(
             [
                 "County GIS parcel data; approximate only; verify with Register of Deeds.",
@@ -387,6 +389,10 @@ def stable_report_projection(report: dict[str, Any]) -> dict[str, Any]:
         ],
         "red_flag_codes": [
             claim["claim_code"] for claim in cast(list[dict[str, Any]], report["red_flags"])
+        ],
+        "advisory_claim_codes": [
+            claim["claim_code"]
+            for claim in cast(list[dict[str, Any]], report["advisory_claims"])
         ],
         "caveats": report["caveats"],
         "artifact_metadata": report["artifact_metadata"],
