@@ -1,6 +1,24 @@
 # Project State
 
-## Current checkpoint (2026-06-12 minerals/broadband rule engine + dossier coverage)
+## Current checkpoint (2026-06-12 advisory claims surface + suitability fix)
+
+Advisory claims (LOW severity) now surface end-to-end:
+- `advisory_claims: list[ClaimContract]` added to `ReportRunContract`; `advisory_count`
+  added to cost_metrics; both in `schemas/report_run_schema.json` (required + properties).
+- `_advisory_claims()` in `service.py` populates LOW-severity claims; `_advisory_rows()`
+  in `dossier.py` renders them as a table in Section 3 after red flags.
+- Executive summary now shows "- Advisory findings: N" count.
+- Schema contract, regression, and dossier enrichment tests updated/added.
+- OpenAPI stub regenerated to reflect new contract field.
+- `_overall_suitability()` fixed: was always returning "unknown" because structural
+  NOT_EVALUATED claims (soil_septic, parcels, resource_context, market_context, assessor)
+  always populated `unknowns`. Now excludes structural evidence IDs using the same
+  `_STRUCTURAL_DOMAINS` / `_STRUCTURAL_EVIDENCE_CODES` pattern as `_confidence_band()`.
+  Two new suitability band tests confirm "screening_clear" (structural only) and
+  "unknown" (real source failure).
+- Full suite: 1547 passed, 73 skipped; ruff/mypy clean (297 source files).
+
+## Previous checkpoint (2026-06-12 minerals/broadband rule engine + dossier coverage)
 
 Rule engine now covers all implemented connector domains:
 - `minerals` domain: two new hard-gate rules (MINERALS_G001 `blm_active_mining_claims_present`

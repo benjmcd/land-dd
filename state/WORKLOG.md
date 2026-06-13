@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-12 (Advisory claims surface + overall suitability fix)
+
+- Added `advisory_claims: list[ClaimContract]` to `ReportRunContract` and
+  `advisory_count` to cost_metrics dict. Updated `schemas/report_run_schema.json`
+  (required array + properties + cost_metrics.required). Regenerated OpenAPI stub.
+- Added `_advisory_claims()` to `service.py`; `_advisory_rows()` and advisory table
+  to `dossier.py` Section 3; advisory count line to executive summary.
+- Fixed `_overall_suitability()`: was always returning `"unknown"` because structural
+  NOT_EVALUATED UNKNOWN claims (soil_septic, parcels, resource_context, etc.) always
+  populated `unknowns`. Now excludes structural evidence IDs, matching `_confidence_band`.
+- Added 3 tests: advisory claims dossier (BLM active mining evidence), suitability
+  screening_clear (structural-only), suitability unknown (real source failure).
+- Updated regression snapshots with `advisory_count: 0` + `advisory_claim_codes: []`.
+- Full suite: 1547 passed, 73 skipped; ruff/mypy clean. .\scripts\verify.ps1 ok.
+
 ## 2026-06-12 (Minerals/broadband rule engine + dossier no-access test)
 
 - Added `minerals` domain hard-gate rules to `ruleset_homestead_mvp.yaml` and

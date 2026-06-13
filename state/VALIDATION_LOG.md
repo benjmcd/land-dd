@@ -2,6 +2,28 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-12 Advisory Claims Surface + Suitability Fix
+
+**Scope:** Surface LOW-severity advisory claims end-to-end; fix `_overall_suitability`
+structural-unknown exclusion; add suitability band tests.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests/reports/ tests/private_mvp/ -q --tb=short
+.\scripts\verify.ps1
+```
+
+**Results:**
+- Full suite: 1547 passed, 73 skipped; ruff clean; mypy clean (297 source files)
+
+**Residual risk:**
+- `_overall_suitability` now returns "screening_clear" for reports where all non-structural
+  domains succeed without unknowns — this is the correct behavior for a report where
+  only FEMA/SSURGO/NWI/etc. ran with clean results and no source failures.
+- Advisory claims count in the executive summary will be non-zero if BLM active mining
+  claims or FCC no-broadband evidence is present for a parcel.
+
 ## 2026-06-12 Minerals/Broadband Rule Engine + Dossier No-Access Test
 
 **Scope:** Add `minerals`/`broadband` rule-engine hard-gate rules; fix lint; add dossier
