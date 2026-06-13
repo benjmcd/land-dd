@@ -682,8 +682,14 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        count_str = ""
+        for e in evidence_records:
+            count = e.observed_value.get("road_count")
+            if isinstance(count, (int, float)) and not isinstance(count, bool) and int(count) == 0:
+                count_str = " (0 OSM road segments in screening area)"
+                break
         user_safe_language = (
-            "Road adjacency screening indicates no apparent public road adjacency. "
+            f"Road adjacency screening indicates no apparent public road adjacency{count_str}. "
             "This is a physical proxy only and does not determine recorded legal "
             "access or easements."
         )
@@ -785,7 +791,7 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Access screening evidence is marked stale in the fixture and should be "
+            "Access screening evidence is marked stale and should be "
             "refreshed before relying on the road-adjacency proxy."
         )
         if caveat_text:
@@ -835,7 +841,7 @@ class RuleEngine:
         zone_context = f" Screened zone: {zone_parts[0]}." if zone_parts else ""
         user_safe_language = (
             f"Zoning/use screening indicates the intended residential or homestead "
-            f"use is prohibited or unsupported in the fixture.{zone_context} This is source-linked "
+            f"use is prohibited or unsupported per available screening evidence.{zone_context} This is source-linked "  # noqa: E501
             "screening only and does not determine final legal use, zoning "
             "compliance, permit eligibility, vested rights, or buildability."
         )
@@ -940,7 +946,7 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Zoning/use screening evidence is marked stale in the fixture and "
+            "Zoning/use screening evidence is marked stale and "
             "should be refreshed before relying on zoning/use screening results. "
             "It does not determine final legal use, zoning compliance, permit "
             "eligibility, vested rights, or buildability."
@@ -1088,7 +1094,7 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Water-context screening evidence is marked stale in the fixture and "
+            "Water-context screening evidence is marked stale and "
             "should be refreshed before relying on water-context screening results. "
             "It does not determine water rights, well yield or viability, lawful "
             "hauling, utility/service availability, potable water, or final water "
@@ -1241,8 +1247,8 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Slope/buildability screening evidence is marked stale in the fixture "
-            "and should be refreshed before relying on low-slope area metrics."
+            "Slope/buildability screening evidence is marked stale and "
+            "should be refreshed before relying on low-slope area metrics."
         )
         if caveat_text:
             user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
@@ -1400,7 +1406,7 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Wetland screening evidence is marked stale in the fixture and should be "
+            "Wetland screening evidence is marked stale and should be "
             "refreshed before relying on mapped wetland/deepwater results."
         )
         if caveat_text:
@@ -1546,7 +1552,7 @@ class RuleEngine:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
         user_safe_language = (
-            "Flood screening evidence is marked stale in the fixture and should be "
+            "Flood screening evidence is marked stale and should be "
             "refreshed before relying on the result."
         )
         if caveat_text:

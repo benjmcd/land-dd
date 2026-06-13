@@ -1944,3 +1944,30 @@ def test_geology_not_evaluated_claim_surfaces_primary_unit_when_present() -> Non
     lang = geology_claims[0].user_safe_language
     assert "GEL" in lang
     assert "Metavolcanic sequence" in lang
+
+
+def test_access_no_adjacency_claim_surfaces_road_count_when_zero() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="ACCESS_ROAD_ADJACENCY_SCREEN",
+        domain="access",
+        observation="OSM Overpass query found no road ways adjacent to the query area.",
+        observed_value={
+            "has_public_road_adjacency": False,
+            "public_road_adjacency": False,
+            "no_public_road_adjacency": True,
+            "road_count": 0,
+            "highway_types": [],
+        },
+        method_code="live_osm_road_adjacency_bbox_screen",
+        confidence=ConfidenceBand.LOW,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    access_claims = [c for c in claims if c.claim_code == "ACCESS_001"]
+    assert len(access_claims) == 1
+    lang = access_claims[0].user_safe_language
+    assert "0 OSM road segments in screening area" in lang
+    assert "physical proxy only" in lang
