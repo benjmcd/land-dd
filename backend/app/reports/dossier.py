@@ -811,7 +811,12 @@ def _soil_drainage_result(report_run: ReportRunContract) -> str:
         hr = record.observed_value.get("hydric_rating")
         if isinstance(hr, str) and hr.lower() == "yes":
             any_hydric = True
-    if not drainage_classes and not hydro_groups and not any_hydric:
+    wt_depths: list[float] = []
+    for record in records:
+        wt = record.observed_value.get("water_table_depth_cm")
+        if isinstance(wt, (int, float)) and not isinstance(wt, bool):
+            wt_depths.append(float(wt))
+    if not drainage_classes and not hydro_groups and not any_hydric and not wt_depths:
         return "not evaluated"
     parts: list[str] = []
     if drainage_classes:
@@ -820,6 +825,9 @@ def _soil_drainage_result(report_run: ReportRunContract) -> str:
         parts.append(f"hydrologic group: {', '.join(hydro_groups)}")
     if any_hydric:
         parts.append("hydric soils present (screening only)")
+    if wt_depths:
+        min_wt = min(wt_depths)
+        parts.append(f"water table ~{min_wt:.0f}cm depth (shallowest recorded unit)")
     return "; ".join(parts) + " — screening only; verify with perc test"
 
 
@@ -915,10 +923,18 @@ def _geologic_context_result(report_run: ReportRunContract) -> str:
     parts: list[str] = []
     unit = record.observed_value.get("primary_geologic_unit_label")
     formation = record.observed_value.get("primary_geologic_formation")
+    gtypes = record.observed_value.get("geologic_types")
+    gbelts = record.observed_value.get("geologic_belts")
     if unit:
         parts.append(f"primary unit: {unit}")
     if formation:
         parts.append(f"formation: {formation}")
+    if isinstance(gtypes, list) and gtypes:
+        unique = list(dict.fromkeys(str(t) for t in gtypes if t))
+        parts.append("type(s): " + ", ".join(unique[:3]))
+    if isinstance(gbelts, list) and gbelts:
+        unique = list(dict.fromkeys(str(b) for b in gbelts if b))
+        parts.append("belt(s): " + ", ".join(unique[:2]))
     return "; ".join(parts) if parts else _cell(record.observation)
 
 
