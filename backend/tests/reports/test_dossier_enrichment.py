@@ -208,6 +208,53 @@ def test_dossier_renders_zoning_district_from_evidence() -> None:
     )
 
 
+def test_dossier_renders_district_name_and_code_from_chatham_style_evidence() -> None:
+    """district_name + zoning_code (Chatham/Brunswick format) must appear in Section 10."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="ZONING_USE_CLASSIFICATION",
+            domain="zoning",
+            method_code="chatham_zoning_udo_recorded_lookup",
+            observation="Chatham UDO lookup: code 'RA' matches 'Rural Agricultural'.",
+            observed_value={
+                "zoning_code": "RA",
+                "district_name": "Rural Agricultural",
+                "use_category": "agricultural_low_intensity_residential",
+                "residential_use_screening": "ALLOWED_WITH_RESTRICTIONS",
+                "intended_residential_use_allowed": True,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Chatham County UDO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    assert sec10_start != -1
+    section_10 = dossier[sec10_start:sec11_start]
+    assert "Rural Agricultural" in section_10, (
+        "Expected 'Rural Agricultural' district name in Section 10; got:\n" + section_10
+    )
+    assert "RA" in section_10, (
+        "Expected zoning code 'RA' in Section 10; got:\n" + section_10
+    )
+    assert "permitted" in section_10, (
+        "Expected 'permitted' use compatibility in Section 10; got:\n" + section_10
+    )
+
+
 def test_dossier_red_flag_row_contains_evidence_id_prefix() -> None:
     """Red-flag Evidence column must show a short 8-hex prefix, not just a bare count."""
     source_service, area_service, evidence_service, report_service = _make_services()

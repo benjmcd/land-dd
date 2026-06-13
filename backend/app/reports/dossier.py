@@ -512,9 +512,16 @@ def _zoning_district_result(report_run: ReportRunContract) -> str:
         return "not evaluated"
     parts: list[str] = []
     for record in records:
-        district = record.observed_value.get("zoning_district")
+        district = (
+            record.observed_value.get("district_name")
+            or record.observed_value.get("zoning_district")
+        )
+        code = record.observed_value.get("zoning_code")
         if district:
-            parts.append(str(district))
+            label = str(district)
+            if code:
+                label = f"{code} — {label}"
+            parts.append(label)
         else:
             parts.append(_cell(record.observation))
     return "; ".join(parts) if parts else _domain_summary(report_run, "zoning")
