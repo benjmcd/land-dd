@@ -1093,6 +1093,41 @@ def test_evaluate_slope_outputs_are_deterministic_when_input_order_changes() -> 
     ]
 
 
+def test_slope_needs_review_claim_surfaces_available_metrics() -> None:
+    area_id = uuid4()
+    insufficient = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.DERIVED_METRIC,
+        evidence_code="SLOPE_BUILDABLE_AREA_SCREEN",
+        domain="buildability",
+        observation="Conflicting slope model result.",
+        observed_value={
+            "insufficient_low_slope_buildable_area": True,
+            "low_slope_area_ratio": 0.12,
+            "mean_slope_pct": 34.5,
+            "metric_code": "low_slope_buildable_area_sq_m",
+            "value": 900.0,
+            "unit": "sq_m",
+        },
+        method_code="fixture_slope_buildability_metric",
+        confidence=ConfidenceBand.LOW,
+    )
+    sufficient = make_slope_evidence(
+        area_id=area_id, insufficient_low_slope_area=False, confidence=ConfidenceBand.HIGH
+    )
+
+    claims = RuleEngine.from_file().evaluate([insufficient, sufficient])
+
+    review_claim = next(
+        (c for c in claims if c.claim_code == "SLOPE_EVIDENCE_NEEDS_REVIEW"), None
+    )
+    assert review_claim is not None
+    assert "available metrics:" in review_claim.user_safe_language
+    assert "12%" in review_claim.user_safe_language
+    assert "34.5%" in review_claim.user_safe_language
+
+
 def test_evaluate_empty_evidence_returns_no_claims() -> None:
     assert RuleEngine.from_file().evaluate([]) == []
 

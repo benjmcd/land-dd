@@ -1221,8 +1221,24 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        first_ratio: float | None = None
+        first_slope: float | None = None
+        for e in evidence_records:
+            if not e.is_source_failure:
+                ratio = e.observed_value.get("low_slope_area_ratio")
+                slope = e.observed_value.get("mean_slope_pct")
+                if first_ratio is None and isinstance(ratio, (int, float)) and not isinstance(ratio, bool):  # noqa: E501
+                    first_ratio = float(ratio)
+                if first_slope is None and isinstance(slope, (int, float)) and not isinstance(slope, bool):  # noqa: E501
+                    first_slope = float(slope)
+        metric_parts: list[str] = []
+        if first_ratio is not None:
+            metric_parts.append(f"{first_ratio:.0%} low-slope area")
+        if first_slope is not None:
+            metric_parts.append(f"mean slope ~{first_slope:.1f}%")
+        detail = f" (available metrics: {'; '.join(metric_parts)})" if metric_parts else ""
         user_safe_language = (
-            "Slope/buildability screening evidence is conflicting or incomplete and "
+            f"Slope/buildability screening evidence is conflicting or incomplete{detail} and "
             "requires human review. The available metrics are screening proxies, not "
             "engineering or site-plan determinations."
         )
