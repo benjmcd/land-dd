@@ -122,6 +122,12 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           condition: minerals_source_unavailable
           claim_code: MINERALS_SOURCE_UNAVAILABLE
           verification_task: Verify through title search and federal mineral records.
+        - code: SOIL_G002
+          domain: soil_septic
+          severity_on_fail: low
+          condition: soil_poor_or_hydric_drainage_detected
+          claim_code: SOIL_POOR_DRAINAGE_001
+          verification_task: Conduct perc testing and consult a licensed septic engineer.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.

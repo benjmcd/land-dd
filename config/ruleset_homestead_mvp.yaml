@@ -56,6 +56,12 @@ ruleset:
       condition: soil_septic_unsupported
       claim_code: SOIL_NOT_EVALUATED
       verification_task: Verify soil and septic feasibility with perc testing, county health department records, and a septic engineer.
+    - code: SOIL_G002
+      domain: soil_septic
+      severity_on_fail: low
+      condition: soil_poor_or_hydric_drainage_detected
+      claim_code: SOIL_POOR_DRAINAGE_001
+      verification_task: Poorly drained or hydric soils detected in USDA NRCS SSURGO screening. Conduct perc testing, consult county health department, and evaluate with a licensed septic engineer before planning on-site wastewater.
     - code: ENV_G001
       domain: env_hazard
       severity_on_fail: high

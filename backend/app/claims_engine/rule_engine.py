@@ -68,6 +68,11 @@ BROADBAND_NO_ACCESS_CONDITION = "no_broadband_service_detected"
 BROADBAND_SOURCE_UNAVAILABLE_CONDITION = "broadband_source_unavailable"
 BROADBAND_NO_ACCESS_CLAIM_CODE = "BROADBAND_NO_ACCESS_001"
 BROADBAND_SOURCE_UNAVAILABLE_CLAIM_CODE = "BROADBAND_SOURCE_UNAVAILABLE"
+SOIL_POOR_DRAINAGE_CONDITION = "soil_poor_or_hydric_drainage_detected"
+SOIL_POOR_DRAINAGE_CLAIM_CODE = "SOIL_POOR_DRAINAGE_001"
+_SSURGO_POOR_DRAINAGE = frozenset({
+    "poorly drained", "very poorly drained", "somewhat poorly drained"
+})
 
 
 @dataclass(frozen=True)
@@ -129,6 +134,9 @@ class RuleEngine:
         )
         broadband_unavailable_rule = self._ruleset.hard_gate_for_condition(
             BROADBAND_SOURCE_UNAVAILABLE_CONDITION
+        )
+        soil_poor_drainage_rule = self._ruleset.hard_gate_for_condition(
+            SOIL_POOR_DRAINAGE_CONDITION
         )
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
@@ -330,6 +338,10 @@ class RuleEngine:
             broadband_failures = [
                 evidence for evidence in area_evidence
                 if _is_broadband_source_failure(evidence)
+            ]
+            soil_poor_drainage = [
+                evidence for evidence in area_evidence
+                if _is_soil_poor_drainage_evidence(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -536,6 +548,14 @@ class RuleEngine:
                         area_id,
                         not_evaluated_rules["soil_septic"],
                         soil_screening,
+                    )
+                )
+            if soil_poor_drainage:
+                claims.append(
+                    self._soil_poor_drainage_claim(
+                        area_id,
+                        soil_poor_drainage_rule,
+                        soil_poor_drainage,
                     )
                 )
             if county_parcel_screen:
@@ -1531,6 +1551,64 @@ class RuleEngine:
             verification_task=rule.verification_task,
         )
 
+    def _soil_poor_drainage_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        drainage_vals = sorted({
+            str(e.observed_value["drainage_class"]).lower()
+            for e in evidence_records
+            if isinstance(e.observed_value.get("drainage_class"), str)
+        })
+        hydric = any(
+            (isinstance(e.observed_value.get("hydric_rating"), str)
+             and str(e.observed_value.get("hydric_rating", "")).lower() in ("yes", "true"))
+            or (e.observed_value.get("hydric_rating") is True)
+            for e in evidence_records
+        )
+        detail_parts: list[str] = []
+        if drainage_vals:
+            detail_parts.append("drainage class: " + ", ".join(drainage_vals))
+        if hydric:
+            detail_parts.append("hydric soils detected")
+        detail = "; ".join(detail_parts) if detail_parts else "poor/hydric drainage indicators"
+        user_safe_language = (
+            f"SSURGO screening detected potential soil drainage limitations ({detail}). "
+            "This is screening only and does not determine septic approval, perc results, "
+            "or buildability. Conduct perc testing, consult county health department, "
+            "and evaluate with a licensed septic engineer before planning on-site wastewater."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id(
+                "soil-poor-drainage",
+                rule,
+                area_id,
+                evidence_ids,
+            ),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=(
+                "Poorly drained or hydric soils detected in SSURGO screening — "
+                "septic feasibility requires professional evaluation."
+            ),
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=ConfidenceBand.LOW,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _parcel_screen_claim(
         self,
         area_id: UUID,
@@ -2290,6 +2368,20 @@ def _is_soil_screening_evidence(evidence: EvidenceContract) -> bool:
         and evidence.evidence_code == "SSURGO_SOIL_MAPUNIT_INTERSECTION"
         and _observed_bool(evidence.observed_value.get("intersects_soil_mapunit"))
     )
+
+
+def _is_soil_poor_drainage_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain not in ("soil_septic", "soils") or evidence.is_source_failure:
+        return False
+    dc = evidence.observed_value.get("drainage_class")
+    if isinstance(dc, str) and dc.lower() in _SSURGO_POOR_DRAINAGE:
+        return True
+    hr = evidence.observed_value.get("hydric_rating")
+    if isinstance(hr, str) and hr.lower() in ("yes", "true"):
+        return True
+    if isinstance(hr, bool) and hr is True:
+        return True
+    return False
 
 
 def _is_county_parcel_screen_evidence(evidence: EvidenceContract) -> bool:
