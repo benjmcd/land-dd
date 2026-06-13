@@ -2785,3 +2785,117 @@ def test_dossier_zoning_overlay_result_no_zoning_evidence() -> None:
     section_10 = dossier[sec10_start:sec11_start]
     assert "not screened — no zoning data available" in section_10
     assert "not captured — no zoning data available" in section_10
+
+
+def test_dossier_renders_flood_moderate_advisory_in_section_3() -> None:
+    """Moderate flood zone evidence must fire FLOOD_G002 advisory visible in Section 3."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "flood")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            method_code="fixture_flood_overlay",
+            observation="FEMA NFHL: X500 (0.2% annual chance) flood zone intersects area.",
+            observed_value={"flood_zone_code": "X500", "intersection_ratio": 0.4},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="FEMA NFHL screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert any(c.claim_code == "FLOOD_MODERATE_001" for c in report_run.advisory_claims), (
+        "Expected FLOOD_MODERATE_001 advisory claim from X500 flood zone evidence"
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    section_3 = dossier[sec3_start:sec4_start]
+    assert "Advisory findings" in section_3
+    assert "flood" in section_3
+
+
+def test_dossier_renders_soil_poor_drainage_advisory_in_section_3() -> None:
+    """Poorly drained soil evidence must fire SOIL_G002 advisory visible in Section 3."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "soil_septic")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+            domain="soil_septic",
+            method_code="ssurgo_soil_mapunit_overlay",
+            observation="SSURGO: poorly drained soil map unit intersects area.",
+            observed_value={
+                "intersects_soil_mapunit": True,
+                "drainage_class": "Poorly drained",
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="SSURGO screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert any(c.claim_code == "SOIL_POOR_DRAINAGE_001" for c in report_run.advisory_claims), (
+        "Expected SOIL_POOR_DRAINAGE_001 advisory claim from poorly drained soil evidence"
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    section_3 = dossier[sec3_start:sec4_start]
+    assert "Advisory findings" in section_3
+    assert "soil_septic" in section_3
+
+
+def test_dossier_renders_geology_not_evaluated_advisory_in_section_3() -> None:
+    """Geology evidence with hazard_determined=False must fire GEOLOGY_G001 advisory."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "geology")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="NC_GEOLOGIC_MAP_UNIT_CONTEXT",
+            domain="geology",
+            method_code="nc_geologic_map_unit_lookup",
+            observation="NC Geologic Map: geologic map unit context retrieved.",
+            observed_value={
+                "geologic_hazard_determined": False,
+                "primary_geologic_unit_label": "Carolina Slate Belt",
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="NCGS 1985 geologic map screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert any(c.claim_code == "GEOLOGY_NOT_EVALUATED" for c in report_run.advisory_claims), (
+        "Expected GEOLOGY_NOT_EVALUATED advisory claim from geology evidence"
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    section_3 = dossier[sec3_start:sec4_start]
+    assert "Advisory findings" in section_3
+    assert "geology" in section_3
