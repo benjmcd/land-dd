@@ -1,6 +1,14 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 9 — 1609 tests)
+## Current checkpoint (2026-06-13 dossier output quality pass 10 — 1610 tests)
+
+Three dossier output quality fixes:
+- **Buildability dedup fix**: `_buildability_summary()` no longer emits raw `metric_code` strings (e.g. `fixture_slope_buildability_screen`) when structured fields (`relief_m`, `mean_slope_pct`, etc.) are present in the same evidence record. Also deduplicates identical entries (e.g. `terrain relief ~215m` from two records sharing `relief_m`). Commits 58f983e.
+- **CHA-zoning-edge fixture**: `nc_chatham_cha_zoning_edge_zoning.json` `observed_value` now includes `udo_note` so Section 10 "District description" shows the human-readable note instead of "not available". Commit 58f983e.
+- **Zoning lot-size phrase**: `_zoning_lot_size_result()` changed "recorded fixture" to "current screening data" — removes implementation-leaking language. Commit f0272ef.
+- 2 new regression tests. Full suite: 1610 passed, 73 skipped; ruff/mypy/verify.ps1 clean (297 source files).
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 9 — 1609 tests)
 
 Soil screening review claim enrichment:
 - **Soil screening review claim**: `_soil_screening_review_claim()` now surfaces `soil_mapunit_name` and `hydrologic_group` from SSURGO evidence, e.g. "(dominant unit: Cecil sandy loam; hydrologic group B)". Commit 3a7d421.

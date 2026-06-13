@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Dossier output quality pass 10 — 1610 tests)
+
+Commits: 58f983e, f0272ef
+
+- Buildability dedup: `_buildability_summary()` now skips raw `metric_code` when structured fields present; de-duplicates identical entries across records. Added assert to existing buildability test and new regression test.
+- CHA-zoning-edge fixture: added `udo_note` to observed_value so Section 10 district description renders instead of "not available".
+- Zoning lot-size phrase: "recorded fixture" → "current screening data" removes implementation-leaking language.
+- 2 new regression tests. verify.ps1: ok; 1610 passed, 73 skipped; ruff/mypy clean (297 source files).
+
 ## 2026-06-13 (Claim narrative enrichment pass 9 — 1609 tests)
 
 Commit: 3a7d421
