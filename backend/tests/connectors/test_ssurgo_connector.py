@@ -76,6 +76,7 @@ def _table() -> dict[str, object]:
                 "drainagecl",
                 "hydgrp",
                 "slope_r",
+                "water_table_depth_cm",
             ],
             [
                 "1912968",
@@ -89,6 +90,7 @@ def _table() -> dict[str, object]:
                 "Somewhat poorly drained",
                 "B/D",
                 "1",
+                "25",
             ],
         ]
     }
@@ -179,6 +181,8 @@ def test_success_query_builds_bounded_ssurgo_request_and_evidence() -> None:
     assert "join mapunit mu" in queries[0]
     assert "left join component co" in queries[0]
     assert f"select top {SSURGO_MAX_ROWS}" in queries[0]
+    assert "comonth" in queries[0]
+    assert "water_table_depth_cm" in queries[0]
     assert result.request_url == SSURGO_POST_REST_URL
     assert result.request_query == queries[0]
 
@@ -211,6 +215,7 @@ def test_success_query_builds_bounded_ssurgo_request_and_evidence() -> None:
     assert evidence.observed_value["drainage_class"] == "Somewhat poorly drained"
     assert evidence.observed_value["hydrologic_group"] == "B/D"
     assert evidence.observed_value["slope_percent"] == 1.0
+    assert evidence.observed_value["water_table_depth_cm"] == 25.0
 
     assert len(result.observability_log.events_of_type(ConnectorEventType.run_started)) == 1
     assert len(result.observability_log.events_of_type(ConnectorEventType.evidence_stored)) == 1

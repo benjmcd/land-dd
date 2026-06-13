@@ -340,9 +340,13 @@ class SsurgoConnector:
                             "drainage_class": _optional_text(row.get("drainagecl")),
                             "hydrologic_group": _optional_text(row.get("hydgrp")),
                             "slope_percent": _optional_number(row.get("slope_r")),
+                            "water_table_depth_cm": _optional_number(
+                                row.get("water_table_depth_cm")
+                            ),
                         }.items()
                         if not (
-                            k in ("slope_percent", "soil_component_percent") and v is None
+                            k in ("slope_percent", "soil_component_percent", "water_table_depth_cm")
+                            and v is None
                         )
                     },
                     source_id=self._source.source_id,
@@ -458,10 +462,16 @@ def _build_query(*, bbox: SsurgoBbox, max_rows: int) -> str:
 select top {max_rows}
   mu.mukey, mu.musym, mu.muname,
   co.cokey, co.compname, co.comppct_r, co.majcompflag,
-  co.hydricrating, co.drainagecl, co.hydgrp, co.slope_r
+  co.hydricrating, co.drainagecl, co.hydgrp, co.slope_r,
+  wt.water_table_depth_cm
 from SDA_Get_Mukey_from_intersection_with_WktWgs84('{wkt}') aoi
 join mapunit mu on mu.mukey = aoi.mukey
 left join component co on co.mukey = mu.mukey and co.majcompflag = 'Yes'
+left join (
+  select cokey, min(wtdepannmin_r) as water_table_depth_cm
+  from comonth
+  group by cokey
+) wt on wt.cokey = co.cokey
 order by mu.mukey, co.comppct_r desc
 """.strip()
 
