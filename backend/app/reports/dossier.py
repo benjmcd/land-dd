@@ -927,12 +927,28 @@ def _mineral_occurrence_result(report_run: ReportRunContract) -> str:
         return "source failure — USGS MRDS data unavailable" if failures else "not evaluated"
     record = records[0]
     count = record.observed_value.get("mineral_occurrence_count")
-    if count is not None:
-        return (
-            f"{count} historical mineral occurrence record(s) in query bbox"
-            " (USGS MRDS — systematic updates ceased 2011)"
-        )
-    return _cell(record.observation)
+    suffix = " (USGS MRDS — systematic updates ceased 2011)"
+    if count is None:
+        return _cell(record.observation)
+    if count == 0:
+        return f"no historical mineral occurrences found in query bbox{suffix}"
+    primary_name = record.observed_value.get("primary_mineral_site_name")
+    primary_status = record.observed_value.get("primary_mineral_development_status")
+    commodity_codes = record.observed_value.get("mineral_commodity_codes")
+    primary_commodities = (
+        str(commodity_codes[0]) if isinstance(commodity_codes, list) and commodity_codes else None
+    )
+    parts: list[str] = [f"{count} historical mineral occurrence record(s) in query bbox"]
+    if primary_name:
+        detail = f"primary: {primary_name}"
+        if primary_commodities:
+            detail += f" ({primary_commodities})"
+        if primary_status:
+            detail += f" — {str(primary_status).lower()}"
+        parts.append(detail)
+    if isinstance(count, (int, float)) and int(count) > 1:
+        parts.append(f"{int(count) - 1} additional record(s)")
+    return "; ".join(parts) + suffix
 
 
 def _geologic_context_result(report_run: ReportRunContract) -> str:

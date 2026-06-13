@@ -1612,6 +1612,92 @@ def test_dossier_renders_mrds_mineral_occurrences_in_section14() -> None:
     )
 
 
+def test_dossier_mrds_shows_primary_site_name_and_commodity() -> None:
+    """Primary site name, commodity code, and dev status must appear in Section 14."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "minerals")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="MRDS_MINERAL_OCCURRENCE_SCREEN",
+            domain="minerals",
+            method_code="live_usgs_mrds_wfs_query",
+            observation="USGS MRDS WFS query found 2 historical mineral occurrence record(s).",
+            observed_value={
+                "mineral_occurrence_count": 2,
+                "has_mineral_occurrence_context": True,
+                "mineral_rights_determined": False,
+                "primary_mineral_site_name": "Clarkdale Mine",
+                "primary_mineral_development_status": "Past Producer",
+                "mineral_commodity_codes": ["AU AG", "FE"],
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec14_start = dossier.find("## 14. Resource")
+    sec15_start = dossier.find("## 15.")
+    section_14 = dossier[sec14_start:sec15_start]
+    assert "Clarkdale Mine" in section_14, (
+        "Expected primary site name in Section 14; got:\n" + section_14
+    )
+    assert "AU AG" in section_14, (
+        "Expected commodity code in Section 14; got:\n" + section_14
+    )
+    assert "past producer" in section_14.lower(), (
+        "Expected development status in Section 14; got:\n" + section_14
+    )
+    assert "1 additional record(s)" in section_14, (
+        "Expected additional record count in Section 14; got:\n" + section_14
+    )
+
+
+def test_dossier_mrds_zero_occurrences_shows_none_found() -> None:
+    """Zero mineral occurrences must produce 'no historical mineral occurrences' output."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "minerals")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="MRDS_MINERAL_OCCURRENCE_SCREEN",
+            domain="minerals",
+            method_code="live_usgs_mrds_wfs_query",
+            observation="USGS MRDS WFS query found 0 historical mineral occurrence record(s).",
+            observed_value={
+                "mineral_occurrence_count": 0,
+                "has_mineral_occurrence_context": False,
+                "mineral_rights_determined": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec14_start = dossier.find("## 14. Resource")
+    sec15_start = dossier.find("## 15.")
+    section_14 = dossier[sec14_start:sec15_start]
+    assert "no historical mineral occurrences" in section_14, (
+        "Expected 'no historical mineral occurrences' in Section 14; got:\n" + section_14
+    )
+
+
 def test_dossier_renders_ncgs_geologic_unit_in_section14() -> None:
     """NCGS geologic unit label must appear in Section 14."""
     source_service, area_service, evidence_service, report_service = _make_services()
