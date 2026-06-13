@@ -3543,6 +3543,16 @@ components:
         residential_use_screening:
           type: string
           title: Residential Use Screening
+        intended_residential_use_allowed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Intended Residential Use Allowed
+        intended_residential_use_prohibited:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Intended Residential Use Prohibited
         source_registry_id:
           type: string
           title: Source Registry Id
@@ -3903,6 +3913,16 @@ components:
         residential_use_screening:
           type: string
           title: Residential Use Screening
+        intended_residential_use_allowed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Intended Residential Use Allowed
+        intended_residential_use_prohibited:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Intended Residential Use Prohibited
         source_registry_id:
           type: string
           title: Source Registry Id

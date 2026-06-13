@@ -532,6 +532,8 @@ class ChathamZoningQueryResponse(BaseModel):
     district_name: str | None
     use_category: str | None
     residential_use_screening: str
+    intended_residential_use_allowed: bool | None = None
+    intended_residential_use_prohibited: bool | None = None
     source_registry_id: str
 
 
@@ -549,6 +551,8 @@ class BrunswickZoningQueryResponse(BaseModel):
     district_name: str | None
     use_category: str | None
     residential_use_screening: str
+    intended_residential_use_allowed: bool | None = None
+    intended_residential_use_prohibited: bool | None = None
     source_registry_id: str
 
 
@@ -2154,6 +2158,12 @@ def query_chatham_zoning_district(
         "residential_use_screening": evidence.observed_value.get(
             "residential_use_screening", "UNKNOWN"
         ),
+        "intended_residential_use_allowed": evidence.observed_value.get(
+            "intended_residential_use_allowed"
+        ),
+        "intended_residential_use_prohibited": evidence.observed_value.get(
+            "intended_residential_use_prohibited"
+        ),
         "source_registry_id": DS_023_REGISTRY_ID,
     }
 
@@ -2197,6 +2207,12 @@ def query_brunswick_zoning_district(
         "use_category": evidence.observed_value.get("use_category"),
         "residential_use_screening": evidence.observed_value.get(
             "residential_use_screening", "UNKNOWN"
+        ),
+        "intended_residential_use_allowed": evidence.observed_value.get(
+            "intended_residential_use_allowed"
+        ),
+        "intended_residential_use_prohibited": evidence.observed_value.get(
+            "intended_residential_use_prohibited"
         ),
         "source_registry_id": DS_023_REGISTRY_ID,
     }

@@ -119,6 +119,14 @@ _CHATHAM_UDO_DISTRICTS: dict[str, dict[str, object]] = {
 }
 
 
+def _zoning_canonical_flags(residential_use_screening: str) -> dict[str, bool]:
+    if residential_use_screening == "ALLOWED_WITH_RESTRICTIONS":
+        return {"intended_residential_use_allowed": True}
+    if residential_use_screening == "UNLIKELY_VERIFY":
+        return {"intended_residential_use_prohibited": True}
+    return {}
+
+
 @dataclass(frozen=True)
 class ChathamZoningConnectorResult:
     retrieval_run: SourceRetrievalRunContract
@@ -241,6 +249,7 @@ class ChathamZoningRecordedConnector:
                 "udo_effective": CHATHAM_ZONING_UDO_EFFECTIVE,
                 "udo_source_url": CHATHAM_ZONING_UDO_URL,
                 "lookup_type": "recorded_fixture",
+                **_zoning_canonical_flags(str(district["residential_use_screening"])),
             },
             source_id=source.source_id,
             source_ingest_run_id=ingest_run_id,
