@@ -1939,8 +1939,19 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        count_str = ""
+        case_str = ""
+        for e in evidence_records:
+            count = e.observed_value.get("blm_active_mining_claim_count")
+            if isinstance(count, (int, float)) and not isinstance(count, bool) and int(count) > 0:
+                count_str = f" ({int(count)} active claim(s))"
+                name = e.observed_value.get("primary_blm_mlrs_case_name")
+                serial = e.observed_value.get("primary_blm_mlrs_case_serial_number")
+                if isinstance(name, str) and name:
+                    case_str = f" Primary: {name}" + (f" #{serial}" if isinstance(serial, str) and serial else "") + "."
+                break
         user_safe_language = (
-            "BLM MLRS screening indicates active federal mining claims in the area bbox. "
+            f"BLM MLRS screening indicates active federal mining claims in the area bbox{count_str}.{case_str} "
             "Active mining claims may affect surface use, development rights, and access. "
             "This is a geospatial bounding-box screen only and does not determine parcel-level "
             "mineral rights ownership. Verify through title search and consult a title attorney."

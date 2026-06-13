@@ -1441,6 +1441,32 @@ def test_minerals_source_failure_suppressed_when_active_claims_present() -> None
     )
 
 
+def test_minerals_active_claim_surfaces_count_and_case_name() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT",
+        domain="minerals",
+        observation="BLM MLRS: 3 active mining claim(s) in bbox.",
+        observed_value={
+            "blm_active_mining_claim_count": 3,
+            "primary_blm_mlrs_case_name": "Copper Creek Mining Claim",
+            "primary_blm_mlrs_case_serial_number": "NMC123456",
+        },
+        method_code="live_blm_mlrs_screen",
+        confidence=ConfidenceBand.LOW,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    active = [c for c in claims if c.claim_code == MINERALS_ACTIVE_CLAIM_CODE]
+    assert len(active) == 1
+    lang = active[0].user_safe_language
+    assert "3 active claim(s)" in lang
+    assert "Copper Creek Mining Claim" in lang
+    assert "NMC123456" in lang
+
+
 def make_broadband_no_access_evidence(
     area_id: UUID,
     *,
