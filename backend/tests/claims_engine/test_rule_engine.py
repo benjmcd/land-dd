@@ -12,6 +12,7 @@ from app.claims_engine.rule_engine import (
     ENV_HAZARD_NEEDS_REVIEW_CLAIM_CODE,
     ENV_HAZARD_STALE_CLAIM_CODE,
     FLOOD_MODERATE_CLAIM_CODE,
+    GEOLOGY_NOT_EVALUATED_CLAIM_CODE,
     MINERALS_ACTIVE_CLAIM_CODE,
     MINERALS_SOURCE_UNAVAILABLE_CLAIM_CODE,
     SOIL_POOR_DRAINAGE_CLAIM_CODE,
@@ -1665,6 +1666,56 @@ def test_evaluate_does_not_create_soil_drainage_claim_for_well_drained_soils() -
     claims = RuleEngine.from_file().evaluate([evidence])
     drainage_claims = [c for c in claims if c.claim_code == SOIL_POOR_DRAINAGE_CLAIM_CODE]
     assert len(drainage_claims) == 0
+
+
+def test_evaluate_creates_geology_not_evaluated_claim_when_hazard_not_determined() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="NCGS_GEOLOGIC_MAP_INTERSECTION",
+        domain="geology",
+        observation="NC geologic map unit intersects query area.",
+        observed_value={
+            "geologic_unit_labels": ["Ts"],
+            "geologic_hazard_determined": False,
+            "buildability_determined": False,
+        },
+        method_code="fixture_ncgs_geologic_map",
+        confidence=ConfidenceBand.LOW,
+        caveat="Regional 1:500k map — not parcel-scale.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+    geology_claims = [c for c in claims if c.claim_code == GEOLOGY_NOT_EVALUATED_CLAIM_CODE]
+    assert len(geology_claims) == 1
+    claim = geology_claims[0]
+    assert claim.area_id == area_id
+    assert claim.domain == "geology"
+    assert claim.verification_required is True
+
+
+def test_evaluate_does_not_create_geology_claim_when_hazard_determined() -> None:
+    evidence = EvidenceContract(
+        area_id=uuid4(),
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="NCGS_GEOLOGIC_MAP_INTERSECTION",
+        domain="geology",
+        observation="NC geologic map unit intersects query area.",
+        observed_value={
+            "geologic_unit_labels": ["Ts"],
+            "geologic_hazard_determined": True,
+        },
+        method_code="fixture_ncgs_geologic_map",
+        confidence=ConfidenceBand.LOW,
+        caveat="Regional map only.",
+    )
+
+    claims = RuleEngine.from_file().evaluate([evidence])
+    geology_claims = [c for c in claims if c.claim_code == GEOLOGY_NOT_EVALUATED_CLAIM_CODE]
+    assert len(geology_claims) == 0
 
 
 def test_load_ruleset_rejects_invalid_severity(tmp_path: Path) -> None:

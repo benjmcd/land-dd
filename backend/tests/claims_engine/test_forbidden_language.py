@@ -133,7 +133,13 @@ _MINIMAL_RULESET_YAML = textwrap.dedent("""\
           severity_on_fail: low
           condition: material_intersection_with_moderate_or_undetermined_flood_zone
           claim_code: FLOOD_MODERATE_001
-          verification_task: Verify current FEMA flood map and confirm with local floodplain administrator.
+          verification_task: Verify flood map panel and confirm with local floodplain administrator.
+        - code: GEOLOGY_G001
+          domain: geology
+          severity_on_fail: informational
+          condition: geologic_hazard_not_determined
+          claim_code: GEOLOGY_NOT_EVALUATED
+          verification_task: Consult a licensed geologist or geotechnical engineer.
       forbidden_language:
         - You can build here.
         - This parcel has legal access.

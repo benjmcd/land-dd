@@ -76,6 +76,8 @@ _SSURGO_POOR_DRAINAGE = frozenset({
 FLOOD_MODERATE_CONDITION = "material_intersection_with_moderate_or_undetermined_flood_zone"
 FLOOD_MODERATE_CLAIM_CODE = "FLOOD_MODERATE_001"
 _MODERATE_RISK_FLOOD_ZONES = frozenset({"X500", "B", "D"})
+GEOLOGY_NOT_EVALUATED_CONDITION = "geologic_hazard_not_determined"
+GEOLOGY_NOT_EVALUATED_CLAIM_CODE = "GEOLOGY_NOT_EVALUATED"
 
 
 @dataclass(frozen=True)
@@ -142,6 +144,9 @@ class RuleEngine:
             SOIL_POOR_DRAINAGE_CONDITION
         )
         flood_moderate_rule = self._ruleset.hard_gate_for_condition(FLOOD_MODERATE_CONDITION)
+        geology_not_evaluated_rule = self._ruleset.hard_gate_for_condition(
+            GEOLOGY_NOT_EVALUATED_CONDITION
+        )
         not_evaluated_rules = {
             domain: self._ruleset.hard_gate_for_condition(condition)
             for domain, condition in NOT_EVALUATED_CONDITIONS_BY_DOMAIN.items()
@@ -351,6 +356,10 @@ class RuleEngine:
             soil_poor_drainage = [
                 evidence for evidence in area_evidence
                 if _is_soil_poor_drainage_evidence(evidence)
+            ]
+            geology_not_evaluated = [
+                evidence for evidence in area_evidence
+                if _is_geology_not_evaluated_evidence(evidence)
             ]
             if access_no_adjacency:
                 claims.append(
@@ -629,6 +638,12 @@ class RuleEngine:
                 claims.append(
                     self._broadband_unknown_claim(
                         area_id, broadband_unavailable_rule, broadband_failures
+                    )
+                )
+            if geology_not_evaluated:
+                claims.append(
+                    self._geology_not_evaluated_claim(
+                        area_id, geology_not_evaluated_rule, geology_not_evaluated
                     )
                 )
             for domain in NOT_EVALUATED_DOMAINS:
@@ -1993,6 +2008,45 @@ class RuleEngine:
             verification_task=rule.verification_task,
         )
 
+    def _geology_not_evaluated_claim(
+        self,
+        area_id: UUID,
+        rule: HardGateRule,
+        evidence_records: list[EvidenceContract],
+    ) -> ClaimContract:
+        evidence_ids = _sorted_evidence_ids(evidence_records)
+        caveat_text = _format_caveats(evidence_records)
+        user_safe_language = (
+            "Geologic map context was retrieved for the area but geologic hazard "
+            "evaluation is not supported by this tool. This does not determine "
+            "geologic hazard, geotechnical suitability, subsidence risk, radon "
+            "potential, or engineering feasibility. Consult a licensed geologist "
+            "or geotechnical engineer if geologic conditions are a concern."
+        )
+        if caveat_text:
+            user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"
+        return ClaimContract(
+            claim_id=self._deterministic_claim_id(
+                "geology-not-evaluated", rule, area_id, evidence_ids
+            ),
+            area_id=area_id,
+            claim_code=rule.claim_code,
+            domain=rule.domain,
+            assertion=(
+                "Geologic map context retrieved — geologic hazard determination "
+                "is not supported by this tool version."
+            ),
+            user_safe_language=user_safe_language,
+            severity=rule.severity_on_fail,
+            confidence=ConfidenceBand.LOW,
+            evidence_ids=evidence_ids,
+            rule_code=rule.code,
+            ruleset_id=self._ruleset.ruleset_id,
+            ruleset_version=self._ruleset.version,
+            verification_required=True,
+            verification_task=rule.verification_task,
+        )
+
     def _deterministic_claim_id(
         self,
         kind: str,
@@ -2566,6 +2620,12 @@ def _is_minerals_active_evidence(evidence: EvidenceContract) -> bool:
     return count is not None and count > 0
 
 
+def _is_geology_not_evaluated_evidence(evidence: EvidenceContract) -> bool:
+    if evidence.domain != "geology" or evidence.is_source_failure:
+        return False
+    return evidence.observed_value.get("geologic_hazard_determined") is False
+
+
 def _flood_zone_values(evidence: EvidenceContract) -> list[str]:
     values: list[str] = []
     for key in ("flood_zone", "flood_zones", "flood_zone_code", "zone"):
@@ -2657,6 +2717,8 @@ __all__ = [
     "ENV_HAZARD_NO_PROXIMITY_KEYS",
     "ENV_HAZARD_PROXIMITY_KEYS",
     "ENV_HAZARD_STALE_CLAIM_CODE",
+    "GEOLOGY_NOT_EVALUATED_CLAIM_CODE",
+    "GEOLOGY_NOT_EVALUATED_CONDITION",
     "HardGateRule",
     "MINERALS_ACTIVE_CLAIM_CODE",
     "MINERALS_ACTIVE_CLAIM_CONDITION",
