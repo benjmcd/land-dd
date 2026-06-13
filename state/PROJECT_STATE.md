@@ -1,6 +1,13 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 11 — 1611 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 12 — 1614 tests)
+
+Water and wetland needs-review claim enrichments:
+- **Water needs-review station count**: `_water_needs_review_claim()` now surfaces `monitoring_station_count` from first non-failure evidence record when present, e.g. "(3 USGS monitoring station(s) in screening bbox)". Commit 5753f26.
+- **Wetland needs-review feature detail**: `_wetland_needs_review_claim()` now surfaces NWI feature count, mapped acres, and wetland type labels (same pattern as `_wetland_positive_claim`). Commit 5753f26.
+- 2 new regression tests. Full suite: 1614 passed, 73 skipped; ruff clean.
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 11 — 1611 tests)
 
 Three more claim narrative enrichments:
 - **Zoning needs-review zone codes**: `_zoning_needs_review_claim()` now surfaces zone code(s) from non-failure evidence in `user_safe_language`, e.g. "(code(s) found: RA)". Commit cad76c0.
