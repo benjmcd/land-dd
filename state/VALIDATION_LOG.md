@@ -2,6 +2,23 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-13 Claim Narrative Enrichment Passes 8 and 9
+
+**Scope:** Pass 8: access no-adjacency enriched with road_count=0; "in the fixture" removed from 7 stale/prohibited claim functions. Pass 9: soil screening review claim enriched with SSURGO soil_mapunit_name and hydrologic_group. 2 new regression tests.
+
+**Commands run:**
+```powershell
+cd backend; py -3.12 -m pytest tests/claims_engine/test_rule_engine.py -q --tb=short
+py -3.11 -m ruff check app/claims_engine/rule_engine.py tests/claims_engine/test_rule_engine.py
+py -3.12 -m mypy app/claims_engine/rule_engine.py tests/claims_engine/test_rule_engine.py --no-error-summary
+py -3.12 -m pytest --tb=short
+py -3.12 -m pytest tests/private_mvp/test_manifest_driven.py -q
+```
+
+**Result:** 1609 passed, 73 skipped. ruff: All checks passed. mypy: no errors. 18 manifest tests pass.
+
+**Residual risk:** All enrichments conditional on evidence keys. No schema changes.
+
 ## 2026-06-13 Claim Narrative Enrichment Pass 7
 
 **Scope:** 3 more claim functions enriched: env_hazard proximity (facility count), water no-context (remove "fixture" phrasing, add station count), parcel screen (PIN, acreage, county). Lint fix for E501 in dossier enrichment tests. 4 new regression tests.

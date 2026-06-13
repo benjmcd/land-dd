@@ -2,6 +2,14 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Claim narrative enrichment pass 9 — 1609 tests)
+
+Commit: 3a7d421
+
+- Soil screening review claim: `_soil_screening_review_claim()` surfaces `soil_mapunit_name` and `hydrologic_group` from SSURGO evidence in user_safe_language.
+- 1 new regression test pins the enriched claim text.
+- Full suite: 1609 passed, 73 skipped; ruff/mypy clean.
+
 ## 2026-06-13 (Claim narrative enrichment pass 8 — 1608 tests)
 
 Commit: 0ffe2ac

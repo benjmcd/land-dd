@@ -1,6 +1,12 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 8 — 1608 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 9 — 1609 tests)
+
+Soil screening review claim enrichment:
+- **Soil screening review claim**: `_soil_screening_review_claim()` now surfaces `soil_mapunit_name` and `hydrologic_group` from SSURGO evidence, e.g. "(dominant unit: Cecil sandy loam; hydrologic group B)". Commit 3a7d421.
+- 1 new regression test (`test_soil_screening_review_claim_surfaces_mapunit_name_and_hydrologic_group`). Full suite: 1609 passed, 73 skipped; ruff/mypy clean.
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 8 — 1608 tests)
 
 Access claim enrichment + "in the fixture" purge across 7 stale/prohibited claim functions:
 - **Access no-adjacency claim**: `_access_no_adjacency_claim()` now surfaces `(0 OSM road segments in screening area)` when `road_count=0`. Commit 0ffe2ac.
