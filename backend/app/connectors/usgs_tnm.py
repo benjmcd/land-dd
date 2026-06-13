@@ -278,6 +278,7 @@ class UsgsTnmElevationConnector:
     ) -> EvidenceContract:
         elevations = [sample.elevation_m for sample in samples]
         relief_m = max(elevations) - min(elevations)
+        mean_elevation_m = sum(elevations) / len(elevations)
         acquisition_dates = sorted(
             {sample.acquisition_date for sample in samples if sample.acquisition_date}
         )
@@ -302,6 +303,7 @@ class UsgsTnmElevationConnector:
                 "metric_code": "tnm_epqs_sampled_relief_m",
                 "value": relief_m,
                 "unit": "m",
+                "mean_elevation_m": round(mean_elevation_m, 1),
                 "calculation_method": "center_and_corner_epqs_point_sample_relief",
             },
             source_id=self._source.source_id,

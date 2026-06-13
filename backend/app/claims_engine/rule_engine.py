@@ -1643,11 +1643,19 @@ class RuleEngine:
             or (e.observed_value.get("hydric_rating") is True)
             for e in evidence_records
         )
+        wt_depths = [
+            float(e.observed_value["water_table_depth_cm"])
+            for e in evidence_records
+            if isinstance(e.observed_value.get("water_table_depth_cm"), (int, float))
+            and not isinstance(e.observed_value.get("water_table_depth_cm"), bool)
+        ]
         detail_parts: list[str] = []
         if drainage_vals:
             detail_parts.append("drainage class: " + ", ".join(drainage_vals))
         if hydric:
             detail_parts.append("hydric soils detected")
+        if wt_depths:
+            detail_parts.append(f"water table ~{min(wt_depths):.0f}cm depth")
         detail = "; ".join(detail_parts) if detail_parts else "poor/hydric drainage indicators"
         user_safe_language = (
             f"SSURGO screening detected potential soil drainage limitations ({detail}). "

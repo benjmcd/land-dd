@@ -41,7 +41,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Acreage: {_parcel_acreage(report_run)}",
         f"- Zoning designation: {_parcel_zoning(report_run)}",
         f"- Parcel data caveats: {_domain_caveats(report_run, {'parcels'})}",
-        "- Assessor and tax data: Assessor and tax data were not available",
+        "- Assessor and tax data: not evaluated — out of scope for this screening version",
         f"- Area ID: {report_run.area_id}",
         f"- Geometry confidence: {_geometry_confidence(report_run)}",
         f"- Intent: {report_run.intent_code.value}",
