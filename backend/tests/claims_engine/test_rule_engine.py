@@ -1269,6 +1269,17 @@ def test_evaluate_creates_env_hazard_claim_from_proximity_evidence() -> None:
     assert "does not prove subject-property contamination" in claim.user_safe_language
 
 
+def test_env_hazard_proximity_claim_surfaces_facility_count() -> None:
+    area_id = uuid4()
+    engine = RuleEngine.from_file()
+    evidence = make_env_hazard_evidence(area_id, has_env_hazard_proximity=True)
+
+    claims = engine.evaluate([evidence])
+
+    lang = next(c.user_safe_language for c in claims if c.claim_code == "ENV_001")
+    assert "2 regulated facility" in lang
+
+
 def test_evaluate_ignores_no_env_hazard_proximity_evidence() -> None:
     area_id = uuid4()
     engine = RuleEngine.from_file()

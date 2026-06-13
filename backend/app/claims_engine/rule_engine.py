@@ -1805,9 +1805,15 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        count_str = ""
+        for e in evidence_records:
+            count = e.observed_value.get("regulated_facility_count")
+            if isinstance(count, (int, float)) and not isinstance(count, bool) and int(count) > 0:
+                count_str = f" ({int(count)} regulated facility/facilities in proximity)"
+                break
         user_safe_language = (
-            "EPA ECHO facility-proximity screening indicates regulated facilities near "
-            "the area. A nearby regulated facility does not prove subject-property "
+            f"EPA ECHO facility-proximity screening indicates regulated facilities near "
+            f"the area{count_str}. A nearby regulated facility does not prove subject-property "
             "contamination, plume extent, exposure pathway, or legal liability. ECHO data "
             "may lag source entry. A Phase I/II ESA is required for regulatory and "
             "transactional environmental due diligence."
