@@ -420,12 +420,14 @@ def _access_road_result(report_run: ReportRunContract) -> str:
         if record.domain == "access" and not record.is_source_failure:
             has_road = record.observed_value.get("has_public_road_adjacency")
             dist = record.observed_value.get("road_distance_m")
+            count = record.observed_value.get("road_count")
+            count_str = f", {int(count)} segment(s)" if isinstance(count, (int, float)) and int(count) > 0 else ""  # noqa: E501
             if has_road is True:
                 if dist is not None and float(dist) == 0.0:  # type: ignore[arg-type]
-                    return "public road adjacency observed (abutting)"
+                    return f"public road adjacency observed (abutting{count_str})"
                 if dist is not None:
-                    return f"public road adjacency observed (~{float(dist):.0f}m)"  # type: ignore[arg-type]
-                return "public road adjacency observed"
+                    return f"public road adjacency observed (~{float(dist):.0f}m{count_str})"  # type: ignore[arg-type]
+                return f"public road adjacency observed{count_str}"
             if has_road is False:
                 return "no public road adjacency observed — physical proxy only; legal access status unknown"  # noqa: E501
     records = [r for r in report_run.evidence if r.domain == "access"]

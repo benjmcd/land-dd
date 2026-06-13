@@ -172,6 +172,45 @@ def test_dossier_renders_no_road_adjacency_from_evidence() -> None:
     )
 
 
+def test_dossier_access_road_count_surfaces_in_adjacency_result() -> None:
+    """road_count from OSM connector must appear in the access road adjacency line."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "access")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ACCESS_ROAD_ADJACENCY_SCREEN",
+            domain="access",
+            method_code="osm_road_adjacency_live",
+            observation="OSM Overpass query found road ways adjacent to the query area.",
+            observed_value={
+                "has_public_road_adjacency": True,
+                "road_distance_m": 0.0,
+                "road_count": 3,
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="OSM road screening only; does not establish legal access.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec5_start = dossier.find("## 5. Access")
+    sec6_start = dossier.find("## 6.")
+    section_5 = dossier[sec5_start:sec6_start]
+    assert "3 segment" in section_5, (
+        "road_count=3 must appear as '3 segment(s)' in Section 5 access line; "
+        "got:\n" + section_5
+    )
+
+
 def test_dossier_renders_zoning_district_from_evidence() -> None:
     """zoning_district in observed_value must appear in the dossier zoning section."""
     source_service, area_service, evidence_service, report_service = _make_services()
