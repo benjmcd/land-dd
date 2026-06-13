@@ -2533,6 +2533,49 @@ def test_dossier_access_shows_highway_types_when_present() -> None:
     )
 
 
+def test_dossier_access_road_context_shows_osm_filter_when_roads_present() -> None:
+    """Public/private road context line must state OSM filter and highway types when roads exist."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "access")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="ACCESS_ROAD_ADJACENCY_SCREEN",
+            domain="access",
+            method_code="live_osm_road_adjacency_bbox_screen",
+            observation="OSM Overpass query found road ways adjacent to the query area.",
+            observed_value={
+                "has_public_road_adjacency": True,
+                "public_road_adjacency": True,
+                "road_distance_m": 0.0,
+                "road_count": 1,
+                "highway_types": ["secondary"],
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="OSM road screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec5_start = dossier.find("## 5. Access")
+    sec6_start = dossier.find("## 6.")
+    section_5 = dossier[sec5_start:sec6_start]
+    assert "OSM query filtered to public/unrestricted-access ways" in section_5, (
+        "Expected OSM filter context in Section 5; got:\n" + section_5
+    )
+    assert "secondary" in section_5, (
+        "Expected highway type 'secondary' in road context line; got:\n" + section_5
+    )
+
+
 def test_dossier_zoning_shows_udo_note_when_present() -> None:
     """udo_note from zoning evidence must appear in Section 10 district description line."""
     source_service, area_service, evidence_service, report_service = _make_services()

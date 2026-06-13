@@ -73,7 +73,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "## 5. Access Screen",
         "",
         f"- Apparent road adjacency: {_access_road_result(report_run)}",
-        "- Public/private/unknown road context: unknown",
+        f"- Public/private/unknown road context: {_access_road_context(report_run)}",
         "- Legal access conclusion: not determined",
         f"- Caveats: {_domain_caveats(report_run, {'access'})}",
         f"- Required verification: {_domain_verification(report_run, 'access')}",
@@ -457,6 +457,28 @@ def _access_road_result(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence if r.domain == "access"]
     if records:
         return _domain_summary(report_run, "access")
+    return "unknown"
+
+
+def _access_road_context(report_run: ReportRunContract) -> str:
+    records = [
+        r for r in report_run.evidence
+        if r.domain == "access" and not r.is_source_failure
+    ]
+    if not records:
+        return "unknown"
+    record = records[0]
+    has_road = record.observed_value.get("has_public_road_adjacency")
+    if has_road is False:
+        return "no adjacent ways found in OSM query area"
+    if has_road is True:
+        htypes = record.observed_value.get("highway_types")
+        type_str = (
+            f"; types present: {', '.join(str(t) for t in htypes)}"
+            if isinstance(htypes, list) and htypes
+            else ""
+        )
+        return f"OSM query filtered to public/unrestricted-access ways{type_str}"
     return "unknown"
 
 
