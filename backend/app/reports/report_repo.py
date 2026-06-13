@@ -241,6 +241,7 @@ def _report_cost_metrics(report_run: ReportRunContract) -> dict[str, Any]:
         "evidence_count": len(report_run.evidence),
         "claim_count": len(report_run.claims),
         "unknown_count": len(report_run.unknowns),
+        "advisory_count": len(report_run.advisory_claims),
         "red_flag_count": len(report_run.red_flags),
         "verification_task_count": len(report_run.verification_tasks),
         "estimated_total_usd_cents": 0,

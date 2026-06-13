@@ -5841,6 +5841,11 @@ components:
             $ref: '#/components/schemas/ClaimContract'
           type: array
           title: Red Flags
+        advisory_claims:
+          items:
+            $ref: '#/components/schemas/ClaimContract'
+          type: array
+          title: Advisory Claims
         verification_tasks:
           items:
             type: string

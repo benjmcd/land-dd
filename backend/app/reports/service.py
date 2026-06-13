@@ -132,6 +132,7 @@ class ReportRunService:
             claims=stored_claims,
             unknowns=_unknown_claims(stored_claims),
             red_flags=_red_flag_claims(stored_claims),
+            advisory_claims=_advisory_claims(stored_claims),
             verification_tasks=_verification_tasks(stored_claims),
             artifact_metadata={
                 "artifact_kind": "report_run",
@@ -370,6 +371,10 @@ def _red_flag_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
     ]
 
 
+def _advisory_claims(claims: list[ClaimContract]) -> list[ClaimContract]:
+    return [claim for claim in claims if claim.severity == SeverityBand.LOW]
+
+
 def _verification_tasks(claims: list[ClaimContract]) -> list[str]:
     return sorted(
         {
@@ -407,6 +412,7 @@ def _cost_metrics(
         "evidence_count": len(evidence),
         "claim_count": len(claims),
         "unknown_count": len(_unknown_claims(claims)),
+        "advisory_count": len(_advisory_claims(claims)),
         "red_flag_count": len(_red_flag_claims(claims)),
         "verification_task_count": len(_verification_tasks(claims)),
         "estimated_total_usd_cents": 0,

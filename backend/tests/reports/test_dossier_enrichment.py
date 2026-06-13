@@ -963,6 +963,49 @@ def test_dossier_renders_broadband_no_access_from_evidence() -> None:
     )
 
 
+def test_dossier_renders_advisory_claims_in_section_3() -> None:
+    """BLM active mining-claim evidence fires LOW advisory claim visible in Section 3."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "minerals")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT",
+            domain="minerals",
+            method_code="blm_mlrs_active_mining_claims_query",
+            observation="BLM MLRS: 2 active mining claim(s) intersect this area.",
+            observed_value={
+                "blm_active_mining_claim_count": 2,
+            },
+            confidence=ConfidenceBand.LOW,
+            caveat="Federal active mining claims only; does not determine private mineral rights.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    assert len(report_run.advisory_claims) >= 1, (
+        "Expected at least one advisory claim from BLM active mining evidence"
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec3_start = dossier.find("## 3. Top Red Flags")
+    sec4_start = dossier.find("## 4.")
+    assert sec3_start != -1
+    section_3 = dossier[sec3_start:sec4_start]
+    assert "Advisory findings" in section_3, (
+        "Expected 'Advisory findings' header in Section 3; got:\n" + section_3
+    )
+    assert "minerals" in section_3, (
+        "Expected minerals domain in advisory table; got:\n" + section_3
+    )
+
+
 def test_dossier_shows_not_evaluated_for_buildability_with_no_evidence() -> None:
     """With no buildability evidence, Section 6 terrain line must say 'not evaluated'."""
     source_service, area_service, evidence_service, report_service = _make_services()

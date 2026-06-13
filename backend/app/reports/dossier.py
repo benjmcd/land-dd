@@ -57,6 +57,12 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "|---|---|---|---|---|",
         *_claim_rows(report_run.red_flags),
         "",
+        "**Advisory findings** (further verification recommended)",
+        "",
+        "| Domain | Claim | Evidence | Verification |",
+        "|---|---|---|---|",
+        *_advisory_rows(report_run.advisory_claims),
+        "",
         "## 4. Data Confidence Summary",
         "",
         "| Domain | Confidence | Sources used | Missing/conflicting data |",
@@ -251,6 +257,20 @@ def _claim_rows(claims: list[ClaimContract]) -> list[str]:
     return [
         "| {severity} | {domain} | {claim} | {evidence} | {verification} |".format(
             severity=_cell(claim.severity.value),
+            domain=_cell(claim.domain),
+            claim=_cell(claim.user_safe_language or claim.assertion),
+            evidence=_cell(_fmt_evidence_ids(claim.evidence_ids)),
+            verification=_cell(claim.verification_task or "none"),
+        )
+        for claim in claims
+    ]
+
+
+def _advisory_rows(claims: list[ClaimContract]) -> list[str]:
+    if not claims:
+        return ["| none | none | none | none |"]
+    return [
+        "| {domain} | {claim} | {evidence} | {verification} |".format(
             domain=_cell(claim.domain),
             claim=_cell(claim.user_safe_language or claim.assertion),
             evidence=_cell(_fmt_evidence_ids(claim.evidence_ids)),

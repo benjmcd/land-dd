@@ -139,6 +139,7 @@ def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
         "evidence_count",
         "claim_count",
         "unknown_count",
+        "advisory_count",
         "red_flag_count",
         "verification_task_count",
         "estimated_total_usd_cents",

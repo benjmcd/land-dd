@@ -38,6 +38,7 @@ class ReportRunContract(BaseModel):
     claims: list[ClaimContract] = Field(default_factory=list)
     unknowns: list[ClaimContract] = Field(default_factory=list)
     red_flags: list[ClaimContract] = Field(default_factory=list)
+    advisory_claims: list[ClaimContract] = Field(default_factory=list)
     verification_tasks: list[str] = Field(default_factory=list)
     artifact_metadata: dict[str, object] = Field(default_factory=dict)
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

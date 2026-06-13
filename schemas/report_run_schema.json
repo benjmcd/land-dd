@@ -22,6 +22,7 @@
     "claims",
     "unknowns",
     "red_flags",
+    "advisory_claims",
     "verification_tasks",
     "artifact_metadata",
     "started_at",
@@ -313,6 +314,12 @@
         "$ref": "https://example.com/schemas/claim.schema.json"
       }
     },
+    "advisory_claims": {
+      "type": "array",
+      "items": {
+        "$ref": "https://example.com/schemas/claim.schema.json"
+      }
+    },
     "verification_tasks": {
       "type": "array",
       "items": {
@@ -387,6 +394,7 @@
             "evidence_count",
             "claim_count",
             "unknown_count",
+            "advisory_count",
             "red_flag_count",
             "verification_task_count",
             "estimated_total_usd_cents",
@@ -409,6 +417,10 @@
               "minimum": 0
             },
             "unknown_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "advisory_count": {
               "type": "integer",
               "minimum": 0
             },
