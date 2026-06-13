@@ -2,6 +2,19 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Claim narrative enrichment pass 6 — 1601 tests)
+
+Commits: 6ea4fa0, 26a9f66, 4096067, 2251de4, 85bd662, f3933eb, 26b866d
+
+- Dossier: `_recommended_next_action()` is now domain-aware — critical/high claims list affected domains; advisory path has specific message; falls back to verification plan.
+- Wetland claim: `_wetland_positive_claim()` surfaces NWI feature count, mapped acres, and wetland class/type labels.
+- Slope claim: `_slope_insufficient_claim()` surfaces buildable area in acres, area ratio, and mean slope % when available.
+- Flood claim: `_flood_positive_claim()` surfaces high-risk flood zone codes (AE, A, VE, etc.) mirroring `_flood_moderate_claim()` pattern.
+- Geology claim: `_geology_not_evaluated_claim()` surfaces primary geologic unit label and formation name.
+- Minerals claim: `_minerals_active_claim()` surfaces claim count and primary BLM case name/serial.
+- Zoning claim: `_zoning_prohibited_claim()` surfaces zone code, district name, and use category.
+- 8 new regression tests; ruff E501 fixes; 1601 passed, 73 skipped.
+
 ## 2026-06-13 (Connector enrichment pass 5 — 1593 tests)
 
 Commits: acba0a5, d6acf90, d3aa9a9, cd2bde3, 394d061

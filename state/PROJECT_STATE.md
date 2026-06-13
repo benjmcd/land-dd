@@ -1,6 +1,18 @@
 # Project State
 
-## Current checkpoint (2026-06-13 connector enrichment pass 5 — 1593 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 6 — 1601 tests)
+
+Seven claim function enrichments and one dossier improvement this session:
+- **Domain-aware recommended action**: `_recommended_next_action()` replaced with logic that varies by severity: critical → lists domains, high → lists domains, advisory → advisory message, else → verification plan. Commit 6ea4fa0.
+- **Wetland positive claim**: `_wetland_positive_claim()` now surfaces NWI feature count, mapped acres (~0.42ac from 1700sq_m), and wetland class/type when present. Commit 26a9f66.
+- **Slope insufficient claim**: `_slope_insufficient_claim()` now surfaces buildable area in acres, `low_slope_area_ratio`, and `mean_slope_pct` when present. Commit 26a9f66.
+- **Flood positive claim**: `_flood_positive_claim()` now surfaces high-risk zone codes (AE, A, VE, etc.) using the same `_flood_zone_values()` helper as `_flood_moderate_claim()`. Commit 4096067.
+- **Geology not-evaluated claim**: `_geology_not_evaluated_claim()` now surfaces `primary_geologic_unit_label` and `primary_geologic_formation` when present. Commit 2251de4.
+- **Minerals active claim**: `_minerals_active_claim()` now surfaces `blm_active_mining_claim_count`, `primary_blm_mlrs_case_name`, and serial number when present. Commit 85bd662.
+- **Zoning prohibited claim**: `_zoning_prohibited_claim()` now surfaces `zoning_code`, `district_name`, and `use_category` when present. Commit 26b866d.
+- 8 new regression tests pinning enriched claim narratives. ruff/mypy clean on all changed files. 1601 passed, 73 skipped.
+
+## Previous checkpoint (2026-06-13 connector enrichment pass 5 — 1593 tests)
 
 Eight targeted connector/dossier/test improvements this session:
 - **SSURGO water_table_depth_cm**: `comonth` join added to `_build_query()` fetches `min(wtdepannmin_r)` per component; mapped to `water_table_depth_cm` in evidence `observed_value`. Commit acba0a5.

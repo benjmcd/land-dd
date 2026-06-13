@@ -2,6 +2,22 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-13 Claim Narrative Enrichment Pass 6
+
+**Scope:** 7 claim functions enriched with evidence-derived narrative detail: wetland (NWI count/area/type), slope (buildable acres), flood positive (zone codes), geology not-evaluated (unit/formation), minerals active (count/case name), zoning prohibited (code/district/use). Domain-aware recommended action in dossier. 8 new regression tests.
+
+**Commands run:**
+```powershell
+cd backend; py -3.12 -m pytest tests/claims_engine/ tests/reports/
+py -3.11 -m ruff check app/claims_engine/rule_engine.py app/reports/dossier.py
+py -3.12 -m mypy app/claims_engine/rule_engine.py app/reports/dossier.py --no-error-summary
+py -3.12 -m pytest
+```
+
+**Result:** 1601 passed, 73 skipped. ruff: All checks passed. mypy: no errors in changed files.
+
+**Residual risk:** Claim narrative enrichments are conditional on evidence having the expected keys — gracefully omit detail when keys absent. No schema changes. No new dependencies.
+
 ## 2026-06-13 Connector Enrichment Pass 5
 
 **Scope:** SSURGO water_table_depth_cm via comonth join, TNM elevation range/sample_count,
