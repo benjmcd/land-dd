@@ -2,6 +2,15 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Claim narrative enrichment pass 8 — 1608 tests)
+
+Commit: 0ffe2ac
+
+- Access no-adjacency claim: `_access_no_adjacency_claim()` surfaces road_count=0 as "(0 OSM road segments in screening area)".
+- "in the fixture" purge: removed from 7 stale/prohibited claim functions (access, zoning ×2, water, slope, wetland, flood stale).
+- 1 new regression test: `test_access_no_adjacency_claim_surfaces_road_count_when_zero`.
+- verify.ps1: ok; 1608 passed, 73 skipped; ruff/mypy clean (297 source files).
+
 ## 2026-06-13 (Claim narrative enrichment pass 7 — 1604 tests)
 
 Commits: 262f8d4, 8f92e70, eb9a79a, 3528151

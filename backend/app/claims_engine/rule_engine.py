@@ -1664,12 +1664,22 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        detail_parts: list[str] = []
+        for e in evidence_records:
+            mapunit = e.observed_value.get("soil_mapunit_name")
+            hydro_group = e.observed_value.get("hydrologic_group")
+            if isinstance(mapunit, str) and mapunit:
+                detail_parts.append(f"dominant unit: {mapunit}")
+            if isinstance(hydro_group, str) and hydro_group:
+                detail_parts.append(f"hydrologic group {hydro_group}")
+            break
+        detail = f" ({'; '.join(detail_parts)})" if detail_parts else ""
         user_safe_language = (
-            "USDA NRCS SSURGO mapunit/component screening evidence is present for "
-            "the area. This is screening only and does not determine septic approval, "
-            "perc results, soil suitability, engineering feasibility, permitting, or "
-            "buildability. Verify soil and septic feasibility with perc testing, "
-            "county health department records, and a septic engineer."
+            f"USDA NRCS SSURGO mapunit/component screening evidence is present for "
+            f"the area{detail}. This is screening only and does not determine septic "
+            "approval, perc results, soil suitability, engineering feasibility, "
+            "permitting, or buildability. Verify soil and septic feasibility with "
+            "perc testing, county health department records, and a septic engineer."
         )
         if caveat_text:
             user_safe_language = f"{user_safe_language} Evidence caveat: {caveat_text}"

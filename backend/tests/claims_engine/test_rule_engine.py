@@ -1946,6 +1946,34 @@ def test_geology_not_evaluated_claim_surfaces_primary_unit_when_present() -> Non
     assert "Metavolcanic sequence" in lang
 
 
+def test_soil_screening_review_claim_surfaces_mapunit_name_and_hydrologic_group() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="SSURGO_SOIL_MAPUNIT_INTERSECTION",
+        domain="soil_septic",
+        observation="USDA NRCS SSURGO mapunit intersects the query area.",
+        observed_value={
+            "intersects_soil_mapunit": True,
+            "soil_mapunit_key": "111222",
+            "soil_mapunit_name": "Cecil sandy loam",
+            "hydrologic_group": "B",
+            "drainage_class": "well drained",
+            "hydric_rating": "No",
+        },
+        method_code="live_usda_ssurgo_soil_mapunit_query",
+        confidence=ConfidenceBand.MEDIUM,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    soil_review_claims = [c for c in claims if c.claim_code == "SOIL_NOT_EVALUATED"]
+    assert len(soil_review_claims) == 1
+    lang = soil_review_claims[0].user_safe_language
+    assert "Cecil sandy loam" in lang
+    assert "hydrologic group B" in lang
+
+
 def test_access_no_adjacency_claim_surfaces_road_count_when_zero() -> None:
     area_id = uuid4()
     evidence = EvidenceContract(

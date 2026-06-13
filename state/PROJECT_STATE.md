@@ -1,6 +1,13 @@
 # Project State
 
-## Current checkpoint (2026-06-13 claim narrative enrichment pass 7 — 1604 tests)
+## Current checkpoint (2026-06-13 claim narrative enrichment pass 8 — 1608 tests)
+
+Access claim enrichment + "in the fixture" purge across 7 stale/prohibited claim functions:
+- **Access no-adjacency claim**: `_access_no_adjacency_claim()` now surfaces `(0 OSM road segments in screening area)` when `road_count=0`. Commit 0ffe2ac.
+- **"in the fixture" removed**: `_access_stale_claim()`, `_zoning_prohibited_claim()`, `_zoning_stale_claim()`, `_water_stale_claim()`, `_slope_stale_claim()`, `_wetland_stale_claim()`, `_flood_stale_claim()` all had the implementation-leaking phrase removed. Commit 0ffe2ac.
+- 1 new regression test (`test_access_no_adjacency_claim_surfaces_road_count_when_zero`). verify.ps1: ok; 1608 passed, 73 skipped; ruff/mypy clean (297 source files).
+
+## Previous checkpoint (2026-06-13 claim narrative enrichment pass 7 — 1604 tests)
 
 Three more claim enrichments and a lint fix; verify.ps1 passes clean:
 - **Env hazard proximity claim**: `_env_hazard_proximity_claim()` now surfaces `regulated_facility_count`. Commit 262f8d4.
