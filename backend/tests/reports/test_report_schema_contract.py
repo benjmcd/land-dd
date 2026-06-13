@@ -43,6 +43,7 @@ def test_report_run_schema_references_lane_owned_nested_contract_schemas() -> No
     assert properties["claims"]["items"]["$ref"] == CLAIM_REF
     assert properties["unknowns"]["items"]["$ref"] == CLAIM_REF
     assert properties["red_flags"]["items"]["$ref"] == CLAIM_REF
+    assert properties["advisory_claims"]["items"]["$ref"] == CLAIM_REF
 
 
 def test_report_run_schema_tightens_source_manifest_shape() -> None:
