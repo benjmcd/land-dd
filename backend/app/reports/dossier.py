@@ -43,7 +43,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Parcel data caveats: {_domain_caveats(report_run, {'parcels'})}",
         "- Assessor and tax data: Assessor and tax data were not available",
         f"- Area ID: {report_run.area_id}",
-        "- Geometry confidence: unknown",
+        f"- Geometry confidence: {_geometry_confidence(report_run)}",
         f"- Intent: {report_run.intent_code.value}",
         f"- Report generated at: {_format_datetime(report_run.finished_at)}",
         f"- Report run ID: {report_run.report_run_id}",
@@ -396,6 +396,21 @@ def _parcel_zoning(report_run: ReportRunContract) -> str:
             if zoning is not None:
                 return str(zoning)
     return "unknown"
+
+
+def _geometry_confidence(report_run: ReportRunContract) -> str:
+    for record in report_run.evidence:
+        if record.domain == "parcels" and not record.is_source_failure:
+            county = record.observed_value.get("parcel_county")
+            source = f"{county} GIS" if county else "county GIS"
+            precision = record.spatial_precision_meters
+            if precision is not None:
+                return (
+                    f"{source} parcel boundary "
+                    f"(~{int(precision)}m spatial precision; approximate — not survey-grade)"
+                )
+            return f"{source} parcel boundary (approximate — not survey-grade)"
+    return "AOI geometry not matched to county parcel boundary"
 
 
 def _jurisdiction_from_evidence(report_run: ReportRunContract) -> str:
