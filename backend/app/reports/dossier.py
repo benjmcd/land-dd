@@ -171,7 +171,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         "",
         "## 18. Source Appendix",
         "",
-        "| Source | Version/date | Use | Caveat | URL |",
+        "| Source | Version/date | Review | License | URL |",
         "|---|---|---|---|---|",
         *_source_rows(report_run),
         "",
@@ -1205,13 +1205,13 @@ def _source_rows(report_run: ReportRunContract) -> list[str]:
         source_id = str(detail.get("source_id", ""))
         url = detail.get("homepage_url") or udo_urls.get(source_id)
         rows.append(
-            "| {source} | {version} | {use} | {caveat} | {url} |".format(
+            "| {source} | {version} | {review} | {license_status} | {url} |".format(
                 source=_cell(str(detail.get("name", "unknown"))),
                 version=_cell(
                     str(detail.get("last_checked_at") or detail.get("freshness_class") or "unknown")
                 ),
-                use=_cell(str(detail.get("review_status", "unknown"))),
-                caveat=_cell(str(detail.get("license_status", "unknown"))),
+                review=_cell(str(detail.get("review_status", "unknown"))),
+                license_status=_cell(str(detail.get("license_status", "unknown"))),
                 url=_cell(str(url) if url else "unknown"),
             )
         )

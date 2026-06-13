@@ -2330,6 +2330,57 @@ def test_dossier_source_appendix_shows_udo_url_when_homepage_url_absent() -> Non
     )
 
 
+def test_source_appendix_labels_review_and_license_columns() -> None:
+    """Section 18 columns must be Review (review_status) and License (license_status).
+
+    Regression: the column previously labeled 'Caveat' rendered license_status,
+    so every source showed 'Caveat: approved' — a mislabeled provenance field.
+    """
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = source_service.register(
+        SourceContract(
+            name="Distinct Status Source",
+            organization="fixture",
+            domain="flood",
+            license_status="restricted",
+            commercial_use_status="approved",
+            redistribution_status="approved",
+            cache_allowed="approved",
+            export_allowed="approved",
+            raw_data_allowed="approved",
+            ai_use_allowed="approved",
+            review_status="approved",
+        )
+    )
+    area = _registered_area(area_service)
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            method_code="fixture_flood_overlay",
+            observation="AE zone intersection",
+            observed_value={"flood_zone_code": "AE", "intersection_ratio": 0.72},
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="Fixture flood screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    section_18 = dossier[dossier.find("## 18. Source Appendix"):]
+
+    assert "| Source | Version/date | Review | License | URL |" in section_18
+    # review_status under Review, license_status under License (not reversed).
+    assert "| approved | restricted |" in section_18
+    assert "Caveat" not in section_18
+
+
 def test_dossier_soil_drainage_shows_water_table_depth_when_present() -> None:
     """Soil drainage note must include water_table_depth_cm when available."""
     source_service, area_service, evidence_service, report_service = _make_services()
