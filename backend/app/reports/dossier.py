@@ -29,6 +29,7 @@ def build_rural_land_dossier(report_run: ReportRunContract) -> str:
         f"- Overall suitability band: {_overall_suitability(report_run)}",
         f"- Confidence band: {_confidence_band(report_run)}",
         f"- Critical red flags: {len(report_run.red_flags)}",
+        f"- Advisory findings: {len(report_run.advisory_claims)}",
         f"- High-priority unknowns: {len(report_run.unknowns)}",
         f"- Recommended next action: {_recommended_next_action(report_run)}",
         "",
