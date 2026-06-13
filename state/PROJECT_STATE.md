@@ -1,6 +1,19 @@
 # Project State
 
-## Current checkpoint (2026-06-13 advisory claims + rule coverage + dossier enrichment pass 4 — 1592 tests)
+## Current checkpoint (2026-06-13 connector enrichment pass 5 — 1593 tests)
+
+Eight targeted connector/dossier/test improvements this session:
+- **SSURGO water_table_depth_cm**: `comonth` join added to `_build_query()` fetches `min(wtdepannmin_r)` per component; mapped to `water_table_depth_cm` in evidence `observed_value`. Commit acba0a5.
+- **SSURGO soil claim narrative**: `_soil_poor_drainage_claim()` now includes "water table ~Xcm depth" in `detail_parts` when `water_table_depth_cm` is present in evidence. Commit d6acf90.
+- **USGS TNM mean/min/max elevation + sample_count**: `_evidence_for_samples()` now stores `mean_elevation_m`, `min_elevation_m`, `max_elevation_m`, `sample_count` in `observed_value`; all were already whitelisted in `DERIVED_METRIC_KEYS`. Commit d6acf90, cd2bde3.
+- **Dossier Section 6 elevation range**: `_buildability_summary()` shows "elevation range X–Ym (N samples)" when min/max present; falls back to "mean elevation ~Xm" without them. Commit cd2bde3.
+- **Dossier Section 14 BLM primary case name**: `_mineral_mining_result()` now includes primary case name and serial number when active claims are present. Commit cd2bde3.
+- **Assessor scope note**: Section 2 assessor line changed from "were not available" to "not evaluated — out of scope for this screening version". Commit d6acf90.
+- **2 new regression tests**: `test_evaluate_soil_drainage_claim_includes_water_table_depth_when_present` pins water table depth in claim narrative; `test_dossier_renders_buildability_terrain_from_evidence` updated to pin elevation range/sample_count display. Commit d3aa9a9.
+- **mypy clean**: 4 `type: ignore` comment errors fixed (`call-overload` vs `arg-type`). Commit 394d061.
+- Full suite: 1593 passed, 73 skipped. ruff/mypy clean on all changed files.
+
+## Previous checkpoint (2026-06-13 advisory claims + rule coverage + dossier enrichment pass 4 — 1592 tests)
 
 Eight improvements across rule engine, dossier output, and test coverage:
 - **GEOLOGY_G001 advisory rule**: new LOW-severity hard gate fires when geology

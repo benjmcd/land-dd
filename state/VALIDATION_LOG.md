@@ -2,6 +2,25 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-13 Connector Enrichment Pass 5
+
+**Scope:** SSURGO water_table_depth_cm via comonth join, TNM elevation range/sample_count,
+BLM primary case name in dossier, assessor scope note fix, regression tests, mypy fixes.
+
+**Commands run:**
+```powershell
+cd backend; py -3.12 -m pytest tests/connectors/test_ssurgo_connector.py tests/api/test_usgs_tnm_connector_api.py tests/claims_engine/ tests/reports/ --tb=short
+py -3.11 -m ruff check app/connectors/ssurgo.py app/connectors/usgs_tnm.py app/claims_engine/rule_engine.py app/reports/dossier.py
+py -3.12 -m mypy app/connectors/ssurgo.py app/connectors/usgs_tnm.py app/claims_engine/rule_engine.py app/reports/dossier.py --ignore-missing-imports
+py -3.12 -m pytest
+```
+
+**Result:** 1593 passed, 73 skipped. ruff: All checks passed. mypy: no issues in 4 source files.
+
+**Residual risk:** SSURGO `comonth` join is only exercised in fixture tests; live SSURGO API
+behavior with `comonth` not yet verified (no DB integration test covers this). Water table
+depth may be NULL for many soil units.
+
 ## 2026-06-13 Advisory Claims + Rule Coverage + Dossier Enrichment Pass 4
 
 **Scope:** GEOLOGY_G001 rule, Section 11/2/10 unknown replacement, advisory claim

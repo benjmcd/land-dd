@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-13 (Connector enrichment pass 5 — 1593 tests)
+
+Commits: acba0a5, d6acf90, d3aa9a9, cd2bde3, 394d061
+
+- SSURGO: `comonth` join adds `water_table_depth_cm` to soil evidence; connector test and mock updated.
+- Soil claim: `_soil_poor_drainage_claim()` includes water table depth in detail when present.
+- USGS TNM: `mean_elevation_m`, `min_elevation_m`, `max_elevation_m`, `sample_count` added to evidence `observed_value`.
+- Dossier Section 6: shows "elevation range X–Ym (N samples)" using new TNM fields.
+- Dossier Section 14: `_mineral_mining_result()` surfaces primary BLM case name and serial number.
+- Dossier Section 2: assessor line wording fixed to "not evaluated — out of scope".
+- 2 new regression tests for water table claim detail and elevation range display.
+- mypy `type: ignore` comment errors fixed (call-overload vs arg-type).
+- All checks: 1593 passed, 73 skipped; ruff/mypy clean.
+
 ## 2026-06-13 (Advisory claims + rule coverage + dossier enrichment pass 4 — 1592 tests)
 
 - **GEOLOGY_G001 advisory rule**: new `geologic_hazard_not_determined` hard gate (LOW severity)
