@@ -419,11 +419,15 @@ def _census_geography_result(report_run: ReportRunContract) -> str:
     record = records[0]
     parts: list[str] = []
     tract = record.observed_value.get("primary_census_tract_geoid")
+    tract_name = record.observed_value.get("primary_census_tract_name")
     bg = record.observed_value.get("primary_census_block_group_geoid")
+    bg_name = record.observed_value.get("primary_census_block_group_name")
     if tract:
-        parts.append(f"tract {tract}")
+        label = str(tract_name) if isinstance(tract_name, str) and tract_name else f"tract {tract}"
+        parts.append(label)
     if bg:
-        parts.append(f"block group {bg}")
+        label = str(bg_name) if isinstance(bg_name, str) and bg_name else f"block group {bg}"
+        parts.append(label)
     return "; ".join(parts) if parts else _cell(record.observation)
 
 
@@ -487,19 +491,25 @@ def _wetland_result(report_run: ReportRunContract) -> str:
             return "source failure — NWI wetland data unavailable"
         return "not evaluated"
     total_area_sq_m = 0.0
-    wetland_types: list[str] = []
+    wetland_labels: list[str] = []
+    seen_labels: set[str] = set()
     for record in records:
         area = record.observed_value.get("mapped_wetland_area_sq_m")
         if area is not None:
             total_area_sq_m += float(area)  # type: ignore[arg-type]
+        wclass = record.observed_value.get("wetland_class")
         wtype = record.observed_value.get("wetland_type")
-        if isinstance(wtype, str) and wtype and wtype not in wetland_types:
-            wetland_types.append(wtype)
+        label = str(wclass) if isinstance(wclass, str) and wclass else (
+            str(wtype) if isinstance(wtype, str) and wtype else None
+        )
+        if label and label not in seen_labels:
+            seen_labels.add(label)
+            wetland_labels.append(label)
     parts: list[str] = [f"{len(records)} mapped wetland/deepwater feature(s) intersect query area"]
     if total_area_sq_m > 0:
         parts.append(f"~{total_area_sq_m / 4047:.2f} mapped acres")
-    if wetland_types:
-        parts.append("types: " + ", ".join(wetland_types[:3]))
+    if wetland_labels:
+        parts.append("types: " + ", ".join(wetland_labels[:3]))
     return "; ".join(parts)
 
 

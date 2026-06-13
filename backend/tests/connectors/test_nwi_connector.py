@@ -186,6 +186,8 @@ def test_success_query_builds_bounded_nwi_request_and_wetland_evidence() -> None
     assert evidence.spatial_precision_meters is not None
     assert evidence.observed_value["intersects_mapped_wetlands"] is True
     assert evidence.observed_value["wetland_type"] == "Lake"
+    assert evidence.observed_value["wetland_class"] == "Unconsolidated Bottom"
+    assert evidence.observed_value["wetland_system"] == "Lacustrine"
     assert evidence.observed_value["mapped_wetland_area_sq_m"] == pytest.approx(
         106.82272375751111 * 4046.8564224
     )

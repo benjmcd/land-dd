@@ -350,11 +350,21 @@ class NwiConnector:
         wetland_type = _optional_text(
             _first_present(properties, "Wetlands.WETLAND_TYPE", "WETLAND_TYPE")
         )
+        class_name = _optional_text(
+            _first_present(properties, "NWI_Wetland_Codes.CLASS_NAME", "CLASS_NAME")
+        )
+        system_name = _optional_text(
+            _first_present(properties, "NWI_Wetland_Codes.SYSTEM_NAME", "SYSTEM_NAME")
+        )
         observed_value: dict[str, object] = {
             "intersects_mapped_wetlands": True,
         }
         if wetland_type is not None:
             observed_value["wetland_type"] = wetland_type
+        if class_name is not None:
+            observed_value["wetland_class"] = class_name
+        if system_name is not None:
+            observed_value["wetland_system"] = system_name
         acres = _optional_number(_first_present(properties, "Wetlands.ACRES", "ACRES"))
         if acres is not None:
             observed_value["mapped_wetland_area_sq_m"] = acres * ACRE_TO_SQ_M

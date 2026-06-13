@@ -1996,3 +1996,90 @@ def test_dossier_verification_plan_shows_domain_specific_contact() -> None:
         "Flood domain verification task must list 'floodplain administrator' as contact; "
         "got:\n" + section_17
     )
+
+
+def test_dossier_wetland_class_name_preferred_over_raw_type_code() -> None:
+    """When wetland_class is present, dossier must show it instead of raw wetland_type."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "wetlands")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="NWI_MAPPED_WETLAND_INTERSECTION",
+            domain="wetlands",
+            method_code="live_usfws_nwi_wetland_intersection_query",
+            observation="USFWS NWI mapped wetland/deepwater feature intersects the query area.",
+            observed_value={
+                "intersects_mapped_wetlands": True,
+                "wetland_type": "L1UBH",
+                "wetland_class": "Unconsolidated Bottom",
+                "wetland_system": "Lacustrine",
+                "mapped_wetland_area_sq_m": 8094.0,
+            },
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="USFWS NWI screening only.",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec7_start = dossier.find("## 7. Flood")
+    sec8_start = dossier.find("## 8.")
+    section_7 = dossier[sec7_start:sec8_start]
+    assert "Unconsolidated Bottom" in section_7, (
+        "wetland_class 'Unconsolidated Bottom' must appear in Section 7; got:\n" + section_7
+    )
+    assert "L1UBH" not in section_7, (
+        "Raw Cowardin code 'L1UBH' must not appear when wetland_class is available; "
+        "got:\n" + section_7
+    )
+
+
+def test_dossier_census_tract_name_shown_when_available() -> None:
+    """When census connector provides tract/block-group names, dossier must show them."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "census_geography")
+    area = _registered_area(area_service)
+
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SOURCE_OBSERVATION,
+            evidence_code="CENSUS_TIGER_GEOGRAPHY_CONTEXT",
+            domain="census_geography",
+            method_code="live_census_tiger_geography_query",
+            observation="Census TIGERweb query found 1 tract(s).",
+            observed_value={
+                "primary_census_tract_geoid": "37021060200",
+                "primary_census_tract_name": "Census Tract 602, Brunswick County",
+                "primary_census_block_group_geoid": "370210602001",
+                "primary_census_block_group_name": "Block Group 1, Census Tract 602",
+                "census_tract_count": 1,
+                "census_demographics_used": False,
+            },
+            confidence=ConfidenceBand.LOW,
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec2_start = dossier.find("## 2. Area Identity")
+    sec3_start = dossier.find("## 3.")
+    section_2 = dossier[sec2_start:sec3_start]
+    assert "Census Tract 602, Brunswick County" in section_2, (
+        "Expected census tract name in Section 2; got:\n" + section_2
+    )
+    assert "Block Group 1, Census Tract 602" in section_2, (
+        "Expected block group name in Section 2; got:\n" + section_2
+    )
