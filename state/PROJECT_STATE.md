@@ -1,6 +1,27 @@
 # Project State
 
-## Current checkpoint (2026-06-12 dossier enrichment pass 2 — 1560 tests)
+## Current checkpoint (2026-06-13 dossier enrichment pass 3 + OSM highway types — 1570 tests)
+
+Seven connector-field surfacing improvements and one connector query upgrade:
+- **NOAA nearest city/state in Section 13**: `_climate_result()` now surfaces
+  `nws_nearest_city` / `nws_nearest_state` stored by NOAA connector but previously
+  unused. Commit b01ec52.
+- **FCC broadband upload speed in Section 12**: `_broadband_result()` now shows
+  combined down/up Mbps as "max 1000/100 Mbps (down/up)" when both values present.
+  Commit 370fd6c.
+- **OSM highway types in Section 5**: Overpass query upgraded from `out count;` to
+  `out tags;` so each matched way's `highway` tag is captured. Connector stores
+  deduplicated `highway_types` list; dossier surfaces road categories (primary, track,
+  etc.) alongside segment count. Fixes payload validation to include `highway_types`
+  in `SPATIAL_INTERSECTION_KEYS`. Connector tests updated for new response format.
+  Commits 1796376, 92b3a47.
+- Also committed in prior context: NWI wetland class/system names, census geography
+  names, UDO source URL fallback, SSURGO slope/water-table, geologic types/belts,
+  road_count surfacing. See commits 33c014b through 8fd3a8b.
+- 10 new enrichment/connector tests this session; mypy clean on all changed files.
+- Full suite: 1570 passed, 73 skipped.
+
+## Previous checkpoint (2026-06-12 dossier enrichment pass 2 — 1560 tests)
 
 Six dossier and correctness improvements this session:
 - **SSURGO drainage/hydric in Section 8**: `_soil_drainage_result()` and
