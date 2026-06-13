@@ -648,7 +648,7 @@ def _zoning_lot_size_result(report_run: ReportRunContract) -> str:
         None,
     )
     suffix = f" (see {url})" if url else ""
-    return f"not captured in recorded fixture — see UDO for dimensional standards{suffix}"
+    return f"not captured in current screening data — see UDO for dimensional standards{suffix}"
 
 
 def _zoning_use_compatibility(report_run: ReportRunContract) -> str:

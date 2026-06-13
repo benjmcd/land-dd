@@ -2879,7 +2879,7 @@ def test_dossier_zoning_overlay_result_surfaces_udo_url() -> None:
     section_10 = dossier[sec10_start:sec11_start]
     assert "not geographically screened" in section_10
     assert "https://example.gov/udo" in section_10
-    assert "not captured in recorded fixture" in section_10
+    assert "not captured in current screening data" in section_10
 
 
 def test_dossier_zoning_overlay_result_no_zoning_evidence() -> None:
