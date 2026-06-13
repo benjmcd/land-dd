@@ -255,6 +255,56 @@ def test_dossier_renders_district_name_and_code_from_chatham_style_evidence() ->
     )
 
 
+def test_dossier_zoning_prohibited_beats_allowed_when_multiple_districts() -> None:
+    """prohibited district must override an allowed district in use-compatibility output."""
+    source_service, area_service, evidence_service, report_service = _make_services()
+    source = _registered_source(source_service, "zoning")
+    area = _registered_area(area_service)
+
+    for code, allowed, prohibited in [
+        ("RR", True, False),
+        ("C-I", False, True),
+    ]:
+        evidence_service.create_observation(
+            EvidenceContract(
+                area_id=area.area_id,
+                source_id=source.source_id,
+                evidence_type=EvidenceType.SOURCE_OBSERVATION,
+                evidence_code="ZONING_USE_CLASSIFICATION",
+                domain="zoning",
+                method_code="brunswick_zoning_udo_recorded_lookup",
+                observation=f"Brunswick UDO lookup: code '{code}'.",
+                observed_value={
+                    "zoning_code": code,
+                    "intended_residential_use_allowed": allowed,
+                    "intended_residential_use_prohibited": prohibited,
+                },
+                confidence=ConfidenceBand.LOW,
+                caveat="Brunswick County UDO screening only.",
+            )
+        )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    dossier = build_rural_land_dossier(report_run)
+    sec10_start = dossier.find("## 10. Zoning")
+    sec11_start = dossier.find("## 11.")
+    section_10 = dossier[sec10_start:sec11_start]
+    compat_line = next(
+        (ln for ln in section_10.splitlines() if "Intended-use compatibility" in ln), ""
+    )
+    assert "restricted" in compat_line, (
+        "prohibited district must override allowed district in use-compatibility; "
+        "got:\n" + compat_line
+    )
+    assert "permitted" not in compat_line, (
+        "should not show 'permitted' on use-compatibility line when any district is prohibited; "
+        "got:\n" + compat_line
+    )
+
+
 def test_dossier_red_flag_row_contains_evidence_id_prefix() -> None:
     """Red-flag Evidence column must show a short 8-hex prefix, not just a bare count."""
     source_service, area_service, evidence_service, report_service = _make_services()

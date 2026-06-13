@@ -531,16 +531,17 @@ def _zoning_use_compatibility(report_run: ReportRunContract) -> str:
     records = [r for r in report_run.evidence if r.domain == "zoning" and not r.is_source_failure]
     if not records:
         return "not determined"
-    for record in records:
-        allowed = record.observed_value.get("intended_residential_use_allowed")
-        prohibited = record.observed_value.get("intended_residential_use_prohibited")
-        edge = record.observed_value.get("jurisdiction_edge")
-        if allowed is True:
-            return "residential use appears permitted (screening only; verify with county planning)"
-        if prohibited is True:
-            return "residential use appears restricted (screening only; verify with county planning)"  # noqa: E501
-        if edge is True:
-            return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
+    any_prohibited = any(r.observed_value.get("intended_residential_use_prohibited") is True
+                         for r in records)
+    any_allowed = any(r.observed_value.get("intended_residential_use_allowed") is True
+                      for r in records)
+    any_edge = any(r.observed_value.get("jurisdiction_edge") is True for r in records)
+    if any_prohibited:
+        return "residential use appears restricted (screening only; verify with county planning)"
+    if any_allowed:
+        return "residential use appears permitted (screening only; verify with county planning)"
+    if any_edge:
+        return "at jurisdiction boundary — zoning status ambiguous; verify with county planning"
     return "not determined"
 
 

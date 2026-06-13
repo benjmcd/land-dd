@@ -145,3 +145,40 @@ def test_query_brunswick_zoning_district_no_code_returns_unknown() -> None:
     body = response.json()
     assert body["evidence_code"] == "ZONING_UNKNOWN"
     assert body["residential_use_screening"] == "UNKNOWN"
+
+
+def test_brunswick_zoning_allowed_district_emits_canonical_rule_engine_key() -> None:
+    """RR district (ALLOWED_WITH_RESTRICTIONS) must emit intended_residential_use_allowed=True."""
+    client, services, area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/brunswick-zoning/query-district",
+        json={"area_id": str(area_id), "zoning_code": "RR"},
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body.get("intended_residential_use_allowed") is True, (
+        "RR (ALLOWED_WITH_RESTRICTIONS) must include intended_residential_use_allowed=True "
+        "so the rule engine classifies zoning as allowed; got: " + str(body)
+    )
+    assert body.get("intended_residential_use_prohibited") is None
+
+
+def test_brunswick_zoning_industrial_district_emits_canonical_prohibited_key() -> None:
+    """C-I (Commercial-Intensive, UNLIKELY_VERIFY) must emit intended_residential_use_prohibited."""
+    client, services, area_id = _client_with_seeded_services()
+
+    response = client.post(
+        "/connector-runs/brunswick-zoning/query-district",
+        json={"area_id": str(area_id), "zoning_code": "C-I"},
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body.get("intended_residential_use_prohibited") is True, (
+        "C-I (Commercial-Intensive/UNLIKELY_VERIFY) must include "
+        "intended_residential_use_prohibited=True; got: " + str(body)
+    )
