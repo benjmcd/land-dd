@@ -1105,9 +1105,23 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        detail_parts: list[str] = []
+        for e in evidence_records:
+            val = e.observed_value.get("value")
+            unit = e.observed_value.get("unit")
+            ratio = e.observed_value.get("low_slope_area_ratio")
+            mean_slope = e.observed_value.get("mean_slope_pct")
+            if isinstance(val, (int, float)) and not isinstance(val, bool) and unit == "sq_m":
+                acres = float(val) / 4047.0
+                detail_parts.append(f"~{acres:.2f} ac low-slope area")
+            if isinstance(ratio, (int, float)) and not isinstance(ratio, bool):
+                detail_parts.append(f"{float(ratio):.0%} of parcel")
+            if isinstance(mean_slope, (int, float)) and not isinstance(mean_slope, bool):
+                detail_parts.append(f"mean slope ~{float(mean_slope):.1f}%")
+        detail = f" ({'; '.join(detail_parts)})" if detail_parts else ""
         user_safe_language = (
-            "Slope/buildability screening indicates insufficient low-slope area in "
-            "the fixture. This is a screening proxy and does not determine final "
+            f"Slope/buildability screening indicates insufficient low-slope area{detail}. "
+            "This is a screening proxy and does not determine final "
             "buildability, site-plan approval, or engineering feasibility."
         )
         if caveat_text:
@@ -1241,8 +1255,31 @@ class RuleEngine:
     ) -> ClaimContract:
         evidence_ids = _sorted_evidence_ids(evidence_records)
         caveat_text = _format_caveats(evidence_records)
+        seen_labels: set[str] = set()
+        wetland_labels: list[str] = []
+        total_area_sq_m = 0.0
+        for e in evidence_records:
+            area = e.observed_value.get("mapped_wetland_area_sq_m")
+            if isinstance(area, (int, float)) and not isinstance(area, bool):
+                total_area_sq_m += float(area)
+            wclass = e.observed_value.get("wetland_class")
+            wtype = e.observed_value.get("wetland_type")
+            label = (
+                str(wclass) if isinstance(wclass, str) and wclass
+                else str(wtype) if isinstance(wtype, str) and wtype
+                else None
+            )
+            if label and label not in seen_labels:
+                seen_labels.add(label)
+                wetland_labels.append(label)
+        detail_parts: list[str] = [f"{len(evidence_records)} NWI feature(s) intersect"]
+        if total_area_sq_m > 0:
+            detail_parts.append(f"~{total_area_sq_m / 4047:.2f} mapped acres")
+        if wetland_labels:
+            detail_parts.append("types: " + ", ".join(wetland_labels[:3]))
+        detail = "; ".join(detail_parts)
         user_safe_language = (
-            "Mapped wetland/deepwater screening evidence intersects the area. "
+            f"Mapped wetland/deepwater screening evidence intersects the area ({detail}). "
             "This is screening only and is not a jurisdictional wetland determination "
             "or field delineation."
         )

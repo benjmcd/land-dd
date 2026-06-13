@@ -1768,3 +1768,50 @@ def test_load_ruleset_rejects_invalid_severity(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError):
         load_ruleset(bad_ruleset)
+
+
+def test_wetland_claim_surfaces_feature_count_and_mapped_area() -> None:
+    area_id = uuid4()
+    evidence = make_wetland_evidence(area_id=area_id)
+    claims = RuleEngine.from_file().evaluate([evidence])
+    wetland_claims = [c for c in claims if c.claim_code == "WETLAND_001"]
+    assert len(wetland_claims) == 1
+    lang = wetland_claims[0].user_safe_language
+    assert "1 NWI feature(s)" in lang
+    assert "0.42" in lang or "mapped acres" in lang
+
+
+def test_wetland_claim_surfaces_wetland_class_when_present() -> None:
+    area_id = uuid4()
+    evidence = EvidenceContract(
+        area_id=area_id,
+        source_id=uuid4(),
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="WETLAND_SCREEN",
+        domain="wetlands",
+        observation="NWI wetland intersects area.",
+        observed_value={
+            "intersects_mapped_wetlands": True,
+            "mapped_wetland_area_sq_m": 4047.0,
+            "wetland_class": "Freshwater Emergent Wetland",
+            "wetland_type": "PEM1C",
+        },
+        method_code="live_fws_nwi_spatial_query",
+        confidence=ConfidenceBand.MEDIUM,
+    )
+    claims = RuleEngine.from_file().evaluate([evidence])
+    wetland_claims = [c for c in claims if c.claim_code == "WETLAND_001"]
+    assert len(wetland_claims) == 1
+    lang = wetland_claims[0].user_safe_language
+    assert "Freshwater Emergent Wetland" in lang
+    assert "1.00" in lang or "mapped acres" in lang
+
+
+def test_slope_insufficient_claim_surfaces_buildable_area_in_acres() -> None:
+    area_id = uuid4()
+    evidence = make_slope_evidence(area_id=area_id, insufficient_low_slope_area=True)
+    claims = RuleEngine.from_file().evaluate([evidence])
+    slope_claims = [c for c in claims if c.claim_code == "SLOPE_001"]
+    assert len(slope_claims) == 1
+    lang = slope_claims[0].user_safe_language
+    assert "0.22" in lang or "ac low-slope" in lang
