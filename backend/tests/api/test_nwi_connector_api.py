@@ -175,12 +175,14 @@ def test_nwi_query_bbox_persists_spatial_evidence_and_review_queue() -> None:
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_VALID_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["disposition"] == "ready_for_connector_qa"
 
     queue_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-queue",
+        headers=_VALID_HEADERS,
     )
     assert queue_response.status_code == 200
     assert queue_response.json()["status"] == "queued"
@@ -283,6 +285,7 @@ def test_nwi_query_bbox_persists_source_failure_for_empty_response() -> None:
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_VALID_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["signal_codes"] == [

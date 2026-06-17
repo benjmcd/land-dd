@@ -876,6 +876,30 @@ paths:
       summary: Query Fema Nfhl Bbox
       operationId: query_fema_nfhl_bbox_connector_runs_fema_nfhl_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -918,6 +942,30 @@ paths:
       summary: Query Usgs Tnm Bbox
       operationId: query_usgs_tnm_bbox_connector_runs_usgs_tnm_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -960,6 +1008,30 @@ paths:
       summary: Query Ssurgo Bbox
       operationId: query_ssurgo_bbox_connector_runs_ssurgo_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1002,6 +1074,30 @@ paths:
       summary: Query Nwi Bbox
       operationId: query_nwi_bbox_connector_runs_nwi_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1044,6 +1140,30 @@ paths:
       summary: Query Osm Road Access Bbox
       operationId: query_osm_road_access_bbox_connector_runs_osm_road_access_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1086,6 +1206,30 @@ paths:
       summary: Query Usgs Water Monitoring Bbox
       operationId: query_usgs_water_monitoring_bbox_connector_runs_usgs_water_monitoring_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1128,6 +1272,30 @@ paths:
       summary: Query Epa Echo Bbox
       operationId: query_epa_echo_bbox_connector_runs_epa_echo_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1170,6 +1338,30 @@ paths:
       summary: Query Fcc Broadband Bbox
       operationId: query_fcc_broadband_bbox_connector_runs_fcc_broadband_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1212,6 +1404,30 @@ paths:
       summary: Query Blm Mlrs Bbox
       operationId: query_blm_mlrs_bbox_connector_runs_blm_mlrs_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1254,6 +1470,30 @@ paths:
       summary: Query Usgs Mrds Bbox
       operationId: query_usgs_mrds_bbox_connector_runs_usgs_mrds_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1296,6 +1536,30 @@ paths:
       summary: Query Nc Geologic Map Bbox
       operationId: query_nc_geologic_map_bbox_connector_runs_nc_geologic_map_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1338,6 +1602,30 @@ paths:
       summary: Query Noaa Climate Bbox
       operationId: query_noaa_climate_bbox_connector_runs_noaa_climate_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1380,6 +1668,30 @@ paths:
       summary: Query Census Tiger Bbox
       operationId: query_census_tiger_bbox_connector_runs_census_tiger_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1422,6 +1734,30 @@ paths:
       summary: Query Chatham Parcels Bbox
       operationId: query_chatham_parcels_bbox_connector_runs_chatham_parcels_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1464,6 +1800,30 @@ paths:
       summary: Query Buncombe Parcels Bbox
       operationId: query_buncombe_parcels_bbox_connector_runs_buncombe_parcels_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1506,6 +1866,30 @@ paths:
       summary: Query Brunswick Parcels Bbox
       operationId: query_brunswick_parcels_bbox_connector_runs_brunswick_parcels_query_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -2174,6 +2558,30 @@ paths:
           type: string
           format: uuid
           title: Ingest Run Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       responses:
         '200':
           description: Successful Response
@@ -2201,6 +2609,30 @@ paths:
           type: string
           format: uuid
           title: Ingest Run Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       responses:
         '200':
           description: Successful Response

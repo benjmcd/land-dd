@@ -30,6 +30,7 @@ from app.connectors import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorFixtureQualityProfile,
     ConnectorRetrievalProvenanceAdapter,
+    ConnectorRunReviewStatus,
     EpaEchoBbox,
     EpaEchoConnector,
     EpaEchoConnectorError,
@@ -384,7 +385,7 @@ def orchestrate_fema_nfhl_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return FemaNfhlOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -443,7 +444,7 @@ def orchestrate_usgs_tnm_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return UsgsTnmOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -502,7 +503,7 @@ def orchestrate_nwi_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return NwiOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -561,7 +562,7 @@ def orchestrate_ssurgo_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return SsurgoOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -620,7 +621,7 @@ def orchestrate_osm_road_access_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return OsmRoadAccessOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -677,7 +678,7 @@ def orchestrate_usgs_water_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return UsgsWaterOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -734,7 +735,7 @@ def orchestrate_epa_echo_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return EpaEchoOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -793,7 +794,7 @@ def orchestrate_blm_mlrs_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return BlmMlrsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -852,7 +853,7 @@ def orchestrate_usgs_mrds_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return UsgsMrdsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -911,7 +912,7 @@ def orchestrate_nc_geologic_map_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return NcGeologicMapOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -968,7 +969,7 @@ def orchestrate_noaa_climate_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return NoaaClimateOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1025,7 +1026,7 @@ def orchestrate_fcc_broadband_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return FccBroadbandOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1084,7 +1085,7 @@ def orchestrate_census_tiger_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return CensusTigerOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1143,7 +1144,7 @@ def orchestrate_chatham_parcels_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return ChathamParcelsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1202,7 +1203,7 @@ def orchestrate_buncombe_parcels_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return ChathamParcelsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1261,7 +1262,7 @@ def orchestrate_brunswick_parcels_for_area(
     )
     review_status = build_connector_run_review_status(handoff, quality)
     services.connector_review_statuses[packet.ingest_run_id] = review_status
-    queue_item = services.connector_review_queue.enqueue_review_status(review_status)
+    queue_item = _enqueue_review_status_for_area(services, review_status, area)
     return ChathamParcelsOrchestrationResult(
         ingest_run_id=packet.ingest_run_id,
         queue_item=queue_item,
@@ -1602,6 +1603,18 @@ def _walk_coordinates(value: object, positions: list[tuple[float, float]]) -> No
         return
     for item in value:
         _walk_coordinates(item, positions)
+
+
+def _enqueue_review_status_for_area(
+    services: ApiServices,
+    review_status: ConnectorRunReviewStatus,
+    area: AreaContract,
+) -> ConnectorReviewQueueItem:
+    return services.connector_review_queue.enqueue_review_status(
+        review_status,
+        workspace_id=area.workspace_id,
+        requested_by=area.created_by,
+    )
 
 
 def _queue_item_approved_for_report(queue_item: ConnectorReviewQueueItem) -> bool:

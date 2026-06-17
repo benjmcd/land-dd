@@ -421,12 +421,14 @@ def test_fema_nfhl_query_bbox_persists_spatial_evidence_and_review_queue() -> No
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_VALID_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["disposition"] == "ready_for_connector_qa"
 
     queue_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-queue",
+        headers=_VALID_HEADERS,
     )
     assert queue_response.status_code == 200
     assert queue_response.json()["status"] == "queued"
@@ -651,6 +653,7 @@ def test_live_connector_report_run_pauses_for_connector_review() -> None:
 
     review_response = client.get(
         f"/connector-runs/{body['connector_ingest_run_id']}/review-queue",
+        headers=_VALID_HEADERS,
     )
     assert review_response.status_code == 200
     assert review_response.json()["status"] == "queued"
@@ -1370,6 +1373,7 @@ def test_fema_nfhl_query_bbox_persists_source_failure_for_empty_response() -> No
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_VALID_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["signal_codes"] == [
@@ -1394,7 +1398,7 @@ def test_fema_nfhl_query_bbox_returns_409_when_ds002_is_not_registered() -> None
     services = app.state.services
     assert isinstance(services, ApiServices)
     area_id = uuid4()
-    services.area_service.create(_area(area_id))
+    services.area_service.create(_area(area_id, workspace_id=_WORKSPACE_ID))
     client = TestClient(app)
 
     response = client.post(

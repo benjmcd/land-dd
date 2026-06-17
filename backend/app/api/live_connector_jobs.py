@@ -50,6 +50,7 @@ def run_next_live_connector_job(
         if job.workspace_id is not None and area.workspace_id != job.workspace_id:
             raise ValueError("area not found")
         area_for_job = _area_with_job_bbox(area, job.bbox)
+        area_for_job = area_for_job.model_copy(update={"created_by": job.requested_by})
         if job.source_registry_id == DS_001_REGISTRY_ID:
             connector_result: (
                 UsgsTnmOrchestrationResult

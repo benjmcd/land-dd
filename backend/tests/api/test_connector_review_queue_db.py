@@ -30,6 +30,9 @@ from app.domain.source_contracts import SourceRetrievalRunContract
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_AUTH_HEADERS = {"X-Workspace-Id": str(_WORKSPACE_ID), "X-User-Id": str(_USER_ID)}
 
 
 class DbApiQueueRetrievalPort:
@@ -131,6 +134,7 @@ def test_db_connector_review_queue_endpoint_reads_persisted_queue_item(
         use_db_services=True,
     )
     client = TestClient(app)
+    client.headers.update(_AUTH_HEADERS)
 
     try:
         with Session(engine) as session:
@@ -143,6 +147,8 @@ def test_db_connector_review_queue_endpoint_reads_persisted_queue_item(
             )
             SqlAlchemyConnectorReviewQueueRepository(session).enqueue_review_status(
                 review_status,
+                workspace_id=_WORKSPACE_ID,
+                requested_by=_USER_ID,
             )
             session.commit()
 
@@ -156,6 +162,8 @@ def test_db_connector_review_queue_endpoint_reads_persisted_queue_item(
         assert record["priority"] == 10
         assert record["idempotency_key"] == idempotency_key
         assert record["payload"]["ingest_run_id"] == str(ingest_run_id)
+        assert record["payload"]["workspace_id"] == str(_WORKSPACE_ID)
+        assert record["payload"]["requested_by"] == str(_USER_ID)
         assert record["attempts"] == 0
         assert record["max_attempts"] == 1
         assert record["locked_by"] is None
@@ -188,6 +196,7 @@ def test_db_connector_review_queue_endpoint_surfaces_worker_state(
         use_db_services=True,
     )
     client = TestClient(app)
+    client.headers.update(_AUTH_HEADERS)
 
     try:
         with Session(engine) as session:
@@ -199,7 +208,11 @@ def test_db_connector_review_queue_endpoint_surfaces_worker_state(
                 {"idempotency_key": idempotency_key},
             )
             repo = SqlAlchemyConnectorReviewQueueRepository(session)
-            repo.enqueue_review_status(review_status)
+            repo.enqueue_review_status(
+                review_status,
+                workspace_id=_WORKSPACE_ID,
+                requested_by=_USER_ID,
+            )
             leased = repo.lease_next(worker_id="db-api-worker")
             assert leased is not None
             repo.mark_failed(leased.job_id, error="review packet rejected")

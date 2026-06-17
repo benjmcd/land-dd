@@ -26,6 +26,8 @@ BBOX = {"xmin": -82.60, "ymin": 35.55, "xmax": -82.55, "ymax": 35.60}
 
 REVIEWER_ID = "fixture-reviewer"
 REVIEWER_TOKEN = "fixture-token-123"
+SMOKE_WORKSPACE_ID = "11111111-1111-4111-8111-111111111111"
+SMOKE_USER_ID = "22222222-2222-4222-8222-222222222222"
 
 # The four smoke legs, in order: (label, endpoint, request_body_key, body_extra)
 _SMOKE_LEGS = [
@@ -89,6 +91,17 @@ def _reviewer_headers() -> dict[str, str]:
     }
 
 
+def _identity_headers() -> dict[str, str]:
+    return {
+        "X-Workspace-Id": SMOKE_WORKSPACE_ID,
+        "X-User-Id": SMOKE_USER_ID,
+    }
+
+
+def _operator_headers() -> dict[str, str]:
+    return {**_identity_headers(), **_reviewer_headers()}
+
+
 def _wait_for_api(base_url: str, retries: int = 30, delay: float = 1.0) -> bool:
     url = base_url.rstrip("/") + "/health"
     for _ in range(retries):
@@ -124,7 +137,7 @@ def _register_sources(base_url: str, seeds_path: Path) -> list[str]:
     return messages
 
 
-def _register_area(base_url: str) -> str | None:
+def _register_area(base_url: str, headers: dict[str, str]) -> str | None:
     """Register a Buncombe NC bbox area; return area_id string or None on failure."""
     body = {
         "area_type": "drawn_polygon",
@@ -141,7 +154,7 @@ def _register_area(base_url: str) -> str | None:
             ],
         },
     }
-    status_code, resp = _post(base_url, "/areas", body)
+    status_code, resp = _post(base_url, "/areas", body, headers)
     if status_code in (200, 201):
         return str(resp.get("area_id"))
     return None
@@ -190,7 +203,7 @@ def run_smoke(base_url: str, output_dir: Path) -> int:
     # ------------------------------------------------------------------
     # Register area
     # ------------------------------------------------------------------
-    area_id = _register_area(base_url)
+    area_id = _register_area(base_url, _identity_headers())
     if area_id is None:
         msg = "Failed to register Buncombe NC test area"
         transcript["setup"].append(f"area registration: FAIL - {msg}")
@@ -204,7 +217,7 @@ def run_smoke(base_url: str, output_dir: Path) -> int:
     # ------------------------------------------------------------------
     # Reviewer auth headers
     # ------------------------------------------------------------------
-    reviewer_headers = _reviewer_headers()
+    operator_headers = _operator_headers()
 
     # ------------------------------------------------------------------
     # Run each smoke leg
@@ -216,7 +229,7 @@ def run_smoke(base_url: str, output_dir: Path) -> int:
 
         leg_start = datetime.now(UTC).isoformat()
         print(f"[smoke] {label}: POST {endpoint} ...", end=" ", flush=True)
-        status_code, resp = _post(base_url, endpoint, body, reviewer_headers)
+        status_code, resp = _post(base_url, endpoint, body, operator_headers)
         leg_end = datetime.now(UTC).isoformat()
 
         success = status_code in (200, 201, 202)

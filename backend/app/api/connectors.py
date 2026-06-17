@@ -858,6 +858,21 @@ def _ensure_live_connector_area_in_workspace(
         )
 
 
+def _get_live_connector_area_or_422(
+    area_id: UUID,
+    *,
+    services: ApiServices,
+    auth: RequestAuthContext,
+) -> Any:
+    area = services.area_service.get(area_id)
+    if area is None or area.workspace_id != auth.workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Area '{area_id}' is not registered",
+        )
+    return area.model_copy(update={"created_by": auth.user_id})
+
+
 def _ensure_fixture_provenance(services: ApiServices) -> None:
     try:
         services.source_provenance_service.ensure_dataset(fixture_dataset_contract())
@@ -886,6 +901,29 @@ def _get_compat_queue_item_or_404(
             detail="connector review queue item not found",
         )
     return item
+
+
+def _get_scoped_review_status_or_404(
+    services: ApiServices,
+    auth: RequestAuthContext,
+    ingest_run_id: UUID,
+) -> ConnectorRunReviewStatus:
+    review_status = services.connector_review_statuses.get(ingest_run_id)
+    if review_status is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector run review status not found",
+        )
+    item = services.connector_review_queue_repo.get_by_ingest_run_id(
+        ingest_run_id,
+        workspace_id=auth.workspace_id,
+    )
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector run review status not found",
+        )
+    return review_status
 
 
 def _connector_review_queue_item_contract(
@@ -955,16 +993,16 @@ def _required_compat_reason(reason: str | None) -> str:
 def query_fema_nfhl_bbox(
     request: FemaNfhlQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1012,16 +1050,16 @@ def query_fema_nfhl_bbox(
 def query_usgs_tnm_bbox(
     request: UsgsTnmQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1069,16 +1107,16 @@ def query_usgs_tnm_bbox(
 def query_ssurgo_bbox(
     request: SsurgoQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1126,16 +1164,16 @@ def query_ssurgo_bbox(
 def query_nwi_bbox(
     request: NwiQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1183,16 +1221,16 @@ def query_nwi_bbox(
 def query_osm_road_access_bbox(
     request: OsmRoadAccessQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1245,16 +1283,16 @@ def query_osm_road_access_bbox(
 def query_usgs_water_monitoring_bbox(
     request: UsgsWaterQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1336,6 +1374,7 @@ class EpaEchoQueryResponse(BaseModel):
 def query_epa_echo_bbox(
     request: EpaEchoQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1346,12 +1385,11 @@ def query_epa_echo_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1433,6 +1471,7 @@ class FccBroadbandQueryResponse(BaseModel):
 def query_fcc_broadband_bbox(
     request: FccBroadbandQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1443,12 +1482,11 @@ def query_fcc_broadband_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1593,6 +1631,7 @@ class NcGeologicMapQueryResponse(BaseModel):
 def query_blm_mlrs_bbox(
     request: BlmMlrsQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1603,12 +1642,11 @@ def query_blm_mlrs_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1661,6 +1699,7 @@ def query_blm_mlrs_bbox(
 def query_usgs_mrds_bbox(
     request: UsgsMrdsQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1671,12 +1710,11 @@ def query_usgs_mrds_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1729,6 +1767,7 @@ def query_usgs_mrds_bbox(
 def query_nc_geologic_map_bbox(
     request: NcGeologicMapQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1739,12 +1778,11 @@ def query_nc_geologic_map_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1858,6 +1896,7 @@ class CensusTigerQueryResponse(BaseModel):
 def query_noaa_climate_bbox(
     request: NoaaClimateQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1868,12 +1907,11 @@ def query_noaa_climate_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1925,6 +1963,7 @@ def query_noaa_climate_bbox(
 def query_census_tiger_bbox(
     request: CensusTigerQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
@@ -1935,12 +1974,11 @@ def query_census_tiger_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -1993,16 +2031,16 @@ def query_census_tiger_bbox(
 def query_chatham_parcels_bbox(
     request: ChathamParcelsQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -2050,16 +2088,16 @@ def query_chatham_parcels_bbox(
 def query_buncombe_parcels_bbox(
     request: BuncombeParcelsQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -2107,16 +2145,16 @@ def query_buncombe_parcels_bbox(
 def query_brunswick_parcels_bbox(
     request: BrunswickParcelsQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     try:
-        area = services.area_service.get(request.area_id)
-        if area is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Area '{request.area_id}' is not registered",
-            )
+        area = _get_live_connector_area_or_422(
+            request.area_id,
+            services=services,
+            auth=auth,
+        )
         area_for_bbox = _area_with_bbox_geometry(
             area=area,
             xmin=request.bbox.xmin,
@@ -2620,13 +2658,9 @@ def get_live_connector_job(
 def get_connector_run_review_status(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> dict[str, object]:
-    review_status = services.connector_review_statuses.get(ingest_run_id)
-    if review_status is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="connector run review status not found",
-        )
+    review_status = _get_scoped_review_status_or_404(services, auth, ingest_run_id)
     return review_status.to_status_record()
 
 
@@ -2637,13 +2671,9 @@ def get_connector_run_review_status(
 def get_connector_review_queue_item(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
 ) -> dict[str, object]:
-    queue_item = services.connector_review_queue.get_by_ingest_run_id(ingest_run_id)
-    if queue_item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="connector review queue item not found",
-        )
+    queue_item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     return _queue_item_response(queue_item)
 
 

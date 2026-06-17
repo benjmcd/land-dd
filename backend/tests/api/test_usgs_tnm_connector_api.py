@@ -119,7 +119,7 @@ def _client_with_seeded_services(
     *,
     elevations: list[float],
     fetch_urls: list[str] | None = None,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID | None = _WORKSPACE_ID,
 ) -> tuple[TestClient, ApiServices, UUID]:
     app = create_app()
     services = app.state.services
@@ -148,7 +148,7 @@ def test_usgs_tnm_query_bbox_persists_relief_evidence_and_review_queue() -> None
     response = client.post(
         "/connector-runs/usgs-tnm/query-bbox",
         json=_body(area_id),
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 202
@@ -183,12 +183,14 @@ def test_usgs_tnm_query_bbox_persists_relief_evidence_and_review_queue() -> None
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_LIVE_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["disposition"] == "ready_for_connector_qa"
 
     queue_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-queue",
+        headers=_LIVE_HEADERS,
     )
     assert queue_response.status_code == 200
     assert queue_response.json()["status"] == "queued"
@@ -202,7 +204,7 @@ def test_usgs_tnm_query_bbox_persists_source_failure_for_no_data() -> None:
     response = client.post(
         "/connector-runs/usgs-tnm/query-bbox",
         json=_body(area_id),
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 202
@@ -222,6 +224,7 @@ def test_usgs_tnm_query_bbox_persists_source_failure_for_no_data() -> None:
 
     status_response = client.get(
         f"/connector-runs/{body['ingest_run_id']}/review-status",
+        headers=_LIVE_HEADERS,
     )
     assert status_response.status_code == 200
     assert status_response.json()["signal_codes"] == [
@@ -244,13 +247,13 @@ def test_usgs_tnm_query_bbox_returns_409_when_ds001_is_not_registered() -> None:
     services = app.state.services
     assert isinstance(services, ApiServices)
     area_id = uuid4()
-    services.area_service.create(_area(area_id))
+    services.area_service.create(_area(area_id, workspace_id=_WORKSPACE_ID))
     client = TestClient(app)
 
     response = client.post(
         "/connector-runs/usgs-tnm/query-bbox",
         json=_body(area_id),
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 409
@@ -270,7 +273,7 @@ def test_usgs_tnm_query_bbox_rejects_oversized_bbox() -> None:
     response = client.post(
         "/connector-runs/usgs-tnm/query-bbox",
         json=body,
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 422
@@ -287,7 +290,7 @@ def test_usgs_tnm_query_bbox_does_not_schedule_or_report() -> None:
     response = client.post(
         "/connector-runs/usgs-tnm/query-bbox",
         json=_body(area_id),
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 202
