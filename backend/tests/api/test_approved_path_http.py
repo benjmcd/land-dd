@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
 from app.main import create_app
+from app.reports.artifacts import serialize_report_artifact
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
 
@@ -57,7 +58,7 @@ def test_http_approved_path_with_shipped_fixture_credential() -> None:
     services = cast(ApiServices, app.state.services)
     contract = services.report_service.get_report_run(UUID(report_run_id))
     assert contract is not None
-    expected = json.dumps(contract.model_dump(mode="json"), indent=2, sort_keys=True)
+    expected = serialize_report_artifact(contract)
     assert artifact_resp.text == expected
 
 

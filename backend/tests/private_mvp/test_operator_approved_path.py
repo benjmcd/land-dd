@@ -24,6 +24,7 @@ from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.source_contracts import SourceContract, SourceRetrievalRunContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
@@ -149,9 +150,7 @@ def test_chatham_approved_path_emits_artifact_with_review_state() -> None:
     assert "Review status: approved" in dossier
     assert "Reviewed by: cli-operator" in dossier
 
-    artifact = json.loads(
-        json.dumps(approved.model_dump(mode="json"), indent=2, sort_keys=True)
-    )
+    artifact = json.loads(serialize_report_artifact(approved))
     assert artifact["report_run_id"] == str(approved.report_run_id)
     assert isinstance(artifact["source_manifest"]["source_ids"], list)
     assert len(artifact["source_manifest"]["source_ids"]) > 0
