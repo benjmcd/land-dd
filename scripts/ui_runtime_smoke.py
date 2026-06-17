@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
+from html.parser import HTMLParser
 import json
 import sys
 from dataclasses import dataclass, field
 from http.cookiejar import CookieJar
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode, urljoin, urlparse
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 
@@ -37,6 +38,19 @@ class RouteResult:
             "ok": self.ok,
             "failures": self.failures,
         }
+
+
+class CsrfTokenParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.token: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "input":
+            return
+        fields = dict(attrs)
+        if fields.get("name") == "csrf_token":
+            self.token = fields.get("value")
 
 
 def build_route_checks(*, reviewer_session: bool) -> list[RouteCheck]:
@@ -75,6 +89,18 @@ def build_route_checks(*, reviewer_session: bool) -> list[RouteCheck]:
     ]
 
 
+OPERATOR_CASE_REPORT_CHECK = RouteCheck(
+    "operator-case-report",
+    "/ui/operator-cases/report",
+    (
+        "Executive Summary",
+        "Download dossier (.md)",
+        "Download report (.json)",
+        "View evidence lineage",
+    ),
+)
+
+
 def request_form(opener: Any, url: str, fields: dict[str, str], timeout: float) -> None:
     body = urlencode(fields).encode("utf-8")
     request = Request(
@@ -86,6 +112,19 @@ def request_form(opener: Any, url: str, fields: dict[str, str], timeout: float) 
     with opener.open(request, timeout=timeout) as response:
         if response.status >= 400:
             raise RuntimeError(f"POST {url} returned HTTP {response.status}")
+
+
+def extract_csrf_token(html: str) -> str | None:
+    parser = CsrfTokenParser()
+    parser.feed(html)
+    return parser.token
+
+
+def fetch_csrf_token(opener: Any, base_url: str, timeout: float) -> str | None:
+    url = urljoin(base_url.rstrip("/") + "/", "ui/")
+    with opener.open(url, timeout=timeout) as response:
+        body = response.read().decode("utf-8", errors="replace")
+    return extract_csrf_token(body)
 
 
 def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -> RouteResult:
@@ -129,6 +168,88 @@ def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -
     return RouteResult(check.label, check.path, status, not failures, failures)
 
 
+def result_path_from_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.query:
+        return f"{parsed.path}?{parsed.query}"
+    return parsed.path
+
+
+def post_operator_case_report(
+    opener: Any,
+    base_url: str,
+    case_id: str,
+    timeout: float,
+    *,
+    include_csrf: bool,
+) -> RouteResult:
+    check = OPERATOR_CASE_REPORT_CHECK
+    url = urljoin(base_url.rstrip("/") + "/", "ui/operator-cases/report")
+    fields = {"selected_county_case_id": case_id}
+    failures: list[str] = []
+    status: int | None = None
+    final_path = check.path
+
+    if include_csrf:
+        try:
+            csrf_token = fetch_csrf_token(opener, base_url, timeout)
+        except HTTPError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch returned HTTP {int(exc.code)}")
+        except URLError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch failed: {exc.reason}")
+        if csrf_token:
+            fields["csrf_token"] = csrf_token
+        else:
+            failures.append("missing csrf token on /ui/")
+
+    try:
+        body_bytes = urlencode(fields).encode("utf-8")
+        request = Request(
+            url,
+            data=body_bytes,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with opener.open(request, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+            final_path = result_path_from_url(response.geturl())
+    except HTTPError as exc:
+        status = int(exc.code)
+        body = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("content-type", "")
+        final_path = result_path_from_url(exc.geturl())
+        failures.append(f"HTTP {status}")
+    except URLError as exc:
+        return RouteResult(
+            check.label,
+            final_path,
+            None,
+            False,
+            [f"runtime unavailable: {exc.reason}"],
+        )
+
+    if status != 200:
+        failures.append(f"expected HTTP 200, got {status}")
+    if not body.strip():
+        failures.append("empty body")
+    if check.expect_html and "text/html" not in content_type.lower():
+        failures.append(f"expected text/html content-type, got {content_type or '<missing>'}")
+    if check.expect_viewport and 'name="viewport"' not in body:
+        failures.append("missing viewport meta")
+    for text in check.required:
+        if text not in body:
+            failures.append(f"missing required text: {text}")
+    for text in check.forbidden:
+        if text in body:
+            failures.append(f"found forbidden text: {text}")
+
+    return RouteResult(check.label, final_path, status, not failures, failures)
+
+
 def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
     cookie_jar = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookie_jar))
@@ -151,10 +272,21 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
             args.timeout,
         )
 
-    return [
+    results = [
         fetch_route(opener, base_url, check, args.timeout)
         for check in build_route_checks(reviewer_session=reviewer_session)
     ]
+    if args.operator_case_id:
+        results.append(
+            post_operator_case_report(
+                opener,
+                base_url,
+                args.operator_case_id,
+                args.timeout,
+                include_csrf=bool(args.api_key),
+            )
+        )
+    return results
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -166,6 +298,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reviewer-id", default="")
     parser.add_argument("--reviewer-token", default="")
     parser.add_argument("--timeout", type=float, default=5.0)
+    parser.add_argument(
+        "--operator-case-id",
+        default="",
+        help="opt in to creating and checking one selected-county UI report",
+    )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     return parser
 

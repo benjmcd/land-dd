@@ -704,6 +704,19 @@ missing DOM contracts or page-level horizontal overflow, and removes its tempora
 Chrome profiles. It does not create areas, report runs, connector-review items, review
 actions, screenshots, or JSON output by default.
 
+To opt in to an operator-case runtime delivery check after the default route checks,
+pass a selected-county case id to the urllib-based runtime smoke:
+
+```powershell
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --operator-case-id BUN-slope
+```
+
+This posts the existing UI form field to `/ui/operator-cases/report`, follows the
+redirect to the approved report UI page, and checks the final page for the executive
+summary, Markdown dossier download, JSON report download, and evidence-lineage link.
+It creates an in-memory approved report in the target runtime when that runtime uses
+the default in-memory services; use it only when mutating fixture state is intentional.
+
 Set these optional environment variables only when the target runtime requires them or
 when collecting explicit visual evidence:
 
