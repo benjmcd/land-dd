@@ -1,5 +1,23 @@
 # Project State
 
+## Current checkpoint (2026-06-17 hosted runtime secret contract)
+
+Hosted deployment readiness now mirrors the current non-local auth requirements without
+changing the repo's validate-only hosted posture.
+
+- **Hosted runtime inputs**: `config/hosted_deployment.yaml` no longer lists local-only
+  `API_KEYS` as a required hosted input. The hosted contract requires
+  `API_KEY_SPECS`, `REVIEWER_ACCOUNTS`, `REVIEWER_ACCOUNT_SCOPES`,
+  `UI_AUTH_COOKIE_SECRET`, `REPORT_IDENTITY_TOKEN_SECRET`, and the existing image,
+  URL, and database inputs.
+- **Static proof alignment**: `scripts/hosted_deployment_check.py` now requires the
+  hosted runtime input set to exactly match that contract, so `API_KEYS` cannot return
+  as an extra hosted input.
+- **Runbook alignment**: hosted-deployment, release-readiness, and MVP operator
+  guidance document the non-local auth handoff while preserving the limits: no hosted
+  infrastructure is created, no secrets are written, and no hosted secrets manager is
+  claimed.
+
 ## Current checkpoint (2026-06-17 UI report identity bridge)
 
 Selected-county UI report creation now has a real browser workspace/user identity
