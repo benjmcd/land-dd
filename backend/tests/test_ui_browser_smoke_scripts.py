@@ -87,6 +87,8 @@ def test_mvp_operator_runbook_documents_ui_browser_smoke() -> None:
     assert ".\\scripts\\run_ui_browser_smoke.ps1" in runbook
     assert "ui_runtime_smoke.py" in runbook
     assert "does not create areas, report runs, connector-review items" in runbook
+    assert "--operator-case-id BUN-slope" in runbook
+    assert "creates an in-memory approved report" in runbook
     assert "LAND_DD_UI_SMOKE_SCREENSHOT_DIR" in runbook
 
 
