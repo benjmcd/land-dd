@@ -13,10 +13,11 @@ import pytest
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import create_api_services, get_services
+from app.api.dependencies import ApiServices, create_api_services, get_services
 from app.api.report_auth import create_report_identity_token, verify_report_identity_token
 from app.api.reports import _optional_report_auth_context
 from app.core.config import Settings
+from app.domain.enums import IntentCode, JobStatus
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
@@ -177,8 +178,20 @@ def test_signed_report_identity_token_binds_report_scope() -> None:
         headers=bearer_headers(workspace_id, user_id),
     )
 
-    assert response.status_code == 201
-    report = response.json()
+    assert response.status_code == 202
+    job = response.json()
+    assert job["status"] == "queued"
+    assert set(job) == {
+        "report_run_id",
+        "status",
+        "connector_ingest_run_id",
+        "connector_review_status",
+        "retry_of_report_run_id",
+    }
+    report = client.get(
+        f"/report-runs/{job['report_run_id']}",
+        headers=bearer_headers(workspace_id, user_id),
+    ).json()
     assert report["workspace_id"] == workspace_id
     assert report["requested_by"] == user_id
     assert (
@@ -210,11 +223,22 @@ def test_signed_report_create_idempotency_replays_same_report() -> None:
         headers={**headers, "Idempotency-Key": key},
     )
 
-    assert first.status_code == 201
+    assert first.status_code == 202
     assert second.status_code == 200
     assert first.json()["report_run_id"] == second.json()["report_run_id"]
-    assert second.json()["workspace_id"] == workspace_id
-    assert second.json()["requested_by"] == user_id
+    assert set(second.json()) == {
+        "report_run_id",
+        "status",
+        "connector_ingest_run_id",
+        "connector_review_status",
+        "retry_of_report_run_id",
+    }
+    report = client.get(
+        f"/report-runs/{second.json()['report_run_id']}",
+        headers=headers,
+    ).json()
+    assert report["workspace_id"] == workspace_id
+    assert report["requested_by"] == user_id
 
 
 def test_signed_report_create_idempotency_rejects_payload_mismatch() -> None:
@@ -237,7 +261,7 @@ def test_signed_report_create_idempotency_rejects_payload_mismatch() -> None:
         headers={**headers, "Idempotency-Key": key},
     )
 
-    assert first.status_code == 201
+    assert first.status_code == 202
     assert second.status_code == 409
     assert "different payload" in second.json()["detail"]
 
@@ -265,11 +289,19 @@ def test_signed_report_create_idempotency_is_principal_scoped() -> None:
         headers={**headers_b, "Idempotency-Key": key},
     )
 
-    assert first.status_code == 201
-    assert second.status_code == 201
+    assert first.status_code == 202
+    assert second.status_code == 202
     assert first.json()["report_run_id"] != second.json()["report_run_id"]
-    assert first.json()["workspace_id"] == workspace_a
-    assert second.json()["workspace_id"] == workspace_b
+    first_report = client.get(
+        f"/report-runs/{first.json()['report_run_id']}",
+        headers=headers_a,
+    ).json()
+    second_report = client.get(
+        f"/report-runs/{second.json()['report_run_id']}",
+        headers=headers_b,
+    ).json()
+    assert first_report["workspace_id"] == workspace_a
+    assert second_report["workspace_id"] == workspace_b
 
 
 def test_signed_report_identity_token_rejects_missing_invalid_and_mismatch() -> None:
@@ -299,7 +331,7 @@ def test_signed_report_identity_token_rejects_missing_invalid_and_mismatch() -> 
                 "X-User-Id": user_id,
             },
         ).status_code
-        == 201
+        == 202
     )
     assert (
         client.post(
@@ -309,6 +341,80 @@ def test_signed_report_identity_token_rejects_missing_invalid_and_mismatch() -> 
         ).status_code
         == 403
     )
+
+
+@pytest.mark.parametrize("job_status", [JobStatus.QUEUED, JobStatus.FAILED])
+def test_signed_report_job_status_reads_do_not_cross_workspace(
+    job_status: JobStatus,
+) -> None:
+    app = create_app(
+        settings=Settings(
+            REPORT_AUTH_MODE="signed_token",
+            REPORT_IDENTITY_TOKEN_SECRET=SECRET,
+        )
+    )
+    client = TestClient(app)
+    workspace_a = str(uuid4())
+    workspace_b = str(uuid4())
+    user_id = str(uuid4())
+    headers_a = bearer_headers(workspace_a, user_id)
+    area_id = create_area(client, headers_a)
+    services = cast(ApiServices, app.state.services)
+    job = services.async_report_jobs.create(
+        area_id=UUID(area_id),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+        workspace_id=UUID(workspace_a),
+        requested_by=UUID(user_id),
+    )
+    if job_status == JobStatus.FAILED:
+        services.async_report_jobs.mark_failed(
+            job.report_run_id,
+            error_msg="fixture failure",
+        )
+
+    response = client.get(
+        f"/report-runs/{job.report_run_id}",
+        headers=bearer_headers(workspace_b, user_id),
+    )
+
+    assert response.status_code == 404
+
+
+def test_signed_report_list_filters_to_authenticated_workspace() -> None:
+    app = create_app(
+        settings=Settings(
+            REPORT_AUTH_MODE="signed_token",
+            REPORT_IDENTITY_TOKEN_SECRET=SECRET,
+        )
+    )
+    client = TestClient(app)
+    workspace_a = str(uuid4())
+    workspace_b = str(uuid4())
+    user_id = str(uuid4())
+    headers_a = bearer_headers(workspace_a, user_id)
+    headers_b = bearer_headers(workspace_b, user_id)
+    area_a = create_area(client, headers_a)
+    area_b = create_area(client, headers_b)
+    services = cast(ApiServices, app.state.services)
+    job_a = services.async_report_jobs.create(
+        area_id=UUID(area_a),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+        workspace_id=UUID(workspace_a),
+        requested_by=UUID(user_id),
+    )
+    job_b = services.async_report_jobs.create(
+        area_id=UUID(area_b),
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=UUID(workspace_b),
+        requested_by=UUID(user_id),
+    )
+
+    response = client.get("/report-runs", headers=headers_a)
+
+    assert response.status_code == 200
+    listed_ids = {item["report_run_id"] for item in response.json()}
+    assert str(job_a.report_run_id) in listed_ids
+    assert str(job_b.report_run_id) not in listed_ids
 
 
 @pytest.mark.parametrize("secret", [None, "short"])
@@ -396,7 +502,7 @@ def test_report_adjacent_routes_fail_closed_for_wrong_workspace(
         json={"area_id": area_id, "intent_code": "rural_land_purchase"},
         headers=bearer_headers(workspace_a, user_id),
     )
-    assert run_resp.status_code == 201
+    assert run_resp.status_code == 202
     report_run_id = run_resp.json()["report_run_id"]
 
     url = route_fn(report_run_id)  # type: ignore[operator]

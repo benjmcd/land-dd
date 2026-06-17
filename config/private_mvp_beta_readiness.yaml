@@ -234,20 +234,19 @@ private_mvp_beta:
       before report creation; signed-token mode keeps its existing bearer-token enforcement.
 
   sync_async_create_divergence:
-    status: accepted_with_risk
-    evidence: backend/app/api/reports.py (create_report_run handler and authenticated idempotency helper)
+    status: complete
+    evidence: backend/app/api/reports.py and backend/app/reports/job_store.py
+      (authenticated create queues durable async report jobs with workspace/requester
+      attribution)
     risk: >
-      Authenticated requests (valid signed token + workspace headers) receive 201 CREATED
-      with a full ReportRunContract synchronously. Unauthenticated requests receive 202
-      ACCEPTED with an AsyncReportRunResponse (job ID only). Clients must handle both
-      response shapes and status codes. This divergence is intentional for private MVP
-      (operator can use either path) but creates inconsistent API ergonomics. Should be
-      unified — likely to 202 with a polling endpoint — before hosted production.
+      Resolved for the active POST /report-runs surface. Authenticated and
+      unauthenticated report creation now return AsyncReportRunResponse: 202 ACCEPTED
+      on first queueing and 200 OK on Idempotency-Key replay.
     note: >
-      The two paths share the same POST /report-runs endpoint but differ in response
-      shape, status code, and execution model. Both paths now support
-      Idempotency-Key replay; signed-token replay is scoped to the authenticated
-      workspace and user, and the operator runbook documents the conditional behavior.
+      Signed-token replay remains scoped to the authenticated workspace and user.
+      The async job store carries workspace_id and requested_by through both
+      in-memory and SQLAlchemy-backed job records, and background report creation
+      uses that attribution for the eventual ReportRunContract.
 
   ds017_not_required:
     status: complete

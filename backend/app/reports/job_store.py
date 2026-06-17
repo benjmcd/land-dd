@@ -24,6 +24,8 @@ class ReportJobRecord:
     area_id: UUID
     intent_code: IntentCode
     status: JobStatus = JobStatus.QUEUED
+    workspace_id: UUID | None = None
+    requested_by: UUID | None = None
     error_msg: str | None = None
     retry_of_report_run_id: UUID | None = None
     # client_idempotency_key is the caller-supplied Idempotency-Key header value
@@ -40,6 +42,8 @@ class AsyncReportJobStoreProtocol(Protocol):
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
         client_idempotency_key: str | None = None,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ReportJobRecord: ...
 
     def get_by_client_idempotency_key(
@@ -69,6 +73,7 @@ class AsyncReportJobStoreProtocol(Protocol):
         limit: int = 50,
         offset: int = 0,
         status: JobStatus | None = None,
+        workspace_id: UUID | None = None,
     ) -> list[ReportJobRecord]: ...
 
 
@@ -86,6 +91,8 @@ class AsyncReportJobStore:
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
         client_idempotency_key: str | None = None,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ReportJobRecord:
         with self._lock:
             if client_idempotency_key is not None:
@@ -99,6 +106,8 @@ class AsyncReportJobStore:
                 report_run_id=uuid4(),
                 area_id=area_id,
                 intent_code=intent_code,
+                workspace_id=workspace_id,
+                requested_by=requested_by,
                 retry_of_report_run_id=retry_of_report_run_id,
                 client_idempotency_key=client_idempotency_key,
             )
@@ -154,11 +163,14 @@ class AsyncReportJobStore:
         limit: int = 50,
         offset: int = 0,
         status: JobStatus | None = None,
+        workspace_id: UUID | None = None,
     ) -> list[ReportJobRecord]:
         with self._lock:
             jobs = sorted(self._jobs.values(), key=lambda r: r.created_at, reverse=True)
             if status is not None:
                 jobs = [r for r in jobs if r.status == status]
+            if workspace_id is not None:
+                jobs = [r for r in jobs if r.workspace_id == workspace_id]
             return jobs[offset : offset + limit]
 
 
@@ -176,6 +188,8 @@ class SqlAlchemyAsyncReportJobStore:
         intent_code: IntentCode,
         retry_of_report_run_id: UUID | None = None,
         client_idempotency_key: str | None = None,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> ReportJobRecord:
         # For client-keyed requests: check for existing job first (durable dedup).
         if client_idempotency_key is not None:
@@ -190,6 +204,8 @@ class SqlAlchemyAsyncReportJobStore:
             report_run_id=uuid4(),
             area_id=area_id,
             intent_code=intent_code,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             retry_of_report_run_id=retry_of_report_run_id,
             client_idempotency_key=client_idempotency_key,
         )
@@ -204,6 +220,7 @@ class SqlAlchemyAsyncReportJobStore:
                     """
                     INSERT INTO jobs.job_queue (
                         job_id,
+                        workspace_id,
                         job_type,
                         status,
                         payload,
@@ -212,6 +229,7 @@ class SqlAlchemyAsyncReportJobStore:
                     )
                     VALUES (
                         :job_id,
+                        :workspace_id,
                         :job_type,
                         CAST(:status AS jobs.job_status),
                         CAST(:payload AS jsonb),
@@ -223,6 +241,9 @@ class SqlAlchemyAsyncReportJobStore:
                 ),
                 {
                     "job_id": str(record.report_run_id),
+                    "workspace_id": str(record.workspace_id)
+                    if record.workspace_id is not None
+                    else None,
                     "job_type": REPORT_RUN_JOB_TYPE,
                     "status": record.status.value,
                     "payload": _json_payload(record),
@@ -253,7 +274,7 @@ class SqlAlchemyAsyncReportJobStore:
             row = session.execute(
                 text(
                     """
-                    SELECT job_id, status, payload, last_error, created_at
+                    SELECT job_id, workspace_id, status, payload, last_error, created_at
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                       AND idempotency_key = :idempotency_key
@@ -274,7 +295,7 @@ class SqlAlchemyAsyncReportJobStore:
             row = session.execute(
                 text(
                     """
-                    SELECT job_id, status, payload, last_error, created_at
+                    SELECT job_id, workspace_id, status, payload, last_error, created_at
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                       AND job_id = :job_id
@@ -319,28 +340,25 @@ class SqlAlchemyAsyncReportJobStore:
         limit: int = 50,
         offset: int = 0,
         status: JobStatus | None = None,
+        workspace_id: UUID | None = None,
     ) -> list[ReportJobRecord]:
         params: dict[str, object] = {
             "job_type": REPORT_RUN_JOB_TYPE,
             "limit": limit,
             "offset": offset,
         }
+        predicates = ["job_type = :job_type"]
         if status is not None:
             params["status"] = status.value
-            sql = """
-                SELECT job_id, status, payload, last_error, created_at
+            predicates.append("status = CAST(:status AS jobs.job_status)")
+        if workspace_id is not None:
+            params["workspace_id"] = str(workspace_id)
+            predicates.append("workspace_id = CAST(:workspace_id AS uuid)")
+        where_clause = " AND ".join(predicates)
+        sql = f"""
+                SELECT job_id, workspace_id, status, payload, last_error, created_at
                 FROM jobs.job_queue
-                WHERE job_type = :job_type
-                  AND status = CAST(:status AS jobs.job_status)
-                ORDER BY created_at DESC
-                LIMIT :limit
-                OFFSET :offset
-                """
-        else:
-            sql = """
-                SELECT job_id, status, payload, last_error, created_at
-                FROM jobs.job_queue
-                WHERE job_type = :job_type
+                WHERE {where_clause}
                 ORDER BY created_at DESC
                 LIMIT :limit
                 OFFSET :offset
@@ -448,6 +466,7 @@ def _payload(record: ReportJobRecord) -> dict[str, str | None]:
         "report_run_id": str(record.report_run_id),
         "area_id": str(record.area_id),
         "intent_code": record.intent_code.value,
+        "requested_by": str(record.requested_by) if record.requested_by is not None else None,
     }
     if record.retry_of_report_run_id is not None:
         payload["retry_of_report_run_id"] = str(record.retry_of_report_run_id)
@@ -476,6 +495,10 @@ def _record_from_row(row: Any) -> ReportJobRecord:
         area_id=UUID(str(payload["area_id"])),
         intent_code=IntentCode(str(payload["intent_code"])),
         status=JobStatus(str(row["status"])),
+        workspace_id=UUID(str(row["workspace_id"]))
+        if row["workspace_id"] is not None
+        else None,
+        requested_by=_optional_payload_uuid(payload, "requested_by"),
         error_msg=None if row["last_error"] is None else str(row["last_error"]),
         retry_of_report_run_id=_optional_payload_uuid(payload, "retry_of_report_run_id"),
         client_idempotency_key=payload.get("client_idempotency_key"),

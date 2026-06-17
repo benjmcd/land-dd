@@ -1,5 +1,32 @@
 # Project State
 
+## Current checkpoint (2026-06-17 async report-create contract)
+
+`POST /report-runs` now uses the async job contract for authenticated creation instead
+of returning a synchronous `201 Created` `ReportRunContract`.
+
+- **Unified create response**: authenticated and unauthenticated report creation both
+  return `AsyncReportRunResponse`; first queueing returns `202 Accepted`, and
+  `Idempotency-Key` replay returns `200 OK` with the same job ID.
+- **Attribution preserved**: report jobs now carry `workspace_id` and `requested_by`
+  through the in-memory and SQLAlchemy-backed async job stores. Background report
+  execution passes those fields to the eventual `ReportRunContract`.
+- **Workspace-scoped job reads**: authenticated `GET /report-runs` filters job rows to
+  the caller's workspace, and authenticated `GET /report-runs/{id}` no longer returns
+  queued/running/failed job placeholders for another workspace. Succeeded legacy rows
+  still fall through to report-level workspace checks.
+- **Readiness/runbook update**: `sync_async_create_divergence` is marked complete in
+  `config/private_mvp_beta_readiness.yaml`, and the MVP operator runbook now documents
+  the unified async creation/idempotency response.
+- **OpenAPI stub refreshed**: tracked stub files under `api/` and
+  `docs/planning_pack/api/` were regenerated with the repo export script.
+- **Validation**: focused report job/auth/async/idempotency tests passed (`54 passed`,
+  `7 skipped`) before the list-isolation follow-up; focused integration/list-isolation
+  tests, ruff, mypy, private-MVP readiness, access-control, and OpenAPI parity passed.
+  DB-enabled `.\scripts\verify.ps1` passed on ephemeral PostGIS port `55446` after a
+  post-readiness settle wait, covering migrations/seeds, backend tests, ruff, mypy over
+  309 source files, and DB smoke.
+
 ## Current checkpoint (2026-06-16 operator proof-semantics closeout)
 
 The selected-county operator implementation remains the app-owned packaged fixture path:
