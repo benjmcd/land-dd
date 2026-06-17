@@ -157,3 +157,68 @@ secret_management_contract:
     writes_secrets: false
     provisions_hosted_secret_manager: false
     permits_committed_plaintext_secrets: false
+identity_rbac_contract:
+  status: repo_local_design_contract
+  authority:
+    - backend/app/api/dependencies.py
+    - backend/app/api/report_auth.py
+    - backend/app/api/reviewer_auth.py
+    - backend/app/api/auth_audit.py
+    - docs/runbooks/access_control.md
+    - docs/runbooks/mvp_operator.md
+  hosted_identity_provider_status: blocked
+  user_account_persistence_status: blocked
+  full_role_policy_status: blocked
+  required_identity_claims:
+    - subject
+    - email
+    - display_name
+    - workspace_id
+    - user_id
+    - groups_or_roles
+  role_mappings:
+    platform_admin:
+      scopes:
+        - connector:run
+        - connector:review
+        - operations:read
+        - report:approve
+        - report:retry
+        - report:run
+    workspace_admin:
+      scopes:
+        - operations:read
+        - report:approve
+        - report:retry
+        - report:run
+    reviewer:
+      scopes:
+        - connector:review
+        - report:approve
+    operator:
+      scopes:
+        - connector:run
+        - operations:read
+        - report:run
+    read_only:
+      scopes:
+        - operations:read
+  audit_requirements:
+    - idp_subject
+    - workspace_id
+    - user_id
+    - role_ids
+    - route_scope
+    - session_or_token_id
+    - decision_outcome
+  migration_requirements:
+    - map_current_reviewer_scopes_to_roles
+    - bind_report_identity_tokens_to_user_account
+    - preserve_static_service_account_breakglass
+    - record_user_bound_audit_events
+  limits:
+    validate_only_catalog: true
+    provisions_identity_provider: false
+    creates_user_account_tables: false
+    implements_oauth_oidc: false
+    claims_production_rbac: false

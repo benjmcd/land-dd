@@ -12,6 +12,8 @@ This runbook does not add user accounts, OAuth/OIDC, full user RBAC, automatic k
 rotation, external secrets management, or hosted identity-provider integration.
 It also treats `secret_management_contract` in `config/access_control.yaml` as a
 validate-only secret handoff catalog, not a hosted secret manager integration.
+It treats `identity_rbac_contract` in `config/access_control.yaml` as a
+validate-only identity/RBAC design handoff, not production identity or RBAC.
 
 ## Current Controls
 
@@ -49,6 +51,28 @@ that authority exists. The catalog ensures no plaintext secret values are commit
 no committed secret values are accepted as proof, no secret writes, and no hosted secret
 manager provisioning.
 There is no hosted secret manager provisioning.
+
+## Identity/RBAC Contract
+
+The repo-local `identity_rbac_contract` is the identity and RBAC design handoff
+contract. It records the claims, roles, route scopes, audit requirements, and
+migration expectations that future identity work must preserve before production
+RBAC can be claimed. It is a validate-only identity/RBAC design handoff with
+no IdP provisioning, no user DB tables, no OAuth/OIDC implementation, and no
+production RBAC claim.
+
+The required identity claims are subject, email, display_name, workspace_id, user_id,
+and groups_or_roles. In operator terms, `groups_or_roles` means groups/roles supplied
+by the future identity provider.
+Canonical claim list: subject, email, display_name, workspace_id, user_id, and groups_or_roles.
+Required role mappings are platform_admin, workspace_admin, reviewer, operator, and read_only.
+Route-scope mappings include connector:run, connector:review, operations:read, report:retry, report:run, and report:approve.
+
+Identity audit evidence must support user-bound audit events and include the IdP subject, workspace/user id, session/token id, route-scope decision, and decision outcome.
+The current API-key and reviewer service-account controls remain static
+private-MVP substrates until the OAuth/OIDC identity provider, full user auth/RBAC,
+user-account persistence, and full user role policy blockers are resolved.
+The hosted identity provider remains blocked.
 
 ## Validate Access Control
 
@@ -91,6 +115,11 @@ Run the pytest targets named below for behavioral proof. The check verifies that
   token rotation or scope removal, remain scoped to `/ui`, and do not authenticate
   JSON/API reviewer-protected routes;
 - reviewer accounts require explicit route scopes through `REVIEWER_ACCOUNT_SCOPES`;
+- `identity_rbac_contract` records the validate-only identity/RBAC design handoff,
+  required identity claims, required role mappings, route-scope mappings, user-bound
+  audit requirements, migration expectations, blocked identity/RBAC statuses, and
+  explicit limits against IdP provisioning, user DB tables, OAuth/OIDC implementation,
+  or a production RBAC claim;
 - operator route modules depend on `ReviewerPrincipal` and enforce the route's scope;
 - current tests cover API-key and reviewer-auth failure paths;
 - CI includes the `access-control` validate-only job.
@@ -130,7 +159,8 @@ Run the pytest targets named below for behavioral proof. The check verifies that
    must still use `X-Reviewer-Id` and `X-Reviewer-Token`.
 7. Treat a failed access-control proof as a release blocker until the current controls,
    tests, catalog, and runbook are reconciled.
-8. Do not claim full user auth/RBAC until user accounts, identity-provider integration,
+8. Treat the repo-local identity/RBAC contract as a design handoff only. Do not
+   claim full user auth/RBAC until user accounts, identity-provider integration,
    full role policy, automatic key rotation, hosted retention, and audit semantics are designed,
    implemented, and verified.
 
@@ -139,6 +169,7 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 - No full user auth/RBAC exists yet.
 - No OAuth/OIDC integration or hosted identity provider exists.
 - No user-account persistence exists.
+- No IdP provisioning, no user DB tables, no OAuth/OIDC implementation, and no production RBAC claim exists through `identity_rbac_contract`.
 - No hosted secret manager integration exists.
 - API keys are static environment values; raw configured secrets are local-only, and
   non-local API-key-locked environments require `API_KEY_SPECS` with `sha256:<64-hex>`

@@ -32,6 +32,37 @@ REQUIRED_SECRET_REFS = {
     "REPORT_IDENTITY_TOKEN_SECRET",
     "DATABASE_URL",
 }
+REQUIRED_IDENTITY_CLAIMS = {
+    "subject",
+    "email",
+    "display_name",
+    "workspace_id",
+    "user_id",
+    "groups_or_roles",
+}
+REQUIRED_IDENTITY_ROLES = {
+    "platform_admin",
+    "workspace_admin",
+    "reviewer",
+    "operator",
+    "read_only",
+}
+REQUIRED_ROUTE_SCOPES = {
+    "connector:run",
+    "connector:review",
+    "operations:read",
+    "report:retry",
+    "report:run",
+    "report:approve",
+}
+REQUIRED_IDENTITY_AUDIT_REQUIREMENTS = {
+    "idp_subject",
+    "workspace_id",
+    "user_id",
+    "route_scope",
+    "session_or_token_id",
+    "decision_outcome",
+}
 
 
 def test_access_control_catalog_covers_current_controls_and_blockers() -> None:
@@ -95,6 +126,50 @@ def test_access_control_catalog_records_secret_management_contract() -> None:
     }
 
 
+def test_access_control_catalog_records_identity_rbac_contract() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "access_control.yaml").read_text(encoding="utf-8"),
+    )
+
+    blockers = {blocker["id"]: blocker for blocker in catalog["production_blockers"]}
+    for blocker_id in (
+        "oauth_oidc_identity_provider",
+        "full_user_auth_rbac",
+        "user_account_persistence",
+        "full_user_role_policy",
+    ):
+        assert blockers[blocker_id]["status"] == "blocked"
+
+    contract = catalog["identity_rbac_contract"]
+    assert contract["status"] == "repo_local_design_contract"
+    assert contract["hosted_identity_provider_status"] == "blocked"
+    assert contract["user_account_persistence_status"] == "blocked"
+    assert contract["full_role_policy_status"] == "blocked"
+    for authority in contract["authority"]:
+        assert (REPO_ROOT / authority).exists()
+
+    assert REQUIRED_IDENTITY_CLAIMS == set(contract["required_identity_claims"])
+    assert REQUIRED_IDENTITY_ROLES == set(contract["role_mappings"])
+
+    mapped_scopes = {
+        scope
+        for role in contract["role_mappings"].values()
+        for scope in role["scopes"]
+    }
+    assert REQUIRED_ROUTE_SCOPES == mapped_scopes
+    assert REQUIRED_IDENTITY_AUDIT_REQUIREMENTS.issubset(
+        set(contract["audit_requirements"]),
+    )
+    assert "record_user_bound_audit_events" in contract["migration_requirements"]
+    assert contract["limits"] == {
+        "validate_only_catalog": True,
+        "provisions_identity_provider": False,
+        "creates_user_account_tables": False,
+        "implements_oauth_oidc": False,
+        "claims_production_rbac": False,
+    }
+
+
 def test_access_control_runbook_records_validation_and_limits() -> None:
     runbook = (REPO_ROOT / "docs" / "runbooks" / "access_control.md").read_text(
         encoding="utf-8",
@@ -133,6 +208,23 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "no committed secret values",
         "no secret writes",
         "no hosted secret manager provisioning",
+        "identity_rbac_contract",
+        "validate-only identity/RBAC design handoff",
+        "required identity claims are subject, email, display_name, workspace_id",
+        "groups_or_roles",
+        "groups/roles supplied",
+        "platform_admin, workspace_admin, reviewer, operator, and read_only",
+        "connector:run, connector:review, operations:read",
+        "report:retry, report:run, and report:approve",
+        "user-bound audit events",
+        "IdP subject",
+        "workspace/user id",
+        "session/token id",
+        "decision outcome",
+        "no IdP provisioning",
+        "no user DB tables",
+        "no OAuth/OIDC implementation",
+        "no production RBAC claim",
     ):
         assert phrase in runbook
 

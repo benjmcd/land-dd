@@ -70,6 +70,44 @@ REQUIRED_SECRET_HANDOFFS = {
     "post_rotation_access_control_check",
     "rotation_runbook_or_ticket",
 }
+REQUIRED_IDENTITY_CLAIMS = {
+    "display_name",
+    "email",
+    "groups_or_roles",
+    "subject",
+    "user_id",
+    "workspace_id",
+}
+REQUIRED_IDENTITY_ROLES = {
+    "operator",
+    "platform_admin",
+    "read_only",
+    "reviewer",
+    "workspace_admin",
+}
+REQUIRED_ROUTE_SCOPES = {
+    "connector:review",
+    "connector:run",
+    "operations:read",
+    "report:approve",
+    "report:retry",
+    "report:run",
+}
+REQUIRED_IDENTITY_AUDIT_REQUIREMENTS = {
+    "decision_outcome",
+    "idp_subject",
+    "role_ids",
+    "route_scope",
+    "session_or_token_id",
+    "user_id",
+    "workspace_id",
+}
+REQUIRED_IDENTITY_MIGRATIONS = {
+    "bind_report_identity_tokens_to_user_account",
+    "map_current_reviewer_scopes_to_roles",
+    "preserve_static_service_account_breakglass",
+    "record_user_bound_audit_events",
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -209,6 +247,7 @@ def validate_catalog() -> None:
     missing_blockers = sorted(REQUIRED_BLOCKERS - blocker_ids)
     require(not missing_blockers, f"missing blockers: {missing_blockers}")
     validate_secret_management_contract(payload)
+    validate_identity_rbac_contract(payload)
 
 
 def validate_secret_management_contract(payload: dict[str, Any]) -> None:
@@ -276,6 +315,96 @@ def validate_secret_management_contract(payload: dict[str, Any]) -> None:
         limits.get("permits_committed_plaintext_secrets") is False,
         "secret contract must not permit committed plaintext secrets",
     )
+
+
+def validate_identity_rbac_contract(payload: dict[str, Any]) -> None:
+    contract_raw = payload.get("identity_rbac_contract")
+    require(isinstance(contract_raw, dict), "identity_rbac_contract missing")
+    contract = cast(dict[str, Any], contract_raw)
+    require(
+        contract.get("status") == "repo_local_design_contract",
+        "identity_rbac_contract status mismatch",
+    )
+    authority_raw = contract.get("authority")
+    require(
+        isinstance(authority_raw, list) and bool(authority_raw),
+        "identity RBAC authority missing",
+    )
+    authority = cast(list[Any], authority_raw)
+    for authority_path in authority:
+        require(isinstance(authority_path, str), "identity RBAC authority must be strings")
+        require_existing(authority_path)
+    for key in (
+        "hosted_identity_provider_status",
+        "user_account_persistence_status",
+        "full_role_policy_status",
+    ):
+        require(contract.get(key) == "blocked", f"{key} must remain blocked")
+
+    claims_raw = contract.get("required_identity_claims")
+    require(
+        isinstance(claims_raw, list) and bool(claims_raw),
+        "required_identity_claims missing",
+    )
+    claims = cast(list[Any], claims_raw)
+    missing_claims = sorted(REQUIRED_IDENTITY_CLAIMS - set(claims))
+    require(not missing_claims, f"identity claims missing: {missing_claims}")
+
+    role_mappings_raw = contract.get("role_mappings")
+    require(isinstance(role_mappings_raw, dict), "role_mappings missing")
+    role_mappings = cast(dict[str, Any], role_mappings_raw)
+    missing_roles = sorted(REQUIRED_IDENTITY_ROLES - set(role_mappings))
+    require(not missing_roles, f"identity roles missing: {missing_roles}")
+    mapped_scopes: set[str] = set()
+    for role_id in REQUIRED_IDENTITY_ROLES:
+        role_raw = role_mappings.get(role_id)
+        require(isinstance(role_raw, dict), f"{role_id} mapping must be a mapping")
+        role = cast(dict[str, Any], role_raw)
+        scopes_raw = role.get("scopes")
+        require(
+            isinstance(scopes_raw, list) and bool(scopes_raw),
+            f"{role_id} scopes missing",
+        )
+        scopes_list = cast(list[Any], scopes_raw)
+        scopes = {str(scope) for scope in scopes_list}
+        unknown_scopes = sorted(scopes - REQUIRED_ROUTE_SCOPES)
+        require(not unknown_scopes, f"{role_id} has unknown scopes: {unknown_scopes}")
+        mapped_scopes.update(scopes)
+    missing_scopes = sorted(REQUIRED_ROUTE_SCOPES - mapped_scopes)
+    require(not missing_scopes, f"route scopes missing from roles: {missing_scopes}")
+
+    audit_raw = contract.get("audit_requirements")
+    require(isinstance(audit_raw, list) and bool(audit_raw), "audit_requirements missing")
+    audit_requirements = cast(list[Any], audit_raw)
+    missing_audit = sorted(REQUIRED_IDENTITY_AUDIT_REQUIREMENTS - set(audit_requirements))
+    require(not missing_audit, f"identity audit requirements missing: {missing_audit}")
+
+    migrations_raw = contract.get("migration_requirements")
+    require(
+        isinstance(migrations_raw, list) and bool(migrations_raw),
+        "migration_requirements missing",
+    )
+    migration_requirements = cast(list[Any], migrations_raw)
+    missing_migrations = sorted(REQUIRED_IDENTITY_MIGRATIONS - set(migration_requirements))
+    require(
+        not missing_migrations,
+        f"identity migration requirements missing: {missing_migrations}",
+    )
+
+    limits_raw = contract.get("limits")
+    require(isinstance(limits_raw, dict), "identity RBAC limits missing")
+    limits = cast(dict[str, Any], limits_raw)
+    require(limits.get("validate_only_catalog") is True, "identity contract must be validate-only")
+    require(
+        limits.get("provisions_identity_provider") is False,
+        "identity contract must not provision identity providers",
+    )
+    require(
+        limits.get("creates_user_account_tables") is False,
+        "identity contract must not create user account tables",
+    )
+    require(limits.get("implements_oauth_oidc") is False, "identity contract must not implement OIDC")
+    require(limits.get("claims_production_rbac") is False, "identity contract must not claim RBAC")
 
 
 def validate_api_key_auth() -> None:
@@ -828,11 +957,19 @@ def validate_ci_and_runbook() -> None:
             "DATABASE_URL",
             "hosted secret manager remains blocked",
             "no plaintext secret values are committed",
+            "identity_rbac_contract",
+            "identity/RBAC design handoff",
+            "subject, email, display_name, workspace_id, user_id, and groups_or_roles",
+            "platform_admin, workspace_admin, reviewer, operator, and read_only",
+            "hosted identity provider remains blocked",
+            "no OAuth/OIDC implementation",
+            "no production RBAC claim",
         ),
         "access-control runbook",
     )
     env_example = read_text(".env.example")
     compose = read_text("docker-compose.yml")
+    mvp_operator = read_text("docs/runbooks/mvp_operator.md")
     for text_name, text_payload in ((".env.example", env_example), ("docker-compose.yml", compose)):
         require(
             "REVIEWER_ACCOUNT_SCOPES" in text_payload,
@@ -853,6 +990,16 @@ def validate_ci_and_runbook() -> None:
     require("non-local APP_ENV" in compose, "docker-compose.yml missing non-local secret guidance")
     require("REPORT_AUTH_MODE" in compose, "docker-compose.yml missing report auth mode")
     require("report:approve" in compose, "docker-compose.yml fixture reviewer scopes missing report approval")
+    require_phrases(
+        mvp_operator,
+        (
+            "identity_rbac_contract",
+            "maps future roles to current route scopes",
+            "does not add user accounts, OAuth/OIDC, full user RBAC",
+            "design handoff only",
+        ),
+        "mvp operator identity RBAC docs",
+    )
 
 
 def main() -> int:

@@ -831,9 +831,12 @@ API-key middleware, private-beta UI API-key cookie bridge, local scoped reviewer
 service-account auth, reviewer-authenticated and scoped operator routes, intentionally
 public `/health` and `/version` routes, CI proof wiring, configured static API-key
 lifecycle support, structured API-key auth runtime logs/audit rows including
-`/ui/auth` login attempts, and explicit production auth blockers. It does not add user
-accounts, OAuth/OIDC, full user RBAC, automatic key rotation, hosted identity-provider
-integration, or user-bound audit semantics.
+`/ui/auth` login attempts, the repo-local `identity_rbac_contract` design handoff,
+and explicit production auth blockers. The identity/RBAC handoff maps future roles
+to current route scopes and names required identity/audit claims, but it does not add
+user accounts, OAuth/OIDC, full user RBAC, automatic key rotation, hosted
+identity-provider integration, or user-bound audit semantics.
+It does not add user accounts, OAuth/OIDC, full user RBAC.
 
 ---
 
@@ -930,7 +933,7 @@ future work items.
 | Live connectors are bounded and review-gated | Reviewed Must-priority paths now include DS-001, DS-002, DS-003, and DS-004 public-source connectors, DS-010 selected-county parcel connectors, the DS-011 assessor NOT_EVALUATED sentinel, and DS-023 Chatham/Brunswick recorded-fixture zoning. Outputs remain screening-only and cannot assert legal/buildability/title/water/wetland jurisdiction conclusions. |
 | County/vendor coverage is intentionally scoped | DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick selected-county operator flows; DS-011 assessor remains explicit NOT_EVALUATED evidence, not live assessor data; DS-017 commercial parcel vendor remains blocked; DS-023 covers Chatham/Brunswick recorded-fixture zoning only. Buncombe zoning and all other counties remain NOT_EVALUATED. |
 | Single-process local default | In-memory stores are not shared across multiple workers or processes; non-local runtime must use DB-backed services |
-| No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode, but there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
+| No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode. The repo-local `identity_rbac_contract` maps future roles to current route scopes for design handoff only; there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
 | Private-beta UI API-key bridge only | When `REQUIRE_API_KEY=true` is set, `/ui/auth` can set a signed expiring HttpOnly SameSite cookie scoped to `/ui` after the submitted API key passes the same verifier as `X-API-Key`; the cookie does not store the submitted API key, is signed with `UI_AUTH_COOKIE_SECRET`, and fails startup outside local/dev/development/test app envs when that setting is blank. Local/dev/development/test app envs may use a per-process fallback. The cookie is `Secure` automatically outside local app envs. Cookie-authenticated UI mutation forms require signed CSRF tokens and sign-out uses POST. JSON/API paths still require `X-API-Key`; this is not full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation, or hosted secret management. |
 | UI reviewer auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly reviewer session at `/ui/auth/reviewer` or by submitting reviewer credentials on the first UI action. The cookie is scoped to `/ui`, stores reviewer id/scopes/expiry plus a non-secret HMAC binding to the configured token spec, is invalidated by reviewer-token rotation or scope removal, and never authenticates JSON/API routes. API clients must still send `X-Reviewer-Id` and `X-Reviewer-Token`. This is not full user auth/RBAC. |
 | Local fixture mode has no persistence | In-memory repositories reset on restart; production-like runtime must set `USE_DB_SERVICES=true` with `DATABASE_URL` |
