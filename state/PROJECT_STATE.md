@@ -1,5 +1,336 @@
 # Project State
 
+## Current checkpoint (2026-06-16 operator proof-semantics closeout)
+
+The selected-county operator implementation remains the app-owned packaged fixture path:
+`backend/app/operator_cases`, `GET /operator-cases`, `POST /operator-cases/{case_id}/report`,
+and the `/ui/` selected-county launcher. This checkpoint did not add source coverage or
+change report/auth/DB behavior; it closed the proof-boundary gap around how operators and
+future agents should interpret the existing paths.
+
+- **Proof matrix added**: `docs/runbooks/mvp_operator.md` now maps the no-server
+  `generate_dossier.py` path, `/operator-cases`, `/ui/`, generic `/report-runs`,
+  DB-backed verification, and live connector queues to what each proves and does not
+  prove.
+- **Overclaim wording tightened**: CLI artifact docs now say the no-server path emits the
+  same in-memory artifact contract shape and does not exercise HTTP routing, access
+  gates, or DB artifact persistence.
+- **Regression guard**: `backend/tests/test_private_mvp_readiness.py` now pins the proof
+  matrix and rejects stale CLI/API artifact overclaim wording.
+- **Reviewer-session doc alignment**: the MVP operator runbook no longer claims UI
+  approval has no session/cookie path; it now distinguishes UI-only reviewer sessions
+  from JSON/API header-only reviewer authentication, and
+  `backend/tests/test_access_control_artifacts.py` guards that wording.
+- **Validation**: focused private-MVP/operator-case tests passed (`45 passed`); ruff and
+  mypy passed on touched surfaces; access-control, hosted-deployment, image-publication,
+  release-readiness, private-MVP, workspace validation, whitespace/no-delete, and
+  attribution scans passed. DB-enabled `.\scripts\verify.ps1` passed on isolated
+  Compose DB port `55443` after an explicit readiness wait. UI runtime smoke passed, and
+  Chrome UI smoke passed in both headless and headed modes at desktop and mobile
+  viewports. Final default `.\scripts\verify.ps1` passed on the current tree.
+
+## Current checkpoint (2026-06-15 production report-create auth guard)
+
+The report-create API no longer leaves the anonymous async creation path available in
+non-local runtime environments.
+
+- **Non-local report-create guard**: `POST /report-runs` still preserves the
+  local/dev/development/test anonymous async private-MVP path, but `_optional_report_auth_context`
+  now delegates to configured report auth outside those app environments. In
+  non-local trusted-header mode, missing `X-Workspace-Id` / `X-User-Id` fails closed
+  with `401` before report creation; signed-token mode keeps the existing bearer-token
+  enforcement.
+- **Private-MVP readiness update**: `config/private_mvp_beta_readiness.yaml` now marks
+  `unauthenticated_workspace_isolation` complete for the non-local production boundary
+  while leaving `sync_async_create_divergence` as an accepted private-MVP API ergonomics
+  risk.
+- **Access-control/design reconciliation**: the static access-control proof now tracks
+  the current UI reviewer-session contract in `DESIGN.md` instead of the stale
+  stateless-per-action reviewer-token phrase.
+- **Validation routing**: `MANIFEST.md` now routes future operators/agents to the
+  explicit UI browser/runtime smoke entrypoints under the validation source-of-truth row.
+- **Validation**: focused report-auth/async/UI-smoke/access-control artifact tests
+  passed; ruff and mypy passed on the touched Python surfaces; access-control,
+  private-MVP, release-readiness, Must-source readiness, workspace validation, and
+  default `.\scripts\verify.ps1` passed. DB smoke remains skipped unless
+  `RUN_DB_SMOKE=1` is set.
+
+## Current checkpoint (2026-06-15 explicit UI browser smoke)
+
+The operator UI now has a repo-owned, non-mutating browser smoke gate instead of relying
+only on ad hoc local screenshot scripts or route-level TestClient assertions.
+
+- **Tracked browser smoke harness**: `scripts/ui_browser_smoke.mjs` launches Chrome with
+  temporary profiles, checks the core `/ui/*` surfaces at desktop (`1366x900`) and
+  mobile (`390x844`) viewports, fails closed on missing DOM contracts or page-level
+  horizontal overflow, and removes temporary profiles. It accepts `--base-url`,
+  `--chrome-path`, `--mode`, optional API-key/reviewer-session inputs, and optional
+  screenshot output. Screenshots and JSON are opt-in; the script does not create areas,
+  report runs, connector-review items, or review actions.
+- **Operator wrappers**: `scripts/run_ui_browser_smoke.ps1` and
+  `scripts/run_ui_browser_smoke.sh` provide explicit Windows/POSIX entrypoints without
+  adding browser smoke to default `verify`.
+- **Lightweight runtime smoke**: `scripts/ui_runtime_smoke.py` gives a fast HTTP-only
+  HTML contract check for the same core UI surfaces and fail-closed empty-page behavior.
+- **Browser-found UI fix**: the new browser smoke found a mobile overflow on `/ui/auth`;
+  the API-key auth input now uses `box-sizing: border-box`, matching the reviewer auth
+  form behavior.
+- **Evidence**: against a fresh memory-backed runtime on port `8768`, HTTP runtime smoke
+  passed; headless Chrome smoke passed for core UI routes with screenshots under
+  `local_artifacts/ui-browser-smoke/`; reviewer-session Chrome smoke also passed at
+  desktop and mobile viewports with no screenshots. Sample inspected screenshots:
+  `ui-smoke-api-key-auth-headless-mobile.png`,
+  `ui-smoke-report-runs-headless-mobile.png`, and
+  `ui-smoke-operations-headless-desktop.png`.
+- **Validation**: focused smoke/auth tests passed; node syntax check passed; focused
+  ruff/mypy passed; default `.\scripts\verify.ps1` passed with workspace validation,
+  backend tests, ruff, and mypy over 309 source files. DB smoke remains skipped unless
+  `RUN_DB_SMOKE=1` is set.
+
+## Current checkpoint (2026-06-15 report-list mobile operator cards)
+
+The report-run list is now usable as a mobile operator work surface instead of
+requiring horizontal table scrolling before the operator can see status or act.
+
+- **Mobile report-run cards**: `/ui/report-runs` keeps the desktop table layout above
+  the small-screen breakpoint, while mobile renders each run as a label-over-value card
+  with visible select, ID, intent, status, created, and action fields. The action links
+  wrap naturally, and pending-review rows expose `Approve from detail` without relying
+  on horizontal scroll.
+- **Accessible mobile table context**: mobile table headers are visually hidden with a
+  clipped/absolute pattern rather than removed from the accessibility tree. The visual
+  cell labels still come from `data-label` pseudo-content, but table headers remain
+  present for assistive technology.
+- **Responsive report-list navigation**: the report-list nav is now a real labeled
+  `<nav>` that wraps on desktop and stacks on mobile, preventing the connector review
+  queue link from clipping before the report list content.
+- **Browser evidence**: headed/in-app browser screenshots were refreshed at
+  `local_artifacts/ui-report-list-mobile-cards-mobile.png` and
+  `local_artifacts/ui-report-list-mobile-cards-desktop.png`; independent headless
+  Chrome proof is at `local_artifacts/ui-report-list-mobile-cards-headless.png`.
+  Mobile metrics showed no page-level horizontal overflow
+  (`clientWidth=375`, `scrollWidth=375`), visible status/action cells, stacked nav, and
+  mobile table headers visually hidden rather than `display:none`.
+- **Validation**: focused report-list tests passed; `test_ui_routes.py` passed; focused
+  ruff and mypy passed; default `.\scripts\verify.ps1` passed with workspace
+  validation, backend tests, ruff, and mypy over 307 source files; standalone workspace
+  validation and hygiene scans passed. DB smoke remains skipped unless
+  `RUN_DB_SMOKE=1` is set.
+
+## Current checkpoint (2026-06-15 production evidence contract and no-JS compare)
+
+The production readiness boundary now has a machine-readable future proof contract for
+both registry image publication and hosted deployment without changing the repo's
+validate-only posture.
+
+- **Image and hosted attestation contracts**: `config/image_publication.yaml` and
+  `config/hosted_deployment.yaml` now include `attestation_evidence` sections with
+  `status: not_available`, exact required fields, current blockers, runbook authority,
+  and empty evidence templates. The validators fail closed if a future
+  available/published/deployed status is claimed while required evidence values remain
+  empty.
+- **No-JavaScript report comparison**: `/ui/report-runs` now submits the compare form
+  natively to `/ui/compare` using repeated `ids` parameters. The existing server-side
+  compare validation remains the authority for selection count and malformed IDs.
+- **Browser evidence**: screenshots were captured at
+  `local_artifacts/ui-report-list-compare-desktop.png`,
+  `local_artifacts/ui-report-list-compare-mobile.png`, and
+  `local_artifacts/ui-compare-native-submit.png`. The mobile probe showed no page-level
+  horizontal overflow (`clientWidth=390`, `scrollWidth=390`) and no scripts on the
+  report-list page.
+- **Validation**: image-publication, hosted-deployment, and release-readiness checks
+  passed; focused artifact/UI tests passed; focused ruff/mypy passed; default
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 307 source
+  files; standalone workspace validation passed. DB smoke remains skipped unless
+  `RUN_DB_SMOKE=1` is set.
+
+## Current checkpoint (2026-06-14 selected-county operator API/UI path)
+
+The selected-county private-MVP approved dossier path is now reachable through the app
+surface, not only through `scripts/generate_dossier.py`.
+
+- **Fresh worktree baseline**: `prod-grade-20260614` was created from fetched
+  `origin/main` at `d7ec75ba7aec52794fc82f29658ce262e15974fc`; initial
+  `.\scripts\verify.ps1` passed after installing `backend[dev]` and
+  `python-multipart`.
+- **App-owned case package**: `backend/app/operator_cases` packages the nine
+  Buncombe/Chatham/Brunswick private-MVP cases plus their local connector fixtures.
+  Runtime no longer depends on `tests/fixtures/**` for this operator path.
+- **Design source of truth**: `DESIGN.md` now defines the private operator console
+  contract, information architecture, visual language, accessibility targets, and
+  implementation constraints for the server-rendered UI.
+- **HTTP/UI utility path**: `GET /operator-cases` lists cases, and
+  `POST /operator-cases/{case_id}/report` ingests the packaged local fixture
+  connectors, approves eligible connector-QA handoffs, creates an approved report, and
+  returns links to the existing UI, dossier download, and JSON artifact. `/ui/` is now a
+  production-oriented operator console with selected-county case table actions, status
+  strip, visible fixture/live boundary metadata, responsive/mobile table layout, and
+  server-side custom GeoJSON intake. The operator API now exposes fixture scope/language,
+  not-evaluated domains, and expected unknowns for each case, and rejects blank or
+  unexpected report-create body fields. The custom AOI form now posts to `/ui/intake`
+  without requiring JavaScript, redirects to the created report or connector-review queue,
+  and returns safe HTML errors for invalid GeoJSON or intent values. Report status/detail
+  pages now share a responsive report shell for queued/running, failed, missing,
+  pending-approval, and approved states, with status-first content and explicit operator
+  action panels. Print/export attempts for missing or unapproved reports use the same
+  shell without exposing dossier content before approval. Connector review, operations,
+  and evidence-lineage UI pages now include the same viewport contract so support
+  workflows stay usable on constrained screens; that page-head and shared error-page
+  behavior is centralized in `ui_shared.py`.
+- **Comparison workflow**: `/ui/report-runs` exposes report comparison as a native
+  `GET /ui/compare` form, so selecting 2-4 rows works without JavaScript. The compare
+  route accepts both repeated `ids` query parameters and the original comma-separated
+  `ids=<uuid>,<uuid>` URL format. `/ui/compare` now shows report/review/delivery
+  status, approval-gated next-action links, high-severity claim code/domain details,
+  and, for exactly two same-area reports, a Change Review section pinned to the same
+  diff semantics as `/report-runs/{id}/diff`.
+- **Workflow recoverability**: the home operator console and report-run list now link
+  directly to `/ui/connector-review-queue`, making review-gated connector handoffs
+  discoverable after an operator leaves the initial pending-intake result.
+- **Private-beta UI access bridge**: when `REQUIRE_API_KEY=true`, `/ui/auth` now lets
+  browser operators submit the configured API key once and receive a signed, expiring,
+  HttpOnly, SameSite cookie scoped to `/ui`; JSON/API paths still require `X-API-Key`.
+  UI-cookie signing uses `UI_AUTH_COOKIE_SECRET` rather than API-key specs/hashes;
+  non-local API-key-locked app environments fail startup if that setting is blank,
+  while local/dev/development/test app environments may use a per-process fallback.
+  Non-local `APP_ENV` values set `Secure` automatically, and `/ui/auth` login attempts
+  are audit-logged without storing submitted secrets. Unsafe `/ui` POST forms
+  authenticated by the UI cookie now carry signed CSRF tokens derived from the HttpOnly
+  cookie, and sign-out is a confirmation GET plus CSRF-protected POST.
+- **Private-beta reviewer UI session**: `/ui/auth/reviewer` and successful
+  reviewer-credential UI actions now establish a signed, expiring, HttpOnly reviewer
+  cookie scoped to `/ui`. The cookie carries reviewer id, scopes, expiry, and an HMAC
+  binding to the configured reviewer token spec; token rotation, scope removal,
+  tampering, or expiry invalidates the session. Report approval, connector-review,
+  and operations UI forms hide token inputs when the reviewer session has the required
+  scope, while JSON/API routes remain header-only for reviewer credentials. UI logout
+  clears both the API-key UI cookie and reviewer UI cookie.
+- **Operations drilldown**: `/ui/operations` queue-health counts now link to the
+  corresponding report-list or connector-review filters, making aggregate failed,
+  queued, cancelled, and needs-review counts immediately actionable while preserving the
+  read-only operations contract. A reviewer session with `operations:read` can now open
+  the dashboard directly via `GET /ui/operations`; missing or under-scoped sessions
+  still fall back to the scoped credential form. Report-list and connector-review queue
+  status filters fail closed with safe HTML errors on unknown values instead of silently
+  showing unfiltered work.
+- **Connector review action gating**: connector-review detail pages now show only
+  actions valid for the current queue-item status according to the repository transition
+  rules; terminal no-action states render an explicit no-actions message rather than
+  invalid mutation forms.
+- **Connector review decision context**: connector review packets and queue payloads now
+  preserve compact evidence summaries plus retrieval counts, log URI, metrics, signals,
+  and human-review tasks. `/ui/connector-review-queue/{ingest_run_id}` renders that
+  snapshot as a Decision Context panel with responsive evidence cards before approve,
+  reject, requeue, cancel, or resume-report actions, without dumping arbitrary payload
+  fields or secret-looking metric keys. `/ui/connector-review-queue` also exposes a
+  compact triage summary and next-action link per row, derived from the same payload and
+  queue status, so operators can prioritize work without opening every detail page.
+- **Evidence-lineage delivery boundary**: `/ui/report-runs/{id}/lineage` now follows
+  the approved-report delivery contract. Succeeded-but-unapproved direct UI visits get
+  an Approval Required page that links back to report review, while approved reports
+  render lineage without embedding reviewer credentials. The JSON lineage API remains
+  on its existing API access policy, and the UI lineage tables are contained in
+  responsive horizontal scroll regions for narrow screens.
+- **Durable runtime state boundary**: production-like app environments now fail closed
+  if the operator runtime would use in-memory API services. `USE_DB_SERVICES=true` is
+  required outside local/dev/development/test `APP_ENV` values, and `DATABASE_URL` must
+  be non-blank when DB services are enabled. `scripts/run_api.ps1 -StorageBackend
+  postgres` and `scripts/run_api.sh --postgres` now set the canonical
+  `USE_DB_SERVICES=true` switch; memory mode remains available for local fixture demos.
+- **Refresh control**: queued/running report pages still auto-refresh every 3 seconds by
+  default, but now expose no-JavaScript 3/10/30/60-second interval controls plus pause,
+  manual refresh, and resume links so operators can inspect long-running jobs without
+  involuntary page reloads. Non-default refresh intervals survive pause/resume URLs.
+- **Report-list actions**: `/ui/report-runs` now includes a row-level Action column that
+  routes queued/running jobs to status, failed jobs to retry detail, pending succeeded
+  reports to approval detail, and approved reports to dossier, JSON artifact, and
+  lineage links without adding new mutation semantics.
+- **Responsive case launcher**: selected-county fixture cases now collapse to
+  label-over-value mobile rows with explicit overflow wrapping, keeping long
+  descriptions and source-boundary metadata readable in narrow Chrome viewports.
+- **Approval audit notes**: the UI report approval form now accepts an optional approval
+  reason and stores trimmed non-empty text on the existing report review action audit
+  trail; blank notes remain omitted.
+- **Boundary preserved**: this is fixture-only private-MVP utility coverage. It does
+  not use live-source production coverage, unblock DS-017, change report semantics, or
+  assert legal zoning, surveyed boundary, wetland jurisdiction, buildability, legal
+  access, appraisal, lending, insurance, or investment conclusions.
+- **Validation**: focused operator/private-MVP/OpenAPI/UI tests passed; ruff and mypy
+  passed on touched files; default `.\scripts\verify.ps1` passed with workspace
+  validation, backend tests, ruff, and mypy over 304 source files. Headless and headed
+  Chrome screenshots were captured under `local_artifacts/`; the final desktop probe
+  confirmed the case action column is fully visible, the no-JavaScript custom intake path
+  landed on a report page, the report-detail HTTP probe confirmed the new pending report
+  shell/action panel after a fresh server restart, and the final iPhone/mobile probes had
+  no horizontal page overflow. The latest connector-review action-gating slice passed the
+  135-test expanded operator/UI/private-MVP/OpenAPI set and a fresh default
+  `.\scripts\verify.ps1`; the refresh-control slice then passed focused report-state
+  tests, the full UI route file, regenerated OpenAPI/schema-copy checks, the expanded
+  operator/UI/private-MVP/OpenAPI set, and another default `.\scripts\verify.ps1`. The
+  report-list action slice passed focused action/responsive tests, the full UI route
+  file, the expanded operator/UI/private-MVP/OpenAPI set, and another default
+  `.\scripts\verify.ps1`; fresh desktop/mobile action-list screenshots were captured
+  under `local_artifacts/`. The approval-reason slice then passed focused approval
+  tests (`5 passed`), the full UI route file (`71` collected tests), regenerated
+  OpenAPI/schema-copy checks (`3 passed`), the expanded operator/UI/private-MVP/OpenAPI
+  set (`145` collected tests), and another default `.\scripts\verify.ps1`; headless
+  desktop/mobile plus headed Chrome screenshots were captured under
+  `local_artifacts/ui-report-approval-reason*.png`, with matching input/textarea widths
+  after screenshot-driven form polish. The redirect-consistency slice then moved report
+  approval, report retry, and connector-review resume-report successes from meta-refresh
+  handoff pages to real `303` redirects to the resulting report pages; focused tests,
+  the combined changed UI route files, ruff, mypy, and OpenAPI/schema-copy checks passed,
+  and redirect target screenshots were captured under
+  `local_artifacts/ui-*-redirect-result.png`. The DB-backed verification lane then
+  passed on isolated Docker PostGIS with `RUN_DB_SMOKE=1`, `DATABASE_URL_SYNC`, and
+  `DATABASE_URL` pointed at DB port `55434`; migrations, backend tests, ruff, mypy,
+  and `scripts/db_smoke_check.py` were green with 25 seeded source-registry rows,
+  26 total source rows, and 2 seeded intents. Deployment smoke initially exposed a
+  PostGIS-image startup race where `pg_isready` returned during the temporary init
+  server; `scripts/run_deployment_smoke.ps1` and `.sh` now wait for stable
+  `pg_postmaster_start_time()` samples before applying migrations, and the Windows
+  script applies SQL through a copied in-container file rather than a PowerShell
+  pipe into `docker compose exec`. Fresh deployment smoke passed on isolated project
+  `land-diligence-smoke-pg6` with backend port `18084` and DB port `55439`, then a
+  final default `.\scripts\verify.ps1` passed with DB smoke skipped by design because
+  `RUN_DB_SMOKE=1` was not set for that fast gate. The UI API-key bridge hardening
+  slice then passed focused UI/API-key auth tests, focused ruff/mypy, access-control
+  validation, OpenAPI contract/schema-copy tests, and another default `.\scripts\verify.ps1`;
+  headless/mobile/headed Chrome screenshots for the login and authenticated home paths
+  were captured under `local_artifacts/ui-auth-*` and
+  `local_artifacts/ui-home-authenticated-*`. The CSRF hardening slice then passed
+  focused UI/auth/OpenAPI tests, focused ruff/mypy, access-control validation, and
+  another default `.\scripts\verify.ps1`; DB smoke was skipped by design for that
+  fast gate. The design/config alignment slice then reconciled `DESIGN.md` and the
+  `UI_AUTH_COOKIE_SECRET` settings description with the implemented `/ui/auth` bridge
+  and local-only signing-secret fallback, added static access-control checks for the
+  design source of truth, and passed access-control validation plus focused ruff/mypy.
+  The manifest/catalog alignment slice then added `DESIGN.md` to the intentionally
+  scoped repo routing manifest, expanded `ui_api_key_cookie_bridge` authority in
+  `config/access_control.yaml`, and made the access-control validator fail if those
+  authority files drift out of the catalog. Review then tightened that guard to read
+  `MANIFEST.md`, pin `DESIGN.md`'s canonical ownership statement, include
+  `backend/app/api/ui_lineage.py`, and fail on unexpected UI bridge authority entries.
+  The release-readiness coverage slice then made `scripts/release_readiness_check.py`
+  require the full declared catalog rather than a historical subset, including
+  security scan, data retention, jurisdiction/rulepack checklists, load testing,
+  performance, and data-lineage gates. The responsive browser-proof slice then tightened
+  the selected-county mobile case launcher, captured headless and headed Chrome evidence
+  under `local_artifacts/ui-console-*`, and verified the 390px CDP mobile viewport had
+  no horizontal page overflow; the monolithic verify wrapper timed out during backend
+  pytest output handling, so the same verification phases were run separately with
+  workspace validation, all backend test groups, full ruff, and full mypy passing. The
+  QA-runner hardening slice then buffered backend pytest through replayed
+  `local_artifacts/backend-pytest.log` transcripts, used fresh-on-collision log paths
+  to preserve prior evidence, added runner behavior regressions, and passed focused
+  pytest/ruff/mypy, Git Bash POSIX syntax, and a fresh default `.\scripts\verify.ps1`
+  over 307 source files. The compare UI change-review slice then passed the focused
+  compare route tests (`16 passed`), focused ruff/mypy, and live preview screenshot
+  checks with headless and headed Chrome under `local_artifacts/ui-compare-*`; the
+  headed desktop/mobile metrics showed no document-level horizontal overflow. The full
+  UI route file, workspace validation, and another default `.\scripts\verify.ps1`
+  passed after the compare docs/state update.
+
 ## Current checkpoint (2026-06-13 operator approved-path proof — 1627 tests)
 
 Pivot from claim-narrative enrichment (passes 4–12 were diminishing-returns polish — the handoff's "readiness theater" risk) to **operator utility**. Lane: Source-Authority Closeout → Selected-County Operator Utility Transition.
@@ -1221,17 +1552,19 @@ context, DS-008 is connector-ready only for historical mineral-occurrence screen
 context, and DS-022 is connector-ready only for administrative TIGERweb geography
 context, not ACS demographics or protected-class analytics.
 
-Last verified in this pass: 2026-06-11 focused DS-007 connector/API/readiness tests
+Last verified in this pass: 2026-06-14 focused DS-007 connector/API/readiness tests
 passed (`22 passed`), OpenAPI parity tests passed (`3 passed`), source registry
 readiness/seed tests passed (`16 passed`), source readiness reported all-priority
 `sources=25 ready=16 blocked=9`, Must `sources=8 ready=7 blocked=1`, Should
 `sources=6 ready=3 blocked=3`, and Later `sources=8 ready=5 blocked=3`.
 Release-readiness proof passed, focused ruff/mypy passed, and default
 `.\scripts\verify.ps1` passed with workspace validation, structural checks, backend
-tests, ruff, and mypy on 287 source files green. `git diff --check` reported no
-whitespace errors; it warned that touched CSV/Markdown/OpenAPI files will normalize
-line endings when Git next touches them. DB smoke was skipped because `RUN_DB_SMOKE=1`
-was not set.
+tests, ruff, and mypy on 306 source files green. The current release-readiness proof is
+now full-catalog exact, maps every declared CI-backed gate to its proof command, and
+keeps live load-test scenarios local/manual while CI validates the load-test artifacts.
+`git diff --check` reported no whitespace errors; it warned that touched CSV/Markdown/
+OpenAPI files will normalize line endings when Git next touches them. DB smoke was
+skipped because `RUN_DB_SMOKE=1` was not set.
 
 ## Completed lane: Selected-County Evidence Utility Closure (completed 2026-06-06)
 

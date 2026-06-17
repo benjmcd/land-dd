@@ -26,6 +26,13 @@ REQUIRED_CHECKS = {
     "image_publication",
     "hosted_deployment",
     "source_readiness",
+    "security_scan",
+    "data_retention",
+    "jurisdiction_readiness",
+    "rulepack_readiness",
+    "load_test",
+    "performance",
+    "data_lineage",
 }
 REQUIRED_BLOCKERS = {
     "hosted_deployment_attestation",
@@ -37,6 +44,29 @@ REQUIRED_BLOCKERS = {
 }
 EXPECTED_DB_SYNC_URL = "postgresql://land:land@localhost:5432/land_diligence"
 EXPECTED_DB_APP_URL = "postgresql+psycopg://land:land@localhost:5432/land_diligence"
+EXPECTED_CI_PROOFS = {
+    "verify": "./scripts/verify.sh",
+    "db-verify": "./scripts/verify.sh",
+    "supply-chain": "./scripts/run_supply_chain_check.sh",
+    "dependency-attestations": "./scripts/run_provenance_check.sh",
+    "container-image-scan": "./scripts/run_container_scan_check.sh",
+    "access-control": "./scripts/run_access_control_check.sh",
+    "image-publication": "./scripts/run_image_publication_check.sh",
+    "hosted-deployment": "./scripts/run_hosted_deployment_check.sh",
+    "release-readiness": "./scripts/run_release_readiness_check.sh",
+    "security-scan": "./scripts/run_security_scan.sh",
+}
+
+
+def steps_text(job: dict[str, Any]) -> str:
+    return "\n".join(
+        str(step.get("uses", ""))
+        + "\n"
+        + str(step.get("run", ""))
+        + "\n"
+        + str(step.get("with", ""))
+        for step in job["steps"]
+    )
 
 
 def test_release_readiness_catalog_covers_required_checks_and_blockers() -> None:
@@ -47,7 +77,7 @@ def test_release_readiness_catalog_covers_required_checks_and_blockers() -> None
     assert catalog["schema_version"] == "release_readiness_v1"
     assert catalog["operator_runbook"] == "docs/runbooks/release_readiness.md"
     check_ids = {check["id"] for check in catalog["required_checks"]}
-    assert REQUIRED_CHECKS.issubset(check_ids)
+    assert check_ids == REQUIRED_CHECKS
     for check in catalog["required_checks"]:
         assert (REPO_ROOT / check["proof"]).exists()
 
@@ -80,6 +110,27 @@ def test_ci_has_release_readiness_job() -> None:
     assert "python -m pip install PyYAML" in steps_text
     assert 'python -m pip install -e "backend[dev]"' in steps_text
     assert "./scripts/run_release_readiness_check.sh" in steps_text
+
+
+def test_catalog_ci_jobs_exist_in_workflow() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "release_readiness.yaml").read_text(encoding="utf-8"),
+    )
+    ci = yaml.safe_load(
+        (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8",
+        ),
+    )
+    catalog_jobs = {
+        check["ci_job"]
+        for check in catalog["required_checks"]
+        if isinstance(check.get("ci_job"), str) and check["ci_job"]
+    }
+
+    assert catalog_jobs.issubset(set(ci["jobs"]))
+    assert catalog_jobs.issubset(set(EXPECTED_CI_PROOFS))
+    for job_name in catalog_jobs:
+        assert EXPECTED_CI_PROOFS[job_name] in steps_text(ci["jobs"][job_name])
 
 
 def test_ci_db_verify_sets_explicit_db_smoke_urls() -> None:
@@ -163,7 +214,16 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "release-package",
         "image-publication",
         "hosted-deployment",
+        "security-scan",
         "release-readiness",
+        "run_security_scan.ps1",
+        "run_data_retention_check.ps1",
+        "run_load_test.ps1",
+        "load_testing.md",
+        "performance.md",
+        "jurisdiction_readiness.md",
+        "rulepack_readiness.md",
+        "data_lineage",
         "DATABASE_URL_SYNC",
         "DATABASE_URL",
         "sources=8 ready=7 blocked=1",
@@ -218,6 +278,11 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert 'blocked_count") == 1' in script
     assert "DATABASE_URL_SYNC" in script
     assert "DATABASE_URL" in script
+    assert '"security_scan"' in script
+    assert '"data_retention"' in script
+    assert '"load_test"' in script
+    assert '"performance"' in script
+    assert '"data_lineage"' in script
     assert '{"DS-017"}' in script
     assert '{"DS-011", "DS-017"}' not in script
     assert '{"DS-011", "DS-017", "DS-023"}' not in script

@@ -423,6 +423,32 @@ def test_operator_runbook_tracks_current_selected_county_source_scope() -> None:
         assert stale_phrase not in runbook
 
 
+def test_operator_runbook_has_selected_county_proof_matrix() -> None:
+    runbook = RUNBOOK_PATH.read_text(encoding="utf-8")
+
+    for phrase in (
+        "## Operator Path Proof Matrix",
+        "### Identifier glossary",
+        "| `{report_run_id}` | Report/job ID |",
+        "`scripts/generate_dossier.py --connector all --approve --artifact`",
+        "`POST /operator-cases/{case_id}/report`",
+        "Generic `POST /report-runs`",
+        "DB-backed verification with `RUN_DB_SMOKE=1`",
+        "same in-memory report artifact contract shape",
+        (
+            "does not exercise HTTP routing, access gates, or DB artifact "
+            "persistence"
+        ),
+    ):
+        assert phrase in runbook
+
+    for stale_phrase in (
+        "emits the same JSON serialization the API serves",
+        "generic report creation loads the packaged selected-county connector fixtures",
+    ):
+        assert stale_phrase not in runbook
+
+
 def test_county_source_manifests_track_structured_selected_county_scope() -> None:
     validator = _load_validator_module()
     manifest_scope = validator.validate_selected_county_manifest_scope_catalog(

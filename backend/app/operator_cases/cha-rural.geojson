@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "CHA-rural-use",
+    "description": "Chatham County rural/agricultural land-use stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.220, 35.705],
+        [-79.200, 35.705],
+        [-79.200, 35.715],
+        [-79.220, 35.715],
+        [-79.220, 35.705]
+      ]
+    ]
+  }
+}

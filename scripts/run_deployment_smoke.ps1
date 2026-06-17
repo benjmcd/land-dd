@@ -54,11 +54,21 @@ function Invoke-ComposeSqlFile {
     )
 
     Write-Host "Applying $Path"
-    Invoke-NativeCommand -Label "psql $Path" -Command {
-        Get-Content -Raw -Path $Path |
-            & docker compose --project-name $projectName exec -T db `
-                psql -U land -d land_diligence -v ON_ERROR_STOP=1
+    Invoke-NativeCommand -Label "docker compose cp $Path" -Command {
+        & docker compose --project-name $projectName cp $Path "db:/tmp/deployment-smoke.sql"
     }
+    Invoke-NativeCommand -Label "psql $Path" -Command {
+        & docker compose --project-name $projectName exec -T db psql -U land -d land_diligence -v ON_ERROR_STOP=1 -f /tmp/deployment-smoke.sql
+    }
+}
+
+function Get-DbStartTime {
+    $output = & docker compose --project-name $projectName exec -T db `
+        psql -U land -d land_diligence -At -v ON_ERROR_STOP=1 -c "SELECT pg_postmaster_start_time();" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return ''
+    }
+    return ([string]$output).Trim()
 }
 
 function Wait-ForDb {
@@ -67,7 +77,19 @@ function Wait-ForDb {
         & docker compose --project-name $projectName exec -T db `
             pg_isready -U land -d land_diligence *> $null
         if ($LASTEXITCODE -eq 0) {
-            return
+            $firstStartTime = Get-DbStartTime
+            if ($firstStartTime) {
+                Start-Sleep -Seconds 5
+                & docker compose --project-name $projectName exec -T db `
+                    pg_isready -U land -d land_diligence *> $null
+                if ($LASTEXITCODE -eq 0) {
+                    $secondStartTime = Get-DbStartTime
+                    if ($secondStartTime -and $firstStartTime -eq $secondStartTime) {
+                        return
+                    }
+                    Write-Host 'db start time changed while waiting for deployment smoke; waiting for final startup'
+                }
+            }
         }
         Start-Sleep -Seconds 2
     } while ((Get-Date) -lt $deadline)

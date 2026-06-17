@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BRU-wetlands-soils",
+    "description": "Brunswick County wetlands/soils/septic-proxy stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-78.320, 33.995],
+        [-78.300, 33.995],
+        [-78.300, 34.005],
+        [-78.320, 34.005],
+        [-78.320, 33.995]
+      ]
+    ]
+  }
+}

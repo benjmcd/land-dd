@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c5c5c5c5-c5c5-4c5c-8c5c-c5c5c5c5c5c5",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_access_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_chatham_cha_parcel_tax_access",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c5c6c7c8-c5c6-4c7c-8c8c-c5c6c7c8c9ca",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "ACCESS_ROAD_ADJACENCY_SCREEN",
+      "domain": "access",
+      "observation": "Fixture road screening: road present for Chatham County parcel/tax stress case.",
+      "observed_value": {
+        "public_road_adjacency": true,
+        "has_public_road_adjacency": true,
+        "road_distance_m": 12.0
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_access_road_adjacency_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only road-adjacency screening for Chatham County. Road presence does not confirm legal access, easements, or maintenance obligations.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-79.110, 35.725], [-79.090, 35.725], [-79.090, 35.735], [-79.110, 35.735], [-79.110, 35.725]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

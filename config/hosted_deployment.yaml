@@ -32,6 +32,45 @@ required_runtime_evidence:
   - report_workflow_smoke_ok
   - rollback_target
   - backup_restore_proof
+attestation_evidence:
+  status: not_available
+  authority: docs/runbooks/hosted_deployment.md
+  required_fields:
+    - immutable_image_digest
+    - deployed_image_ref
+    - platform_environment_name
+    - database_instance_name
+    - public_https_url
+    - tls_certificate_status
+    - health_endpoint_ok
+    - version_endpoint_ok
+    - metrics_endpoint_ok
+    - queue_health_endpoint_ok
+    - report_workflow_smoke_ok
+    - rollback_target
+    - backup_restore_proof
+  blocked_until:
+    - hosted_platform_selected
+    - domain_tls_authority
+    - secrets_manager_authority
+    - database_instance_authority
+    - registry_image_digest_available
+    - hosted_billing_reconciliation
+    - hosted_alerting_route
+  evidence_template:
+    immutable_image_digest: null
+    deployed_image_ref: null
+    platform_environment_name: null
+    database_instance_name: null
+    public_https_url: null
+    tls_certificate_status: null
+    health_endpoint_ok: null
+    version_endpoint_ok: null
+    metrics_endpoint_ok: null
+    queue_health_endpoint_ok: null
+    report_workflow_smoke_ok: null
+    rollback_target: null
+    backup_restore_proof: null
 blocked_until:
   - hosted_platform_selected
   - domain_tls_authority

@@ -2537,6 +2537,216 @@ paths:
                 additionalProperties: true
                 type: object
                 title: Response Metrics Metrics Get
+  /operator-cases:
+    get:
+      tags:
+      - operator-cases-private-mvp
+      summary: List Operator Cases
+      operationId: list_operator_cases_operator_cases_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/OperatorCaseSummary'
+                type: array
+                title: Response List Operator Cases Operator Cases Get
+  /operator-cases/{case_id}/report:
+    post:
+      tags:
+      - operator-cases-private-mvp
+      summary: Create Operator Case Report
+      operationId: create_operator_case_report_operator_cases__case_id__report_post
+      parameters:
+      - name: case_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Case Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/OperatorCaseReportCreateRequest'
+              - type: 'null'
+              title: Body
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorCaseReportResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth:
+    get:
+      tags:
+      - ui
+      summary: Ui Auth Form
+      operationId: ui_auth_form_ui_auth_get
+      parameters:
+      - name: next
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - ui
+      summary: Ui Auth Submit
+      operationId: ui_auth_submit_ui_auth_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_auth_submit_ui_auth_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth/logout:
+    get:
+      tags:
+      - ui
+      summary: Ui Auth Logout Form
+      operationId: ui_auth_logout_form_ui_auth_logout_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags:
+      - ui
+      summary: Ui Auth Logout
+      operationId: ui_auth_logout_ui_auth_logout_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_auth_logout_ui_auth_logout_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth/reviewer:
+    get:
+      tags:
+      - ui
+      summary: Ui Reviewer Auth Form
+      operationId: ui_reviewer_auth_form_ui_auth_reviewer_get
+      parameters:
+      - name: next
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - ui
+      summary: Ui Reviewer Auth Submit
+      operationId: ui_reviewer_auth_submit_ui_auth_reviewer_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_reviewer_auth_submit_ui_auth_reviewer_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth/reviewer/logout:
+    post:
+      tags:
+      - ui
+      summary: Ui Reviewer Auth Logout
+      operationId: ui_reviewer_auth_logout_ui_auth_reviewer_logout_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_reviewer_auth_logout_ui_auth_reviewer_logout_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/:
     get:
       tags:
@@ -2550,6 +2760,54 @@ paths:
             text/html:
               schema:
                 type: string
+  /ui/intake:
+    post:
+      tags:
+      - ui
+      summary: Ui Custom Geojson Intake
+      operationId: ui_custom_geojson_intake_ui_intake_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_custom_geojson_intake_ui_intake_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/operator-cases/report:
+    post:
+      tags:
+      - ui
+      summary: Ui Create Selected County Report
+      operationId: ui_create_selected_county_report_ui_operator_cases_report_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_create_selected_county_report_ui_operator_cases_report_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/report-runs/{report_run_id}:
     get:
       tags:
@@ -2564,6 +2822,22 @@ paths:
           type: string
           format: uuid
           title: Report Run Id
+      - name: auto_refresh
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Auto Refresh
+      - name: refresh_seconds
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 60
+          minimum: 3
+          default: 3
+          title: Refresh Seconds
       responses:
         '200':
           description: Successful Response
@@ -2626,7 +2900,9 @@ paths:
         required: false
         schema:
           anyOf:
-          - type: string
+          - type: array
+            items:
+              type: string
           - type: 'null'
           title: Ids
       responses:
@@ -3285,8 +3561,41 @@ components:
           - type: string
           - type: 'null'
           title: Reviewer Token
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_approve_report_run_ui_report_runs__report_run_id__approve_post
+    Body_ui_auth_logout_ui_auth_logout_post:
+      properties:
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      title: Body_ui_auth_logout_ui_auth_logout_post
+    Body_ui_auth_submit_ui_auth_post:
+      properties:
+        api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Api Key
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+      type: object
+      title: Body_ui_auth_submit_ui_auth_post
     Body_ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post:
       properties:
         reviewer_id:
@@ -3304,6 +3613,11 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_connector_approve_ui_connector_review_queue__ingest_run_id__approve_post
     Body_ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post:
@@ -3323,6 +3637,11 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_connector_cancel_ui_connector_review_queue__ingest_run_id__cancel_post
     Body_ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post:
@@ -3342,6 +3661,11 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_connector_reject_ui_connector_review_queue__ingest_run_id__reject_post
     Body_ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post:
@@ -3361,6 +3685,11 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_connector_requeue_ui_connector_review_queue__ingest_run_id__requeue_post
     Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post:
@@ -3380,8 +3709,45 @@ components:
           - type: string
           - type: 'null'
           title: Intent Code
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_connector_resume_report_ui_connector_review_queue__ingest_run_id__resume_report_post
+    Body_ui_create_selected_county_report_ui_operator_cases_report_post:
+      properties:
+        selected_county_case_id:
+          type: string
+          title: Selected County Case Id
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      required:
+      - selected_county_case_id
+      title: Body_ui_create_selected_county_report_ui_operator_cases_report_post
+    Body_ui_custom_geojson_intake_ui_intake_post:
+      properties:
+        area_geojson:
+          type: string
+          title: Area Geojson
+        intent:
+          type: string
+          title: Intent
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      required:
+      - area_geojson
+      - intent
+      title: Body_ui_custom_geojson_intake_ui_intake_post
     Body_ui_operations_post_ui_operations_post:
       properties:
         reviewer_id:
@@ -3394,6 +3760,11 @@ components:
           - type: string
           - type: 'null'
           title: Reviewer Token
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_operations_post_ui_operations_post
     Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post:
@@ -3408,8 +3779,46 @@ components:
           - type: string
           - type: 'null'
           title: Reviewer Token
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
       type: object
       title: Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post
+    Body_ui_reviewer_auth_logout_ui_auth_reviewer_logout_post:
+      properties:
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      title: Body_ui_reviewer_auth_logout_ui_auth_reviewer_logout_post
+    Body_ui_reviewer_auth_submit_ui_auth_reviewer_post:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      title: Body_ui_reviewer_auth_submit_ui_auth_reviewer_post
     BrunswickParcelsQueryRequest:
       properties:
         area_id:
@@ -5534,6 +5943,135 @@ components:
       - report_jobs
       - live_connector_jobs
       title: OperationsQueueHealthResponse
+    OperatorCaseReportCreateRequest:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      additionalProperties: false
+      type: object
+      title: OperatorCaseReportCreateRequest
+    OperatorCaseReportLinks:
+      properties:
+        ui:
+          type: string
+          title: Ui
+        dossier_download:
+          type: string
+          title: Dossier Download
+        artifact:
+          type: string
+          title: Artifact
+      type: object
+      required:
+      - ui
+      - dossier_download
+      - artifact
+      title: OperatorCaseReportLinks
+    OperatorCaseReportResponse:
+      properties:
+        case_id:
+          type: string
+          title: Case Id
+        report_run_id:
+          type: string
+          format: uuid
+          title: Report Run Id
+        review_status:
+          type: string
+          title: Review Status
+        status:
+          type: string
+          title: Status
+        fixture_only:
+          type: boolean
+          title: Fixture Only
+          default: true
+        message:
+          type: string
+          title: Message
+          default: Private-MVP selected-county fixture-only coverage created. This
+            does not use live-source production coverage.
+        evidence_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Evidence Count
+        connector_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Connector Count
+        links:
+          $ref: '#/components/schemas/OperatorCaseReportLinks'
+      type: object
+      required:
+      - case_id
+      - report_run_id
+      - review_status
+      - status
+      - links
+      title: OperatorCaseReportResponse
+    OperatorCaseSummary:
+      properties:
+        case_id:
+          type: string
+          title: Case Id
+        county:
+          type: string
+          title: County
+        state:
+          type: string
+          title: State
+        intent:
+          type: string
+          title: Intent
+        description:
+          type: string
+          title: Description
+        connector_domains:
+          items:
+            type: string
+          type: array
+          title: Connector Domains
+        fixture_scope:
+          type: string
+          title: Fixture Scope
+          default: private_mvp_fixture
+        fixture_language:
+          type: string
+          title: Fixture Language
+          default: Packaged fixture-only selected-county private MVP case; not live
+            coverage.
+        not_evaluated_domains:
+          items:
+            type: string
+          type: array
+          title: Not Evaluated Domains
+        expected_unknowns:
+          items:
+            type: string
+          type: array
+          title: Expected Unknowns
+        fixture_only:
+          type: boolean
+          title: Fixture Only
+          default: true
+      type: object
+      required:
+      - case_id
+      - county
+      - state
+      - intent
+      - description
+      title: OperatorCaseSummary
     OsmRoadAccessBboxRequest:
       properties:
         xmin:

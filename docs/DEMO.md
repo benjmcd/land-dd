@@ -82,6 +82,10 @@ python scripts\db_smoke_check.py
 .\scripts\run_api.ps1 -StorageBackend postgres
 ```
 
+The `--postgres` / `-StorageBackend postgres` wrappers set `USE_DB_SERVICES=true`.
+Use that mode for production-like operator testing; in-memory mode is local demo
+state and is rejected outside local/dev/development/test `APP_ENV` values.
+
 In another PowerShell:
 
 ```powershell

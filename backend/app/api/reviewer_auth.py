@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Annotated
@@ -12,6 +14,7 @@ REVIEWER_SCOPE_OPERATIONS_READ = "operations:read"
 REVIEWER_SCOPE_REPORT_APPROVE = "report:approve"
 REVIEWER_SCOPE_REPORT_RETRY = "report:retry"
 REVIEWER_SCOPE_REPORT_RUN = "report:run"
+REVIEWER_SESSION_BINDING_PREFIX = "land-dd-reviewer-session-binding-v1"
 
 REVIEWER_SCOPES = frozenset(
     {
@@ -81,6 +84,71 @@ class LocalServiceAccountReviewerAuth:
             reviewer_id=cleaned_reviewer_id,
             scopes=self._service_account_scopes[cleaned_reviewer_id],
         )
+
+    def principal_from_session(
+        self,
+        *,
+        reviewer_id: str,
+        scopes: Iterable[str],
+        session_binding: str,
+        signing_secret: str,
+    ) -> ReviewerPrincipal:
+        cleaned_reviewer_id = _clean_header(reviewer_id)
+        if cleaned_reviewer_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="connector reviewer session is invalid",
+            )
+        configured_scopes = self._service_account_scopes.get(cleaned_reviewer_id)
+        if (
+            cleaned_reviewer_id not in self._service_account_tokens
+            or configured_scopes is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="connector reviewer session is invalid",
+            )
+        expected_binding = self.session_binding(
+            reviewer_id=cleaned_reviewer_id,
+            signing_secret=signing_secret,
+        )
+        if not hmac.compare_digest(session_binding, expected_binding):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="connector reviewer session is invalid",
+            )
+        session_scopes = frozenset(
+            _require_known_scope(scope, cleaned_reviewer_id) for scope in scopes
+        )
+        if not session_scopes or not session_scopes.issubset(configured_scopes):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="connector reviewer session scope is invalid",
+            )
+        return ReviewerPrincipal(
+            reviewer_id=cleaned_reviewer_id,
+            scopes=session_scopes,
+            auth_scheme="ui_reviewer_session",
+        )
+
+    def session_binding(self, *, reviewer_id: str, signing_secret: str) -> str:
+        cleaned_reviewer_id = _clean_header(reviewer_id)
+        if cleaned_reviewer_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="connector reviewer session is invalid",
+            )
+        token_spec = self._service_account_tokens.get(cleaned_reviewer_id)
+        if token_spec is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="connector reviewer session is invalid",
+            )
+        signing_key = hashlib.sha256(
+            f"{REVIEWER_SESSION_BINDING_PREFIX}:{signing_secret}".encode()
+        ).digest()
+        signed_value = f"{cleaned_reviewer_id}\0{token_spec}".encode()
+        return hmac.new(signing_key, signed_value, hashlib.sha256).hexdigest()
 
 
 def require_reviewer_scope(principal: ReviewerPrincipal, required_scope: str) -> None:

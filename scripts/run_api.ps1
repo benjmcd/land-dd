@@ -17,6 +17,7 @@ $StorageBackend = $StorageBackend.Trim().ToLowerInvariant()
 if ($StorageBackend -notin $allowedBackends) {
     throw "StorageBackend must be one of: $($allowedBackends -join ', ')"
 }
+$useDbServices = if ($StorageBackend -eq 'postgres') { 'true' } else { 'false' }
 
 $python = ''
 if (Get-Command py -ErrorAction SilentlyContinue) {
@@ -36,9 +37,11 @@ if (-not $python) {
 }
 
 $previousStorageBackend = $env:APP_STORAGE_BACKEND
+$previousUseDbServices = $env:USE_DB_SERVICES
 $previousPythonPath = $env:PYTHONPATH
 $previousObjectStoreRoot = $env:OBJECT_STORE_ROOT
 $env:APP_STORAGE_BACKEND = $StorageBackend
+$env:USE_DB_SERVICES = $useDbServices
 $env:PYTHONPATH = '.'
 if ([string]::IsNullOrWhiteSpace($env:OBJECT_STORE_ROOT)) {
     $env:OBJECT_STORE_ROOT = Join-Path $root 'local_artifacts\object_store'
@@ -59,6 +62,11 @@ finally {
         Remove-Item Env:APP_STORAGE_BACKEND -ErrorAction SilentlyContinue
     } else {
         $env:APP_STORAGE_BACKEND = $previousStorageBackend
+    }
+    if ($null -eq $previousUseDbServices) {
+        Remove-Item Env:USE_DB_SERVICES -ErrorAction SilentlyContinue
+    } else {
+        $env:USE_DB_SERVICES = $previousUseDbServices
     }
     if ($null -eq $previousPythonPath) {
         Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue

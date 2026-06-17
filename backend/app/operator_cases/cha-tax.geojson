@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "CHA-parcel-tax",
+    "description": "Chatham County parcel/tax/easement-ambiguity stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.110, 35.725],
+        [-79.090, 35.725],
+        [-79.090, 35.735],
+        [-79.110, 35.735],
+        [-79.110, 35.725]
+      ]
+    ]
+  }
+}

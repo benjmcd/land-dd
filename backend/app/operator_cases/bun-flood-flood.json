@@ -1,0 +1,48 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "b3b3b3b3-b3b3-4b3b-8b3b-b3b3b3b3b3b3",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_flood_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_flood_flood",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "b3b4b5b6-b3b4-4b5b-8b6b-b3b4b5b6b7b8",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "FLOOD_ZONE_SCREEN",
+      "domain": "flood",
+      "observation": "Fixture flood screening: high AE zone intersection — mountain floodplain stress case.",
+      "observed_value": {
+        "flood_zone_code": "AE",
+        "intersection_ratio": 0.72
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_flood_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only flood screening for Buncombe County French Broad River floodplain. High intersection ratio indicates significant modeled flood exposure. Requires confirmation by a licensed surveyor or flood-plain manager.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-82.570, 35.555], [-82.550, 35.555], [-82.550, 35.565], [-82.570, 35.565], [-82.570, 35.555]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

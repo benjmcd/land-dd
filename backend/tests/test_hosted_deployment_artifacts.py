@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
+
+import pytest
 
 yaml = cast(Any, importlib.import_module("yaml"))
 
@@ -13,6 +17,41 @@ REQUIRED_PRE_DEPLOY_GATES = {
     "scripts/run_release_readiness_check.ps1",
     "scripts/run_image_publication_check.ps1",
 }
+REQUIRED_RUNTIME_EVIDENCE = {
+    "immutable_image_digest",
+    "deployed_image_ref",
+    "platform_environment_name",
+    "database_instance_name",
+    "public_https_url",
+    "tls_certificate_status",
+    "health_endpoint_ok",
+    "version_endpoint_ok",
+    "metrics_endpoint_ok",
+    "queue_health_endpoint_ok",
+    "report_workflow_smoke_ok",
+    "rollback_target",
+    "backup_restore_proof",
+}
+REQUIRED_BLOCKERS = {
+    "hosted_platform_selected",
+    "domain_tls_authority",
+    "secrets_manager_authority",
+    "database_instance_authority",
+    "registry_image_digest_available",
+    "hosted_billing_reconciliation",
+    "hosted_alerting_route",
+}
+
+
+def _load_validator() -> ModuleType:
+    script_path = REPO_ROOT / "scripts" / "hosted_deployment_check.py"
+    spec = importlib.util.spec_from_file_location("hosted_deployment_check", script_path)
+    assert spec is not None
+    loader = spec.loader
+    assert loader is not None
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
 
 
 def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
@@ -65,6 +104,41 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
     assert catalog["limits"]["mutates_hosted_infrastructure"] is False
     assert catalog["limits"]["writes_secrets"] is False
     assert catalog["limits"]["opens_public_endpoint"] is False
+
+
+def test_hosted_deployment_catalog_records_structured_attestation_contract() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "hosted_deployment.yaml").read_text(encoding="utf-8"),
+    )
+
+    evidence = catalog["attestation_evidence"]
+    assert evidence["status"] == "not_available"
+    assert evidence["authority"] == "docs/runbooks/hosted_deployment.md"
+    assert set(evidence["required_fields"]) == REQUIRED_RUNTIME_EVIDENCE
+    assert set(evidence["blocked_until"]) == REQUIRED_BLOCKERS
+    assert set(evidence["blocked_until"]) == set(catalog["blocked_until"])
+    assert set(evidence["evidence_template"]) == REQUIRED_RUNTIME_EVIDENCE
+    assert all(value is None for value in evidence["evidence_template"].values())
+
+
+def test_hosted_deployment_validator_rejects_deployed_empty_attestation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "hosted_deployment.yaml").read_text(encoding="utf-8"),
+    )
+    catalog["attestation_evidence"]["status"] = "deployed"
+
+    def fake_read_text(path_text: str) -> str:
+        if path_text == "config/hosted_deployment.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path_text).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="requires values"):
+        validator.validate_catalog()
 
 
 def test_hosted_deployment_validate_only_artifacts_do_not_mutate_cloud() -> None:

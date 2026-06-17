@@ -1,0 +1,48 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_flood_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_wetlands_soils_flood",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d2d3d4d5-d2d3-4d4d-8d5d-d2d3d4d5d6d7",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "FLOOD_ZONE_SCREEN",
+      "domain": "flood",
+      "observation": "Fixture flood screening: AE zone intersection — Brunswick County wetlands/soils stress case.",
+      "observed_value": {
+        "flood_zone_code": "AE",
+        "intersection_ratio": 0.55
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_flood_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only flood screening for Brunswick County wetlands/soils area. Coastal soils with high water table may have additional flood exposure. Requires confirmation by a licensed surveyor and flood-plain manager.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-78.320, 33.995], [-78.300, 33.995], [-78.300, 34.005], [-78.320, 34.005], [-78.320, 33.995]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

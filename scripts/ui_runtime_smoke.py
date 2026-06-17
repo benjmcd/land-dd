@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass, field
+from http.cookiejar import CookieJar
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode, urljoin
+from urllib.request import HTTPCookieProcessor, Request, build_opener
+
+
+@dataclass(frozen=True)
+class RouteCheck:
+    label: str
+    path: str
+    required: tuple[str, ...]
+    forbidden: tuple[str, ...] = ("Traceback", "Internal Server Error")
+    expect_html: bool = True
+    expect_viewport: bool = True
+
+
+@dataclass
+class RouteResult:
+    label: str
+    path: str
+    status: int | None
+    ok: bool
+    failures: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "label": self.label,
+            "path": self.path,
+            "status": self.status,
+            "ok": self.ok,
+            "failures": self.failures,
+        }
+
+
+def build_route_checks(*, reviewer_session: bool) -> list[RouteCheck]:
+    operations_forbidden = () if not reviewer_session else ('name="reviewer_token"',)
+    operations_required: tuple[str, ...] = ("Operations Dashboard",)
+    if not reviewer_session:
+        operations_required = (*operations_required, "reviewer_token")
+    else:
+        operations_required = (*operations_required, "Using reviewer session")
+
+    return [
+        RouteCheck("home", "/ui/", ("Land Diligence",)),
+        RouteCheck(
+            "report-runs",
+            "/ui/report-runs",
+            ("Report Runs", '<form method="GET" action="/ui/compare"'),
+            forbidden=("Traceback", "Internal Server Error", "<script>"),
+        ),
+        RouteCheck(
+            "connector-review-queue",
+            "/ui/connector-review-queue",
+            ("Connector Review Queue", "<select name='status'>"),
+        ),
+        RouteCheck(
+            "operations",
+            "/ui/operations",
+            operations_required,
+            forbidden=("Traceback", "Internal Server Error", *operations_forbidden),
+        ),
+        RouteCheck("api-key-auth", "/ui/auth", ('name="api_key"',)),
+        RouteCheck(
+            "reviewer-auth",
+            "/ui/auth/reviewer",
+            ('name="reviewer_id"', 'name="reviewer_token"'),
+        ),
+    ]
+
+
+def request_form(opener: Any, url: str, fields: dict[str, str], timeout: float) -> None:
+    body = urlencode(fields).encode("utf-8")
+    request = Request(
+        url,
+        data=body,
+        headers={"content-type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with opener.open(request, timeout=timeout) as response:
+        if response.status >= 400:
+            raise RuntimeError(f"POST {url} returned HTTP {response.status}")
+
+
+def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -> RouteResult:
+    url = urljoin(base_url.rstrip("/") + "/", check.path.lstrip("/"))
+    failures: list[str] = []
+    status: int | None = None
+    try:
+        with opener.open(url, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+    except HTTPError as exc:
+        status = int(exc.code)
+        body = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("content-type", "")
+        failures.append(f"HTTP {status}")
+    except URLError as exc:
+        return RouteResult(
+            check.label,
+            check.path,
+            None,
+            False,
+            [f"runtime unavailable: {exc.reason}"],
+        )
+
+    if status != 200:
+        failures.append(f"expected HTTP 200, got {status}")
+    if not body.strip():
+        failures.append("empty body")
+    if check.expect_html and "text/html" not in content_type.lower():
+        failures.append(f"expected text/html content-type, got {content_type or '<missing>'}")
+    if check.expect_viewport and 'name="viewport"' not in body:
+        failures.append("missing viewport meta")
+    for text in check.required:
+        if text not in body:
+            failures.append(f"missing required text: {text}")
+    for text in check.forbidden:
+        if text in body:
+            failures.append(f"found forbidden text: {text}")
+
+    return RouteResult(check.label, check.path, status, not failures, failures)
+
+
+def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
+    cookie_jar = CookieJar()
+    opener = build_opener(HTTPCookieProcessor(cookie_jar))
+    base_url = args.base_url.rstrip("/")
+
+    if args.api_key:
+        request_form(opener, f"{base_url}/ui/auth", {"api_key": args.api_key}, args.timeout)
+
+    reviewer_session = bool(args.reviewer_id or args.reviewer_token)
+    if reviewer_session:
+        if not args.reviewer_id or not args.reviewer_token:
+            raise RuntimeError("--reviewer-id and --reviewer-token must be provided together")
+        request_form(
+            opener,
+            f"{base_url}/ui/auth/reviewer",
+            {
+                "reviewer_id": args.reviewer_id,
+                "reviewer_token": args.reviewer_token,
+            },
+            args.timeout,
+        )
+
+    return [
+        fetch_route(opener, base_url, check, args.timeout)
+        for check in build_route_checks(reviewer_session=reviewer_session)
+    ]
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Smoke-check the running land_dd server-rendered UI.",
+    )
+    parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--api-key", default="")
+    parser.add_argument("--reviewer-id", default="")
+    parser.add_argument("--reviewer-token", default="")
+    parser.add_argument("--timeout", type=float, default=5.0)
+    parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        results = run_smoke(args)
+    except Exception as exc:
+        if args.json:
+            print(json.dumps({"ok": False, "error": str(exc)}, indent=2))
+        else:
+            print(f"ui runtime smoke failed: {exc}", file=sys.stderr)
+        return 1
+
+    ok = all(result.ok for result in results)
+    if args.json:
+        print(json.dumps({"ok": ok, "routes": [r.as_dict() for r in results]}, indent=2))
+    else:
+        for result in results:
+            status = result.status if result.status is not None else "unavailable"
+            marker = "ok" if result.ok else "fail"
+            print(f"{marker}: {result.label} {result.path} status={status}")
+            for failure in result.failures:
+                print(f"  - {failure}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

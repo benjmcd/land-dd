@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BUN-flood",
+    "description": "Buncombe County mountain floodplain stress case — French Broad River area"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-82.570, 35.555],
+        [-82.550, 35.555],
+        [-82.550, 35.565],
+        [-82.570, 35.565],
+        [-82.570, 35.555]
+      ]
+    ]
+  }
+}

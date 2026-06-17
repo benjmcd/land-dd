@@ -42,6 +42,46 @@ class ConnectorReviewSignal:
 
 
 @dataclass(frozen=True)
+class ConnectorReviewEvidenceSummary:
+    evidence_id: UUID
+    area_id: UUID
+    source_id: UUID
+    dataset_version_id: UUID | None
+    source_ingest_run_id: UUID | None
+    evidence_type: str
+    evidence_code: str
+    domain: str
+    observation: str
+    caveat: str | None
+    confidence: str
+    is_source_failure: bool
+
+    def to_review_record(self) -> dict[str, object]:
+        return {
+            "evidence_id": str(self.evidence_id),
+            "area_id": str(self.area_id),
+            "source_id": str(self.source_id),
+            "dataset_version_id": (
+                str(self.dataset_version_id)
+                if self.dataset_version_id is not None
+                else None
+            ),
+            "source_ingest_run_id": (
+                str(self.source_ingest_run_id)
+                if self.source_ingest_run_id is not None
+                else None
+            ),
+            "evidence_type": self.evidence_type,
+            "evidence_code": self.evidence_code,
+            "domain": self.domain,
+            "observation": self.observation,
+            "caveat": self.caveat,
+            "confidence": self.confidence,
+            "is_source_failure": self.is_source_failure,
+        }
+
+
+@dataclass(frozen=True)
 class ConnectorRunReviewPacket:
     connector_name: str
     ingest_run_id: UUID
@@ -65,6 +105,8 @@ class ConnectorRunReviewPacket:
     created_evidence_ids: tuple[UUID, ...]
     skipped_evidence_ids: tuple[UUID, ...]
     source_failure_evidence_ids: tuple[UUID, ...]
+    created_evidence: tuple[ConnectorReviewEvidenceSummary, ...]
+    skipped_evidence: tuple[ConnectorReviewEvidenceSummary, ...]
     review_required: bool
     signals: tuple[ConnectorReviewSignal, ...]
     human_review_tasks: tuple[str, ...]
@@ -120,6 +162,12 @@ def build_connector_run_review_packet(
             evidence.evidence_id
             for evidence in (*source_failure_created, *source_failure_skipped)
         ),
+        created_evidence=tuple(
+            _evidence_summary(evidence) for evidence in created_evidence
+        ),
+        skipped_evidence=tuple(
+            _evidence_summary(evidence) for evidence in skipped_evidence
+        ),
         review_required=any(signal.requires_human_review for signal in signals),
         signals=signals,
         human_review_tasks=_human_review_tasks(signals),
@@ -133,6 +181,23 @@ def _area_id_from_evidence_inputs(
     if len(area_ids) != 1:
         return None
     return next(iter(area_ids))
+
+
+def _evidence_summary(evidence: EvidenceContract) -> ConnectorReviewEvidenceSummary:
+    return ConnectorReviewEvidenceSummary(
+        evidence_id=evidence.evidence_id,
+        area_id=evidence.area_id,
+        source_id=evidence.source_id,
+        dataset_version_id=evidence.dataset_version_id,
+        source_ingest_run_id=evidence.source_ingest_run_id,
+        evidence_type=evidence.evidence_type.value,
+        evidence_code=evidence.evidence_code,
+        domain=evidence.domain,
+        observation=evidence.observation,
+        caveat=evidence.caveat,
+        confidence=evidence.confidence.value,
+        is_source_failure=evidence.is_source_failure,
+    )
 
 
 def _review_signals(
@@ -216,6 +281,7 @@ def _human_review_tasks(
 
 
 __all__ = [
+    "ConnectorReviewEvidenceSummary",
     "ConnectorReviewSignal",
     "ConnectorReviewSignalCode",
     "ConnectorIngestWorkflowResult",

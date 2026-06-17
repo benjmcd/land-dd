@@ -23,12 +23,31 @@ compose() {
 apply_sql_file() {
   local file="$1"
   echo "Applying $file"
-  compose exec -T db psql -U land -d land_diligence -v ON_ERROR_STOP=1 < "$file"
+  compose exec -T db psql -U land -d land_diligence -v ON_ERROR_STOP=1 -f - < "$file"
+}
+
+db_start_time() {
+  compose exec -T db psql -U land -d land_diligence -At -v ON_ERROR_STOP=1 \
+    -c "SELECT pg_postmaster_start_time();" 2>/dev/null || true
 }
 
 wait_for_db() {
   local deadline=$((SECONDS + 90))
-  until compose exec -T db pg_isready -U land -d land_diligence >/dev/null 2>&1; do
+  local first_start_time second_start_time
+  while true; do
+    if compose exec -T db pg_isready -U land -d land_diligence >/dev/null 2>&1; then
+      first_start_time="$(db_start_time)"
+      if [[ -n "$first_start_time" ]]; then
+        sleep 5
+        if compose exec -T db pg_isready -U land -d land_diligence >/dev/null 2>&1; then
+          second_start_time="$(db_start_time)"
+          if [[ -n "$second_start_time" && "$first_start_time" == "$second_start_time" ]]; then
+            return 0
+          fi
+          echo "db start time changed while waiting for deployment smoke; waiting for final startup" >&2
+        fi
+      fi
+    fi
     if (( SECONDS >= deadline )); then
       echo "db did not become ready for deployment smoke" >&2
       return 1

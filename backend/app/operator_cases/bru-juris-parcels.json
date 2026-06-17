@@ -1,0 +1,52 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "f3f3f3f3-f3f3-4f3f-8f3f-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_jurisdiction_parcels",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "f3f3f3f3-f3f3-4f3f-8f3f-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "PARCEL_INTERSECTION_SCREEN",
+      "domain": "parcels",
+      "observation": "Fixture parcel screening: Brunswick County parcel intersection — municipal-vs-county zoning jurisdiction stress case. AOI intersects 1 parcel near incorporated boundary.",
+      "observed_value": {
+        "parcel_count": 1,
+        "parcel_pin": "0640-00073-FX",
+        "parcel_county": "Brunswick County, NC",
+        "parcel_zoning": "R-20",
+        "owner_display": "NOT_SHOWN",
+        "parcel_class": "rural_residential",
+        "total_acres_approx": 18.3,
+        "source_note": "Fixture parcel data for Brunswick County jurisdiction stress case. Zoning from Brunswick County GIS parcel layer; municipal ETJ boundary may differ."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only parcel data for Brunswick County. Parcel boundaries are approximate; not survey-grade. Ownership, easements, and recorded instruments require confirmation by the Brunswick County Register of Deeds and a licensed surveyor. Acreage and zoning classification are indicative only; verify land use with Brunswick County Planning. ETJ boundaries may place this parcel under municipal jurisdiction.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-78.160, 34.105], [-78.140, 34.105], [-78.140, 34.115], [-78.160, 34.115], [-78.160, 34.105]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 50.0
+    }
+  ]
+}

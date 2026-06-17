@@ -2,6 +2,293 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-16 (Operator proof-semantics closeout)
+
+- Re-audited `prod-grade-20260614` against the handoff lanes and confirmed the app-owned
+  selected-county operator package/API/UI path is the current implementation authority.
+- Added an Operator Path Proof Matrix to the MVP operator runbook so the no-server CLI,
+  `/operator-cases`, `/ui/`, generic `/report-runs`, DB-backed verification, and live
+  connector queue paths are not treated as interchangeable proofs.
+- Tightened CLI artifact wording to distinguish in-memory artifact contract shape from
+  HTTP routing, access gates, and DB artifact persistence.
+- Added a private-MVP runbook guard test for the proof matrix and stale overclaim
+  wording.
+- Fixed stale MVP operator runbook wording that implied UI report approval had no
+  session/cookie path; the runbook now matches the implemented reviewer UI session
+  bridge while preserving JSON/API header-only reviewer auth.
+- Added an access-control artifact guard so the reviewer-session runbook wording does
+  not regress.
+- Updated the selected-county operator plan status to implemented with proof-semantics
+  documentation closeout in progress.
+- Re-ran default verification, DB-enabled verification on an isolated Compose DB, and
+  explicit UI runtime plus headless/headed Chrome smoke.
+
+## 2026-06-15 (Production report-create auth guard)
+
+- Restricted the anonymous async `POST /report-runs` creation path to
+  local/dev/development/test app environments; non-local runtimes now delegate missing
+  workspace/user identity to the configured report auth mode and fail closed before
+  report creation.
+- Added helper and route-level regressions proving local private-MVP trusted-header
+  fallback still returns no auth context, non-local trusted-header report creation
+  returns `401` without workspace identity, and signed-token mode remains bearer-token
+  gated.
+- Reconciled the access-control static validator with the current UI reviewer-session
+  design contract and added an artifact regression so stale auth-design wording is
+  caught.
+- Routed `MANIFEST.md` to the explicit UI browser/runtime smoke scripts and protected
+  that routing in the UI smoke artifact tests.
+- Updated the private-MVP readiness catalog so `unauthenticated_workspace_isolation`
+  is complete for the non-local production boundary while the remaining sync/async
+  create-response divergence stays accepted private-MVP risk.
+
+## 2026-06-15 (Explicit UI browser smoke)
+
+- Added `scripts/ui_browser_smoke.mjs` plus Windows/POSIX wrappers to run an explicit
+  Chrome-based UI smoke against a running app at desktop and mobile viewports.
+- Added `scripts/ui_runtime_smoke.py` for a lightweight HTTP-only UI route contract
+  check that fails closed on unavailable or empty runtime surfaces.
+- Kept both smoke paths non-mutating by default: no area/report creation, no connector
+  review state creation, no default screenshots, and no default JSON artifacts.
+- The new browser smoke caught a mobile overflow on `/ui/auth`; fixed the API-key auth
+  input sizing with `box-sizing: border-box`.
+- Documented the browser/runtime smoke workflow in the MVP operator runbook and added
+  focused script/auth regressions.
+
+## 2026-06-15 (Report-list mobile operator cards)
+
+- Converted `/ui/report-runs` narrow-screen rows into label-over-value mobile cards so
+  status and next actions remain visible without horizontal scrolling.
+- Replaced the report-list inline nav with a labeled wrapping/stacking nav so Home,
+  Operations Dashboard, and Connector review queue remain reachable on mobile.
+- Kept table headers available to assistive technology on mobile by visually hiding
+  them instead of using `display:none`, while retaining visible per-cell labels.
+- Captured headed/in-app and headless Chrome screenshots for desktop and mobile report
+  list views, then refreshed the validation evidence.
+
+## 2026-06-15 (Configurable report refresh interval)
+
+- Replaced the fixed-only queued/running report auto-refresh UI with a no-JavaScript
+  interval selector for 3, 10, 30, or 60 seconds while keeping the default at 3 seconds.
+- Preserved pause, manual refresh, and resume semantics; non-default refresh intervals
+  now survive pause/resume URLs.
+- Updated the design source of truth and MVP operator runbook to remove the resolved
+  fixed-refresh open question and document the implemented interval controls.
+
+## 2026-06-15 (Connector review queue triage list)
+
+- Added compact triage summaries to `/ui/connector-review-queue` rows using existing
+  queue payload facts: disposition, signal codes, first human-review task, blocking
+  count, evidence counts, and source-failure counts.
+- Added per-row next-action links that label the current expected operator path while
+  keeping mutation forms on the connector review detail page.
+- Wrapped the widened queue table in a horizontal scroll container for narrow screens.
+- Added focused queue-list regressions for needs-review, failed, and succeeded items.
+
+## 2026-06-15 (Operations dashboard session entry and safe filters)
+
+- Made `GET /ui/operations` render the operations dashboard directly when the current
+  reviewer UI session has `operations:read` scope; missing or under-scoped sessions keep
+  the existing credential fallback.
+- Removed the redundant authenticated operations credential form after dashboard render,
+  while preserving submitted-credential session creation.
+- Changed report-list and connector-review status filters to fail closed with safe HTML
+  errors for unknown values instead of silently returning unfiltered work.
+- Updated the MVP operator runbook and project state for the direct dashboard entry and
+  fail-closed filter semantics.
+
+## 2026-06-15 (Reviewer UI session and operations mobile tables)
+
+- Added a reviewer-scoped UI session bridge at `/ui/auth/reviewer` so browser
+  operators can sign in once for UI-only reviewer actions while JSON/API reviewer
+  routes continue to require `X-Reviewer-Id` and `X-Reviewer-Token` headers.
+- Bound reviewer UI cookies to the configured reviewer token spec with an HMAC
+  session binding, so token rotation or scope removal invalidates existing UI
+  reviewer sessions without storing raw reviewer tokens in the browser cookie.
+- Updated report approval, connector-review actions, and operations dashboard
+  reviewer forms to use the reviewer session when the required scope is present,
+  while preserving per-action credential fallback and attaching a reviewer cookie
+  after successful submitted credentials.
+- Extended UI logout to clear the reviewer session cookie along with the API-key UI
+  cookie, and added CSRF-protected reviewer-session regressions for report approval.
+- Wrapped operations health tables in responsive horizontal scroll containers after
+  screenshot review exposed narrow-viewport overflow.
+- Repaired the shared reviewer-session status/manage-link layout after screenshot
+  review caught a desktop overlap in the report approval action panel.
+- Regenerated OpenAPI stubs for the new reviewer auth UI routes and updated design,
+  access-control, and MVP-operator docs to make the UI session/API header boundary
+  explicit.
+
+## 2026-06-15 (Durable operator state runtime guard)
+
+- Added a startup fail-closed guard so non-local `APP_ENV` values cannot run the
+  operator surface with in-memory services; `USE_DB_SERVICES=true` is now required
+  outside local/dev/development/test, and `DATABASE_URL` must be non-blank when DB
+  services are enabled.
+- Fixed `scripts/run_api.ps1` and `scripts/run_api.sh` so `-StorageBackend postgres`
+  / `--postgres` sets the actual app switch, `USE_DB_SERVICES=true`, while memory mode
+  sets it false and preserves/restores the caller's environment.
+- Updated runtime-mode, UI auth, and run-script regressions to pin the production
+  fail-closed boundary and wrapper mapping.
+- Updated `.env.example`, `docs/DEMO.md`, the settings description, and the MVP
+  operator runbook so local in-memory mode is clearly demo-only and production-like
+  runtime uses durable DB-backed state.
+
+## 2026-06-15 (Evidence lineage UI approval boundary)
+
+- Aligned `/ui/report-runs/{id}/lineage` with the approved-report delivery boundary:
+  direct UI visits for succeeded-but-unapproved reports now return an Approval Required
+  page linking back to report review, while approved reports still render evidence
+  lineage without requiring reviewer credentials in the URL or page.
+- Left the JSON lineage API contract unchanged; the UI-only guard prevents a direct
+  browser route from bypassing the approved-report link surface.
+- Made lineage tables responsive by containing wide source/claim/evidence tables in
+  horizontal scroll wrappers and wrapping metadata IDs on narrow screens.
+- Added UI route regressions for pending-gated lineage, approved no-credential lineage,
+  approved table rendering, and the responsive table wrapper contract.
+- Focused lineage tests, the full UI route file, workspace validation, ruff, mypy, and
+  default `.\scripts\verify.ps1` passed. Browser proof used system Chrome after in-app
+  Browser attach timed out; headless and headed desktop/mobile screenshots were captured
+  under `local_artifacts/ui-lineage-*-fixed-8768.png`.
+
+## 2026-06-15 (Connector review decision context)
+
+- Promoted connector review-packet evidence summaries into `ConnectorRunReviewPacket`
+  and the connector review queue payload, preserving retrieval counts, log URI,
+  metrics, tasks, evidence/source-failure counts, evidence IDs, and compact
+  evidence code/observation/caveat/source-failure facts for both in-memory and
+  DB-backed queue items.
+- Upgraded `/ui/connector-review-queue/{ingest_run_id}` with a Decision Context panel
+  ahead of mutation forms: status cards, signal chips, human-review tasks, responsive
+  evidence cards, and safe metric rendering without dumping arbitrary payload keys.
+- Added packet, queue, and UI route regressions for source-failure and successful
+  fixture contexts, including a secret-looking payload/metric key guard.
+- Focused packet/queue/UI tests, ruff, mypy, workspace validation, and default
+  `.\scripts\verify.ps1` passed; headless and headed Chrome screenshots were captured
+  under `local_artifacts/ui-review-decision-card-*`.
+
+## 2026-06-15 (Compare UI change review)
+
+- Upgraded `/ui/compare` from count-only comparison to an operator action surface with
+  report status, review/delivery status, gated next-action links, high-severity
+  claim-code/domain details, and a same-area Change Review section.
+- Change Review reuses the existing report-diff semantics: ruleset changed,
+  added/removed claim codes, added/removed sources, and evidence-count delta. Cross-area
+  comparisons keep the side-by-side summary and render a clear same-area requirement
+  note.
+- Preserved the approval boundary: unapproved reports link only to report detail/approval,
+  while approved reports expose dossier, artifact, print, and lineage links.
+- Added focused compare route tests, including UI/API diff parity, delivery-link gating,
+  high-severity details, and responsive table wrapping; captured headless and headed
+  Chrome compare screenshots under `local_artifacts/ui-compare-*`.
+- Full `backend/tests/api/test_ui_routes.py`, focused ruff/mypy, workspace validation,
+  and default `.\scripts\verify.ps1` passed after the compare change.
+
+## 2026-06-15 (QA runner output buffering)
+
+- Hardened `scripts/verify.ps1` and `.sh` so backend pytest writes to a
+  replayed `local_artifacts/backend-pytest.log` transcript instead of streaming the
+  full progress feed directly through the command transport.
+- Made runner logs fresh-on-collision so prior backend pytest evidence is not removed
+  or overwritten; PowerShell now preserves the backend pytest exit code, restores an
+  incoming `PYTHONPATH`, and avoids treating redirected stderr as a transport failure.
+- Added `backend/tests/test_verify_scripts.py` coverage for the runner contract,
+  including a PowerShell behavioral probe that proves stderr/stdout replay, preserved
+  prior log content, and exact non-zero exit propagation.
+- Focused tests, ruff, mypy, Git Bash syntax check, and default `.\scripts\verify.ps1`
+  passed after the runner hardening.
+
+## 2026-06-15 (DB-backed verify + deployment smoke hardening)
+
+- Ran DB-backed verification on isolated Docker PostGIS. The first attempt exposed
+  a transient Dockerized-psql host-port connection failure before schema application;
+  the retry on project `land-dd-db-smoke-pg2` with DB port `55434`, `RUN_DB_SMOKE=1`,
+  `DATABASE_URL_SYNC`, and `DATABASE_URL` passed migrations, backend tests, ruff,
+  mypy, and `scripts/db_smoke_check.py`.
+- Deployment smoke then exposed a real readiness race: `pg_isready` returned true
+  during the PostGIS image's temporary init server, before the image's intentional
+  restart into the final PostgreSQL process.
+- Hardened `scripts/run_deployment_smoke.ps1` and `.sh` to wait for stable
+  `pg_postmaster_start_time()` samples before applying migrations. The Windows script
+  now copies SQL into the DB container and runs `psql -f /tmp/deployment-smoke.sql`
+  instead of piping SQL through `docker compose exec`.
+- Added static regressions in `backend/tests/test_deployment_smoke_scripts.py`; watched
+  the new tests fail before each script hardening step and pass afterward.
+- Fresh deployment smoke passed on project `land-diligence-smoke-pg6` with backend
+  port `18084` and DB port `55439`; final default `.\scripts\verify.ps1` also passed.
+  Docker containers/networks were shut down; named volumes were left untouched.
+
+## 2026-06-14 (Selected-county operator API/UI path)
+
+- Created fresh worktree `worktrees/prod-grade` from fetched `origin/main`
+  `d7ec75ba7aec52794fc82f29658ce262e15974fc`.
+- Added `backend/app/operator_cases`: app-owned packaged selected-county
+  private-MVP case catalog, 9 AOI geometries, and local connector fixtures copied from
+  the golden regression corpus with compact runtime filenames.
+- Added `GET /operator-cases` and `POST /operator-cases/{case_id}/report`; report creation
+  ingests local fixture connectors, records provenance/evidence, approves eligible
+  connector-QA handoffs, creates an approved report, and returns UI/dossier/artifact links.
+- Added `DESIGN.md` as the active design source of truth for the private operator console.
+- Reworked `/ui/` into a production-oriented operator console: selected-county case table,
+  one-click report actions, status strip, operator navigation, responsive/mobile table
+  layout, and preserved raw GeoJSON intake.
+- Hardened the operator-case API contract: case summaries now expose fixture boundary
+  metadata, and report creation rejects blank reviewer/reason values, normalizes
+  surrounding whitespace, and fails closed on unexpected JSON fields.
+- Added a visible Boundary column to the selected-county UI table for fixture scope,
+  not-live coverage, not-evaluated domains, and expected unknowns; the selected-case
+  table now spans the console width so action buttons are visible without horizontal
+  scrolling on desktop.
+- Added server-rendered custom GeoJSON intake at `POST /ui/intake`, reusing the canonical
+  JSON intake path, with no-JavaScript form submission, redirects to report or connector
+  review, safe HTML errors for invalid GeoJSON/intent, and JavaScript-enhanced invalid
+  GeoJSON feedback.
+- Reworked `/ui/report-runs/{id}` status/detail pages into a shared responsive report
+  shell for queued/running, failed, missing, pending-approval, and approved states. Each
+  state now puts status first and exposes the next operator action without relying on
+  JavaScript.
+- Reworked non-happy-path print/export pages so missing and unapproved reports use the
+  same report shell and action panel without exposing dossier content before approval.
+- Hardened the remaining support UI pages (`/ui/connector-review-queue`,
+  `/ui/operations`, and `/ui/report-runs/{id}/lineage`) with viewport-aware HTML heads
+  while preserving their review, operations, lineage, and safe-return action surfaces.
+- Consolidated the support-page viewport/error-page contract in `ui_shared.page_head`
+  and `ui_shared.error_page` so review, operations, and lineage modules no longer carry
+  duplicate local page-head/error helpers.
+- Made report comparison usable without JavaScript: `/ui/report-runs` now submits
+  selected rows through a native `GET /ui/compare` form, and `/ui/compare` accepts both
+  repeated `ids` parameters and the existing comma-separated URL format.
+- Added connector-review queue navigation to the home operator console and report-run
+  list so review-gated connector work is recoverable without relying on a one-time
+  pending-intake deep link.
+- Made operations dashboard queue-health counts actionable: report-job counts link to
+  `/ui/report-runs` filters, and live-connector counts link to connector-review queue
+  filters without mutating queues or changing the operations API contract.
+- Made connector-review item detail actions state-aware: open items show approve/reject
+  plus cancel, failed items show valid requeue/cancel paths, succeeded items show only
+  resume-report, and cancelled/terminal no-action states render an explicit message.
+- Added no-JavaScript pause/manual-refresh/resume controls to queued/running report
+  pages so default auto-refresh no longer traps operators during inspection.
+- Added a report-list Action column so queued/running, failed, pending-approval, and
+  approved rows point to the correct existing status, retry, approval, download, JSON,
+  and lineage surfaces; wrapped the wider table for narrow viewports.
+- Added optional report-approval reason capture to the UI approval form and persisted
+  trimmed non-empty notes through the existing report review action audit trail; after
+  screenshot review, restyled the stacked approval form so reviewer inputs and the reason
+  textarea share full-width sizing on desktop and mobile.
+- Changed successful report approval, report retry, and connector-review resume-report
+  UI posts to return real `303` redirects to the resulting report pages, matching the
+  documented operator flow while preserving guarded HTML error responses.
+- Updated OpenAPI stubs plus connector/operator runbooks to distinguish generic embedded
+  fixtures, packaged selected-county operator fixtures, and test-only golden fixtures.
+- Captured headless/headed Chrome UI screenshots under `local_artifacts/`, including
+  desktop, mobile, report-page, final stacked mobile states, and final Boundary-column
+  desktop/mobile states, approval-reason desktop/mobile/headed states, redirect target
+  pages, plus custom-intake no-JavaScript and invalid-input states.
+- Focused tests, ruff, mypy, `git diff --check`, browser probes, and default
+  `.\scripts\verify.ps1` passed; report-detail runtime HTTP probes passed after the
+  server restart; DB smoke remains a separate `RUN_DB_SMOKE=1` gate.
+
 ## 2026-06-13 (Operator approved-path proof + §18 fix + all-county proof — 1627 tests)
 
 Commits: 254a893 (+ state), §18 column fix, all-county approved-path proof
@@ -2024,8 +2311,8 @@ Commits: acba0a5, d6acf90, d3aa9a9, cd2bde3, 394d061
 - Fixed fragile `_unknown_claims` filter in `service.py`: replaced `"UNKNOWN" in claim.claim_code` substring scan with `claim.severity == SeverityBand.UNKNOWN` (the correct and complete signal).
 - Added `intent_code_enum` to `db/types.py` — closes the gap for future ORM models against `core.intents` or `reports.report_runs`. Added explanatory comment for `area_type_enum` (the one known exception, pending coordinated migration).
 - Added AGENTS.md non-negotiable: no agent name, model name, or AI attribution in any file or commit message.
-- Removed `Author: Claude (ralplan)` tag from `plans/2026-06-03-repo-audit-and-forward-options.md`.
-- Rewrote all session commit messages to remove `Co-Authored-By:` trailers (17 local commits; no remote push affected).
+- Removed prior AI-attribution text from `plans/2026-06-03-repo-audit-and-forward-options.md`.
+- Rewrote all session commit messages to remove AI-attribution trailers (17 local commits; no remote push affected).
 - Added 3 structural invariant checks to `scripts/validate_workspace.ps1` (runs as part of `verify.ps1`):
   1. Exactly 1 `DeclarativeBase` subclass in `backend/app/` (prevents ORM base fragmentation)
   2. Zero `.query(` calls in `backend/app/` (prevents SQLAlchemy 1.x API regression)
@@ -2567,3 +2854,164 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Updated `config/private_mvp_beta_readiness.yaml` ds010_011_023_selected_county_behavior note: all 9 golden AOI cases now carry parcel fixtures; parcels is no longer NOT_EVALUATED for any Buncombe, Chatham, or Brunswick golden AOI.
 - CLI verified: `generate_dossier.py --connector all` on bun_slope.geojson now shows "Parcel ID/APN: 9621-21-3456-FX, Jurisdiction: Buncombe County, NC, Acreage: 82.5 acres" in dossier.
 - Verification: 1452 passed / 84 skipped; verify.ps1 ok; all 23 private-MVP readiness tests pass; 16 manifest tests pass. DS-017 and hosted-production blockers unchanged.
+
+## 2026-06-14 Private-beta UI API-key bridge hardening
+
+- Added `/ui/auth` private-beta browser access for `REQUIRE_API_KEY=true`: operators
+  can submit the configured API key once and receive a signed, expiring, HttpOnly,
+  SameSite cookie scoped to `/ui`; JSON/API paths still require `X-API-Key`.
+- Hardened the cookie verifier so malformed payloads, badly encoded payloads, expired
+  cookies, tampered cookies, missing signing-secret config, and active-key config
+  changes fail closed back to login.
+- Moved UI-cookie signing to independent `UI_AUTH_COOKIE_SECRET` material, with a
+  per-process local fallback when blank; `sha256:<digest>` API-key config values can no
+  longer be used as cookie-forging HMAC secrets.
+- Added automatic `Secure` cookie behavior for non-local `APP_ENV` values and
+  `UI_AUTH_COOKIE_SECURE=true` override support.
+- Added audit events for accepted, invalid, missing, and unconfigured `/ui/auth` login
+  attempts without logging submitted keys.
+- Updated `.env.example`, access-control docs, MVP operator docs, and the static
+  access-control validator to track the new bridge and its limits.
+- Verification: focused UI/API-key auth tests passed; ruff and mypy passed on touched
+  auth/config/test surfaces; `.\scripts\run_access_control_check.ps1` passed; OpenAPI
+  contract/schema-copy tests passed; default `.\scripts\verify.ps1` passed. Headless
+  and headed Chrome screenshots were captured under `local_artifacts/ui-auth-*` and
+  `local_artifacts/ui-home-authenticated-*`.
+
+## 2026-06-14 Cookie-authenticated UI CSRF hardening
+
+- Added stateless signed CSRF tokens for unsafe `/ui` POST forms authenticated by the
+  UI API-key cookie. The token is derived from the HttpOnly UI auth cookie and
+  `UI_AUTH_COOKIE_SECRET`, so no server-side CSRF store or JavaScript-only dependency is
+  required.
+- Threaded hidden CSRF fields through custom AOI intake, selected-county case launch,
+  report approve/retry, connector review actions, connector resume-report, operations
+  credential forms, and sign-out.
+- Added route-level CSRF checks before reviewer credential validation or mutations;
+  local no-auth and `X-API-Key` header-auth paths do not require the UI CSRF field.
+- Changed sign-out from a mutating GET to a confirmation GET plus CSRF-protected POST.
+- Fixed the custom AOI JavaScript enhancement so it submits the actual `/ui/intake`
+  form data, including the CSRF token, and follows server redirects instead of posting
+  JSON to `/intake`, which is not authorized by the UI cookie.
+- Updated access-control and operator runbooks plus the access-control static validator.
+- Verification: focused UI/auth/OpenAPI tests passed, ruff and mypy passed on touched
+  surfaces, `.\scripts\run_access_control_check.ps1` passed, and default
+  `.\scripts\verify.ps1` passed with DB smoke skipped by design.
+
+## 2026-06-14 Non-local UI cookie secret fail-closed hardening
+
+- Added a shared local-app-env predicate for `local`, `dev`, `development`, and `test`
+  so the UI cookie `Secure` default and UI-cookie signing-secret fallback use the same
+  environment boundary.
+- Changed app startup to fail fast when `REQUIRE_API_KEY=true`, `APP_ENV` is outside
+  that local allowlist, and `UI_AUTH_COOKIE_SECRET` is blank. Local/dev/development/test
+  environments keep the existing per-process fallback for local work.
+- Updated `.env.example`, access-control docs, MVP operator docs, and the static
+  access-control validator so operators see that the blank fallback is local-only.
+- Review found one wording mismatch around `development`; the runtime error, docs, and
+  validator now all say `local/dev/development/test`.
+- Verification: focused UI/API-key auth tests, ruff, mypy, access-control validation,
+  default `.\scripts\verify.ps1`, and production-like Chrome CDP UI smoke passed.
+  Browser evidence was captured at
+  `local_artifacts/ui-secret-production-auth-cdp.png`,
+  `local_artifacts/ui-secret-production-home-cdp.png`, and
+  `local_artifacts/ui-secret-production-home-headed-cdp.png`.
+
+## 2026-06-14 UI auth design/config source-of-truth alignment
+
+- Reconciled `DESIGN.md` with the implemented private-beta `/ui/auth` bridge:
+  API/JSON routes still require `X-API-Key`, browser operators may use the signed
+  `/ui` cookie, and non-local API-key-locked environments require
+  `UI_AUTH_COOKIE_SECRET`.
+- Updated the `UI_AUTH_COOKIE_SECRET` settings description so generated settings
+  metadata no longer implies a per-process fallback is valid in non-local
+  API-key-locked deployments.
+- Extended `scripts/access_control_check.py` to require `DESIGN.md` and
+  `docs/runbooks/mvp_operator.md`, verifying the canonical design/operator wording for
+  the UI API-key cookie bridge, reviewer-token separation, and local-only fallback
+  boundary.
+- A read-only review found no stale proxy-only lockout or unconditional fallback claims,
+  then flagged that `mvp_operator.md` was not yet statically guarded; the validator now
+  checks it directly.
+- Verification: `.\scripts\run_access_control_check.ps1`, default
+  `.\scripts\verify.ps1`, focused ruff, and focused mypy passed on the changed
+  config/validator surfaces.
+
+## 2026-06-14 UI auth manifest/catalog authority alignment
+
+- Updated the intentionally scoped repo routing manifest to list `DESIGN.md` as the
+  active operator UI design source of truth and to include `DESIGN.md` plus
+  `docs/runbooks/mvp_operator.md` in the access-control source-of-truth area.
+- Expanded `config/access_control.yaml` `ui_api_key_cookie_bridge` authority to cover
+  the runtime auth modules, UI CSRF/form surfaces, settings, tests, env example,
+  canonical design file, access-control runbook, and MVP operator runbook.
+- Extended `scripts/access_control_check.py` so the static proof fails if the UI bridge
+  authority list drops those files.
+- Review found the validator still did not pin `MANIFEST.md`, the canonical ownership
+  declaration inside `DESIGN.md`, or the live `/ui/*` lineage surface. The validator now
+  reads `MANIFEST.md`, checks the canonical `DESIGN.md` ownership text, includes
+  `backend/app/api/ui_lineage.py`, and treats the UI bridge authority set as exact.
+- Verification: `.\scripts\run_access_control_check.ps1`, release-readiness check,
+  focused ruff, focused mypy, and default `.\scripts\verify.ps1` passed on the changed
+  validator/catalog surfaces.
+
+## 2026-06-14 Release-readiness full-catalog validation hardening
+
+- Updated `scripts/release_readiness_check.py` so `REQUIRED_CHECKS` matches the full
+  `config/release_readiness.yaml` gate set instead of the older subset.
+- Added required-file coverage for security scan, data retention, load testing,
+  performance, jurisdiction/rulepack checklists, and the report API data-lineage
+  surface.
+- Made the release validator fail on unexpected release check IDs and verify every
+  non-null catalog `ci_job` exists in `.github/workflows/ci.yml`.
+- Hardened the CI proof relationship so every non-null catalog `ci_job` must run the
+  expected POSIX proof wrapper; added missing wrapper steps to the `supply-chain` and
+  `container-image-scan` jobs.
+- Updated the performance runbook to distinguish CI artifact validation from local live
+  `run_load_test` sequential/concurrent scenarios and validate-only mode.
+- Updated `backend/tests/test_release_readiness_artifacts.py` and
+  `docs/runbooks/release_readiness.md` so the tests and operator runbook name the same
+  full gate set.
+- Verification: `.\scripts\run_release_readiness_check.ps1`, supply-chain and
+  container-image scan proof wrappers, focused release/load/performance/supply-chain/
+  container artifact tests, focused ruff, focused mypy, and default
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-06-14 Operator console responsive browser proof
+
+- Captured fresh localhost Chrome evidence for `/ui/` on the current worktree after
+  starting the app on isolated port `8765`.
+- Tightened the selected-county case table mobile CSS so case-card cells render as
+  label-over-value blocks with explicit overflow wrapping, avoiding cramped two-column
+  mobile rows for long operator descriptions and fixture-boundary metadata.
+- Added a UI route regression assertion for the mobile wrapping CSS contract.
+- Browser proof: headless Chrome desktop/mobile screenshots plus headed Chrome CDP
+  screenshots were captured under `local_artifacts/`; the final CDP mobile probe at
+  390px reported `clientWidth=390`, `scrollWidth=390`, and only the intentionally
+  hidden caption as a scroll-width outlier.
+- Verification: `python -m pytest -q .\tests\api\test_ui_routes.py`, focused ruff,
+  and focused mypy passed on the changed UI files. A monolithic `.\scripts\verify.ps1`
+  attempt timed out during backend pytest output handling, so the same gate was
+  re-run by phase: workspace validation, all backend tests split by directory/root
+  file group, full backend ruff, and full backend mypy passed. DB smoke was skipped by
+  default.
+
+## 2026-06-15 Production evidence contract and no-JS compare hardening
+
+- Added structured `attestation_evidence` contracts to the image-publication and hosted
+  deployment catalogs. The contracts remain `status: not_available`, keep the current
+  blockers, and provide empty templates for the exact future production proof fields.
+- Hardened `scripts/image_publication_check.py` and `scripts/hosted_deployment_check.py`
+  so future available/published/deployed statuses fail closed unless every required
+  evidence field has a value.
+- Added focused artifact tests for the new contract shape and fail-closed validator
+  behavior.
+- Kept the `/ui/report-runs` compare affordance as a native `GET /ui/compare` form with
+  repeated `ids` parameters and no script dependency.
+- Browser proof captured desktop/mobile report-list screenshots plus a native submit
+  result under `local_artifacts/`; the mobile report-list probe reported
+  `clientWidth=390`, `scrollWidth=390`, `hasScript=0`, and two compare inputs.
+- Verification: image-publication, hosted-deployment, and release-readiness wrappers
+  passed; focused artifact/UI tests passed; focused ruff and mypy passed; default
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy on 307 source files;
+  standalone workspace validation passed. DB smoke was skipped by default.

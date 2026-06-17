@@ -250,6 +250,7 @@ from app.connectors.review_handoff import (
 )
 from app.connectors.review_packet import (
     ConnectorIngestWorkflowResult,
+    ConnectorReviewEvidenceSummary,
     ConnectorReviewSignal,
     ConnectorReviewSignalCode,
     ConnectorRunReviewPacket,
@@ -420,6 +421,7 @@ __all__ = [
     "ConnectorRetrievalProvenanceAdapter",
     "ConnectorRetrievalProvenanceResult",
     "ConnectorReviewDisposition",
+    "ConnectorReviewEvidenceSummary",
     "ConnectorReviewHandoff",
     "ConnectorReviewPriority",
     "ConnectorReviewQueueItem",

@@ -19,10 +19,17 @@ REQUIRED_FILES = (
     "docs/runbooks/release_package.md",
     "docs/runbooks/image_publication.md",
     "docs/runbooks/hosted_deployment.md",
+    "docs/runbooks/security_scan.md",
+    "docs/runbooks/data_retention.md",
+    "docs/runbooks/load_testing.md",
+    "docs/runbooks/performance.md",
+    "docs/checklists/jurisdiction_readiness.md",
+    "docs/checklists/rulepack_readiness.md",
     ".github/workflows/ci.yml",
     "backend/pyproject.toml",
     "backend/requirements-prod.lock",
     "backend/Dockerfile",
+    "backend/app/api/reports.py",
     "docker-compose.yml",
     "docs/sbom/backend-prod-sbom.json",
     "scripts/verify.ps1",
@@ -34,6 +41,11 @@ REQUIRED_FILES = (
     "scripts/run_release_package_check.ps1",
     "scripts/run_image_publication_check.ps1",
     "scripts/run_hosted_deployment_check.ps1",
+    "scripts/run_security_scan.ps1",
+    "scripts/run_data_retention_check.ps1",
+    "scripts/run_load_test.ps1",
+    "scripts/run_load_test.sh",
+    "scripts/load_test_runner.py",
     "scripts/source_readiness.py",
     "scripts/release_readiness_check.py",
 )
@@ -53,6 +65,13 @@ REQUIRED_CHECKS = {
     "image_publication",
     "hosted_deployment",
     "source_readiness",
+    "security_scan",
+    "data_retention",
+    "jurisdiction_readiness",
+    "rulepack_readiness",
+    "load_test",
+    "performance",
+    "data_lineage",
 }
 REQUIRED_CI_JOBS = {
     "verify",
@@ -64,6 +83,7 @@ REQUIRED_CI_JOBS = {
     "image-publication",
     "hosted-deployment",
     "release-readiness",
+    "security-scan",
 }
 REQUIRED_BLOCKERS = {
     "hosted_deployment_attestation",
@@ -75,6 +95,18 @@ REQUIRED_BLOCKERS = {
 }
 EXPECTED_DB_SYNC_URL = "postgresql://land:land@localhost:5432/land_diligence"
 EXPECTED_DB_APP_URL = "postgresql+psycopg://land:land@localhost:5432/land_diligence"
+EXPECTED_CI_PROOFS = {
+    "verify": "./scripts/verify.sh",
+    "db-verify": "./scripts/verify.sh",
+    "supply-chain": "./scripts/run_supply_chain_check.sh",
+    "dependency-attestations": "./scripts/run_provenance_check.sh",
+    "container-image-scan": "./scripts/run_container_scan_check.sh",
+    "access-control": "./scripts/run_access_control_check.sh",
+    "image-publication": "./scripts/run_image_publication_check.sh",
+    "hosted-deployment": "./scripts/run_hosted_deployment_check.sh",
+    "release-readiness": "./scripts/run_release_readiness_check.sh",
+    "security-scan": "./scripts/run_security_scan.sh",
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -178,10 +210,10 @@ def validate_catalog() -> None:
         check_ids.add(check_id)
         proof = require_text(check.get("proof"), f"{check_id} proof missing")
         require_existing(proof)
-    require(
-        REQUIRED_CHECKS.issubset(check_ids),
-        f"missing release checks: {sorted(REQUIRED_CHECKS - check_ids)}",
-    )
+    missing_checks = sorted(REQUIRED_CHECKS - check_ids)
+    unexpected_checks = sorted(check_ids - REQUIRED_CHECKS)
+    require(not missing_checks, f"missing release checks: {missing_checks}")
+    require(not unexpected_checks, f"unexpected release checks: {unexpected_checks}")
 
     blockers = require_non_empty_list(
         payload.get("release_blockers"),
@@ -205,10 +237,42 @@ def validate_ci() -> None:
     ci_text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     ci = require_mapping(yaml.safe_load(ci_text), "ci workflow must be a mapping")
     jobs = require_mapping(ci.get("jobs"), "ci workflow jobs missing")
+    release_catalog = require_mapping(
+        yaml.safe_load(
+            (ROOT / "config" / "release_readiness.yaml").read_text(encoding="utf-8"),
+        ),
+        "release readiness catalog must be a mapping",
+    )
+    catalog_checks = require_non_empty_list(
+        release_catalog.get("required_checks"),
+        "release readiness checks missing",
+    )
+    catalog_ci_jobs = {
+        ci_job
+        for check in catalog_checks
+        if isinstance(check, dict)
+        for ci_job in (check.get("ci_job"),)
+        if isinstance(ci_job, str) and ci_job
+    }
     require(
         REQUIRED_CI_JOBS.issubset(set(jobs)),
         f"missing CI jobs: {sorted(REQUIRED_CI_JOBS - set(jobs))}",
     )
+    require(
+        catalog_ci_jobs.issubset(set(jobs)),
+        f"missing catalog CI jobs: {sorted(catalog_ci_jobs - set(jobs))}",
+    )
+    require(
+        catalog_ci_jobs.issubset(set(EXPECTED_CI_PROOFS)),
+        f"missing expected CI proof mapping: {sorted(catalog_ci_jobs - set(EXPECTED_CI_PROOFS))}",
+    )
+    for job_name in sorted(catalog_ci_jobs):
+        job = require_mapping(jobs.get(job_name), f"{job_name} job missing")
+        proof = EXPECTED_CI_PROOFS[job_name]
+        require(
+            proof in step_text(job, job_name),
+            f"{job_name} job must run {proof}",
+        )
     validate_db_verify_job(require_mapping(jobs.get("db-verify"), "db-verify job missing"))
     job = require_mapping(jobs.get("release-readiness"), "release-readiness job missing")
     permissions = require_mapping(
@@ -333,7 +397,16 @@ def validate_runbook() -> None:
         "release-package",
         "image-publication",
         "hosted-deployment",
+        "security-scan",
         "release-readiness",
+        "run_security_scan.ps1",
+        "run_data_retention_check.ps1",
+        "run_load_test.ps1",
+        "load_testing.md",
+        "performance.md",
+        "jurisdiction_readiness.md",
+        "rulepack_readiness.md",
+        "data_lineage",
         "DATABASE_URL_SYNC",
         "DATABASE_URL",
         "sources=8 ready=7 blocked=1",

@@ -1,0 +1,42 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_zoning_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_jurisdiction_zoning",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d4d5d6d7-d4d5-4d6d-8d7d-d4d5d6d7d8d9",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "ZONING_USE_CLASSIFICATION",
+      "domain": "zoning",
+      "observation": "Fixture zoning screening: county zoning allows residential use but AOI is near municipal jurisdiction boundary — jurisdiction ambiguity stress case.",
+      "observed_value": {
+        "intended_residential_use_allowed": true,
+        "zoning_district": "R-20",
+        "jurisdiction_boundary_proximity": true,
+        "municipal_jurisdiction_possible": true
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_zoning_classification_lookup",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only zoning screening for Brunswick County jurisdiction boundary area. Mapped data indicates county zoning classification; AOI may fall under municipal zoning jurisdiction. Requires confirmation by Brunswick County Planning or the relevant municipal planning department.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}

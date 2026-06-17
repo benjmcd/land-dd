@@ -9,12 +9,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = (
     "config/access_control.yaml",
+    "MANIFEST.md",
     "docs/runbooks/access_control.md",
+    "docs/runbooks/mvp_operator.md",
     ".env.example",
     ".github/workflows/ci.yml",
     "docker-compose.yml",
+    "DESIGN.md",
     "backend/app/api/auth_audit.py",
     "backend/app/api/api_key_auth.py",
+    "backend/app/api/ui.py",
+    "backend/app/api/ui_auth.py",
+    "backend/app/api/ui_lineage.py",
+    "backend/app/api/ui_operations.py",
+    "backend/app/api/ui_review.py",
+    "backend/app/api/ui_shared.py",
     "backend/app/api/reviewer_auth.py",
     "backend/app/api/secret_specs.py",
     "backend/app/api/connectors.py",
@@ -22,6 +31,7 @@ REQUIRED_FILES = (
     "backend/app/api/reports.py",
     "backend/app/core/config.py",
     "backend/tests/api/test_api_key_auth.py",
+    "backend/tests/api/test_ui_api_key_auth.py",
     "backend/tests/api/test_reviewer_auth.py",
     "scripts/access_control_check.py",
     "scripts/run_access_control_check.ps1",
@@ -31,6 +41,7 @@ REQUIRED_CONTROLS = {
     "api_key_middleware",
     "api_key_rotation",
     "api_key_audit_logging",
+    "ui_api_key_cookie_bridge",
     "reviewer_service_account",
     "reviewer_scope_enforcement",
     "protected_operator_routes",
@@ -41,6 +52,7 @@ REQUIRED_BLOCKERS = {
     "oauth_oidc_identity_provider",
     "user_account_persistence",
     "automatic_api_key_rotation",
+    "hosted_secret_manager",
     "full_user_role_policy",
 }
 
@@ -106,6 +118,7 @@ def validate_catalog() -> None:
     if not isinstance(controls, list) or not controls:
         raise SystemExit("current controls missing")
     control_ids: set[str] = set()
+    control_authorities: dict[str, set[str]] = {}
     for control in controls:
         require(isinstance(control, dict), "each current control must be a mapping")
         control_id = control.get("id")
@@ -113,6 +126,7 @@ def validate_catalog() -> None:
             raise SystemExit("control id missing")
         require(control_id not in control_ids, f"duplicate control id: {control_id}")
         control_ids.add(control_id)
+        control_authorities[control_id] = set()
         authority = control.get("authority")
         if not isinstance(authority, list) or not authority:
             raise SystemExit(f"{control_id} authority missing")
@@ -121,6 +135,7 @@ def validate_catalog() -> None:
                 isinstance(authority_path, str),
                 f"{control_id} authority path must be a string",
             )
+            control_authorities[control_id].add(authority_path)
             require_existing(authority_path)
         validation = control.get("validation")
         if not isinstance(validation, str) or not validation:
@@ -128,6 +143,37 @@ def validate_catalog() -> None:
         require_existing(validation)
     missing_controls = sorted(REQUIRED_CONTROLS - control_ids)
     require(not missing_controls, f"missing controls: {missing_controls}")
+    ui_bridge_authority = control_authorities.get("ui_api_key_cookie_bridge", set())
+    required_ui_bridge_authority = {
+        ".env.example",
+        "DESIGN.md",
+        "backend/app/api/api_key_auth.py",
+        "backend/app/api/ui.py",
+        "backend/app/api/ui_auth.py",
+        "backend/app/api/ui_lineage.py",
+        "backend/app/api/ui_operations.py",
+        "backend/app/api/ui_review.py",
+        "backend/app/api/ui_shared.py",
+        "backend/app/core/config.py",
+        "backend/app/main.py",
+        "backend/tests/api/test_ui_api_key_auth.py",
+        "docs/runbooks/access_control.md",
+        "docs/runbooks/mvp_operator.md",
+    }
+    missing_ui_bridge_authority = sorted(
+        required_ui_bridge_authority - ui_bridge_authority
+    )
+    require(
+        not missing_ui_bridge_authority,
+        f"ui_api_key_cookie_bridge authority missing: {missing_ui_bridge_authority}",
+    )
+    unexpected_ui_bridge_authority = sorted(
+        ui_bridge_authority - required_ui_bridge_authority
+    )
+    require(
+        not unexpected_ui_bridge_authority,
+        f"ui_api_key_cookie_bridge authority unexpected: {unexpected_ui_bridge_authority}",
+    )
 
     blockers = payload.get("production_blockers")
     if not isinstance(blockers, list) or not blockers:
@@ -260,6 +306,252 @@ def validate_api_key_auth() -> None:
             "test_settings_api_key_hash_specs_fail_closed_for_malformed_entries",
         ),
         "api key tests",
+    )
+
+
+def validate_ui_api_key_bridge() -> None:
+    api_auth = read_text("backend/app/api/api_key_auth.py")
+    ui = read_text("backend/app/api/ui.py")
+    ui_auth = read_text("backend/app/api/ui_auth.py")
+    ui_lineage = read_text("backend/app/api/ui_lineage.py")
+    ui_operations = read_text("backend/app/api/ui_operations.py")
+    ui_review = read_text("backend/app/api/ui_review.py")
+    ui_shared = read_text("backend/app/api/ui_shared.py")
+    main = read_text("backend/app/main.py")
+    settings = read_text("backend/app/core/config.py")
+    ui_tests = read_text("backend/tests/api/test_ui_api_key_auth.py")
+    runbook = read_text("docs/runbooks/access_control.md")
+    mvp_operator = read_text("docs/runbooks/mvp_operator.md")
+    design = read_text("DESIGN.md")
+    manifest = read_text("MANIFEST.md")
+    env_example = read_text(".env.example")
+
+    require_phrases(
+        api_auth,
+        (
+            'UI_API_KEY_COOKIE = "land_dd_ui_api_key"',
+            "UI_API_KEY_COOKIE_MAX_AGE_SECONDS",
+            'PUBLIC_UI_AUTH_PATHS = frozenset({"/ui/auth"})',
+            "create_ui_api_key_cookie_token",
+            "verify_ui_api_key_cookie_token",
+            "UI_API_KEY_COOKIE_TOKEN_PREFIX",
+            "UI_CSRF_FORM_FIELD",
+            "UI_CSRF_TOKEN_PREFIX",
+            "create_ui_csrf_token",
+            "verify_ui_csrf_token",
+            "ui_cookie_signing_secret",
+            "ui_cookie_secure",
+            "_sign_ui_cookie_token(signed_part, config)",
+            "request.state.api_key_auth_source",
+            "_is_ui_path",
+            "ui_cookie",
+            "_ui_login_redirect(request)",
+            "next=",
+            "_ui_next_path",
+            '"API key is required"',
+            '"API key is invalid"',
+        ),
+        "ui api key bridge middleware",
+    )
+    require_phrases(
+        ui_auth,
+        (
+            'APIRouter(prefix="/ui/auth"',
+            "_safe_next_path",
+            'path="/ui"',
+            "max_age=UI_API_KEY_COOKIE_MAX_AGE_SECONDS",
+            "httponly=True",
+            'samesite="lax"',
+            "secure=config.ui_cookie_secure",
+            "escape(",
+            'type="password"',
+            'name="next"',
+            "urlsplit",
+            "scheme",
+            "netloc",
+            "_match_api_key",
+            "_record_api_key_audit_event",
+            "ApiKeyAuthAuditOutcome",
+            "csrf_form_field",
+            "require_ui_csrf",
+            '@router.post("/logout")',
+        ),
+        "ui api key bridge route",
+    )
+    for label, text in (
+        ("ui home routes", ui),
+        ("ui operations routes", ui_operations),
+        ("ui review routes", ui_review),
+    ):
+        require_phrases(
+            text,
+            (
+                "csrf_form_field",
+                "require_ui_csrf",
+                "csrf_token",
+            ),
+            label,
+        )
+    require_phrases(
+        ui_shared,
+        (
+            "def csrf_form_field",
+            "def require_ui_csrf",
+            "def ui_csrf_required",
+            "verify_ui_csrf_token",
+            "api_key_auth_source",
+        ),
+        "ui csrf helpers",
+    )
+    require_phrases(
+        ui_lineage,
+        (
+            'APIRouter(prefix="/ui/report-runs"',
+            '@router.get("/{report_run_id}/lineage"',
+            "page_head(",
+            "error_page(",
+            "build_lineage_response",
+        ),
+        "ui lineage route",
+    )
+    require_phrases(
+        main,
+        (
+            "_LOCAL_APP_ENVS",
+            "_ui_auth_cookie_secure",
+            "_ui_cookie_signing_secret",
+            "_is_local_app_env",
+            "ui_cookie_signing_secret=_ui_cookie_signing_secret(resolved)",
+            "ui_cookie_secure=_ui_auth_cookie_secure(resolved)",
+            "UI_AUTH_COOKIE_SECRET is required when REQUIRE_API_KEY is true",
+            "outside local/dev/development/test APP_ENV values",
+            "secrets.token_urlsafe(48)",
+        ),
+        "ui api key bridge app wiring",
+    )
+    require_phrases(
+        settings,
+        (
+            "ui_auth_cookie_secret",
+            'alias="UI_AUTH_COOKIE_SECRET"',
+            "Required when REQUIRE_API_KEY is true outside local/dev/development/test",
+            "per-process local fallback",
+            "ui_auth_cookie_secure",
+            'alias="UI_AUTH_COOKIE_SECURE"',
+        ),
+        "ui api key bridge settings",
+    )
+    require_phrases(
+        design,
+        (
+            "Canonical planning/design ownership: this repo-root `DESIGN.md`",
+            "server-rendered private operator UI under `/ui/*`",
+            "When `REQUIRE_API_KEY=true`, JSON/API routes still require `X-API-Key`",
+            "/ui/auth",
+            "signed, expiring, HttpOnly cookie scoped to `/ui`",
+            "Non-local API-key-locked app environments require `UI_AUTH_COOKIE_SECRET`",
+            "local/dev/development/test environments may use a per-process fallback",
+            "API reviewer tokens remain header-only and separate from API keys",
+            "browser reviewer actions can use `/ui/auth/reviewer`",
+            "signed, expiring, HttpOnly reviewer session cookie scoped to `/ui`",
+        ),
+        "ui api key bridge design source of truth",
+    )
+    require_phrases(
+        manifest,
+        (
+            "Use this as the repo/file routing index. "
+            "It is intentionally not an exhaustive file listing.",
+            "Operator UI design",
+            "`DESIGN.md`",
+            "Active private operator console contract",
+            "Access control",
+            "`docs/runbooks/mvp_operator.md`",
+            "UI API-key cookie bridge",
+        ),
+        "repo manifest ui access-control routing",
+    )
+    require_phrases(
+        ui_tests,
+        (
+            "test_ui_auth_form_is_public_and_does_not_expose_configured_secret",
+            "test_ui_auth_cookie_enables_ui_when_api_key_required",
+            "test_tampered_ui_auth_cookie_redirects_to_login",
+            "test_ui_auth_cookie_is_rejected_when_active_api_key_config_changes",
+            "test_sha256_api_key_digest_cannot_forge_ui_auth_cookie",
+            "test_configured_ui_auth_cookie_secret_allows_restart_with_same_api_key",
+            "test_non_local_app_env_sets_secure_ui_auth_cookie",
+            "test_non_local_api_key_auth_requires_configured_ui_auth_cookie_secret",
+            'pytest.raises(ValueError, match="UI_AUTH_COOKIE_SECRET")',
+            "test_expired_ui_auth_cookie_redirects_to_login",
+            "test_invalid_ui_auth_login_records_audit_event_without_secret",
+            "test_api_routes_reject_forced_ui_auth_cookie_header_without_header_key",
+            "test_ui_auth_redirect_preserves_safe_next_path_for_unauthenticated_ui_get",
+            "test_successful_ui_auth_redirects_to_safe_next_path",
+            "test_successful_ui_auth_falls_back_when_next_path_is_unsafe",
+            "test_ui_auth_accepts_active_api_key_spec",
+            "test_ui_auth_cookie_records_api_key_spec_id_and_ui_cookie_source",
+            "test_ui_cookie_auth_forms_include_csrf_token",
+            "test_ui_cookie_auth_post_requires_valid_csrf_token",
+            "test_ui_header_auth_post_does_not_require_csrf_token",
+            "test_ui_logout_requires_post_with_csrf_token",
+            "test_existing_api_key_header_still_enables_areas_route",
+            '"Max-Age=" in set_cookie',
+            '"wrong-key" not in response.text',
+            '"production-key" not in response.text',
+        ),
+        "ui api key bridge tests",
+    )
+    require_phrases(
+        runbook,
+        (
+            "UI API-key cookie bridge",
+            "/ui/auth",
+            "signed expiring path-scoped HttpOnly SameSite cookie",
+            "UI_AUTH_COOKIE_SECRET",
+            "UI_AUTH_COOKIE_SECURE",
+            "separate UI-cookie signing material",
+            "requires `UI_AUTH_COOKIE_SECRET`",
+            "non-local API-key-locked app environments",
+            "local/dev/development/test app environments",
+            "sets `Secure` automatically",
+            "CSRF token",
+            "logout uses a CSRF-protected POST",
+            "without storing the submitted API key",
+            "/areas` rejects cookie-only API access",
+            "safe `/ui/*` return path",
+            "No full user auth/RBAC exists yet.",
+            "No OAuth/OIDC",
+            "No user-account persistence",
+            "No hosted secret manager integration",
+        ),
+        "ui api key bridge docs",
+    )
+    require_phrases(
+        mvp_operator,
+        (
+            "When `REQUIRE_API_KEY=true` is set, JSON/API routes require `X-API-Key`",
+            "`/ui/auth` is public",
+            "signed expiring HttpOnly SameSite cookie scoped to `/ui`",
+            "`UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments",
+            "non-local `APP_ENV` values fail startup if it is blank",
+            "local/dev/development/test config uses a per-process signing secret",
+            "Cookie-authenticated UI mutation forms include a signed CSRF token",
+            "Sign-out is",
+            "a CSRF-protected POST from `/ui/auth/logout`",
+            "JSON/API paths still require `X-API-Key`",
+            "not full user auth/RBAC",
+        ),
+        "mvp operator ui api key bridge docs",
+    )
+    require_phrases(
+        env_example,
+        (
+            "UI_AUTH_COOKIE_SECRET=",
+            "Blank is local/dev/development/test only",
+            "UI_AUTH_COOKIE_SECURE=false",
+        ),
+        "ui api key bridge environment example",
     )
 
 
@@ -450,6 +742,7 @@ def main() -> int:
     validate_required_files()
     validate_catalog()
     validate_api_key_auth()
+    validate_ui_api_key_bridge()
     validate_reviewer_auth()
     validate_operator_routes()
     validate_ci_and_runbook()

@@ -26,6 +26,10 @@ review-gated. Supported intents: `rural_land_purchase`, `homestead_feasibility`.
 
 ### Development (in-memory, no database)
 
+Use in-memory mode only for local fixture/demo work. Non-local `APP_ENV` values
+fail startup unless `USE_DB_SERVICES=true`, because queued jobs, connector
+review, reports, and audit state must survive process restarts.
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -59,8 +63,8 @@ Apply migrations before first run:
 |---|---|---|
 | `APP_NAME` | `land-diligence` | Application name (appears in /health) |
 | `APP_ENV` | `development` | Environment label |
-| `DATABASE_URL` | _(none)_ | Postgres connection string; omit for in-memory mode |
-| `USE_DB_SERVICES` | `false` | Use Postgres-backed services instead of in-memory stores |
+| `DATABASE_URL` | _(none)_ | Postgres connection string; required when `USE_DB_SERVICES=true` |
+| `USE_DB_SERVICES` | `false` | Use Postgres-backed services instead of in-memory stores; required outside local/dev/development/test `APP_ENV` values |
 | `OBJECT_STORE_ROOT` | `./object_store` | Directory for report artifact files |
 | `REVIEWER_ACCOUNTS` | local fixture reviewer | Reviewer service account ids and tokens |
 | `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:approve`, `report:retry`, and `report:run` |
@@ -86,13 +90,13 @@ curl -s -X POST http://localhost:8000/intake \
 Response (202 Accepted):
 
 ```json
-{"report_run_id": "<uuid>", "area_id": "<uuid>", "status": "queued"}
+{"report_run_id": "{report_run_id}", "area_id": "{area_id}", "status": "queued"}
 ```
 
 **Step 2 — Poll until complete:**
 
 ```bash
-curl -s http://localhost:8000/report-runs/<report_run_id>
+curl -s http://localhost:8000/report-runs/{report_run_id}
 ```
 
 Poll until `"status": "succeeded"`. The full `ReportRunContract` is returned at that point.
@@ -110,7 +114,7 @@ curl -s -X POST http://localhost:8000/areas \
 # Create report run with returned area_id
 curl -s -X POST http://localhost:8000/report-runs \
   -H 'Content-Type: application/json' \
-  -d '{"area_id": "<uuid>", "intent_code": "rural_land_purchase"}'
+  -d '{"area_id": "{area_id}", "intent_code": "rural_land_purchase"}'
 ```
 
 The two-step report creation response is `202 Accepted` with `report_run_id` and
@@ -130,6 +134,17 @@ report. The signed-token path still returns `201 Created` with a full
 The unauthenticated operator path returns `202 Accepted` on first queueing and `200 OK`
 with the same queued job on replay.
 
+### Identifier glossary
+
+Use these placeholders consistently in curl examples:
+
+| Placeholder | Meaning | Where it comes from |
+|---|---|---|
+| `{area_id}` | Area of interest ID | Returned by `POST /areas` or `POST /intake` |
+| `{report_run_id}` | Report/job ID | Returned by `POST /report-runs`, `POST /intake`, or `/operator-cases/{case_id}/report` |
+| `{case_id}` | Packaged selected-county fixture case | Returned by `GET /operator-cases` |
+| `{ingest_run_id}` | Connector run ID | Returned by connector-run routes and connector review queue payloads |
+
 ### Approve a report run
 
 The final Markdown dossier (`GET /report-runs/{id}/dossier`) and the machine-readable
@@ -146,7 +161,7 @@ validated on every submission.
 `report:approve` scope:
 
 ```bash
-curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/approve \
   -H 'Content-Type: application/json' \
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123' \
@@ -169,11 +184,11 @@ X-Reviewer-Id: fixture-reviewer
 X-Reviewer-Token: fixture-token-123
 ```
 
-If `GET /report-runs/<report_run_id>` returns `status="failed"`, create a new report job
+If `GET /report-runs/{report_run_id}` returns `status="failed"`, create a new report job
 from the failed job's stored area and intent:
 
 ```bash
-curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/retry \
+curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/retry \
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123'
 ```
@@ -198,7 +213,7 @@ curl -s -X POST http://localhost:8000/connector-runs/live-sequence/schedule-bbox
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123' \
   -d '{
-    "area_id": "<uuid>",
+    "area_id": "{area_id}",
     "bbox": {"xmin": -77.10, "ymin": 38.80, "xmax": -77.00, "ymax": 38.90},
     "max_sample_points": 2,
     "max_features": 1,
@@ -228,10 +243,82 @@ or create reports.
 
 ---
 
+## Selected-County Operator Cases (server, no Docker required)
+
+The selected-county private-MVP fixture cases are available through the app surface.
+Use this server path when an operator wants an evidence-rich selected-county fixture
+dossier through HTTP/UI instead of the no-server CLI. It packages the nine
+Buncombe/Chatham/Brunswick cases under
+`backend/app/operator_cases`, ingests the local fixture connectors for the selected case,
+approves eligible connector-QA handoffs, creates an approved report, and returns the
+existing report UI/download links.
+
+List cases:
+
+```bash
+curl -s http://localhost:8000/operator-cases
+```
+
+Create an approved fixture report for one case:
+
+```bash
+curl -s -X POST http://localhost:8000/operator-cases/CHA-rural-use/report
+```
+
+The response includes:
+
+- `links.ui`: open the report in `/ui/report-runs/{id}`
+- `links.dossier_download`: approved Markdown dossier download
+- `links.artifact`: approved machine-readable report JSON
+
+In the web UI, open `http://localhost:8000/ui/` and use the
+**Selected-County Private MVP Fixture Cases** table. The custom GeoJSON intake form remains
+available on the same page for manual AOIs; it posts to `/ui/intake` without requiring
+JavaScript and redirects to the created report or connector-review queue.
+
+Report status/detail pages are also usable without JavaScript. Queued/running, failed,
+missing, pending-approval, and approved report states render the current status first,
+then the next available operator action: wait/list navigation for generating reports,
+retry for failed reports, approve for pending reports, and export/download/lineage links
+for approved reports. Queued/running pages auto-refresh every 3 seconds by default but
+include no-JavaScript 3/10/30/60-second interval controls plus pause, manual refresh,
+and resume links. Print/export attempts for missing or unapproved reports use the same
+status/action shell and never expose dossier content before approval. Connector review,
+operations, and evidence-lineage pages include the same mobile viewport contract while
+retaining their no-JavaScript forms and return links.
+
+This route remains fixture-only utility coverage. It does not use live-source production
+coverage, does not unblock DS-017, and does not assert legal zoning, surveyed boundary,
+wetland jurisdiction, buildability, legal access, appraisal, lending, insurance, or
+investment conclusions.
+
+Do not confuse this route with the generic `POST /report-runs` path. In default fixture
+mode, generic report creation does not load the packaged selected-county connector
+fixtures; use `/operator-cases/{case_id}/report` for the packaged selected-county
+HTTP/UI path, or use `scripts/generate_dossier.py --connector all --approve` when no
+server is running.
+
+## Operator Path Proof Matrix
+
+Use this matrix to pick the right path and avoid treating one proof as another.
+
+| Path | Intended use | Proves | Does not prove |
+|---|---|---|---|
+| `scripts/generate_dossier.py --connector all --approve --artifact` | Fast no-server selected-county dossier and JSON artifact | County golden fixture evidence, approved-report state, source/caveat/unknown rendering, API-compatible in-memory artifact contract shape | HTTP routing, DB persistence, UI usability, live-source coverage |
+| `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged case resources, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
+| `/ui/` selected-county launcher | Browser operator flow for packaged cases | No-JavaScript UI launch into the same `/operator-cases` path and existing approved report pages | Full dashboard polish, user accounts/RBAC, live-source production operation |
+| Generic `POST /report-runs` | Custom AOI report run from existing stored/ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior where exercised | No-server CLI behavior, hosted deployment, external identity/secrets |
+| Live connector queue paths | Reviewed live-source screening workflows | Bounded source-specific fetch/schedule/review behavior for implemented connectors | Recorded fixture parity, paid vendor coverage, legal/buildability/title/value conclusions |
+
+---
+
 ## Local Dossier Generation (no server required)
 
 Generate a Markdown dossier directly from a GeoJSON AOI file using fixture connectors.
-No database, no API server, and no approval step required.
+No database or API server is required. Basic preview commands can omit approval; final
+operator delivery should use `--approve` plus `--artifact` so the Markdown dossier and
+JSON artifact carry approved-report state.
 
 ```bash
 # Single connector (flood only)
@@ -275,7 +362,7 @@ py -3.12 scripts/generate_dossier.py `
 ```
 
 This is the no-Docker, no-network operator path that produces an APPROVED selected-county dossier (Markdown) plus the machine-readable JSON artifact.
-`--approve` calls the same `approve_report_run` service method the HTTP approve endpoint uses and emits the same JSON serialization the API serves; it does not exercise the HTTP delivery gate (the API and DB-smoke tests cover that).
+`--approve` calls the same `approve_report_run` service method the HTTP approve endpoint uses and emits the same in-memory report artifact contract shape. It does not exercise HTTP routing, access gates, or DB artifact persistence; the API tests and DB-smoke tests cover those separately.
 `local_artifacts/` is a gitignored on-demand output location.
 
 ---
@@ -309,14 +396,19 @@ server environment (default is `trusted_headers` for local development).
 
 ### Deployment posture and API-key locking
 
-When `REQUIRE_API_KEY=true` is set, the API-key middleware applies to **every route**,
-including all `/ui/*` pages and file-download endpoints. The only public exceptions are
-`/health` and `/version`. This is intentional fail-closed behaviour: setting
-`REQUIRE_API_KEY=true` without a valid `X-API-Key` header will lock the entire operator
-UI, not just the JSON API. The operator web UI targets the default private trusted-network
-posture (`REQUIRE_API_KEY=false`). Do not set `REQUIRE_API_KEY=true` in environments
-where operators need browser access unless the deployment provides header injection or a
-reverse-proxy that adds the key for trusted internal clients.
+When `REQUIRE_API_KEY=true` is set, JSON/API routes require `X-API-Key`. The
+operator web UI supports a private-beta browser bridge: `/ui/auth` is public,
+accepts the same configured API key, and sets a signed expiring HttpOnly SameSite
+cookie scoped to `/ui` without storing the submitted API key. Set
+`UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments. With
+`REQUIRE_API_KEY=true`, non-local `APP_ENV` values fail startup if it is blank; only
+local/dev/development/test config uses a per-process signing secret. Non-local `APP_ENV`
+values set the cookie `Secure` flag automatically; `UI_AUTH_COOKIE_SECURE=true` can force it in any
+environment. Cookie-authenticated UI mutation forms include a signed CSRF token derived
+from the HttpOnly UI cookie; refresh stale forms before retrying an action. Sign-out is
+a CSRF-protected POST from `/ui/auth/logout`. That cookie is accepted only by `/ui/*`
+routes; `/areas` and other JSON/API paths still require `X-API-Key`. `/health` and
+`/version` remain public for smoke checks.
 
 Reviewer tokens for UI operations are separate from API keys. Configure them via
 `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` (see the Configuration table above and
@@ -328,30 +420,56 @@ Open `http://localhost:8000/ui/` in a browser. Submit a GeoJSON polygon and sele
 intent. The page submits to `/intake` and then either:
 
 - Redirects to the report status page (`/ui/report-runs/{id}`), which auto-refreshes
-  while the report is generating; or
+  while the report is generating, can be slowed with `?refresh_seconds=30`, and can be
+  paused with `?auto_refresh=false`; or
 - Shows a yellow banner with a link to the **Connector Review Queue** if the intake
   response returns `status=pending_connector_review` (no report job exists yet at that
   point — the link goes directly to the queue item).
+
+The home navigation also links directly to the connector review queue so operators can
+recover review-gated work after leaving an intake result or returning to the console
+later.
 
 ### Report list (`/ui/report-runs`)
 
 The report list shows up to 30 runs per page with a status filter dropdown and
 previous/next pagination links. The status filter accepts: `queued`, `running`,
-`succeeded`, `failed`. Each succeeded row displays its review badge (`approved` in green
-or `pending` in amber). Failed rows link to the individual report page where a retry form
-is available.
+`succeeded`, `failed`; unknown status values return a safe HTML error instead of
+falling back to an unfiltered list. Each row has an **Action** column: queued/running
+rows link to the status page, failed rows link to the detail page where retry credentials
+can be entered, succeeded-but-unapproved rows link to the approval detail page, and
+approved rows expose view, dossier download, JSON artifact download, and lineage links.
+Each succeeded row displays its review badge (`approved` in green or `pending` in
+amber). The wide table is wrapped for horizontal scrolling on narrow screens. The page
+navigation links back to the home console, operations dashboard, and connector review
+queue.
 
 A **Compare** affordance lets operators select 2–4 report runs using the checkboxes and
 open a side-by-side summary at `/ui/compare?ids=<uuid>,<uuid>[,...]`. The compare view
-shows summary counts only (claims, unknowns, red flags, verification tasks). Report
-content is gated on approval status.
+shows report/review/delivery status, claim/unknown/red-flag/verification-task counts,
+high-severity claim code/domain summaries, and gated next-action links. Approved
+reports expose existing dossier, artifact, print, and lineage links; unapproved reports
+link only to the report detail/approval page. When exactly two compared reports share
+the same `area_id`, the page also renders a **Change Review** section using the same
+diff semantics as `GET /report-runs/{id}/diff?base_id=<uuid>`: ruleset changed,
+added/removed claim codes, added/removed sources, and evidence-count delta. Report
+content is still gated on approval status.
+
+The compare control is a native `GET /ui/compare` form and works without JavaScript.
+With JavaScript disabled, selected rows submit as repeated query parameters
+(`/ui/compare?ids=<uuid>&ids=<uuid>`). The compare route also preserves the existing
+comma-separated URL format.
 
 Programmatic access: `GET /report-runs?status=<value>&limit=<n>&offset=<n>` (max limit
 100) returns a JSON list of report run summaries.
 
 ### Report page (`/ui/report-runs/{id}`)
 
-- **Queued or running:** the page auto-refreshes every 3 seconds.
+- **Queued or running:** the page auto-refreshes every 3 seconds by default. Use the
+  **Refresh interval** selector to apply 3, 10, 30, or 60 seconds without JavaScript.
+  Use **Pause auto-refresh** to reopen it with `?auto_refresh=false`; the paused page
+  removes the refresh meta tag and shows **Refresh now** plus **Resume auto-refresh**
+  links while preserving a non-default `refresh_seconds` value.
 - **Failed:** shows the error message and a retry form (see below).
 - **Succeeded, not yet approved:** shows the approval form (see below).
 - **Approved:** shows the rendered dossier with nav links:
@@ -368,9 +486,13 @@ Programmatic access: `GET /report-runs?status=<value>&limit=<n>&offset=<n>` (max
 
 ### Approving a report run via the UI
 
-The report page for a succeeded-but-unapproved run shows an approval form. The form
-requires **Reviewer ID** and **Reviewer token** fields (scope: `report:approve`). There
-is no session or cookie: credentials are validated per-action from the form body.
+The report page for a succeeded-but-unapproved run shows an approval form. Without a
+reviewer UI session, the form requires **Reviewer ID** and **Reviewer token** fields
+(scope: `report:approve`) and accepts an optional approval reason. Blank approval
+reasons are stored as omitted audit notes; non-empty reasons are trimmed and recorded on
+the report review action. A successful credential submission can establish the UI-only
+reviewer session described below; JSON/API reviewer routes still require reviewer
+headers and do not use the UI cookie.
 On success the page redirects back to the report view. On credential failure the
 response carries the real HTTP status (401/403/503) and a generic error message — no
 field-level detail is leaked.
@@ -386,7 +508,7 @@ REVIEWER_ACCOUNT_SCOPES=fixture-reviewer:connector:run|connector:review|operatio
 API-based approval (unchanged) sends credentials as headers:
 
 ```bash
-curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/approve \
   -H 'Content-Type: application/json' \
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123' \
@@ -406,33 +528,54 @@ yet. The operator must action the connector review item before a report can be g
 
 **Queue list** (`/ui/connector-review-queue`): table of connector ingest runs with status
 filter and limit/offset pagination (default 25 per page). Columns: ingest run ID,
-connector, status, attempts, created.
+connector, status, attempts, compact triage summary, next action, and created. The
+triage column summarizes existing review payload fields: disposition, signal codes,
+first human-review task, blocking issue count, evidence counts, and source-failure
+counts. The next-action link always opens the detail page; it labels the expected
+operator path for the current queue status without duplicating credentialed mutation
+forms on the list. Unknown status filter values return a safe HTML error instead of
+falling back to an unfiltered queue. Wide queue tables are contained in a horizontal
+scroll wrapper on narrow screens.
 
-**Item detail** (`/ui/connector-review-queue/{ingest_run_id}`): shows payload summary,
-quality issues (blocking issues highlighted in red), and attempts/lock/timing metadata.
+**Item detail** (`/ui/connector-review-queue/{ingest_run_id}`): starts with a
+**Decision Context** panel before mutation forms. It shows the connector handoff title
+and summary, retrieval status/counts/log URI/metrics, review signals, human-review
+tasks, evidence/source-failure counts, and compact evidence cards with evidence code,
+observation, caveat, and evidence ID. The page still shows quality issues (blocking
+issues highlighted in red) plus attempts/lock/timing metadata, but it does not dump raw
+queue payload fields or secret-looking metric keys.
 
-Action forms — all require **Reviewer ID** and **Reviewer token** with scope
-`connector:review`:
+Action forms require **Reviewer ID** and **Reviewer token** with scope
+`connector:review`, and the detail page only shows actions that are valid for the
+queue item's current status:
 
 | Action | When to use | Reason field |
 |---|---|---|
-| **Approve for QA** | Data quality passes review | Optional |
-| **Request Fix (Reject)** | Data quality blocks use | Required |
-| **Requeue After Fix** | Underlying fixture/data has been corrected | Required |
-| **Cancel** | No further action needed | Required |
+| **Approve for QA** | Open item in `needs_review`, `queued`, or `running` status | Optional |
+| **Request Fix (Reject)** | Open item in `needs_review`, `queued`, or `running` status | Required |
+| **Requeue After Fix** | Failed item has been corrected and retry attempts remain | Required |
+| **Cancel** | Non-terminal item should stop processing | Required |
 
 After a queue item reaches `succeeded` status (approved), a **Resume Report Run** form
-appears. This form requires **Reviewer ID** and **Reviewer token** with scope
-`report:run`, and an intent selection. Submitting it creates a new report run for the
+appears. This form uses the current reviewer session when it has `report:run` scope;
+otherwise enter **Reviewer ID** and **Reviewer token** with `report:run` scope plus
+an intent selection. Submitting it creates a new report run for the
 area associated with the approved connector run and redirects to the report page.
+Terminal queue items with no valid mutation action render an explicit no-actions message
+instead of invalid action forms.
 
 ### Operations dashboard (`/ui/operations`)
 
-Navigate to `/ui/operations`. Enter **Reviewer ID** and **Reviewer token** (scope:
-`operations:read`) and submit the form. The page renders queue-health tables for report
-jobs and live connector jobs (total, queued, running, succeeded, failed, cancelled, needs
-review, oldest queued age). The dashboard is read-only; it does not lease work, retry
-jobs, or call live sources.
+Navigate to `/ui/operations`. When the current reviewer session has `operations:read`
+scope, the dashboard renders directly on `GET /ui/operations`; otherwise the page shows
+the credential form. Submitting valid **Reviewer ID** and **Reviewer token** credentials
+with `operations:read` scope also creates the reviewer UI session before rendering the
+dashboard. The page renders queue-health tables for report jobs and live connector jobs
+(total, queued, running, succeeded, failed, cancelled, needs review, oldest queued age).
+The dashboard is read-only; it does not lease work, retry jobs, or call live sources.
+Count cells link to the corresponding report list or connector review queue filter so
+operators can drill into affected work without leaving the UI. Wide queue-health tables
+are contained in horizontal scroll wrappers on narrow screens.
 
 Equivalent API call:
 
@@ -453,8 +596,12 @@ Linked from approved report pages as **View evidence lineage**. Renders three ta
   `UNKNOWN` evidence (no data) is highlighted amber; `SOURCE_FAILURE` evidence is
   highlighted red.
 
-The lineage page applies the same access gating as the lineage API
-(`GET /report-runs/{id}/lineage`).
+The operator UI lineage page follows the approved-report delivery boundary:
+direct visits for succeeded-but-unapproved reports return an **Approval Required**
+page and link back to the report review page. The JSON lineage API
+(`GET /report-runs/{id}/lineage`) remains available for service consumers under
+the normal API access policy. Wide lineage tables are contained in horizontal
+scroll regions on narrow screens.
 
 ---
 
@@ -508,6 +655,41 @@ Optional environment variables:
 | `DEPLOYMENT_SMOKE_BACKEND_PORT` | `18080` | Host port for backend |
 | `DEPLOYMENT_SMOKE_DB_PORT` | `55432` | Host port for Postgres |
 | `DEPLOYMENT_SMOKE_KEEP_SERVICES` | unset | Set to `1` to preserve services for debugging |
+
+---
+
+## UI Browser Smoke
+
+After starting a local, private-beta, or hosted candidate runtime, run the UI smoke
+checks before claiming browser usability:
+
+```powershell
+$env:LAND_DD_UI_SMOKE_BASE_URL = 'http://127.0.0.1:8000'
+.\scripts\run_ui_browser_smoke.ps1
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL
+```
+
+The browser smoke launches Chrome with temporary profiles, checks the core `/ui/*`
+surfaces at desktop (`1366x900`) and mobile (`390x844`) viewports, fails closed on
+missing DOM contracts or page-level horizontal overflow, and removes its temporary
+Chrome profiles. It does not create areas, report runs, connector-review items, review
+actions, screenshots, or JSON output by default.
+
+Set these optional environment variables only when the target runtime requires them or
+when collecting explicit visual evidence:
+
+| Variable | Default | Description |
+|---|---|---|
+| `LAND_DD_UI_SMOKE_BASE_URL` | `http://127.0.0.1:8000` | Running app base URL |
+| `LAND_DD_CHROME_PATH` | auto-detect | Chrome/Chromium executable path |
+| `LAND_DD_UI_SMOKE_MODE` | `headless` | `headless`, `headed`, or `both` |
+| `LAND_DD_UI_SMOKE_API_KEY` | unset | Optional UI API key for API-key-locked runtimes |
+| `LAND_DD_UI_SMOKE_REVIEWER_ID` | unset | Optional reviewer id for reviewer-session checks |
+| `LAND_DD_UI_SMOKE_REVIEWER_TOKEN` | unset | Optional reviewer token for reviewer-session checks |
+| `LAND_DD_UI_SMOKE_SCREENSHOT_DIR` | unset | Opt-in screenshot output directory, usually under `local_artifacts/` |
+
+Use headed mode or screenshot output only for deliberate visual review. Screenshots can
+contain private operator/report data and must remain in ignored local artifact paths.
 
 ---
 
@@ -589,12 +771,14 @@ Validate it with:
 .\scripts\run_access_control_check.ps1
 ```
 
-The access-control proof is validate-only. It checks the current default-off API-key
-middleware, local scoped reviewer service-account auth, reviewer-authenticated and
-scoped operator routes, intentionally public `/health` and `/version` routes, CI proof
-wiring, configured static API-key lifecycle support, structured API-key auth runtime
-logs, and explicit production auth blockers. It does not add user accounts, OAuth/OIDC,
-full user RBAC, automatic key rotation, or hosted identity-provider integration.
+The access-control proof is validate-only and static. It checks the current default-off
+API-key middleware, private-beta UI API-key cookie bridge, local scoped reviewer
+service-account auth, reviewer-authenticated and scoped operator routes, intentionally
+public `/health` and `/version` routes, CI proof wiring, configured static API-key
+lifecycle support, structured API-key auth runtime logs/audit rows including
+`/ui/auth` login attempts, and explicit production auth blockers. It does not add user
+accounts, OAuth/OIDC, full user RBAC, automatic key rotation, hosted identity-provider
+integration, or user-bound audit semantics.
 
 ---
 
@@ -687,14 +871,14 @@ future work items.
 
 | Limitation | Impact |
 |---|---|
-| In-memory job store | Job status is lost on server restart; pending jobs cannot be recovered |
+| In-memory job store | Local/dev/test-only mode. Job status is lost on server restart; pending jobs cannot be recovered |
 | Live connectors are bounded and review-gated | Reviewed Must-priority paths now include DS-001, DS-002, DS-003, and DS-004 public-source connectors, DS-010 selected-county parcel connectors, the DS-011 assessor NOT_EVALUATED sentinel, and DS-023 Chatham/Brunswick recorded-fixture zoning. Outputs remain screening-only and cannot assert legal/buildability/title/water/wetland jurisdiction conclusions. |
 | County/vendor coverage is intentionally scoped | DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick selected-county operator flows; DS-011 assessor remains explicit NOT_EVALUATED evidence, not live assessor data; DS-017 commercial parcel vendor remains blocked; DS-023 covers Chatham/Brunswick recorded-fixture zoning only. Buncombe zoning and all other counties remain NOT_EVALUATED. |
-| Single-process default | In-memory stores are not shared across multiple workers or processes |
+| Single-process local default | In-memory stores are not shared across multiple workers or processes; non-local runtime must use DB-backed services |
 | No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode, but there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
-| `REQUIRE_API_KEY=true` locks the operator UI | When `REQUIRE_API_KEY=true` is set, the API-key middleware applies to every route including all `/ui/*` pages; only `/health` and `/version` remain public. The UI targets the default private trusted-network posture (`REQUIRE_API_KEY=false`). |
-| UI reviewer auth is stateless per-action | The UI approval, retry, connector-review, and operations forms submit `reviewer_id` + `reviewer_token` in the form body on every action. There are no sessions or cookies. Tokens are validated via the same reviewer-auth service as API header tokens. |
-| No persistence by default | In-memory repositories reset on restart; use DATABASE_URL for persistence |
+| Private-beta UI API-key bridge only | When `REQUIRE_API_KEY=true` is set, `/ui/auth` can set a signed expiring HttpOnly SameSite cookie scoped to `/ui` after the submitted API key passes the same verifier as `X-API-Key`; the cookie does not store the submitted API key, is signed with `UI_AUTH_COOKIE_SECRET`, and fails startup outside local/dev/development/test app envs when that setting is blank. Local/dev/development/test app envs may use a per-process fallback. The cookie is `Secure` automatically outside local app envs. Cookie-authenticated UI mutation forms require signed CSRF tokens and sign-out uses POST. JSON/API paths still require `X-API-Key`; this is not full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation, or hosted secret management. |
+| UI reviewer auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly reviewer session at `/ui/auth/reviewer` or by submitting reviewer credentials on the first UI action. The cookie is scoped to `/ui`, stores reviewer id/scopes/expiry plus a non-secret HMAC binding to the configured token spec, is invalidated by reviewer-token rotation or scope removal, and never authenticates JSON/API routes. API clients must still send `X-Reviewer-Id` and `X-Reviewer-Token`. This is not full user auth/RBAC. |
+| Local fixture mode has no persistence | In-memory repositories reset on restart; production-like runtime must set `USE_DB_SERVICES=true` with `DATABASE_URL` |
 | Repo-local alert rules only | Alert rules are validated as artifacts, but no hosted alert manager, dashboard, pager, or named on-call rotation exists |
 | Supply-chain scan limits | CI runs Python dependency vulnerability scanning, validates and attests the repo-local production lock/SBOM, pins the backend base image by OCI index digest, scans the locally built backend image for critical/high CVEs, and validates the image-publication and hosted-deployment boundaries, but there is no hosted deployment or published-registry image attestation |
 | Cost monitoring is local and zero-dollar attributed | Report cost metrics include local-only USD-cent attribution, but no hosted billing reconciliation or approved nonzero unit-cost thresholds exist yet |
@@ -721,17 +905,23 @@ future work items.
 - Common causes: area not registered (should not occur via /intake), rule engine misconfiguration.
 
 **UI approval form returns 401 or 403**
-- Credentials are missing, wrong, or the reviewer account does not hold `report:approve` scope.
+- Reviewer credentials are missing or wrong, the reviewer session is expired/invalid, or the reviewer account does not hold `report:approve` scope.
+- Start or refresh a reviewer session at `/ui/auth/reviewer`, or enter reviewer credentials directly in the action form.
 - Check `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` in the server environment.
   The default fixture account in `.env.example` does not include `report:approve`; add it
   explicitly before testing UI approval in development.
 - 503 means reviewer accounts are not configured at all.
 
 **UI returns 401/403 on every page (locked out)**
-- `REQUIRE_API_KEY=true` is set. The API-key middleware blocks all routes except `/health`
-  and `/version`, including all `/ui/*` pages. Either disable `REQUIRE_API_KEY` for
-  private-network operator use, or configure the reverse proxy to inject the
-  `X-API-Key` header for trusted operator clients.
+- `REQUIRE_API_KEY=true` is set and the browser has no valid `/ui` auth cookie.
+  Visit `/ui/auth`, submit the configured API key, and retry the UI route.
+- JSON/API callers must continue sending `X-API-Key`; the `/ui/auth` cookie is
+  a signed expiring token and is not accepted outside `/ui/*`.
+- If the app restarted in local/dev/development/test with `UI_AUTH_COOKIE_SECRET`
+  blank, sign in again. Set a stable high-entropy `UI_AUTH_COOKIE_SECRET` before
+  running API-key-locked shared or production-like environments.
+- A 403 security-check page on a UI form usually means the form's CSRF token is stale
+  or missing. Refresh the page and submit again.
 
 **Intake response shows `pending_connector_review` but no report link**
 - This is expected when a live connector run requires review before a report can be
@@ -859,12 +1049,17 @@ For explicit review, wire a `ConnectorReviewQueue` that returns an approved deci
 ```bash
 curl -s -X POST http://localhost:8000/report-runs \
   -H 'Content-Type: application/json' \
-  -d '{"area_id": "<uuid>", "intent_code": "homestead_feasibility"}'
+  -d '{"area_id": "{area_id}", "intent_code": "homestead_feasibility"}'
 ```
 
-Poll `GET /report-runs/<report_run_id>` until `"status": "succeeded"`.
+Poll `GET /report-runs/{report_run_id}` until `"status": "succeeded"`.
 
-> Note: in default fixture mode, `POST /report-runs` does not ingest connector fixtures, so the HTTP curl path yields an evidence-poor (all-NOT_EVALUATED) dossier unless `ENABLE_LIVE_CONNECTORS=true` (network) or a DB-backed connector-run pre-ingests evidence. For a useful selected-county fixture dossier with no server, use the Operator Quickstart above.
+> Note: in default fixture mode, generic `POST /report-runs` does not ingest connector
+> fixtures, so this generic curl path yields an evidence-poor dossier unless
+> `ENABLE_LIVE_CONNECTORS=true` (network) or a DB-backed connector-run pre-ingests
+> evidence. For a useful selected-county fixture dossier through the app surface, use
+> `/operator-cases/{case_id}/report`; for no-server use, use the Operator Quickstart
+> above.
 
 ### 4a. Approve the report run (required before dossier delivery)
 
@@ -872,7 +1067,7 @@ The dossier endpoint enforces an approval gate. A reviewer with `report:approve`
 must approve the completed report before `GET /report-runs/{id}/dossier` will serve it:
 
 ```bash
-curl -s -X POST http://localhost:8000/report-runs/<report_run_id>/approve \
+curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/approve \
   -H 'Content-Type: application/json' \
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123' \

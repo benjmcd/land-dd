@@ -109,6 +109,33 @@ def test_access_control_scripts_exist_for_windows_and_posix() -> None:
     assert (REPO_ROOT / "scripts" / "run_access_control_check.sh").is_file()
 
 
+def test_access_control_validator_tracks_current_ui_reviewer_session_design() -> None:
+    validator = (REPO_ROOT / "scripts" / "access_control_check.py").read_text(
+        encoding="utf-8",
+    )
+    design = (REPO_ROOT / "DESIGN.md").read_text(encoding="utf-8")
+
+    for phrase in (
+        "API reviewer tokens remain header-only and separate from API keys",
+        "browser reviewer actions can use `/ui/auth/reviewer`",
+        "signed, expiring, HttpOnly reviewer session cookie scoped to `/ui`",
+    ):
+        assert phrase in validator
+        assert phrase in design
+
+
+def test_operator_runbook_tracks_current_ui_reviewer_session_design() -> None:
+    runbook = (REPO_ROOT / "docs" / "runbooks" / "mvp_operator.md").read_text(
+        encoding="utf-8",
+    )
+
+    assert "reviewer UI session" in runbook
+    assert "the form requires **Reviewer ID** and **Reviewer token** fields" in runbook
+    assert "can establish the UI-only" in runbook
+    assert "reviewer session described below" in runbook
+    assert "There is no session or cookie" not in runbook
+
+
 def test_access_control_wrappers_delegate_to_shared_validator() -> None:
     for script_name in ("run_access_control_check.ps1", "run_access_control_check.sh"):
         script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")

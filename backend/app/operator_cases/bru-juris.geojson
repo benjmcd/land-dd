@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "BRU-jurisdiction",
+    "description": "Brunswick County municipal-vs-county zoning jurisdiction stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-78.160, 34.105],
+        [-78.140, 34.105],
+        [-78.140, 34.115],
+        [-78.160, 34.115],
+        [-78.160, 34.105]
+      ]
+    ]
+  }
+}

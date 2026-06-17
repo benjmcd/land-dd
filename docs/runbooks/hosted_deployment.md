@@ -31,6 +31,9 @@ The check verifies that:
 - required hosted runtime evidence stays explicit: immutable image digest, deployed image
   ref, public HTTPS URL, TLS status, health/version/metrics/queue-health checks, report
   workflow smoke, rollback target, and backup/restore proof;
+- `attestation_evidence` records the future hosted production proof contract with
+  `status: not_available`, the required fields, the current blockers, and an empty
+  evidence template;
 - hosted platform, DNS/TLS, secrets, database, billing, alerting, and image-digest
   blockers remain recorded.
 
@@ -45,7 +48,9 @@ The check verifies that:
    evidence-capture authority are explicitly available.
 6. After a future hosted deployment, record the deployed image digest, public HTTPS URL,
    TLS status, health/version/metrics/queue-health results, report workflow smoke result,
-   rollback target, and backup/restore proof before calling it production-ready.
+   rollback target, and backup/restore proof before calling it production-ready. Fill
+   every field in the `attestation_evidence.evidence_template` contract before changing
+   its status away from `not_available`.
 
 ## Known Limits
 
@@ -55,3 +60,5 @@ The check verifies that:
 - No secrets are written or validated against a hosted secrets manager.
 - No registry image is deployed by this proof.
 - No hosted billing reconciliation exists yet.
+- The structured attestation template is intentionally empty while hosted deployment
+  authority is unavailable.

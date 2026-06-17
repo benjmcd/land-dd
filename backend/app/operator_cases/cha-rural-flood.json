@@ -1,0 +1,48 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_flood_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_chatham_cha_rural_use_flood",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c1c2c3c4-c1c2-4c3c-8c4c-c1c2c3c4c5c6",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "FLOOD_ZONE_SCREEN",
+      "domain": "flood",
+      "observation": "Fixture flood screening: X zone — minimal modeled flood risk for rural Chatham County agricultural land.",
+      "observed_value": {
+        "flood_zone_code": "X",
+        "intersection_ratio": 0.0
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_flood_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only flood screening for Chatham County rural area. X zone indicates minimal modeled flood risk. Requires confirmation by a licensed surveyor or flood-plain manager.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-79.220, 35.705], [-79.200, 35.705], [-79.200, 35.715], [-79.220, 35.715], [-79.220, 35.705]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}
