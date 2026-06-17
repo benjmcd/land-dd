@@ -20,7 +20,12 @@ class _SmokeHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         body = self.route_bodies.get(self.path, "")
         self.send_response(200)
-        self.send_header("content-type", "text/html; charset=utf-8")
+        content_type = (
+            "application/json"
+            if self.path.endswith("/artifact")
+            else "text/html; charset=utf-8"
+        )
+        self.send_header("content-type", content_type)
         self.end_headers()
         self.wfile.write(body.encode("utf-8"))
 
@@ -189,6 +194,85 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_api_key_cookie() -> None:
             "csrf_token": ["csrf-fixture"],
         },
     ) in handler.post_bodies
+
+
+def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke"] = _html(
+        "Executive Summary",
+        "Download dossier (.md)",
+        "Download report (.json)",
+        "View evidence lineage",
+    )
+    routes["/report-runs/operator-smoke/artifact"] = json.dumps(
+        {"artifact_metadata": {"persistence": "postgres+object_store"}},
+    )
+    server, base_url = _run_server(routes)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--operator-case-id",
+            "BUN-slope",
+            "--expect-artifact-persistence",
+            "postgres+object_store",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["routes"][-1]["ok"] is True
+
+
+def test_ui_runtime_smoke_operator_case_fails_on_artifact_persistence_mismatch() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke"] = _html(
+        "Executive Summary",
+        "Download dossier (.md)",
+        "Download report (.json)",
+        "View evidence lineage",
+    )
+    routes["/report-runs/operator-smoke/artifact"] = json.dumps(
+        {"artifact_metadata": {"persistence": "memory"}},
+    )
+    server, base_url = _run_server(routes)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--operator-case-id",
+            "BUN-slope",
+            "--expect-artifact-persistence",
+            "postgres+object_store",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 1
+    assert "artifact persistence mismatch" in result.stdout
+    assert "postgres+object_store" in result.stdout
+    assert "memory" in result.stdout
+
+
+def test_ui_runtime_smoke_artifact_persistence_requires_operator_case() -> None:
+    server, base_url = _run_server(_required_routes())
+    try:
+        result = _run_smoke(
+            base_url,
+            "--expect-artifact-persistence",
+            "postgres+object_store",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
+    assert "--expect-artifact-persistence requires --operator-case-id" in payload["error"]
 
 
 def test_ui_runtime_smoke_operator_case_fails_when_report_delivery_link_missing() -> None:

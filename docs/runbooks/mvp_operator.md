@@ -318,12 +318,17 @@ Use this matrix to pick the right path and avoid treating one proof as another.
 | `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged selected-county corpus, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
 | `/ui/` selected-county launcher | Browser operator flow for packaged cases | No-JavaScript UI launch into the same `/operator-cases` path and existing approved report pages | Full dashboard polish, user accounts/RBAC, live-source production operation |
 | Generic `POST /report-runs` | Custom AOI report run from an existing `area_id` plus already-ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
-| DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior for the generic full reviewed dossier path and representative selected-county operator cases | No-server CLI behavior, hosted deployment, live-source production coverage, external identity/secrets |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior for the generic full reviewed dossier path, representative selected-county operator cases, and the selected-county UI launcher | No-server CLI behavior, hosted deployment, live-source production coverage, external identity/secrets |
 | Live connector queue paths | Reviewed live-source screening workflows | Bounded source-specific fetch/schedule/review behavior for implemented connectors | Recorded fixture parity, paid vendor coverage, legal/buildability/title/value conclusions |
 
 DB-backed verification includes the generic full reviewed dossier path in
 `backend/tests/api/test_report_runs_db.py` plus representative selected-county operator DB smoke cases `BUN-slope`, `CHA-zoning-edge`, and `BRU-coastal-flood`
-in `backend/tests/api/test_operator_cases_db.py`. It does not prove full hosted production, live-source production coverage, or counties outside the selected private-MVP set.
+in `backend/tests/api/test_operator_cases_db.py`. The same DB smoke file also covers
+the `/ui/operator-cases/report` launcher for one representative selected-county case,
+including redirect to the approved report page, approved UI delivery links, and persisted
+JSON artifact delivery.
+It does not prove full hosted production, live-source production coverage, or counties
+outside the selected private-MVP set.
 
 ### Operator path execution qualifiers
 
@@ -333,7 +338,7 @@ in `backend/tests/api/test_operator_cases_db.py`. It does not prove full hosted 
 | `POST /operator-cases/{case_id}/report` | High selected-county fixture evidence through the app-owned packaged corpus | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-only packaged cases, not live county fetches |
 | `/ui/` selected-county launcher | High selected-county fixture evidence plus no-JavaScript operator UX | Yes; same approved-report and dossier gates as `/operator-cases` | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | UI usability for packaged cases only; not full accounts/RBAC |
 | Generic `POST /report-runs` | Low by default; strongest as a code-level integration pattern over an existing `{area_id}` plus whatever evidence is already ingested/reviewed | Yes | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | Only when you intentionally enable live connector ingestion; otherwise no | This is not the packaged selected-county corpus path and does not auto-load selected-county fixtures in default mode |
-| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path and representative selected-county operator DB smoke cases |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path, representative selected-county operator DB smoke cases, and one selected-county UI launcher DB smoke |
 | Live connector queue paths | Connector-dependent live evidence | Connector review queue applies where implemented | Optional, depending on runtime | Yes | Only implemented live connectors; no packaged selected-county parity |
 
 ---
@@ -716,6 +721,14 @@ redirect to the approved report UI page, and checks the final page for the execu
 summary, Markdown dossier download, JSON report download, and evidence-lineage link.
 It creates an in-memory approved report in the target runtime when that runtime uses
 the default in-memory services; use it only when mutating fixture state is intentional.
+For a DB-backed runtime, add an artifact persistence assertion:
+
+```powershell
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --operator-case-id BUN-slope --expect-artifact-persistence postgres+object_store
+```
+
+That DB-backed invocation follows the same UI path and then fetches the linked JSON
+artifact, requiring `artifact_metadata.persistence` to equal `postgres+object_store`.
 
 Set these optional environment variables only when the target runtime requires them or
 when collecting explicit visual evidence:

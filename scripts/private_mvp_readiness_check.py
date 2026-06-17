@@ -62,6 +62,10 @@ RUNBOOK_REQUIRED_CURRENT_PHRASES = (
         "whatever evidence is already ingested/reviewed"
     ),
     "not the packaged selected-county corpus path",
+    "the `/ui/operator-cases/report` launcher",
+    "approved UI delivery links",
+    "--expect-artifact-persistence postgres+object_store",
+    "artifact_metadata.persistence",
     (
         "It does not prove the HTTP `POST /report-runs` surface, "
         "`/operator-cases/{case_id}/report`, or DB artifact persistence"
