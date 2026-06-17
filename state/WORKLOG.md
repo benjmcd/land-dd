@@ -3056,3 +3056,23 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   passed; focused artifact/UI tests passed; focused ruff and mypy passed; default
   `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy on 307 source files;
   standalone workspace validation passed. DB smoke was skipped by default.
+
+## 2026-06-17 Operator runbook executability slice
+
+- Tightened `docs/runbooks/mvp_operator.md` so the operator proof matrix now includes an
+  execution-qualifier supplement, the identifier glossary distinguishes `{area_id}`,
+  `{report_run_id}`, `{case_id}`, and `{ingest_run_id}`, and the no-server quickstart
+  explicitly stops short of HTTP/DB proof.
+- Replaced ambiguous report-route `{id}` examples with `{report_run_id}` and pinned stale
+  `{id}` route placeholders in the readiness test/checker.
+- Clarified the later generic `POST /report-runs` workflow as an already-ingested-state
+  integration path rather than the packaged selected-county corpus path. The evidence-rich
+  selected-county operator routes remain `/operator-cases/{case_id}/report` and
+  `scripts/generate_dossier.py --connector all --approve --artifact`.
+- Hardened `backend/tests/test_private_mvp_readiness.py` and
+  `scripts/private_mvp_readiness_check.py` so the runbook must keep those distinctions
+  and fails closed if stale overclaim phrasing returns.
+- Verification: `$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/test_private_mvp_readiness.py`,
+  `$env:PYTHONPATH='./backend'; python ./scripts/private_mvp_readiness_check.py`, and
+  `python -m ruff check ./backend/tests/test_private_mvp_readiness.py ./scripts/private_mvp_readiness_check.py`
+  all passed.

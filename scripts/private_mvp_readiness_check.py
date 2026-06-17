@@ -54,6 +54,18 @@ RUNBOOK_REQUIRED_CURRENT_PHRASES = (
     "DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick",
     "DS-011 assessor remains explicit NOT_EVALUATED evidence",
     "DS-023 covers Chatham/Brunswick recorded-fixture zoning only",
+    "Operator path execution qualifiers",
+    "Packaged selected-county fixture case slug (not an AOI UUID)",
+    "Connector evidence/review run ID",
+    (
+        "code-level integration pattern over an existing `{area_id}` plus "
+        "whatever evidence is already ingested/reviewed"
+    ),
+    "not the packaged selected-county corpus path",
+    (
+        "It does not prove the HTTP `POST /report-runs` surface, "
+        "`/operator-cases/{case_id}/report`, or DB artifact persistence"
+    ),
 )
 RUNBOOK_STALE_PHRASES = (
     "County/vendor sources not ready",
@@ -62,6 +74,10 @@ RUNBOOK_STALE_PHRASES = (
     "No machine-queryable assessor connector; recorded as unknown",
     "| `terrain/slope` | live-connector only |",
     "| `wetlands` | live-connector only |",
+    "emits the same JSON serialization the API serves",
+    "generic report creation loads the packaged selected-county connector fixtures",
+    "/report-runs/{id}",
+    "/ui/report-runs/{id}",
 )
 CATALOG_STALE_PHRASES = (
     "Chatham parcels/zoning, Brunswick coastal/wetlands",

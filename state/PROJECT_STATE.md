@@ -1681,6 +1681,22 @@ Last verified for this historical lane: 2026-06-06; current source-readiness cou
 Prior lane (L10 production hardening) plans remain in `plans/` for reference. Production
 hardening continues as a separate blocked lane and does not gate private MVP utility proof.
 
+## 2026-06-17 Current checkpoint - operator runbook executability
+
+- Status: PASS for the narrow documentation/validation slice on `operator-path`.
+- Current authority trail: runtime/tests plus `scripts/private_mvp_readiness_check.py`
+  now require the operator runbook to distinguish selected-county packaged-case delivery,
+  generic `POST /report-runs` over already-ingested state, and no-server dossier output.
+- Operator route examples now use explicit `{report_run_id}` placeholders instead of
+  ambiguous `{id}` report-route placeholders.
+- Selected-county evidence-rich delivery remains `POST /operator-cases/{case_id}/report`
+  (HTTP/UI) or `scripts/generate_dossier.py --connector all --approve --artifact`
+  (no-server). Generic `POST /report-runs` remains a separate integration pattern and
+  does not auto-load the packaged selected-county corpus in default fixture mode.
+- Last verified: 2026-06-17 via `python -m pytest -q ./backend/tests/test_private_mvp_readiness.py`,
+  `python ./scripts/private_mvp_readiness_check.py`, and `python -m ruff check` on the
+  touched readiness files.
+
 ## Local repo bootstrap state
 
 - Local Git initialized on `main`.

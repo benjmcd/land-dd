@@ -428,7 +428,14 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
 
     for phrase in (
         "## Operator Path Proof Matrix",
+        "### Operator path execution qualifiers",
+        (
+            "| Path | Evidence richness | Approval gate | DB required | "
+            "Live network required | Main limitation |"
+        ),
         "### Identifier glossary",
+        "Packaged selected-county fixture case slug (not an AOI UUID)",
+        "Connector evidence/review run ID",
         "| `{report_run_id}` | Report/job ID |",
         "`scripts/generate_dossier.py --connector all --approve --artifact`",
         "`POST /operator-cases/{case_id}/report`",
@@ -436,8 +443,17 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
         "DB-backed verification with `RUN_DB_SMOKE=1`",
         "same in-memory report artifact contract shape",
         (
+            "code-level integration pattern over an existing `{area_id}` plus "
+            "whatever evidence is already ingested/reviewed"
+        ),
+        "not the packaged selected-county corpus path",
+        (
             "does not exercise HTTP routing, access gates, or DB artifact "
             "persistence"
+        ),
+        (
+            "It does not prove the HTTP `POST /report-runs` surface, "
+            "`/operator-cases/{case_id}/report`, or DB artifact persistence"
         ),
     ):
         assert phrase in runbook
@@ -445,6 +461,8 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
     for stale_phrase in (
         "emits the same JSON serialization the API serves",
         "generic report creation loads the packaged selected-county connector fixtures",
+        "/report-runs/{id}",
+        "/ui/report-runs/{id}",
     ):
         assert stale_phrase not in runbook
 
