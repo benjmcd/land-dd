@@ -251,6 +251,22 @@ The response reports status counts and oldest queued age for report jobs and liv
 connector jobs. It does not lease work, retry jobs, call live sources, persist evidence,
 or create reports.
 
+To inspect failed and stale-running recovery candidates without mutating queue state:
+
+```bash
+curl -s http://localhost:8000/operations/recovery-preview \
+  -H 'X-Reviewer-Id: fixture-reviewer' \
+  -H 'X-Reviewer-Token: fixture-token-123'
+```
+
+The recovery preview response returns up to the response's
+`candidate_limit_per_state` failed report jobs, stale-running report jobs, failed live
+connector jobs, and stale-running live connector jobs with detail API/UI paths and
+recommended inspection steps. Per-queue truncation booleans show when additional failed
+or stale-running jobs exist beyond the candidate sample. It does not retry reports,
+requeue live connector jobs, lease work, call live sources, persist evidence, or create
+reports.
+
 ---
 
 ## Selected-County Operator Cases (server, no Docker required)
@@ -610,6 +626,12 @@ The dashboard is read-only; it does not lease work, retry jobs, or call live sou
 Count cells link to the corresponding report list or connector review queue filter so
 operators can drill into affected work without leaving the UI. Wide queue-health tables
 are contained in horizontal scroll wrappers on narrow screens.
+
+The dashboard links to `/ui/operations/recovery-preview`, which renders the same
+read-only failed/stale-running recovery candidate view in the browser. Candidate rows link
+only to existing report or live connector job detail pages; the page labels the per-state
+candidate cap and shows a truncation note if more failed or stale-running jobs exist. The
+preview page does not perform retries, requeues, leases, or source calls.
 
 Equivalent API call:
 

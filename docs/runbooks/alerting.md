@@ -18,6 +18,7 @@ investment conclusions.
 | API health | `/health` | Public liveness and environment status |
 | Runtime metrics | `/metrics` | In-memory `runtime_metrics_v1` request counters and durations |
 | Queue health | `/operations/queue-health` | Reviewer-authenticated report/live connector queue counts, queued age, running age, and stale-running count |
+| Recovery preview | `/operations/recovery-preview` | Reviewer-authenticated read-only failed/stale-running recovery candidates with detail links |
 | Deployment smoke | `scripts/run_deployment_smoke.ps1` | Compose-backed health, metrics, queue health, and report workflow |
 | DB smoke | `scripts/verify.ps1`, `scripts/db_smoke_check.py` | Migrations, seeds, and DB schema proof when `RUN_DB_SMOKE=1` |
 | Backup/restore | `scripts/run_backup_restore_check.ps1` | Dump, restore, DB smoke, and restore DB cleanup proof |
@@ -47,7 +48,8 @@ the expected shape, and Must source rows carry parseable freshness metadata.
 2. Open `docs/runbooks/incident_response.md` for SEV0 or SEV1, and for any SEV2 that
    threatens report correctness, source authority, queue recovery, or user trust.
 3. Capture the current signal payload or command output before mitigation.
-4. For queue alerts, inspect `/operations/queue-health`, then use the linked
+4. For queue alerts, inspect `/operations/queue-health` and
+   `/operations/recovery-preview`, then use the linked
    `/ui/report-runs?status=running` or `/ui/live-connector-jobs?status=running&stale=true`
    drilldown before remediation. Treat `stale_running` as a worker-progress signal and
    avoid retry loops until the running job, failed job lineage, and source-review state
@@ -75,5 +77,7 @@ the expected shape, and Must source rows carry parseable freshness metadata.
 - Runtime metrics are in-memory and reset on process restart.
 - `/operations/queue-health` is reviewer-authenticated and must be queried with reviewer
   service-account headers in deployed environments.
+- `/operations/recovery-preview` is read-only. It does not retry reports, requeue live
+  connector jobs, lease worker jobs, or call live sources.
 - Source freshness rules validate registry metadata and operator review cadence; they do
   not independently verify every upstream vendor dataset in real time.

@@ -75,6 +75,7 @@ class AsyncReportJobStoreProtocol(Protocol):
         offset: int = 0,
         status: JobStatus | None = None,
         workspace_id: UUID | None = None,
+        stale: bool = False,
     ) -> list[ReportJobRecord]: ...
 
 
@@ -166,6 +167,7 @@ class AsyncReportJobStore:
         offset: int = 0,
         status: JobStatus | None = None,
         workspace_id: UUID | None = None,
+        stale: bool = False,
     ) -> list[ReportJobRecord]:
         with self._lock:
             jobs = sorted(self._jobs.values(), key=lambda r: r.created_at, reverse=True)
@@ -173,6 +175,8 @@ class AsyncReportJobStore:
                 jobs = [r for r in jobs if r.status == status]
             if workspace_id is not None:
                 jobs = [r for r in jobs if r.workspace_id == workspace_id]
+            if stale:
+                jobs = [r for r in jobs if _is_stale_running(r)]
             return jobs[offset : offset + limit]
 
 
@@ -273,9 +277,10 @@ class SqlAlchemyAsyncReportJobStore:
     ) -> ReportJobRecord | None:
         storage_key = _client_storage_key(client_idempotency_key)
         with self._session_factory() as session:
-            row = session.execute(
-                text(
-                    """
+            row = (
+                session.execute(
+                    text(
+                        """
                     SELECT
                         job_id,
                         workspace_id,
@@ -289,21 +294,25 @@ class SqlAlchemyAsyncReportJobStore:
                       AND idempotency_key = :idempotency_key
                     LIMIT 1
                     """
-                ),
-                {
-                    "job_type": REPORT_RUN_JOB_TYPE,
-                    "idempotency_key": storage_key,
-                },
-            ).mappings().one_or_none()
+                    ),
+                    {
+                        "job_type": REPORT_RUN_JOB_TYPE,
+                        "idempotency_key": storage_key,
+                    },
+                )
+                .mappings()
+                .one_or_none()
+            )
         if row is None:
             return None
         return _record_from_row(row)
 
     def get(self, report_run_id: UUID) -> ReportJobRecord | None:
         with self._session_factory() as session:
-            row = session.execute(
-                text(
-                    """
+            row = (
+                session.execute(
+                    text(
+                        """
                     SELECT
                         job_id,
                         workspace_id,
@@ -317,12 +326,15 @@ class SqlAlchemyAsyncReportJobStore:
                       AND job_id = :job_id
                     LIMIT 1
                     """
-                ),
-                {
-                    "job_type": REPORT_RUN_JOB_TYPE,
-                    "job_id": str(report_run_id),
-                },
-            ).mappings().one_or_none()
+                    ),
+                    {
+                        "job_type": REPORT_RUN_JOB_TYPE,
+                        "job_id": str(report_run_id),
+                    },
+                )
+                .mappings()
+                .one_or_none()
+            )
         if row is None:
             return None
         return _record_from_row(row)
@@ -357,6 +369,7 @@ class SqlAlchemyAsyncReportJobStore:
         offset: int = 0,
         status: JobStatus | None = None,
         workspace_id: UUID | None = None,
+        stale: bool = False,
     ) -> list[ReportJobRecord]:
         params: dict[str, object] = {
             "job_type": REPORT_RUN_JOB_TYPE,
@@ -370,6 +383,16 @@ class SqlAlchemyAsyncReportJobStore:
         if workspace_id is not None:
             params["workspace_id"] = str(workspace_id)
             predicates.append("workspace_id = CAST(:workspace_id AS uuid)")
+        if stale:
+            params["running_status"] = JobStatus.RUNNING.value
+            params["stale_running_threshold_seconds"] = STALE_RUNNING_THRESHOLD_SECONDS
+            predicates.append("status = CAST(:running_status AS jobs.job_status)")
+            predicates.append(
+                """
+                EXTRACT(EPOCH FROM (now() - COALESCE(started_at, created_at)))
+                    >= :stale_running_threshold_seconds
+                """
+            )
         where_clause = " AND ".join(predicates)
         sql = f"""
                 SELECT
@@ -392,9 +415,10 @@ class SqlAlchemyAsyncReportJobStore:
 
     def health(self) -> JobQueueHealth:
         with self._session_factory() as session:
-            row = session.execute(
-                text(
-                    """
+            row = (
+                session.execute(
+                    text(
+                        """
                     SELECT
                         count(*) AS total,
                         count(*) FILTER (
@@ -438,9 +462,12 @@ class SqlAlchemyAsyncReportJobStore:
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                     """
-                ),
-                _health_query_params(REPORT_RUN_JOB_TYPE),
-            ).mappings().one()
+                    ),
+                    _health_query_params(REPORT_RUN_JOB_TYPE),
+                )
+                .mappings()
+                .one()
+            )
         return _health_from_row(REPORT_RUN_JOB_TYPE, row)
 
     def _update_status(
@@ -535,9 +562,7 @@ def _record_from_row(row: Any) -> ReportJobRecord:
         area_id=UUID(str(payload["area_id"])),
         intent_code=IntentCode(str(payload["intent_code"])),
         status=JobStatus(str(row["status"])),
-        workspace_id=UUID(str(row["workspace_id"]))
-        if row["workspace_id"] is not None
-        else None,
+        workspace_id=UUID(str(row["workspace_id"])) if row["workspace_id"] is not None else None,
         requested_by=_optional_payload_uuid(payload, "requested_by"),
         error_msg=None if row["last_error"] is None else str(row["last_error"]),
         retry_of_report_run_id=_optional_payload_uuid(payload, "retry_of_report_run_id"),
@@ -576,10 +601,7 @@ def _health_from_records(
             started_at = record.started_at or record.created_at
             running_started_at.append((started_at, record.report_run_id))
             age_seconds = _age_seconds(started_at)
-            if (
-                age_seconds is not None
-                and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
-            ):
+            if age_seconds is not None and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS:
                 stale_running += 1
     oldest_queued_at = min(queued_created_at) if queued_created_at else None
     oldest_running = min(running_started_at, default=None, key=lambda item: item[0])
@@ -599,6 +621,13 @@ def _health_from_records(
         oldest_running_job_id=oldest_running[1] if oldest_running is not None else None,
         stale_running=stale_running,
     )
+
+
+def _is_stale_running(record: ReportJobRecord) -> bool:
+    if record.status != JobStatus.RUNNING:
+        return False
+    age_seconds = _age_seconds(record.started_at or record.created_at)
+    return age_seconds is not None and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
 
 
 def _health_query_params(job_type: str) -> dict[str, object]:

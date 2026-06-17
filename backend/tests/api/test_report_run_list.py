@@ -129,6 +129,45 @@ def test_list_report_runs_includes_running_age_and_stale_flag() -> None:
     assert item["is_stale_running"] is True
 
 
+def test_list_report_runs_stale_filter_requires_running_status() -> None:
+    tc = TestClient(create_app())
+
+    missing_status = tc.get("/report-runs?stale=true")
+    queued_status = tc.get("/report-runs?status=queued&stale=true")
+
+    assert missing_status.status_code == 422
+    assert queued_status.status_code == 422
+    assert "status=running" in missing_status.text
+    assert "status=running" in queued_status.text
+
+
+def test_list_report_runs_stale_filter_returns_only_stale_running_jobs() -> None:
+    app, tc, run_ids = _make_client_with_reports(3)
+    services = cast(ApiServices, app.state.services)
+    stale_run_id = UUID(run_ids[0])
+    fresh_run_id = UUID(run_ids[1])
+    failed_run_id = UUID(run_ids[2])
+    services.async_report_jobs.mark_running(stale_run_id)
+    services.async_report_jobs.mark_running(fresh_run_id)
+    services.async_report_jobs.mark_failed(failed_run_id, error_msg="boom")
+    stale_job = services.async_report_jobs.get(stale_run_id)
+    assert stale_job is not None
+    stale_job.started_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+
+    resp = tc.get("/report-runs?status=running&stale=true")
+
+    assert resp.status_code == 200
+    items = resp.json()
+    ids = {item["report_run_id"] for item in items}
+    assert run_ids[0] in ids
+    assert run_ids[1] not in ids
+    assert run_ids[2] not in ids
+    assert all(item["status"] == "running" for item in items)
+    assert all(item["is_stale_running"] is True for item in items)
+
+
 # ---------------------------------------------------------------------------
 # Pagination
 # ---------------------------------------------------------------------------

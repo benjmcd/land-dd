@@ -933,6 +933,7 @@ def ui_report_run(
 def ui_report_run_list(
     services: ServicesDep,
     status: Annotated[str | None, Query()] = None,
+    stale: Annotated[bool, Query()] = False,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> str | HTMLResponse:
     # Validate and resolve the status filter
@@ -950,11 +951,19 @@ def ui_report_run_list(
                 "/ui/report-runs",
                 422,
             )
+    if stale and status_filter != JobStatus.RUNNING:
+        return error_page(
+            "Invalid Stale Filter",
+            "Stale report run filtering requires status=running.",
+            "/ui/report-runs",
+            422,
+        )
 
     jobs = services.async_report_jobs.list_recent(
         limit=_UI_PAGE_SIZE,
         offset=offset,
         status=status_filter,
+        stale=stale,
     )
     rows = ""
     for job in jobs:
@@ -999,7 +1008,8 @@ def ui_report_run_list(
             f"</tr>\n"
         )
     if not rows:
-        rows = '<tr><td colspan="7" style="color:#666">No report runs yet.</td></tr>'
+        empty_text = "No stale running report runs." if stale else "No report runs yet."
+        rows = f'<tr><td colspan="7" style="color:#666">{_html.escape(empty_text)}</td></tr>'
 
     # Build status filter dropdown
     status_options = '<option value="">All</option>\n'
@@ -1015,6 +1025,8 @@ def ui_report_run_list(
         parts = []
         if status_filter is not None:
             parts.append(f"status={_html.escape(status_filter.value)}")
+        if stale:
+            parts.append("stale=true")
         parts.append(f"offset={new_offset}")
         return "?" + "&amp;".join(parts)
 
@@ -1030,6 +1042,7 @@ def ui_report_run_list(
     if prev_link or next_link:
         sep = " &nbsp; " if (prev_link and next_link) else ""
         pagination = f'<div style="margin-top:1rem">{prev_link}{sep}{next_link}</div>'
+    stale_checked = " checked" if stale else ""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -1110,10 +1123,11 @@ form.filter {{ display:inline-flex; gap:0.5rem; align-items:center; margin-botto
 <h1>Report Runs</h1>
 <form class="filter" method="GET" action="/ui/report-runs">
   <label for="status-filter">Filter by status:</label>
-  <select id="status-filter" name="status" onchange="this.form.submit()">
+  <select id="status-filter" name="status">
     {status_options}
   </select>
-  <noscript><button type="submit">Apply</button></noscript>
+  <label><input type="checkbox" name="stale" value="true"{stale_checked}> Stale running</label>
+  <button type="submit">Apply</button>
 </form>
 <form method="GET" action="/ui/compare">
 <div class="cmp-bar">

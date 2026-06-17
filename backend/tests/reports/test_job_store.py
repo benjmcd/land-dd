@@ -202,6 +202,51 @@ def test_list_recent_status_filter_in_memory() -> None:
     assert failed.report_run_id in {r.report_run_id for r in failed_jobs}
 
 
+def test_list_recent_stale_filter_returns_only_stale_running_jobs_in_memory() -> None:
+    store = AsyncReportJobStore()
+    old_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+    stale_started = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    stale_created = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    fresh_running = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    old_failed = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    store.mark_running(stale_started.report_run_id)
+    store.mark_running(fresh_running.report_run_id)
+    store.mark_failed(old_failed.report_run_id, error_msg="boom")
+    stale_started_record = store.get(stale_started.report_run_id)
+    stale_created_record = store.get(stale_created.report_run_id)
+    old_failed_record = store.get(old_failed.report_run_id)
+    assert stale_started_record is not None
+    assert stale_created_record is not None
+    assert old_failed_record is not None
+    stale_started_record.started_at = old_at
+    stale_created_record.status = JobStatus.RUNNING
+    stale_created_record.started_at = None
+    stale_created_record.created_at = old_at
+    old_failed_record.created_at = old_at
+
+    jobs = store.list_recent(limit=50, status=JobStatus.RUNNING, stale=True)
+
+    assert {job.report_run_id for job in jobs} == {
+        stale_started.report_run_id,
+        stale_created.report_run_id,
+    }
+
+
 def test_list_recent_filters_by_workspace_in_memory() -> None:
     store = AsyncReportJobStore()
     workspace_a = uuid4()
@@ -334,8 +379,7 @@ def test_sqlalchemy_job_store_list_recent_offset_and_status() -> None:
     store = SqlAlchemyAsyncReportJobStore()
     area_id = uuid4()
     records = [
-        store.create(area_id=area_id, intent_code=IntentCode.RURAL_LAND_PURCHASE)
-        for _ in range(4)
+        store.create(area_id=area_id, intent_code=IntentCode.RURAL_LAND_PURCHASE) for _ in range(4)
     ]
     failed_record = records[0]
     store.mark_failed(failed_record.report_run_id, error_msg="test")
@@ -363,6 +407,61 @@ def test_sqlalchemy_job_store_list_recent_offset_and_status() -> None:
     finally:
         for r in records:
             _delete_report_job(r.report_run_id)
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_sqlalchemy_job_store_list_recent_stale_filter() -> None:
+    store = SqlAlchemyAsyncReportJobStore()
+    stale = store.create(area_id=uuid4(), intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    stale_created = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    fresh = store.create(area_id=uuid4(), intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    failed = store.create(area_id=uuid4(), intent_code=IntentCode.HOMESTEAD_FEASIBILITY)
+    try:
+        store.mark_running(stale.report_run_id)
+        store.mark_running(stale_created.report_run_id)
+        store.mark_running(fresh.report_run_id)
+        store.mark_failed(failed.report_run_id, error_msg="boom")
+        _age_report_job(stale.report_run_id, started=True)
+        _age_report_job(stale_created.report_run_id, started=False)
+        _age_report_job(failed.report_run_id, started=True)
+
+        jobs = store.list_recent(limit=50, status=JobStatus.RUNNING, stale=True)
+
+        stale_ids = {job.report_run_id for job in jobs}
+        assert stale.report_run_id in stale_ids
+        assert stale_created.report_run_id in stale_ids
+        assert fresh.report_run_id not in stale_ids
+        assert failed.report_run_id not in stale_ids
+    finally:
+        _delete_report_job(stale.report_run_id)
+        _delete_report_job(stale_created.report_run_id)
+        _delete_report_job(fresh.report_run_id)
+        _delete_report_job(failed.report_run_id)
+
+
+def _age_report_job(report_run_id: object, *, started: bool) -> None:
+    engine = build_engine()
+    started_expr = "now() - (:age_seconds * interval '1 second')" if started else "NULL"
+    with Session(engine) as session:
+        session.execute(
+            text(
+                f"""
+                UPDATE jobs.job_queue
+                SET
+                    created_at = now() - (:age_seconds * interval '1 second'),
+                    started_at = {started_expr}
+                WHERE job_id = :job_id
+                """
+            ),
+            {
+                "age_seconds": STALE_RUNNING_THRESHOLD_SECONDS + 1,
+                "job_id": str(report_run_id),
+            },
+        )
+        session.commit()
 
 
 def _delete_report_job(report_run_id: object) -> None:

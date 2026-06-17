@@ -666,12 +666,18 @@ def list_report_runs(
     services: ServicesDep,
     request_context: Request,
     status: Annotated[JobStatus | None, Query()] = None,
+    stale: Annotated[bool, Query()] = False,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
     x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> list[ReportRunListItem]:
+    if stale and status != JobStatus.RUNNING:
+        raise HTTPException(
+            status_code=422,
+            detail="stale report run filtering requires status=running",
+        )
     auth = _optional_report_auth_context(
         request_context,
         authorization=authorization,
@@ -683,6 +689,7 @@ def list_report_runs(
         offset=offset,
         status=status,
         workspace_id=auth.workspace_id if auth is not None else None,
+        stale=stale,
     )
     items: list[ReportRunListItem] = []
     for job in jobs:
