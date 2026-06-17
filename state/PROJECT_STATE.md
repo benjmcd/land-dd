@@ -1,5 +1,29 @@
 # Project State
 
+## Current checkpoint (2026-06-17 UI report identity bridge)
+
+Selected-county UI report creation now has a real browser workspace/user identity
+bridge for non-local environments.
+
+- **Token authority preserved**: `verify_report_identity_token` now returns the
+  verified expiration timestamp along with workspace/user claims, so browser identity
+  sessions can be bounded by the submitted token.
+- **Derived UI identity session**: `/ui/auth/identity` and selected-county UI report
+  forms accept `report_identity_token`, verify it with `REPORT_IDENTITY_TOKEN_SECRET`,
+  and set a signed HttpOnly SameSite `/ui` cookie carrying only workspace id, user id,
+  and expiry. The raw token is not stored in the cookie or rendered back.
+- **Non-local selected-county path**: `/ui/operator-cases/report` now uses the
+  submitted identity token or identity session cookie to persist `workspace_id` and
+  `requested_by`. It still fails closed outside local/dev/development/test when no
+  identity is present, and preserves local seeded fallback only for local-like app
+  environments.
+- **Validation/docs**: focused report-auth/UI route tests pass for submitted token,
+  identity cookie reuse, invalid/missing identity, local fallback coverage, and CSRF
+  on identity login and selected-county report creation when UI API-key, reviewer,
+  or identity session cookies authorize the UI mutation. Access-control and MVP
+  operator runbooks document the bridge, and `scripts/access_control_check.py` pins
+  the helper/routes/tests/static route condition.
+
 ## Current checkpoint (2026-06-17 non-local secret hygiene)
 
 Non-local app environments now fail closed for weak static secret configuration while

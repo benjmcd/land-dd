@@ -36,10 +36,13 @@ from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_RUN,
 )
 from app.api.ui_shared import (
+    attach_ui_report_identity_session_cookie,
     attach_ui_reviewer_session_cookie,
     csrf_form_field,
     error_page,
+    report_identity_fields,
     require_ui_csrf,
+    require_ui_report_identity,
     require_ui_reviewer,
     reviewer_credential_fields,
 )
@@ -579,11 +582,13 @@ def _selected_county_case_row(
     description = _html.escape(case.description)
     boundary = _case_boundary_metadata(case)
     domains = _connector_domain_badges(case.connector_domains)
+    settings = cast(Settings, request.app.state.settings)
     reviewer_fields = reviewer_credential_fields(
         request,
         services,
         required_scope=REVIEWER_SCOPE_REPORT_RUN,
     )
+    identity_fields = report_identity_fields(request, settings)
     return f"""<tr>
   <td data-label="Case"><span class="case-id">{case_id}</span></td>
   <td data-label="County">{county}, {state}</td>
@@ -596,6 +601,7 @@ def _selected_county_case_row(
       <input type="hidden" name="selected_county_case_id" value="{case_id}">
       {csrf_field}
       <div data-required-scope="report:run">{reviewer_fields}</div>
+      <div>{identity_fields}</div>
       <button class="primary-button" type="submit"
         aria-label="Create approved report for {case_id}">
         Create report
@@ -724,6 +730,7 @@ def ui_create_selected_county_report(
     selected_county_case_id: Annotated[str, Form()],
     reviewer_id: Annotated[str | None, Form()] = None,
     reviewer_token: Annotated[str | None, Form()] = None,
+    report_identity_token: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse | HTMLResponse:
     csrf_error = require_ui_csrf(request, csrf_token, back_url="/ui/")
@@ -749,7 +756,21 @@ def ui_create_selected_county_report(
         )
     principal = auth_result.principal
     settings = cast(Settings, request.app.state.settings)
-    if not settings.is_local_app_env():
+    try:
+        identity_result = require_ui_report_identity(
+            request,
+            settings,
+            report_identity_token=report_identity_token,
+        )
+    except HTTPException as exc:
+        return error_page(
+            "Workspace Identity Required",
+            str(exc.detail),
+            "/ui/",
+            exc.status_code,
+            css=_INDEX_CSS,
+        )
+    if identity_result is None and not settings.is_local_app_env():
         return error_page(
             "Workspace Identity Required",
             (
@@ -760,13 +781,23 @@ def ui_create_selected_county_report(
             status.HTTP_403_FORBIDDEN,
             css=_INDEX_CSS,
         )
+    workspace_id = (
+        identity_result.auth.workspace_id
+        if identity_result is not None
+        else _LOCAL_UI_WORKSPACE_ID
+    )
+    requested_by = (
+        identity_result.auth.user_id
+        if identity_result is not None
+        else _LOCAL_UI_USER_ID
+    )
     try:
         created = operator_cases_api.create_selected_county_fixture_report_response(
             services=services,
             case_id=selected_county_case_id,
             reviewer_id=principal.reviewer_id,
-            workspace_id=_LOCAL_UI_WORKSPACE_ID,
-            requested_by=_LOCAL_UI_USER_ID,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
         )
     except HTTPException as exc:
         detail = _html.escape(str(exc.detail))
@@ -784,6 +815,7 @@ def ui_create_selected_county_report(
         status_code=status.HTTP_303_SEE_OTHER,
     )
     attach_ui_reviewer_session_cookie(response, request, services, auth_result)
+    attach_ui_report_identity_session_cookie(response, request, identity_result)
     return response
 
 

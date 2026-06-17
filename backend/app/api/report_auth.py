@@ -17,6 +17,7 @@ DEFAULT_TOKEN_TTL = timedelta(hours=1)
 class ReportIdentityClaims:
     workspace_id: UUID
     user_id: UUID
+    expires_at_timestamp: int
 
 
 def create_report_identity_token(
@@ -60,10 +61,11 @@ def verify_report_identity_token(
     if not hmac.compare_digest(parts[2], expected_signature):
         raise ValueError("invalid report identity token signature")
     payload = _decode_payload(parts[1])
-    _enforce_expiration(payload, now or datetime.now(UTC))
+    expires_at_timestamp = _enforce_expiration(payload, now or datetime.now(UTC))
     return ReportIdentityClaims(
         workspace_id=_required_uuid(payload, "workspace_id"),
         user_id=_required_uuid(payload, "user_id"),
+        expires_at_timestamp=expires_at_timestamp,
     )
 
 
@@ -78,7 +80,7 @@ def _decode_payload(payload_segment: str) -> dict[str, object]:
     return payload
 
 
-def _enforce_expiration(payload: dict[str, object], now: datetime) -> None:
+def _enforce_expiration(payload: dict[str, object], now: datetime) -> int:
     expires_at = payload.get("exp")
     if expires_at is None:
         raise ValueError("report identity token expiration is required")
@@ -86,6 +88,7 @@ def _enforce_expiration(payload: dict[str, object], now: datetime) -> None:
         raise ValueError("invalid report identity token expiration")
     if expires_at <= int(now.timestamp()):
         raise ValueError("report identity token expired")
+    return expires_at
 
 
 def _required_uuid(payload: dict[str, object], field: str) -> UUID:

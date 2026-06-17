@@ -4,7 +4,7 @@
 
 Use `config/access_control.yaml` as the repo-local Level 10 access-control posture
 catalog. It records the current API-key middleware, private-beta operator UI
-API-key cookie bridge, UI reviewer-session bridge, local scoped reviewer
+API-key cookie bridge, UI reviewer-session bridge, UI report identity session bridge, local scoped reviewer
 service-account boundary, reviewer-authenticated and scoped operator routes, intentionally public
 health/version routes, and production auth blockers.
 
@@ -25,6 +25,7 @@ validate-only identity/RBAC design handoff, not production identity or RBAC.
 | UI API-key cookie bridge | Implemented private-beta browser bridge | When `REQUIRE_API_KEY=true`, `/ui/auth` is public and accepts the same configured API keys as `X-API-Key`. Successful form login sets a signed expiring HttpOnly SameSite cookie scoped to `/ui` without storing the submitted API key and may redirect back to a safe `/ui/*` return path; only `/ui/*` routes accept that cookie as an alternative to the header. Cookie-authenticated UI mutation forms require a signed CSRF token derived from the HttpOnly UI cookie, and logout uses a CSRF-protected POST. The token is signed with `UI_AUTH_COOKIE_SECRET`; non-local API-key-locked app environments fail fast when that setting is blank, while local/dev/development/test environments may use a per-process generated fallback. Non-local `APP_ENV` values set the cookie `Secure` flag automatically. JSON/API routes such as `/areas` still require `X-API-Key` |
 | Reviewer service account | Implemented local scoped substrate | `LocalServiceAccountReviewerAuth` requires `X-Reviewer-Id` plus `X-Reviewer-Token`, supports raw local or `sha256:<64-hex>` configured tokens, requires explicit `REVIEWER_ACCOUNT_SCOPES`, rejects the fixture account and raw token specs outside local/dev/development/test `APP_ENV` values, and fails closed when unconfigured |
 | UI reviewer session bridge | Implemented private-beta browser bridge | `/ui/auth/reviewer` and first submitted UI action credentials can set a signed expiring HttpOnly SameSite reviewer cookie scoped to `/ui`. The cookie stores reviewer id, scopes, expiry, and a non-secret HMAC binding to the configured reviewer token spec; raw reviewer tokens are not stored, reviewer-token rotation invalidates existing reviewer sessions, per-action scopes are still enforced, and JSON/API routes still require `X-Reviewer-Id` plus `X-Reviewer-Token` headers |
+| UI report identity session bridge | Implemented private-beta browser bridge | `/ui/auth/identity` and selected-county UI report forms accept a signed report identity token verified with `REPORT_IDENTITY_TOKEN_SECRET`. The browser cookie stores only workspace id, user id, and expiry in a signed HttpOnly SameSite cookie scoped to `/ui`; it never stores or renders the submitted report identity token, and its max age is bounded by the verified token expiration. Selected-county UI report creation outside local/dev/development/test requires this identity session or a submitted token, plus reviewer `report:run` authority |
 | Operator routes | Reviewer-authenticated and scoped | Connector invocation/scheduling requires `connector:run`, connector review decisions require `connector:review`, queue/live-job health reads require `operations:read`, report retry requires `report:retry`, selected-county/operator-case fixture report creation and manual approved-connector report creation require `report:run`, and source-registry mutation requires `source:manage` |
 | Public health routes | Intentionally public | `/health` and `/version` remain unauthenticated for local and deployment smoke checks |
 
@@ -112,8 +113,14 @@ Run the pytest targets named below for behavioral proof. The check verifies that
   tokens, rejects fixture reviewer defaults and raw token specs in non-local
   environments, and fails closed with 401/403/503 behavior;
 - UI reviewer sessions do not expose submitted reviewer tokens, are invalidated by
-  token rotation or scope removal, remain scoped to `/ui`, and do not authenticate
-  JSON/API reviewer-protected routes;
+  token rotation or scope removal, remain scoped to `/ui`, require signed CSRF tokens
+  for cookie-authorized UI mutations, and do not authenticate JSON/API
+  reviewer-protected routes;
+- UI report identity sessions do not expose submitted report identity tokens, are
+  bounded by the verified report token expiration, remain scoped to `/ui`, and
+  require signed CSRF tokens for cookie-authorized UI mutations while allowing
+  non-local selected-county UI report creation to persist authenticated workspace/user
+  provenance;
 - reviewer accounts require explicit route scopes through `REVIEWER_ACCOUNT_SCOPES`;
 - `identity_rbac_contract` records the validate-only identity/RBAC design handoff,
   required identity claims, required role mappings, route-scope mappings, user-bound
@@ -156,10 +163,18 @@ Run the pytest targets named below for behavioral proof. The check verifies that
    use `id:sha256:<64-hex>` and have explicit scopes.
 6. Browser operators can use `/ui/auth/reviewer` to start a reviewer session once,
    or submit reviewer credentials on a UI action to set the same session. API clients
-   must still use `X-Reviewer-Id` and `X-Reviewer-Token`.
-7. Treat a failed access-control proof as a release blocker until the current controls,
+   must still use `X-Reviewer-Id` and `X-Reviewer-Token`. UI mutations authorized
+   by the reviewer session cookie require the page's signed CSRF token.
+7. Browser operators can use `/ui/auth/identity` to start a workspace/user identity
+   session from a signed report identity token, or paste the token into a
+   selected-county UI report form for one action. The raw token is not stored in the
+   UI cookie or rendered back to the page. The resulting cookie expires no later than
+   the submitted token. Non-local selected-county UI report creation requires this
+   identity plus reviewer `report:run` authority. UI mutations authorized by the
+   identity session cookie require the page's signed CSRF token.
+8. Treat a failed access-control proof as a release blocker until the current controls,
    tests, catalog, and runbook are reconciled.
-8. Treat the repo-local identity/RBAC contract as a design handoff only. Do not
+9. Treat the repo-local identity/RBAC contract as a design handoff only. Do not
    claim full user auth/RBAC until user accounts, identity-provider integration,
    full role policy, automatic key rotation, hosted retention, and audit semantics are designed,
    implemented, and verified.
@@ -179,6 +194,11 @@ Run the pytest targets named below for behavioral proof. The check verifies that
   not the submitted API key. It uses separate UI-cookie signing material instead of
   API-key specs/hashes, but does not add users, roles, OAuth/OIDC, account
   persistence, or user-bound audit semantics.
+- UI report identity auth is private-beta session auth. It stores workspace id, user
+  id, and expiry in a signed HttpOnly cookie scoped to `/ui`, not the submitted
+  report identity token. It uses existing report identity tokens as authority and
+  does not add users, roles, OAuth/OIDC, account persistence, or user-bound audit
+  semantics.
 - A configured static key lifecycle exists through `API_KEY_SPECS`, but no automatic
   key-rotation scheduler, external secret manager integration, revocation propagation,
   or hosted key-management workflow exists yet.

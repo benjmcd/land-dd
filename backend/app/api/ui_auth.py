@@ -23,12 +23,17 @@ from app.api.dependencies import ApiServices, get_services
 from app.api.ui_shared import (
     UI_REVIEWER_COOKIE,
     UI_REVIEWER_COOKIE_MAX_AGE_SECONDS,
+    attach_ui_report_identity_session_cookie,
     create_ui_reviewer_cookie_token,
     csrf_form_field,
+    delete_ui_report_identity_session_cookie,
     delete_ui_reviewer_session_cookie,
     require_ui_csrf,
+    require_ui_report_identity,
+    ui_report_identity_from_cookie,
     ui_reviewer_principal_from_cookie,
 )
+from app.core.config import Settings
 
 router = APIRouter(prefix="/ui/auth", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -133,6 +138,7 @@ def ui_auth_logout(
         secure=config.ui_cookie_secure,
     )
     delete_ui_reviewer_session_cookie(response, request)
+    delete_ui_report_identity_session_cookie(response, request)
     return response
 
 
@@ -198,6 +204,70 @@ def ui_reviewer_auth_logout(
         return csrf_error
     response = RedirectResponse("/ui/auth/reviewer", status_code=303)
     delete_ui_reviewer_session_cookie(response, request)
+    return response
+
+
+@router.get("/identity", response_class=HTMLResponse)
+def ui_report_identity_auth_form(
+    request: Request,
+    next: str | None = None,
+) -> HTMLResponse:
+    settings = cast(Settings, request.app.state.settings)
+    return _report_identity_login_page(
+        request,
+        settings,
+        next_path=next,
+    )
+
+
+@router.post("/identity", response_class=HTMLResponse)
+def ui_report_identity_auth_submit(
+    request: Request,
+    report_identity_token: Annotated[str | None, Form()] = None,
+    next: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+) -> Response:
+    csrf_error = require_ui_csrf(request, csrf_token, back_url="/ui/auth/identity")
+    if csrf_error is not None:
+        return csrf_error
+    settings = cast(Settings, request.app.state.settings)
+    try:
+        identity = require_ui_report_identity(
+            request,
+            settings,
+            report_identity_token=report_identity_token,
+        )
+    except HTTPException as exc:
+        return _report_identity_login_page(
+            request,
+            settings,
+            error=str(exc.detail),
+            next_path=next,
+            status_code=exc.status_code,
+        )
+    if identity is None:
+        return _report_identity_login_page(
+            request,
+            settings,
+            error="Report identity token is required",
+            next_path=next,
+            status_code=401,
+        )
+    response = RedirectResponse(_safe_next_path(next), status_code=303)
+    attach_ui_report_identity_session_cookie(response, request, identity)
+    return response
+
+
+@router.post("/identity/logout")
+def ui_report_identity_auth_logout(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+) -> Response:
+    csrf_error = require_ui_csrf(request, csrf_token, back_url="/ui/auth/identity")
+    if csrf_error is not None:
+        return csrf_error
+    response = RedirectResponse("/ui/auth/identity", status_code=303)
+    delete_ui_report_identity_session_cookie(response, request)
     return response
 
 
@@ -330,6 +400,74 @@ def _reviewer_login_page(
         '<input id="reviewer_token" name="reviewer_token" type="password" '
         'autocomplete="off" required>'
         "<button type='submit'>Start reviewer session</button>"
+        "</form></body></html>"
+    )
+    return HTMLResponse(html, status_code=status_code)
+
+
+def _report_identity_login_page(
+    request: Request,
+    settings: Settings,
+    *,
+    error: str | None = None,
+    next_path: str | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    current = ui_report_identity_from_cookie(request)
+    current_html = ""
+    if current is not None:
+        current_html = (
+            "<section class='session'>"
+            f"<p>Workspace identity: <strong>{escape(str(current.workspace_id))}</strong></p>"
+            f"<p><small>User: {escape(str(current.user_id))}</small></p>"
+            "<form method='POST' action='/ui/auth/identity/logout'>"
+            f"{csrf_form_field(request)}"
+            "<button type='submit'>Sign out identity</button>"
+            "</form></section>"
+        )
+    error_html = ""
+    if error is not None:
+        error_html = f"<p class='error'>{escape(error)}</p>"
+    safe_next = _safe_next_path(next_path)
+    next_input = ""
+    if safe_next != "/ui/":
+        next_input = (
+            f'<input name="next" type="hidden" value="{escape(safe_next, quote=True)}">'
+        )
+    local_hint = ""
+    if settings.is_local_app_env():
+        local_hint = "<p>Local environments can still use the seeded fallback.</p>"
+    html = (
+        "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'>"
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        "<title>Workspace identity session</title>"
+        "<style>"
+        "body { font-family: system-ui, sans-serif; max-width: 34rem; margin: 4rem auto;"
+        " padding: 0 1rem; color: #1f2933; }"
+        "form { display: grid; gap: 0.75rem; margin-top: 1rem; }"
+        "label { font-weight: 700; }"
+        "input { border: 1px solid #b8c2cf; border-radius: 4px; font-size: 1rem;"
+        " padding: 0.6rem; width: 100%; box-sizing: border-box; }"
+        "button { background: #155e75; border: 0; border-radius: 4px; color: white;"
+        " cursor: pointer; font-weight: 700; padding: 0.65rem 0.9rem; }"
+        ".error { background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px;"
+        " color: #991b1b; padding: 0.75rem; }"
+        ".session { background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 4px;"
+        " padding: 0.75rem; margin-bottom: 1rem; overflow-wrap: anywhere; }"
+        "</style></head><body>"
+        "<h1>Workspace identity session</h1>"
+        "<p>Start a browser session from a signed report identity token. "
+        "The submitted token is verified once and is not stored in the browser cookie.</p>"
+        f"{local_hint}"
+        f"{current_html}"
+        f"{error_html}"
+        "<form method='POST' action='/ui/auth/identity'>"
+        f"{csrf_form_field(request)}"
+        f"{next_input}"
+        "<label for='report_identity_token'>Report identity token</label>"
+        '<input id="report_identity_token" name="report_identity_token" '
+        'type="password" autocomplete="off" required>'
+        "<button type='submit'>Start identity session</button>"
         "</form></body></html>"
     )
     return HTMLResponse(html, status_code=status_code)

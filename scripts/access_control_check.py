@@ -553,6 +553,8 @@ def validate_ui_api_key_bridge() -> None:
     main = read_text("backend/app/main.py")
     settings = read_text("backend/app/core/config.py")
     ui_tests = read_text("backend/tests/api/test_ui_api_key_auth.py")
+    ui_route_tests = read_text("backend/tests/api/test_ui_routes.py")
+    report_auth_tests = read_text("backend/tests/api/test_report_auth.py")
     runbook = read_text("docs/runbooks/access_control.md")
     mvp_operator = read_text("docs/runbooks/mvp_operator.md")
     design = read_text("DESIGN.md")
@@ -633,8 +635,64 @@ def validate_ui_api_key_bridge() -> None:
             "def ui_csrf_required",
             "verify_ui_csrf_token",
             "api_key_auth_source",
+            "UI_REVIEWER_COOKIE",
+            "UI_REPORT_IDENTITY_COOKIE",
         ),
         "ui csrf helpers",
+    )
+    require_phrases(
+        ui_shared,
+        (
+            'UI_REPORT_IDENTITY_COOKIE = "land_dd_ui_identity"',
+            'UI_REPORT_IDENTITY_COOKIE_TOKEN_PREFIX = "land-dd-ui-identity-v1"',
+            "def require_ui_report_identity",
+            "def create_ui_report_identity_cookie_token",
+            "def verify_ui_report_identity_cookie_token",
+            "def attach_ui_report_identity_session_cookie",
+            "def delete_ui_report_identity_session_cookie",
+            "def report_identity_fields",
+            "verify_report_identity_token",
+            "expires_at_timestamp",
+            "report_identity_token",
+            '"wid"',
+            '"uid"',
+            '"exp"',
+        ),
+        "ui report identity helpers",
+    )
+    require_phrases(
+        ui_auth,
+        (
+            '@router.get("/identity"',
+            '@router.post("/identity"',
+            '@router.post("/identity/logout")',
+            "_report_identity_login_page",
+            "require_ui_report_identity",
+            "attach_ui_report_identity_session_cookie",
+            "delete_ui_report_identity_session_cookie",
+            "csrf_form_field",
+            "require_ui_csrf",
+            "not stored in the browser cookie",
+        ),
+        "ui report identity auth routes",
+    )
+    selected_county_block = function_block(ui, "ui_create_selected_county_report")
+    require_phrases(
+        selected_county_block,
+        (
+            "report_identity_token",
+            "require_ui_report_identity(",
+            "identity_result is None and not settings.is_local_app_env()",
+            "workspace_id = (",
+            "requested_by = (",
+            "attach_ui_report_identity_session_cookie",
+        ),
+        "selected-county ui report identity route",
+    )
+    require(
+        "if not settings.is_local_app_env():\n        return error_page"
+        not in selected_county_block,
+        "selected-county UI route must not unconditionally fail outside local env",
     )
     require_phrases(
         ui_lineage,
@@ -724,6 +782,8 @@ def validate_ui_api_key_bridge() -> None:
             "test_successful_ui_auth_falls_back_when_next_path_is_unsafe",
             "test_ui_auth_accepts_active_api_key_spec",
             "test_ui_auth_cookie_records_api_key_spec_id_and_ui_cookie_source",
+            "test_ui_report_identity_cookie_rejects_tampering_and_expiry",
+            "test_api_routes_do_not_accept_ui_report_identity_cookie_for_report_auth",
             "test_ui_cookie_auth_forms_include_csrf_token",
             "test_ui_cookie_auth_post_requires_valid_csrf_token",
             "test_ui_header_auth_post_does_not_require_csrf_token",
@@ -734,6 +794,31 @@ def validate_ui_api_key_bridge() -> None:
             '"production-key" not in response.text',
         ),
         "ui api key bridge tests",
+    )
+    require_phrases(
+        ui_route_tests,
+        (
+            "test_ui_selected_county_fixture_post_uses_submitted_report_identity_token",
+            "test_ui_selected_county_fixture_post_uses_report_identity_session_cookie",
+            "test_ui_selected_county_fixture_post_rejects_invalid_report_identity_token",
+            "test_ui_identity_auth_requires_csrf_when_ui_cookie_auth_applies",
+            "test_ui_selected_county_fixture_post_requires_csrf_with_identity_and_reviewer_sessions",
+            "test_ui_selected_county_cookie_sessions_require_csrf_without_api_key_auth",
+            "def _assert_ui_identity_cookie",
+            '"HttpOnly" in set_cookie',
+            '"SameSite=lax" in set_cookie',
+            '"Path=/ui" in set_cookie',
+            "raw_token not in set_cookie",
+        ),
+        "ui report identity route tests",
+    )
+    require_phrases(
+        report_auth_tests,
+        (
+            "expires_at_timestamp",
+            "test_report_identity_token_verifies_signature_and_expiration",
+        ),
+        "report identity expiration tests",
     )
     require_phrases(
         runbook,
@@ -751,6 +836,10 @@ def validate_ui_api_key_bridge() -> None:
             "CSRF token",
             "logout uses a CSRF-protected POST",
             "without storing the submitted API key",
+            "UI report identity session bridge",
+            "/ui/auth/identity",
+            "never stores or renders the submitted report identity token",
+            "bounded by the verified token expiration",
             "/areas` rejects cookie-only API access",
             "safe `/ui/*` return path",
             "No full user auth/RBAC exists yet.",
@@ -773,6 +862,10 @@ def validate_ui_api_key_bridge() -> None:
             "Sign-out is",
             "CSRF-protected POST from",
             "JSON/API paths still require `X-API-Key`",
+            "/ui/auth/identity",
+            "report_identity_token",
+            "raw token is not stored",
+            "expires no later than the report identity token",
             "not full user auth/RBAC",
         ),
         "mvp operator ui api key bridge docs",

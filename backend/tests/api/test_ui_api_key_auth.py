@@ -8,6 +8,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import cast
 from urllib.parse import parse_qs, urlsplit
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -20,9 +21,13 @@ from app.api.api_key_auth import (
 )
 from app.api.auth_audit import InMemoryApiKeyAuthAuditLog
 from app.api.dependencies import ApiServices
+from app.api.report_auth import ReportIdentityClaims
 from app.api.ui_shared import (
+    UI_REPORT_IDENTITY_COOKIE,
     UI_REVIEWER_COOKIE,
+    create_ui_report_identity_cookie_token,
     create_ui_reviewer_cookie_token,
+    verify_ui_report_identity_cookie_token,
     verify_ui_reviewer_cookie_token,
 )
 from app.core.config import Settings
@@ -264,6 +269,42 @@ def test_ui_reviewer_cookie_rejects_tampering_expiry_and_token_rotation() -> Non
     )
 
 
+def test_ui_report_identity_cookie_rejects_tampering_and_expiry() -> None:
+    app = create_app(
+        Settings(
+            REQUIRE_API_KEY=False,
+            UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret",
+        )
+    )
+    config = app.state.api_key_auth_config
+    now = datetime.now(UTC)
+    claims = ReportIdentityClaims(
+        workspace_id=uuid4(),
+        user_id=uuid4(),
+        expires_at_timestamp=int((now + timedelta(minutes=5)).timestamp()),
+    )
+    token = create_ui_report_identity_cookie_token(
+        claims,
+        config,
+        expires_at_timestamp=claims.expires_at_timestamp,
+    )
+
+    auth = verify_ui_report_identity_cookie_token(token, config, now=now)
+
+    assert auth is not None
+    assert auth.workspace_id == claims.workspace_id
+    assert auth.user_id == claims.user_id
+    assert verify_ui_report_identity_cookie_token(f"{token}tampered", config, now=now) is None
+    assert (
+        verify_ui_report_identity_cookie_token(
+            token,
+            config,
+            now=now + timedelta(minutes=6),
+        )
+        is None
+    )
+
+
 def test_api_routes_do_not_accept_ui_reviewer_session_cookie_for_header_auth() -> None:
     client = TestClient(create_app(Settings(REQUIRE_API_KEY=False)))
     login = client.post(
@@ -280,6 +321,39 @@ def test_api_routes_do_not_accept_ui_reviewer_session_cookie_for_header_auth() -
 
     assert response.status_code == 401
     assert response.json()["detail"] == "connector reviewer credentials are required"
+
+
+def test_api_routes_do_not_accept_ui_report_identity_cookie_for_report_auth() -> None:
+    app = create_app(
+        Settings(
+            REQUIRE_API_KEY=False,
+            REPORT_AUTH_MODE="signed_token",
+            REPORT_IDENTITY_TOKEN_SECRET=(
+                "report-identity-secret-with-at-least-32-characters"
+            ),
+            UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret",
+        )
+    )
+    now = datetime.now(UTC)
+    claims = ReportIdentityClaims(
+        workspace_id=uuid4(),
+        user_id=uuid4(),
+        expires_at_timestamp=int((now + timedelta(minutes=5)).timestamp()),
+    )
+    token = create_ui_report_identity_cookie_token(
+        claims,
+        app.state.api_key_auth_config,
+        expires_at_timestamp=claims.expires_at_timestamp,
+    )
+    client = TestClient(app)
+
+    response = client.get(
+        "/report-runs",
+        headers={"Cookie": f"{UI_REPORT_IDENTITY_COOKIE}={token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authorization bearer token is required"
 
 
 def test_tampered_ui_auth_cookie_redirects_to_login() -> None:

@@ -152,7 +152,7 @@ def test_ui_operations_tables_have_responsive_scroll_wrapper() -> None:
     assert "min-width: 920px" in resp.text
 
 
-def test_ui_operations_post_accepts_reviewer_session_without_form_credentials() -> None:
+def test_ui_operations_post_reviewer_session_requires_csrf() -> None:
     tc = _client()
     reviewer_login = tc.post(
         "/ui/auth/reviewer",
@@ -164,14 +164,16 @@ def test_ui_operations_post_accepts_reviewer_session_without_form_credentials() 
     )
     assert reviewer_login.status_code == 303
 
-    resp = tc.post("/ui/operations", data={})
+    missing_csrf = tc.post("/ui/operations", data={})
+    dashboard = tc.get("/ui/operations")
 
-    assert resp.status_code == 200
-    assert "Operations Dashboard" in resp.text
-    assert _FIXTURE_REVIEWER_ID in resp.text
-    assert "Using reviewer session" in resp.text
-    assert "reviewer_token" not in resp.text
-    assert "View Dashboard" not in resp.text
+    assert missing_csrf.status_code == 403
+    assert dashboard.status_code == 200
+    assert "Operations Dashboard" in dashboard.text
+    assert _FIXTURE_REVIEWER_ID in dashboard.text
+    assert "Using reviewer session" in dashboard.text
+    assert "reviewer_token" not in dashboard.text
+    assert "View Dashboard" not in dashboard.text
 
 
 def test_ui_operations_get_with_reviewer_session_renders_dashboard() -> None:

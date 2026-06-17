@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import replace as _dc_replace
 from pathlib import Path
 from typing import cast
@@ -32,6 +33,13 @@ FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "conn
 
 _FIXTURE_REVIEWER_ID = "fixture-reviewer"
 _FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
+_CSRF_FIELD = "csrf_token"
+
+
+def _csrf_token_from(html: str) -> str:
+    match = re.search(r'name="csrf_token" type="hidden" value="([^"]+)"', html)
+    assert match is not None
+    return match.group(1)
 
 
 class _RetrievalProvenancePort:
@@ -654,7 +662,7 @@ def test_ui_review_approve_accepts_reviewer_session_without_form_credentials() -
     assert "reviewer_token" not in detail.text
     response = tc.post(
         f"/ui/connector-review-queue/{item.ingest_run_id}/approve",
-        data={},
+        data={_CSRF_FIELD: _csrf_token_from(detail.text)},
     )
 
     assert response.status_code == 200

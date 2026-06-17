@@ -477,6 +477,7 @@ def test_report_identity_token_verifies_signature_and_expiration() -> None:
 
     assert claims.workspace_id == workspace_id
     assert claims.user_id == user_id
+    assert claims.expires_at_timestamp == int((issued_at + timedelta(minutes=1)).timestamp())
     with pytest.raises(ValueError, match="signature"):
         verify_report_identity_token(f"{token}x", secret=SECRET)
     with pytest.raises(ValueError, match="expired"):

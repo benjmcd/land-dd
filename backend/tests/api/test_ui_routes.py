@@ -15,12 +15,14 @@ import app.api.operator_cases as operator_cases_api
 import app.api.ui as ui_api
 from app.api.dependencies import ApiServices, create_api_services, get_services
 from app.api.intake import IntakeResponse
+from app.api.report_auth import create_report_identity_token
 from app.api.reports import (
     ReportRunComparisonSummary,
 )
 from app.api.reports import (
     _build_comparison_summary as _reports_build_comparison_summary,
 )
+from app.api.ui_shared import UI_REPORT_IDENTITY_COOKIE
 from app.core.config import Settings
 from app.domain.enums import IntentCode
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
@@ -45,6 +47,8 @@ _FIXTURE_REVIEWER_ID = "fixture-reviewer"
 _FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
 _API_KEY = "production-key"
 _CSRF_FIELD = "csrf_token"
+_REPORT_IDENTITY_SECRET = "report-identity-secret-with-at-least-32-characters"
+_UI_COOKIE_SECRET = "stable-ui-cookie-secret-for-prod-test"
 
 
 def _csrf_token_from(html: str) -> str:
@@ -86,6 +90,50 @@ def _selected_county_cases() -> list[dict[str, object]]:
         }
         for case in cases
     ]
+
+
+def _prod_selected_county_settings() -> Settings:
+    return Settings(
+        APP_ENV="production",
+        USE_DB_SERVICES=True,
+        REVIEWER_ACCOUNTS=(f"reviewer:sha256:{hashlib.sha256(b'token').hexdigest()}"),
+        REVIEWER_ACCOUNT_SCOPES="reviewer:report:run",
+        UI_AUTH_COOKIE_SECRET=_UI_COOKIE_SECRET,
+        REPORT_IDENTITY_TOKEN_SECRET=_REPORT_IDENTITY_SECRET,
+    )
+
+
+def _report_identity_token(
+    *,
+    workspace_id: UUID,
+    user_id: UUID,
+    expires_in: timedelta = timedelta(minutes=30),
+) -> str:
+    return create_report_identity_token(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        secret=_REPORT_IDENTITY_SECRET,
+        expires_in=expires_in,
+        issued_at=datetime.now(UTC),
+    )
+
+
+def _assert_ui_identity_cookie(
+    set_cookie: str,
+    raw_token: str,
+    *,
+    secure: bool,
+) -> None:
+    assert f"{UI_REPORT_IDENTITY_COOKIE}=" in set_cookie
+    assert "HttpOnly" in set_cookie
+    assert "SameSite=lax" in set_cookie
+    assert "Path=/ui" in set_cookie
+    assert "Max-Age=" in set_cookie
+    if secure:
+        assert "Secure" in set_cookie
+    else:
+        assert "Secure" not in set_cookie
+    assert raw_token not in set_cookie
 
 
 class _FakeOperatorCasesContract:
@@ -181,7 +229,7 @@ def _make_api_key_app_client_with_report() -> tuple[FastAPI, TestClient, str]:
             UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret",
         )
     )
-    tc = TestClient(app)
+    tc = TestClient(app, base_url="https://testserver")
     headers = {"X-API-Key": _API_KEY}
     area_resp = tc.post(
         "/areas",
@@ -525,6 +573,281 @@ def test_ui_selected_county_fixture_post_fails_closed_outside_local_env(
     assert "UI workspace identity is not configured" in response.text
 
 
+def test_ui_selected_county_fixture_post_uses_submitted_report_identity_token(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = _prod_selected_county_settings()
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    tc = TestClient(app)
+    workspace_id = uuid4()
+    user_id = uuid4()
+    token = _report_identity_token(workspace_id=workspace_id, user_id=user_id)
+
+    response = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            "reviewer_id": "reviewer",
+            "reviewer_token": "token",
+            "report_identity_token": token,
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    _assert_ui_identity_cookie(response.headers.get("set-cookie", ""), token, secure=True)
+    report_run_id = response.headers["location"].rsplit("/", 1)[-1]
+    report = services.report_service.get_report_run(UUID(report_run_id))
+    assert report is not None
+    assert report.workspace_id == workspace_id
+    assert report.requested_by == user_id
+
+
+def test_ui_selected_county_fixture_post_uses_report_identity_session_cookie(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = _prod_selected_county_settings()
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    tc = TestClient(app, base_url="https://testserver")
+    workspace_id = uuid4()
+    user_id = uuid4()
+    token = _report_identity_token(workspace_id=workspace_id, user_id=user_id)
+
+    login = tc.post(
+        "/ui/auth/identity",
+        data={"report_identity_token": token},
+        follow_redirects=False,
+    )
+    assert login.status_code == 303
+    _assert_ui_identity_cookie(login.headers.get("set-cookie", ""), token, secure=True)
+
+    page = tc.get("/ui/")
+    response = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            "reviewer_id": "reviewer",
+            "reviewer_token": "token",
+            _CSRF_FIELD: _csrf_token_from(page.text),
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    report_run_id = response.headers["location"].rsplit("/", 1)[-1]
+    report = services.report_service.get_report_run(UUID(report_run_id))
+    assert report is not None
+    assert report.workspace_id == workspace_id
+    assert report.requested_by == user_id
+
+
+def test_ui_selected_county_fixture_post_rejects_invalid_report_identity_token(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = _prod_selected_county_settings()
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    tc = TestClient(app)
+
+    response = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            "reviewer_id": "reviewer",
+            "reviewer_token": "token",
+            "report_identity_token": "not-a-valid-token",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 401
+    assert "Workspace Identity Required" in response.text
+
+
+def test_ui_identity_auth_requires_csrf_when_ui_cookie_auth_applies() -> None:
+    settings = Settings(
+        REQUIRE_API_KEY=True,
+        API_KEYS=_API_KEY,
+        UI_AUTH_COOKIE_SECRET=_UI_COOKIE_SECRET,
+        REPORT_IDENTITY_TOKEN_SECRET=_REPORT_IDENTITY_SECRET,
+    )
+    tc = TestClient(create_app(settings))
+    workspace_id = uuid4()
+    user_id = uuid4()
+    token = _report_identity_token(workspace_id=workspace_id, user_id=user_id)
+    api_login = tc.post("/ui/auth", data={"api_key": _API_KEY}, follow_redirects=False)
+    assert api_login.status_code == 303
+
+    missing_csrf = tc.post(
+        "/ui/auth/identity",
+        data={"report_identity_token": token},
+        follow_redirects=False,
+    )
+    assert missing_csrf.status_code == 403
+
+    form = tc.get("/ui/auth/identity")
+    csrf_token = _csrf_token_from(form.text)
+    accepted = tc.post(
+        "/ui/auth/identity",
+        data={"report_identity_token": token, _CSRF_FIELD: csrf_token},
+        follow_redirects=False,
+    )
+    assert accepted.status_code == 303
+    _assert_ui_identity_cookie(accepted.headers.get("set-cookie", ""), token, secure=False)
+    assert token not in accepted.text
+
+
+def test_ui_selected_county_fixture_post_requires_csrf_with_identity_and_reviewer_sessions(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = Settings(
+        REQUIRE_API_KEY=True,
+        API_KEYS=_API_KEY,
+        UI_AUTH_COOKIE_SECRET=_UI_COOKIE_SECRET,
+        REPORT_IDENTITY_TOKEN_SECRET=_REPORT_IDENTITY_SECRET,
+    )
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    tc = TestClient(app)
+    workspace_id = uuid4()
+    user_id = uuid4()
+    token = _report_identity_token(workspace_id=workspace_id, user_id=user_id)
+    api_login = tc.post("/ui/auth", data={"api_key": _API_KEY}, follow_redirects=False)
+    assert api_login.status_code == 303
+
+    identity_form = tc.get("/ui/auth/identity")
+    identity_login = tc.post(
+        "/ui/auth/identity",
+        data={
+            "report_identity_token": token,
+            _CSRF_FIELD: _csrf_token_from(identity_form.text),
+        },
+        follow_redirects=False,
+    )
+    assert identity_login.status_code == 303
+
+    reviewer_form = tc.get("/ui/auth/reviewer")
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            _CSRF_FIELD: _csrf_token_from(reviewer_form.text),
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    missing_csrf = tc.post(
+        "/ui/operator-cases/report",
+        data={"selected_county_case_id": "BUN-slope"},
+        follow_redirects=False,
+    )
+    page = tc.get("/ui/")
+    accepted = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            _CSRF_FIELD: _csrf_token_from(page.text),
+        },
+        follow_redirects=False,
+    )
+
+    assert missing_csrf.status_code == 403
+    assert accepted.status_code == 303
+    report_run_id = accepted.headers["location"].rsplit("/", 1)[-1]
+    report = services.report_service.get_report_run(UUID(report_run_id))
+    assert report is not None
+    assert report.workspace_id == workspace_id
+    assert report.requested_by == user_id
+    assert report.reviewed_by == _FIXTURE_REVIEWER_ID
+
+
+def test_ui_selected_county_cookie_sessions_require_csrf_without_api_key_auth(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = _prod_selected_county_settings()
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    tc = TestClient(app, base_url="https://testserver")
+    workspace_id = uuid4()
+    user_id = uuid4()
+    token = _report_identity_token(workspace_id=workspace_id, user_id=user_id)
+    identity_login = tc.post(
+        "/ui/auth/identity",
+        data={"report_identity_token": token},
+        follow_redirects=False,
+    )
+    assert identity_login.status_code == 303
+    reviewer_form = tc.get("/ui/auth/reviewer")
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": "reviewer",
+            "reviewer_token": "token",
+            _CSRF_FIELD: _csrf_token_from(reviewer_form.text),
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    missing_csrf = tc.post(
+        "/ui/operator-cases/report",
+        data={"selected_county_case_id": "BUN-slope"},
+        follow_redirects=False,
+    )
+    page = tc.get("/ui/")
+    accepted = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            _CSRF_FIELD: _csrf_token_from(page.text),
+        },
+        follow_redirects=False,
+    )
+
+    assert missing_csrf.status_code == 403
+    assert accepted.status_code == 303
+    report_run_id = accepted.headers["location"].rsplit("/", 1)[-1]
+    report = services.report_service.get_report_run(UUID(report_run_id))
+    assert report is not None
+    assert report.workspace_id == workspace_id
+    assert report.requested_by == user_id
+    assert report.reviewed_by == "reviewer"
+
+
 def test_ui_report_run_returns_404_page_for_unknown_id() -> None:
     response = client.get(f"/ui/report-runs/{uuid4()}")
     assert response.status_code == 200  # We return 200 HTML with "not found" message
@@ -786,7 +1109,7 @@ def test_ui_approve_report_run_accepts_reviewer_session_without_form_credentials
 
     response = tc.post(
         f"/ui/report-runs/{report_run_id}/approve",
-        data={},
+        data={_CSRF_FIELD: _csrf_token_from(page.text)},
         follow_redirects=False,
     )
 
