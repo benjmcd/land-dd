@@ -1657,6 +1657,30 @@ paths:
       summary: Schedule Live Connector Sequence Bbox
       operationId: schedule_live_connector_sequence_bbox_connector_runs_live_sequence_schedule_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1699,6 +1723,30 @@ paths:
       summary: Schedule Fema Nfhl Bbox
       operationId: schedule_fema_nfhl_bbox_connector_runs_fema_nfhl_schedule_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1741,6 +1789,30 @@ paths:
       summary: Schedule Usgs Tnm Bbox
       operationId: schedule_usgs_tnm_bbox_connector_runs_usgs_tnm_schedule_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1783,6 +1855,30 @@ paths:
       summary: Schedule Nwi Bbox
       operationId: schedule_nwi_bbox_connector_runs_nwi_schedule_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1825,6 +1921,30 @@ paths:
       summary: Schedule Ssurgo Bbox
       operationId: schedule_ssurgo_bbox_connector_runs_ssurgo_schedule_bbox_post
       parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1899,6 +2019,30 @@ paths:
           minimum: 0
           default: 0
           title: Offset
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -1946,6 +2090,30 @@ paths:
           type: string
           format: uuid
           title: Job Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       - name: X-Reviewer-Id
         in: header
         required: false
@@ -5992,6 +6160,18 @@ components:
           type: string
           format: uuid
           title: Area Id
+        workspace_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Workspace Id
+        requested_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Requested By
         source_registry_id:
           type: string
           title: Source Registry Id

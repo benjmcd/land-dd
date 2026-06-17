@@ -560,6 +560,8 @@ class BrunswickZoningQueryResponse(BaseModel):
 class LiveConnectorJobResponse(BaseModel):
     job_id: UUID
     area_id: UUID
+    workspace_id: UUID | None = None
+    requested_by: UUID | None = None
     source_registry_id: str
     connector_name: str
     status: str
@@ -830,6 +832,22 @@ def _ensure_connector_areas_in_workspace(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="area not found",
             )
+
+
+def _ensure_live_connector_area_in_workspace(
+    area_id: UUID,
+    *,
+    services: ApiServices,
+    auth: RequestAuthContext,
+) -> None:
+    if not services.area_service.area_is_registered(
+        area_id,
+        workspace_id=auth.workspace_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="area not found",
+        )
 
 
 def _ensure_fixture_provenance(services: ApiServices) -> None:
@@ -2325,15 +2343,11 @@ def _validate_live_sequence_limits(request: LiveConnectorSequenceScheduleRequest
 def schedule_live_connector_sequence_bbox(
     request: LiveConnectorSequenceScheduleRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
-    area = services.area_service.get(request.area_id)
-    if area is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Area '{request.area_id}' is not registered",
-        )
+    _ensure_live_connector_area_in_workspace(request.area_id, services=services, auth=auth)
     try:
         usgs_tnm_bbox = UsgsTnmBbox(
             xmin=request.bbox.xmin,
@@ -2363,21 +2377,29 @@ def schedule_live_connector_sequence_bbox(
         jobs = (
             services.live_connector_jobs.enqueue_usgs_tnm(
                 area_id=request.area_id,
+                workspace_id=auth.workspace_id,
+                requested_by=auth.user_id,
                 bbox=usgs_tnm_bbox,
                 max_sample_points=request.max_sample_points,
             ),
             services.live_connector_jobs.enqueue_fema_nfhl(
                 area_id=request.area_id,
+                workspace_id=auth.workspace_id,
+                requested_by=auth.user_id,
                 bbox=fema_nfhl_bbox,
                 max_features=request.max_features,
             ),
             services.live_connector_jobs.enqueue_nwi(
                 area_id=request.area_id,
+                workspace_id=auth.workspace_id,
+                requested_by=auth.user_id,
                 bbox=nwi_bbox,
                 max_features=request.max_features,
             ),
             services.live_connector_jobs.enqueue_ssurgo(
                 area_id=request.area_id,
+                workspace_id=auth.workspace_id,
+                requested_by=auth.user_id,
                 bbox=ssurgo_bbox,
                 max_rows=request.max_rows,
             ),
@@ -2402,15 +2424,11 @@ def schedule_live_connector_sequence_bbox(
 def schedule_fema_nfhl_bbox(
     request: FemaNfhlQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
-    area = services.area_service.get(request.area_id)
-    if area is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Area '{request.area_id}' is not registered",
-        )
+    _ensure_live_connector_area_in_workspace(request.area_id, services=services, auth=auth)
     try:
         bbox = FemaNfhlBbox(
             xmin=request.bbox.xmin,
@@ -2420,6 +2438,8 @@ def schedule_fema_nfhl_bbox(
         )
         job = services.live_connector_jobs.enqueue_fema_nfhl(
             area_id=request.area_id,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
             bbox=bbox,
             max_features=request.max_features,
         )
@@ -2439,15 +2459,11 @@ def schedule_fema_nfhl_bbox(
 def schedule_usgs_tnm_bbox(
     request: UsgsTnmQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
-    area = services.area_service.get(request.area_id)
-    if area is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Area '{request.area_id}' is not registered",
-        )
+    _ensure_live_connector_area_in_workspace(request.area_id, services=services, auth=auth)
     try:
         bbox = UsgsTnmBbox(
             xmin=request.bbox.xmin,
@@ -2457,6 +2473,8 @@ def schedule_usgs_tnm_bbox(
         )
         job = services.live_connector_jobs.enqueue_usgs_tnm(
             area_id=request.area_id,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
             bbox=bbox,
             max_sample_points=request.max_sample_points,
         )
@@ -2476,15 +2494,11 @@ def schedule_usgs_tnm_bbox(
 def schedule_nwi_bbox(
     request: NwiQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
-    area = services.area_service.get(request.area_id)
-    if area is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Area '{request.area_id}' is not registered",
-        )
+    _ensure_live_connector_area_in_workspace(request.area_id, services=services, auth=auth)
     try:
         bbox = NwiBbox(
             xmin=request.bbox.xmin,
@@ -2494,6 +2508,8 @@ def schedule_nwi_bbox(
         )
         job = services.live_connector_jobs.enqueue_nwi(
             area_id=request.area_id,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
             bbox=bbox,
             max_features=request.max_features,
         )
@@ -2513,15 +2529,11 @@ def schedule_nwi_bbox(
 def schedule_ssurgo_bbox(
     request: SsurgoQueryRequest,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
-    area = services.area_service.get(request.area_id)
-    if area is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Area '{request.area_id}' is not registered",
-        )
+    _ensure_live_connector_area_in_workspace(request.area_id, services=services, auth=auth)
     try:
         bbox = SsurgoBbox(
             xmin=request.bbox.xmin,
@@ -2531,6 +2543,8 @@ def schedule_ssurgo_bbox(
         )
         job = services.live_connector_jobs.enqueue_ssurgo(
             area_id=request.area_id,
+            workspace_id=auth.workspace_id,
+            requested_by=auth.user_id,
             bbox=bbox,
             max_rows=request.max_rows,
         )
@@ -2548,6 +2562,7 @@ def schedule_ssurgo_bbox(
 )
 def list_live_connector_jobs(
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     job_status: Annotated[JobStatus | None, Query(alias="status")] = None,
     stale: Annotated[bool, Query()] = False,
@@ -2565,6 +2580,7 @@ def list_live_connector_jobs(
         offset=offset,
         status=job_status,
         stale=stale,
+        workspace_id=auth.workspace_id,
     )
     return [_live_connector_job_response(job) for job in jobs]
 
@@ -2576,11 +2592,12 @@ def list_live_connector_jobs(
 def get_live_connector_job(
     job_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_OPERATIONS_READ)
     job = services.live_connector_jobs.get(job_id)
-    if job is None:
+    if job is None or job.workspace_id != auth.workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="live connector job not found",
@@ -2827,6 +2844,8 @@ def _live_connector_job_response(
     return {
         "job_id": job.job_id,
         "area_id": job.area_id,
+        "workspace_id": job.workspace_id,
+        "requested_by": job.requested_by,
         "source_registry_id": job.source_registry_id,
         "connector_name": job.connector_name,
         "status": job.status.value,

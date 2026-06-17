@@ -86,6 +86,32 @@ def test_api_scaffold_creates_and_lists_areas() -> None:
     assert [area["area_id"] for area in list_response.json()] == [area_id]
 
 
+def test_api_scaffold_creates_trusted_header_area_with_request_identity() -> None:
+    client = TestClient(create_app())
+    workspace_id = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+    user_id = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+
+    create_response = client.post(
+        "/areas",
+        json={
+            "label": "fixture polygon",
+            "workspace_id": str(uuid4()),
+            "created_by": str(uuid4()),
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+        headers={
+            "X-Workspace-Id": str(workspace_id),
+            "X-User-Id": str(user_id),
+        },
+    )
+
+    assert create_response.status_code == 201
+    body = create_response.json()
+    assert body["workspace_id"] == str(workspace_id)
+    assert body["created_by"] == str(user_id)
+
+
 def test_api_scaffold_creates_and_gets_report_run() -> None:
     client = TestClient(create_app())
     area_response = client.post(

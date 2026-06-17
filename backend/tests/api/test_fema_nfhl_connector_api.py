@@ -29,11 +29,20 @@ _VALID_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "fixture-token-123",
 }
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_VALID_HEADERS.update(
+    {
+        "X-Workspace-Id": str(_WORKSPACE_ID),
+        "X-User-Id": str(_USER_ID),
+    }
+)
 
 
-def _area(area_id: UUID) -> AreaContract:
+def _area(area_id: UUID, *, workspace_id: UUID | None = None) -> AreaContract:
     return AreaContract(
         area_id=area_id,
+        workspace_id=workspace_id,
         label="FEMA NFHL API test area",
         geom_geojson={
             "type": "Polygon",
@@ -283,7 +292,7 @@ def _client_with_seeded_services(
     assert isinstance(services, ApiServices)
     area_id = uuid4()
     services.source_service.register(_source())
-    services.area_service.create(_area(area_id))
+    services.area_service.create(_area(area_id, workspace_id=_WORKSPACE_ID))
 
     def fetch_json(url: str, _timeout_seconds: float) -> dict[str, object]:
         if fetch_urls is not None:
@@ -482,6 +491,8 @@ def test_fema_nfhl_schedule_bbox_rejects_reviewer_without_connector_run_scope() 
         headers={
             "X-Reviewer-Id": "reviewer",
             "X-Reviewer-Token": "reviewer-token",
+            "X-Workspace-Id": str(_WORKSPACE_ID),
+            "X-User-Id": str(_USER_ID),
         },
     )
 
@@ -566,8 +577,8 @@ def test_live_connector_sequence_schedule_bbox_rejects_unregistered_area() -> No
         headers=_VALID_HEADERS,
     )
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == f"Area '{missing_area_id}' is not registered"
+    assert response.status_code == 404
+    assert response.json()["detail"] == "area not found"
 
 
 def test_approved_fema_nfhl_connector_run_feeds_report_api() -> None:
@@ -1020,8 +1031,11 @@ def test_db_fema_nfhl_approval_feeds_report_api(tmp_path: Path) -> None:
         area_response = client.post(
             "/areas",
             json=_area(uuid4()).model_dump(mode="json"),
+            headers=_VALID_HEADERS,
         )
         assert area_response.status_code == 201
+        assert area_response.json()["workspace_id"] == str(_WORKSPACE_ID)
+        assert area_response.json()["created_by"] == str(_USER_ID)
         area_id = UUID(area_response.json()["area_id"])
 
         connector_response = client.post(
@@ -1131,8 +1145,11 @@ def test_db_live_connector_report_run_waits_for_approval_then_reports(
         area_response = client.post(
             "/areas",
             json=_area(uuid4()).model_dump(mode="json"),
+            headers=_VALID_HEADERS,
         )
         assert area_response.status_code == 201
+        assert area_response.json()["workspace_id"] == str(_WORKSPACE_ID)
+        assert area_response.json()["created_by"] == str(_USER_ID)
         area_id = UUID(area_response.json()["area_id"])
 
         pending_response = client.post(
@@ -1226,8 +1243,11 @@ def test_db_live_connector_scheduler_enqueues_and_runs_without_report_job(
         area_response = client.post(
             "/areas",
             json=_area(uuid4()).model_dump(mode="json"),
+            headers=_VALID_HEADERS,
         )
         assert area_response.status_code == 201
+        assert area_response.json()["workspace_id"] == str(_WORKSPACE_ID)
+        assert area_response.json()["created_by"] == str(_USER_ID)
         area_id = UUID(area_response.json()["area_id"])
 
         schedule_response = client.post(
@@ -1239,6 +1259,8 @@ def test_db_live_connector_scheduler_enqueues_and_runs_without_report_job(
         scheduled = schedule_response.json()
         live_job_id = UUID(scheduled["job_id"])
         assert scheduled["status"] == "queued"
+        assert scheduled["workspace_id"] == str(_WORKSPACE_ID)
+        assert scheduled["requested_by"] == str(_USER_ID)
         assert fetch_urls == []
 
         with Session(engine) as session:
@@ -1269,7 +1291,10 @@ def test_db_live_connector_scheduler_enqueues_and_runs_without_report_job(
             live_job = session.execute(
                 text(
                     """
-                    SELECT status::text AS status, payload
+                    SELECT
+                        status::text AS status,
+                        workspace_id::text AS workspace_id,
+                        payload
                     FROM jobs.job_queue
                     WHERE job_id = :job_id
                     """
@@ -1299,6 +1324,9 @@ def test_db_live_connector_scheduler_enqueues_and_runs_without_report_job(
             ).scalar_one()
 
         assert live_job["status"] == "succeeded"
+        assert live_job["workspace_id"] == str(_WORKSPACE_ID)
+        assert live_job["payload"]["workspace_id"] == str(_WORKSPACE_ID)
+        assert live_job["payload"]["requested_by"] == str(_USER_ID)
         assert live_job["payload"]["connector_ingest_run_id"] == str(ingest_run_id)
         assert live_job["payload"]["connector_review_status"] == "queued"
         assert review_job["status"] == "queued"

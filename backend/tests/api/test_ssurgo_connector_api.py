@@ -25,11 +25,20 @@ _VALID_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "fixture-token-123",
 }
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_VALID_HEADERS.update(
+    {
+        "X-Workspace-Id": str(_WORKSPACE_ID),
+        "X-User-Id": str(_USER_ID),
+    }
+)
 
 
-def _area(area_id: UUID) -> AreaContract:
+def _area(area_id: UUID, *, workspace_id: UUID | None = None) -> AreaContract:
     return AreaContract(
         area_id=area_id,
+        workspace_id=workspace_id,
         label="SSURGO API test area",
         geom_geojson={
             "type": "Polygon",
@@ -127,7 +136,7 @@ def _client_with_seeded_services(
     assert isinstance(services, ApiServices)
     area_id = uuid4()
     services.source_service.register(_source())
-    services.area_service.create(_area(area_id))
+    services.area_service.create(_area(area_id, workspace_id=_WORKSPACE_ID))
 
     def fetch_json(query: str, _timeout_seconds: float) -> dict[str, object]:
         if fetch_queries is not None:
@@ -304,19 +313,42 @@ def test_db_ssurgo_live_connector_job_store_persists_and_leases_ds003_payload() 
     try:
         with Session(engine) as session:
             store = SqlAlchemyLiveConnectorJobStore(session)
-            queued = store.enqueue_ssurgo(area_id=area_id, bbox=bbox, max_rows=1)
+            queued = store.enqueue_ssurgo(
+                area_id=area_id,
+                bbox=bbox,
+                max_rows=1,
+                workspace_id=_WORKSPACE_ID,
+                requested_by=_USER_ID,
+            )
             job_id = queued.job_id
             assert queued.source_registry_id == "DS-003"
             assert queued.connector_name == "ssurgo_live"
+            assert queued.workspace_id == _WORKSPACE_ID
+            assert queued.requested_by == _USER_ID
             assert queued.payload["source_registry_id"] == "DS-003"
             assert queued.payload["connector_name"] == "ssurgo_live"
+            assert queued.payload["workspace_id"] == str(_WORKSPACE_ID)
+            assert queued.payload["requested_by"] == str(_USER_ID)
             assert queued.payload["max_rows"] == 1
+
+            retrieved = store.get(queued.job_id)
+            assert retrieved is not None
+            assert retrieved.workspace_id == _WORKSPACE_ID
+            assert retrieved.requested_by == _USER_ID
+            assert queued.job_id in {
+                job.job_id for job in store.list_recent(workspace_id=_WORKSPACE_ID)
+            }
+            assert queued.job_id not in {
+                job.job_id for job in store.list_recent(workspace_id=uuid4())
+            }
 
             leased = store.lease_next(worker_id="db-ssurgo-worker-1")
             assert leased is not None
             assert leased.job_id == queued.job_id
             assert leased.source_registry_id == "DS-003"
             assert leased.connector_name == "ssurgo_live"
+            assert leased.workspace_id == _WORKSPACE_ID
+            assert leased.requested_by == _USER_ID
             assert isinstance(leased.bbox, SsurgoBbox)
             assert leased.bbox.fingerprint == bbox.fingerprint
             assert leased.payload["max_rows"] == 1

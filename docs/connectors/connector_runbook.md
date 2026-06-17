@@ -292,28 +292,31 @@ explicit queue/worker path:
 
 Use `POST /connector-runs/live-sequence/schedule-bbox` when the operator wants to enqueue
 the current reviewed live-source sequence for one registered area in one call. The route
-requires reviewer auth, validates the registered `area_id` plus one bounded EPSG:4326
-bbox, and enqueues four separate `live_connector_run` jobs in this order: DS-001, DS-002,
-DS-004, then DS-003. The response includes
+requires reviewer auth plus `X-Workspace-Id`/`X-User-Id`, validates that the registered
+`area_id` belongs to that workspace, validates one bounded EPSG:4326 bbox, and enqueues
+four separate `live_connector_run` jobs in this order: DS-001, DS-002, DS-004, then
+DS-003. The response includes
 `policy_id="reviewed_live_sequence_ds001_ds002_ds004_ds003_v1"` and the ordered live job
-records. Sequence scheduling is idempotent through the same per-source job keys used by
-the individual routes.
+records. Sequence scheduling is idempotent through workspace-scoped per-source job keys
+used by the individual routes.
 
 The sequence scheduler does not call live sources, persist evidence, create claims,
 approve connector review items, or create report jobs. It is an operator convenience for
 queue creation only; the worker, connector review, and report approval gates remain the
 execution authorities.
 
-1. Call the relevant reviewer-authenticated route with a registered `area_id` and a
-   bounded EPSG:4326 bbox: `POST /connector-runs/usgs-tnm/schedule-bbox` for DS-001,
+1. Call the relevant reviewer-authenticated and workspace-authenticated route with a
+   registered workspace-owned `area_id` and a bounded EPSG:4326 bbox:
+   `POST /connector-runs/usgs-tnm/schedule-bbox` for DS-001,
    `POST /connector-runs/fema-nfhl/schedule-bbox` for DS-002,
    `POST /connector-runs/ssurgo/schedule-bbox` for DS-003, or
    `POST /connector-runs/nwi/schedule-bbox` for DS-004. DS-001 accepts optional
    `max_sample_points`; DS-002 and DS-004 accept optional `max_features`; DS-003 accepts
    optional `max_rows`.
-2. The API validates the area and connector-specific bounds, then enqueues a durable
-   `live_connector_run` job in `jobs.job_queue`. Scheduling does not call the live
-   source, persist evidence, create claims, or create report jobs.
+2. The API validates the area workspace and connector-specific bounds, then enqueues a
+   durable `live_connector_run` job in `jobs.job_queue` with workspace/requester
+   metadata. Scheduling does not call the live source, persist evidence, create claims,
+   or create report jobs.
 3. Run the bounded worker command:
    `py -3.12 .\scripts\live_connector_worker.py --max-jobs 1 --json`.
    The command opens fresh DB-backed services, calls `run_next_live_connector_job(...)`,
