@@ -1169,6 +1169,50 @@ def test_ui_report_run_list_and_detail_show_stale_running_metadata() -> None:
     assert "stale" in detail_resp.text
 
 
+def test_ui_report_run_list_stale_filter_requires_running_status() -> None:
+    tc = TestClient(create_app())
+
+    missing_status = tc.get("/ui/report-runs?stale=true")
+    failed_status = tc.get("/ui/report-runs?status=failed&stale=true")
+
+    assert missing_status.status_code == 422
+    assert failed_status.status_code == 422
+    assert "Invalid Stale Filter" in missing_status.text
+    assert "status=running" in missing_status.text
+    assert "Invalid Stale Filter" in failed_status.text
+    assert "status=running" in failed_status.text
+
+
+def test_ui_report_run_list_stale_filter_shows_only_stale_running_rows() -> None:
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    report_uuid = UUID(report_run_id)
+    fresh = services.async_report_jobs.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    failed = services.async_report_jobs.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    services.async_report_jobs.mark_running(report_uuid)
+    services.async_report_jobs.mark_running(fresh.report_run_id)
+    services.async_report_jobs.mark_failed(failed.report_run_id, error_msg="boom")
+    stale_job = services.async_report_jobs.get(report_uuid)
+    assert stale_job is not None
+    stale_job.started_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+
+    resp = tc.get("/ui/report-runs?status=running&stale=true")
+
+    assert resp.status_code == 200
+    assert "Stale running" in resp.text
+    assert report_run_id[:8] in resp.text
+    assert str(fresh.report_run_id)[:8] not in resp.text
+    assert str(failed.report_run_id)[:8] not in resp.text
+
+
 def test_ui_report_run_list_invalid_status_filter_fails_closed() -> None:
     tc = TestClient(create_app())
     resp = tc.get("/ui/report-runs?status=not_a_real_status")
@@ -1206,6 +1250,15 @@ def test_ui_report_run_list_pagination_preserves_status_filter() -> None:
     # Previous link should include the status param
     if "Previous" in resp.text:
         assert "status=failed" in resp.text
+
+
+def test_ui_report_run_list_pagination_preserves_stale_filter() -> None:
+    tc = TestClient(create_app())
+    resp = tc.get("/ui/report-runs?status=running&stale=true&offset=30")
+    assert resp.status_code == 200
+    if "Previous" in resp.text:
+        assert "status=running" in resp.text
+        assert "stale=true" in resp.text
 
 
 # ---------------------------------------------------------------------------

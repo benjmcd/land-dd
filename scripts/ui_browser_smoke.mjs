@@ -181,6 +181,14 @@ function buildRoutes({ apiKey, reviewerSession }) {
       forbidden: reviewerSession ? ['name="reviewer_token"'] : [],
     },
     {
+      label: "operations-recovery-preview",
+      path: "/ui/operations/recovery-preview",
+      required: reviewerSession
+        ? ["Recovery Preview", "Using reviewer session"]
+        : ["Recovery Preview", 'name="reviewer_token"'],
+      forbidden: reviewerSession ? ['name="reviewer_token"'] : [],
+    },
+    {
       label: "live-connector-jobs",
       path: "/ui/live-connector-jobs",
       required: reviewerSession ? ["Live Connector Jobs"] : ["Authentication Required"],

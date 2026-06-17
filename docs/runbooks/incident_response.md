@@ -179,13 +179,24 @@ Use when report jobs accumulate, fail repeatedly, or do not reach `succeeded`.
      -H "X-Reviewer-Token: fixture-token-123"
    ```
 
-2. Inspect a specific report:
+2. Preview failed and stale-running recovery candidates without mutating jobs:
+
+   ```powershell
+   curl http://localhost:8000/operations/recovery-preview `
+     -H "X-Reviewer-Id: fixture-reviewer" `
+     -H "X-Reviewer-Token: fixture-token-123"
+   ```
+
+   The preview only returns detail paths and recommended next inspection steps. It does
+   not retry reports, requeue live connector jobs, lease work, or call live sources.
+
+3. Inspect a specific report:
 
    ```powershell
    curl http://localhost:8000/report-runs/<report_run_id>
    ```
 
-3. Retry only failed report jobs, and preserve lineage:
+4. Retry only failed report jobs, and preserve lineage:
 
    ```powershell
    curl -X POST http://localhost:8000/report-runs/<report_run_id>/retry `
@@ -193,7 +204,7 @@ Use when report jobs accumulate, fail repeatedly, or do not reach `succeeded`.
      -H "X-Reviewer-Token: fixture-token-123"
    ```
 
-4. If retry fails repeatedly, classify as at least SEV2 and inspect DB/job/log evidence
+5. If retry fails repeatedly, classify as at least SEV2 and inspect DB/job/log evidence
    before further retries.
 
 ## Recovery Criteria
