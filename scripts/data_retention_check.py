@@ -19,6 +19,14 @@ REQUIRED_FILES = (
 )
 REQUIRED_FIELDS = {"id", "description", "retention_period", "deletion_approach", "blocker"}
 REQUIRED_IDS = {"report_runs", "evidence_observations", "audit_events", "source_ingest_runs"}
+REQUIRED_AUTOMATION_TARGET_CLASSES = {"audit_events", "api_key_audit_events"}
+REQUIRED_AUTOMATION_EVENT_TYPES = {"api_key_auth", "created", "superseded"}
+REQUIRED_AUTOMATION_APPLY_GATES = {
+    "--apply",
+    "backup_or_export",
+    "security_reviewer_approval",
+    "state_worklog_entry",
+}
 REQUIRED_PURGE_REFERENCES = (
     "scripts/purge_audit_events.py",
     ".\\scripts\\run_purge_audit_events.ps1",
@@ -29,7 +37,8 @@ REQUIRED_RUNBOOK_PHRASES = (
     "scripts/purge_audit_events.py",
     ".\\scripts\\run_purge_audit_events.ps1",
     "py -3.12 scripts/purge_audit_events.py --apply",
-    "No automated deletion procedures are implemented",
+    "repo-local audit retention schedule contract",
+    "hosted scheduler is not provisioned",
     "manual operator action",
 )
 
@@ -96,6 +105,8 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
     missing_ids = REQUIRED_IDS - ids_seen
     require(not missing_ids, f"retention_classes missing required ids: {sorted(missing_ids)}")
 
+    validate_automation_plan(catalog)
+
     blockers = catalog.get("retention_blockers")
     if not isinstance(blockers, list) or not blockers:
         raise SystemExit("retention_blockers must be a non-empty list")
@@ -107,6 +118,59 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             f"blocker missing fields: {blocker}",
         )
         require(blocker["status"] == "blocked", f"blocker {blocker['id']} must have status=blocked")
+
+
+def validate_automation_plan(catalog: dict[str, Any]) -> None:
+    plan = catalog.get("automation_plan")
+    require(isinstance(plan, dict), "automation_plan must be a mapping")
+    plan = cast(dict[str, Any], plan)
+    require(
+        plan.get("status") == "repo_local_schedule_contract",
+        "automation_plan status must be repo_local_schedule_contract",
+    )
+    require(plan.get("runner") == "scripts/purge_audit_events.py", "automation runner mismatch")
+    require(
+        plan.get("windows_dry_run_wrapper") == "scripts/run_purge_audit_events.ps1",
+        "automation Windows wrapper mismatch",
+    )
+    require(
+        plan.get("posix_dry_run_wrapper") == "scripts/run_purge_audit_events.sh",
+        "automation POSIX wrapper mismatch",
+    )
+    for path_text in (
+        plan["runner"],
+        plan["windows_dry_run_wrapper"],
+        plan["posix_dry_run_wrapper"],
+    ):
+        require((ROOT / path_text).is_file(), f"automation artifact missing: {path_text}")
+    require(plan.get("cadence") == "weekly", "automation cadence must be weekly")
+    require(plan.get("mode") == "dry_run_by_default", "automation mode must be dry_run_by_default")
+    require(
+        set(plan.get("target_retention_classes", [])) == REQUIRED_AUTOMATION_TARGET_CLASSES,
+        "automation target retention classes mismatch",
+    )
+    require(
+        set(plan.get("target_event_types", [])) == REQUIRED_AUTOMATION_EVENT_TYPES,
+        "automation target event types mismatch",
+    )
+    require(
+        REQUIRED_AUTOMATION_APPLY_GATES.issubset(set(plan.get("apply_requires", []))),
+        "automation apply gates missing required entries",
+    )
+    require(
+        plan.get("hosted_scheduler_status") == "blocked",
+        "hosted scheduler status must remain blocked until provisioned",
+    )
+    limits = plan.get("limits")
+    require(isinstance(limits, dict), "automation_plan limits must be a mapping")
+    limits = cast(dict[str, Any], limits)
+    require(limits.get("validate_only_catalog") is True, "automation catalog must be validate-only")
+    require(limits.get("deletes_by_default") is False, "automation must not delete by default")
+    require(
+        limits.get("requires_explicit_apply") is True,
+        "automation must require explicit --apply",
+    )
+    require(limits.get("writes_secrets") is False, "automation must not write secrets")
 
 
 def main() -> int:
