@@ -168,6 +168,19 @@ def test_artifact_json_contains_report_run_id() -> None:
     assert body["report_run_id"] == report_run_id
 
 
+def test_artifact_body_matches_shared_serializer_for_approved_report() -> None:
+    from app.reports.artifacts import serialize_report_artifact
+
+    app, client, report_run_id = _make_app_client_with_approved_report()
+    services = cast(ApiServices, app.state.services)
+    report = services.report_service.get_report_run(UUID(report_run_id))
+    assert report is not None
+
+    resp = client.get(f"/report-runs/{report_run_id}/artifact")
+    assert resp.status_code == 200
+    assert resp.text == serialize_report_artifact(report)
+
+
 def test_artifact_json_contains_claims_with_evidence_ids() -> None:
     _app, client, report_run_id = _make_app_client_with_approved_report()
     resp = client.get(f"/report-runs/{report_run_id}/artifact")
@@ -292,6 +305,7 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
         artifact_path = Path(body["output_uri"])
         assert artifact_path.exists(), f"Artifact file not found: {artifact_path}"
         stored = json.loads(artifact_path.read_text(encoding="utf-8"))
+        assert body == stored
         assert stored["report_run_id"] == str(report_run_id)
     finally:
         with Session(engine) as session:

@@ -455,6 +455,15 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
             "It does not prove the HTTP `POST /report-runs` surface, "
             "`/operator-cases/{case_id}/report`, or DB artifact persistence"
         ),
+        (
+            "representative selected-county operator DB smoke cases "
+            "`BUN-slope`, `CHA-zoning-edge`, and `BRU-coastal-flood`"
+        ),
+        "backend/tests/api/test_operator_cases_db.py",
+        (
+            "does not prove full hosted production, live-source production "
+            "coverage, or counties outside the selected private-MVP set"
+        ),
     ):
         assert phrase in runbook
 
@@ -498,3 +507,28 @@ def test_private_mvp_catalog_rejects_stale_selected_county_source_scope_prose() 
         "parcels/assessor as NOT_EVALUATED for fixture regression",
     ):
         assert stale_phrase not in catalog
+
+
+def test_db_backed_regression_path_names_representative_operator_cases(
+    readiness: dict[str, Any],
+) -> None:
+    gate = readiness["private_mvp_beta"]["db_backed_regression_path"]
+    proof_text = f"{gate['evidence']}\n{gate['note']}"
+
+    for phrase in (
+        "backend/tests/api/test_report_runs_db.py",
+        "test_db_backed_full_reviewed_dossier_path",
+        "backend/tests/api/test_operator_cases_db.py",
+        "test_db_operator_case_report_persists_selected_county_fixture",
+        "BUN-slope",
+        "CHA-zoning-edge",
+        "BRU-coastal-flood",
+        "representative selected-county operator cases",
+    ):
+        assert phrase in proof_text
+
+    assert "Full AOI-to-approved-dossier DB-backed path proven" in proof_text
+    assert (
+        "does not prove full hosted production or live-source production coverage"
+        in proof_text
+    )
