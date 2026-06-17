@@ -864,6 +864,7 @@ def validate_operator_routes() -> None:
         require("require_reviewer_scope" in text, f"{route_file} must enforce reviewer scopes")
 
     connectors = read_text("backend/app/api/connectors.py")
+    live_connectors = read_text("backend/app/api/live_connectors.py")
     operations = read_text("backend/app/api/operations.py")
     reports = read_text("backend/app/api/reports.py")
     sources = read_text("backend/app/api/sources.py")
@@ -880,6 +881,68 @@ def validate_operator_routes() -> None:
             "REVIEWER_SCOPE_REPORT_RUN",
         ),
         "connectors route",
+    )
+    require_phrases(
+        connectors,
+        (
+            "def _get_live_connector_area_or_422(",
+            "auth: RequestAuthContext",
+            "area.workspace_id != auth.workspace_id",
+            'return area.model_copy(update={"created_by": auth.user_id})',
+            "def _get_scoped_review_status_or_404(",
+            "workspace_id=auth.workspace_id",
+        ),
+        "workspace-scoped connector reads",
+    )
+    for function_name in (
+        "query_blm_mlrs_bbox",
+        "query_brunswick_parcels_bbox",
+        "query_buncombe_parcels_bbox",
+        "query_census_tiger_bbox",
+        "query_chatham_parcels_bbox",
+        "query_epa_echo_bbox",
+        "query_fcc_broadband_bbox",
+        "query_fema_nfhl_bbox",
+        "query_nc_geologic_map_bbox",
+        "query_nwi_bbox",
+        "query_noaa_climate_bbox",
+        "query_osm_road_access_bbox",
+        "query_ssurgo_bbox",
+        "query_usgs_mrds_bbox",
+        "query_usgs_tnm_bbox",
+        "query_usgs_water_monitoring_bbox",
+    ):
+        block = function_block(connectors, function_name)
+        require_phrases(
+            block,
+            (
+                "auth: AuthDep",
+                "_get_live_connector_area_or_422(",
+                "auth=auth",
+            ),
+            f"{function_name} workspace identity",
+        )
+    for function_name in (
+        "get_connector_run_review_status",
+        "get_connector_review_queue_item",
+    ):
+        block = function_block(connectors, function_name)
+        require_phrases(
+            block,
+            (
+                "auth: AuthDep",
+                "auth, ingest_run_id",
+            ),
+            f"{function_name} workspace identity",
+        )
+    require_phrases(
+        live_connectors,
+        (
+            "def _enqueue_review_status_for_area(",
+            "workspace_id=area.workspace_id",
+            "requested_by=area.created_by",
+        ),
+        "live connector review queue scope",
     )
     require(
         "REVIEWER_SCOPE_OPERATIONS_READ" in operations,
@@ -902,6 +965,8 @@ def validate_operator_routes() -> None:
             "test_fema_nfhl_connector_api.py",
             "test_api_scaffold.py",
             "test_connector_review_queue_api.py",
+            "test_connector_review_status.py",
+            "test_usgs_tnm_connector_api.py",
         )
     )
     require_phrases(
@@ -914,6 +979,12 @@ def validate_operator_routes() -> None:
             "test_retry_report_run_rejects_reviewer_without_retry_scope",
             "test_fema_nfhl_schedule_bbox_rejects_reviewer_without_connector_run_scope",
             "test_api_scaffold_source_create_requires_source_manage_scope",
+            "test_connector_review_status_endpoint_requires_identity",
+            "test_connector_review_status_endpoint_hides_other_workspace",
+            "test_connector_review_queue_endpoint_requires_identity",
+            "test_connector_review_queue_endpoint_hides_other_workspace",
+            "test_usgs_tnm_schedule_bbox_requires_workspace_identity",
+            "test_usgs_tnm_schedule_bbox_hides_area_from_other_workspace",
         ),
         "scoped route tests",
     )

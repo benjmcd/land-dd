@@ -607,6 +607,12 @@ API actions:
 | `POST /connector-runs/{ingest_run_id}/review-actions/requeue_after_fix` | Yes | Calls `requeue_failed` and returns the updated queue item |
 | `POST /connector-runs/{ingest_run_id}/review-actions/cancel_review` | Yes | Calls `cancel` and returns the updated queue item |
 
+Read routes `GET /connector-runs/{ingest_run_id}/review-status` and
+`GET /connector-runs/{ingest_run_id}/review-queue` require `X-Workspace-Id` and
+`X-User-Id`; both return 404 when the queue item is not in the caller workspace.
+Queue-generating live connector runs stamp review queue rows with the registered
+area workspace and requester identity.
+
 These actions mutate only connector review queue state. They do not mutate source
 retrieval provenance, evidence observations, claims, report runs, schemas, connector
 runtime behavior, or live source data. Downstream report generation reads the queue state

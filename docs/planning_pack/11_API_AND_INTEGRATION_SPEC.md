@@ -52,6 +52,10 @@ guarded by `backend/tests/test_planning_pack_schema_copies.py`.
 - `GET /connector-runs/{ingest_run_id}/review-status`
 - `GET /connector-runs/{ingest_run_id}/review-queue`
 
+Both review-read routes require `X-Workspace-Id` and `X-User-Id`. They resolve the
+review queue row inside the caller workspace and return 404 for unknown or
+cross-workspace ingest runs.
+
 ### Health/version
 
 - `GET /health`

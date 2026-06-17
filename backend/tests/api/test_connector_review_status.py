@@ -27,6 +27,21 @@ from app.domain.source_contracts import SourceRetrievalRunContract
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "connectors"
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_OTHER_WORKSPACE_ID = UUID("33333333-3333-4333-8333-333333333333")
+_OTHER_USER_ID = UUID("44444444-4444-4444-8444-444444444444")
+_AUTH_HEADERS = {"X-Workspace-Id": str(_WORKSPACE_ID), "X-User-Id": str(_USER_ID)}
+_OTHER_AUTH_HEADERS = {
+    "X-Workspace-Id": str(_OTHER_WORKSPACE_ID),
+    "X-User-Id": str(_OTHER_USER_ID),
+}
+
+
+def _client(app: FastAPI | None = None) -> TestClient:
+    client = TestClient(app or create_app())
+    client.headers.update(_AUTH_HEADERS)
+    return client
 
 
 class ApiStatusRetrievalProvenancePort:
@@ -124,6 +139,11 @@ def _store_review_status(
     )
     services = cast(ApiServices, app.state.services)
     services.connector_review_statuses[packet.ingest_run_id] = status
+    services.connector_review_queue.enqueue_review_status(
+        status,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+    )
     return str(packet.ingest_run_id)
 
 
@@ -140,13 +160,17 @@ def _enqueue_review_status(
         evaluate_flood_fixture_quality(result.connector_result),
     )
     services = cast(ApiServices, app.state.services)
-    services.connector_review_queue.enqueue_review_status(status)
+    services.connector_review_queue.enqueue_review_status(
+        status,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+    )
     return str(packet.ingest_run_id)
 
 
 def test_connector_review_status_endpoint_returns_handoff_and_quality() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     ingest_run_id = _store_review_status(app, fixture_name="flood_success.json")
 
     response = client.get(f"/connector-runs/{ingest_run_id}/review-status")
@@ -168,7 +192,7 @@ def test_connector_review_status_endpoint_returns_handoff_and_quality() -> None:
 
 def test_connector_review_status_endpoint_surfaces_source_failure_handoff() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     ingest_run_id = _store_review_status(app, fixture_name="flood_failure.json")
 
     response = client.get(f"/connector-runs/{ingest_run_id}/review-status")
@@ -189,7 +213,7 @@ def test_connector_review_status_endpoint_surfaces_source_failure_handoff() -> N
 
 def test_connector_review_status_endpoint_uses_quality_issues_as_review_required() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     quality = ConnectorFixtureQualityProfile(
         connector_name="fixture_flood_static",
         evidence_count=1,
@@ -224,7 +248,7 @@ def test_connector_review_status_endpoint_uses_quality_issues_as_review_required
 
 
 def test_connector_review_status_endpoint_returns_404_for_unknown_run() -> None:
-    client = TestClient(create_app())
+    client = _client()
 
     response = client.get(f"/connector-runs/{uuid4()}/review-status")
 
@@ -232,9 +256,32 @@ def test_connector_review_status_endpoint_returns_404_for_unknown_run() -> None:
     assert response.json()["detail"] == "connector run review status not found"
 
 
+def test_connector_review_status_endpoint_requires_identity() -> None:
+    client = TestClient(create_app())
+
+    response = client.get(f"/connector-runs/{uuid4()}/review-status")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_connector_review_status_endpoint_hides_other_workspace() -> None:
+    app = create_app()
+    client = _client(app)
+    ingest_run_id = _store_review_status(app, fixture_name="flood_success.json")
+
+    response = client.get(
+        f"/connector-runs/{ingest_run_id}/review-status",
+        headers=_OTHER_AUTH_HEADERS,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connector run review status not found"
+
+
 def test_connector_review_queue_endpoint_returns_in_memory_queue_item() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     ingest_run_id = _enqueue_review_status(app, fixture_name="flood_failure.json")
 
     response = client.get(f"/connector-runs/{ingest_run_id}/review-queue")
@@ -260,7 +307,7 @@ def test_connector_review_queue_endpoint_returns_in_memory_queue_item() -> None:
 
 def test_connector_review_queue_endpoint_surfaces_in_memory_worker_state() -> None:
     app = create_app()
-    client = TestClient(app)
+    client = _client(app)
     ingest_run_id = _enqueue_review_status(app, fixture_name="flood_failure.json")
     services = cast(ApiServices, app.state.services)
     leased = services.connector_review_queue.lease_next(worker_id="api-test-worker")
@@ -282,9 +329,32 @@ def test_connector_review_queue_endpoint_surfaces_in_memory_worker_state() -> No
 
 
 def test_connector_review_queue_endpoint_returns_404_for_unknown_run() -> None:
+    client = _client()
+
+    response = client.get(f"/connector-runs/{uuid4()}/review-queue")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connector review queue item not found"
+
+
+def test_connector_review_queue_endpoint_requires_identity() -> None:
     client = TestClient(create_app())
 
     response = client.get(f"/connector-runs/{uuid4()}/review-queue")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_connector_review_queue_endpoint_hides_other_workspace() -> None:
+    app = create_app()
+    client = _client(app)
+    ingest_run_id = _enqueue_review_status(app, fixture_name="flood_failure.json")
+
+    response = client.get(
+        f"/connector-runs/{ingest_run_id}/review-queue",
+        headers=_OTHER_AUTH_HEADERS,
+    )
 
     assert response.status_code == 404
     assert response.json()["detail"] == "connector review queue item not found"

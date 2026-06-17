@@ -13,6 +13,10 @@ Existing API surface is read-only for connector review status and queue state:
 - `GET /connector-runs/{ingest_run_id}/review-status`;
 - `GET /connector-runs/{ingest_run_id}/review-queue`.
 
+As of 2026-06-17, these read routes require workspace identity headers and are
+scoped through the connector review queue row. Unknown or cross-workspace ingest
+runs return 404.
+
 Existing repository transitions are available for queue orchestration, but not every CON-021 action maps cleanly to current persistence fields. Acknowledgement and reviewer ownership need explicit future persistence semantics before implementation.
 
 ## Decision

@@ -12,15 +12,20 @@ from app.domain.enums import EvidenceType
 from app.domain.source_contracts import SourceContract
 from app.main import create_app
 
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
 _VALID_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "fixture-token-123",
+    "X-Workspace-Id": str(_WORKSPACE_ID),
+    "X-User-Id": str(_USER_ID),
 }
 
 
-def _area(area_id: UUID) -> AreaContract:
+def _area(area_id: UUID, *, workspace_id: UUID | None = _WORKSPACE_ID) -> AreaContract:
     return AreaContract(
         area_id=area_id,
+        workspace_id=workspace_id,
         label="Chatham parcels API test area",
         geom_geojson={
             "type": "Polygon",
@@ -348,9 +353,14 @@ def _ssurgo_table() -> dict[str, object]:
     }
 
 
-def _small_area(area_id: UUID) -> AreaContract:
+def _small_area(
+    area_id: UUID,
+    *,
+    workspace_id: UUID | None = _WORKSPACE_ID,
+) -> AreaContract:
     return AreaContract(
         area_id=area_id,
+        workspace_id=workspace_id,
         label="Chatham small test area",
         geom_geojson={
             "type": "Polygon",
