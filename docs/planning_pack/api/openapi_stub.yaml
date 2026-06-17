@@ -1853,6 +1853,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /connector-runs/live-jobs:
+    get:
+      tags:
+      - connector-runs
+      summary: List Live Connector Jobs
+      operationId: list_live_connector_jobs_connector_runs_live_jobs_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/JobStatus'
+          - type: 'null'
+          title: Status
+      - name: stale
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Stale
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LiveConnectorJobResponse'
+                title: Response List Live Connector Jobs Connector Runs Live Jobs
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /connector-runs/live-jobs/{job_id}:
     get:
       tags:
@@ -3094,6 +3166,76 @@ paths:
           type: string
           format: uuid
           title: Report Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/live-connector-jobs:
+    get:
+      tags:
+      - ui
+      summary: Ui Live Connector Job List
+      operationId: ui_live_connector_job_list_ui_live_connector_jobs_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: stale
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Stale
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/live-connector-jobs/{job_id}:
+    get:
+      tags:
+      - ui
+      summary: Ui Live Connector Job Detail
+      operationId: ui_live_connector_job_detail_ui_live_connector_jobs__job_id__get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
       responses:
         '200':
           description: Successful Response
@@ -5610,6 +5752,59 @@ components:
           additionalProperties: true
           type: object
           title: Payload
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        not_before:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Not Before
+        attempts:
+          type: integer
+          title: Attempts
+        max_attempts:
+          type: integer
+          title: Max Attempts
+        locked_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locked By
+        locked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Locked At
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        running_age_seconds:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Running Age Seconds
+        is_stale_running:
+          type: boolean
+          title: Is Stale Running
+          default: false
         connector_ingest_run_id:
           anyOf:
           - type: string
@@ -5637,6 +5832,9 @@ components:
       - idempotency_key
       - max_features
       - payload
+      - created_at
+      - attempts
+      - max_attempts
       title: LiveConnectorJobResponse
     LiveConnectorSequenceBboxRequest:
       properties:
@@ -6637,6 +6835,31 @@ components:
         created_at:
           type: string
           title: Created At
+        started_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Started At
+        running_age_seconds:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Running Age Seconds
+        is_stale_running:
+          type: boolean
+          title: Is Stale Running
+          default: false
+        retry_of_report_run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Retry Of Report Run Id
+        error_msg:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Msg
         review_status:
           anyOf:
           - type: string

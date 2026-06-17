@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
+from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -12,12 +15,15 @@ from app.api.dependencies import ApiServices
 from app.api.live_connector_jobs import run_next_live_connector_job
 from app.connectors.live_jobs import (
     LIVE_CONNECTOR_JOB_TYPE,
+    InMemoryLiveConnectorJobStore,
     SqlAlchemyLiveConnectorJobStore,
 )
 from app.connectors.usgs_tnm import UsgsTnmBbox
+from app.core.config import Settings
 from app.db.engine import build_engine
 from app.domain.area_contracts import AreaContract
 from app.domain.enums import EvidenceType
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.source_contracts import SourceContract
 from app.main import create_app
 
@@ -349,6 +355,96 @@ def test_usgs_tnm_schedule_bbox_enqueues_without_fetch_or_report() -> None:
         result.connector_result.ingest_run_id,
     )
     assert finished_job["connector_review_status"] == "queued"
+
+
+def test_list_live_connector_jobs_filters_running_and_stale_jobs() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    running = services.live_connector_jobs.enqueue_nwi(
+        area_id=area_id,
+        max_features=1,
+    )
+    queued = services.live_connector_jobs.enqueue_fema_nfhl(
+        area_id=area_id,
+        max_features=1,
+    )
+    leased = services.live_connector_jobs.lease_next(worker_id="api-live-worker")
+    assert leased is not None
+    assert leased.job_id == running.job_id
+    store = services.live_connector_jobs
+    assert isinstance(store, InMemoryLiveConnectorJobStore)
+    with store._lock:
+        stale_started_at = datetime.now(UTC) - timedelta(
+            seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+        )
+        store._jobs[running.job_id] = replace(
+            store._jobs[running.job_id],
+            started_at=stale_started_at,
+        )
+
+    running_resp = client.get(
+        "/connector-runs/live-jobs?status=running",
+        headers=_VALID_HEADERS,
+    )
+    stale_resp = client.get(
+        "/connector-runs/live-jobs?status=running&stale=true",
+        headers=_VALID_HEADERS,
+    )
+    queued_resp = client.get(
+        "/connector-runs/live-jobs?status=queued",
+        headers=_VALID_HEADERS,
+    )
+    invalid_resp = client.get(
+        "/connector-runs/live-jobs?status=failed&stale=true",
+        headers=_VALID_HEADERS,
+    )
+
+    assert running_resp.status_code == 200
+    running_items = running_resp.json()
+    assert [item["job_id"] for item in running_items] == [str(running.job_id)]
+    assert running_items[0]["locked_by"] == "api-live-worker"
+    assert running_items[0]["running_age_seconds"] >= STALE_RUNNING_THRESHOLD_SECONDS
+    assert running_items[0]["is_stale_running"] is True
+    assert stale_resp.status_code == 200
+    assert [item["job_id"] for item in stale_resp.json()] == [str(running.job_id)]
+    assert queued_resp.status_code == 200
+    assert [item["job_id"] for item in queued_resp.json()] == [str(queued.job_id)]
+    assert invalid_resp.status_code == 422
+
+
+def test_live_connector_job_inspection_requires_operations_read_scope() -> None:
+    client = TestClient(create_app())
+    no_auth_list = client.get("/connector-runs/live-jobs")
+    no_auth_detail = client.get(f"/connector-runs/live-jobs/{uuid4()}")
+    under_scoped = TestClient(
+        create_app(
+            Settings(
+                REVIEWER_ACCOUNTS="runner:runner-token",
+                REVIEWER_ACCOUNT_SCOPES="runner:connector:run",
+            )
+        )
+    )
+    under_scoped_headers = {
+        "X-Reviewer-Id": "runner",
+        "X-Reviewer-Token": "runner-token",
+    }
+
+    under_scoped_list = under_scoped.get(
+        "/connector-runs/live-jobs",
+        headers=under_scoped_headers,
+    )
+    under_scoped_detail = under_scoped.get(
+        f"/connector-runs/live-jobs/{uuid4()}",
+        headers=under_scoped_headers,
+    )
+
+    assert no_auth_list.status_code == 401
+    assert no_auth_detail.status_code == 401
+    assert under_scoped_list.status_code == 403
+    assert under_scoped_detail.status_code == 403
+    assert under_scoped_list.json()["detail"] == ("reviewer scope is required: operations:read")
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")

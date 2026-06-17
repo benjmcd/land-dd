@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, cast
 from uuid import UUID
@@ -38,6 +39,7 @@ from app.core.config import Settings
 from app.db.engine import get_session_factory
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
 from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
@@ -365,9 +367,7 @@ def _create_authenticated_report_run(
     client_key: str | None,
 ) -> AsyncReportRunResponse:
     scoped_client_key = (
-        _authenticated_idempotency_key(client_key, auth=auth)
-        if client_key is not None
-        else None
+        _authenticated_idempotency_key(client_key, auth=auth) if client_key is not None else None
     )
     if scoped_client_key is not None:
         existing = services.async_report_jobs.get_by_client_idempotency_key(
@@ -653,6 +653,11 @@ class ReportRunListItem(BaseModel):
     intent_code: str
     status: str
     created_at: str
+    started_at: str | None = None
+    running_age_seconds: float | None = None
+    is_stale_running: bool = False
+    retry_of_report_run_id: UUID | None = None
+    error_msg: str | None = None
     review_status: str | None
 
 
@@ -686,12 +691,18 @@ def list_report_runs(
             report = services.report_service.get_report_run(job.report_run_id)
             if report is not None:
                 review_status = report.review_status.value
+        running_age_seconds = _report_job_running_age_seconds(job)
         items.append(
             ReportRunListItem(
                 report_run_id=job.report_run_id,
                 intent_code=job.intent_code.value,
                 status=job.status.value,
                 created_at=job.created_at.isoformat(),
+                started_at=job.started_at.isoformat() if job.started_at is not None else None,
+                running_age_seconds=running_age_seconds,
+                is_stale_running=_is_stale_running_age(running_age_seconds),
+                retry_of_report_run_id=job.retry_of_report_run_id,
+                error_msg=job.error_msg,
                 review_status=review_status,
             )
         )
@@ -821,9 +832,7 @@ def get_report_run_dossier(
         dossier_md = build_rural_land_dossier(report)
         headers: dict[str, str] = {}
         if download:
-            headers["Content-Disposition"] = (
-                f'attachment; filename="dossier_{report_run_id}.md"'
-            )
+            headers["Content-Disposition"] = f'attachment; filename="dossier_{report_run_id}.md"'
         return Response(
             content=dossier_md,
             media_type="text/markdown; charset=utf-8",
@@ -890,9 +899,7 @@ def get_report_run_artifact(
             content=artifact_json.encode("utf-8"),
             media_type="application/json",
             headers={
-                "Content-Disposition": (
-                    f'attachment; filename="report_{report_run_id}.json"'
-                )
+                "Content-Disposition": (f'attachment; filename="report_{report_run_id}.json"')
             },
         )
     job = services.async_report_jobs.get(report_run_id)
@@ -1118,6 +1125,21 @@ def _next_queued_report_job(
             ):
                 selected = job
         offset += len(page)
+
+
+def _report_job_running_age_seconds(job: ReportJobRecord) -> float | None:
+    if job.status != JobStatus.RUNNING:
+        return None
+    started_at = job.started_at or job.created_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=UTC)
+    return max(0.0, (datetime.now(UTC) - started_at).total_seconds())
+
+
+def _is_stale_running_age(running_age_seconds: float | None) -> bool:
+    return (
+        running_age_seconds is not None and running_age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
+    )
 
 
 def _validate_report_worker_id(raw: str) -> str:

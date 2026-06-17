@@ -76,7 +76,7 @@ def _dashboard_response(
     connector_table = _render_health_table(
         "Live Connector Jobs",
         connector_health,
-        "/ui/connector-review-queue",
+        "/ui/live-connector-jobs",
     )
 
     principal_esc = _html.escape(reviewer_id)
@@ -132,8 +132,8 @@ def _render_health_table(
         f"<td>{_status_count_link(base_href, 'cancelled', health_resp.cancelled)}</td>"
         f"<td>{_status_count_link(base_href, 'needs_review', health_resp.needs_review)}</td>"
         f"<td>{_html.escape(queued_age)}</td>"
-        f"<td>{_html.escape(running_age)}</td>"
-        f"<td>{health_resp.stale_running}</td>"
+        f"<td>{_oldest_running_link(base_href, health_resp, running_age)}</td>"
+        f"<td>{_stale_running_link(base_href, health_resp.stale_running)}</td>"
         "</tr></tbody>"
         "</table>"
         "</div>"
@@ -142,6 +142,24 @@ def _render_health_table(
 
 def _format_age(age_seconds: float | None) -> str:
     return f"{age_seconds:.1f}s" if age_seconds is not None else "n/a"
+
+
+def _oldest_running_link(
+    base_href: str,
+    health_resp: JobQueueHealthResponse,
+    running_age: str,
+) -> str:
+    job_id = health_resp.oldest_running_job_id
+    if job_id is None:
+        return _html.escape(running_age)
+    return (
+        f"<a href='{_html.escape(f'{base_href}/{job_id}', quote=True)}'>"
+        f"{_html.escape(running_age)}</a>"
+    )
+
+
+def _stale_running_link(base_href: str, stale_count: int) -> str:
+    return _count_link(f"{base_href}?status=running&stale=true", stale_count)
 
 
 @router.get("", response_class=HTMLResponse)

@@ -1,7 +1,9 @@
 """Tests for GET /report-runs list endpoint (S5: pagination, filtering, bounds)."""
+
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 from uuid import UUID
@@ -10,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.main import create_app
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
@@ -71,6 +74,11 @@ def test_list_report_runs_item_has_required_fields() -> None:
     assert "intent_code" in item
     assert "status" in item
     assert "created_at" in item
+    assert "started_at" in item
+    assert "running_age_seconds" in item
+    assert "is_stale_running" in item
+    assert "retry_of_report_run_id" in item
+    assert "error_msg" in item
     assert "review_status" in item  # may be None
 
 
@@ -99,6 +107,26 @@ def test_list_report_runs_review_status_null_for_non_succeeded() -> None:
     item = next((i for i in items if i["report_run_id"] == run_ids[0]), None)
     assert item is not None
     assert item["review_status"] is None
+
+
+def test_list_report_runs_includes_running_age_and_stale_flag() -> None:
+    app, tc, run_ids = _make_client_with_reports(1)
+    services = cast(ApiServices, app.state.services)
+    report_run_id = UUID(run_ids[0])
+    services.async_report_jobs.mark_running(report_run_id)
+    job = services.async_report_jobs.get(report_run_id)
+    assert job is not None
+    job.started_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+
+    resp = tc.get("/report-runs?status=running")
+
+    assert resp.status_code == 200
+    item = next(i for i in resp.json() if i["report_run_id"] == run_ids[0])
+    assert item["started_at"] is not None
+    assert item["running_age_seconds"] >= STALE_RUNNING_THRESHOLD_SECONDS
+    assert item["is_stale_running"] is True
 
 
 # ---------------------------------------------------------------------------

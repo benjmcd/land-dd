@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import cast
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import ApiServices
 from app.core.config import Settings
+from app.domain.enums import IntentCode
 from app.main import create_app
 
 _FIXTURE_REVIEWER_ID = "fixture-reviewer"
@@ -198,10 +203,39 @@ def test_ui_operations_post_valid_creds_renders_drilldown_links() -> None:
     assert "href='/ui/report-runs?status=queued'" in resp.text
     assert "href='/ui/report-runs?status=failed'" in resp.text
     assert "href='/ui/report-runs?status=needs_review'" in resp.text
-    assert "<td><a href='/ui/connector-review-queue'>0</a></td>" in resp.text
-    assert "href='/ui/connector-review-queue?status=queued'" in resp.text
-    assert "href='/ui/connector-review-queue?status=failed'" in resp.text
-    assert "href='/ui/connector-review-queue?status=needs_review'" in resp.text
+    assert "<td><a href='/ui/live-connector-jobs'>0</a></td>" in resp.text
+    assert "href='/ui/live-connector-jobs?status=queued'" in resp.text
+    assert "href='/ui/live-connector-jobs?status=failed'" in resp.text
+    assert "href='/ui/live-connector-jobs?status=needs_review'" in resp.text
+    assert "href='/ui/live-connector-jobs?status=running&amp;stale=true'" in resp.text
+
+
+def test_ui_operations_links_oldest_running_jobs_to_detail_pages() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    report_job = services.async_report_jobs.create(
+        area_id=area_id,
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    services.async_report_jobs.mark_running(report_job.report_run_id)
+    live_job = services.live_connector_jobs.enqueue_nwi(area_id=area_id, max_features=1)
+    leased = services.live_connector_jobs.lease_next(worker_id="ui-ops-worker")
+    assert leased is not None
+    assert leased.job_id == live_job.job_id
+
+    resp = tc.post(
+        "/ui/operations",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+    )
+
+    assert resp.status_code == 200
+    assert f"href='/ui/report-runs/{report_job.report_run_id}'" in resp.text
+    assert f"href='/ui/live-connector-jobs/{live_job.job_id}'" in resp.text
 
 
 def test_ui_operations_post_shows_authenticated_reviewer() -> None:

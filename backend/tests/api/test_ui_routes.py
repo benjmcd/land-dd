@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 from uuid import UUID, uuid4
@@ -21,17 +22,14 @@ from app.api.reports import (
 )
 from app.core.config import Settings
 from app.domain.enums import IntentCode
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.main import create_app
 
 client = TestClient(create_app())
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
 _MANIFEST_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "tests"
-    / "fixtures"
-    / "golden_aois"
-    / "manifest.yaml"
+    Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "golden_aois" / "manifest.yaml"
 )
 
 
@@ -72,8 +70,7 @@ def _selected_county_cases() -> list[dict[str, object]]:
             "fixture_scope": case.get("fixture_scope", "private_mvp_fixture"),
             "fixture_language": case.get(
                 "fixture_language",
-                "Packaged fixture-only selected-county private MVP case; "
-                "not live coverage.",
+                "Packaged fixture-only selected-county private MVP case; not live coverage.",
             ),
             "connector_domains": cast(
                 list[str],
@@ -282,7 +279,7 @@ def test_ui_index_renders_operator_console_case_table(monkeypatch: Any) -> None:
     assert 'aria-label="Operator console navigation"' in response.text
     assert '<main class="console-grid">' in response.text
     assert '<table class="case-table">' in response.text
-    assert '<caption>Selected-county fixture cases</caption>' in response.text
+    assert "<caption>Selected-county fixture cases</caption>" in response.text
     assert response.text.count('action="/ui/operator-cases/report"') >= 2
     assert 'data-label="Case"' in response.text
     assert 'data-label="Boundary"' in response.text
@@ -424,9 +421,7 @@ def test_ui_custom_geojson_intake_pending_connector_review_redirects(
     )
 
     assert response.status_code == 303
-    assert response.headers["location"] == (
-        f"/ui/connector-review-queue/{ingest_run_id}"
-    )
+    assert response.headers["location"] == (f"/ui/connector-review-queue/{ingest_run_id}")
 
 
 def test_ui_selected_county_fixture_post_redirects_to_report_run(
@@ -501,7 +496,7 @@ def test_ui_report_run_queued_page_has_safe_action_surface() -> None:
     _assert_report_page_chrome(response.text)
     assert '<meta http-equiv="refresh" content="3">' in response.text
     assert "This page refreshes every 3 seconds." in response.text
-    assert '<form class=\'refresh-interval-form\'' in response.text
+    assert "<form class='refresh-interval-form'" in response.text
     assert "Refresh interval" in response.text
     assert "<option value='3' selected>3 seconds</option>" in response.text
     assert "<option value='30'>30 seconds</option>" in response.text
@@ -543,9 +538,7 @@ def test_ui_report_run_queued_page_can_pause_auto_refresh() -> None:
 
 def test_ui_report_run_paused_page_preserves_changed_refresh_interval() -> None:
     _app, tc, report_run_id = _make_app_client_with_queued_report()
-    response = tc.get(
-        f"/ui/report-runs/{report_run_id}?auto_refresh=false&refresh_seconds=30"
-    )
+    response = tc.get(f"/ui/report-runs/{report_run_id}?auto_refresh=false&refresh_seconds=30")
     assert response.status_code == 200
     assert '<meta http-equiv="refresh"' not in response.text
     assert "Auto-refresh is paused." in response.text
@@ -1151,6 +1144,29 @@ def test_ui_report_run_list_status_filter_shows_only_matching_rows() -> None:
     resp_queued = tc.get("/ui/report-runs?status=queued")
     assert resp_queued.status_code == 200
     assert report_run_id[:8] not in resp_queued.text
+
+
+def test_ui_report_run_list_and_detail_show_stale_running_metadata() -> None:
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    report_uuid = UUID(report_run_id)
+    services.async_report_jobs.mark_running(report_uuid)
+    job = services.async_report_jobs.get(report_uuid)
+    assert job is not None
+    job.started_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+
+    list_resp = tc.get("/ui/report-runs?status=running")
+    detail_resp = tc.get(f"/ui/report-runs/{report_run_id}")
+
+    assert list_resp.status_code == 200
+    assert "Running Age" in list_resp.text
+    assert "stale" in list_resp.text
+    assert report_run_id[:8] in list_resp.text
+    assert detail_resp.status_code == 200
+    assert "Running age:" in detail_resp.text
+    assert "stale" in detail_resp.text
 
 
 def test_ui_report_run_list_invalid_status_filter_fails_closed() -> None:
