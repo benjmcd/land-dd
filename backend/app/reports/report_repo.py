@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.enums import ReportReviewStatus
 from app.domain.report_contracts import ReportReviewActionContract, ReportRunContract
+from app.reports.artifacts import serialize_report_artifact
 from app.reports.models import ReportRunModel
 
 
@@ -88,7 +89,7 @@ class SqlAlchemyReportRunRepository:
         artifact_path = self._artifact_path(persisted.report_run_id).resolve()
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
         artifact_path.write_text(
-            json.dumps(persisted.model_dump(mode="json"), indent=2, sort_keys=True),
+            serialize_report_artifact(persisted),
             encoding="utf-8",
         )
         model = self._contract_to_model(persisted, artifact_path)
@@ -140,7 +141,7 @@ class SqlAlchemyReportRunRepository:
             }
         )
         artifact_path.write_text(
-            json.dumps(updated.model_dump(mode="json"), indent=2, sort_keys=True),
+            serialize_report_artifact(updated),
             encoding="utf-8",
         )
         return updated

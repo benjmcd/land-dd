@@ -176,11 +176,21 @@ private_mvp_beta:
       uses SqlAlchemyReportRunRepository + real Postgres; proves full path:
       POST /areas → POST /report-runs → GET /dossier 409 → POST /approve →
       GET /dossier 200 with Markdown → DB row confirms status=succeeded + artifact present
-      → API reload confirms review_status=approved, reviewed_by=fixture-reviewer)
+      → API reload confirms review_status=approved, reviewed_by=fixture-reviewer),
+      plus backend/tests/api/test_operator_cases_db.py
+      (test_db_operator_case_report_persists_selected_county_fixture, RUN_DB_SMOKE=1-gated;
+      parametrized representative selected-county operator cases BUN-slope,
+      CHA-zoning-edge, and BRU-coastal-flood; proves /operator-cases/{case_id}/report
+      persists approved report/artifact state, selected-county evidence, and
+      connector-review handoff rows through SqlAlchemy + real Postgres)
     note: >
-      Full AOI-to-approved-dossier DB-backed path proven. The test exercises
-      SqlAlchemy persistence, the approval gate (pre-approval 409, post-approval 200),
-      and confirms artifact and review state survive a DB reload.
+      Full AOI-to-approved-dossier DB-backed path proven, plus representative
+      selected-county operator cases proven through the DB-backed
+      /operator-cases/{case_id}/report path. The tests exercise SqlAlchemy
+      persistence, the approval gate (pre-approval 409, post-approval 200 for
+      the generic dossier path), selected-county persisted evidence/artifacts,
+      and DB reload behavior. This does not prove full hosted production or
+      live-source production coverage.
 
   ds010_011_023_selected_county_behavior:
     status: complete

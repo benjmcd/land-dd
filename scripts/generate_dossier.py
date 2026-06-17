@@ -60,6 +60,7 @@ from app.connectors.review_handoff import ConnectorReviewDisposition  # noqa: E4
 from app.domain.area_contracts import AreaContract  # noqa: E402
 from app.domain.enums import IntentCode  # noqa: E402
 from app.domain.source_contracts import SourceContract  # noqa: E402
+from app.reports.artifacts import serialize_report_artifact  # noqa: E402
 from app.reports.dossier import build_rural_land_dossier  # noqa: E402
 
 _FIXTURE_SOURCE_ID = UUID("55555555-5555-4555-8555-555555555555")
@@ -427,11 +428,7 @@ def main() -> int:  # noqa: C901
         print(dossier)
 
     if args.artifact:
-        # Byte-identical to the API's in-memory artifact serialization
-        # (app/api/reports.py: json.dumps(report.model_dump(mode="json"), ...)).
-        artifact_json = json.dumps(
-            report_run.model_dump(mode="json"), indent=2, sort_keys=True
-        )
+        artifact_json = serialize_report_artifact(report_run)
         try:
             artifact_path = Path(args.artifact)
             artifact_path.write_text(artifact_json, encoding="utf-8")

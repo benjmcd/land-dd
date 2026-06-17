@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from collections import defaultdict
 from pathlib import Path
@@ -40,6 +39,7 @@ from app.db.engine import get_session_factory
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.report_contracts import ReportRunContract
+from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord, SqlAlchemyAsyncReportJobStore
 
@@ -830,7 +830,7 @@ def get_report_run_artifact(
                     },
                 )
         # In-memory mode (or missing file): serialize the contract
-        artifact_json = json.dumps(report.model_dump(mode="json"), indent=2, sort_keys=True)
+        artifact_json = serialize_report_artifact(report)
         return Response(
             content=artifact_json.encode("utf-8"),
             media_type="application/json",
