@@ -175,6 +175,63 @@ def result_path_from_url(url: str) -> str:
     return parsed.path
 
 
+def artifact_path_for_ui_report(path: str) -> str | None:
+    path_only = urlparse(path).path
+    prefix = "/ui/report-runs/"
+    if not path_only.startswith(prefix):
+        return None
+    report_run_id = path_only[len(prefix) :].split("/", 1)[0]
+    if not report_run_id:
+        return None
+    return f"/report-runs/{report_run_id}/artifact"
+
+
+def check_artifact_persistence(
+    opener: Any,
+    base_url: str,
+    report_ui_path: str,
+    expected_persistence: str,
+    timeout: float,
+) -> list[str]:
+    artifact_path = artifact_path_for_ui_report(report_ui_path)
+    if artifact_path is None:
+        return [f"could not derive artifact route from final path: {report_ui_path}"]
+    url = urljoin(base_url.rstrip("/") + "/", artifact_path.lstrip("/"))
+    try:
+        with opener.open(url, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        return [f"artifact persistence check returned HTTP {int(exc.code)}: {body[:200]}"]
+    except URLError as exc:
+        return [f"artifact persistence check failed: {exc.reason}"]
+
+    failures: list[str] = []
+    if status != 200:
+        failures.append(f"artifact persistence check expected HTTP 200, got {status}")
+    if "application/json" not in content_type.lower():
+        failures.append(
+            f"artifact persistence check expected application/json, got {content_type or '<missing>'}"
+        )
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        return [*failures, f"artifact persistence check returned invalid JSON: {exc}"]
+    metadata = payload.get("artifact_metadata")
+    if not isinstance(metadata, dict):
+        failures.append("artifact persistence check missing artifact_metadata object")
+        return failures
+    actual = metadata.get("persistence")
+    if actual != expected_persistence:
+        failures.append(
+            "artifact persistence mismatch: "
+            f"expected {expected_persistence!r}, got {actual!r}"
+        )
+    return failures
+
+
 def post_operator_case_report(
     opener: Any,
     base_url: str,
@@ -182,6 +239,7 @@ def post_operator_case_report(
     timeout: float,
     *,
     include_csrf: bool,
+    expected_artifact_persistence: str,
 ) -> RouteResult:
     check = OPERATOR_CASE_REPORT_CHECK
     url = urljoin(base_url.rstrip("/") + "/", "ui/operator-cases/report")
@@ -246,6 +304,16 @@ def post_operator_case_report(
     for text in check.forbidden:
         if text in body:
             failures.append(f"found forbidden text: {text}")
+    if expected_artifact_persistence:
+        failures.extend(
+            check_artifact_persistence(
+                opener,
+                base_url,
+                final_path,
+                expected_artifact_persistence,
+                timeout,
+            )
+        )
 
     return RouteResult(check.label, final_path, status, not failures, failures)
 
@@ -271,6 +339,8 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
             },
             args.timeout,
         )
+    if args.expect_artifact_persistence and not args.operator_case_id:
+        raise RuntimeError("--expect-artifact-persistence requires --operator-case-id")
 
     results = [
         fetch_route(opener, base_url, check, args.timeout)
@@ -284,6 +354,7 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                 args.operator_case_id,
                 args.timeout,
                 include_csrf=bool(args.api_key),
+                expected_artifact_persistence=args.expect_artifact_persistence,
             )
         )
     return results
@@ -302,6 +373,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--operator-case-id",
         default="",
         help="opt in to creating and checking one selected-county UI report",
+    )
+    parser.add_argument(
+        "--expect-artifact-persistence",
+        default="",
+        help="with --operator-case-id, assert final report artifact persistence value",
     )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     return parser

@@ -460,10 +460,12 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
             "`BUN-slope`, `CHA-zoning-edge`, and `BRU-coastal-flood`"
         ),
         "backend/tests/api/test_operator_cases_db.py",
-        (
-            "does not prove full hosted production, live-source production "
-            "coverage, or counties outside the selected private-MVP set"
-        ),
+        "does not prove full hosted production",
+        "outside the selected private-MVP set",
+        "the `/ui/operator-cases/report` launcher",
+        "approved UI delivery links",
+        "--expect-artifact-persistence postgres+object_store",
+        "artifact_metadata.persistence",
     ):
         assert phrase in runbook
 
@@ -520,10 +522,13 @@ def test_db_backed_regression_path_names_representative_operator_cases(
         "test_db_backed_full_reviewed_dossier_path",
         "backend/tests/api/test_operator_cases_db.py",
         "test_db_operator_case_report_persists_selected_county_fixture",
+        "test_db_ui_operator_case_report_persists_selected_county_fixture",
         "BUN-slope",
         "CHA-zoning-edge",
         "BRU-coastal-flood",
         "representative selected-county operator cases",
+        "/ui/operator-cases/report",
+        "approved UI delivery links",
     ):
         assert phrase in proof_text
 

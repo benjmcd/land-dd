@@ -89,6 +89,8 @@ def test_mvp_operator_runbook_documents_ui_browser_smoke() -> None:
     assert "does not create areas, report runs, connector-review items" in runbook
     assert "--operator-case-id BUN-slope" in runbook
     assert "creates an in-memory approved report" in runbook
+    assert "--expect-artifact-persistence postgres+object_store" in runbook
+    assert "artifact_metadata.persistence" in runbook
     assert "LAND_DD_UI_SMOKE_SCREENSHOT_DIR" in runbook
 
 

@@ -162,6 +162,93 @@ def test_db_operator_case_report_persists_selected_county_fixture(
         _cleanup_selected_county_snapshot(engine, before, area_id)
 
 
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_ui_operator_case_report_persists_selected_county_fixture(
+    tmp_path: Path,
+) -> None:
+    case_id = "BUN-slope"
+    area_id = _area_id_for(case_id)
+    engine = build_engine()
+    object_store_root = (tmp_path / "object-store").resolve()
+    with Session(engine) as session:
+        before = _capture_selected_county_snapshot(session, area_id)
+
+    app = create_app(
+        settings=Settings(OBJECT_STORE_ROOT=str(object_store_root)),
+        use_db_services=True,
+    )
+    client = TestClient(app)
+
+    try:
+        create_response = client.post(
+            "/ui/operator-cases/report",
+            data={"selected_county_case_id": case_id},
+            follow_redirects=False,
+        )
+
+        assert create_response.status_code == 303
+        location = create_response.headers["location"]
+        assert location.startswith("/ui/report-runs/")
+        report_run_id = UUID(location.rsplit("/", 1)[-1])
+
+        report_page = client.get(location)
+
+        assert report_page.status_code == 200
+        assert "Executive Summary" in report_page.text
+        assert "Download dossier (.md)" in report_page.text
+        assert "Download report (.json)" in report_page.text
+        assert "View evidence lineage" in report_page.text
+        assert f'href="/report-runs/{report_run_id}/artifact"' in report_page.text
+
+        artifact_response = client.get(f"/report-runs/{report_run_id}/artifact")
+
+        assert artifact_response.status_code == 200
+        artifact_report = artifact_response.json()
+        assert artifact_report["report_run_id"] == str(report_run_id)
+        assert artifact_report["review_status"] == "approved"
+        assert artifact_report["artifact_metadata"]["persistence"] == "postgres+object_store"
+        assert _SOURCE_NAME in artifact_report["source_manifest"]["source_names"]
+        assert (
+            str(selected_county_cases._SOURCE_ID)
+            in artifact_report["source_manifest"]["source_ids"]
+        )
+
+        artifact_path = Path(
+            artifact_report["artifact_metadata"]["machine_json_uri"],
+        ).resolve()
+        assert artifact_path.exists()
+        assert artifact_path.is_relative_to(object_store_root)
+        stored_artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        assert stored_artifact == artifact_report
+
+        with Session(engine) as session:
+            after = _capture_selected_county_snapshot(session, area_id)
+            report_row = session.execute(
+                text(
+                    """
+                    SELECT area_id, status, output_uri, machine_json_uri
+                    FROM reports.report_runs
+                    WHERE report_run_id = :report_run_id
+                    """
+                ),
+                {"report_run_id": report_run_id},
+            ).mappings().one_or_none()
+            assert report_row is not None
+            assert UUID(str(report_row["area_id"])) == area_id
+            assert report_row["status"] == "succeeded"
+            assert report_row["output_uri"] == artifact_report["output_uri"]
+            assert (
+                report_row["machine_json_uri"]
+                == artifact_report["artifact_metadata"]["machine_json_uri"]
+            )
+
+            assert after.evidence_ids - before.evidence_ids
+            assert after.ingest_run_ids - before.ingest_run_ids
+            assert after.connector_review_keys - before.connector_review_keys
+    finally:
+        _cleanup_selected_county_snapshot(engine, before, area_id)
+
+
 def _capture_selected_county_snapshot(
     session: Session,
     area_id: UUID,
