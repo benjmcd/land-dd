@@ -46,6 +46,8 @@ class LiveConnectorJobRecord:
     payload: dict[str, Any]
     created_at: datetime
     max_features: int
+    workspace_id: UUID | None = None
+    requested_by: UUID | None = None
     bbox: LiveConnectorBbox | None = None
     connector_ingest_run_id: UUID | None = None
     connector_review_status: str | None = None
@@ -65,6 +67,8 @@ class LiveConnectorJobStoreProtocol(Protocol):
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: UsgsTnmBbox | None = None,
         max_sample_points: int = USGS_TNM_MAX_SAMPLE_POINTS,
     ) -> LiveConnectorJobRecord: ...
@@ -73,6 +77,8 @@ class LiveConnectorJobStoreProtocol(Protocol):
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: FemaNfhlBbox | None = None,
         max_features: int = FEMA_NFHL_MAX_FEATURES,
     ) -> LiveConnectorJobRecord: ...
@@ -81,6 +87,8 @@ class LiveConnectorJobStoreProtocol(Protocol):
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: NwiBbox | None = None,
         max_features: int = NWI_MAX_FEATURES,
     ) -> LiveConnectorJobRecord: ...
@@ -89,6 +97,8 @@ class LiveConnectorJobStoreProtocol(Protocol):
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: SsurgoBbox | None = None,
         max_rows: int = SSURGO_MAX_ROWS,
     ) -> LiveConnectorJobRecord: ...
@@ -102,6 +112,7 @@ class LiveConnectorJobStoreProtocol(Protocol):
         offset: int = 0,
         status: JobStatus | None = None,
         stale: bool = False,
+        workspace_id: UUID | None = None,
     ) -> list[LiveConnectorJobRecord]: ...
 
     def lease_next(self, *, worker_id: str) -> LiveConnectorJobRecord | None: ...
@@ -130,11 +141,15 @@ class InMemoryLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: UsgsTnmBbox | None = None,
         max_sample_points: int = USGS_TNM_MAX_SAMPLE_POINTS,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS001_ID,
             connector_name=USGS_TNM_CONNECTOR_NAME,
             bbox=bbox,
@@ -146,11 +161,15 @@ class InMemoryLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: FemaNfhlBbox | None = None,
         max_features: int = FEMA_NFHL_MAX_FEATURES,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS002_ID,
             connector_name=FEMA_NFHL_CONNECTOR_NAME,
             bbox=bbox,
@@ -162,11 +181,15 @@ class InMemoryLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: NwiBbox | None = None,
         max_features: int = NWI_MAX_FEATURES,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS004_ID,
             connector_name=NWI_CONNECTOR_NAME,
             bbox=bbox,
@@ -178,11 +201,15 @@ class InMemoryLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: SsurgoBbox | None = None,
         max_rows: int = SSURGO_MAX_ROWS,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS003_ID,
             connector_name=SSURGO_CONNECTOR_NAME,
             bbox=bbox,
@@ -194,6 +221,8 @@ class InMemoryLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None,
+        requested_by: UUID | None,
         source_registry_id: str,
         connector_name: str,
         bbox: LiveConnectorBbox | None,
@@ -203,6 +232,7 @@ class InMemoryLiveConnectorJobStore:
         max_features = _require_max_features(max_features, max_allowed_features)
         idempotency_key = _idempotency_key(
             source_registry_id=source_registry_id,
+            workspace_id=workspace_id,
             area_id=area_id,
             bbox=bbox,
             max_features=max_features,
@@ -224,11 +254,15 @@ class InMemoryLiveConnectorJobStore:
                     source_registry_id=source_registry_id,
                     connector_name=connector_name,
                     area_id=area_id,
+                    workspace_id=workspace_id,
+                    requested_by=requested_by,
                     bbox=bbox,
                     max_features=max_features,
                 ),
                 created_at=now,
                 max_features=max_features,
+                workspace_id=workspace_id,
+                requested_by=requested_by,
                 bbox=bbox,
                 not_before=now,
             )
@@ -247,9 +281,12 @@ class InMemoryLiveConnectorJobStore:
         offset: int = 0,
         status: JobStatus | None = None,
         stale: bool = False,
+        workspace_id: UUID | None = None,
     ) -> list[LiveConnectorJobRecord]:
         with self._lock:
             jobs = sorted(self._jobs.values(), key=lambda job: job.created_at, reverse=True)
+            if workspace_id is not None:
+                jobs = [job for job in jobs if job.workspace_id == workspace_id]
             if status is not None:
                 jobs = [job for job in jobs if job.status == status]
             if stale:
@@ -343,11 +380,15 @@ class SqlAlchemyLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: UsgsTnmBbox | None = None,
         max_sample_points: int = USGS_TNM_MAX_SAMPLE_POINTS,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS001_ID,
             connector_name=USGS_TNM_CONNECTOR_NAME,
             bbox=bbox,
@@ -359,11 +400,15 @@ class SqlAlchemyLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: FemaNfhlBbox | None = None,
         max_features: int = FEMA_NFHL_MAX_FEATURES,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS002_ID,
             connector_name=FEMA_NFHL_CONNECTOR_NAME,
             bbox=bbox,
@@ -375,11 +420,15 @@ class SqlAlchemyLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: NwiBbox | None = None,
         max_features: int = NWI_MAX_FEATURES,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS004_ID,
             connector_name=NWI_CONNECTOR_NAME,
             bbox=bbox,
@@ -391,11 +440,15 @@ class SqlAlchemyLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
         bbox: SsurgoBbox | None = None,
         max_rows: int = SSURGO_MAX_ROWS,
     ) -> LiveConnectorJobRecord:
         return self._enqueue(
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             source_registry_id=LIVE_CONNECTOR_DS003_ID,
             connector_name=SSURGO_CONNECTOR_NAME,
             bbox=bbox,
@@ -407,6 +460,8 @@ class SqlAlchemyLiveConnectorJobStore:
         self,
         *,
         area_id: UUID,
+        workspace_id: UUID | None,
+        requested_by: UUID | None,
         source_registry_id: str,
         connector_name: str,
         bbox: LiveConnectorBbox | None,
@@ -416,6 +471,7 @@ class SqlAlchemyLiveConnectorJobStore:
         max_features = _require_max_features(max_features, max_allowed_features)
         idempotency_key = _idempotency_key(
             source_registry_id=source_registry_id,
+            workspace_id=workspace_id,
             area_id=area_id,
             bbox=bbox,
             max_features=max_features,
@@ -426,6 +482,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 INSERT INTO jobs.job_queue (
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -435,6 +492,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 VALUES (
                     :job_id,
                     :job_type,
+                    CAST(:workspace_id AS uuid),
                     CAST(:status AS jobs.job_status),
                     :priority,
                     CAST(:payload AS jsonb),
@@ -447,12 +505,15 @@ class SqlAlchemyLiveConnectorJobStore:
             {
                 "job_id": str(_stable_job_id(idempotency_key)),
                 "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                "workspace_id": str(workspace_id) if workspace_id is not None else None,
                 "status": JobStatus.QUEUED.value,
                 "priority": 40,
                 "payload": _json_payload(
                     source_registry_id=source_registry_id,
                     connector_name=connector_name,
                     area_id=area_id,
+                    workspace_id=workspace_id,
+                    requested_by=requested_by,
                     bbox=bbox,
                     max_features=max_features,
                 ),
@@ -473,6 +534,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 SELECT
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -509,6 +571,7 @@ class SqlAlchemyLiveConnectorJobStore:
         offset: int = 0,
         status: JobStatus | None = None,
         stale: bool = False,
+        workspace_id: UUID | None = None,
     ) -> list[LiveConnectorJobRecord]:
         params: dict[str, object] = {
             "job_type": LIVE_CONNECTOR_JOB_TYPE,
@@ -516,6 +579,9 @@ class SqlAlchemyLiveConnectorJobStore:
             "offset": offset,
         }
         predicates = ["job_type = :job_type"]
+        if workspace_id is not None:
+            params["workspace_id"] = str(workspace_id)
+            predicates.append("workspace_id = CAST(:workspace_id AS uuid)")
         if status is not None:
             params["status"] = status.value
             predicates.append("status = CAST(:status AS jobs.job_status)")
@@ -534,6 +600,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 SELECT
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -585,6 +652,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 RETURNING
                     queue.job_id,
                     queue.job_type,
+                    queue.workspace_id,
                     queue.status,
                     queue.priority,
                     queue.payload,
@@ -642,6 +710,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 RETURNING
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -689,6 +758,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 RETURNING
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -787,6 +857,7 @@ class SqlAlchemyLiveConnectorJobStore:
                 SELECT
                     job_id,
                     job_type,
+                    workspace_id,
                     status,
                     priority,
                     payload,
@@ -822,6 +893,8 @@ def _payload(
     source_registry_id: str,
     connector_name: str,
     area_id: UUID,
+    workspace_id: UUID | None,
+    requested_by: UUID | None,
     bbox: LiveConnectorBbox | None,
     max_features: int,
 ) -> dict[str, object]:
@@ -832,6 +905,10 @@ def _payload(
         "area_id": str(area_id),
         "max_features": max_features,
     }
+    if workspace_id is not None:
+        payload["workspace_id"] = str(workspace_id)
+    if requested_by is not None:
+        payload["requested_by"] = str(requested_by)
     if source_registry_id == LIVE_CONNECTOR_DS003_ID:
         payload["max_rows"] = max_features
     if source_registry_id == LIVE_CONNECTOR_DS001_ID:
@@ -876,6 +953,8 @@ def _json_payload(
     source_registry_id: str,
     connector_name: str,
     area_id: UUID,
+    workspace_id: UUID | None,
+    requested_by: UUID | None,
     bbox: LiveConnectorBbox | None,
     max_features: int,
 ) -> str:
@@ -884,6 +963,8 @@ def _json_payload(
             source_registry_id=source_registry_id,
             connector_name=connector_name,
             area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             bbox=bbox,
             max_features=max_features,
         ),
@@ -922,12 +1003,17 @@ def _bbox_from_payload(payload: Mapping[str, object]) -> LiveConnectorBbox | Non
 def _idempotency_key(
     *,
     source_registry_id: str,
+    workspace_id: UUID | None,
     area_id: UUID,
     bbox: LiveConnectorBbox | None,
     max_features: int,
 ) -> str:
     bbox_key = "area" if bbox is None else bbox.fingerprint
-    return f"{LIVE_CONNECTOR_JOB_TYPE}:{source_registry_id}:{area_id}:{bbox_key}:{max_features}"
+    workspace_key = str(workspace_id) if workspace_id is not None else "legacy"
+    return (
+        f"{LIVE_CONNECTOR_JOB_TYPE}:{workspace_key}:{source_registry_id}:"
+        f"{area_id}:{bbox_key}:{max_features}"
+    )
 
 
 def _stable_job_id(idempotency_key: str) -> UUID:
@@ -949,6 +1035,8 @@ def _record_from_row(row: Any) -> LiveConnectorJobRecord:
         payload=payload,
         created_at=row["created_at"],
         max_features=int(payload["max_features"]),
+        workspace_id=_record_workspace_id(row, payload),
+        requested_by=_optional_uuid(payload.get("requested_by")),
         bbox=_bbox_from_payload(payload),
         connector_ingest_run_id=_optional_uuid(payload.get("connector_ingest_run_id")),
         connector_review_status=_optional_str(payload.get("connector_review_status")),
@@ -968,6 +1056,13 @@ def _optional_uuid(value: object) -> UUID | None:
     if value is None:
         return None
     return UUID(str(value))
+
+
+def _record_workspace_id(row: Any, payload: Mapping[str, object]) -> UUID | None:
+    row_workspace_id = row["workspace_id"] if "workspace_id" in row else None
+    if row_workspace_id is not None:
+        return UUID(str(row_workspace_id))
+    return _optional_uuid(payload.get("workspace_id"))
 
 
 def _optional_str(value: object) -> str | None:

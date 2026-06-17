@@ -168,6 +168,29 @@ def test_optional_report_auth_signed_token_fails_closed_without_valid_bearer_tok
     assert invalid_exc.value.status_code == 401
 
 
+def test_signed_token_area_create_uses_token_identity_over_body() -> None:
+    client = signed_token_client()
+    workspace_id = str(uuid4())
+    user_id = str(uuid4())
+
+    response = client.post(
+        "/areas",
+        json={
+            "label": "signed token fixture polygon",
+            "workspace_id": str(uuid4()),
+            "created_by": str(uuid4()),
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+        headers=bearer_headers(workspace_id, user_id),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["workspace_id"] == workspace_id
+    assert body["created_by"] == user_id
+
+
 def test_signed_report_identity_token_binds_report_scope() -> None:
     client = signed_token_client()
     workspace_id = str(uuid4())

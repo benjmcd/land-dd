@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
-from app.api.dependencies import ApiServices, get_request_auth_context, get_services
+from app.api.dependencies import (
+    ApiServices,
+    get_request_auth_context,
+    get_services,
+)
 from app.domain.area_contracts import AreaContract
 
 router = APIRouter(prefix="/areas", tags=["areas"])
@@ -26,7 +30,11 @@ def create_area(
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> AreaContract:
     try:
-        if request_context.app.state.settings.report_auth_mode == "signed_token":
+        if (
+            request_context.app.state.settings.report_auth_mode == "signed_token"
+            or _has_header_value(x_workspace_id)
+            or _has_header_value(x_user_id)
+        ):
             auth = get_request_auth_context(
                 request_context,
                 authorization=authorization,
@@ -35,8 +43,8 @@ def create_area(
             )
             area = area.model_copy(
                 update={
-                    "workspace_id": area.workspace_id or auth.workspace_id,
-                    "created_by": area.created_by or auth.user_id,
+                    "workspace_id": auth.workspace_id,
+                    "created_by": auth.user_id,
                 }
             )
         return services.area_service.create(area)
@@ -45,3 +53,7 @@ def create_area(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
+
+
+def _has_header_value(raw: str | None) -> bool:
+    return raw is not None and bool(raw.strip())

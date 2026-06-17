@@ -31,11 +31,21 @@ _VALID_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "fixture-token-123",
 }
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+_OTHER_USER_ID = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+_LIVE_HEADERS = {
+    **_VALID_HEADERS,
+    "X-Workspace-Id": str(_WORKSPACE_ID),
+    "X-User-Id": str(_USER_ID),
+}
 
 
-def _area(area_id: UUID) -> AreaContract:
+def _area(area_id: UUID, *, workspace_id: UUID | None = None) -> AreaContract:
     return AreaContract(
         area_id=area_id,
+        workspace_id=workspace_id,
         label="USGS TNM API test area",
         geom_geojson={
             "type": "Polygon",
@@ -109,13 +119,14 @@ def _client_with_seeded_services(
     *,
     elevations: list[float],
     fetch_urls: list[str] | None = None,
+    workspace_id: UUID | None = None,
 ) -> tuple[TestClient, ApiServices, UUID]:
     app = create_app()
     services = app.state.services
     assert isinstance(services, ApiServices)
     area_id = uuid4()
     services.source_service.register(_source())
-    services.area_service.create(_area(area_id))
+    services.area_service.create(_area(area_id, workspace_id=workspace_id))
     remaining_elevations = iter(elevations)
 
     def fetch_json(url: str, _timeout_seconds: float) -> dict[str, object]:
@@ -292,21 +303,26 @@ def test_usgs_tnm_schedule_bbox_enqueues_without_fetch_or_report() -> None:
     client, services, area_id = _client_with_seeded_services(
         elevations=[9.0, 13.0],
         fetch_urls=fetch_urls,
+        workspace_id=_WORKSPACE_ID,
     )
 
     response = client.post(
         "/connector-runs/usgs-tnm/schedule-bbox",
         json=_body(area_id),
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert response.status_code == 202
     body = response.json()
     assert body["status"] == "queued"
     assert body["area_id"] == str(area_id)
+    assert body["workspace_id"] == str(_WORKSPACE_ID)
+    assert body["requested_by"] == str(_USER_ID)
     assert body["source_registry_id"] == "DS-001"
     assert body["connector_name"] == "usgs_tnm_elevation_live"
     assert body["connector_ingest_run_id"] is None
+    assert body["payload"]["workspace_id"] == str(_WORKSPACE_ID)
+    assert body["payload"]["requested_by"] == str(_USER_ID)
     assert body["payload"]["source_registry_id"] == "DS-001"
     assert body["payload"]["connector_name"] == "usgs_tnm_elevation_live"
     assert body["payload"]["max_sample_points"] == 2
@@ -316,7 +332,7 @@ def test_usgs_tnm_schedule_bbox_enqueues_without_fetch_or_report() -> None:
 
     queued_job_response = client.get(
         f"/connector-runs/live-jobs/{body['job_id']}",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
     assert queued_job_response.status_code == 200
     queued_job = queued_job_response.json()
@@ -346,7 +362,7 @@ def test_usgs_tnm_schedule_bbox_enqueues_without_fetch_or_report() -> None:
 
     finished_job_response = client.get(
         f"/connector-runs/live-jobs/{body['job_id']}",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
     assert finished_job_response.status_code == 200
     finished_job = finished_job_response.json()
@@ -357,6 +373,38 @@ def test_usgs_tnm_schedule_bbox_enqueues_without_fetch_or_report() -> None:
     assert finished_job["connector_review_status"] == "queued"
 
 
+def test_usgs_tnm_schedule_bbox_requires_workspace_identity() -> None:
+    client, _services, area_id = _client_with_seeded_services(
+        elevations=[9.0, 13.0],
+        workspace_id=_WORKSPACE_ID,
+    )
+
+    response = client.post(
+        "/connector-runs/usgs-tnm/schedule-bbox",
+        json=_body(area_id),
+        headers=_VALID_HEADERS,
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_usgs_tnm_schedule_bbox_hides_area_from_other_workspace() -> None:
+    client, _services, area_id = _client_with_seeded_services(
+        elevations=[9.0, 13.0],
+        workspace_id=_OTHER_WORKSPACE_ID,
+    )
+
+    response = client.post(
+        "/connector-runs/usgs-tnm/schedule-bbox",
+        json=_body(area_id),
+        headers=_LIVE_HEADERS,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "area not found"
+
+
 def test_list_live_connector_jobs_filters_running_and_stale_jobs() -> None:
     app = create_app()
     client = TestClient(app)
@@ -364,10 +412,14 @@ def test_list_live_connector_jobs_filters_running_and_stale_jobs() -> None:
     area_id = uuid4()
     running = services.live_connector_jobs.enqueue_nwi(
         area_id=area_id,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
         max_features=1,
     )
     queued = services.live_connector_jobs.enqueue_fema_nfhl(
         area_id=area_id,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
         max_features=1,
     )
     leased = services.live_connector_jobs.lease_next(worker_id="api-live-worker")
@@ -386,19 +438,19 @@ def test_list_live_connector_jobs_filters_running_and_stale_jobs() -> None:
 
     running_resp = client.get(
         "/connector-runs/live-jobs?status=running",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
     stale_resp = client.get(
         "/connector-runs/live-jobs?status=running&stale=true",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
     queued_resp = client.get(
         "/connector-runs/live-jobs?status=queued",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
     invalid_resp = client.get(
         "/connector-runs/live-jobs?status=failed&stale=true",
-        headers=_VALID_HEADERS,
+        headers=_LIVE_HEADERS,
     )
 
     assert running_resp.status_code == 200
@@ -429,6 +481,8 @@ def test_live_connector_job_inspection_requires_operations_read_scope() -> None:
     under_scoped_headers = {
         "X-Reviewer-Id": "runner",
         "X-Reviewer-Token": "runner-token",
+        "X-Workspace-Id": str(_WORKSPACE_ID),
+        "X-User-Id": str(_USER_ID),
     }
 
     under_scoped_list = under_scoped.get(
@@ -447,6 +501,72 @@ def test_live_connector_job_inspection_requires_operations_read_scope() -> None:
     assert under_scoped_list.json()["detail"] == ("reviewer scope is required: operations:read")
 
 
+def test_live_connector_job_inspection_requires_workspace_identity() -> None:
+    client = TestClient(create_app())
+
+    no_identity_list = client.get("/connector-runs/live-jobs", headers=_VALID_HEADERS)
+    no_identity_detail = client.get(
+        f"/connector-runs/live-jobs/{uuid4()}",
+        headers=_VALID_HEADERS,
+    )
+
+    assert no_identity_list.status_code == 401
+    assert no_identity_detail.status_code == 401
+    assert no_identity_list.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_live_connector_job_list_and_detail_hide_other_workspace_jobs() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    job = services.live_connector_jobs.enqueue_nwi(
+        area_id=uuid4(),
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+        max_features=1,
+    )
+    other_headers = {
+        **_VALID_HEADERS,
+        "X-Workspace-Id": str(_OTHER_WORKSPACE_ID),
+        "X-User-Id": str(_OTHER_USER_ID),
+    }
+
+    listed = client.get("/connector-runs/live-jobs", headers=other_headers)
+    fetched = client.get(
+        f"/connector-runs/live-jobs/{job.job_id}",
+        headers=other_headers,
+    )
+
+    assert listed.status_code == 200
+    assert listed.json() == []
+    assert fetched.status_code == 404
+
+
+def test_live_connector_worker_fails_closed_for_cross_workspace_area() -> None:
+    app = create_app()
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    services.area_service.create(_area(area_id, workspace_id=_OTHER_WORKSPACE_ID))
+    job = services.live_connector_jobs.enqueue_usgs_tnm(
+        area_id=area_id,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+        bbox=UsgsTnmBbox(xmin=-77.10, ymin=38.80, xmax=-77.00, ymax=38.90),
+        max_sample_points=2,
+    )
+
+    result = run_next_live_connector_job(
+        services=services,
+        worker_id="usgs-tnm-worker-1",
+    )
+
+    assert result is not None
+    assert result.succeeded is False
+    assert result.job.job_id == job.job_id
+    assert result.job.status.value == "failed"
+    assert result.error == "area not found"
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_db_usgs_tnm_live_connector_job_store_persists_and_leases_ds001_payload() -> None:
     engine = build_engine()
@@ -461,19 +581,38 @@ def test_db_usgs_tnm_live_connector_job_store_persists_and_leases_ds001_payload(
                 area_id=area_id,
                 bbox=bbox,
                 max_sample_points=2,
+                workspace_id=_WORKSPACE_ID,
+                requested_by=_USER_ID,
             )
             job_id = queued.job_id
             assert queued.source_registry_id == "DS-001"
             assert queued.connector_name == "usgs_tnm_elevation_live"
+            assert queued.workspace_id == _WORKSPACE_ID
+            assert queued.requested_by == _USER_ID
             assert queued.payload["source_registry_id"] == "DS-001"
             assert queued.payload["connector_name"] == "usgs_tnm_elevation_live"
+            assert queued.payload["workspace_id"] == str(_WORKSPACE_ID)
+            assert queued.payload["requested_by"] == str(_USER_ID)
             assert queued.payload["max_sample_points"] == 2
+
+            retrieved = store.get(queued.job_id)
+            assert retrieved is not None
+            assert retrieved.workspace_id == _WORKSPACE_ID
+            assert retrieved.requested_by == _USER_ID
+            assert queued.job_id in {
+                job.job_id for job in store.list_recent(workspace_id=_WORKSPACE_ID)
+            }
+            assert queued.job_id not in {
+                job.job_id for job in store.list_recent(workspace_id=uuid4())
+            }
 
             leased = store.lease_next(worker_id="db-usgs-tnm-worker-1")
             assert leased is not None
             assert leased.job_id == queued.job_id
             assert leased.source_registry_id == "DS-001"
             assert leased.connector_name == "usgs_tnm_elevation_live"
+            assert leased.workspace_id == _WORKSPACE_ID
+            assert leased.requested_by == _USER_ID
             assert isinstance(leased.bbox, UsgsTnmBbox)
             assert leased.bbox.fingerprint == bbox.fingerprint
             assert leased.payload["max_sample_points"] == 2

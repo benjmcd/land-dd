@@ -208,11 +208,14 @@ The failed job is preserved. The response returns a new `report_run_id` plus
 
 ### Reviewed live connector queue scheduling
 
-Connector scheduling routes require reviewer headers:
+Connector scheduling routes require reviewer headers plus the request workspace/user
+headers for the registered area:
 
 ```bash
 X-Reviewer-Id: fixture-reviewer
 X-Reviewer-Token: fixture-token-123
+X-Workspace-Id: {workspace_id}
+X-User-Id: {user_id}
 ```
 
 To enqueue the current reviewed live-source sequence for an already registered area:
@@ -222,6 +225,8 @@ curl -s -X POST http://localhost:8000/connector-runs/live-sequence/schedule-bbox
   -H 'Content-Type: application/json' \
   -H 'X-Reviewer-Id: fixture-reviewer' \
   -H 'X-Reviewer-Token: fixture-token-123' \
+  -H 'X-Workspace-Id: {workspace_id}' \
+  -H 'X-User-Id: {user_id}' \
   -d '{
     "area_id": "{area_id}",
     "bbox": {"xmin": -77.10, "ymin": 38.80, "xmax": -77.00, "ymax": 38.90},
@@ -232,10 +237,11 @@ curl -s -X POST http://localhost:8000/connector-runs/live-sequence/schedule-bbox
 ```
 
 The response returns `policy_id="reviewed_live_sequence_ds001_ds002_ds004_ds003_v1"` and
-four durable live connector jobs in order: DS-001, DS-002, DS-004, DS-003. Scheduling does
-not call live sources, persist evidence, approve review, or create reports. Run
-`py -3.12 .\scripts\live_connector_worker.py --max-jobs 1 --json` to process queued jobs
-one at a time; report creation remains separate and requires connector review approval.
+four durable live connector jobs in order: DS-001, DS-002, DS-004, DS-003, scoped to
+the authenticated workspace. Scheduling does not call live sources, persist evidence,
+approve review, or create reports. Run `py -3.12 .\scripts\live_connector_worker.py
+--max-jobs 1 --json` to process queued jobs one at a time; report creation remains
+separate and requires connector review approval.
 
 ### Queue health
 
