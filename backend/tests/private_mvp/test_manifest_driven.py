@@ -38,6 +38,7 @@ from app.domain.report_contracts import ReportRunContract
 from app.domain.source_contracts import SourceContract, SourceRetrievalRunContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
@@ -196,10 +197,8 @@ def test_manifest_approved_path_emits_valid_artifact(case: dict[str, Any]) -> No
     assert approved is not None, f"Case {case['case_id']!r}: approval returned None"
     assert approved.review_status == ReportReviewStatus.APPROVED
 
-    # Artifact serialization is byte-identical to the API (app/api/reports.py).
-    artifact = json.loads(
-        json.dumps(approved.model_dump(mode="json"), indent=2, sort_keys=True)
-    )
+    # Artifact serialization is shared with API/repository artifact emission.
+    artifact = json.loads(serialize_report_artifact(approved))
     assert artifact["report_run_id"] == str(approved.report_run_id)
     source_ids = artifact["source_manifest"]["source_ids"]
     assert isinstance(source_ids, list) and source_ids, (
