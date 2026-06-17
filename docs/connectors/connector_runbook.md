@@ -678,7 +678,8 @@ Optional overrides: `SMOKE_API_PORT` (default 8103), `SMOKE_OUTPUT_DIR`
    `ENABLE_LIVE_CONNECTORS=true`.
 2. Waits for the `/health` endpoint to respond.
 3. Registers DS-001, DS-002, DS-003, and DS-004 sources from the CSV registry via
-   `POST /sources`.
+   `POST /sources` with the local reviewer service-account headers. The reviewer account
+   must hold `source:manage`; the default local `fixture-reviewer` account includes it.
 4. Registers a Buncombe NC polygon area via `POST /areas`.
 5. Calls each of the four `query-bbox` routes in order (DS-001, DS-002, DS-004, DS-003)
    with reviewer auth headers.
@@ -720,6 +721,9 @@ Non-2xx HTTP responses are recorded per leg. The transcript JSON includes
 - `409 source registry id DS-00X is not registered` — source seed was not applied; check
   that `registers/data_source_registry.csv` contains the expected row and that the
   `/sources` seed step completed successfully.
+- `401` or `403` during source seed - reviewer credentials were missing, invalid, or did
+  not include `source:manage`; check `REVIEWER_ACCOUNTS` and
+  `REVIEWER_ACCOUNT_SCOPES`.
 - `422 area not found` — area registration failed; check API startup logs.
 - `503 connector reviewer auth is not configured` — `REVIEWER_ACCOUNTS` env var is not
   set or is empty; the default value applies automatically when no `.env` overrides it.

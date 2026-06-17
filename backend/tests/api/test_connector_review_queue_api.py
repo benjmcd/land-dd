@@ -21,6 +21,7 @@ from app.connectors import (
     build_connector_run_review_status,
     evaluate_flood_fixture_quality,
 )
+from app.core.config import Settings
 from app.domain.enums import ConfidenceBand, EvidenceType, JobStatus
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceRetrievalRunContract
@@ -31,6 +32,10 @@ _WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 _USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
 _OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 _OTHER_USER_ID = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+_REVIEWER_ID = "fixture-reviewer"
+_REVIEWER_TOKEN = "fixture-token-123"
+_LIMITED_REVIEWER_ID = "limited-reviewer"
+_LIMITED_REVIEWER_TOKEN = "limited-token"
 
 
 def _auth_headers(
@@ -38,6 +43,16 @@ def _auth_headers(
     user_id: UUID = _USER_ID,
 ) -> dict[str, str]:
     return {"X-Workspace-Id": str(workspace_id), "X-User-Id": str(user_id)}
+
+
+def _reviewer_headers(
+    reviewer_id: str = _REVIEWER_ID,
+    reviewer_token: str = _REVIEWER_TOKEN,
+) -> dict[str, str]:
+    return {
+        "X-Reviewer-Id": reviewer_id,
+        "X-Reviewer-Token": reviewer_token,
+    }
 
 
 def _client(app: FastAPI | None = None) -> TestClient:
@@ -367,7 +382,8 @@ def test_approve_connector_review_queue_item_records_reviewer_action() -> None:
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/approve",
-        json={"reviewer_id": f" {str(_USER_ID)} ", "reason": "checked source packet"},
+        json={"reviewer_id": f" {_REVIEWER_ID} ", "reason": "checked source packet"},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 200
@@ -376,7 +392,7 @@ def test_approve_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] is None
     action = body["payload"]["last_review_action"]
     assert action["action"] == "approve"
-    assert action["reviewer_id"] == str(_USER_ID)
+    assert action["reviewer_id"] == _REVIEWER_ID
     assert action["reason"] == "checked source packet"
     assert body["payload"]["review_actions"] == [action]
 
@@ -388,7 +404,8 @@ def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": str(_USER_ID), "reason": "source packet rejected"},
+        json={"reviewer_id": _REVIEWER_ID, "reason": "source packet rejected"},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 200
@@ -397,7 +414,7 @@ def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] == "source packet rejected"
     action = body["payload"]["last_review_action"]
     assert action["action"] == "reject"
-    assert action["reviewer_id"] == str(_USER_ID)
+    assert action["reviewer_id"] == _REVIEWER_ID
     assert action["reason"] == "source packet rejected"
 
 
@@ -407,13 +424,15 @@ def test_requeue_connector_review_queue_item_appends_second_reviewer_action() ->
     item = _enqueue_review_item(app, "flood_failure.json")
     rejected = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": str(_USER_ID), "reason": "temporary source issue"},
+        json={"reviewer_id": _REVIEWER_ID, "reason": "temporary source issue"},
+        headers=_reviewer_headers(),
     )
     assert rejected.status_code == 200
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/requeue",
-        json={"reviewer_id": str(_USER_ID), "reason": "retry source packet"},
+        json={"reviewer_id": _REVIEWER_ID, "reason": "retry source packet"},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 200
@@ -422,7 +441,7 @@ def test_requeue_connector_review_queue_item_appends_second_reviewer_action() ->
     assert body["last_error"] == "retry source packet"
     actions = body["payload"]["review_actions"]
     assert [action["action"] for action in actions] == ["reject", "requeue"]
-    assert actions[-1]["reviewer_id"] == str(_USER_ID)
+    assert actions[-1]["reviewer_id"] == _REVIEWER_ID
 
 
 def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
@@ -432,7 +451,8 @@ def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/cancel",
-        json={"reviewer_id": str(_USER_ID), "reason": "duplicate packet"},
+        json={"reviewer_id": _REVIEWER_ID, "reason": "duplicate packet"},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 200
@@ -441,7 +461,7 @@ def test_cancel_connector_review_queue_item_records_reviewer_action() -> None:
     assert body["last_error"] == "duplicate packet"
     action = body["payload"]["last_review_action"]
     assert action["action"] == "cancel"
-    assert action["reviewer_id"] == str(_USER_ID)
+    assert action["reviewer_id"] == _REVIEWER_ID
 
 
 def test_connector_review_action_rejects_missing_reviewer_identity() -> None:
@@ -452,6 +472,7 @@ def test_connector_review_action_rejects_missing_reviewer_identity() -> None:
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/approve",
         json={"reviewer_id": " "},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 422
@@ -465,11 +486,46 @@ def test_connector_review_action_rejects_reviewer_identity_mismatch() -> None:
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/approve",
-        json={"reviewer_id": str(_OTHER_USER_ID)},
+        json={"reviewer_id": "second-reviewer"},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 403
     assert "reviewer_id" in response.json()["detail"]
+
+
+def test_connector_review_action_requires_reviewer_credentials() -> None:
+    app = create_app()
+    client = _client(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/approve",
+        json={"reviewer_id": _REVIEWER_ID, "reason": "checked source packet"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "connector reviewer credentials are required"
+
+
+def test_connector_review_action_rejects_reviewer_without_review_scope() -> None:
+    app = create_app(
+        settings=Settings(
+            REVIEWER_ACCOUNTS=f"{_LIMITED_REVIEWER_ID}:{_LIMITED_REVIEWER_TOKEN}",
+            REVIEWER_ACCOUNT_SCOPES=f"{_LIMITED_REVIEWER_ID}:operations:read",
+        )
+    )
+    client = _client(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/approve",
+        json={"reviewer_id": _LIMITED_REVIEWER_ID, "reason": "checked source packet"},
+        headers=_reviewer_headers(_LIMITED_REVIEWER_ID, _LIMITED_REVIEWER_TOKEN),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "reviewer scope is required: connector:review"
 
 
 def test_connector_review_action_rejects_missing_reason_when_required() -> None:
@@ -479,7 +535,8 @@ def test_connector_review_action_rejects_missing_reason_when_required() -> None:
 
     response = client.post(
         f"/connector-review-queue/{item.ingest_run_id}/reject",
-        json={"reviewer_id": str(_USER_ID)},
+        json={"reviewer_id": _REVIEWER_ID},
+        headers=_reviewer_headers(),
     )
 
     assert response.status_code == 422

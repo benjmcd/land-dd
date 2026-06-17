@@ -9,6 +9,7 @@ from app.api.reviewer_auth import (
     REVIEWER_SCOPE_CONNECTOR_REVIEW,
     REVIEWER_SCOPE_CONNECTOR_RUN,
     REVIEWER_SCOPE_OPERATIONS_READ,
+    REVIEWER_SCOPE_SOURCE_MANAGE,
     LocalServiceAccountReviewerAuth,
     ReviewerPrincipal,
     require_reviewer_scope,
@@ -217,7 +218,7 @@ def test_non_local_settings_require_hashed_reviewer_accounts_with_scopes() -> No
     settings = Settings(
         APP_ENV="production",
         REVIEWER_ACCOUNTS=f"reviewer-a:sha256:{digest}",
-        REVIEWER_ACCOUNT_SCOPES="reviewer-a:connector:run|connector:review",
+        REVIEWER_ACCOUNT_SCOPES="reviewer-a:connector:run|connector:review|source:manage",
     )
 
     assert settings.parsed_reviewer_accounts() == {
@@ -228,6 +229,7 @@ def test_non_local_settings_require_hashed_reviewer_accounts_with_scopes() -> No
             {
                 REVIEWER_SCOPE_CONNECTOR_RUN,
                 REVIEWER_SCOPE_CONNECTOR_REVIEW,
+                REVIEWER_SCOPE_SOURCE_MANAGE,
             }
         )
     }
@@ -268,7 +270,7 @@ def test_settings_parses_reviewer_account_scopes() -> None:
     settings = Settings(
         REVIEWER_ACCOUNT_SCOPES=(
             " reviewer-a : connector:run|connector:review ,"
-            " reviewer-b:operations:read "
+            " reviewer-b:operations:read|source:manage "
         ),
     )
 
@@ -279,7 +281,9 @@ def test_settings_parses_reviewer_account_scopes() -> None:
                 REVIEWER_SCOPE_CONNECTOR_REVIEW,
             }
         ),
-        "reviewer-b": frozenset({REVIEWER_SCOPE_OPERATIONS_READ}),
+        "reviewer-b": frozenset(
+            {REVIEWER_SCOPE_OPERATIONS_READ, REVIEWER_SCOPE_SOURCE_MANAGE}
+        ),
     }
 
 

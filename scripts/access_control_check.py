@@ -29,6 +29,7 @@ REQUIRED_FILES = (
     "backend/app/api/connectors.py",
     "backend/app/api/operations.py",
     "backend/app/api/reports.py",
+    "backend/app/api/sources.py",
     "backend/app/core/config.py",
     "backend/tests/api/test_api_key_auth.py",
     "backend/tests/api/test_ui_api_key_auth.py",
@@ -92,6 +93,7 @@ REQUIRED_ROUTE_SCOPES = {
     "report:approve",
     "report:retry",
     "report:run",
+    "source:manage",
 }
 REQUIRED_IDENTITY_AUDIT_REQUIREMENTS = {
     "decision_outcome",
@@ -145,6 +147,16 @@ def step_text(job: dict[str, Any], job_name: str) -> str:
 def require_phrases(text: str, phrases: tuple[str, ...], label: str) -> None:
     for phrase in phrases:
         require(phrase in text, f"{label} missing phrase: {phrase}")
+
+
+def function_block(text: str, function_name: str) -> str:
+    marker = f"def {function_name}("
+    start = text.find(marker)
+    require(start >= 0, f"function not found: {function_name}")
+    next_start = text.find("\ndef ", start + len(marker))
+    if next_start < 0:
+        return text[start:]
+    return text[start:next_start]
 
 
 def validate_required_files() -> None:
@@ -845,7 +857,7 @@ def validate_reviewer_auth() -> None:
 
 
 def validate_operator_routes() -> None:
-    for route_file in ("connectors.py", "operations.py", "reports.py"):
+    for route_file in ("connectors.py", "operations.py", "reports.py", "sources.py"):
         text = read_text(f"backend/app/api/{route_file}")
         require("ReviewerPrincipal" in text, f"{route_file} must depend on ReviewerPrincipal")
         require("get_reviewer_principal" in text, f"{route_file} must expose reviewer dependency")
@@ -854,6 +866,7 @@ def validate_operator_routes() -> None:
     connectors = read_text("backend/app/api/connectors.py")
     operations = read_text("backend/app/api/operations.py")
     reports = read_text("backend/app/api/reports.py")
+    sources = read_text("backend/app/api/sources.py")
     require(
         "reviewer_id=principal.reviewer_id" in connectors,
         "connector review actions must use authenticated reviewer id",
@@ -876,6 +889,10 @@ def validate_operator_routes() -> None:
         "REVIEWER_SCOPE_REPORT_RETRY" in reports,
         "reports route must require report retry scope",
     )
+    require(
+        "REVIEWER_SCOPE_SOURCE_MANAGE" in sources,
+        "sources route must require source manage scope",
+    )
     tests = "\n".join(
         read_text(f"backend/tests/api/{test_file}")
         for test_file in (
@@ -883,17 +900,59 @@ def validate_operator_routes() -> None:
             "test_operations.py",
             "test_async_report_runs.py",
             "test_fema_nfhl_connector_api.py",
+            "test_api_scaffold.py",
+            "test_connector_review_queue_api.py",
         )
     )
     require_phrases(
         tests,
         (
             "test_request_fixture_fix_rejects_reviewer_without_review_scope",
+            "test_connector_review_action_rejects_reviewer_without_review_scope",
+            "test_connector_review_action_requires_reviewer_credentials",
             "test_queue_health_rejects_reviewer_without_operations_read_scope",
             "test_retry_report_run_rejects_reviewer_without_retry_scope",
             "test_fema_nfhl_schedule_bbox_rejects_reviewer_without_connector_run_scope",
+            "test_api_scaffold_source_create_requires_source_manage_scope",
         ),
         "scoped route tests",
+    )
+    for function_name in (
+        "approve_connector_review_queue_item_compat",
+        "reject_connector_review_queue_item_compat",
+        "requeue_connector_review_queue_item_compat",
+        "cancel_connector_review_queue_item_compat",
+    ):
+        block = function_block(connectors, function_name)
+        require_phrases(
+            block,
+            (
+                "principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)]",
+                "require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)",
+                "_compat_reviewer_id(principal, request.reviewer_id)",
+            ),
+            f"{function_name} reviewer scope",
+        )
+
+    live_smoke = read_text("scripts/run_live_smoke.py")
+    demo_mvp = read_text("scripts/demo_mvp.py")
+    require_phrases(
+        live_smoke,
+        (
+            "X-Reviewer-Id",
+            "X-Reviewer-Token",
+            '_post(base_url, "/sources", body, _reviewer_headers())',
+        ),
+        "live smoke source seed auth",
+    )
+    require_phrases(
+        demo_mvp,
+        (
+            "X-Reviewer-Id",
+            "X-Reviewer-Token",
+            'client.request("POST", "/sources", payload, headers=reviewer_headers)',
+        ),
+        "demo MVP source seed auth",
     )
 
 
@@ -938,6 +997,7 @@ def validate_ci_and_runbook() -> None:
             "operations:read",
             "report:retry",
             "report:run",
+            "source:manage",
             "No full user auth/RBAC exists yet.",
             "No OAuth/OIDC",
             "No user-account persistence",

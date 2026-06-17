@@ -18,6 +18,11 @@ In another shell:
 python scripts/demo_mvp.py
 ```
 
+The script seeds the fixture source with reviewer headers before running the
+workspace-bound demo flow. The default local reviewer (`fixture-reviewer` /
+`fixture-token-123`) must have `source:manage`, `report:approve`, and
+`connector:review`; the checked-in local defaults include those scopes.
+
 Windows PowerShell:
 
 ```powershell
@@ -104,8 +109,8 @@ scheduler or daemon.
    authenticated workspace/user identity as the demo area.
 4. Creates a `homestead_feasibility` report run using the demo
    `X-Workspace-Id` and `X-User-Id` identity headers.
-5. Runs one source-failure fixture and approves its review queue item with
-   `reviewer_id` set to the authenticated demo user.
+5. Runs one source-failure fixture and approves its review queue item with the
+   reviewer service-account credentials and the authenticated workspace/user identity.
 6. Lists report runs for the fixture area.
 
 The demo is intentionally fixture-only. Live connectors remain disabled until a

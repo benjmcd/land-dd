@@ -745,12 +745,14 @@ def approve_connector_review_queue_item_compat(
     request: ConnectorReviewQueueActionRequest,
     services: ServicesDep,
     auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorReviewQueueItemContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     return _run_compat_queue_action(
         lambda: services.connector_review_queue_repo.approve_for_connector_qa(
             item.job_id,
-            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reviewer_id=_compat_reviewer_id(principal, request.reviewer_id),
             reason=request.reason,
         )
     )
@@ -765,12 +767,14 @@ def reject_connector_review_queue_item_compat(
     request: ConnectorReviewQueueActionRequest,
     services: ServicesDep,
     auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorReviewQueueItemContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     return _run_compat_queue_action(
         lambda: services.connector_review_queue_repo.request_fixture_fix(
             item.job_id,
-            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reviewer_id=_compat_reviewer_id(principal, request.reviewer_id),
             reason=_required_compat_reason(request.reason),
         )
     )
@@ -785,14 +789,16 @@ def requeue_connector_review_queue_item_compat(
     request: ConnectorReviewQueueActionRequest,
     services: ServicesDep,
     auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorReviewQueueItemContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     return _run_compat_queue_action(
         lambda: services.connector_review_queue_repo.requeue_failed(
             item.job_id,
             reason=_required_compat_reason(request.reason),
             not_before=request.not_before,
-            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reviewer_id=_compat_reviewer_id(principal, request.reviewer_id),
         )
     )
 
@@ -806,13 +812,15 @@ def cancel_connector_review_queue_item_compat(
     request: ConnectorReviewQueueActionRequest,
     services: ServicesDep,
     auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorReviewQueueItemContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
     item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     return _run_compat_queue_action(
         lambda: services.connector_review_queue_repo.cancel(
             item.job_id,
             reason=_required_compat_reason(request.reason),
-            reviewer_id=_compat_reviewer_id(auth, request.reviewer_id),
+            reviewer_id=_compat_reviewer_id(principal, request.reviewer_id),
         )
     )
 
@@ -915,17 +923,17 @@ def _run_compat_queue_action(
         ) from exc
 
 
-def _compat_reviewer_id(auth: RequestAuthContext, reviewer_id: str) -> str:
+def _compat_reviewer_id(principal: ReviewerPrincipal, reviewer_id: str) -> str:
     reviewer = reviewer_id.strip()
     if not reviewer:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="reviewer_id is required",
         )
-    if reviewer != str(auth.user_id):
+    if reviewer != principal.reviewer_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="reviewer_id does not match authenticated user",
+            detail="reviewer_id does not match authenticated reviewer",
         )
     return reviewer
 
