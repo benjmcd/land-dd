@@ -28,7 +28,7 @@ _OPS_CSS = build_css(
     "table { margin-bottom: 1.5rem; }\n"
     ".ops-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch;"
     " margin-bottom: 1.5rem; }\n"
-    ".ops-table-wrap table { min-width: 720px; margin-bottom: 0; }\n"
+    ".ops-table-wrap table { min-width: 920px; margin-bottom: 0; }\n"
     ".auth-form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 320px;"
     " margin-top: 1rem; }\n"
     ".auth-form label { font-size: 0.95rem; }\n"
@@ -111,11 +111,8 @@ def _render_health_table(
     health_resp: JobQueueHealthResponse,
     base_href: str,
 ) -> str:
-    age = (
-        f"{health_resp.oldest_queued_age_seconds:.1f}s"
-        if health_resp.oldest_queued_age_seconds is not None
-        else "—"
-    )
+    queued_age = _format_age(health_resp.oldest_queued_age_seconds)
+    running_age = _format_age(health_resp.oldest_running_age_seconds)
     return (
         f"<h2>{_html.escape(label)}</h2>"
         "<div class='ops-table-wrap'>"
@@ -124,6 +121,7 @@ def _render_health_table(
         "<th>Total</th><th>Queued</th><th>Running</th>"
         "<th>Succeeded</th><th>Failed</th><th>Cancelled</th>"
         "<th>Needs Review</th><th>Oldest Queued Age</th>"
+        "<th>Oldest Running Age</th><th>Stale Running</th>"
         "</tr></thead>"
         "<tbody><tr>"
         f"<td>{_count_link(base_href, health_resp.total)}</td>"
@@ -133,11 +131,17 @@ def _render_health_table(
         f"<td>{_status_count_link(base_href, 'failed', health_resp.failed)}</td>"
         f"<td>{_status_count_link(base_href, 'cancelled', health_resp.cancelled)}</td>"
         f"<td>{_status_count_link(base_href, 'needs_review', health_resp.needs_review)}</td>"
-        f"<td>{_html.escape(age)}</td>"
+        f"<td>{_html.escape(queued_age)}</td>"
+        f"<td>{_html.escape(running_age)}</td>"
+        f"<td>{health_resp.stale_running}</td>"
         "</tr></tbody>"
         "</table>"
         "</div>"
     )
+
+
+def _format_age(age_seconds: float | None) -> str:
+    return f"{age_seconds:.1f}s" if age_seconds is not None else "n/a"
 
 
 @router.get("", response_class=HTMLResponse)

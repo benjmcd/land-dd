@@ -90,6 +90,8 @@ def test_ui_operations_post_valid_creds_renders_counts() -> None:
     assert "Queued" in resp.text
     assert "Running" in resp.text
     assert "Failed" in resp.text
+    assert "Oldest Running Age" in resp.text
+    assert "Stale Running" in resp.text
 
 
 def test_ui_operations_tables_have_responsive_scroll_wrapper() -> None:
@@ -105,7 +107,7 @@ def test_ui_operations_tables_have_responsive_scroll_wrapper() -> None:
     assert resp.status_code == 200
     assert resp.text.count("class='ops-table-wrap'") == 2
     assert "overflow-x: auto" in resp.text
-    assert "min-width: 720px" in resp.text
+    assert "min-width: 920px" in resp.text
 
 
 def test_ui_operations_post_accepts_reviewer_session_without_form_credentials() -> None:

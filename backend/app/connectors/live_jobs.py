@@ -24,7 +24,7 @@ from app.connectors.usgs_tnm import (
     UsgsTnmBbox,
 )
 from app.domain.enums import JobStatus
-from app.domain.job_health import JobQueueHealth
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS, JobQueueHealth
 
 LIVE_CONNECTOR_JOB_TYPE = "live_connector_run"
 LIVE_CONNECTOR_DS001_ID = "DS-001"
@@ -651,7 +651,24 @@ class SqlAlchemyLiveConnectorJobStore:
                     ) AS needs_review,
                     min(created_at) FILTER (
                         WHERE status = CAST(:queued_status AS jobs.job_status)
-                    ) AS oldest_queued_at
+                    ) AS oldest_queued_at,
+                    min(COALESCE(started_at, created_at)) FILTER (
+                        WHERE status = CAST(:running_status AS jobs.job_status)
+                    ) AS oldest_running_at,
+                    (
+                        SELECT job_id
+                        FROM jobs.job_queue
+                        WHERE job_type = :job_type
+                          AND status = CAST(:running_status AS jobs.job_status)
+                        ORDER BY COALESCE(started_at, created_at), job_id
+                        LIMIT 1
+                    ) AS oldest_running_job_id,
+                    count(*) FILTER (
+                        WHERE status = CAST(:running_status AS jobs.job_status)
+                          AND EXTRACT(
+                              EPOCH FROM (now() - COALESCE(started_at, created_at))
+                          ) >= :stale_running_threshold_seconds
+                    ) AS stale_running
                 FROM jobs.job_queue
                 WHERE job_type = :job_type
                 """
@@ -885,11 +902,23 @@ def _health_from_records(
 ) -> JobQueueHealth:
     counts = {status: 0 for status in JobStatus}
     queued_created_at: list[datetime] = []
+    running_started_at: list[tuple[datetime, UUID]] = []
+    stale_running = 0
     for record in records:
         counts[record.status] += 1
         if record.status == JobStatus.QUEUED:
             queued_created_at.append(record.created_at)
+        if record.status == JobStatus.RUNNING:
+            started_at = record.started_at or record.created_at
+            running_started_at.append((started_at, record.job_id))
+            age_seconds = _age_seconds(started_at)
+            if (
+                age_seconds is not None
+                and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
+            ):
+                stale_running += 1
     oldest_queued_at = min(queued_created_at) if queued_created_at else None
+    oldest_running = min(running_started_at, default=None, key=lambda item: item[0])
     return JobQueueHealth(
         job_type=job_type,
         total=len(records),
@@ -900,10 +929,15 @@ def _health_from_records(
         cancelled=counts[JobStatus.CANCELLED],
         needs_review=counts[JobStatus.NEEDS_REVIEW],
         oldest_queued_age_seconds=_age_seconds(oldest_queued_at),
+        oldest_running_age_seconds=_age_seconds(oldest_running[0])
+        if oldest_running is not None
+        else None,
+        oldest_running_job_id=oldest_running[1] if oldest_running is not None else None,
+        stale_running=stale_running,
     )
 
 
-def _health_query_params(job_type: str) -> dict[str, str]:
+def _health_query_params(job_type: str) -> dict[str, object]:
     return {
         "job_type": job_type,
         "queued_status": JobStatus.QUEUED.value,
@@ -912,6 +946,7 @@ def _health_query_params(job_type: str) -> dict[str, str]:
         "failed_status": JobStatus.FAILED.value,
         "cancelled_status": JobStatus.CANCELLED.value,
         "needs_review_status": JobStatus.NEEDS_REVIEW.value,
+        "stale_running_threshold_seconds": STALE_RUNNING_THRESHOLD_SECONDS,
     }
 
 
@@ -926,6 +961,9 @@ def _health_from_row(job_type: str, row: Any) -> JobQueueHealth:
         cancelled=int(row["cancelled"]),
         needs_review=int(row["needs_review"]),
         oldest_queued_age_seconds=_age_seconds(row["oldest_queued_at"]),
+        oldest_running_age_seconds=_age_seconds(row["oldest_running_at"]),
+        oldest_running_job_id=_optional_uuid(row["oldest_running_job_id"]),
+        stale_running=int(row["stale_running"]),
     )
 
 

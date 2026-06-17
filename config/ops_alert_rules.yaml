@@ -93,6 +93,19 @@ rules:
     validation:
       proof: scripts/run_deployment_smoke.ps1
       expected: queue-health endpoint exposes report job counts and oldest queued age
+  - id: report_running_stale
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health report_jobs.stale_running
+    condition: stale running report job count is nonzero for 15 minutes
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response; inspect report worker and report job lineage
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: backend/tests/api/test_operations.py
+      expected: queue-health tests cover report job running age and stale-running count
   - id: report_failures_high
     severity: SEV2
     signal:
@@ -119,6 +132,19 @@ rules:
     validation:
       proof: backend/tests/api/test_operations.py
       expected: queue-health tests cover live connector queue age
+  - id: live_connector_running_stale
+    severity: SEV2
+    signal:
+      kind: http_endpoint
+      target: /operations/queue-health live_connector_jobs.stale_running
+    condition: stale running live connector job count is nonzero for 15 minutes
+    window: 15m
+    owner: operations-on-call
+    escalation: SEV2 incident response; inspect connector worker, source rights, and retry posture
+    runbook: docs/runbooks/alerting.md
+    validation:
+      proof: backend/tests/api/test_operations.py
+      expected: queue-health tests cover live connector running age and stale-running count
   - id: live_connector_failures_high
     severity: SEV2
     signal:

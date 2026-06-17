@@ -17,7 +17,7 @@ investment conclusions.
 |---|---|---|
 | API health | `/health` | Public liveness and environment status |
 | Runtime metrics | `/metrics` | In-memory `runtime_metrics_v1` request counters and durations |
-| Queue health | `/operations/queue-health` | Reviewer-authenticated report/live connector queue counts and age |
+| Queue health | `/operations/queue-health` | Reviewer-authenticated report/live connector queue counts, queued age, running age, and stale-running count |
 | Deployment smoke | `scripts/run_deployment_smoke.ps1` | Compose-backed health, metrics, queue health, and report workflow |
 | DB smoke | `scripts/verify.ps1`, `scripts/db_smoke_check.py` | Migrations, seeds, and DB schema proof when `RUN_DB_SMOKE=1` |
 | Backup/restore | `scripts/run_backup_restore_check.ps1` | Dump, restore, DB smoke, and restore DB cleanup proof |
@@ -47,8 +47,9 @@ the expected shape, and Must source rows carry parseable freshness metadata.
 2. Open `docs/runbooks/incident_response.md` for SEV0 or SEV1, and for any SEV2 that
    threatens report correctness, source authority, queue recovery, or user trust.
 3. Capture the current signal payload or command output before mitigation.
-4. For queue alerts, inspect `/operations/queue-health` and avoid retry loops until the
-   failed job lineage and source-review state are understood.
+4. For queue alerts, inspect `/operations/queue-health`; treat `stale_running` as a
+   worker-progress signal and avoid retry loops until the running job, failed job lineage,
+   and source-review state are understood.
 5. For source-readiness or stale-source alerts, do not approve new connector evidence until
    the source/review operator confirms rights, freshness, and caveats.
 6. Close the alert only after the corresponding validation proof passes.
@@ -59,8 +60,9 @@ the expected shape, and Must source rows carry parseable freshness metadata.
   users even if infrastructure is healthy.
 - Health, deployment, DB, and backup/restore failures are SEV1 because they affect core
   workflow availability or recovery confidence.
-- Queue backlog, connector failures, metrics loss, and source-readiness/freshness drift are
-  SEV2 unless they also indicate unsafe output, data exposure, or evidence corruption.
+- Queue backlog, stale running jobs, connector failures, metrics loss, and
+  source-readiness/freshness drift are SEV2 unless they also indicate unsafe output, data
+  exposure, or evidence corruption.
 - Cost-monitoring check failure is SEV2 because unmetered growth can make batch/report
   operation unsafe to expand even when user-facing APIs are healthy.
 

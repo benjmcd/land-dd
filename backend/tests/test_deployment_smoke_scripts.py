@@ -25,6 +25,10 @@ def test_deployment_smoke_scripts_cover_runtime_contract() -> None:
         assert "/version" in script
         assert "/metrics" in script
         assert "/operations/queue-health" in script
+        assert "oldest_running_age_seconds" in script
+        assert "oldest_running_job_id" in script
+        assert "stale_running" in script
+        assert "stale_running_threshold_seconds" in script
         assert "/areas" in script
         assert "/report-runs" in script
         assert "deployment smoke: ok" in script

@@ -212,6 +212,22 @@ try {
     if ($queueHealth.schema_version -ne 'operations_queue_health_v1') {
         throw 'queue health endpoint did not return operations_queue_health_v1'
     }
+    foreach ($queueName in @('report_jobs', 'live_connector_jobs')) {
+        $queue = $queueHealth.$queueName
+        foreach ($fieldName in @(
+            'oldest_running_age_seconds',
+            'oldest_running_job_id',
+            'stale_running',
+            'stale_running_threshold_seconds'
+        )) {
+            if ($queue.PSObject.Properties.Name -notcontains $fieldName) {
+                throw "queue health $queueName missing $fieldName"
+            }
+        }
+        if ($queue.stale_running_threshold_seconds -ne 900) {
+            throw "queue health $queueName stale threshold mismatch"
+        }
+    }
 
     $areaBody = @'
 {
