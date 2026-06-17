@@ -432,13 +432,17 @@ def test_configured_ui_auth_cookie_secret_allows_restart_with_same_api_key() -> 
 
 
 def test_non_local_app_env_sets_secure_ui_auth_cookie() -> None:
+    api_key_digest = hashlib.sha256(b"production-key").hexdigest()
+    reviewer_token_digest = hashlib.sha256(b"reviewer-token").hexdigest()
     app = create_app(
         Settings(
             APP_ENV="production",
             USE_DB_SERVICES=True,
             REQUIRE_API_KEY=True,
-            API_KEYS="production-key",
+            API_KEY_SPECS=f"primary|active|sha256:{api_key_digest}",
             UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret",
+            REVIEWER_ACCOUNTS=f"reviewer:sha256:{reviewer_token_digest}",
+            REVIEWER_ACCOUNT_SCOPES="reviewer:operations:read",
         ),
         api_key_audit_log=InMemoryApiKeyAuthAuditLog(),
     )
@@ -455,13 +459,17 @@ def test_non_local_app_env_sets_secure_ui_auth_cookie() -> None:
 
 
 def test_non_local_api_key_auth_requires_configured_ui_auth_cookie_secret() -> None:
+    api_key_digest = hashlib.sha256(b"production-key").hexdigest()
+    reviewer_token_digest = hashlib.sha256(b"reviewer-token").hexdigest()
     with pytest.raises(ValueError, match="UI_AUTH_COOKIE_SECRET"):
         create_app(
             Settings(
                 APP_ENV="production",
                 USE_DB_SERVICES=True,
                 REQUIRE_API_KEY=True,
-                API_KEYS="production-key",
+                API_KEY_SPECS=f"primary|active|sha256:{api_key_digest}",
+                REVIEWER_ACCOUNTS=f"reviewer:sha256:{reviewer_token_digest}",
+                REVIEWER_ACCOUNT_SCOPES="reviewer:operations:read",
             )
         )
 

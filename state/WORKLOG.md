@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-17 (Non-local secret hygiene)
+
+- Added settings-level non-local secret-hygiene validation for API-key and reviewer
+  static-secret configuration.
+- Preserved local/dev/development/test ergonomics for raw `API_KEYS`, raw
+  `API_KEY_SPECS` secrets, and fixture reviewer defaults.
+- Made non-local `REQUIRE_API_KEY=true` reject `API_KEYS`, require `API_KEY_SPECS`, and
+  require every API-key spec secret to use `sha256:<64-hex>`.
+- Made non-local reviewer configuration reject the fixture reviewer default, reject raw
+  reviewer token specs, and require explicit scopes for every reviewer id.
+- Wired app startup through the secret-hygiene validator before middleware/service
+  construction.
+- Updated access-control and MVP operator guidance without claiming OAuth/OIDC,
+  automatic rotation, or hosted secret-manager integration.
+- Updated the access-control validate-only script and focused tests so the new non-local
+  guardrails remain pinned.
+
 ## 2026-06-17 (Async report-create contract)
 
 - Changed authenticated signed-token `POST /report-runs` from synchronous

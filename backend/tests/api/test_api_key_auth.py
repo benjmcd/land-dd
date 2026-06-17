@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from hashlib import sha256
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
@@ -379,6 +380,79 @@ def test_settings_parses_api_key_lifecycle_specs() -> None:
     assert [spec.key_id for spec in specs] == ["key-a", "key-b"]
     assert [spec.status for spec in specs] == ["active", "retired"]
     assert [spec.secret_spec for spec in specs] == ["raw-a", f"sha256:{digest.lower()}"]
+
+
+def test_non_local_settings_require_hashed_api_key_specs() -> None:
+    digest = sha256(b"key-a").hexdigest()
+    settings = Settings(
+        APP_ENV="production",
+        REQUIRE_API_KEY=True,
+        API_KEY_SPECS=f"key-a|active|sha256:{digest}",
+    )
+
+    assert [spec.secret_spec for spec in settings.parsed_api_key_specs()] == [
+        f"sha256:{digest}"
+    ]
+
+
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        ({"API_KEYS": "legacy-key"}, "API_KEYS is local-only"),
+        ({"API_KEY_SPECS": "key-a|active|raw-key"}, "sha256:<64-hex>"),
+        ({}, "API_KEY_SPECS is required"),
+    ],
+)
+def test_non_local_settings_reject_raw_or_missing_api_key_specs(
+    kwargs: dict[str, object],
+    match: str,
+) -> None:
+    settings_kwargs: dict[str, object] = {
+        "APP_ENV": "production",
+        "REQUIRE_API_KEY": True,
+        **kwargs,
+    }
+    settings = Settings(**cast(Any, settings_kwargs))
+
+    with pytest.raises(ValueError, match=match):
+        settings.parsed_api_keys()
+
+
+def test_non_local_secret_hygiene_allows_no_api_key_config_when_auth_disabled() -> None:
+    reviewer_digest = sha256(b"reviewer-token").hexdigest()
+    settings = Settings(
+        APP_ENV="production",
+        REQUIRE_API_KEY=False,
+        REVIEWER_ACCOUNTS=f"reviewer:sha256:{reviewer_digest}",
+        REVIEWER_ACCOUNT_SCOPES="reviewer:operations:read",
+    )
+
+    settings.validate_secret_hygiene()
+
+
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        ({"API_KEYS": "legacy-key"}, "API_KEYS is local-only"),
+        ({"API_KEY_SPECS": "key-a|active|raw-key"}, "sha256:<64-hex>"),
+    ],
+)
+def test_non_local_secret_hygiene_rejects_legacy_api_key_config_when_auth_disabled(
+    kwargs: dict[str, object],
+    match: str,
+) -> None:
+    reviewer_digest = sha256(b"reviewer-token").hexdigest()
+    settings_kwargs: dict[str, object] = {
+        "APP_ENV": "production",
+        "REQUIRE_API_KEY": False,
+        "REVIEWER_ACCOUNTS": f"reviewer:sha256:{reviewer_digest}",
+        "REVIEWER_ACCOUNT_SCOPES": "reviewer:operations:read",
+        **kwargs,
+    }
+    settings = Settings(**cast(Any, settings_kwargs))
+
+    with pytest.raises(ValueError, match=match):
+        settings.validate_secret_hygiene()
 
 
 def test_settings_active_api_key_specs_join_legacy_api_keys() -> None:

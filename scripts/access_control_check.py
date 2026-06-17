@@ -276,6 +276,11 @@ def validate_api_key_auth() -> None:
             "API_KEY_SPECS",
             "API_KEY_STATUS_ACTIVE",
             "API_KEY_STATUS_RETIRED",
+            "LOCAL_APP_ENVS",
+            "validate_secret_hygiene",
+            "API_KEYS is local-only",
+            "API_KEY_SPECS is required when REQUIRE_API_KEY=true outside",
+            "Non-local APP_ENV API_KEY_SPECS secrets must use",
             "parsed_api_key_specs",
             "Duplicate API_KEYS entry",
             "Duplicate API_KEY_SPECS id",
@@ -304,6 +309,10 @@ def validate_api_key_auth() -> None:
             "test_settings_parses_api_key_lifecycle_specs",
             "test_settings_api_key_lifecycle_specs_fail_closed_for_malformed_entries",
             "test_settings_api_key_hash_specs_fail_closed_for_malformed_entries",
+            "test_non_local_settings_require_hashed_api_key_specs",
+            "test_non_local_settings_reject_raw_or_missing_api_key_specs",
+            "test_non_local_secret_hygiene_allows_no_api_key_config_when_auth_disabled",
+            "test_non_local_secret_hygiene_rejects_legacy_api_key_config_when_auth_disabled",
         ),
         "api key tests",
     )
@@ -417,10 +426,10 @@ def validate_ui_api_key_bridge() -> None:
     require_phrases(
         main,
         (
-            "_LOCAL_APP_ENVS",
             "_ui_auth_cookie_secure",
             "_ui_cookie_signing_secret",
             "_is_local_app_env",
+            "settings.is_local_app_env()",
             "ui_cookie_signing_secret=_ui_cookie_signing_secret(resolved)",
             "ui_cookie_secure=_ui_auth_cookie_secure(resolved)",
             "UI_AUTH_COOKIE_SECRET is required when REQUIRE_API_KEY is true",
@@ -535,10 +544,10 @@ def validate_ui_api_key_bridge() -> None:
             "signed expiring HttpOnly SameSite cookie scoped to `/ui`",
             "`UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments",
             "non-local `APP_ENV` values fail startup if it is blank",
-            "local/dev/development/test config uses a per-process signing secret",
-            "Cookie-authenticated UI mutation forms include a signed CSRF token",
+            "config uses a per-process signing secret",
+            "mutation forms include a signed CSRF token",
             "Sign-out is",
-            "a CSRF-protected POST from `/ui/auth/logout`",
+            "CSRF-protected POST from",
             "JSON/API paths still require `X-API-Key`",
             "not full user auth/RBAC",
         ),
@@ -592,6 +601,9 @@ def validate_reviewer_auth() -> None:
             "reviewer_account_scopes: str = Field(",
             "REVIEWER_ACCOUNT_SCOPES",
             "Defaults to a local fixture account; override in production.",
+            "The default fixture reviewer account is local-only.",
+            "Non-local APP_ENV REVIEWER_ACCOUNTS tokens must use",
+            "Non-local APP_ENV values require explicit REVIEWER_ACCOUNT_SCOPES",
             "parsed_reviewer_accounts",
             "parsed_reviewer_account_scopes",
             "Duplicate REVIEWER_ACCOUNTS",
@@ -613,6 +625,8 @@ def validate_reviewer_auth() -> None:
             "test_local_service_account_reviewer_auth_fails_closed_when_unconfigured",
             "test_local_service_account_reviewer_auth_accepts_sha256_token_hash",
             "test_settings_reviewer_account_hash_specs_fail_closed_for_malformed_entries",
+            "test_non_local_settings_require_hashed_reviewer_accounts_with_scopes",
+            "test_non_local_settings_reject_fixture_or_raw_reviewer_accounts",
         ),
         "reviewer auth tests",
     )
@@ -724,6 +738,8 @@ def validate_ci_and_runbook() -> None:
             "durable per-key usage audit ledger",
             "configured static key lifecycle exists",
             "no automatic",
+            "reject `API_KEYS` and raw `API_KEY_SPECS` secrets",
+            "rejects fixture reviewer defaults and raw token specs in non-local",
         ),
         "access-control runbook",
     )
@@ -736,6 +752,9 @@ def validate_ci_and_runbook() -> None:
         )
         require("API_KEY_SPECS" in text_payload, f"{text_name} missing API key lifecycle env")
     require("sha256:<64-hex>" in env_example, ".env.example missing hashed secret guidance")
+    require("API_KEYS is local/dev/development/test only" in env_example, ".env.example missing local-only API_KEYS guidance")
+    require("non-local APP_ENV" in compose, "docker-compose.yml missing non-local secret guidance")
+    require("report:approve" in compose, "docker-compose.yml fixture reviewer scopes missing report approval")
 
 
 def main() -> int:

@@ -1,5 +1,32 @@
 # Project State
 
+## Current checkpoint (2026-06-17 non-local secret hygiene)
+
+Non-local app environments now fail closed for weak static secret configuration while
+local private-MVP ergonomics remain intact.
+
+- **API-key secret shape**: local/dev/development/test may still use raw `API_KEYS` and
+  raw `API_KEY_SPECS` secrets. Outside those app environments, `API_KEYS` is rejected;
+  configured `API_KEY_SPECS` secrets must use `sha256:<64-hex>`; and
+  `REQUIRE_API_KEY=true` requires `API_KEY_SPECS`.
+- **Reviewer secret shape**: local/dev/development/test may still use the fixture
+  reviewer account and raw reviewer tokens. Non-local app environments reject the
+  fixture reviewer default, reject raw reviewer token specs, and require explicit
+  `REVIEWER_ACCOUNT_SCOPES` coverage for each reviewer id.
+- **Startup path**: `create_app` now runs the secret-hygiene validator before building
+  auth middleware and service state.
+- **Operator guidance**: `.env.example`, Compose comments, and access-control/MVP
+  runbooks now describe the non-local hashed-spec requirements while preserving the
+  existing blockers for OAuth/OIDC, user accounts/RBAC, hosted secret management, and
+  automatic rotation.
+- **Validation**: focused non-local API-key boundary tests passed (`7 passed`), API-key
+  and reviewer-auth files passed (`70 passed`, `1 skipped`), impacted API/UI/runtime/
+  access-control artifact suite passed (`139 passed`, `1 skipped`), access-control
+  checker exited `0`, ruff passed on touched Python files, mypy passed on touched
+  source plus focused touched tests from the backend import path, default
+  `scripts/verify.ps1` passed, and private-MVP/hosted/release readiness validators
+  exited `0`.
+
 ## Current checkpoint (2026-06-17 async report-create contract)
 
 `POST /report-runs` now uses the async job contract for authenticated creation instead

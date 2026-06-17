@@ -11,6 +11,13 @@ from app.api.secret_specs import normalize_secret_spec
 API_KEY_STATUS_ACTIVE = "active"
 API_KEY_STATUS_RETIRED = "retired"
 API_KEY_STATUSES = frozenset({API_KEY_STATUS_ACTIVE, API_KEY_STATUS_RETIRED})
+LOCAL_APP_ENVS = frozenset({"local", "dev", "development", "test"})
+SHA256_SECRET_PREFIX = "sha256:"
+DEFAULT_REVIEWER_ACCOUNTS = "fixture-reviewer:fixture-token-123"
+DEFAULT_REVIEWER_ACCOUNT_SCOPES = (
+    "fixture-reviewer:"
+    "connector:run|connector:review|operations:read|report:approve|report:retry|report:run"
+)
 
 
 @dataclass(frozen=True)
@@ -81,7 +88,7 @@ class Settings(BaseSettings):
     rate_limit_window_seconds: int = Field(default=60, alias="RATE_LIMIT_WINDOW_SECONDS")
     enable_metrics: bool = Field(default=True, alias="ENABLE_METRICS")
     reviewer_accounts: str = Field(
-        default="fixture-reviewer:fixture-token-123",
+        default=DEFAULT_REVIEWER_ACCOUNTS,
         alias="REVIEWER_ACCOUNTS",
         description=(
             "Comma-separated id:token pairs for connector reviewer auth. "
@@ -90,10 +97,7 @@ class Settings(BaseSettings):
         ),
     )
     reviewer_account_scopes: str = Field(
-        default=(
-            "fixture-reviewer:"
-            "connector:run|connector:review|operations:read|report:approve|report:retry|report:run"
-        ),
+        default=DEFAULT_REVIEWER_ACCOUNT_SCOPES,
         alias="REVIEWER_ACCOUNT_SCOPES",
         description=(
             "Comma-separated id:scope|scope entries for connector reviewer auth. "
@@ -148,7 +152,43 @@ class Settings(BaseSettings):
         ),
     )
 
+    def is_local_app_env(self) -> bool:
+        return self.app_env.lower() in LOCAL_APP_ENVS
+
+    def validate_secret_hygiene(self) -> None:
+        if self.is_local_app_env():
+            return
+        if self.api_keys.strip() or self.require_api_key:
+            self.parsed_api_keys()
+        elif self.api_key_specs.strip():
+            self.parsed_api_key_specs()
+        accounts = self.parsed_reviewer_accounts()
+        scopes = self.parsed_reviewer_account_scopes()
+        missing_scopes = sorted(set(accounts) - set(scopes))
+        if missing_scopes:
+            raise ValueError(
+                "Non-local APP_ENV values require explicit REVIEWER_ACCOUNT_SCOPES "
+                f"for reviewer id: {missing_scopes[0]!r}"
+            )
+        unknown_scopes = sorted(set(scopes) - set(accounts))
+        if unknown_scopes:
+            raise ValueError(
+                "REVIEWER_ACCOUNT_SCOPES references unknown reviewer id: "
+                f"{unknown_scopes[0]!r}"
+            )
+
     def parsed_api_keys(self) -> frozenset[str]:
+        if not self.is_local_app_env():
+            if self.api_keys.strip():
+                raise ValueError(
+                    "API_KEYS is local-only; non-local APP_ENV values must use "
+                    "API_KEY_SPECS."
+                )
+            if self.require_api_key and not self.api_key_specs.strip():
+                raise ValueError(
+                    "API_KEY_SPECS is required when REQUIRE_API_KEY=true outside "
+                    "local/dev/development/test APP_ENV values."
+                )
         keys: set[str] = set()
         for entry in self.api_keys.split(","):
             raw_key = entry.strip()
@@ -188,6 +228,13 @@ class Settings(BaseSettings):
             if normalized_status not in API_KEY_STATUSES:
                 raise ValueError("API_KEY_SPECS status must be active or retired")
             secret_spec = normalize_secret_spec(secret, "API_KEY_SPECS secret")
+            if not self.is_local_app_env() and not secret_spec.startswith(
+                SHA256_SECRET_PREFIX
+            ):
+                raise ValueError(
+                    "Non-local APP_ENV API_KEY_SPECS secrets must use "
+                    "sha256:<64-hex>."
+                )
             if secret_spec in seen_secrets:
                 raise ValueError("Duplicate API_KEY_SPECS secret")
             seen_ids.add(key_id)
@@ -209,6 +256,9 @@ class Settings(BaseSettings):
         return self.rate_limit_requests, self.rate_limit_window_seconds
 
     def parsed_reviewer_accounts(self) -> dict[str, str]:
+        non_local = not self.is_local_app_env()
+        if non_local and self.reviewer_accounts.strip() == DEFAULT_REVIEWER_ACCOUNTS:
+            raise ValueError("The default fixture reviewer account is local-only.")
         accounts: dict[str, str] = {}
         for pair in self.reviewer_accounts.split(","):
             pair = pair.strip()
@@ -223,13 +273,26 @@ class Settings(BaseSettings):
                 raise ValueError("REVIEWER_ACCOUNTS entries must include id and token")
             if reviewer_id in accounts:
                 raise ValueError(f"Duplicate REVIEWER_ACCOUNTS id: {reviewer_id!r}")
-            accounts[reviewer_id] = normalize_secret_spec(
+            token_spec = normalize_secret_spec(
                 token,
                 "REVIEWER_ACCOUNTS token",
             )
+            if non_local and not token_spec.startswith(SHA256_SECRET_PREFIX):
+                raise ValueError(
+                    "Non-local APP_ENV REVIEWER_ACCOUNTS tokens must use "
+                    "sha256:<64-hex>."
+                )
+            accounts[reviewer_id] = token_spec
         return accounts
 
     def parsed_reviewer_account_scopes(self) -> dict[str, frozenset[str]]:
+        if (
+            not self.is_local_app_env()
+            and not self.reviewer_account_scopes.strip()
+        ):
+            raise ValueError(
+                "Non-local APP_ENV values require explicit REVIEWER_ACCOUNT_SCOPES."
+            )
         scoped_accounts: dict[str, frozenset[str]] = {}
         for entry in self.reviewer_account_scopes.split(","):
             entry = entry.strip()

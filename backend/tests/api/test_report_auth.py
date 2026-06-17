@@ -112,6 +112,8 @@ def test_report_create_route_requires_workspace_identity_in_non_local_env() -> N
         APP_ENV="production",
         USE_DB_SERVICES=True,
         REPORT_AUTH_MODE="trusted_headers",
+        REVIEWER_ACCOUNTS=f"reviewer:sha256:{hashlib.sha256(b'token').hexdigest()}",
+        REVIEWER_ACCOUNT_SCOPES="reviewer:operations:read",
     )
     services = create_api_services(settings)
     app = create_app(settings=settings)
