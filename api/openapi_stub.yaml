@@ -394,6 +394,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /report-runs/jobs/execute-next:
+    post:
+      tags:
+      - report-runs
+      summary: Execute Next Report Job
+      operationId: execute_next_report_job_report_runs_jobs_execute_next_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportJobExecuteNextRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportJobExecuteNextResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /report-runs/compare:
     get:
       tags:
@@ -6208,6 +6258,36 @@ components:
           title: Reason
       type: object
       title: ReportApproveRequest
+    ReportJobExecuteNextRequest:
+      properties:
+        worker_id:
+          type: string
+          minLength: 1
+          title: Worker Id
+      type: object
+      required:
+      - worker_id
+      title: ReportJobExecuteNextRequest
+    ReportJobExecuteNextResponse:
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          title: Job Id
+        status:
+          type: string
+          title: Status
+        report_run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Report Run Id
+      type: object
+      required:
+      - job_id
+      - status
+      title: ReportJobExecuteNextResponse
     ReportLineageResponse:
       properties:
         report_run_id:

@@ -18,7 +18,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.dependencies import (
     ApiServices,
@@ -66,6 +66,16 @@ class AsyncReportRunResponse(BaseModel):
     connector_ingest_run_id: UUID | None = None
     connector_review_status: str | None = None
     retry_of_report_run_id: UUID | None = None
+
+
+class ReportJobExecuteNextRequest(BaseModel):
+    worker_id: str = Field(min_length=1)
+
+
+class ReportJobExecuteNextResponse(BaseModel):
+    job_id: UUID
+    status: str
+    report_run_id: UUID | None = None
 
 
 class LineageSourceEntry(BaseModel):
@@ -511,6 +521,51 @@ def retry_report_run(
         report_run_id=retry_job.report_run_id,
         status="queued",
         retry_of_report_run_id=failed_job.report_run_id,
+    )
+
+
+@router.post("/jobs/execute-next", response_model=ReportJobExecuteNextResponse)
+def execute_next_report_job(
+    request: ReportJobExecuteNextRequest,
+    request_context: Request,
+    services: ServicesDep,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> ReportJobExecuteNextResponse:
+    auth = get_request_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
+    worker_id = _validate_report_worker_id(request.worker_id)
+    job = _next_queued_report_job(services, workspace_id=auth.workspace_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no queued report job available",
+        )
+    logger.info(
+        "report worker executing job",
+        extra={
+            **_job_log_context(job.report_run_id, job.area_id, job.intent_code),
+            "worker_id": worker_id,
+        },
+    )
+    run_report_background(
+        services=services,
+        report_run_id=job.report_run_id,
+        area_id=job.area_id,
+        intent_code=job.intent_code,
+        workspace_id=job.workspace_id,
+        requested_by=job.requested_by,
+    )
+    finished_job = services.async_report_jobs.get(job.report_run_id) or job
+    return ReportJobExecuteNextResponse(
+        job_id=finished_job.report_run_id,
+        status=finished_job.status.value,
+        report_run_id=finished_job.report_run_id,
     )
 
 
@@ -1034,6 +1089,45 @@ def _job_log_context(
 def _live_connectors_enabled(request_context: Request) -> bool:
     settings = cast(Settings, request_context.app.state.settings)
     return settings.enable_live_connectors
+
+
+def _next_queued_report_job(
+    services: ApiServices,
+    *,
+    workspace_id: UUID,
+) -> ReportJobRecord | None:
+    selected: ReportJobRecord | None = None
+    offset = 0
+    while True:
+        page = services.async_report_jobs.list_recent(
+            limit=100,
+            offset=offset,
+            status=JobStatus.QUEUED,
+        )
+        if not page:
+            return selected
+        for job in page:
+            if job.workspace_id != workspace_id:
+                continue
+            if selected is None or (
+                job.created_at,
+                str(job.report_run_id),
+            ) < (
+                selected.created_at,
+                str(selected.report_run_id),
+            ):
+                selected = job
+        offset += len(page)
+
+
+def _validate_report_worker_id(raw: str) -> str:
+    worker_id = raw.strip()
+    if not worker_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="worker_id is required",
+        )
+    return worker_id
 
 
 def _optional_report_auth_context(

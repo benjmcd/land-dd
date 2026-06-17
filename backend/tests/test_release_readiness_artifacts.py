@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
 
 yaml = cast(Any, importlib.import_module("yaml"))
@@ -56,6 +58,21 @@ EXPECTED_CI_PROOFS = {
     "release-readiness": "./scripts/run_release_readiness_check.sh",
     "security-scan": "./scripts/run_security_scan.sh",
 }
+COMPOSED_VALIDATORS = (
+    "scripts/image_publication_check.py",
+    "scripts/hosted_deployment_check.py",
+)
+
+
+def _load_validator() -> ModuleType:
+    script_path = REPO_ROOT / "scripts" / "release_readiness_check.py"
+    spec = importlib.util.spec_from_file_location("release_readiness_check", script_path)
+    assert spec is not None
+    loader = spec.loader
+    assert loader is not None
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
 
 
 def steps_text(job: dict[str, Any]) -> str:
@@ -230,10 +247,34 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
+        "executes the image-publication and hosted-deployment validators",
         "No container image is pushed",
         "published registry-image attestation",
     ):
         assert phrase in runbook
+
+
+def test_release_readiness_composes_image_and_hosted_validators(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    calls: list[tuple[list[str], dict[str, Any]]] = []
+
+    def fake_run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(args=args, returncode=0)
+
+    monkeypatch.setattr(validator.subprocess, "run", fake_run)
+
+    validator.validate_composed_contracts()
+
+    assert [args[1] for args, _ in calls] == list(COMPOSED_VALIDATORS)
+    for args, kwargs in calls:
+        assert args[0] == sys.executable
+        assert kwargs["cwd"] == REPO_ROOT
+        assert kwargs["check"] is True
+        assert kwargs["capture_output"] is True
+        assert kwargs["text"] is True
 
 
 def test_release_readiness_source_blockers_remain_explicit() -> None:
