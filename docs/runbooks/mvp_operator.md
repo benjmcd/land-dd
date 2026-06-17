@@ -146,18 +146,22 @@ Use these placeholders consistently in curl examples:
 
 | Placeholder | Meaning | Where it comes from |
 |---|---|---|
-| `{area_id}` | Area of interest ID | Returned by `POST /areas` or `POST /intake` |
-| `{report_run_id}` | Report/job ID | Returned by `POST /report-runs`, `POST /intake`, or `/operator-cases/{case_id}/report` |
-| `{case_id}` | Packaged selected-county fixture case | Returned by `GET /operator-cases` |
-| `{ingest_run_id}` | Connector run ID | Returned by connector-run routes and connector review queue payloads |
+| `{area_id}` | Area of interest ID | Returned by `POST /areas` or `POST /intake`; pass this to generic `POST /report-runs` |
+| `{report_run_id}` | Report/job ID | Returned by `POST /report-runs`, `POST /intake`, or `/operator-cases/{case_id}/report`; use it for poll/approve/dossier/artifact routes |
+| `{case_id}` | Packaged selected-county fixture case slug (not an AOI UUID) | Returned by `GET /operator-cases`; only `/operator-cases/{case_id}/report` accepts it |
+| `{ingest_run_id}` | Connector evidence/review run ID | Returned by connector-run routes and connector review queue payloads; use it for evidence lineage and review, not dossier delivery |
+
+Mnemonic: `{case_id}` selects the packaged selected-county corpus, `{area_id}`
+identifies the stored AOI record, `{report_run_id}` identifies the report job created
+from either input, and `{ingest_run_id}` identifies connector evidence.
 
 ### Approve a report run
 
-The final Markdown dossier (`GET /report-runs/{id}/dossier`) and the machine-readable
-artifact (`GET /report-runs/{id}/artifact`) are both gated on approval status. A report
+The final Markdown dossier (`GET /report-runs/{report_run_id}/dossier`) and the machine-readable
+artifact (`GET /report-runs/{report_run_id}/artifact`) are both gated on approval status. A report
 that has not been approved returns `409 Conflict`.
 
-**Via the web UI:** navigate to the report page (`/ui/report-runs/{id}`). When the report
+**Via the web UI:** navigate to the report page (`/ui/report-runs/{report_run_id}`). When the report
 has succeeded but is not yet approved, an approval form is shown. Enter the reviewer ID
 and token (scope: `report:approve`) and submit. The authenticated reviewer identity is
 recorded in the immutable `review_actions` audit log — credentials are required and
@@ -176,7 +180,7 @@ curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/approve \
 
 The `reason` field is optional. The response returns the updated `ReportRunContract` with
 `"review_status": "approved"` and the approval action recorded in `review_actions`. Once
-approved, `GET /report-runs/{id}/dossier` returns the full Markdown dossier.
+approved, `GET /report-runs/{report_run_id}/dossier` returns the full Markdown dossier.
 
 Approval is idempotent: a second `POST /approve` on an already-approved report returns
 the current contract unchanged.
@@ -273,7 +277,7 @@ curl -s -X POST http://localhost:8000/operator-cases/CHA-rural-use/report
 
 The response includes:
 
-- `links.ui`: open the report in `/ui/report-runs/{id}`
+- `links.ui`: open the report in `/ui/report-runs/{report_run_id}`
 - `links.dossier_download`: approved Markdown dossier download
 - `links.artifact`: approved machine-readable report JSON
 
@@ -311,11 +315,22 @@ Use this matrix to pick the right path and avoid treating one proof as another.
 | Path | Intended use | Proves | Does not prove |
 |---|---|---|---|
 | `scripts/generate_dossier.py --connector all --approve --artifact` | Fast no-server selected-county dossier and JSON artifact | County golden fixture evidence, approved-report state, source/caveat/unknown rendering, API-compatible in-memory artifact contract shape | HTTP routing, DB persistence, UI usability, live-source coverage |
-| `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged case resources, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
+| `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged selected-county corpus, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
 | `/ui/` selected-county launcher | Browser operator flow for packaged cases | No-JavaScript UI launch into the same `/operator-cases` path and existing approved report pages | Full dashboard polish, user accounts/RBAC, live-source production operation |
-| Generic `POST /report-runs` | Custom AOI report run from existing stored/ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
+| Generic `POST /report-runs` | Custom AOI report run from an existing `area_id` plus already-ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
 | DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior where exercised | No-server CLI behavior, hosted deployment, external identity/secrets |
 | Live connector queue paths | Reviewed live-source screening workflows | Bounded source-specific fetch/schedule/review behavior for implemented connectors | Recorded fixture parity, paid vendor coverage, legal/buildability/title/value conclusions |
+
+### Operator path execution qualifiers
+
+| Path | Evidence richness | Approval gate | DB required | Live network required | Main limitation |
+|---|---|---|---|---|---|
+| `scripts/generate_dossier.py --connector all --approve --artifact` | High selected-county fixture evidence plus final dossier/artifact shape | `--approve` calls the same approval service method as the HTTP path; no reviewer HTTP hop | No | No | No HTTP routing, UI, or DB persistence proof |
+| `POST /operator-cases/{case_id}/report` | High selected-county fixture evidence through the app-owned packaged corpus | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-only packaged cases, not live county fetches |
+| `/ui/` selected-county launcher | High selected-county fixture evidence plus no-JavaScript operator UX | Yes; same approved-report and dossier gates as `/operator-cases` | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | UI usability for packaged cases only; not full accounts/RBAC |
+| Generic `POST /report-runs` | Low by default; strongest as a code-level integration pattern over an existing `{area_id}` plus whatever evidence is already ingested/reviewed | Yes | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | Only when you intentionally enable live connector ingestion; otherwise no | This is not the packaged selected-county corpus path and does not auto-load selected-county fixtures in default mode |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the path you exercised separately |
+| Live connector queue paths | Connector-dependent live evidence | Connector review queue applies where implemented | Optional, depending on runtime | Yes | Only implemented live connectors; no packaged selected-county parity |
 
 ---
 
@@ -368,7 +383,7 @@ py -3.12 scripts/generate_dossier.py `
 ```
 
 This is the no-Docker, no-network operator path that produces an APPROVED selected-county dossier (Markdown) plus the machine-readable JSON artifact.
-`--approve` calls the same `approve_report_run` service method the HTTP approve endpoint uses and emits the same in-memory report artifact contract shape. It does not exercise HTTP routing, access gates, or DB artifact persistence; the API tests and DB-smoke tests cover those separately.
+`--approve` calls the same `approve_report_run` service method the HTTP approve endpoint uses and emits the same in-memory report artifact contract shape. It does not prove the HTTP `POST /report-runs` surface, `/operator-cases/{case_id}/report`, or DB artifact persistence. It does not exercise HTTP routing, access gates, or DB artifact persistence; the API tests and DB-smoke tests cover those separately.
 `local_artifacts/` is a gitignored on-demand output location.
 
 ---
@@ -429,7 +444,7 @@ local-only.
 Open `http://localhost:8000/ui/` in a browser. Submit a GeoJSON polygon and select an
 intent. The page submits to `/intake` and then either:
 
-- Redirects to the report status page (`/ui/report-runs/{id}`), which auto-refreshes
+- Redirects to the report status page (`/ui/report-runs/{report_run_id}`), which auto-refreshes
   while the report is generating, can be slowed with `?refresh_seconds=30`, and can be
   paused with `?auto_refresh=false`; or
 - Shows a yellow banner with a link to the **Connector Review Queue** if the intake
@@ -461,7 +476,7 @@ high-severity claim code/domain summaries, and gated next-action links. Approved
 reports expose existing dossier, artifact, print, and lineage links; unapproved reports
 link only to the report detail/approval page. When exactly two compared reports share
 the same `area_id`, the page also renders a **Change Review** section using the same
-diff semantics as `GET /report-runs/{id}/diff?base_id=<uuid>`: ruleset changed,
+diff semantics as `GET /report-runs/{report_run_id}/diff?base_id=<uuid>`: ruleset changed,
 added/removed claim codes, added/removed sources, and evidence-count delta. Report
 content is still gated on approval status.
 
@@ -473,7 +488,7 @@ comma-separated URL format.
 Programmatic access: `GET /report-runs?status=<value>&limit=<n>&offset=<n>` (max limit
 100) returns a JSON list of report run summaries.
 
-### Report page (`/ui/report-runs/{id}`)
+### Report page (`/ui/report-runs/{report_run_id}`)
 
 - **Queued or running:** the page auto-refreshes every 3 seconds by default. Use the
   **Refresh interval** selector to apply 3, 10, 30, or 60 seconds without JavaScript.
@@ -483,14 +498,14 @@ Programmatic access: `GET /report-runs?status=<value>&limit=<n>&offset=<n>` (max
 - **Failed:** shows the error message and a retry form (see below).
 - **Succeeded, not yet approved:** shows the approval form (see below).
 - **Approved:** shows the rendered dossier with nav links:
-  - **Download dossier (.md):** `GET /report-runs/{id}/dossier?download=1` — serves the
+  - **Download dossier (.md):** `GET /report-runs/{report_run_id}/dossier?download=1` — serves the
     Markdown dossier as an attachment; approved-only (returns `409` if not approved,
     `202` if still running, `404` if not found).
-  - **Download report (.json):** `GET /report-runs/{id}/artifact` — serves the
+  - **Download report (.json):** `GET /report-runs/{report_run_id}/artifact` — serves the
     machine-readable report JSON as an attachment; approved-only with identical gating.
     In DB-backed mode the persisted artifact file is served; in-memory mode the contract
     is serialised at request time.
-  - **Print / Export PDF:** `/ui/report-runs/{id}/print` — print-optimised HTML page;
+  - **Print / Export PDF:** `/ui/report-runs/{report_run_id}/print` — print-optimised HTML page;
     approved-only.
   - **View evidence lineage:** see below.
 
@@ -595,7 +610,7 @@ curl -s http://localhost:8000/operations/queue-health \
   -H 'X-Reviewer-Token: fixture-token-123'
 ```
 
-### Evidence lineage (`/ui/report-runs/{id}/lineage`)
+### Evidence lineage (`/ui/report-runs/{report_run_id}/lineage`)
 
 Linked from approved report pages as **View evidence lineage**. Renders three tables:
 
@@ -609,7 +624,7 @@ Linked from approved report pages as **View evidence lineage**. Renders three ta
 The operator UI lineage page follows the approved-report delivery boundary:
 direct visits for succeeded-but-unapproved reports return an **Approval Required**
 page and link back to the report review page. The JSON lineage API
-(`GET /report-runs/{id}/lineage`) remains available for service consumers under
+(`GET /report-runs/{report_run_id}/lineage`) remains available for service consumers under
 the normal API access policy. Wide lineage tables are contained in horizontal
 scroll regions on narrow screens.
 
@@ -902,7 +917,7 @@ future work items.
 - GeoJSON is malformed or the geometry type is unsupported (must be Polygon or MultiPolygon).
 - `intent_code` must be exactly `rural_land_purchase` or `homestead_feasibility`.
 
-**404 on GET /report-runs/{id}**
+**404 on GET /report-runs/{report_run_id}**
 - The ID is unknown. If the server restarted after the job was created, the job record was lost.
   Submit a new intake request.
 
@@ -945,7 +960,7 @@ future work items.
   item). Navigate back to the queue detail page to check the current status.
 
 **Download link returns 409**
-- `GET /report-runs/{id}/dossier?download=1` or `GET /report-runs/{id}/artifact` returns
+- `GET /report-runs/{report_run_id}/dossier?download=1` or `GET /report-runs/{report_run_id}/artifact` returns
   `409 Conflict` when the report has not been approved. Approve the report first via the
   UI approval form or the API.
 
@@ -1064,17 +1079,19 @@ curl -s -X POST http://localhost:8000/report-runs \
 
 Poll `GET /report-runs/{report_run_id}` until `"status": "succeeded"`.
 
-> Note: in default fixture mode, generic `POST /report-runs` does not ingest connector
-> fixtures, so this generic curl path yields an evidence-poor dossier unless
+> Note: this generic `POST /report-runs` example is a code-level integration pattern
+> over an existing `{area_id}` plus whatever evidence is already ingested/reviewed.
+> In default fixture mode it does not ingest the packaged selected-county corpus, so
+> this generic curl path yields an evidence-poor dossier unless
 > `ENABLE_LIVE_CONNECTORS=true` (network) or a DB-backed connector-run pre-ingests
-> evidence. For a useful selected-county fixture dossier through the app surface, use
-> `/operator-cases/{case_id}/report`; for no-server use, use the Operator Quickstart
-> above.
+> evidence. For the evidence-rich selected-county packaged path through the app
+> surface, use `/operator-cases/{case_id}/report`; for no-server selected-county
+> delivery, use the Operator Quickstart above.
 
 ### 4a. Approve the report run (required before dossier delivery)
 
 The dossier endpoint enforces an approval gate. A reviewer with `report:approve` scope
-must approve the completed report before `GET /report-runs/{id}/dossier` will serve it:
+must approve the completed report before `GET /report-runs/{report_run_id}/dossier` will serve it:
 
 ```bash
 curl -s -X POST http://localhost:8000/report-runs/{report_run_id}/approve \

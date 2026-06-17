@@ -10542,3 +10542,37 @@ table, and zero scripts.
 - This creates and validates the repo-local evidence contract. It does not publish a
   registry image, create hosted infrastructure, sign attestations, unblock DS-017, or run
   DB smoke without `RUN_DB_SMOKE=1`.
+
+---
+
+## 2026-06-17 - Operator Runbook Executability Slice
+
+**Scope:** Tighten the private/operator runbook so the selected-county packaged-case path,
+generic `POST /report-runs` path, and no-server dossier path remain unambiguous and
+validator-pinned. Report-route examples also use `{report_run_id}` instead of ambiguous
+`{id}` placeholders.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/test_private_mvp_readiness.py
+$env:PYTHONPATH='./backend'; python ./scripts/private_mvp_readiness_check.py
+python -m ruff check ./backend/tests/test_private_mvp_readiness.py ./scripts/private_mvp_readiness_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `backend/tests/test_private_mvp_readiness.py` passed.
+- `scripts/private_mvp_readiness_check.py` passed with exit 0 and no output.
+- Ruff passed on the touched readiness test and readiness validator files.
+- The readiness test and validator now fail closed if stale `/report-runs/{id}` or
+  `/ui/report-runs/{id}` placeholders return.
+- Default `scripts/verify.ps1` passed; DB smoke remained skipped by the wrapper because
+  `RUN_DB_SMOKE` was not set.
+
+**Residual risk:**
+
+- This slice hardens documentation and validation semantics only. It does not add new
+  HTTP, DB-smoke, or live-network runtime coverage beyond the authority already exercised
+  by the existing readiness tests and validator.
