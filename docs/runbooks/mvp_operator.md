@@ -317,10 +317,16 @@ The response includes:
 
 In the web UI, open `http://localhost:8000/ui/` and use the
 **Selected-County Private MVP Fixture Cases** table. The selected-county forms require a
-reviewer session or submitted reviewer credentials with `report:run`. Until a real
-UI workspace/user identity bridge exists, the UI route uses the seeded demo
-workspace/user only in local/dev/development/test app environments and fails closed
-outside those environments. The custom GeoJSON intake form remains
+reviewer session or submitted reviewer credentials with `report:run`. They also accept
+a `report_identity_token` field for workspace/user provenance. Browser operators can
+start a reusable workspace identity session at `/ui/auth/identity`; the submitted signed
+report identity token is verified with `REPORT_IDENTITY_TOKEN_SECRET`, then the UI stores
+only workspace id, user id, and expiry in a signed HttpOnly cookie scoped to `/ui`. The
+cookie expires no later than the report identity token and the raw token is not stored or
+rendered back. Non-local selected-county UI report creation requires this identity token
+or identity session; UI actions authorized by API-key, reviewer, or identity session
+cookies require the page's signed CSRF token; local/dev/development/test app environments still preserve the
+seeded demo workspace/user fallback when no identity is provided. The custom GeoJSON intake form remains
 available on the same page for manual AOIs; it posts to `/ui/intake` without requiring
 JavaScript and redirects to the created report or connector-review queue.
 
@@ -980,7 +986,8 @@ future work items.
 | Single-process local default | In-memory stores are not shared across multiple workers or processes; non-local runtime must use DB-backed services |
 | No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode. The repo-local `identity_rbac_contract` maps future roles to current route scopes for design handoff only; there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
 | Private-beta UI API-key bridge only | When `REQUIRE_API_KEY=true` is set, `/ui/auth` can set a signed expiring HttpOnly SameSite cookie scoped to `/ui` after the submitted API key passes the same verifier as `X-API-Key`; the cookie does not store the submitted API key, is signed with `UI_AUTH_COOKIE_SECRET`, and fails startup outside local/dev/development/test app envs when that setting is blank. Local/dev/development/test app envs may use a per-process fallback. The cookie is `Secure` automatically outside local app envs. Cookie-authenticated UI mutation forms require signed CSRF tokens and sign-out uses POST. JSON/API paths still require `X-API-Key`; this is not full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation, or hosted secret management. |
-| UI reviewer auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly reviewer session at `/ui/auth/reviewer` or by submitting reviewer credentials on the first UI action. The cookie is scoped to `/ui`, stores reviewer id/scopes/expiry plus a non-secret HMAC binding to the configured token spec, is invalidated by reviewer-token rotation or scope removal, and never authenticates JSON/API routes. API clients must still send `X-Reviewer-Id` and `X-Reviewer-Token`. This is not full user auth/RBAC. |
+| UI reviewer auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly reviewer session at `/ui/auth/reviewer` or by submitting reviewer credentials on the first UI action. The cookie is scoped to `/ui`, stores reviewer id/scopes/expiry plus a non-secret HMAC binding to the configured token spec, is invalidated by reviewer-token rotation or scope removal, and never authenticates JSON/API routes. UI mutations authorized by this cookie require signed CSRF tokens. API clients must still send `X-Reviewer-Id` and `X-Reviewer-Token`. This is not full user auth/RBAC. |
+| UI report identity auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly workspace/user identity session at `/ui/auth/identity` or by submitting `report_identity_token` on selected-county UI report creation. The cookie is scoped to `/ui`, stores workspace id, user id, and expiry only, is signed with UI-cookie signing material, and expires no later than the submitted report identity token. UI mutations authorized by this cookie require signed CSRF tokens. The raw report identity token is not stored or rendered back. This is not full user auth/RBAC. |
 | Local fixture mode has no persistence | In-memory repositories reset on restart; production-like runtime must set `USE_DB_SERVICES=true` with `DATABASE_URL` |
 | Repo-local alert rules only | Alert rules are validated as artifacts, but no hosted alert manager, dashboard, pager, or named on-call rotation exists |
 | Supply-chain scan limits | CI runs Python dependency vulnerability scanning, validates and attests the repo-local production lock/SBOM, pins the backend base image by OCI index digest, scans the locally built backend image for critical/high CVEs, and validates the image-publication and hosted-deployment boundaries, but there is no hosted deployment or published-registry image attestation |

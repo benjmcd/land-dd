@@ -19,8 +19,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, cast
+from uuid import UUID
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.responses import HTMLResponse
 from starlette.requests import Request
 from starlette.responses import Response
@@ -32,11 +33,21 @@ from app.api.api_key_auth import (
     create_ui_csrf_token,
     verify_ui_csrf_token,
 )
+from app.api.dependencies import RequestAuthContext
+from app.api.report_auth import (
+    MIN_SECRET_LENGTH,
+    ReportIdentityClaims,
+    verify_report_identity_token,
+)
 from app.api.reviewer_auth import ReviewerPrincipal, require_reviewer_scope
+from app.core.config import Settings
 
 UI_REVIEWER_COOKIE = "land_dd_ui_reviewer"
 UI_REVIEWER_COOKIE_MAX_AGE_SECONDS = 8 * 60 * 60
 UI_REVIEWER_COOKIE_TOKEN_PREFIX = "land-dd-ui-reviewer-v1"
+UI_REPORT_IDENTITY_COOKIE = "land_dd_ui_identity"
+UI_REPORT_IDENTITY_COOKIE_MAX_AGE_SECONDS = 60 * 60
+UI_REPORT_IDENTITY_COOKIE_TOKEN_PREFIX = "land-dd-ui-identity-v1"
 
 
 class ReviewerAuthSessionProtocol(Protocol):
@@ -67,6 +78,14 @@ class UiReviewerServicesProtocol(Protocol):
 class UiReviewerAuthResult:
     principal: ReviewerPrincipal
     from_submitted_credentials: bool
+
+
+@dataclass(frozen=True)
+class UiReportIdentityResult:
+    auth: RequestAuthContext
+    from_submitted_token: bool
+    cookie_token: str | None = None
+    cookie_max_age_seconds: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -153,13 +172,11 @@ def error_page(
 
 def csrf_form_field(request: Request) -> str:
     """Return a hidden CSRF field for cookie-authenticated UI forms."""
-    if not ui_csrf_required(request):
-        return ""
-    cookie_token = request.cookies.get(UI_API_KEY_COOKIE)
-    if cookie_token is None:
+    cookie_tokens = _ui_csrf_cookie_tokens(request)
+    if not cookie_tokens:
         return ""
     config = _auth_config(request)
-    token = create_ui_csrf_token(cookie_token, config)
+    token = create_ui_csrf_token(cookie_tokens[0], config)
     return (
         f'<input name="{UI_CSRF_FORM_FIELD}" type="hidden" '
         f'value="{_html.escape(token, quote=True)}">'
@@ -174,13 +191,13 @@ def require_ui_csrf(
     css: str = BASE_CSS,
 ) -> HTMLResponse | None:
     """Fail closed for unsafe UI posts authenticated by the browser cookie."""
-    if not ui_csrf_required(request):
+    cookie_tokens = _ui_csrf_cookie_tokens(request)
+    if not cookie_tokens:
         return None
-    cookie_token = request.cookies.get(UI_API_KEY_COOKIE)
-    if cookie_token is not None and verify_ui_csrf_token(
-        cookie_token,
-        submitted_token,
-        _auth_config(request),
+    config = _auth_config(request)
+    if any(
+        verify_ui_csrf_token(cookie_token, submitted_token, config)
+        for cookie_token in cookie_tokens
     ):
         return None
     return error_page(
@@ -193,11 +210,267 @@ def require_ui_csrf(
 
 
 def ui_csrf_required(request: Request) -> bool:
-    return getattr(request.state, "api_key_auth_source", None) == "ui_cookie"
+    return bool(_ui_csrf_cookie_tokens(request))
+
+
+def _ui_csrf_cookie_tokens(request: Request) -> tuple[str, ...]:
+    tokens: list[str] = []
+    api_key_cookie = request.cookies.get(UI_API_KEY_COOKIE)
+    if (
+        getattr(request.state, "api_key_auth_source", None) == "ui_cookie"
+        and api_key_cookie
+    ):
+        tokens.append(api_key_cookie)
+    for cookie_name in (UI_REVIEWER_COOKIE, UI_REPORT_IDENTITY_COOKIE):
+        cookie_token = request.cookies.get(cookie_name)
+        if cookie_token:
+            tokens.append(cookie_token)
+    return tuple(tokens)
 
 
 def _auth_config(request: Request) -> ApiKeyAuthConfig:
     return cast(ApiKeyAuthConfig, request.app.state.api_key_auth_config)
+
+
+# ---------------------------------------------------------------------------
+# Report identity session and form fields
+# ---------------------------------------------------------------------------
+
+
+def require_ui_report_identity(
+    request: Request,
+    settings: Settings,
+    *,
+    report_identity_token: str | None = None,
+) -> UiReportIdentityResult | None:
+    """Return browser report identity from a submitted token or signed UI cookie."""
+    submitted_token = (
+        report_identity_token.strip()
+        if report_identity_token is not None and report_identity_token.strip()
+        else None
+    )
+    config = _auth_config(request)
+    if submitted_token is not None:
+        claims = _verify_submitted_report_identity_token(submitted_token, settings)
+        now = datetime.now(UTC)
+        now_ts = int(now.timestamp())
+        cookie_expires_at = min(
+            claims.expires_at_timestamp,
+            now_ts + UI_REPORT_IDENTITY_COOKIE_MAX_AGE_SECONDS,
+        )
+        cookie_max_age = cookie_expires_at - now_ts
+        if cookie_max_age <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="report identity token expired",
+            )
+        cookie_token = create_ui_report_identity_cookie_token(
+            claims,
+            config,
+            expires_at_timestamp=cookie_expires_at,
+        )
+        return UiReportIdentityResult(
+            auth=RequestAuthContext(
+                workspace_id=claims.workspace_id,
+                user_id=claims.user_id,
+            ),
+            from_submitted_token=True,
+            cookie_token=cookie_token,
+            cookie_max_age_seconds=cookie_max_age,
+        )
+    auth = ui_report_identity_from_cookie(request)
+    if auth is None:
+        return None
+    return UiReportIdentityResult(auth=auth, from_submitted_token=False)
+
+
+def create_ui_report_identity_cookie_token(
+    claims: ReportIdentityClaims,
+    config: ApiKeyAuthConfig,
+    *,
+    expires_at_timestamp: int,
+) -> str:
+    if config.ui_cookie_signing_secret is None:
+        raise ValueError("UI report identity cookie signing secret is not configured")
+    bounded_exp = min(expires_at_timestamp, claims.expires_at_timestamp)
+    payload: dict[str, object] = {
+        "wid": str(claims.workspace_id),
+        "uid": str(claims.user_id),
+        "exp": bounded_exp,
+    }
+    payload_segment = _base64url_encode(
+        json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    )
+    signed_part = f"{UI_REPORT_IDENTITY_COOKIE_TOKEN_PREFIX}.{payload_segment}"
+    return f"{signed_part}.{_sign_ui_report_identity_token(signed_part, config)}"
+
+
+def verify_ui_report_identity_cookie_token(
+    token: str,
+    config: ApiKeyAuthConfig,
+    *,
+    now: datetime | None = None,
+) -> RequestAuthContext | None:
+    parts = token.split(".")
+    if len(parts) != 3 or parts[0] != UI_REPORT_IDENTITY_COOKIE_TOKEN_PREFIX:
+        return None
+    signed_part = f"{parts[0]}.{parts[1]}"
+    payload = _decode_ui_report_identity_payload(parts[1])
+    if payload is None or not _ui_report_identity_payload_is_unexpired(
+        payload,
+        now or datetime.now(UTC),
+    ):
+        return None
+    if config.ui_cookie_signing_secret is None:
+        return None
+    expected_signature = _sign_ui_report_identity_token(signed_part, config)
+    if not hmac.compare_digest(parts[2], expected_signature):
+        return None
+    workspace_id = _payload_uuid(payload, "wid")
+    user_id = _payload_uuid(payload, "uid")
+    if workspace_id is None or user_id is None:
+        return None
+    return RequestAuthContext(workspace_id=workspace_id, user_id=user_id)
+
+
+def ui_report_identity_from_cookie(request: Request) -> RequestAuthContext | None:
+    cookie_token = request.cookies.get(UI_REPORT_IDENTITY_COOKIE)
+    if cookie_token is None:
+        return None
+    return verify_ui_report_identity_cookie_token(cookie_token, _auth_config(request))
+
+
+def attach_ui_report_identity_session_cookie(
+    response: Response,
+    request: Request,
+    identity_result: UiReportIdentityResult | None,
+) -> None:
+    if (
+        identity_result is None
+        or not identity_result.from_submitted_token
+        or identity_result.cookie_token is None
+        or identity_result.cookie_max_age_seconds is None
+    ):
+        return
+    config = _auth_config(request)
+    response.set_cookie(
+        UI_REPORT_IDENTITY_COOKIE,
+        identity_result.cookie_token,
+        max_age=identity_result.cookie_max_age_seconds,
+        path="/ui",
+        httponly=True,
+        samesite="lax",
+        secure=config.ui_cookie_secure,
+    )
+
+
+def delete_ui_report_identity_session_cookie(response: Response, request: Request) -> None:
+    response.delete_cookie(
+        UI_REPORT_IDENTITY_COOKIE,
+        path="/ui",
+        httponly=True,
+        samesite="lax",
+        secure=_auth_config(request).ui_cookie_secure,
+    )
+
+
+def report_identity_fields(
+    request: Request,
+    settings: Settings,
+) -> str:
+    auth = ui_report_identity_from_cookie(request)
+    if auth is not None:
+        workspace_id = _html.escape(str(auth.workspace_id))
+        user_id = _html.escape(str(auth.user_id))
+        return (
+            "<div class='reviewer-session'><span>Using workspace identity session: "
+            f"<strong>{workspace_id}</strong></span> "
+            f"<span>User: <code>{user_id}</code>.</span> "
+            "<a class='reviewer-session-link' href='/ui/auth/identity'>"
+            "Manage identity session</a></div>"
+        )
+    if settings.is_local_app_env():
+        return (
+            "<div class='reviewer-session'>"
+            "<a class='reviewer-session-link' href='/ui/auth/identity'>"
+            "Start workspace identity session</a><span>or use local fallback.</span>"
+            "</div>"
+            f"{_report_identity_token_input(required=False)}"
+        )
+    return (
+        "<div class='reviewer-session'>"
+        "<a class='reviewer-session-link' href='/ui/auth/identity'>"
+        "Start workspace identity session</a><span>or enter token.</span>"
+        "</div>"
+        f"{_report_identity_token_input(required=False)}"
+    )
+
+
+def _verify_submitted_report_identity_token(
+    token: str,
+    settings: Settings,
+) -> ReportIdentityClaims:
+    secret = settings.report_identity_token_secret
+    if secret is None or len(secret.strip()) < MIN_SECRET_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "report identity token secret must be configured with "
+                f"at least {MIN_SECRET_LENGTH} characters"
+            ),
+        )
+    try:
+        return verify_report_identity_token(token, secret=secret)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+
+def _report_identity_token_input(*, required: bool) -> str:
+    required_attr = " required" if required else ""
+    return (
+        "<label>Report identity token:"
+        " <input type='password' name='report_identity_token'"
+        f"{required_attr} autocomplete='off'></label>"
+    )
+
+
+def _sign_ui_report_identity_token(signed_part: str, config: ApiKeyAuthConfig) -> str:
+    if config.ui_cookie_signing_secret is None:
+        raise ValueError("UI report identity cookie signing secret is not configured")
+    signing_key = hashlib.sha256(
+        f"{UI_REPORT_IDENTITY_COOKIE_TOKEN_PREFIX}:{config.ui_cookie_signing_secret}".encode()
+    ).digest()
+    return _base64url_encode(
+        hmac.new(signing_key, signed_part.encode("utf-8"), hashlib.sha256).digest()
+    )
+
+
+def _decode_ui_report_identity_payload(payload_segment: str) -> dict[str, object] | None:
+    try:
+        payload = json.loads(_base64url_decode(payload_segment).decode("utf-8"))
+    except (binascii.Error, ValueError, UnicodeDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _ui_report_identity_payload_is_unexpired(
+    payload: dict[str, object],
+    now: datetime,
+) -> bool:
+    expires_at = payload.get("exp")
+    return isinstance(expires_at, int) and expires_at > int(now.timestamp())
+
+
+def _payload_uuid(payload: dict[str, object], field: str) -> UUID | None:
+    value = payload.get(field)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return UUID(value)
+    except ValueError:
+        return None
 
 
 # ---------------------------------------------------------------------------

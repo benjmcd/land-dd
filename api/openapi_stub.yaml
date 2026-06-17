@@ -3654,6 +3654,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth/identity:
+    get:
+      tags:
+      - ui
+      summary: Ui Report Identity Auth Form
+      operationId: ui_report_identity_auth_form_ui_auth_identity_get
+      parameters:
+      - name: next
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - ui
+      summary: Ui Report Identity Auth Submit
+      operationId: ui_report_identity_auth_submit_ui_auth_identity_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_report_identity_auth_submit_ui_auth_identity_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ui/auth/identity/logout:
+    post:
+      tags:
+      - ui
+      summary: Ui Report Identity Auth Logout
+      operationId: ui_report_identity_auth_logout_ui_auth_identity_logout_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_report_identity_auth_logout_ui_auth_identity_logout_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/:
     get:
       tags:
@@ -4751,6 +4825,11 @@ components:
           - type: string
           - type: 'null'
           title: Reviewer Token
+        report_identity_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Identity Token
         csrf_token:
           anyOf:
           - type: string
@@ -4816,6 +4895,34 @@ components:
           title: Csrf Token
       type: object
       title: Body_ui_operations_recovery_preview_post_ui_operations_recovery_preview_post
+    Body_ui_report_identity_auth_logout_ui_auth_identity_logout_post:
+      properties:
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      title: Body_ui_report_identity_auth_logout_ui_auth_identity_logout_post
+    Body_ui_report_identity_auth_submit_ui_auth_identity_post:
+      properties:
+        report_identity_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Identity Token
+        next:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      title: Body_ui_report_identity_auth_submit_ui_auth_identity_post
     Body_ui_retry_report_run_ui_report_runs__report_run_id__retry_post:
       properties:
         reviewer_id:
