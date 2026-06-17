@@ -4,8 +4,10 @@
 
 The MVP retains all operational data (report runs, evidence, job queue records, source
 ingest runs) indefinitely. Audit events (access logs, API-key auth events in
-`audit.events`) have a target retention period of **90 days**, but no automated purge
-procedure exists yet. All data deletion is a manual operator action in MVP scope.
+`audit.events`) have a target retention period of **90 days**. A repo-local audit
+retention schedule contract now records the dry-run-first purge command, target event
+types, weekly cadence, and manual apply gates; the hosted scheduler is not provisioned
+yet. Any applied data deletion remains a manual operator action in MVP scope.
 
 ---
 
@@ -18,9 +20,9 @@ Retention classes are catalogued in `config/data_retention.yaml`. Each class spe
 | `id` | Stable identifier for the retention class |
 | `description` | Which table/queue the class covers |
 | `retention_period` | Target period (`indefinite_mvp` or `90_days_target`) |
-| `deletion_approach` | How deletion is handled (`manual_operator` or `not_yet_automated`) |
+| `deletion_approach` | How deletion is handled (`manual_operator` or `automated_script_dry_run_default`) |
 | `data_sensitivity` | Sensitivity label for the class |
-| `blocker` | Why automated deletion is not yet in place |
+| `blocker` | Current hosted-production blocker or retention limit |
 
 To review the full catalog:
 
@@ -38,16 +40,31 @@ cat config/data_retention.yaml
 
 ## MVP scope limitation
 
-No automated deletion procedures are implemented. All data deletion is a manual operator
-action. The current blockers are:
+Repo-local audit purge tooling and the repo-local audit retention schedule contract are
+implemented as validate-only artifacts. The current blockers are:
 
-- **automated_deletion** — No automated deletion procedure implemented in MVP; all
-  deletion is manual.
-- **hosted_log_retention** — Hosted log retention system not yet provisioned.
+- **automated_deletion** - Repo-local audit purge command and schedule contract exist;
+  hosted scheduler and automatic approval workflow are not provisioned.
+- **hosted_log_retention** - Hosted log retention system not yet provisioned.
 
 Do not delete `reports.report_runs`, `evidence.observations`, `jobs.job_queue`, or
 `source.ingest_runs` rows without explicit operator sign-off. Deleting evidence breaks
 report reproducibility.
+
+The schedule contract is intentionally not a hosted scheduler. It keeps the command and
+approval boundary explicit until platform scheduling, alerting, and log-retention
+authority exist.
+
+| Field | Current value |
+|---|---|
+| Runner | `scripts/purge_audit_events.py` |
+| Dry-run wrappers | `scripts/run_purge_audit_events.ps1`, `scripts/run_purge_audit_events.sh` |
+| Cadence | Weekly |
+| Default mode | Dry run; no rows deleted |
+| Target retention classes | `audit_events`, `api_key_audit_events` |
+| Target event types | `created`, `superseded`, `api_key_auth` |
+| Apply gates | `--apply`, security reviewer approval, backup/export, `state/WORKLOG.md` entry |
+| Hosted scheduler | Blocked |
 
 ---
 
@@ -65,7 +82,7 @@ A purge script exists at `scripts/purge_audit_events.py`. It deletes **only** th
 in-scope event types listed above; any future event type with a different policy is
 excluded by the explicit allowlist in the script.
 
-### Step 1 — Dry run (always run first)
+### Step 1 - Dry run (always run first)
 
 ```powershell
 .\scripts\run_purge_audit_events.ps1
@@ -80,7 +97,7 @@ py -3.12 scripts/purge_audit_events.py
 The dry run prints the count of rows eligible for deletion per event type and the
 cutoff date. No rows are written or deleted.
 
-### Step 2 — Review output and confirm with security reviewer
+### Step 2 - Review output and confirm with security reviewer
 
 Before applying:
 
@@ -89,7 +106,7 @@ Before applying:
 3. Record the planned deletion in `state/WORKLOG.md` with date, expected row count,
    and approver name.
 
-### Step 3 — Apply (manual operator action)
+### Step 3 - Apply (manual operator action)
 
 ```powershell
 py -3.12 scripts/purge_audit_events.py --apply
@@ -105,8 +122,8 @@ The script prints the number of rows actually deleted and exits 0 on success.
 
 ### Notes
 
-- There is no automated (scheduled) job for this procedure. It must be triggered
-  manually by an operator.
+- There is no hosted scheduled job for this procedure. It must be triggered manually by
+  an operator until the hosted scheduler is provisioned and wired to the same gates.
 - Pass `--db-url` to target a non-default database, or set the `DATABASE_URL_SYNC`
   environment variable.
 - The script reads the default retention window from `config/data_retention.yaml`
@@ -116,8 +133,8 @@ The script prints the number of rows actually deleted and exits 0 on success.
 
 ## Future work
 
-- Schedule the purge script (`scripts/purge_audit_events.py --apply`) as a cron job
-  or operator runbook step once the operational process is agreed.
+- Provision the hosted scheduler for the repo-local weekly purge contract once platform
+  scheduling, alerting, backup/export, and approval evidence are available.
 - Provision hosted log retention / SIEM export for `audit.events`.
 - Assess GDPR/CCPA scope when user-identifying data is introduced.
 - Add retention policy enforcement tests to CI once automated deletion exists.

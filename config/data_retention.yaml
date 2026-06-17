@@ -20,7 +20,7 @@ retention_classes:
     purge_script: scripts/purge_audit_events.py
     purge_invocation: manual_operator
     data_sensitivity: internal_audit
-    blocker: Script exists; requires manual --apply invocation; not scheduled
+    blocker: Repo-local purge command and schedule contract exist; hosted scheduler not provisioned
   - id: connector_review_queue
     description: Connector review queue items in jobs.job_queue (type=connector_review_status)
     retention_period: indefinite_mvp
@@ -46,11 +46,36 @@ retention_classes:
     purge_script: scripts/purge_audit_events.py
     purge_invocation: manual_operator
     data_sensitivity: internal_security_audit
-    blocker: Script exists; requires manual --apply invocation; not scheduled
+    blocker: Repo-local purge command and schedule contract exist; hosted scheduler not provisioned
+automation_plan:
+  status: repo_local_schedule_contract
+  runner: scripts/purge_audit_events.py
+  windows_dry_run_wrapper: scripts/run_purge_audit_events.ps1
+  posix_dry_run_wrapper: scripts/run_purge_audit_events.sh
+  cadence: weekly
+  mode: dry_run_by_default
+  target_retention_classes:
+    - audit_events
+    - api_key_audit_events
+  target_event_types:
+    - api_key_auth
+    - created
+    - superseded
+  apply_requires:
+    - --apply
+    - security_reviewer_approval
+    - backup_or_export
+    - state_worklog_entry
+  hosted_scheduler_status: blocked
+  limits:
+    validate_only_catalog: true
+    deletes_by_default: false
+    requires_explicit_apply: true
+    writes_secrets: false
 retention_blockers:
   - id: automated_deletion
     status: blocked
-    reason: No automated deletion procedure implemented in MVP; all deletion is manual
+    reason: Repo-local audit purge command and schedule contract exist; hosted scheduler and automatic approval workflow are not provisioned
   - id: hosted_log_retention
     status: blocked
     reason: Hosted log retention system not yet provisioned
