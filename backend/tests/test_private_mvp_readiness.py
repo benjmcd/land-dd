@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 READINESS_YAML = ROOT / "config" / "private_mvp_beta_readiness.yaml"
 RUNBOOK_PATH = ROOT / "docs" / "runbooks" / "mvp_operator.md"
+IMPLEMENTATION_READINESS_PATH = ROOT / "docs" / "IMPLEMENTATION_READINESS.md"
 MANIFEST_PATHS_BY_KEY = {
     "buncombe_nc": ROOT / "docs" / "geographies" / "nc" / "buncombe" / "source_manifest.md",
     "chatham_nc": ROOT / "docs" / "geographies" / "nc" / "chatham" / "source_manifest.md",
@@ -476,6 +477,31 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
         "/ui/report-runs/{id}",
     ):
         assert stale_phrase not in runbook
+
+
+def test_implementation_readiness_routes_after_selected_county_proof() -> None:
+    readiness_doc = IMPLEMENTATION_READINESS_PATH.read_text(encoding="utf-8")
+    normalized_doc = " ".join(readiness_doc.split())
+
+    for phrase in (
+        "Pick the state/counties",
+        "one selected-county fixture-backed source adapter",
+        "first source candidates",
+    ):
+        assert phrase not in readiness_doc
+
+    for phrase in (
+        "Buncombe, Chatham, and Brunswick",
+        "selected NC counties",
+        "`/operator-cases/{case_id}/report`",
+        "Operator Path Proof Matrix",
+        "source-management/live connector tenancy",
+        "report job scheduling",
+        "dossier surface expansion",
+        "legacy/null ownership",
+        "hosted-production blockers",
+    ):
+        assert phrase in normalized_doc
 
 
 def test_county_source_manifests_track_structured_selected_county_scope() -> None:

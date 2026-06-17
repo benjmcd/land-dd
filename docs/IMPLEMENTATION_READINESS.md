@@ -11,9 +11,15 @@ start without re-litigating basic authority.
   endpoints.
 - CI runs both the fast verification job and the PostGIS-backed DB verification
   job on `main`.
-- Current connector runtime is fixture-only for access, flood, and zoning.
-- DS-002 FEMA NFHL has a reviewed federal source row; local/county source rows
-  still fail closed until reviewed.
+- Private MVP geography is selected: North Carolina, with Buncombe, Chatham,
+  and Brunswick as the selected NC counties.
+- The selected-county operator path is routed through
+  `/operator-cases/{case_id}/report`; `docs/runbooks/mvp_operator.md` is the
+  current operator authority and includes the Operator Path Proof Matrix.
+- DS-002 FEMA NFHL has a reviewed federal source row. DS-010 selected-county
+  parcel connectors and DS-023 Chatham/Brunswick recorded-fixture zoning are
+  scoped for private MVP; DS-011 assessor remains an explicit NOT_EVALUATED
+  sentinel.
 - FastAPI's generated OpenAPI schema is the runtime API authority;
   `api/openapi_stub.yaml` is a curated companion checked for path/method drift.
 - Report runs return a machine-readable JSON contract; approved report runs can
@@ -55,29 +61,32 @@ start without re-litigating basic authority.
 
 | Gate | Required decision | Reason |
 |---|---|---|
-| MVP geography | Select one U.S. state and 3-5 target counties. | County parcels, zoning, assessor, recorder, wells, and caveats are jurisdiction-specific. |
-| Source licensing | Complete license review for any source used beyond fixtures. | Unknown or blocked source rights fail closed for production reports and exports. |
-| External identity integration | Decide whether beta needs an external IdP/session issuer beyond signed report identity tokens. | The backend now has a signed beta token boundary, but a public multi-user deployment may still need a product IdP/session layer. |
-| Source-management and live connector tenancy | Decide whether source-management routes are admin-only or workspace-scoped, and define non-fixture live connector run identifiers/payload tenancy before live multi-user ingestion. | Fixture connector run/review queue routes are now workspace-scoped, but source registry routes are still governance/admin scaffolding and fixture connectors still use deterministic packaged IDs. |
-| Legacy/null area ownership | Decide whether any pre-existing `core.areas.workspace_id IS NULL` rows need a one-time backfill. | Authenticated public APIs intentionally fail closed for null-owned areas rather than exposing them across workspaces. |
+| Source-management/live connector tenancy | Decide whether source-management routes are admin-only or workspace-scoped, and define non-fixture live connector run identifiers/payload tenancy before live multi-user ingestion. | Fixture connector run/review queue routes are workspace-scoped, while source registry routes remain governance/admin scaffolding and fixture connectors use deterministic packaged IDs. |
 | Report job scheduling | Decide whether bounded operator/API execution is enough or an autonomous scheduler/daemon is needed. | The worker endpoint and bounded operator script exist, but automatic processing is not yet part of the runtime. |
-| Dossier surface expansion | Decide whether beta needs PDF, web page, dashboard, or operator UI beyond the approved Markdown endpoint. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
-| Golden parcels | Define regression parcels for the selected counties. | Geo/source changes need known fixtures to detect false confidence. |
+| Dossier surface expansion | Decide whether beta needs PDF, dashboard, richer web delivery, or a broader operator UI beyond approved Markdown and current operator-case routes. | Served Markdown delivery is review-gated; broader user-facing surfaces remain product decisions. |
+| Legacy/null ownership | Decide whether any pre-existing `core.areas.workspace_id IS NULL` rows need a one-time backfill. | Authenticated public APIs intentionally fail closed for null-owned areas rather than exposing them across workspaces. |
+| Hosted-production blockers | Decide which hosted-production blockers matter only after private MVP utility is proven. | Hosted deployment, OAuth/OIDC, registry publication, billing, and external secret-manager work are documented blockers, but they should not obscure private MVP utility proof. |
 
 ## Recommended Next Passes
+
+Immediate next passes are source-management/live connector tenancy, report job
+scheduling, dossier surface expansion, legacy/null ownership, and
+hosted-production blockers after private MVP utility.
 
 1. **Authority pass**
    - Keep `MILESTONE_MAP.md`, `LANE_OWNERSHIP.md`, and `state/*.md` current.
    - Reconcile any ADR links to missing or historical planning artifacts.
    - Keep `scripts/render_project_status.py` runnable.
 
-2. **MVP geography and source pass**
-   - Pick the state/counties.
-   - Update `registers/data_source_registry.csv` with county-specific rows or
-     narrowed source records.
-   - Complete source reviews under `registers/license-reviews/` for the first
-     source candidates.
-   - Define source caveats and source-failure behavior before runtime work.
+2. **Source-management/live connector tenancy decision**
+   - Treat North Carolina Buncombe, Chatham, and Brunswick as the selected NC
+     counties; do not reopen geography selection without a new authority pass.
+   - Keep selected-county scope aligned with
+     `config/private_mvp_beta_readiness.yaml`, the county manifests, and the
+     operator-case bridge in `docs/runbooks/mvp_operator.md`.
+   - Decide whether source-management routes are admin-only or workspace-scoped
+     before exposing live source governance or live ingestion beyond
+     fixture/operator use.
 
 3. **API contract pass**
    - Use generated FastAPI OpenAPI as runtime authority.
@@ -88,23 +97,34 @@ start without re-litigating basic authority.
    - Use `REPORT_AUTH_MODE=signed_token` before exposed beta deployment unless a
      stronger external IdP/session integration replaces it.
    - Keep fixture connector run/review queue routes behind request identity.
-   - Design source-management and live connector workspace authority before
-     exposing source governance or live ingestion beyond fixture/operator use.
    - Use the bounded report worker script for operator-driven job execution.
-   - Decide and implement automatic report-job scheduling only if beta needs it.
    - Keep explicit false/unknown/missing/source-failed response semantics visible.
 
-4. **First high-ROI implementation pass**
-   - Choose one vertical slice, preferably one selected-county fixture-backed
-     source adapter that produces evidence and report-visible unknowns/caveats.
-   - Keep live network disabled until the connector gate passes.
-   - Add regression fixtures before widening data coverage.
+4. **Report job scheduling decision**
+   - Decide whether bounded operator/API execution is enough for private MVP or
+     whether a scheduler/daemon is needed.
+   - Keep validate-only checks fail-closed; validation must not seed, mutate, or
+     generate runtime artifacts.
 
-5. **Report productization pass**
+5. **Dossier surface expansion decision**
    - Keep `templates/report_template_rural_land_dossier.md` aligned with the
      approved Markdown dossier endpoint.
    - Keep safe-language lint around generated report text.
    - Keep served/beta dossier delivery gated on the report review workflow.
+   - Use the Operator Path Proof Matrix before adding PDF, dashboard, richer web
+     delivery, or broader operator UI surfaces.
+
+6. **Legacy/null ownership decision**
+   - Decide whether null-owned historical areas need a one-time backfill or
+     should stay inaccessible through authenticated public APIs.
+   - Keep workspace isolation as the public API default.
+
+7. **Hosted-production blockers after private MVP utility**
+   - Keep hosted deployment, OAuth/OIDC, registry publication, billing, and
+     external secret-manager work out of the private MVP gate unless utility
+     proof requires them.
+   - Promote only blockers that have a repo-confirmed path from private MVP
+     utility to hosted-production need.
 
 ## Stop Rules
 
