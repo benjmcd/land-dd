@@ -13,9 +13,14 @@ from app.claims_engine.not_evaluated import (
     NOT_EVALUATED_DOMAINS,
     NOT_EVALUATED_SOURCE_NAME,
 )
+from app.core.config import Settings
 from app.main import create_app
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
+SOURCE_MANAGE_HEADERS = {
+    "X-Reviewer-Id": "fixture-reviewer",
+    "X-Reviewer-Token": "fixture-token-123",
+}
 
 
 def load_geometry(name: str) -> dict[str, object]:
@@ -58,6 +63,7 @@ def test_api_scaffold_creates_and_lists_sources() -> None:
             "commercial_use_status": "approved",
             "review_status": "approved",
         },
+        headers=SOURCE_MANAGE_HEADERS,
     )
 
     assert create_response.status_code == 201
@@ -65,6 +71,40 @@ def test_api_scaffold_creates_and_lists_sources() -> None:
     list_response = client.get("/sources")
     assert list_response.status_code == 200
     assert [source["source_id"] for source in list_response.json()] == [source_id]
+
+
+def test_api_scaffold_source_create_requires_source_manage_scope() -> None:
+    client = TestClient(create_app())
+    under_scoped_client = TestClient(
+        create_app(
+            settings=Settings(
+                REVIEWER_ACCOUNT_SCOPES="fixture-reviewer:operations:read"
+            )
+        )
+    )
+    payload = {
+        "name": "Fixture FEMA",
+        "organization": "FEMA",
+        "domain": "flood",
+        "license_status": "approved",
+        "commercial_use_status": "approved",
+        "review_status": "approved",
+    }
+
+    no_credentials = client.post("/sources", json=payload)
+    under_scoped = under_scoped_client.post(
+        "/sources",
+        json=payload,
+        headers={
+            "X-Reviewer-Id": "fixture-reviewer",
+            "X-Reviewer-Token": "fixture-token-123",
+        },
+    )
+
+    assert no_credentials.status_code == 401
+    assert no_credentials.json()["detail"] == "connector reviewer credentials are required"
+    assert under_scoped.status_code == 403
+    assert under_scoped.json()["detail"] == "reviewer scope is required: source:manage"
 
 
 def test_api_scaffold_creates_and_lists_areas() -> None:
@@ -174,6 +214,7 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
             "commercial_use_status": "approved",
             "review_status": "approved",
         },
+        headers=SOURCE_MANAGE_HEADERS,
     )
     area_response = client.post(
         "/areas",
@@ -222,7 +263,14 @@ def test_api_report_run_surfaces_source_failure_unknowns() -> None:
 def test_api_scaffold_returns_422_for_bad_input() -> None:
     client = TestClient(create_app())
 
-    assert client.post("/sources", json={"name": "Missing domain"}).status_code == 422
+    assert (
+        client.post(
+            "/sources",
+            json={"name": "Missing domain"},
+            headers=SOURCE_MANAGE_HEADERS,
+        ).status_code
+        == 422
+    )
     assert (
         client.post(
             "/areas",

@@ -82,6 +82,13 @@ def _post(base_url: str, path: str, body: dict, headers: dict | None = None) -> 
         return exc.code, body_json
 
 
+def _reviewer_headers() -> dict[str, str]:
+    return {
+        "X-Reviewer-Id": REVIEWER_ID,
+        "X-Reviewer-Token": REVIEWER_TOKEN,
+    }
+
+
 def _wait_for_api(base_url: str, retries: int = 30, delay: float = 1.0) -> bool:
     url = base_url.rstrip("/") + "/health"
     for _ in range(retries):
@@ -109,7 +116,7 @@ def _register_sources(base_url: str, seeds_path: Path) -> list[str]:
             continue
         reg_id = src.metadata["source_registry_id"]
         body = json.loads(src.model_dump_json())
-        status_code, resp = _post(base_url, "/sources", body)
+        status_code, resp = _post(base_url, "/sources", body, _reviewer_headers())
         if status_code in (200, 201, 409):
             messages.append(f"  source {reg_id}: registered (HTTP {status_code})")
         else:
@@ -197,10 +204,7 @@ def run_smoke(base_url: str, output_dir: Path) -> int:
     # ------------------------------------------------------------------
     # Reviewer auth headers
     # ------------------------------------------------------------------
-    reviewer_headers = {
-        "X-Reviewer-Id": REVIEWER_ID,
-        "X-Reviewer-Token": REVIEWER_TOKEN,
-    }
+    reviewer_headers = _reviewer_headers()
 
     # ------------------------------------------------------------------
     # Run each smoke leg

@@ -14,6 +14,7 @@ REVIEWER_SCOPE_OPERATIONS_READ = "operations:read"
 REVIEWER_SCOPE_REPORT_APPROVE = "report:approve"
 REVIEWER_SCOPE_REPORT_RETRY = "report:retry"
 REVIEWER_SCOPE_REPORT_RUN = "report:run"
+REVIEWER_SCOPE_SOURCE_MANAGE = "source:manage"
 REVIEWER_SESSION_BINDING_PREFIX = "land-dd-reviewer-session-binding-v1"
 
 REVIEWER_SCOPES = frozenset(
@@ -24,6 +25,7 @@ REVIEWER_SCOPES = frozenset(
         REVIEWER_SCOPE_REPORT_APPROVE,
         REVIEWER_SCOPE_REPORT_RETRY,
         REVIEWER_SCOPE_REPORT_RUN,
+        REVIEWER_SCOPE_SOURCE_MANAGE,
     }
 )
 
@@ -221,6 +223,7 @@ __all__ = [
     "REVIEWER_SCOPE_REPORT_APPROVE",
     "REVIEWER_SCOPE_REPORT_RETRY",
     "REVIEWER_SCOPE_REPORT_RUN",
+    "REVIEWER_SCOPE_SOURCE_MANAGE",
     "ReviewerPrincipal",
     "require_reviewer_scope",
 ]

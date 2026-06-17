@@ -67,7 +67,7 @@ Apply migrations before first run:
 | `USE_DB_SERVICES` | `false` | Use Postgres-backed services instead of in-memory stores; required outside local/dev/development/test `APP_ENV` values |
 | `OBJECT_STORE_ROOT` | `./object_store` | Directory for report artifact files |
 | `REVIEWER_ACCOUNTS` | local fixture reviewer | Reviewer service account ids and tokens |
-| `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:approve`, `report:retry`, and `report:run` |
+| `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:approve`, `report:retry`, `report:run`, and `source:manage` |
 | `ENABLE_LIVE_CONNECTORS` | `false` | Enables request-time DS-001, DS-002, DS-004, then DS-003 connector gating |
 
 Local/dev/development/test app environments may use raw `API_KEYS`, raw
@@ -553,12 +553,13 @@ On success the page redirects back to the report view. On credential failure the
 response carries the real HTTP status (401/403/503) and a generic error message — no
 field-level detail is leaked.
 
-The default fixture account (`fixture-reviewer` / `fixture-token-123`) does **not** hold
-`report:approve` scope in `.env.example`. Grant it explicitly via
-`REVIEWER_ACCOUNT_SCOPES` before using the UI approval form in development:
+The default fixture account (`fixture-reviewer` / `fixture-token-123`) in
+`.env.example` includes the private-MVP operator scopes. If a local environment overrides
+`REVIEWER_ACCOUNT_SCOPES`, keep `report:approve` before using the UI approval form in
+development:
 
 ```
-REVIEWER_ACCOUNT_SCOPES=fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run
+REVIEWER_ACCOUNT_SCOPES=fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run|source:manage
 ```
 
 API-based approval (unchanged) sends credentials as headers:
@@ -994,8 +995,8 @@ future work items.
 - Reviewer credentials are missing or wrong, the reviewer session is expired/invalid, or the reviewer account does not hold `report:approve` scope.
 - Start or refresh a reviewer session at `/ui/auth/reviewer`, or enter reviewer credentials directly in the action form.
 - Check `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` in the server environment.
-  The default fixture account in `.env.example` does not include `report:approve`; add it
-  explicitly before testing UI approval in development.
+  If the environment overrides the `.env.example` default fixture scopes, keep
+  `report:approve` before testing UI approval in development.
 - 503 means reviewer accounts are not configured at all.
 
 **UI returns 401/403 on every page (locked out)**

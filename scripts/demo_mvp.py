@@ -10,6 +10,8 @@ FIXTURE_SOURCE_ID = "55555555-5555-4555-8555-555555555555"
 FIXTURE_AREA_ID = "44444444-4444-4444-8444-444444444444"
 DEMO_WORKSPACE_ID = "11111111-1111-4111-8111-111111111111"
 DEMO_USER_ID = "22222222-2222-4222-8222-222222222222"
+FIXTURE_REVIEWER_ID = "fixture-reviewer"
+FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
 FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -29,8 +31,8 @@ def main() -> None:
         description="Run the public API fixture-to-report MVP demo."
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--reviewer-id", default=DEMO_USER_ID)
-    parser.add_argument("--reviewer-token", default="fixture-token-123")
+    parser.add_argument("--reviewer-id", default=FIXTURE_REVIEWER_ID)
+    parser.add_argument("--reviewer-token", default=FIXTURE_REVIEWER_TOKEN)
     parser.add_argument("--workspace-id", default=DEMO_WORKSPACE_ID)
     parser.add_argument("--user-id", default=DEMO_USER_ID)
     parser.add_argument("--identity-token")
@@ -46,7 +48,12 @@ def main() -> None:
     health = client.request("GET", "/health")
     print(f"health: {health['status']} ({health['environment']})")
 
-    seed_fixture_source(client)
+    reviewer_headers = {
+        "X-Reviewer-Id": args.reviewer_id,
+        "X-Reviewer-Token": args.reviewer_token,
+    }
+
+    seed_fixture_source(client, reviewer_headers)
     seed_fixture_area(client, identity_headers)
 
     connector_results = [
@@ -89,10 +96,6 @@ def main() -> None:
     )
 
     # Step A: Approve the report run
-    reviewer_headers = {
-        "X-Reviewer-Id": args.reviewer_id,
-        "X-Reviewer-Token": args.reviewer_token,
-    }
     approved_report = client.request(
         "POST",
         f"/report-runs/{report['report_run_id']}/approve",
@@ -111,7 +114,7 @@ def main() -> None:
         parse_json=False,
     )
     lines = dossier_text.split("\n")[:5]
-    print(f"dossier preview: {' | '.join(l.strip() for l in lines if l.strip())}")
+    print(f"dossier preview: {' | '.join(line.strip() for line in lines if line.strip())}")
 
     # Run failure connector, review it, then list reports
     failure_result = run_connector(
@@ -133,7 +136,7 @@ def main() -> None:
                 "reviewer_id": args.reviewer_id,
                 "reason": "demo review approval",
             },
-            headers=identity_headers,
+            headers={**identity_headers, **reviewer_headers},
         )
         print(f"review action: {approved['status']} by {args.reviewer_id}")
     else:
@@ -190,7 +193,7 @@ class ApiClient:
             ) from exc
 
 
-def seed_fixture_source(client: ApiClient) -> None:
+def seed_fixture_source(client: ApiClient, reviewer_headers: dict[str, str]) -> None:
     payload: dict[str, object] = {
         "source_id": FIXTURE_SOURCE_ID,
         "name": "Fixture Source",
@@ -206,7 +209,7 @@ def seed_fixture_source(client: ApiClient) -> None:
         "review_status": "approved",
     }
     try:
-        client.request("POST", "/sources", payload)
+        client.request("POST", "/sources", payload, headers=reviewer_headers)
         print("source: created")
     except RuntimeError as exc:
         if "already registered" not in str(exc):

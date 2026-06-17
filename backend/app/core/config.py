@@ -16,7 +16,8 @@ SHA256_SECRET_PREFIX = "sha256:"
 DEFAULT_REVIEWER_ACCOUNTS = "fixture-reviewer:fixture-token-123"
 DEFAULT_REVIEWER_ACCOUNT_SCOPES = (
     "fixture-reviewer:"
-    "connector:run|connector:review|operations:read|report:approve|report:retry|report:run"
+    "connector:run|connector:review|operations:read|report:approve|report:retry|"
+    "report:run|source:manage"
 )
 
 

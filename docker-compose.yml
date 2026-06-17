@@ -43,7 +43,7 @@ services:
       ENABLE_METRICS: ${ENABLE_METRICS:-true}
       # Fixture reviewer defaults are local-only; non-local APP_ENV requires hashed tokens.
       REVIEWER_ACCOUNTS: ${REVIEWER_ACCOUNTS:-fixture-reviewer:fixture-token-123}
-      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run}
+      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run|source:manage}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -72,7 +72,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # Fixture reviewer defaults are local-only; non-local APP_ENV requires hashed tokens.
       REVIEWER_ACCOUNTS: ${REVIEWER_ACCOUNTS:-fixture-reviewer:fixture-token-123}
-      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run}
+      REVIEWER_ACCOUNT_SCOPES: ${REVIEWER_ACCOUNT_SCOPES:-fixture-reviewer:connector:run|connector:review|operations:read|report:approve|report:retry|report:run|source:manage}
     command:
       - python
       - /app/scripts/live_connector_worker.py

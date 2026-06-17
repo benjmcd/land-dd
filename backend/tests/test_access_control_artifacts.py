@@ -54,6 +54,7 @@ REQUIRED_ROUTE_SCOPES = {
     "report:retry",
     "report:run",
     "report:approve",
+    "source:manage",
 }
 REQUIRED_IDENTITY_AUDIT_REQUIREMENTS = {
     "idp_subject",
@@ -215,7 +216,7 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "groups/roles supplied",
         "platform_admin, workspace_admin, reviewer, operator, and read_only",
         "connector:run, connector:review, operations:read",
-        "report:retry, report:run, and report:approve",
+        "report:retry, report:run, report:approve, and source:manage",
         "user-bound audit events",
         "IdP subject",
         "workspace/user id",
@@ -256,6 +257,38 @@ def test_access_control_scripts_exist_for_windows_and_posix() -> None:
     assert (REPO_ROOT / "scripts" / "access_control_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_access_control_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_access_control_check.sh").is_file()
+
+
+def test_operator_source_seed_scripts_use_reviewer_headers() -> None:
+    live_smoke = (REPO_ROOT / "scripts" / "run_live_smoke.py").read_text(
+        encoding="utf-8",
+    )
+    demo_mvp = (REPO_ROOT / "scripts" / "demo_mvp.py").read_text(
+        encoding="utf-8",
+    )
+
+    assert "X-Reviewer-Id" in live_smoke
+    assert "X-Reviewer-Token" in live_smoke
+    assert '_post(base_url, "/sources", body, _reviewer_headers())' in live_smoke
+    assert "X-Reviewer-Id" in demo_mvp
+    assert "X-Reviewer-Token" in demo_mvp
+    assert 'client.request("POST", "/sources", payload, headers=reviewer_headers)' in demo_mvp
+
+
+def test_access_control_validator_tracks_compat_review_queue_scope() -> None:
+    validator = (REPO_ROOT / "scripts" / "access_control_check.py").read_text(
+        encoding="utf-8",
+    )
+
+    for phrase in (
+        "approve_connector_review_queue_item_compat",
+        "reject_connector_review_queue_item_compat",
+        "requeue_connector_review_queue_item_compat",
+        "cancel_connector_review_queue_item_compat",
+        "test_connector_review_action_requires_reviewer_credentials",
+        "test_connector_review_action_rejects_reviewer_without_review_scope",
+    ):
+        assert phrase in validator
 
 
 def test_access_control_validator_tracks_current_ui_reviewer_session_design() -> None:

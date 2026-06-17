@@ -185,6 +185,7 @@ identity_rbac_contract:
         - report:approve
         - report:retry
         - report:run
+        - source:manage
     workspace_admin:
       scopes:
         - operations:read

@@ -48,21 +48,38 @@ paths:
           content:
             application/json:
               schema:
+                type: array
                 items:
                   $ref: '#/components/schemas/SourceContract'
-                type: array
                 title: Response List Sources Sources Get
     post:
       tags:
       - sources
       summary: Create Source
       operationId: create_source_sources_post
+      parameters:
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SourceContract'
-        required: true
       responses:
         '201':
           description: Successful Response
@@ -2614,6 +2631,22 @@ paths:
           - type: string
           - type: 'null'
           title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
         required: true
         content:
@@ -2671,6 +2704,22 @@ paths:
           - type: string
           - type: 'null'
           title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
         required: true
         content:
@@ -2728,6 +2777,22 @@ paths:
           - type: string
           - type: 'null'
           title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
         required: true
         content:
@@ -2785,6 +2850,22 @@ paths:
           - type: string
           - type: 'null'
           title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
         required: true
         content:
