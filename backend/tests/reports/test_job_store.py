@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.db.engine import build_engine
 from app.domain.enums import IntentCode, JobStatus
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.reports.job_store import AsyncReportJobStore, SqlAlchemyAsyncReportJobStore
 
 
@@ -79,6 +81,7 @@ def test_mark_running() -> None:
     result = store.get(record.report_run_id)
     assert result is not None
     assert result.status == JobStatus.RUNNING
+    assert result.started_at is not None
 
 
 def test_mark_succeeded() -> None:
@@ -132,7 +135,33 @@ def test_health_counts_report_job_statuses() -> None:
     assert health.needs_review == 0
     assert health.oldest_queued_age_seconds is not None
     assert health.oldest_queued_age_seconds >= 0
+    assert health.oldest_running_age_seconds is None
+    assert health.oldest_running_job_id is None
+    assert health.stale_running == 0
+    assert health.stale_running_threshold_seconds == STALE_RUNNING_THRESHOLD_SECONDS
     assert store.get(queued.report_run_id) is queued
+
+
+def test_health_reports_oldest_running_job_and_stale_running_count() -> None:
+    store = AsyncReportJobStore()
+    running = store.create(area_id=uuid4(), intent_code=IntentCode.RURAL_LAND_PURCHASE)
+    fresh = store.create(area_id=uuid4(), intent_code=IntentCode.HOMESTEAD_FEASIBILITY)
+    store.mark_running(running.report_run_id)
+    store.mark_running(fresh.report_run_id)
+    running_record = store.get(running.report_run_id)
+    assert running_record is not None
+    running_record.started_at = datetime.now(UTC) - timedelta(
+        seconds=STALE_RUNNING_THRESHOLD_SECONDS + 1,
+    )
+
+    health = store.health()
+
+    assert health.running == 2
+    assert health.oldest_running_age_seconds is not None
+    assert health.oldest_running_age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
+    assert health.oldest_running_job_id == running.report_run_id
+    assert health.stale_running == 1
+    assert health.stale_running_threshold_seconds == STALE_RUNNING_THRESHOLD_SECONDS
 
 
 def test_list_recent_offset_paginates_results() -> None:

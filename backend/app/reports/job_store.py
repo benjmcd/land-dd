@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.engine import get_session_factory
 from app.domain.enums import IntentCode, JobStatus
-from app.domain.job_health import JobQueueHealth
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS, JobQueueHealth
 
 REPORT_RUN_JOB_TYPE = "report_run"
 
@@ -32,6 +32,7 @@ class ReportJobRecord:
     # (stripped, non-empty). None means this job was created without a key.
     client_idempotency_key: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    started_at: datetime | None = None
 
 
 class AsyncReportJobStoreProtocol(Protocol):
@@ -140,6 +141,7 @@ class AsyncReportJobStore:
             record = self._jobs.get(report_run_id)
             if record is not None:
                 record.status = JobStatus.RUNNING
+                record.started_at = record.started_at or datetime.now(UTC)
 
     def mark_succeeded(self, report_run_id: UUID) -> None:
         with self._lock:
@@ -274,7 +276,14 @@ class SqlAlchemyAsyncReportJobStore:
             row = session.execute(
                 text(
                     """
-                    SELECT job_id, workspace_id, status, payload, last_error, created_at
+                    SELECT
+                        job_id,
+                        workspace_id,
+                        status,
+                        payload,
+                        last_error,
+                        created_at,
+                        started_at
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                       AND idempotency_key = :idempotency_key
@@ -295,7 +304,14 @@ class SqlAlchemyAsyncReportJobStore:
             row = session.execute(
                 text(
                     """
-                    SELECT job_id, workspace_id, status, payload, last_error, created_at
+                    SELECT
+                        job_id,
+                        workspace_id,
+                        status,
+                        payload,
+                        last_error,
+                        created_at,
+                        started_at
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                       AND job_id = :job_id
@@ -356,7 +372,14 @@ class SqlAlchemyAsyncReportJobStore:
             predicates.append("workspace_id = CAST(:workspace_id AS uuid)")
         where_clause = " AND ".join(predicates)
         sql = f"""
-                SELECT job_id, workspace_id, status, payload, last_error, created_at
+                SELECT
+                    job_id,
+                    workspace_id,
+                    status,
+                    payload,
+                    last_error,
+                    created_at,
+                    started_at
                 FROM jobs.job_queue
                 WHERE {where_clause}
                 ORDER BY created_at DESC
@@ -394,7 +417,24 @@ class SqlAlchemyAsyncReportJobStore:
                         ) AS needs_review,
                         min(created_at) FILTER (
                             WHERE status = CAST(:queued_status AS jobs.job_status)
-                        ) AS oldest_queued_at
+                        ) AS oldest_queued_at,
+                        min(COALESCE(started_at, created_at)) FILTER (
+                            WHERE status = CAST(:running_status AS jobs.job_status)
+                        ) AS oldest_running_at,
+                        (
+                            SELECT job_id
+                            FROM jobs.job_queue
+                            WHERE job_type = :job_type
+                              AND status = CAST(:running_status AS jobs.job_status)
+                            ORDER BY COALESCE(started_at, created_at), job_id
+                            LIMIT 1
+                        ) AS oldest_running_job_id,
+                        count(*) FILTER (
+                            WHERE status = CAST(:running_status AS jobs.job_status)
+                              AND EXTRACT(
+                                  EPOCH FROM (now() - COALESCE(started_at, created_at))
+                              ) >= :stale_running_threshold_seconds
+                        ) AS stale_running
                     FROM jobs.job_queue
                     WHERE job_type = :job_type
                     """
@@ -503,11 +543,18 @@ def _record_from_row(row: Any) -> ReportJobRecord:
         retry_of_report_run_id=_optional_payload_uuid(payload, "retry_of_report_run_id"),
         client_idempotency_key=payload.get("client_idempotency_key"),
         created_at=row["created_at"],
+        started_at=row["started_at"],
     )
 
 
 def _optional_payload_uuid(payload: dict[str, Any], key: str) -> UUID | None:
     value = payload.get(key)
+    if value is None:
+        return None
+    return UUID(str(value))
+
+
+def _optional_uuid(value: object) -> UUID | None:
     if value is None:
         return None
     return UUID(str(value))
@@ -519,11 +566,23 @@ def _health_from_records(
 ) -> JobQueueHealth:
     counts = {status: 0 for status in JobStatus}
     queued_created_at: list[datetime] = []
+    running_started_at: list[tuple[datetime, UUID]] = []
+    stale_running = 0
     for record in records:
         counts[record.status] += 1
         if record.status == JobStatus.QUEUED:
             queued_created_at.append(record.created_at)
+        if record.status == JobStatus.RUNNING:
+            started_at = record.started_at or record.created_at
+            running_started_at.append((started_at, record.report_run_id))
+            age_seconds = _age_seconds(started_at)
+            if (
+                age_seconds is not None
+                and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
+            ):
+                stale_running += 1
     oldest_queued_at = min(queued_created_at) if queued_created_at else None
+    oldest_running = min(running_started_at, default=None, key=lambda item: item[0])
     return JobQueueHealth(
         job_type=job_type,
         total=len(records),
@@ -534,10 +593,15 @@ def _health_from_records(
         cancelled=counts[JobStatus.CANCELLED],
         needs_review=counts[JobStatus.NEEDS_REVIEW],
         oldest_queued_age_seconds=_age_seconds(oldest_queued_at),
+        oldest_running_age_seconds=_age_seconds(oldest_running[0])
+        if oldest_running is not None
+        else None,
+        oldest_running_job_id=oldest_running[1] if oldest_running is not None else None,
+        stale_running=stale_running,
     )
 
 
-def _health_query_params(job_type: str) -> dict[str, str]:
+def _health_query_params(job_type: str) -> dict[str, object]:
     return {
         "job_type": job_type,
         "queued_status": JobStatus.QUEUED.value,
@@ -546,6 +610,7 @@ def _health_query_params(job_type: str) -> dict[str, str]:
         "failed_status": JobStatus.FAILED.value,
         "cancelled_status": JobStatus.CANCELLED.value,
         "needs_review_status": JobStatus.NEEDS_REVIEW.value,
+        "stale_running_threshold_seconds": STALE_RUNNING_THRESHOLD_SECONDS,
     }
 
 
@@ -560,6 +625,9 @@ def _health_from_row(job_type: str, row: Any) -> JobQueueHealth:
         cancelled=int(row["cancelled"]),
         needs_review=int(row["needs_review"]),
         oldest_queued_age_seconds=_age_seconds(row["oldest_queued_at"]),
+        oldest_running_age_seconds=_age_seconds(row["oldest_running_at"]),
+        oldest_running_job_id=_optional_uuid(row["oldest_running_job_id"]),
+        stale_running=int(row["stale_running"]),
     )
 
 

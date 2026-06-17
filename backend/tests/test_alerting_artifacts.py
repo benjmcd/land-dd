@@ -16,8 +16,10 @@ REQUIRED_RULE_IDS = {
     "backup_restore_failed",
     "metrics_endpoint_down",
     "report_queue_backlog_high",
+    "report_running_stale",
     "report_failures_high",
     "live_connector_queue_backlog_high",
+    "live_connector_running_stale",
     "live_connector_failures_high",
     "source_readiness_ready_drop",
     "source_registry_last_checked_stale",
@@ -77,6 +79,7 @@ def test_alerting_runbook_names_validation_and_incident_response() -> None:
         "docs/runbooks/incident_response.md",
         "/operations/queue-health",
         "source_readiness.py --priority Must --json",
+        "stale_running",
         "Last Checked At",
         "Known Limits",
     ):

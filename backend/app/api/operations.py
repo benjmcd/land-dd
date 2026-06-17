@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
@@ -27,6 +28,10 @@ class JobQueueHealthResponse(BaseModel):
     cancelled: int
     needs_review: int
     oldest_queued_age_seconds: float | None = None
+    oldest_running_age_seconds: float | None = None
+    oldest_running_job_id: UUID | None = None
+    stale_running: int
+    stale_running_threshold_seconds: int
 
 
 class OperationsQueueHealthResponse(BaseModel):
@@ -67,6 +72,10 @@ def job_queue_health_response(health: JobQueueHealth) -> JobQueueHealthResponse:
         cancelled=health.cancelled,
         needs_review=health.needs_review,
         oldest_queued_age_seconds=health.oldest_queued_age_seconds,
+        oldest_running_age_seconds=health.oldest_running_age_seconds,
+        oldest_running_job_id=health.oldest_running_job_id,
+        stale_running=health.stale_running,
+        stale_running_threshold_seconds=health.stale_running_threshold_seconds,
     )
 
 
