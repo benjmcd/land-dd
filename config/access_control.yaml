@@ -112,3 +112,48 @@ production_blockers:
   - id: full_user_role_policy
     status: blocked
     authority: docs/runbooks/access_control.md
+secret_management_contract:
+  status: repo_local_handoff_contract
+  authority:
+    - backend/app/core/config.py
+    - backend/app/api/secret_specs.py
+    - .env.example
+    - docker-compose.yml
+    - docs/runbooks/access_control.md
+  hosted_secret_manager_status: blocked
+  required_runtime_refs:
+    - id: API_KEY_SPECS
+      required_when: REQUIRE_API_KEY=true outside local/dev/development/test APP_ENV values
+      format: id|active|sha256:<64-hex> or id|retired|sha256:<64-hex>
+      rotation: configured_active_retired_lifecycle
+    - id: REVIEWER_ACCOUNTS
+      required_when: any shared or production-like reviewer/operator workflow
+      format: id:sha256:<64-hex>
+      rotation: replace token hash and update REVIEWER_ACCOUNT_SCOPES for same reviewer id
+    - id: REVIEWER_ACCOUNT_SCOPES
+      required_when: every REVIEWER_ACCOUNTS id outside local/dev/development/test APP_ENV values
+      format: id:scope|scope
+      rotation: update alongside REVIEWER_ACCOUNTS and audit route-scope expectations
+    - id: UI_AUTH_COOKIE_SECRET
+      required_when: REQUIRE_API_KEY=true outside local/dev/development/test APP_ENV values
+      format: high-entropy secret value
+      rotation: rotate after draining or invalidating UI sessions
+    - id: REPORT_IDENTITY_TOKEN_SECRET
+      required_when: REPORT_AUTH_MODE=signed_token
+      format: high-entropy secret value with at least 32 characters
+      rotation: rotate with token issuer and short-lived token expiry window
+    - id: DATABASE_URL
+      required_when: USE_DB_SERVICES=true or any non-local APP_ENV value
+      format: database connection URL from hosted secret manager or platform binding
+      rotation: rotate database credentials with connection drain and DB smoke proof
+  handoff_requirements:
+    - external_secret_manager_reference_names
+    - per_environment_secret_owner
+    - rotation_runbook_or_ticket
+    - post_rotation_access_control_check
+    - no_plaintext_committed_secret_values
+  limits:
+    validate_only_catalog: true
+    writes_secrets: false
+    provisions_hosted_secret_manager: false
+    permits_committed_plaintext_secrets: false

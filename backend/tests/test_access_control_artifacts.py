@@ -21,7 +21,16 @@ REQUIRED_BLOCKERS = {
     "oauth_oidc_identity_provider",
     "user_account_persistence",
     "automatic_api_key_rotation",
+    "hosted_secret_manager",
     "full_user_role_policy",
+}
+REQUIRED_SECRET_REFS = {
+    "API_KEY_SPECS",
+    "REVIEWER_ACCOUNTS",
+    "REVIEWER_ACCOUNT_SCOPES",
+    "UI_AUTH_COOKIE_SECRET",
+    "REPORT_IDENTITY_TOKEN_SECRET",
+    "DATABASE_URL",
 }
 
 
@@ -44,6 +53,46 @@ def test_access_control_catalog_covers_current_controls_and_blockers() -> None:
     for blocker in blockers.values():
         assert blocker["status"] == "blocked"
         assert (REPO_ROOT / blocker["authority"]).exists()
+
+
+def test_access_control_catalog_records_secret_management_contract() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "access_control.yaml").read_text(encoding="utf-8"),
+    )
+
+    contract = catalog["secret_management_contract"]
+    assert contract["status"] == "repo_local_handoff_contract"
+    assert contract["hosted_secret_manager_status"] == "blocked"
+    for authority in contract["authority"]:
+        assert (REPO_ROOT / authority).exists()
+
+    refs = {ref["id"]: ref for ref in contract["required_runtime_refs"]}
+    assert REQUIRED_SECRET_REFS == set(refs)
+    assert refs["API_KEY_SPECS"]["required_when"].startswith("REQUIRE_API_KEY=true")
+    assert "sha256:<64-hex>" in refs["API_KEY_SPECS"]["format"]
+    assert "sha256:<64-hex>" in refs["REVIEWER_ACCOUNTS"]["format"]
+    assert refs["REVIEWER_ACCOUNT_SCOPES"]["required_when"].startswith("every")
+    assert refs["UI_AUTH_COOKIE_SECRET"]["required_when"].startswith(
+        "REQUIRE_API_KEY=true",
+    )
+    assert refs["REPORT_IDENTITY_TOKEN_SECRET"]["required_when"] == (
+        "REPORT_AUTH_MODE=signed_token"
+    )
+    assert refs["DATABASE_URL"]["required_when"].startswith("USE_DB_SERVICES=true")
+
+    assert {
+        "external_secret_manager_reference_names",
+        "per_environment_secret_owner",
+        "rotation_runbook_or_ticket",
+        "post_rotation_access_control_check",
+        "no_plaintext_committed_secret_values",
+    } == set(contract["handoff_requirements"])
+    assert contract["limits"] == {
+        "validate_only_catalog": True,
+        "writes_secrets": False,
+        "provisions_hosted_secret_manager": False,
+        "permits_committed_plaintext_secrets": False,
+    }
 
 
 def test_access_control_runbook_records_validation_and_limits() -> None:
@@ -76,6 +125,14 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "durable per-key usage audit ledger",
         "configured static key lifecycle exists",
         "no automatic",
+        "secret_management_contract",
+        "validate-only secret handoff",
+        "API_KEY_SPECS, REVIEWER_ACCOUNTS, REVIEWER_ACCOUNT_SCOPES",
+        "UI_AUTH_COOKIE_SECRET, REPORT_IDENTITY_TOKEN_SECRET, and DATABASE_URL",
+        "REPORT_AUTH_MODE=signed_token",
+        "no committed secret values",
+        "no secret writes",
+        "no hosted secret manager provisioning",
     ):
         assert phrase in runbook
 

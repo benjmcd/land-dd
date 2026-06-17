@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -54,6 +54,21 @@ REQUIRED_BLOCKERS = {
     "automatic_api_key_rotation",
     "hosted_secret_manager",
     "full_user_role_policy",
+}
+REQUIRED_SECRET_REFS = {
+    "API_KEY_SPECS",
+    "REVIEWER_ACCOUNTS",
+    "REVIEWER_ACCOUNT_SCOPES",
+    "UI_AUTH_COOKIE_SECRET",
+    "REPORT_IDENTITY_TOKEN_SECRET",
+    "DATABASE_URL",
+}
+REQUIRED_SECRET_HANDOFFS = {
+    "external_secret_manager_reference_names",
+    "no_plaintext_committed_secret_values",
+    "per_environment_secret_owner",
+    "post_rotation_access_control_check",
+    "rotation_runbook_or_ticket",
 }
 
 
@@ -193,6 +208,74 @@ def validate_catalog() -> None:
         require_existing(authority)
     missing_blockers = sorted(REQUIRED_BLOCKERS - blocker_ids)
     require(not missing_blockers, f"missing blockers: {missing_blockers}")
+    validate_secret_management_contract(payload)
+
+
+def validate_secret_management_contract(payload: dict[str, Any]) -> None:
+    contract_raw = payload.get("secret_management_contract")
+    require(isinstance(contract_raw, dict), "secret_management_contract missing")
+    contract = cast(dict[str, Any], contract_raw)
+    require(
+        contract.get("status") == "repo_local_handoff_contract",
+        "secret_management_contract status mismatch",
+    )
+    authority_raw = contract.get("authority")
+    require(
+        isinstance(authority_raw, list) and bool(authority_raw),
+        "secret management authority missing",
+    )
+    authority = cast(list[Any], authority_raw)
+    for authority_path in authority:
+        require(isinstance(authority_path, str), "secret management authority must be strings")
+        require_existing(authority_path)
+    require(
+        contract.get("hosted_secret_manager_status") == "blocked",
+        "hosted secret manager status must remain blocked until provisioned",
+    )
+
+    refs_raw = contract.get("required_runtime_refs")
+    require(isinstance(refs_raw, list) and bool(refs_raw), "required_runtime_refs missing")
+    refs = cast(list[Any], refs_raw)
+    seen_refs: set[str] = set()
+    for ref_raw in refs:
+        require(isinstance(ref_raw, dict), "each secret runtime ref must be a mapping")
+        ref = cast(dict[str, Any], ref_raw)
+        ref_id = ref.get("id")
+        if not isinstance(ref_id, str) or not ref_id:
+            raise SystemExit("secret ref id missing")
+        require(ref_id not in seen_refs, f"duplicate secret ref id: {ref_id}")
+        seen_refs.add(ref_id)
+        for key in ("required_when", "format", "rotation"):
+            value = ref.get(key)
+            require(
+                isinstance(value, str) and bool(value.strip()),
+                f"{ref_id} missing {key}",
+            )
+    missing_refs = sorted(REQUIRED_SECRET_REFS - seen_refs)
+    require(not missing_refs, f"missing secret refs: {missing_refs}")
+
+    handoffs_raw = contract.get("handoff_requirements")
+    require(
+        isinstance(handoffs_raw, list) and bool(handoffs_raw),
+        "handoff_requirements missing",
+    )
+    handoffs = cast(list[Any], handoffs_raw)
+    missing_handoffs = sorted(REQUIRED_SECRET_HANDOFFS - set(handoffs))
+    require(not missing_handoffs, f"missing secret handoff requirements: {missing_handoffs}")
+
+    limits_raw = contract.get("limits")
+    require(isinstance(limits_raw, dict), "secret management limits missing")
+    limits = cast(dict[str, Any], limits_raw)
+    require(limits.get("validate_only_catalog") is True, "secret contract must be validate-only")
+    require(limits.get("writes_secrets") is False, "secret contract must not write secrets")
+    require(
+        limits.get("provisions_hosted_secret_manager") is False,
+        "secret contract must not provision hosted secret manager",
+    )
+    require(
+        limits.get("permits_committed_plaintext_secrets") is False,
+        "secret contract must not permit committed plaintext secrets",
+    )
 
 
 def validate_api_key_auth() -> None:
@@ -740,6 +823,11 @@ def validate_ci_and_runbook() -> None:
             "no automatic",
             "reject `API_KEYS` and raw `API_KEY_SPECS` secrets",
             "rejects fixture reviewer defaults and raw token specs in non-local",
+            "secret management handoff contract",
+            "REPORT_IDENTITY_TOKEN_SECRET",
+            "DATABASE_URL",
+            "hosted secret manager remains blocked",
+            "no plaintext secret values are committed",
         ),
         "access-control runbook",
     )
@@ -751,9 +839,19 @@ def validate_ci_and_runbook() -> None:
             f"{text_name} missing reviewer scope env",
         )
         require("API_KEY_SPECS" in text_payload, f"{text_name} missing API key lifecycle env")
+        require(
+            "UI_AUTH_COOKIE_SECRET" in text_payload,
+            f"{text_name} missing UI cookie secret env",
+        )
+        require(
+            "REPORT_IDENTITY_TOKEN_SECRET" in text_payload,
+            f"{text_name} missing report identity secret env",
+        )
     require("sha256:<64-hex>" in env_example, ".env.example missing hashed secret guidance")
+    require("REPORT_AUTH_MODE=trusted_headers" in env_example, ".env.example missing report auth mode")
     require("API_KEYS is local/dev/development/test only" in env_example, ".env.example missing local-only API_KEYS guidance")
     require("non-local APP_ENV" in compose, "docker-compose.yml missing non-local secret guidance")
+    require("REPORT_AUTH_MODE" in compose, "docker-compose.yml missing report auth mode")
     require("report:approve" in compose, "docker-compose.yml fixture reviewer scopes missing report approval")
 
 
