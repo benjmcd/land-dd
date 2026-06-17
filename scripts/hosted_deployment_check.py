@@ -33,10 +33,11 @@ REQUIRED_RUNTIME_INPUTS = {
     "IMAGE_DIGEST",
     "PUBLIC_BASE_URL",
     "DATABASE_URL",
-    "API_KEYS",
     "API_KEY_SPECS",
     "REVIEWER_ACCOUNTS",
     "REVIEWER_ACCOUNT_SCOPES",
+    "UI_AUTH_COOKIE_SECRET",
+    "REPORT_IDENTITY_TOKEN_SECRET",
 }
 REQUIRED_RUNTIME_EVIDENCE = {
     "immutable_image_digest",
@@ -170,9 +171,16 @@ def validate_catalog() -> None:
     for gate in gates:
         require_existing(gate)
 
-    runtime_inputs = set(require_str_list(catalog, "required_runtime_inputs"))
-    missing_inputs = sorted(REQUIRED_RUNTIME_INPUTS - runtime_inputs)
-    require(not missing_inputs, f"missing runtime inputs: {missing_inputs}")
+    runtime_input_list = require_str_list(catalog, "required_runtime_inputs")
+    runtime_inputs = set(runtime_input_list)
+    require(
+        len(runtime_input_list) == len(runtime_inputs),
+        "runtime inputs must not contain duplicates",
+    )
+    require(
+        runtime_inputs == REQUIRED_RUNTIME_INPUTS,
+        "runtime inputs must exactly match the hosted non-local auth contract",
+    )
 
     runtime_evidence = set(require_str_list(catalog, "required_runtime_evidence"))
     missing_evidence = sorted(REQUIRED_RUNTIME_EVIDENCE - runtime_evidence)

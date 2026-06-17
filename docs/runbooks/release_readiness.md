@@ -39,7 +39,8 @@ The check is validate-only. It verifies that:
 - the local release package boundary and builders are validated by
   `scripts/run_release_package_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;
-- the hosted deployment boundary is validated by `scripts/run_hosted_deployment_check.ps1`;
+- the hosted deployment boundary, including the non-local hosted runtime secret input
+  contract, is validated by `scripts/run_hosted_deployment_check.ps1`;
 - the aggregate release proof executes the image-publication and hosted-deployment validators
   so stricter lower-level contracts fail the release gate;
 - security scanning is represented by `scripts/run_security_scan.ps1`;
@@ -81,7 +82,8 @@ The check is validate-only. It verifies that:
 - Image publication readiness is cataloged in `config/image_publication.yaml`, but
   registry push and attestation publication remain blocked.
 - Hosted deployment readiness is cataloged in `config/hosted_deployment.yaml`, but
-  hosted infrastructure mutation and public endpoint creation remain blocked.
+  hosted infrastructure mutation, public endpoint creation, and hosted secret-manager
+  authority remain blocked.
 - No hosted deployment, domain, TLS endpoint, hosted alerting, or pager routing is
   created by this proof.
 - No published registry-image attestation, signed image SBOM, or SLSA provenance

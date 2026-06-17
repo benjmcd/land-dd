@@ -25,9 +25,12 @@ The check verifies that:
 - `config/hosted_deployment.yaml` links to the image-publication and release-readiness
   catalogs;
 - required local gates exist before any hosted handoff;
-- required hosted runtime inputs stay explicit: `REGISTRY_IMAGE`, `IMAGE_DIGEST`,
-  `PUBLIC_BASE_URL`, `DATABASE_URL`, `API_KEYS`, `API_KEY_SPECS`,
-  `REVIEWER_ACCOUNTS`, and `REVIEWER_ACCOUNT_SCOPES`;
+- required hosted runtime inputs stay explicit and match the non-local auth contract:
+  `REGISTRY_IMAGE`, `IMAGE_DIGEST`, `PUBLIC_BASE_URL`, `DATABASE_URL`,
+  `API_KEY_SPECS`, `REVIEWER_ACCOUNTS`, `REVIEWER_ACCOUNT_SCOPES`,
+  `UI_AUTH_COOKIE_SECRET`, and `REPORT_IDENTITY_TOKEN_SECRET`;
+- hosted API-key auth uses `API_KEY_SPECS`; `API_KEYS` is local/dev/development/test
+  only and is not a required hosted runtime input;
 - required hosted runtime evidence stays explicit: immutable image digest, deployed image
   ref, public HTTPS URL, TLS status, health/version/metrics/queue-health checks, report
   workflow smoke, rollback target, and backup/restore proof;
@@ -57,7 +60,8 @@ The check verifies that:
 - This proof is local and validate-only.
 - No hosted deployment, domain, TLS endpoint, hosted alert route, or pager route is
   created.
-- No secrets are written or validated against a hosted secrets manager.
+- No secrets are written or validated against a hosted secrets manager, and this
+  proof does not claim that a hosted secrets manager exists.
 - No registry image is deployed by this proof.
 - No hosted billing reconciliation exists yet.
 - The structured attestation template is intentionally empty while hosted deployment

@@ -17,6 +17,17 @@ REQUIRED_PRE_DEPLOY_GATES = {
     "scripts/run_release_readiness_check.ps1",
     "scripts/run_image_publication_check.ps1",
 }
+REQUIRED_RUNTIME_INPUTS = {
+    "REGISTRY_IMAGE",
+    "IMAGE_DIGEST",
+    "PUBLIC_BASE_URL",
+    "DATABASE_URL",
+    "API_KEY_SPECS",
+    "REVIEWER_ACCOUNTS",
+    "REVIEWER_ACCOUNT_SCOPES",
+    "UI_AUTH_COOKIE_SECRET",
+    "REPORT_IDENTITY_TOKEN_SECRET",
+}
 REQUIRED_RUNTIME_EVIDENCE = {
     "immutable_image_digest",
     "deployed_image_ref",
@@ -67,16 +78,8 @@ def test_hosted_deployment_catalog_records_boundary_and_blockers() -> None:
     assert REQUIRED_PRE_DEPLOY_GATES.issubset(set(catalog["required_pre_deploy_gates"]))
     for gate in catalog["required_pre_deploy_gates"]:
         assert (REPO_ROOT / gate).exists()
-    assert {
-        "REGISTRY_IMAGE",
-        "IMAGE_DIGEST",
-        "PUBLIC_BASE_URL",
-        "DATABASE_URL",
-        "API_KEYS",
-        "API_KEY_SPECS",
-        "REVIEWER_ACCOUNTS",
-        "REVIEWER_ACCOUNT_SCOPES",
-    }.issubset(set(catalog["required_runtime_inputs"]))
+    assert set(catalog["required_runtime_inputs"]) == REQUIRED_RUNTIME_INPUTS
+    assert "API_KEYS" not in catalog["required_runtime_inputs"]
     assert {
         "immutable_image_digest",
         "deployed_image_ref",
@@ -141,6 +144,49 @@ def test_hosted_deployment_validator_rejects_deployed_empty_attestation(
         validator.validate_catalog()
 
 
+def test_hosted_deployment_validator_rejects_legacy_api_keys_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "hosted_deployment.yaml").read_text(encoding="utf-8"),
+    )
+    catalog["required_runtime_inputs"] = sorted(REQUIRED_RUNTIME_INPUTS | {"API_KEYS"})
+
+    def fake_read_text(path_text: str) -> str:
+        if path_text == "config/hosted_deployment.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path_text).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="runtime inputs must exactly match"):
+        validator.validate_catalog()
+
+
+def test_hosted_deployment_validator_rejects_duplicate_runtime_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "hosted_deployment.yaml").read_text(encoding="utf-8"),
+    )
+    catalog["required_runtime_inputs"] = [
+        *catalog["required_runtime_inputs"],
+        "API_KEY_SPECS",
+    ]
+
+    def fake_read_text(path_text: str) -> str:
+        if path_text == "config/hosted_deployment.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path_text).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="runtime inputs must not contain duplicates"):
+        validator.validate_catalog()
+
+
 def test_hosted_deployment_validate_only_artifacts_do_not_mutate_cloud() -> None:
     forbidden_commands = (
         "kubectl " + "apply",
@@ -176,6 +222,9 @@ def test_hosted_deployment_runbook_records_validation_workflow_and_limits() -> N
         "validate-only",
         "PUBLIC_BASE_URL",
         "IMAGE_DIGEST",
+        "API_KEY_SPECS",
+        "UI_AUTH_COOKIE_SECRET",
+        "REPORT_IDENTITY_TOKEN_SECRET",
         "public HTTPS URL",
         "TLS status",
         "No hosted deployment",

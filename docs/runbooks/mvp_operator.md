@@ -953,8 +953,12 @@ boundary. Validate it with:
 ```
 
 The proof checks required pre-deploy gates, runtime inputs, runtime evidence, and hosted
-platform/DNS/TLS/secrets/database/billing/alerting blockers. It does not create hosted
-infrastructure, write secrets, open a public endpoint, or deploy a registry image.
+platform/DNS/TLS/secrets/database/billing/alerting blockers. Its hosted runtime inputs
+follow the non-local auth contract: `API_KEY_SPECS` rather than `API_KEYS`, plus
+`UI_AUTH_COOKIE_SECRET` for stable UI API-key sessions and
+`REPORT_IDENTITY_TOKEN_SECRET` for selected-county UI report identity. It does not
+create hosted infrastructure, write secrets, claim a hosted secrets manager exists,
+open a public endpoint, or deploy a registry image.
 
 ---
 
