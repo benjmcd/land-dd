@@ -7,16 +7,26 @@ from enum import Enum
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.api.dependencies import ApiServices, get_services
+from app.api.dependencies import (
+    ApiServices,
+    RequestAuthContext,
+    get_request_auth_context,
+    get_services,
+)
+from app.api.reviewer_auth import (
+    REVIEWER_SCOPE_REPORT_RUN,
+    ReviewerPrincipal,
+    require_reviewer_scope,
+)
 
 router = APIRouter(prefix="/operator-cases", tags=["operator-cases-private-mvp"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
+AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]
 
 _MISSING = object()
-_DEFAULT_REVIEWER_ID = "fixture-reviewer"
 _DEFAULT_REASON = "private_mvp_fixture_only"
 _DEFAULT_FIXTURE_SCOPE = "private_mvp_fixture"
 _DEFAULT_FIXTURE_LANGUAGE = (
@@ -84,6 +94,14 @@ class OperatorCasesContract:
     create_selected_county_report: Callable[..., object]
 
 
+def get_reviewer_principal(
+    services: ServicesDep,
+    reviewer_id: Annotated[str | None, Header(alias="X-Reviewer-Id")] = None,
+    reviewer_token: Annotated[str | None, Header(alias="X-Reviewer-Token")] = None,
+) -> ReviewerPrincipal:
+    return services.reviewer_auth(reviewer_id=reviewer_id, reviewer_token=reviewer_token)
+
+
 def resolve_operator_cases_contract() -> OperatorCasesContract:
     try:
         module = importlib.import_module("app.operator_cases")
@@ -121,8 +139,10 @@ def create_selected_county_fixture_report_response(
     *,
     services: ApiServices,
     case_id: str,
-    reviewer_id: str | None = None,
+    reviewer_id: str,
     reason: str | None = None,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
 ) -> OperatorCaseReportResponse:
     contract = resolve_operator_cases_contract()
     case = contract.get_selected_county_case(case_id)
@@ -135,8 +155,10 @@ def create_selected_county_fixture_report_response(
     created = contract.create_selected_county_report(
         services,
         case_id,
-        reviewer_id=reviewer_id or _DEFAULT_REVIEWER_ID,
+        reviewer_id=reviewer_id,
         reason=reason or _DEFAULT_REASON,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
     )
     summary = _coerce_case_summary(case)
     report_run_id = _coerce_uuid(
@@ -175,14 +197,34 @@ def list_operator_cases() -> list[OperatorCaseSummary]:
 def create_operator_case_report(
     case_id: str,
     services: ServicesDep,
+    auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     body: OperatorCaseReportCreateRequest | None = None,
 ) -> OperatorCaseReportResponse:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_RUN)
+    reviewer_id = _authenticated_reviewer_id(principal, body)
     return create_selected_county_fixture_report_response(
         services=services,
         case_id=case_id,
-        reviewer_id=body.reviewer_id if body else None,
+        reviewer_id=reviewer_id,
         reason=body.reason if body else None,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
     )
+
+
+def _authenticated_reviewer_id(
+    principal: ReviewerPrincipal,
+    body: OperatorCaseReportCreateRequest | None,
+) -> str:
+    if body is None or body.reviewer_id is None:
+        return principal.reviewer_id
+    if body.reviewer_id != principal.reviewer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="body reviewer_id must match the authenticated reviewer",
+        )
+    return principal.reviewer_id
 
 
 def _coerce_case_summary(case: object) -> OperatorCaseSummary:

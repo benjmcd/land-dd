@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from datetime import UTC, datetime, timedelta
@@ -12,7 +13,7 @@ from fastapi.testclient import TestClient
 
 import app.api.operator_cases as operator_cases_api
 import app.api.ui as ui_api
-from app.api.dependencies import ApiServices
+from app.api.dependencies import ApiServices, create_api_services, get_services
 from app.api.intake import IntakeResponse
 from app.api.reports import (
     ReportRunComparisonSummary,
@@ -103,6 +104,8 @@ class _FakeOperatorCasesContract:
         case_id: str,
         reviewer_id: str = "fixture-reviewer",
         reason: str = "private_mvp_fixture_only",
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> dict[str, object]:
         from uuid import NAMESPACE_URL, uuid5
 
@@ -110,11 +113,18 @@ class _FakeOperatorCasesContract:
         from app.domain.enums import IntentCode
 
         case = self._cases[case_id]
-        area_id = uuid5(NAMESPACE_URL, f"selected-county:{case_id}")
+        area_seed = (
+            f"selected-county:{workspace_id}:{case_id}"
+            if workspace_id
+            else f"selected-county:{case_id}"
+        )
+        area_id = uuid5(NAMESPACE_URL, area_seed)
         if services.area_service.get(area_id) is None:
             services.area_service.create(
                 AreaContract(
                     area_id=area_id,
+                    workspace_id=workspace_id,
+                    created_by=requested_by,
                     label=f"selected-county-{case_id.lower()}",
                     geom_geojson=_valid_geojson(),
                     geom_source="selected-county-fixture",
@@ -123,6 +133,8 @@ class _FakeOperatorCasesContract:
         report = services.report_service.create_report_run(
             area_id=area_id,
             intent_code=IntentCode(cast(str, case["intent"])),
+            workspace_id=workspace_id,
+            requested_by=requested_by,
         )
         approved = services.report_service.approve_report_run(
             report.report_run_id,
@@ -281,6 +293,9 @@ def test_ui_index_renders_operator_console_case_table(monkeypatch: Any) -> None:
     assert '<table class="case-table">' in response.text
     assert "<caption>Selected-county fixture cases</caption>" in response.text
     assert response.text.count('action="/ui/operator-cases/report"') >= 2
+    assert "reviewer_id" in response.text
+    assert "reviewer_token" in response.text
+    assert 'data-required-scope="report:run"' in response.text
     assert 'data-label="Case"' in response.text
     assert 'data-label="Boundary"' in response.text
     assert 'data-label="Action"' in response.text
@@ -436,11 +451,16 @@ def test_ui_selected_county_fixture_post_redirects_to_report_run(
 
     response = tc.post(
         "/ui/operator-cases/report",
-        data={"selected_county_case_id": "BUN-slope"},
+        data={
+            "selected_county_case_id": "BUN-slope",
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
         follow_redirects=False,
     )
 
     assert response.status_code == 303
+    assert "land_dd_ui_reviewer" in response.headers.get("set-cookie", "")
     location = response.headers["location"]
     assert location.startswith("/ui/report-runs/")
 
@@ -448,6 +468,61 @@ def test_ui_selected_county_fixture_post_redirects_to_report_run(
 
     assert report_response.status_code == 200
     assert "Executive Summary" in report_response.text
+
+
+def test_ui_selected_county_fixture_post_requires_report_run_reviewer(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    tc = TestClient(create_app())
+
+    response = tc.post(
+        "/ui/operator-cases/report",
+        data={"selected_county_case_id": "BUN-slope"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 401
+    assert "Authentication Error" in response.text
+
+
+def test_ui_selected_county_fixture_post_fails_closed_outside_local_env(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    settings = Settings(
+        APP_ENV="production",
+        USE_DB_SERVICES=True,
+        REVIEWER_ACCOUNTS=(
+            f"reviewer:sha256:{hashlib.sha256(b'token').hexdigest()}"
+        ),
+        REVIEWER_ACCOUNT_SCOPES="reviewer:report:run",
+        UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret-for-prod-test",
+    )
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: create_api_services(settings)
+    tc = TestClient(app)
+
+    response = tc.post(
+        "/ui/operator-cases/report",
+        data={
+            "selected_county_case_id": "BUN-slope",
+            "reviewer_id": "reviewer",
+            "reviewer_token": "token",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert "UI workspace identity is not configured" in response.text
 
 
 def test_ui_report_run_returns_404_page_for_unknown_id() -> None:

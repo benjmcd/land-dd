@@ -294,8 +294,20 @@ curl -s http://localhost:8000/operator-cases
 Create an approved fixture report for one case:
 
 ```bash
-curl -s -X POST http://localhost:8000/operator-cases/CHA-rural-use/report
+curl -s -X POST http://localhost:8000/operator-cases/CHA-rural-use/report \
+  -H 'X-Workspace-Id: {workspace_id}' \
+  -H 'X-User-Id: {user_id}' \
+  -H 'X-Reviewer-Id: {reviewer_id}' \
+  -H 'X-Reviewer-Token: {reviewer_token}'
 ```
+
+`POST /operator-cases/{case_id}/report` requires the same workspace/user identity
+headers or signed report identity token as other workspace-bound report creation
+paths, plus reviewer credentials with `report:run`. The authenticated workspace/user
+become the selected-county area, review-queue, and report-run provenance. The
+authenticated reviewer approves connector-QA handoffs and the final report; an
+optional body `reviewer_id` is accepted only when it matches the authenticated
+reviewer.
 
 The response includes:
 
@@ -304,7 +316,11 @@ The response includes:
 - `links.artifact`: approved machine-readable report JSON
 
 In the web UI, open `http://localhost:8000/ui/` and use the
-**Selected-County Private MVP Fixture Cases** table. The custom GeoJSON intake form remains
+**Selected-County Private MVP Fixture Cases** table. The selected-county forms require a
+reviewer session or submitted reviewer credentials with `report:run`. Until a real
+UI workspace/user identity bridge exists, the UI route uses the seeded demo
+workspace/user only in local/dev/development/test app environments and fails closed
+outside those environments. The custom GeoJSON intake form remains
 available on the same page for manual AOIs; it posts to `/ui/intake` without requiring
 JavaScript and redirects to the created report or connector-review queue.
 

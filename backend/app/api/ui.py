@@ -4,7 +4,7 @@ import html as _html
 import json
 from datetime import UTC, datetime
 from json import JSONDecodeError
-from typing import Annotated
+from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import (
@@ -33,6 +33,7 @@ from app.api.reports import (
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_REPORT_APPROVE,
     REVIEWER_SCOPE_REPORT_RETRY,
+    REVIEWER_SCOPE_REPORT_RUN,
 )
 from app.api.ui_shared import (
     attach_ui_reviewer_session_cookie,
@@ -42,6 +43,7 @@ from app.api.ui_shared import (
     require_ui_reviewer,
     reviewer_credential_fields,
 )
+from app.core.config import Settings
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
@@ -60,6 +62,8 @@ _INTENT_OPTIONS = [
     ("homestead_feasibility", "Homestead Feasibility"),
 ]
 _GEOJSON_PLACEHOLDER = '{"type":"Polygon","coordinates":[[...]]}'
+_LOCAL_UI_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_LOCAL_UI_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 _INDEX_CSS = """\
 :root { color-scheme: light; --ink:#1f2933; --muted:#5f6c7b; --line:#d8dee7; --panel:#ffffff; --soft:#f4f7fb; --accent:#155e75; --ok:#166534; --warn:#9a3412; }
@@ -364,12 +368,16 @@ def _format_dt(value: datetime | None) -> str:
 
 
 @router.get("/", response_class=HTMLResponse)
-def ui_index(request: Request) -> str:
+def ui_index(request: Request, services: ServicesDep) -> str:
     intent_options = "\n".join(
         f'<option value="{val}">{label}</option>' for val, label in _INTENT_OPTIONS
     )
     csrf_field = csrf_form_field(request)
-    selected_county_markup = _selected_county_fixture_markup(csrf_field)
+    selected_county_markup = _selected_county_fixture_markup(
+        request,
+        services,
+        csrf_field,
+    )
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -490,7 +498,11 @@ document.getElementById('report-form').addEventListener('submit', function(event
 </html>"""
 
 
-def _selected_county_fixture_markup(csrf_field: str = "") -> str:
+def _selected_county_fixture_markup(
+    request: Request,
+    services: ApiServices,
+    csrf_field: str = "",
+) -> str:
     try:
         cases = operator_cases_api.list_selected_county_case_summaries()
     except HTTPException as exc:
@@ -519,7 +531,10 @@ def _selected_county_fixture_markup(csrf_field: str = "") -> str:
             "</section>"
         )
 
-    rows = "\n".join(_selected_county_case_row(case, csrf_field) for case in cases)
+    rows = "\n".join(
+        _selected_county_case_row(case, request, services, csrf_field)
+        for case in cases
+    )
     case_count = len(cases)
     return f"""<section class="panel case-panel" aria-labelledby="fixture-cases-title">
   <div class="panel-header">
@@ -553,6 +568,8 @@ def _selected_county_fixture_markup(csrf_field: str = "") -> str:
 
 def _selected_county_case_row(
     case: operator_cases_api.OperatorCaseSummary,
+    request: Request,
+    services: ApiServices,
     csrf_field: str = "",
 ) -> str:
     case_id = _html.escape(case.case_id)
@@ -562,6 +579,11 @@ def _selected_county_case_row(
     description = _html.escape(case.description)
     boundary = _case_boundary_metadata(case)
     domains = _connector_domain_badges(case.connector_domains)
+    reviewer_fields = reviewer_credential_fields(
+        request,
+        services,
+        required_scope=REVIEWER_SCOPE_REPORT_RUN,
+    )
     return f"""<tr>
   <td data-label="Case"><span class="case-id">{case_id}</span></td>
   <td data-label="County">{county}, {state}</td>
@@ -573,6 +595,7 @@ def _selected_county_case_row(
     <form class="compact-form" method="POST" action="/ui/operator-cases/report">
       <input type="hidden" name="selected_county_case_id" value="{case_id}">
       {csrf_field}
+      <div data-required-scope="report:run">{reviewer_fields}</div>
       <button class="primary-button" type="submit"
         aria-label="Create approved report for {case_id}">
         Create report
@@ -699,15 +722,51 @@ def ui_create_selected_county_report(
     request: Request,
     services: ServicesDep,
     selected_county_case_id: Annotated[str, Form()],
+    reviewer_id: Annotated[str | None, Form()] = None,
+    reviewer_token: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse | HTMLResponse:
     csrf_error = require_ui_csrf(request, csrf_token, back_url="/ui/")
     if csrf_error is not None:
         return csrf_error
     try:
+        auth_result = require_ui_reviewer(
+            request,
+            services,
+            reviewer_id=reviewer_id,
+            reviewer_token=reviewer_token,
+            required_scope=REVIEWER_SCOPE_REPORT_RUN,
+        )
+    except HTTPException as exc:
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>Authentication Error</title></head>"
+                "<body><h1>Authentication Error</h1>"
+                "<p>Reviewer credentials are missing, invalid, or lack the required scope.</p>"
+                "<a href='/ui/'>Back to Home</a></body></html>"
+            ),
+            status_code=exc.status_code,
+        )
+    principal = auth_result.principal
+    settings = cast(Settings, request.app.state.settings)
+    if not settings.is_local_app_env():
+        return error_page(
+            "Workspace Identity Required",
+            (
+                "UI workspace identity is not configured for selected-county report "
+                "creation outside local/dev/test environments."
+            ),
+            "/ui/",
+            status.HTTP_403_FORBIDDEN,
+            css=_INDEX_CSS,
+        )
+    try:
         created = operator_cases_api.create_selected_county_fixture_report_response(
             services=services,
             case_id=selected_county_case_id,
+            reviewer_id=principal.reviewer_id,
+            workspace_id=_LOCAL_UI_WORKSPACE_ID,
+            requested_by=_LOCAL_UI_USER_ID,
         )
     except HTTPException as exc:
         detail = _html.escape(str(exc.detail))
@@ -720,10 +779,12 @@ def ui_create_selected_county_report(
             ),
             status_code=exc.status_code,
         )
-    return RedirectResponse(
+    response = RedirectResponse(
         url=created.links.ui,
         status_code=status.HTTP_303_SEE_OTHER,
     )
+    attach_ui_reviewer_session_cookie(response, request, services, auth_result)
+    return response
 
 
 @router.get("/report-runs/{report_run_id}", response_class=HTMLResponse)

@@ -202,8 +202,10 @@ class SqlAlchemyReportRunRepository:
         intent_id = self._resolve_intent_id(report_run.intent_code)
         return ReportRunModel(
             report_run_id=report_run.report_run_id,
+            workspace_id=report_run.workspace_id,
             area_id=report_run.area_id,
             intent_id=intent_id,
+            requested_by=report_run.requested_by,
             status=report_run.status.value,
             started_at=report_run.started_at,
             finished_at=report_run.finished_at,

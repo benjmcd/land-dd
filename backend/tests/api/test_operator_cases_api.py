@@ -3,13 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, cast
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import yaml
 from fastapi.testclient import TestClient
 
 import app.api.operator_cases as operator_cases_api
 from app.api.dependencies import ApiServices
+from app.core.config import Settings
 from app.domain.area_contracts import AreaContract
 from app.domain.enums import IntentCode
 from app.main import create_app
@@ -17,6 +18,25 @@ from app.main import create_app
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "tests" / "fixtures" / "golden_aois" / "manifest.yaml"
 GEOMETRY_FIXTURE_PATH = ROOT / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"
+_WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+_USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+_REVIEWER_ID = "fixture-reviewer"
+_REVIEWER_TOKEN = "fixture-token-123"
+
+
+def _auth_headers(
+    *,
+    workspace_id: UUID = _WORKSPACE_ID,
+    user_id: UUID = _USER_ID,
+    reviewer_id: str = _REVIEWER_ID,
+    reviewer_token: str = _REVIEWER_TOKEN,
+) -> dict[str, str]:
+    return {
+        "X-Workspace-Id": str(workspace_id),
+        "X-User-Id": str(user_id),
+        "X-Reviewer-Id": reviewer_id,
+        "X-Reviewer-Token": reviewer_token,
+    }
 
 
 def _selected_county_cases() -> list[dict[str, Any]]:
@@ -60,13 +80,22 @@ class _FakeOperatorCasesContract:
         case_id: str,
         reviewer_id: str = "fixture-reviewer",
         reason: str = "private_mvp_fixture_only",
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> dict[str, Any]:
         case = self._cases[case_id]
-        area_id = uuid5(NAMESPACE_URL, f"selected-county:{case_id}")
+        area_seed = (
+            f"selected-county:{workspace_id}:{case_id}"
+            if workspace_id
+            else f"selected-county:{case_id}"
+        )
+        area_id = uuid5(NAMESPACE_URL, area_seed)
         if services.area_service.get(area_id) is None:
             services.area_service.create(
                 AreaContract(
                     area_id=area_id,
+                    workspace_id=workspace_id,
+                    created_by=requested_by,
                     label=f"selected-county-{case_id.lower()}",
                     geom_geojson=_valid_geojson(),
                     geom_source="selected-county-fixture",
@@ -75,6 +104,8 @@ class _FakeOperatorCasesContract:
         report = services.report_service.create_report_run(
             area_id=area_id,
             intent_code=IntentCode(case["intent"]),
+            workspace_id=workspace_id,
+            requested_by=requested_by,
         )
         approved = services.report_service.approve_report_run(
             report.report_run_id,
@@ -103,6 +134,8 @@ class _CapturingOperatorCasesContract(_FakeOperatorCasesContract):
         super().__init__()
         self.reviewer_id: str | None = None
         self.reason: str | None = None
+        self.workspace_id: UUID | None = None
+        self.requested_by: UUID | None = None
 
     def create_selected_county_report(
         self,
@@ -110,14 +143,20 @@ class _CapturingOperatorCasesContract(_FakeOperatorCasesContract):
         case_id: str,
         reviewer_id: str = "fixture-reviewer",
         reason: str = "private_mvp_fixture_only",
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
     ) -> dict[str, Any]:
         self.reviewer_id = reviewer_id
         self.reason = reason
+        self.workspace_id = workspace_id
+        self.requested_by = requested_by
         return super().create_selected_county_report(
             services,
             case_id,
             reviewer_id=reviewer_id,
             reason=reason,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
         )
 
 
@@ -157,7 +196,7 @@ def test_operator_case_report_create_returns_approved_report_and_artifact(
     )
     client = TestClient(create_app())
 
-    response = client.post("/operator-cases/BUN-slope/report")
+    response = client.post("/operator-cases/BUN-slope/report", headers=_auth_headers())
 
     assert response.status_code == 201
     body = response.json()
@@ -176,7 +215,73 @@ def test_operator_case_report_create_returns_approved_report_and_artifact(
     artifact_response = client.get(body["links"]["artifact"])
 
     assert artifact_response.status_code == 200
-    assert artifact_response.json()["report_run_id"] == report_run_id
+    artifact = artifact_response.json()
+    assert artifact["report_run_id"] == report_run_id
+    assert artifact["workspace_id"] == str(_WORKSPACE_ID)
+    assert artifact["requested_by"] == str(_USER_ID)
+    assert artifact["reviewed_by"] == _REVIEWER_ID
+
+
+def test_operator_case_report_create_rejects_missing_workspace_identity() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/operator-cases/BUN-slope/report",
+        headers={
+            "X-Reviewer-Id": _REVIEWER_ID,
+            "X-Reviewer-Token": _REVIEWER_TOKEN,
+        },
+    )
+
+    assert response.status_code == 401
+    assert "X-Workspace-Id" in response.text
+
+
+def test_operator_case_report_create_rejects_missing_reviewer_auth() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/operator-cases/BUN-slope/report",
+        headers={
+            "X-Workspace-Id": str(_WORKSPACE_ID),
+            "X-User-Id": str(_USER_ID),
+        },
+    )
+
+    assert response.status_code == 401
+    assert "reviewer credentials" in response.text
+
+
+def test_operator_case_report_create_rejects_reviewer_without_report_run_scope() -> None:
+    settings = Settings(
+        REVIEWER_ACCOUNTS="limited:limited-token",
+        REVIEWER_ACCOUNT_SCOPES="limited:operations:read",
+    )
+    client = TestClient(create_app(settings=settings))
+
+    response = client.post(
+        "/operator-cases/BUN-slope/report",
+        headers=_auth_headers(
+            reviewer_id="limited",
+            reviewer_token="limited-token",
+        ),
+    )
+
+    assert response.status_code == 403
+    assert "report:run" in response.text
+
+
+def test_operator_case_report_create_rejects_body_reviewer_mismatch() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/operator-cases/BUN-slope/report",
+        headers=_auth_headers(),
+        json={"reviewer_id": "other-reviewer"},
+    )
+
+    assert response.status_code == 403
+    assert "reviewer_id" in response.text
 
 
 def test_operator_case_report_create_rejects_unknown_case_id(
@@ -189,7 +294,7 @@ def test_operator_case_report_create_rejects_unknown_case_id(
     )
     client = TestClient(create_app())
 
-    response = client.post("/operator-cases/NOT-A-CASE/report")
+    response = client.post("/operator-cases/NOT-A-CASE/report", headers=_auth_headers())
 
     assert response.status_code == 404
     assert "fixture case" in response.json()["detail"]
@@ -198,8 +303,11 @@ def test_operator_case_report_create_rejects_unknown_case_id(
 def test_operator_case_report_create_uses_packaged_case_service() -> None:
     client = TestClient(create_app())
 
-    first = client.post("/operator-cases/BUN-slope/report")
-    second = client.post("/operator-cases/CHA-zoning-edge/report")
+    first = client.post("/operator-cases/BUN-slope/report", headers=_auth_headers())
+    second = client.post(
+        "/operator-cases/CHA-zoning-edge/report",
+        headers=_auth_headers(user_id=uuid4()),
+    )
 
     assert first.status_code == 201
     assert second.status_code == 201
@@ -220,6 +328,9 @@ def test_operator_case_report_create_uses_packaged_case_service() -> None:
     assert second_artifact.status_code == 200
     assert first_artifact.json()["report_run_id"] == first_body["report_run_id"]
     assert second_artifact.json()["report_run_id"] == second_body["report_run_id"]
+    assert first_artifact.json()["workspace_id"] == str(_WORKSPACE_ID)
+    assert first_artifact.json()["requested_by"] == str(_USER_ID)
+    assert first_artifact.json()["reviewed_by"] == _REVIEWER_ID
 
 
 def test_operator_case_report_rejects_blank_reviewer_id() -> None:
@@ -227,6 +338,7 @@ def test_operator_case_report_rejects_blank_reviewer_id() -> None:
 
     response = client.post(
         "/operator-cases/BUN-slope/report",
+        headers=_auth_headers(),
         json={"reviewer_id": "   "},
     )
 
@@ -239,6 +351,7 @@ def test_operator_case_report_rejects_blank_reason() -> None:
 
     response = client.post(
         "/operator-cases/BUN-slope/report",
+        headers=_auth_headers(),
         json={"reason": "   "},
     )
 
@@ -251,6 +364,7 @@ def test_operator_case_report_rejects_unrecognized_body_fields() -> None:
 
     response = client.post(
         "/operator-cases/BUN-slope/report",
+        headers=_auth_headers(),
         json={"reviewer_id": "operator", "unexpected": "ignored?"},
     )
 
@@ -271,9 +385,12 @@ def test_operator_case_report_strips_reviewer_id_and_reason(
 
     response = client.post(
         "/operator-cases/BUN-slope/report",
-        json={"reviewer_id": "  operator  ", "reason": "  reviewed  "},
+        headers=_auth_headers(),
+        json={"reviewer_id": "  fixture-reviewer  ", "reason": "  reviewed  "},
     )
 
     assert response.status_code == 201
-    assert contract.reviewer_id == "operator"
+    assert contract.reviewer_id == _REVIEWER_ID
     assert contract.reason == "reviewed"
+    assert contract.workspace_id == _WORKSPACE_ID
+    assert contract.requested_by == _USER_ID

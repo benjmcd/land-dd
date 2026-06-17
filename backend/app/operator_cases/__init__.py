@@ -138,6 +138,8 @@ def create_selected_county_report(
     case_id: str,
     reviewer_id: str = "operator-private-mvp",
     reason: str = "selected-county private MVP fixture approval",
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
 ) -> SelectedCountyReportResult:
     case = get_selected_county_case(case_id)
     if case is None:
@@ -146,8 +148,14 @@ def create_selected_county_report(
         )
 
     _ensure_fixture_provenance(services, case)
-    area_id = _area_id_for(case)
-    _ensure_area(services, case, area_id)
+    area_id = _area_id_for(case, workspace_id=workspace_id)
+    _ensure_area(
+        services,
+        case,
+        area_id,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
+    )
 
     evidence_created_count = 0
     for domain, fixture_file in case.connector_fixture_files.items():
@@ -155,7 +163,11 @@ def create_selected_county_report(
         with as_file(_resource_root().joinpath(fixture_file)) as fixture_path:
             raw_result = connector_factory().load_fixture(fixture_path)
 
-        connector_result = _connector_result_for_area(raw_result, area_id)
+        connector_result = _connector_result_for_area(
+            raw_result,
+            area_id,
+            workspace_id=workspace_id,
+        )
         quality_profile = quality_evaluator(connector_result)
         if quality_profile.blocking_issue_count:
             issue_codes = ", ".join(issue.code.value for issue in quality_profile.issues)
@@ -176,7 +188,11 @@ def create_selected_county_report(
         handoff = build_connector_review_handoff(packet)
         review_status = build_connector_run_review_status(handoff, quality_profile)
         services.connector_review_statuses[packet.ingest_run_id] = review_status
-        queued = services.connector_review_queue.enqueue_review_status(review_status)
+        queued = services.connector_review_queue.enqueue_review_status(
+            review_status,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+        )
         if handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
             services.connector_review_queue.approve_for_connector_qa(
                 queued.job_id,
@@ -188,6 +204,8 @@ def create_selected_county_report(
     report_run = services.report_service.create_report_run(
         area_id=area_id,
         intent_code=IntentCode(case.intent),
+        workspace_id=workspace_id,
+        requested_by=requested_by,
     )
     approved = services.report_service.approve_report_run(
         report_run.report_run_id,
@@ -289,14 +307,24 @@ def _ensure_area(
     services: ApiServices,
     case: SelectedCountyCase,
     area_id: UUID,
+    *,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
 ) -> None:
-    if services.area_service.get(area_id) is not None:
+    existing = services.area_service.get(area_id)
+    if existing is not None:
+        if workspace_id is not None and existing.workspace_id != workspace_id:
+            raise ValueError(
+                "selected-county area belongs to a different workspace",
+            )
         return
     raw = _load_json_resource(case.geometry_file)
     geometry = raw["geometry"] if raw.get("type") == "Feature" else raw
     services.area_service.create(
         AreaContract(
             area_id=area_id,
+            workspace_id=workspace_id,
+            created_by=requested_by,
             label=f"selected-county-private-mvp-{case.case_id}",
             geom_geojson=geometry,
             geom_source=f"package://app.operator_cases/{case.geometry_file}",
@@ -323,20 +351,64 @@ def _load_json_resource(resource_name: str) -> dict[str, Any]:
     return data
 
 
-def _area_id_for(case: SelectedCountyCase) -> UUID:
-    return uuid5(NAMESPACE_URL, f"land-dd:selected-county:{case.case_id}")
+def _area_id_for(case: SelectedCountyCase, workspace_id: UUID | None = None) -> UUID:
+    if workspace_id is None:
+        return uuid5(NAMESPACE_URL, f"land-dd:selected-county:{case.case_id}")
+    return uuid5(
+        NAMESPACE_URL,
+        f"land-dd:selected-county:{workspace_id}:{case.case_id}",
+    )
 
 
 def _connector_result_for_area(
     connector_result: ConnectorResult,
     area_id: UUID,
+    *,
+    workspace_id: UUID | None = None,
 ) -> _SelectedCountyConnectorResult:
+    ingest_run_id = _ingest_run_id_for(
+        connector_result.retrieval_run.ingest_run_id,
+        workspace_id=workspace_id,
+    )
     return _SelectedCountyConnectorResult(
-        retrieval_run=connector_result.retrieval_run,
+        retrieval_run=connector_result.retrieval_run.model_copy(
+            update={"ingest_run_id": ingest_run_id},
+        ),
         evidence_inputs=tuple(
-            evidence.model_copy(update={"area_id": area_id})
+            evidence.model_copy(
+                update={
+                    "evidence_id": _evidence_id_for(
+                        evidence.evidence_id,
+                        workspace_id=workspace_id,
+                    ),
+                    "area_id": area_id,
+                    "source_ingest_run_id": (
+                        ingest_run_id
+                        if workspace_id is not None
+                        else evidence.source_ingest_run_id
+                    ),
+                },
+            )
             for evidence in connector_result.evidence_inputs
         ),
+    )
+
+
+def _ingest_run_id_for(ingest_run_id: UUID, *, workspace_id: UUID | None = None) -> UUID:
+    if workspace_id is None:
+        return ingest_run_id
+    return uuid5(
+        NAMESPACE_URL,
+        f"land-dd:selected-county:{workspace_id}:ingest-run:{ingest_run_id}",
+    )
+
+
+def _evidence_id_for(evidence_id: UUID, *, workspace_id: UUID | None = None) -> UUID:
+    if workspace_id is None:
+        return evidence_id
+    return uuid5(
+        NAMESPACE_URL,
+        f"land-dd:selected-county:{workspace_id}:evidence:{evidence_id}",
     )
 
 
