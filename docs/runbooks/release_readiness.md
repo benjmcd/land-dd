@@ -40,6 +40,8 @@ The check is validate-only. It verifies that:
   `scripts/run_release_package_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;
 - the hosted deployment boundary is validated by `scripts/run_hosted_deployment_check.ps1`;
+- the aggregate release proof executes the image-publication and hosted-deployment validators
+  so stricter lower-level contracts fail the release gate;
 - security scanning is represented by `scripts/run_security_scan.ps1`;
 - data retention is represented by `scripts/run_data_retention_check.ps1`;
 - load testing is represented by `scripts/run_load_test.ps1` and documented in

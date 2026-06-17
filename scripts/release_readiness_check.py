@@ -107,6 +107,10 @@ EXPECTED_CI_PROOFS = {
     "release-readiness": "./scripts/run_release_readiness_check.sh",
     "security-scan": "./scripts/run_security_scan.sh",
 }
+COMPOSED_VALIDATORS = (
+    "scripts/image_publication_check.py",
+    "scripts/hosted_deployment_check.py",
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -381,6 +385,17 @@ def validate_source_readiness() -> None:
     require(blocked == {"DS-017"}, "expected Must-source blocker set changed")
 
 
+def validate_composed_contracts() -> None:
+    for script_path in COMPOSED_VALIDATORS:
+        subprocess.run(
+            [sys.executable, script_path],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+
 def validate_runbook() -> None:
     runbook = (ROOT / "docs" / "runbooks" / "release_readiness.md").read_text(
         encoding="utf-8",
@@ -413,6 +428,7 @@ def validate_runbook() -> None:
         "build_release_package.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
+        "executes the image-publication and hosted-deployment validators",
         "No container image is pushed",
         "published registry-image attestation",
     ):
@@ -424,6 +440,7 @@ def main() -> int:
     validate_catalog()
     validate_ci()
     validate_source_readiness()
+    validate_composed_contracts()
     validate_runbook()
     return 0
 
