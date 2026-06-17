@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-17 Non-local Secret Hygiene
+
+**Scope:** Fail closed for raw API/reviewer secrets and fixture reviewer defaults outside
+local/dev/development/test app environments while preserving local private-MVP ergonomics.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='./backend'; python -m pytest ./backend/tests/api/test_api_key_auth.py -k "non_local_settings" ./backend/tests/api/test_reviewer_auth.py -k "non_local_settings"
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/api/test_api_key_auth.py -k "non_local"
+$env:PYTHONPATH='./backend'; python -m pytest ./backend/tests/api/test_api_key_auth.py ./backend/tests/api/test_reviewer_auth.py
+$env:PYTHONPATH='./backend'; python -m pytest ./backend/tests/api/test_app_runtime_mode.py ./backend/tests/api/test_report_auth.py ./backend/tests/api/test_metrics.py ./backend/tests/api/test_ui_api_key_auth.py
+$env:PYTHONPATH='./backend'; python -m pytest ./backend/tests/api/test_api_key_auth.py ./backend/tests/api/test_reviewer_auth.py ./backend/tests/api/test_app_runtime_mode.py ./backend/tests/api/test_report_auth.py ./backend/tests/api/test_metrics.py ./backend/tests/api/test_ui_api_key_auth.py ./backend/tests/test_access_control_artifacts.py
+$env:PYTHONPATH='./backend'; python ./scripts/access_control_check.py
+$env:PYTHONPATH='./backend'; python -m ruff check ./backend/app/core/config.py ./backend/app/main.py ./backend/tests/api/test_api_key_auth.py ./backend/tests/api/test_reviewer_auth.py ./backend/tests/api/test_app_runtime_mode.py ./backend/tests/api/test_report_auth.py ./backend/tests/api/test_ui_api_key_auth.py ./backend/tests/test_access_control_artifacts.py ./scripts/access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy app/core/config.py app/main.py tests/api/test_api_key_auth.py tests/api/test_reviewer_auth.py tests/api/test_app_runtime_mode.py tests/api/test_report_auth.py tests/api/test_ui_api_key_auth.py tests/test_access_control_artifacts.py
+.\scripts\verify.ps1
+$env:PYTHONPATH='./backend'; python ./scripts/private_mvp_readiness_check.py
+$env:PYTHONPATH='./backend'; python ./scripts/hosted_deployment_check.py
+$env:PYTHONPATH='./backend'; python ./scripts/release_readiness_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+attribution-marker scan over changed files
+```
+
+**Results:**
+
+- RED proof: the new non-local settings rejection tests initially failed because raw or
+  missing non-local secrets and fixture reviewer defaults did not raise.
+- Focused non-local settings tests passed after implementation (`8 passed`, with the
+  existing Starlette/httpx deprecation warning).
+- Focused non-local API-key boundary tests passed after tightening auth-disabled legacy
+  config rejection (`7 passed`, with the existing Starlette/httpx deprecation warning).
+- API-key and reviewer-auth focused files passed (`70 passed`, `1 skipped`).
+- Broader impacted API/UI/runtime/access-control artifact suite passed (`139 passed`,
+  `1 skipped`, with the existing Starlette/httpx deprecation warning).
+- `scripts/access_control_check.py` exited `0`.
+- Ruff passed on all touched Python files.
+- Mypy passed on touched source and focused touched tests from the backend import path
+  (`8 source files`).
+- Default `scripts/verify.ps1` passed; DB smoke remained intentionally skipped by the
+  wrapper because `RUN_DB_SMOKE` was not set.
+- Private-MVP, hosted-deployment, and release-readiness validators exited `0`.
+- `git diff --check` exited `0`.
+- Deleted-file scan returned no paths.
+- Attribution-marker scan returned no forbidden attribution; the only hit was an older
+  "Regenerated with Python" validation note, not a co-author or AI-credit marker.
+
+**Residual risk:**
+
+- The active editable Python install in this environment still points at the sibling
+  `prod-grade` worktree, so validation commands were run with explicit `PYTHONPATH`
+  rooted in `secret-hyg`.
+- This slice adds static hashed-secret-spec enforcement only; it does not implement
+  external secret-manager integration, OAuth/OIDC, or automatic rotation.
+
 ## 2026-06-17 Async Report-Create Contract
 
 **Scope:** Resolve the `sync_async_create_divergence` risk for `POST /report-runs` by

@@ -1,5 +1,5 @@
 from hashlib import sha256
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import pytest
 from fastapi import Depends, FastAPI, HTTPException
@@ -210,6 +210,58 @@ def test_settings_parses_reviewer_account_token_hash_specs() -> None:
     assert settings.parsed_reviewer_accounts() == {
         "reviewer-a": f"sha256:{digest.lower()}",
     }
+
+
+def test_non_local_settings_require_hashed_reviewer_accounts_with_scopes() -> None:
+    digest = sha256(b"token-a").hexdigest()
+    settings = Settings(
+        APP_ENV="production",
+        REVIEWER_ACCOUNTS=f"reviewer-a:sha256:{digest}",
+        REVIEWER_ACCOUNT_SCOPES="reviewer-a:connector:run|connector:review",
+    )
+
+    assert settings.parsed_reviewer_accounts() == {
+        "reviewer-a": f"sha256:{digest}",
+    }
+    assert settings.parsed_reviewer_account_scopes() == {
+        "reviewer-a": frozenset(
+            {
+                REVIEWER_SCOPE_CONNECTOR_RUN,
+                REVIEWER_SCOPE_CONNECTOR_REVIEW,
+            }
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    "kwargs,method,match",
+    [
+        ({}, "parsed_reviewer_accounts", "fixture reviewer account is local-only"),
+        (
+            {"REVIEWER_ACCOUNTS": "reviewer-a:raw-token"},
+            "parsed_reviewer_accounts",
+            "sha256:<64-hex>",
+        ),
+        (
+            {
+                "REVIEWER_ACCOUNTS": "reviewer-a:sha256:" + ("a" * 64),
+                "REVIEWER_ACCOUNT_SCOPES": "",
+            },
+            "parsed_reviewer_account_scopes",
+            "explicit REVIEWER_ACCOUNT_SCOPES",
+        ),
+    ],
+)
+def test_non_local_settings_reject_fixture_or_raw_reviewer_accounts(
+    kwargs: dict[str, object],
+    method: str,
+    match: str,
+) -> None:
+    settings_kwargs: dict[str, object] = {"APP_ENV": "production", **kwargs}
+    settings = Settings(**cast(Any, settings_kwargs))
+
+    with pytest.raises(ValueError, match=match):
+        getattr(settings, method)()
 
 
 def test_settings_parses_reviewer_account_scopes() -> None:

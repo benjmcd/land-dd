@@ -70,6 +70,14 @@ Apply migrations before first run:
 | `REVIEWER_ACCOUNT_SCOPES` | local fixture scopes | Explicit reviewer scopes such as `connector:run`, `connector:review`, `operations:read`, `report:approve`, `report:retry`, and `report:run` |
 | `ENABLE_LIVE_CONNECTORS` | `false` | Enables request-time DS-001, DS-002, DS-004, then DS-003 connector gating |
 
+Local/dev/development/test app environments may use raw `API_KEYS`, raw
+`API_KEY_SPECS` secrets, and the default fixture reviewer account for private-MVP work.
+Non-local `APP_ENV` values with `REQUIRE_API_KEY=true` reject `API_KEYS` and require
+`API_KEY_SPECS` entries with `sha256:<64-hex>` secrets. Non-local `APP_ENV` values also
+reject the fixture reviewer account and raw reviewer tokens; configure explicit
+`REVIEWER_ACCOUNTS` entries as `id:sha256:<64-hex>` and give every reviewer id explicit
+`REVIEWER_ACCOUNT_SCOPES`.
+
 ---
 
 ## API Workflow
@@ -399,18 +407,22 @@ operator web UI supports a private-beta browser bridge: `/ui/auth` is public,
 accepts the same configured API key, and sets a signed expiring HttpOnly SameSite
 cookie scoped to `/ui` without storing the submitted API key. Set
 `UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments. With
-`REQUIRE_API_KEY=true`, non-local `APP_ENV` values fail startup if it is blank; only
-local/dev/development/test config uses a per-process signing secret. Non-local `APP_ENV`
-values set the cookie `Secure` flag automatically; `UI_AUTH_COOKIE_SECURE=true` can force it in any
-environment. Cookie-authenticated UI mutation forms include a signed CSRF token derived
-from the HttpOnly UI cookie; refresh stale forms before retrying an action. Sign-out is
-a CSRF-protected POST from `/ui/auth/logout`. That cookie is accepted only by `/ui/*`
-routes; `/areas` and other JSON/API paths still require `X-API-Key`. `/health` and
-`/version` remain public for smoke checks.
+`REQUIRE_API_KEY=true`, non-local `APP_ENV` values fail startup if it is blank and also
+reject `API_KEYS` plus raw `API_KEY_SPECS` secrets. Only local/dev/development/test
+config uses a per-process signing secret and may keep raw fixture API-key values.
+Non-local `APP_ENV` values set the cookie `Secure` flag automatically;
+`UI_AUTH_COOKIE_SECURE=true` can force it in any environment. Cookie-authenticated UI
+mutation forms include a signed CSRF token derived from the HttpOnly UI cookie; refresh
+stale forms before retrying an action. Sign-out is a CSRF-protected POST from
+`/ui/auth/logout`. That cookie is accepted only by `/ui/*` routes; `/areas` and other
+JSON/API paths still require `X-API-Key`. `/health` and `/version` remain public for
+smoke checks.
 
 Reviewer tokens for UI operations are separate from API keys. Configure them via
 `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` (see the Configuration table above and
-`.env.example`).
+`.env.example`). Non-local `APP_ENV` values require explicit reviewer accounts using
+`id:sha256:<64-hex>` token specs and explicit scopes; the default fixture reviewer is
+local-only.
 
 ### Home page and intake
 

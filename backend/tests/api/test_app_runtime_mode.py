@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from hashlib import sha256
+
 import pytest
 
 from app.api.dependencies import get_db_services, get_services
@@ -33,7 +35,14 @@ def test_create_app_explicit_override_wins_over_settings() -> None:
 
 def test_create_app_rejects_in_memory_services_outside_local_env() -> None:
     with pytest.raises(ValueError, match="USE_DB_SERVICES=true is required"):
-        create_app(Settings(APP_ENV="production", USE_DB_SERVICES=False))
+        create_app(
+            Settings(
+                APP_ENV="production",
+                USE_DB_SERVICES=False,
+                REVIEWER_ACCOUNTS=f"reviewer:sha256:{sha256(b'token').hexdigest()}",
+                REVIEWER_ACCOUNT_SCOPES="reviewer:operations:read",
+            )
+        )
 
 
 def test_create_app_rejects_db_services_without_database_url() -> None:

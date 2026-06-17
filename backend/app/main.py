@@ -29,8 +29,6 @@ from app.core.logging import configure_json_logging
 from app.core.metrics import MetricsMiddleware, RuntimeMetrics
 from app.db.engine import get_session_factory
 
-_LOCAL_APP_ENVS = frozenset({"local", "dev", "development", "test"})
-
 
 def create_app(
     settings: Settings | None = None,
@@ -42,6 +40,7 @@ def create_app(
     resolved_use_db_services = (
         resolved.use_db_services if use_db_services is None else use_db_services
     )
+    resolved.validate_secret_hygiene()
     _validate_runtime_state_config(resolved, use_db_services=resolved_use_db_services)
     configure_json_logging(resolved.log_level)
     app = FastAPI(
@@ -151,7 +150,7 @@ def _ui_cookie_signing_secret(settings: Settings) -> str:
 
 
 def _is_local_app_env(settings: Settings) -> bool:
-    return settings.app_env.lower() in _LOCAL_APP_ENVS
+    return settings.is_local_app_env()
 
 
 def _build_api_key_audit_log(

@@ -15,11 +15,11 @@ rotation, external secrets management, or hosted identity-provider integration.
 
 | Control | Status | Evidence |
 |---|---|---|
-| API-key middleware | Implemented, default off | `ApiKeyAuthMiddleware` protects non-public paths when `REQUIRE_API_KEY=true`, uses `X-API-Key`, supports raw or `sha256:<64-hex>` configured secrets, fails closed when required but unconfigured, and leaves `/health` and `/version` public |
-| API-key static lifecycle | Implemented configured rotation substrate | `API_KEY_SPECS` accepts comma-separated `id|status|secret` entries, where `status` is `active` or `retired`; active specs authenticate, retired specs do not, and malformed, duplicate-id, or duplicate-secret specs fail closed |
+| API-key middleware | Implemented, default off | `ApiKeyAuthMiddleware` protects non-public paths when `REQUIRE_API_KEY=true`, uses `X-API-Key`, supports raw or `sha256:<64-hex>` configured secrets for local/dev/development/test, requires hashed `API_KEY_SPECS` outside those app environments, fails closed when required but unconfigured, and leaves `/health` and `/version` public |
+| API-key static lifecycle | Implemented configured rotation substrate | `API_KEY_SPECS` accepts comma-separated `id|status|secret` entries, where `status` is `active` or `retired`; active specs authenticate, retired specs do not, malformed, duplicate-id, or duplicate-secret specs fail closed, and non-local `APP_ENV` values require `sha256:<64-hex>` secrets |
 | API-key audit logging | Implemented structured runtime logs plus DB events | Protected-path API-key decisions and `/ui/auth` login attempts emit `event_type=api_key_auth`, outcome, status code, method, path, auth source, and configured `api_key_id` for accepted `API_KEY_SPECS` keys without logging the provided key, configured secret, or query string. When API-key auth and DB services are both enabled, decisions are also written to `audit.events` |
 | UI API-key cookie bridge | Implemented private-beta browser bridge | When `REQUIRE_API_KEY=true`, `/ui/auth` is public and accepts the same configured API keys as `X-API-Key`. Successful form login sets a signed expiring HttpOnly SameSite cookie scoped to `/ui` without storing the submitted API key and may redirect back to a safe `/ui/*` return path; only `/ui/*` routes accept that cookie as an alternative to the header. Cookie-authenticated UI mutation forms require a signed CSRF token derived from the HttpOnly UI cookie, and logout uses a CSRF-protected POST. The token is signed with `UI_AUTH_COOKIE_SECRET`; non-local API-key-locked app environments fail fast when that setting is blank, while local/dev/development/test environments may use a per-process generated fallback. Non-local `APP_ENV` values set the cookie `Secure` flag automatically. JSON/API routes such as `/areas` still require `X-API-Key` |
-| Reviewer service account | Implemented local scoped substrate | `LocalServiceAccountReviewerAuth` requires `X-Reviewer-Id` plus `X-Reviewer-Token`, supports raw or `sha256:<64-hex>` configured tokens, requires explicit `REVIEWER_ACCOUNT_SCOPES`, and fails closed when unconfigured |
+| Reviewer service account | Implemented local scoped substrate | `LocalServiceAccountReviewerAuth` requires `X-Reviewer-Id` plus `X-Reviewer-Token`, supports raw local or `sha256:<64-hex>` configured tokens, requires explicit `REVIEWER_ACCOUNT_SCOPES`, rejects the fixture account and raw token specs outside local/dev/development/test `APP_ENV` values, and fails closed when unconfigured |
 | UI reviewer session bridge | Implemented private-beta browser bridge | `/ui/auth/reviewer` and first submitted UI action credentials can set a signed expiring HttpOnly SameSite reviewer cookie scoped to `/ui`. The cookie stores reviewer id, scopes, expiry, and a non-secret HMAC binding to the configured reviewer token spec; raw reviewer tokens are not stored, reviewer-token rotation invalidates existing reviewer sessions, per-action scopes are still enforced, and JSON/API routes still require `X-Reviewer-Id` plus `X-Reviewer-Token` headers |
 | Operator routes | Reviewer-authenticated and scoped | Connector invocation/scheduling requires `connector:run`, connector review decisions require `connector:review`, queue/live-job health reads require `operations:read`, report retry requires `report:retry`, and manual approved-connector report creation requires `report:run` |
 | Public health routes | Intentionally public | `/health` and `/version` remain unauthenticated for local and deployment smoke checks |
@@ -41,8 +41,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 - the access-control catalog names current controls and production blockers;
 - referenced authority files exist;
 - API-key middleware still uses `X-API-Key`, keeps only `/health` and `/version`
-  public, supports raw and `sha256:<64-hex>` configured secrets, and fails closed with
-  401/403/503 behavior;
+  public, supports raw and `sha256:<64-hex>` configured secrets in local fixture
+  environments, requires hashed `API_KEY_SPECS` for non-local API-key-locked
+  environments, and fails closed with 401/403/503 behavior;
 - `API_KEY_SPECS` supports configured active/retired key lifecycle specs, authenticates
   only active specs, and fails closed for malformed lifecycle entries;
 - API-key auth emits structured runtime audit logs and, in DB-service mode, durable
@@ -57,8 +58,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
   forms, keeps logout on a CSRF-protected POST, does not store the submitted API key
   in the cookie, and `/areas` rejects cookie-only API access;
 - reviewer auth still requires `X-Reviewer-Id` and `X-Reviewer-Token`, uses
-  constant-time token comparison through raw or `sha256:<64-hex>` configured tokens, and
-  fails closed with 401/403/503 behavior;
+  constant-time token comparison through raw local or `sha256:<64-hex>` configured
+  tokens, rejects fixture reviewer defaults and raw token specs in non-local
+  environments, and fails closed with 401/403/503 behavior;
 - UI reviewer sessions do not expose submitted reviewer tokens, are invalidated by
   token rotation or scope removal, remain scoped to `/ui`, and do not authenticate
   JSON/API reviewer-protected routes;
@@ -72,9 +74,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 1. For local fixture mode, leave `REQUIRE_API_KEY=false` unless testing production
    request gating.
 2. For deployment smoke or any shared environment, set `REQUIRE_API_KEY=true` and provide
-   `API_KEYS` through the environment, never through committed files. Prefer
-   `sha256:<64-hex>` entries for shared or production-like environments.
-3. For planned static key rotation, prefer `API_KEY_SPECS` over bare `API_KEYS`:
+   `API_KEY_SPECS` through the environment, never through committed files. Non-local
+   `APP_ENV` values reject `API_KEYS` and raw `API_KEY_SPECS` secrets.
+3. For planned static key rotation, use `API_KEY_SPECS` instead of bare `API_KEYS`:
    add the new key as `new-id|active|sha256:<64-hex>`, deploy, move callers to the
    new key, then mark the old entry `old-id|retired|sha256:<64-hex>` or remove it.
    Retired entries are kept only as explicit fail-closed configuration evidence; they
@@ -94,9 +96,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
    The cookie is not accepted by JSON/API routes; scripts and API clients must still
    send `X-API-Key`.
 5. Override the fixture `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` values before
-   any shared or production-like reviewer/operator workflow. Every account must have
-   explicit scopes. Prefer `id:sha256:<64-hex>` reviewer token specs outside local fixture
-   mode.
+   any shared or production-like reviewer/operator workflow. Non-local `APP_ENV` values
+   reject the fixture reviewer defaults and raw reviewer token specs; every account must
+   use `id:sha256:<64-hex>` and have explicit scopes.
 6. Browser operators can use `/ui/auth/reviewer` to start a reviewer session once,
    or submit reviewer credentials on a UI action to set the same session. API clients
    must still use `X-Reviewer-Id` and `X-Reviewer-Token`.
@@ -112,8 +114,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 - No OAuth/OIDC integration or hosted identity provider exists.
 - No user-account persistence exists.
 - No hosted secret manager integration exists.
-- API keys are static environment values; raw and `sha256:<64-hex>` configured secrets
-  are supported.
+- API keys are static environment values; raw configured secrets are local-only, and
+  non-local API-key-locked environments require `API_KEY_SPECS` with `sha256:<64-hex>`
+  secrets.
 - The `/ui/auth` cookie bridge is a private-beta browser convenience, not full user
   auth/RBAC. It stores a signed expiring token in an HttpOnly cookie scoped to `/ui`,
   not the submitted API key. It uses separate UI-cookie signing material instead of
@@ -125,7 +128,7 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 - API-key auth writes runtime logs, and DB-service mode writes `audit.events`, but there is
   no hosted log-retention/export/SIEM integration, no user-account binding, and no
   durable per-key usage audit ledger for legacy `API_KEYS` entries without configured IDs.
-- Reviewer service-account auth is a local scoped substrate, not a full production
-  identity system.
+- Reviewer service-account auth is a scoped static-token substrate, not a full production
+  identity system; raw reviewer tokens and fixture reviewer defaults are local-only.
 - Route-level reviewer scopes exist, but full user-account role policy and hosted
   identity-provider authorization are not modeled.
