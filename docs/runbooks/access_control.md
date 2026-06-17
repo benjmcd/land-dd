@@ -10,6 +10,8 @@ health/version routes, and production auth blockers.
 
 This runbook does not add user accounts, OAuth/OIDC, full user RBAC, automatic key
 rotation, external secrets management, or hosted identity-provider integration.
+It also treats `secret_management_contract` in `config/access_control.yaml` as a
+validate-only secret handoff catalog, not a hosted secret manager integration.
 
 ## Current Controls
 
@@ -23,6 +25,30 @@ rotation, external secrets management, or hosted identity-provider integration.
 | UI reviewer session bridge | Implemented private-beta browser bridge | `/ui/auth/reviewer` and first submitted UI action credentials can set a signed expiring HttpOnly SameSite reviewer cookie scoped to `/ui`. The cookie stores reviewer id, scopes, expiry, and a non-secret HMAC binding to the configured reviewer token spec; raw reviewer tokens are not stored, reviewer-token rotation invalidates existing reviewer sessions, per-action scopes are still enforced, and JSON/API routes still require `X-Reviewer-Id` plus `X-Reviewer-Token` headers |
 | Operator routes | Reviewer-authenticated and scoped | Connector invocation/scheduling requires `connector:run`, connector review decisions require `connector:review`, queue/live-job health reads require `operations:read`, report retry requires `report:retry`, and manual approved-connector report creation requires `report:run` |
 | Public health routes | Intentionally public | `/health` and `/version` remain unauthenticated for local and deployment smoke checks |
+
+## Secret Management Contract
+
+The repo-local `secret_management_contract` is the secret management handoff contract.
+It records required secret references and handoff expectations for operators. It is a
+validate-only secret handoff: it does
+not create hosted infrastructure, write or rotate secret values, read secret
+payloads from a hosted provider, or provision a hosted secret manager.
+
+The required runtime references are `API_KEY_SPECS, REVIEWER_ACCOUNTS, REVIEWER_ACCOUNT_SCOPES`,
+`UI_AUTH_COOKIE_SECRET, REPORT_IDENTITY_TOKEN_SECRET, and DATABASE_URL`. Non-local
+`APP_ENV` values require hashed API/reviewer secrets through `API_KEY_SPECS` and
+`REVIEWER_ACCOUNTS`; raw fixture or plaintext secret specs remain local-only.
+`UI_AUTH_COOKIE_SECRET` is required when `REQUIRE_API_KEY=true` outside
+local/dev/development/test app environments. `REPORT_IDENTITY_TOKEN_SECRET` is
+required only when `REPORT_AUTH_MODE=signed_token`.
+
+Secret handoff evidence must identify external secret manager reference names,
+the per-environment secret owner, a rotation runbook or ticket, and
+post-rotation access-control proof. The hosted secret manager remains blocked until
+that authority exists. The catalog ensures no plaintext secret values are committed,
+no committed secret values are accepted as proof, no secret writes, and no hosted secret
+manager provisioning.
+There is no hosted secret manager provisioning.
 
 ## Validate Access Control
 
