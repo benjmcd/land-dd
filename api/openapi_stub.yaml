@@ -3433,6 +3433,46 @@ paths:
         schema:
           type: string
           title: Case Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
       requestBody:
         content:
           application/json:
@@ -4701,6 +4741,16 @@ components:
         selected_county_case_id:
           type: string
           title: Selected County Case Id
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
         csrf_token:
           anyOf:
           - type: string

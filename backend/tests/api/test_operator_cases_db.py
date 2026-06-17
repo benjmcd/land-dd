@@ -4,7 +4,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import NAMESPACE_URL, UUID, uuid5
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -28,6 +28,10 @@ _REPRESENTATIVE_CASE_IDS = (
     "BRU-coastal-flood",
 )
 _SOURCE_NAME = "Selected County Private MVP Fixtures"
+_DEMO_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_DEMO_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_REVIEWER_ID = "fixture-reviewer"
+_REVIEWER_TOKEN = "fixture-token-123"
 
 
 @dataclass(frozen=True)
@@ -45,8 +49,23 @@ class _SelectedCountySnapshot:
     connector_review_keys: frozenset[str]
 
 
-def _area_id_for(case_id: str) -> UUID:
-    return uuid5(NAMESPACE_URL, f"land-dd:selected-county:{case_id}")
+def _area_id_for(
+    case_id: str,
+    *,
+    workspace_id: UUID | None = _DEMO_WORKSPACE_ID,
+) -> UUID:
+    case = selected_county_cases.get_selected_county_case(case_id)
+    assert case is not None
+    return selected_county_cases._area_id_for(case, workspace_id=workspace_id)
+
+
+def _auth_headers() -> dict[str, str]:
+    return {
+        "X-Workspace-Id": str(_DEMO_WORKSPACE_ID),
+        "X-User-Id": str(_DEMO_USER_ID),
+        "X-Reviewer-Id": _REVIEWER_ID,
+        "X-Reviewer-Token": _REVIEWER_TOKEN,
+    }
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
@@ -68,7 +87,10 @@ def test_db_operator_case_report_persists_selected_county_fixture(
     client = TestClient(app)
 
     try:
-        create_response = client.post(f"/operator-cases/{case_id}/report")
+        create_response = client.post(
+            f"/operator-cases/{case_id}/report",
+            headers=_auth_headers(),
+        )
 
         assert create_response.status_code == 201
         created = create_response.json()
@@ -84,6 +106,9 @@ def test_db_operator_case_report_persists_selected_county_fixture(
         artifact_report = artifact_response.json()
         assert artifact_report["report_run_id"] == str(report_run_id)
         assert artifact_report["review_status"] == "approved"
+        assert artifact_report["workspace_id"] == str(_DEMO_WORKSPACE_ID)
+        assert artifact_report["requested_by"] == str(_DEMO_USER_ID)
+        assert artifact_report["reviewed_by"] == _REVIEWER_ID
         assert artifact_report["artifact_metadata"]["persistence"] == "postgres+object_store"
 
         get_response = client.get(f"/report-runs/{report_run_id}")
@@ -112,7 +137,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
             report_row = session.execute(
                 text(
                     """
-                    SELECT area_id, status, output_uri, machine_json_uri
+                    SELECT area_id, workspace_id, requested_by, status, output_uri, machine_json_uri
                     FROM reports.report_runs
                     WHERE report_run_id = :report_run_id
                     """
@@ -121,6 +146,8 @@ def test_db_operator_case_report_persists_selected_county_fixture(
             ).mappings().one_or_none()
             assert report_row is not None
             assert UUID(str(report_row["area_id"])) == area_id
+            assert UUID(str(report_row["workspace_id"])) == _DEMO_WORKSPACE_ID
+            assert UUID(str(report_row["requested_by"])) == _DEMO_USER_ID
             assert report_row["status"] == "succeeded"
             assert report_row["output_uri"] == report["output_uri"]
             assert report_row["machine_json_uri"] == report["artifact_metadata"]["machine_json_uri"]
@@ -128,7 +155,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
             area_row = session.execute(
                 text(
                     """
-                    SELECT label
+                    SELECT label, workspace_id, created_by
                     FROM core.areas
                     WHERE area_id = :area_id
                     """
@@ -137,6 +164,8 @@ def test_db_operator_case_report_persists_selected_county_fixture(
             ).mappings().one_or_none()
             assert area_row is not None
             assert "selected-county-private-mvp" in str(area_row["label"])
+            assert UUID(str(area_row["workspace_id"])) == _DEMO_WORKSPACE_ID
+            assert UUID(str(area_row["created_by"])) == _DEMO_USER_ID
 
             new_evidence_ids = after.evidence_ids - before.evidence_ids
             new_ingest_run_ids = after.ingest_run_ids - before.ingest_run_ids
@@ -146,6 +175,31 @@ def test_db_operator_case_report_persists_selected_county_fixture(
             assert new_evidence_ids
             assert new_ingest_run_ids
             assert len(new_connector_review_keys) == len(new_ingest_run_ids)
+
+            queue_rows = session.execute(
+                text(
+                    """
+                    SELECT workspace_id, payload
+                    FROM jobs.job_queue
+                    WHERE job_type = :job_type
+                        AND idempotency_key = ANY(:keys)
+                    """
+                ),
+                {
+                    "job_type": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+                    "keys": list(new_connector_review_keys),
+                },
+            ).mappings().all()
+            assert queue_rows
+            assert {UUID(str(row["workspace_id"])) for row in queue_rows} == {
+                _DEMO_WORKSPACE_ID
+            }
+            assert {row["payload"]["requested_by"] for row in queue_rows} == {
+                str(_DEMO_USER_ID)
+            }
+            assert {
+                row["payload"]["review_decision"]["reviewer_id"] for row in queue_rows
+            } == {_REVIEWER_ID}
 
             evidence_count = session.execute(
                 text(
@@ -182,7 +236,11 @@ def test_db_ui_operator_case_report_persists_selected_county_fixture(
     try:
         create_response = client.post(
             "/ui/operator-cases/report",
-            data={"selected_county_case_id": case_id},
+            data={
+                "selected_county_case_id": case_id,
+                "reviewer_id": _REVIEWER_ID,
+                "reviewer_token": _REVIEWER_TOKEN,
+            },
             follow_redirects=False,
         )
 
@@ -206,6 +264,9 @@ def test_db_ui_operator_case_report_persists_selected_county_fixture(
         artifact_report = artifact_response.json()
         assert artifact_report["report_run_id"] == str(report_run_id)
         assert artifact_report["review_status"] == "approved"
+        assert artifact_report["workspace_id"] == str(_DEMO_WORKSPACE_ID)
+        assert artifact_report["requested_by"] == str(_DEMO_USER_ID)
+        assert artifact_report["reviewed_by"] == _REVIEWER_ID
         assert artifact_report["artifact_metadata"]["persistence"] == "postgres+object_store"
         assert _SOURCE_NAME in artifact_report["source_manifest"]["source_names"]
         assert (
@@ -226,7 +287,7 @@ def test_db_ui_operator_case_report_persists_selected_county_fixture(
             report_row = session.execute(
                 text(
                     """
-                    SELECT area_id, status, output_uri, machine_json_uri
+                    SELECT area_id, workspace_id, requested_by, status, output_uri, machine_json_uri
                     FROM reports.report_runs
                     WHERE report_run_id = :report_run_id
                     """
@@ -235,6 +296,8 @@ def test_db_ui_operator_case_report_persists_selected_county_fixture(
             ).mappings().one_or_none()
             assert report_row is not None
             assert UUID(str(report_row["area_id"])) == area_id
+            assert UUID(str(report_row["workspace_id"])) == _DEMO_WORKSPACE_ID
+            assert UUID(str(report_row["requested_by"])) == _DEMO_USER_ID
             assert report_row["status"] == "succeeded"
             assert report_row["output_uri"] == artifact_report["output_uri"]
             assert (

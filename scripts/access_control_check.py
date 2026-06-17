@@ -857,7 +857,13 @@ def validate_reviewer_auth() -> None:
 
 
 def validate_operator_routes() -> None:
-    for route_file in ("connectors.py", "operations.py", "reports.py", "sources.py"):
+    for route_file in (
+        "connectors.py",
+        "operator_cases.py",
+        "operations.py",
+        "reports.py",
+        "sources.py",
+    ):
         text = read_text(f"backend/app/api/{route_file}")
         require("ReviewerPrincipal" in text, f"{route_file} must depend on ReviewerPrincipal")
         require("get_reviewer_principal" in text, f"{route_file} must expose reviewer dependency")
@@ -865,6 +871,7 @@ def validate_operator_routes() -> None:
 
     connectors = read_text("backend/app/api/connectors.py")
     live_connectors = read_text("backend/app/api/live_connectors.py")
+    operator_cases = read_text("backend/app/api/operator_cases.py")
     operations = read_text("backend/app/api/operations.py")
     reports = read_text("backend/app/api/reports.py")
     sources = read_text("backend/app/api/sources.py")
@@ -948,6 +955,19 @@ def validate_operator_routes() -> None:
         "REVIEWER_SCOPE_OPERATIONS_READ" in operations,
         "operations route must require operations read scope",
     )
+    require_phrases(
+        operator_cases,
+        (
+            "AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]",
+            "REVIEWER_SCOPE_REPORT_RUN",
+            "require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_RUN)",
+            "body reviewer_id must match the authenticated reviewer",
+            "reviewer_id=reviewer_id",
+            "workspace_id=auth.workspace_id",
+            "requested_by=auth.user_id",
+        ),
+        "operator case report route auth",
+    )
     require(
         "REVIEWER_SCOPE_REPORT_RETRY" in reports,
         "reports route must require report retry scope",
@@ -966,6 +986,7 @@ def validate_operator_routes() -> None:
             "test_api_scaffold.py",
             "test_connector_review_queue_api.py",
             "test_connector_review_status.py",
+            "test_operator_cases_api.py",
             "test_usgs_tnm_connector_api.py",
         )
     )
@@ -983,6 +1004,9 @@ def validate_operator_routes() -> None:
             "test_connector_review_status_endpoint_hides_other_workspace",
             "test_connector_review_queue_endpoint_requires_identity",
             "test_connector_review_queue_endpoint_hides_other_workspace",
+            "test_operator_case_report_create_rejects_missing_workspace_identity",
+            "test_operator_case_report_create_rejects_missing_reviewer_auth",
+            "test_operator_case_report_create_rejects_body_reviewer_mismatch",
             "test_usgs_tnm_schedule_bbox_requires_workspace_identity",
             "test_usgs_tnm_schedule_bbox_hides_area_from_other_workspace",
         ),
