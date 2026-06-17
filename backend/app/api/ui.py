@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html as _html
 import json
+from datetime import UTC, datetime
 from json import JSONDecodeError
 from typing import Annotated
 from uuid import UUID
@@ -42,8 +43,10 @@ from app.api.ui_shared import (
     reviewer_credential_fields,
 )
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
 from app.reports.dossier import build_rural_land_dossier
+from app.reports.job_store import ReportJobRecord
 
 _UI_PAGE_SIZE = 30
 _REPORT_REFRESH_SECONDS_DEFAULT = 3
@@ -243,22 +246,13 @@ def _report_nav(
     if include_report_links and report_run_id is not None:
         links.extend(
             [
-                (
-                    f'<a href="/ui/report-runs/{report_run_id}/print">'
-                    "Print / Export PDF</a>"
-                ),
+                (f'<a href="/ui/report-runs/{report_run_id}/print">Print / Export PDF</a>'),
                 (
                     f'<a href="/report-runs/{report_run_id}/dossier?download=1">'
                     "Download dossier (.md)</a>"
                 ),
-                (
-                    f'<a href="/report-runs/{report_run_id}/artifact">'
-                    "Download report (.json)</a>"
-                ),
-                (
-                    f'<a href="/ui/report-runs/{report_run_id}/lineage">'
-                    "View evidence lineage</a>"
-                ),
+                (f'<a href="/report-runs/{report_run_id}/artifact">Download report (.json)</a>'),
+                (f'<a href="/ui/report-runs/{report_run_id}/lineage">View evidence lineage</a>'),
             ]
         )
     return '<nav class="report-nav" aria-label="Report navigation">' + "".join(links) + "</nav>"
@@ -311,10 +305,7 @@ def _report_page(
 
 def _report_list_action_links(links: list[tuple[str, str]]) -> str:
     rendered = "".join(
-        (
-            f'<a href="{_html.escape(href, quote=True)}">'
-            f"{_html.escape(label)}</a>"
-        )
+        (f'<a href="{_html.escape(href, quote=True)}">{_html.escape(label)}</a>')
         for href, label in links
     )
     return f'<div class="report-actions">{rendered}</div>'
@@ -349,11 +340,33 @@ def _report_list_next_action_html(
     return _report_list_action_links([(detail_href, "Open detail")])
 
 
+def _report_job_running_age_seconds(job: ReportJobRecord) -> float | None:
+    if job.status != JobStatus.RUNNING:
+        return None
+    started_at = job.started_at or job.created_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=UTC)
+    return max(0.0, (datetime.now(UTC) - started_at).total_seconds())
+
+
+def _report_job_running_age_html(job: ReportJobRecord) -> str:
+    running_age = _report_job_running_age_seconds(job)
+    if running_age is None:
+        return "n/a"
+    text = f"{running_age:.1f}s"
+    if running_age < STALE_RUNNING_THRESHOLD_SECONDS:
+        return _html.escape(text)
+    return f"<span style='color:#b42318;font-weight:700'>{_html.escape(text)} stale</span>"
+
+
+def _format_dt(value: datetime | None) -> str:
+    return "n/a" if value is None else value.isoformat()
+
+
 @router.get("/", response_class=HTMLResponse)
 def ui_index(request: Request) -> str:
     intent_options = "\n".join(
-        f'<option value="{val}">{label}</option>'
-        for val, label in _INTENT_OPTIONS
+        f'<option value="{val}">{label}</option>' for val, label in _INTENT_OPTIONS
     )
     csrf_field = csrf_form_field(request)
     selected_county_markup = _selected_county_fixture_markup(csrf_field)
@@ -486,9 +499,9 @@ def _selected_county_fixture_markup(csrf_field: str = "") -> str:
             '<section class="panel" aria-labelledby="fixture-cases-title">'
             '<div class="panel-header"><div>'
             '<h2 id="fixture-cases-title">Selected-County Private MVP Fixture Cases</h2>'
-            '<p>Fixture-case launcher unavailable.</p>'
+            "<p>Fixture-case launcher unavailable.</p>"
             "</div></div>"
-            "<div class=\"warning\">"
+            '<div class="warning">'
             "<strong>Unavailable.</strong> "
             f"{detail}"
             "</div>"
@@ -502,7 +515,7 @@ def _selected_county_fixture_markup(csrf_field: str = "") -> str:
             '<h2 id="fixture-cases-title">Selected-County Private MVP Fixture Cases</h2>'
             "<p>No selected-county fixture cases are available.</p>"
             "</div></div>"
-            "<div class=\"warning\">No selected-county fixture cases are available.</div>"
+            '<div class="warning">No selected-county fixture cases are available.</div>'
             "</section>"
         )
 
@@ -589,32 +602,26 @@ def _case_boundary_metadata(case: operator_cases_api.OperatorCaseSummary) -> str
 def _boundary_chips(values: list[str]) -> str:
     if not values:
         return '<span class="boundary-chip">none declared</span>'
-    return "".join(
-        f'<span class="boundary-chip">{_html.escape(value)}</span>'
-        for value in values
-    )
+    return "".join(f'<span class="boundary-chip">{_html.escape(value)}</span>' for value in values)
 
 
 def _connector_domain_badges(domains: list[str]) -> str:
     if not domains:
         return '<span class="domain">none declared</span>'
-    return "".join(
-        f'<span class="domain">{_html.escape(domain)}</span>'
-        for domain in domains
-    )
+    return "".join(f'<span class="domain">{_html.escape(domain)}</span>' for domain in domains)
 
 
 def _ui_intake_error_page(message: str, status_code: int = 422) -> HTMLResponse:
     safe_message = _html.escape(message)
     return HTMLResponse(
         content=(
-            "<!DOCTYPE html><html lang=\"en\">"
-            "<head><meta charset=\"UTF-8\">"
-            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            '<!DOCTYPE html><html lang="en">'
+            '<head><meta charset="UTF-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
             "<title>Custom GeoJSON Intake Error</title></head>"
             "<body><h1>Custom GeoJSON Intake Error</h1>"
             f"<p>{safe_message}</p>"
-            "<p><a href=\"/ui/\">Back to Home</a></p>"
+            '<p><a href="/ui/">Back to Home</a></p>'
             "</body></html>"
         ),
         status_code=status_code,
@@ -636,9 +643,7 @@ def ui_custom_geojson_intake(
     try:
         parsed_geojson = json.loads(area_geojson)
     except JSONDecodeError:
-        return _ui_intake_error_page(
-            "Invalid GeoJSON. Enter a valid GeoJSON object."
-        )
+        return _ui_intake_error_page("Invalid GeoJSON. Enter a valid GeoJSON object.")
     if not isinstance(parsed_geojson, dict):
         return _ui_intake_error_page(
             "Invalid GeoJSON. The top-level GeoJSON value must be an object."
@@ -676,10 +681,7 @@ def ui_custom_geojson_intake(
         and intake_response.connector_ingest_run_id is not None
     ):
         return RedirectResponse(
-            url=(
-                "/ui/connector-review-queue/"
-                f"{intake_response.connector_ingest_run_id}"
-            ),
+            url=(f"/ui/connector-review-queue/{intake_response.connector_ingest_run_id}"),
             status_code=status.HTTP_303_SEE_OTHER,
         )
     if intake_response.report_run_id is None:
@@ -774,6 +776,9 @@ def ui_report_run(
                 '<div class="meta">'
                 f"<div>Status: {job_status}</div>"
                 f"<div>Report ID: {report_run_id}</div>"
+                f"<div>Created: {_html.escape(_format_dt(job.created_at))}</div>"
+                f"<div>Started: {_html.escape(_format_dt(job.started_at))}</div>"
+                f"<div>Running age: {_report_job_running_age_html(job)}</div>"
                 "</div>"
                 f"{refresh_copy}"
             ),
@@ -872,7 +877,7 @@ def ui_report_run(
                 f' action="/ui/report-runs/{report_run_id}/approve">'
                 f"{csrf_field}"
                 f"{reviewer_fields}"
-                '<label>Approval reason (optional)'
+                "<label>Approval reason (optional)"
                 '<textarea name="reason" class="approval-reason" rows="4"></textarea></label>'
                 '<button class="primary-action approve" type="submit">'
                 "Approve Report</button>"
@@ -962,7 +967,7 @@ def ui_report_run_list(
                 color = "#28a745" if rv == "approved" else "#ffc107"
                 review_badge = (
                     f' &nbsp; <span style="color:{color};font-weight:bold">'
-                    f'{_html.escape(rv)}</span>'
+                    f"{_html.escape(rv)}</span>"
                 )
         status_color = {
             "queued": "#6c757d",
@@ -977,30 +982,32 @@ def ui_report_run_list(
             report.review_status if report is not None else None,
             has_report=report is not None,
         )
+        running_age = _report_job_running_age_html(job)
         rows += (
-            f'<tr>'
+            f"<tr>"
             f'<td data-label="Select" style="text-align:center">'
             f'<input type="checkbox" class="cmp-check" name="ids" value="{rid_esc}"'
             f' aria-label="Select {rid_esc[:8]}"></td>'
             f'<td data-label="ID"><a href="/ui/report-runs/{job.report_run_id}">'
-            f'{_html.escape(str(job.report_run_id)[:8])}&#8230;</a></td>'
+            f"{_html.escape(str(job.report_run_id)[:8])}&#8230;</a></td>"
             f'<td data-label="Intent">{_html.escape(job.intent_code.value)}</td>'
             f'<td data-label="Status" style="color:{status_color}">'
-            f'{_html.escape(job.status.value)}{review_badge}</td>'
+            f"{_html.escape(job.status.value)}{review_badge}</td>"
             f'<td data-label="Created">{_html.escape(str(job.created_at)[:19])}</td>'
+            f'<td data-label="Running Age">{running_age}</td>'
             f'<td data-label="Action">{action_html}</td>'
-            f'</tr>\n'
+            f"</tr>\n"
         )
     if not rows:
-        rows = '<tr><td colspan="6" style="color:#666">No report runs yet.</td></tr>'
+        rows = '<tr><td colspan="7" style="color:#666">No report runs yet.</td></tr>'
 
     # Build status filter dropdown
     status_options = '<option value="">All</option>\n'
     for js in JobStatus:
-        selected = ' selected' if status_filter == js else ''
+        selected = " selected" if status_filter == js else ""
         status_options += (
             f'<option value="{_html.escape(js.value)}"{selected}>'
-            f'{_html.escape(js.value)}</option>\n'
+            f"{_html.escape(js.value)}</option>\n"
         )
 
     # Build query string helpers for pagination links
@@ -1014,21 +1021,15 @@ def ui_report_run_list(
     prev_link = ""
     if offset > 0:
         prev_offset = max(0, offset - _UI_PAGE_SIZE)
-        prev_link = (
-            f'<a href="/ui/report-runs{_page_qs(prev_offset)}">&larr; Previous</a>'
-        )
+        prev_link = f'<a href="/ui/report-runs{_page_qs(prev_offset)}">&larr; Previous</a>'
     next_link = ""
     if len(jobs) == _UI_PAGE_SIZE:
         next_offset = offset + _UI_PAGE_SIZE
-        next_link = (
-            f'<a href="/ui/report-runs{_page_qs(next_offset)}">Next &rarr;</a>'
-        )
+        next_link = f'<a href="/ui/report-runs{_page_qs(next_offset)}">Next &rarr;</a>'
     pagination = ""
     if prev_link or next_link:
         sep = " &nbsp; " if (prev_link and next_link) else ""
-        pagination = (
-            f'<div style="margin-top:1rem">{prev_link}{sep}{next_link}</div>'
-        )
+        pagination = f'<div style="margin-top:1rem">{prev_link}{sep}{next_link}</div>'
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -1129,7 +1130,8 @@ form.filter {{ display:inline-flex; gap:0.5rem; align-items:center; margin-botto
   <th style="width:2rem;text-align:center">
     <abbr title="Select 2&#8211;4 rows then click Compare">&#9745;</abbr>
   </th>
-  <th>ID</th><th>Intent</th><th>Status</th><th>Created</th><th>Action</th>
+  <th>ID</th><th>Intent</th><th>Status</th><th>Created</th>
+  <th>Running Age</th><th>Action</th>
 </tr></thead>
 <tbody>{rows}</tbody>
 </table>
@@ -1198,7 +1200,7 @@ def _compare_high_severity_html(claims: list[dict[str, str]]) -> str:
     for claim in claims:
         code = _html.escape(claim.get("claim_code", "unknown"))
         domain = _html.escape(claim.get("domain", "unknown"))
-        items += f"<li><code>{code}</code> <span class=\"muted\">({domain})</span></li>"
+        items += f'<li><code>{code}</code> <span class="muted">({domain})</span></li>'
     return f'<ul class="claim-list">{items}</ul>'
 
 
@@ -1249,12 +1251,7 @@ def _compare_change_review_html(reports: list[ReportRunContract]) -> str:
     diff = _build_ui_report_diff(report, base)
 
     def _row(label: str, value_html: str) -> str:
-        return (
-            "<tr>"
-            f'<td class="metric">{_html.escape(label)}</td>'
-            f"<td>{value_html}</td>"
-            "</tr>\n"
-        )
+        return f'<tr><td class="metric">{_html.escape(label)}</td><td>{value_html}</td></tr>\n'
 
     rows = ""
     rows += _row("Same Area", "Yes")
@@ -1281,16 +1278,13 @@ def ui_compare_report_runs(
     services: ServicesDep,
 ) -> HTMLResponse:
     """Side-by-side comparison table for 2..4 report run IDs."""
-    nav = (
-        '<a href="/ui/">&#8592; Home</a>'
-        ' &nbsp;|&nbsp; <a href="/ui/report-runs">All Reports</a>'
-    )
+    nav = '<a href="/ui/">&#8592; Home</a> &nbsp;|&nbsp; <a href="/ui/report-runs">All Reports</a>'
 
     def _error_page(message: str, http_status: int) -> HTMLResponse:
         body = (
-            f"<!DOCTYPE html><html lang=\"en\">"
-            f"<head><meta charset=\"UTF-8\">"
-            f"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            f'<!DOCTYPE html><html lang="en">'
+            f'<head><meta charset="UTF-8">'
+            f'<meta name="viewport" content="width=device-width, initial-scale=1">'
             f"<title>Compare Error</title>"
             f"<style>{_COMPARE_CSS}</style></head>"
             f"<body>{nav}<h1>Compare Report Runs</h1>"
@@ -1300,9 +1294,7 @@ def ui_compare_report_runs(
         return HTMLResponse(content=body, status_code=http_status)
 
     if not ids:
-        return _error_page(
-            "at least 2 report run IDs are required for comparison", 400
-        )
+        return _error_page("at least 2 report run IDs are required for comparison", 400)
 
     try:
         run_ids = _parse_compare_ids(",".join(ids))
@@ -1341,17 +1333,14 @@ def ui_compare_report_runs(
     rows += _metric_row("Claims", [str(s.claims_count) for s in summaries])
     rows += _metric_row("Unknowns", [str(s.unknowns_count) for s in summaries])
     rows += _metric_row("Red Flags", [str(s.red_flags_count) for s in summaries])
-    rows += _metric_row(
-        "Verification Tasks", [str(s.verification_tasks_count) for s in summaries]
-    )
+    rows += _metric_row("Verification Tasks", [str(s.verification_tasks_count) for s in summaries])
     rows += _metric_row(
         "High-Severity Claims", [str(len(s.high_severity_claims)) for s in summaries]
     )
     rows += (
         '<tr><td class="metric">High-Severity Details</td>'
         + "".join(
-            f"<td>{_compare_high_severity_html(s.high_severity_claims)}</td>"
-            for s in summaries
+            f"<td>{_compare_high_severity_html(s.high_severity_claims)}</td>" for s in summaries
         )
         + "</tr>\n"
     )

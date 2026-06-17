@@ -22,6 +22,7 @@ from app.api.sources import router as sources_router
 from app.api.ui import router as ui_router
 from app.api.ui_auth import router as ui_auth_router
 from app.api.ui_lineage import router as ui_lineage_router
+from app.api.ui_live_connector_jobs import router as ui_live_connector_jobs_router
 from app.api.ui_operations import router as ui_operations_router
 from app.api.ui_review import router as ui_review_router
 from app.core.config import Settings, get_settings
@@ -113,6 +114,7 @@ def create_app(
     app.include_router(ui_auth_router)
     app.include_router(ui_router)
     app.include_router(ui_lineage_router)
+    app.include_router(ui_live_connector_jobs_router)
     app.include_router(ui_operations_router)
     app.include_router(ui_review_router)
     return app

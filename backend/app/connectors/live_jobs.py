@@ -95,6 +95,15 @@ class LiveConnectorJobStoreProtocol(Protocol):
 
     def get(self, job_id: UUID) -> LiveConnectorJobRecord | None: ...
 
+    def list_recent(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+        stale: bool = False,
+    ) -> list[LiveConnectorJobRecord]: ...
+
     def lease_next(self, *, worker_id: str) -> LiveConnectorJobRecord | None: ...
 
     def mark_succeeded(
@@ -230,6 +239,22 @@ class InMemoryLiveConnectorJobStore:
     def get(self, job_id: UUID) -> LiveConnectorJobRecord | None:
         with self._lock:
             return self._jobs.get(job_id)
+
+    def list_recent(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+        stale: bool = False,
+    ) -> list[LiveConnectorJobRecord]:
+        with self._lock:
+            jobs = sorted(self._jobs.values(), key=lambda job: job.created_at, reverse=True)
+            if status is not None:
+                jobs = [job for job in jobs if job.status == status]
+            if stale:
+                jobs = [job for job in jobs if _is_stale_running(job)]
+            return jobs[offset : offset + limit]
 
     def lease_next(self, *, worker_id: str) -> LiveConnectorJobRecord | None:
         worker_id = _require_worker_id(worker_id)
@@ -441,9 +466,10 @@ class SqlAlchemyLiveConnectorJobStore:
         return queued
 
     def get(self, job_id: UUID) -> LiveConnectorJobRecord | None:
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 SELECT
                     job_id,
                     job_type,
@@ -465,19 +491,77 @@ class SqlAlchemyLiveConnectorJobStore:
                   AND job_id = :job_id
                 LIMIT 1
                 """
-            ),
-            {
-                "job_type": LIVE_CONNECTOR_JOB_TYPE,
-                "job_id": str(job_id),
-            },
-        ).mappings().one_or_none()
+                ),
+                {
+                    "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                    "job_id": str(job_id),
+                },
+            )
+            .mappings()
+            .one_or_none()
+        )
         return None if row is None else _record_from_row(row)
+
+    def list_recent(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        status: JobStatus | None = None,
+        stale: bool = False,
+    ) -> list[LiveConnectorJobRecord]:
+        params: dict[str, object] = {
+            "job_type": LIVE_CONNECTOR_JOB_TYPE,
+            "limit": limit,
+            "offset": offset,
+        }
+        predicates = ["job_type = :job_type"]
+        if status is not None:
+            params["status"] = status.value
+            predicates.append("status = CAST(:status AS jobs.job_status)")
+        if stale:
+            params["running_status"] = JobStatus.RUNNING.value
+            params["stale_running_threshold_seconds"] = STALE_RUNNING_THRESHOLD_SECONDS
+            predicates.append("status = CAST(:running_status AS jobs.job_status)")
+            predicates.append(
+                """
+                EXTRACT(EPOCH FROM (now() - COALESCE(started_at, created_at)))
+                    >= :stale_running_threshold_seconds
+                """
+            )
+        where_clause = " AND ".join(predicates)
+        sql = f"""
+                SELECT
+                    job_id,
+                    job_type,
+                    status,
+                    priority,
+                    payload,
+                    idempotency_key,
+                    created_at,
+                    not_before,
+                    attempts,
+                    max_attempts,
+                    locked_by,
+                    locked_at,
+                    started_at,
+                    finished_at,
+                    last_error
+                FROM jobs.job_queue
+                WHERE {where_clause}
+                ORDER BY created_at DESC
+                LIMIT :limit
+                OFFSET :offset
+                """
+        rows = self._session.execute(text(sql), params).mappings().all()
+        return [_record_from_row(row) for row in rows]
 
     def lease_next(self, *, worker_id: str) -> LiveConnectorJobRecord | None:
         worker_id = _require_worker_id(worker_id)
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 WITH candidate AS (
                     SELECT job_id
                     FROM jobs.job_queue
@@ -515,14 +599,17 @@ class SqlAlchemyLiveConnectorJobStore:
                     queue.finished_at,
                     queue.last_error
                 """
-            ),
-            {
-                "job_type": LIVE_CONNECTOR_JOB_TYPE,
-                "queued_status": JobStatus.QUEUED.value,
-                "running_status": JobStatus.RUNNING.value,
-                "worker_id": worker_id,
-            },
-        ).mappings().one_or_none()
+                ),
+                {
+                    "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                    "queued_status": JobStatus.QUEUED.value,
+                    "running_status": JobStatus.RUNNING.value,
+                    "worker_id": worker_id,
+                },
+            )
+            .mappings()
+            .one_or_none()
+        )
         self._session.flush()
         return None if row is None else _record_from_row(row)
 
@@ -539,9 +626,10 @@ class SqlAlchemyLiveConnectorJobStore:
             connector_review_status=connector_review_status,
             request_url=request_url,
         )
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 UPDATE jobs.job_queue
                 SET
                     status = CAST(:status AS jobs.job_status),
@@ -568,24 +656,28 @@ class SqlAlchemyLiveConnectorJobStore:
                     finished_at,
                     last_error
                 """
-            ),
-            {
-                "status": JobStatus.SUCCEEDED.value,
-                "result_payload": json.dumps(result_payload, sort_keys=True),
-                "job_type": LIVE_CONNECTOR_JOB_TYPE,
-                "job_id": str(job_id),
-                "running_status": JobStatus.RUNNING.value,
-            },
-        ).mappings().one_or_none()
+                ),
+                {
+                    "status": JobStatus.SUCCEEDED.value,
+                    "result_payload": json.dumps(result_payload, sort_keys=True),
+                    "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                    "job_id": str(job_id),
+                    "running_status": JobStatus.RUNNING.value,
+                },
+            )
+            .mappings()
+            .one_or_none()
+        )
         self._session.flush()
         if row is None:
             raise ValueError("live connector job is not running")
         return _record_from_row(row)
 
     def mark_failed(self, job_id: UUID, *, error_msg: str) -> LiveConnectorJobRecord:
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 UPDATE jobs.job_queue
                 SET
                     status = CAST(:status AS jobs.job_status),
@@ -611,24 +703,28 @@ class SqlAlchemyLiveConnectorJobStore:
                     finished_at,
                     last_error
                 """
-            ),
-            {
-                "status": JobStatus.FAILED.value,
-                "last_error": _require_error(error_msg),
-                "job_type": LIVE_CONNECTOR_JOB_TYPE,
-                "job_id": str(job_id),
-                "running_status": JobStatus.RUNNING.value,
-            },
-        ).mappings().one_or_none()
+                ),
+                {
+                    "status": JobStatus.FAILED.value,
+                    "last_error": _require_error(error_msg),
+                    "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                    "job_id": str(job_id),
+                    "running_status": JobStatus.RUNNING.value,
+                },
+            )
+            .mappings()
+            .one_or_none()
+        )
         self._session.flush()
         if row is None:
             raise ValueError("live connector job is not running")
         return _record_from_row(row)
 
     def health(self) -> JobQueueHealth:
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 SELECT
                     count(*) AS total,
                     count(*) FILTER (
@@ -672,18 +768,22 @@ class SqlAlchemyLiveConnectorJobStore:
                 FROM jobs.job_queue
                 WHERE job_type = :job_type
                 """
-            ),
-            _health_query_params(LIVE_CONNECTOR_JOB_TYPE),
-        ).mappings().one()
+                ),
+                _health_query_params(LIVE_CONNECTOR_JOB_TYPE),
+            )
+            .mappings()
+            .one()
+        )
         return _health_from_row(LIVE_CONNECTOR_JOB_TYPE, row)
 
     def _get_by_idempotency_key(
         self,
         idempotency_key: str,
     ) -> LiveConnectorJobRecord | None:
-        row = self._session.execute(
-            text(
-                """
+        row = (
+            self._session.execute(
+                text(
+                    """
                 SELECT
                     job_id,
                     job_type,
@@ -705,12 +805,15 @@ class SqlAlchemyLiveConnectorJobStore:
                   AND idempotency_key = :idempotency_key
                 LIMIT 1
                 """
-            ),
-            {
-                "job_type": LIVE_CONNECTOR_JOB_TYPE,
-                "idempotency_key": idempotency_key,
-            },
-        ).mappings().one_or_none()
+                ),
+                {
+                    "job_type": LIVE_CONNECTOR_JOB_TYPE,
+                    "idempotency_key": idempotency_key,
+                },
+            )
+            .mappings()
+            .one_or_none()
+        )
         return None if row is None else _record_from_row(row)
 
 
@@ -824,10 +927,7 @@ def _idempotency_key(
     max_features: int,
 ) -> str:
     bbox_key = "area" if bbox is None else bbox.fingerprint
-    return (
-        f"{LIVE_CONNECTOR_JOB_TYPE}:{source_registry_id}:"
-        f"{area_id}:{bbox_key}:{max_features}"
-    )
+    return f"{LIVE_CONNECTOR_JOB_TYPE}:{source_registry_id}:{area_id}:{bbox_key}:{max_features}"
 
 
 def _stable_job_id(idempotency_key: str) -> UUID:
@@ -912,10 +1012,7 @@ def _health_from_records(
             started_at = record.started_at or record.created_at
             running_started_at.append((started_at, record.job_id))
             age_seconds = _age_seconds(started_at)
-            if (
-                age_seconds is not None
-                and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
-            ):
+            if age_seconds is not None and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS:
                 stale_running += 1
     oldest_queued_at = min(queued_created_at) if queued_created_at else None
     oldest_running = min(running_started_at, default=None, key=lambda item: item[0])
@@ -973,6 +1070,13 @@ def _age_seconds(created_at: datetime | None) -> float | None:
     if created_at.tzinfo is None:
         created_at = created_at.replace(tzinfo=UTC)
     return max(0.0, (datetime.now(UTC) - created_at).total_seconds())
+
+
+def _is_stale_running(record: LiveConnectorJobRecord) -> bool:
+    if record.status != JobStatus.RUNNING:
+        return False
+    age_seconds = _age_seconds(record.started_at or record.created_at)
+    return age_seconds is not None and age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
 
 
 __all__ = [

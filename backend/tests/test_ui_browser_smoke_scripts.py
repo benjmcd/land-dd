@@ -47,6 +47,7 @@ def test_ui_browser_smoke_checks_core_routes_and_viewports() -> None:
         "/ui/auth",
         "/ui/auth/reviewer",
         "/ui/operations",
+        "/ui/live-connector-jobs",
     ):
         assert path in script
 

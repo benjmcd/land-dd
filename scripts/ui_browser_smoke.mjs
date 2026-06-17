@@ -180,6 +180,11 @@ function buildRoutes({ apiKey, reviewerSession }) {
         : ["Operations Dashboard", 'name="reviewer_token"'],
       forbidden: reviewerSession ? ['name="reviewer_token"'] : [],
     },
+    {
+      label: "live-connector-jobs",
+      path: "/ui/live-connector-jobs",
+      required: reviewerSession ? ["Live Connector Jobs"] : ["Authentication Required"],
+    },
   ];
 }
 

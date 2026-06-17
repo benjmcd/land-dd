@@ -1,7 +1,7 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from importlib.resources import as_file
 from typing import Annotated, Any
 from uuid import UUID
@@ -126,6 +126,7 @@ from app.domain.connector_contracts import (
     ConnectorRunResultContract,
 )
 from app.domain.enums import IntentCode, JobStatus
+from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 
 router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 review_queue_router = APIRouter(
@@ -566,6 +567,17 @@ class LiveConnectorJobResponse(BaseModel):
     idempotency_key: str
     max_features: int
     payload: dict[str, Any]
+    created_at: datetime
+    not_before: datetime | None = None
+    attempts: int
+    max_attempts: int
+    locked_by: str | None = None
+    locked_at: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    last_error: str | None = None
+    running_age_seconds: float | None = None
+    is_stale_running: bool = False
     connector_ingest_run_id: UUID | None = None
     connector_review_status: str | None = None
     request_url: str | None = None
@@ -2531,6 +2543,33 @@ def schedule_ssurgo_bbox(
 
 
 @router.get(
+    "/live-jobs",
+    response_model=list[LiveConnectorJobResponse],
+)
+def list_live_connector_jobs(
+    services: ServicesDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+    job_status: Annotated[JobStatus | None, Query(alias="status")] = None,
+    stale: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[dict[str, object]]:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_OPERATIONS_READ)
+    if stale and job_status not in (None, JobStatus.RUNNING):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="stale live connector job filtering requires status=running",
+        )
+    jobs = services.live_connector_jobs.list_recent(
+        limit=limit,
+        offset=offset,
+        status=job_status,
+        stale=stale,
+    )
+    return [_live_connector_job_response(job) for job in jobs]
+
+
+@router.get(
     "/live-jobs/{job_id}",
     response_model=LiveConnectorJobResponse,
 )
@@ -2784,6 +2823,7 @@ def _queue_item_response(queue_item: ConnectorReviewQueueItem) -> dict[str, obje
 def _live_connector_job_response(
     job: LiveConnectorJobRecord,
 ) -> dict[str, object]:
+    running_age_seconds = _live_connector_running_age_seconds(job)
     return {
         "job_id": job.job_id,
         "area_id": job.area_id,
@@ -2794,10 +2834,35 @@ def _live_connector_job_response(
         "idempotency_key": job.idempotency_key,
         "max_features": job.max_features,
         "payload": job.payload,
+        "created_at": job.created_at,
+        "not_before": job.not_before,
+        "attempts": job.attempts,
+        "max_attempts": job.max_attempts,
+        "locked_by": job.locked_by,
+        "locked_at": job.locked_at,
+        "started_at": job.started_at,
+        "finished_at": job.finished_at,
+        "last_error": job.last_error,
+        "running_age_seconds": running_age_seconds,
+        "is_stale_running": (
+            running_age_seconds is not None
+            and running_age_seconds >= STALE_RUNNING_THRESHOLD_SECONDS
+        ),
         "connector_ingest_run_id": job.connector_ingest_run_id,
         "connector_review_status": job.connector_review_status,
         "request_url": job.request_url,
     }
+
+
+def _live_connector_running_age_seconds(
+    job: LiveConnectorJobRecord,
+) -> float | None:
+    if job.status != JobStatus.RUNNING:
+        return None
+    started_at = job.started_at or job.created_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=UTC)
+    return max(0.0, (datetime.now(UTC) - started_at).total_seconds())
 
 
 def _review_action_response(

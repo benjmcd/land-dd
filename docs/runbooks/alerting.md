@@ -47,9 +47,11 @@ the expected shape, and Must source rows carry parseable freshness metadata.
 2. Open `docs/runbooks/incident_response.md` for SEV0 or SEV1, and for any SEV2 that
    threatens report correctness, source authority, queue recovery, or user trust.
 3. Capture the current signal payload or command output before mitigation.
-4. For queue alerts, inspect `/operations/queue-health`; treat `stale_running` as a
-   worker-progress signal and avoid retry loops until the running job, failed job lineage,
-   and source-review state are understood.
+4. For queue alerts, inspect `/operations/queue-health`, then use the linked
+   `/ui/report-runs?status=running` or `/ui/live-connector-jobs?status=running&stale=true`
+   drilldown before remediation. Treat `stale_running` as a worker-progress signal and
+   avoid retry loops until the running job, failed job lineage, and source-review state
+   are understood.
 5. For source-readiness or stale-source alerts, do not approve new connector evidence until
    the source/review operator confirms rights, freshness, and caveats.
 6. Close the alert only after the corresponding validation proof passes.
