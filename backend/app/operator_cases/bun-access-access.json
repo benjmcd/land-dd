@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "b4b4b4b4-b4b4-4b4b-8b4b-b4b4b4b4b4b4",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_access_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_access_access",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "b4b5b6b7-b4b5-4b6b-8b7b-b4b5b6b7b8b9",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "ACCESS_ROAD_ADJACENCY_SCREEN",
+      "domain": "access",
+      "observation": "Fixture road screening: no public road adjacency found — access ambiguity stress case.",
+      "observed_value": {
+        "no_public_road_adjacency": true,
+        "public_road_adjacency": false,
+        "has_public_road_adjacency": false
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_access_road_adjacency_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only road-adjacency screening for Buncombe County remote terrain. No mapped public road adjacency was found. Legal access requires confirmation by title search and licensed surveyor.",
+      "is_negative_evidence": true,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-82.575, 35.655], [-82.555, 35.655], [-82.555, 35.665], [-82.575, 35.665], [-82.575, 35.655]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

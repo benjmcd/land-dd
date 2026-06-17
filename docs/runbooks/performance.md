@@ -101,16 +101,22 @@ pass before any release artifact is cut. Test failures block release.
 
 ### Load test baseline
 
-`scripts/run_load_test.ps1` runs a baseline load test of 20 sequential requests. Each
-request must complete in 5 seconds or less. Run it locally before any change that touches
-report generation, connector execution, or DB query paths:
+`scripts/run_load_test.ps1` and `scripts/run_load_test.sh` first validate that the
+load-test artifacts exist, then run both local live scenarios by default: the 20-request
+sequential baseline and the concurrent expected-workload scenario documented in
+`docs/runbooks/load_testing.md`. The default target is `http://127.0.0.1:8000`; override
+it with `-BaseUrl` or `LOAD_TEST_BASE_URL` when the local server uses another port.
+Run the live scenarios before any change that touches report generation, connector
+execution, or DB query paths:
 
 ```powershell
 .\scripts\run_load_test.ps1
 ```
 
-No automated load-test regression gate exists in CI yet; the script is validate-only for
-now (see Limitations).
+Use `.\scripts\run_load_test.ps1 -ValidateOnly` when you only need the fail-closed
+artifact check and do not want to send HTTP traffic. Release-readiness/CI validation
+checks the load-test artifacts, but live load scenarios remain local/manual unless an
+operator explicitly runs the wrapper against a running server.
 
 ### Spatial query plan review
 
@@ -134,9 +140,10 @@ There is no automated plan-regression gate; validation is manual at this stage.
   (S3-compatible) backend.
 - **No shared-memory rate limiter.** `ENABLE_RATE_LIMIT` uses an in-process counter. A
   Redis-backed limiter is needed before horizontal scaling is safe.
-- **No automated load-test regression gate in CI.** The `run_load_test` script is
-  validate-only. A future CI job should fail the build when p99 latency exceeds the
-  5-second threshold.
+- **No automated live load-test regression gate in CI.** Release readiness validates
+  the load-test scripts and runbook only. The `run_load_test` wrappers can run live
+  sequential and concurrent scenarios locally, but CI does not start a server or fail
+  builds on latency thresholds yet.
 - **DB pool settings not yet tuned for production.** `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`,
   `DB_POOL_TIMEOUT`, and `DB_POOL_RECYCLE` use SQLAlchemy defaults in local mode. Set
   explicit values in production `.env`.

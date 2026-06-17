@@ -42,6 +42,11 @@ if [[ "$STORAGE_BACKEND" != "memory" && "$STORAGE_BACKEND" != "postgres" ]]; the
   echo "APP_STORAGE_BACKEND must be memory or postgres" >&2
   exit 2
 fi
+if [[ "$STORAGE_BACKEND" == "postgres" ]]; then
+  USE_DB_SERVICES="true"
+else
+  USE_DB_SERVICES="false"
+fi
 
 reload_args=()
 if [[ "$RELOAD" == "1" ]]; then
@@ -50,6 +55,6 @@ fi
 
 echo "Starting land-diligence API on http://$BIND_ADDRESS:$PORT using $STORAGE_BACKEND storage"
 cd "$ROOT_DIR/backend"
-APP_STORAGE_BACKEND="$STORAGE_BACKEND" OBJECT_STORE_ROOT="$OBJECT_STORE_ROOT" \
-  PYTHONPATH=. "$PYTHON_BIN" \
+APP_STORAGE_BACKEND="$STORAGE_BACKEND" USE_DB_SERVICES="$USE_DB_SERVICES" \
+  OBJECT_STORE_ROOT="$OBJECT_STORE_ROOT" PYTHONPATH=. "$PYTHON_BIN" \
   -m uvicorn app.main:app --host "$BIND_ADDRESS" --port "$PORT" "${reload_args[@]}"

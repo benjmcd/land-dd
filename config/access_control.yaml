@@ -25,6 +25,24 @@ current_controls:
       - backend/tests/api/test_api_key_auth.py
       - docs/runbooks/access_control.md
     validation: scripts/run_access_control_check.ps1
+  - id: ui_api_key_cookie_bridge
+    status: implemented_private_beta_browser_bridge
+    authority:
+      - backend/app/api/api_key_auth.py
+      - backend/app/api/ui.py
+      - backend/app/api/ui_auth.py
+      - backend/app/api/ui_lineage.py
+      - backend/app/api/ui_operations.py
+      - backend/app/api/ui_review.py
+      - backend/app/api/ui_shared.py
+      - backend/app/core/config.py
+      - backend/app/main.py
+      - backend/tests/api/test_ui_api_key_auth.py
+      - .env.example
+      - DESIGN.md
+      - docs/runbooks/access_control.md
+      - docs/runbooks/mvp_operator.md
+    validation: scripts/run_access_control_check.ps1
   - id: reviewer_service_account
     status: implemented_local_service_account_scoped
     authority:
@@ -86,6 +104,9 @@ production_blockers:
     status: blocked
     authority: docs/runbooks/access_control.md
   - id: automatic_api_key_rotation
+    status: blocked
+    authority: docs/runbooks/access_control.md
+  - id: hosted_secret_manager
     status: blocked
     authority: docs/runbooks/access_control.md
   - id: full_user_role_policy

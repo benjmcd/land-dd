@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "case_id": "CHA-zoning-edge",
+    "description": "Chatham County zoning/unzoned/jurisdiction-edge stress case"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.370, 35.645],
+        [-79.350, 35.645],
+        [-79.350, 35.655],
+        [-79.370, 35.655],
+        [-79.370, 35.645]
+      ]
+    ]
+  }
+}

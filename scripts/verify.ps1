@@ -76,6 +76,58 @@ function Invoke-PythonCommand {
     }
 }
 
+function New-VerifyLogPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LogName
+    )
+
+    $logDir = Join-Path $root 'local_artifacts'
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+    $logPath = Join-Path $logDir $LogName
+    if (-not (Test-Path -Path $logPath -PathType Leaf)) {
+        return $logPath
+    }
+
+    $stamp = Get-Date -Format 'yyyyMMddTHHmmssfffZ'
+    $name = [System.IO.Path]::GetFileNameWithoutExtension($LogName)
+    $extension = [System.IO.Path]::GetExtension($LogName)
+    return (Join-Path $logDir "$name-$stamp$extension")
+}
+
+function Invoke-PythonCommandWithLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Label,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+
+        [Parameter(Mandatory = $true)]
+        [string]$LogName
+    )
+
+    $logPath = New-VerifyLogPath -LogName $LogName
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $script:PythonExecutable @Arguments *> $logPath
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if (Test-Path -Path $logPath -PathType Leaf) {
+        Get-Content -Path $logPath | ForEach-Object { Write-Host $_ }
+    }
+    Write-Host "$Label log: $logPath"
+    if ($exitCode -ne 0) {
+        Write-Host "$Label failed with exit code $exitCode"
+    }
+    return [int]$exitCode
+}
+
 Select-Python
 
 Write-Host '== workspace validation =='
@@ -87,29 +139,47 @@ if ($env:RUN_DB_SMOKE -eq '1') {
 }
 
 Write-Host '== backend tests =='
+$backendTestsExitCode = 0
+$hadPythonPath = Test-Path Env:PYTHONPATH
+$previousPythonPath = if ($hadPythonPath) { $env:PYTHONPATH } else { '' }
 Push-Location backend
 try {
     $env:PYTHONPATH = '.'
-    Invoke-PythonCommand -Label 'backend tests' -Arguments @('-m', 'pytest', '-q')
+    $backendTestsExitCode = Invoke-PythonCommandWithLog `
+        -Label 'backend tests' `
+        -Arguments @('-m', 'pytest', '-q') `
+        -LogName 'backend-pytest.log'
 
-    if (Get-Command ruff -ErrorAction SilentlyContinue) {
+    if ($backendTestsExitCode -ne 0) {
+        Write-Host "backend tests failed; skipping lint and typecheck"
+    } elseif (Get-Command ruff -ErrorAction SilentlyContinue) {
         Write-Host '== backend lint =='
         Invoke-NativeCommand -Label 'backend lint' -Command { ruff check . }
     } else {
         Write-Host 'ruff not installed; skipping lint'
     }
 
-    & $script:PythonExecutable -m mypy --version *> $null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host '== backend typecheck =='
-        Invoke-PythonCommand -Label 'backend typecheck' -Arguments @('-m', 'mypy', 'app', 'tests')
-    } else {
-        Write-Host 'mypy not installed for the selected Python; skipping typecheck'
+    if ($backendTestsExitCode -eq 0) {
+        & $script:PythonExecutable -m mypy --version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host '== backend typecheck =='
+            Invoke-PythonCommand -Label 'backend typecheck' -Arguments @('-m', 'mypy', 'app', 'tests')
+        } else {
+            Write-Host 'mypy not installed for the selected Python; skipping typecheck'
+        }
     }
 }
 finally {
     Pop-Location
-    Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+    if ($hadPythonPath) {
+        $env:PYTHONPATH = $previousPythonPath
+    } else {
+        Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+    }
+}
+
+if ($backendTestsExitCode -ne 0) {
+    exit $backendTestsExitCode
 }
 
 if ($env:RUN_DB_SMOKE -eq '1') {

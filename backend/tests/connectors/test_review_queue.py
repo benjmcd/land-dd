@@ -136,6 +136,30 @@ def test_in_memory_review_queue_enqueues_idempotent_success_status() -> None:
     assert first.payload["ingest_run_id"] == str(review_status.handoff.packet.ingest_run_id)
     assert first.payload["area_id"] == str(review_status.handoff.packet.area_id)
     assert first.payload["review_required"] is False
+    assert first.payload["row_count"] == 1
+    assert first.payload["error_count"] == 0
+    assert first.payload["log_uri"] == "fixture://connectors/flood_success"
+    assert first.payload["tasks"] == [
+        "Confirm connector provenance and evidence counts before promotion.",
+        "Keep fixture-only connector evidence out of claims and reports until "
+        "the next approved workflow gate.",
+    ]
+    assert first.payload["created_evidence"] == [
+        {
+            "evidence_id": "33333333-3333-4333-8333-333333333333",
+            "area_id": "44444444-4444-4444-8444-444444444444",
+            "source_id": "55555555-5555-4555-8555-555555555555",
+            "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+            "source_ingest_run_id": None,
+            "evidence_type": "spatial_intersection",
+            "evidence_code": "FLOOD_ZONE_SCREEN",
+            "domain": "flood",
+            "observation": "Fixture flood geometry intersects the subject area.",
+            "caveat": "Fixture-only flood screening; not a final flood determination.",
+            "confidence": "medium",
+            "is_source_failure": False,
+        }
+    ]
 
 
 def test_in_memory_review_queue_rejects_cross_workspace_idempotency_collision() -> None:
@@ -172,6 +196,12 @@ def test_in_memory_review_queue_prioritizes_human_review_status() -> None:
     assert item.payload["review_required"] is True
     assert item.payload["disposition"] == "needs_human_review"
     assert item.payload["kind"] == CONNECTOR_REVIEW_STATUS_JOB_TYPE
+    assert item.payload["row_count"] == 0
+    assert item.payload["error_count"] == 1
+    assert item.payload["source_failure_created_count"] == 1
+    assert item.payload["created_evidence"][0]["evidence_code"] == (
+        "FLOOD_SOURCE_UNAVAILABLE"
+    )
 
 
 def test_in_memory_review_queue_leases_and_finishes_items() -> None:

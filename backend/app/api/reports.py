@@ -48,6 +48,7 @@ ServicesDep = Annotated[ApiServices, Depends(get_services)]
 logger = logging.getLogger(__name__)
 
 _RED_FLAG_BANDS: frozenset[SeverityBand] = frozenset({SeverityBand.HIGH, SeverityBand.CRITICAL})
+_LOCAL_REPORT_AUTH_APP_ENVS = frozenset({"local", "dev", "development", "test"})
 
 
 def _flat_claims(report: ReportRunContract) -> list[ClaimContract]:
@@ -999,7 +1000,8 @@ def _optional_report_auth_context(
     settings = cast(Settings, request_context.app.state.settings)
     if (
         settings.report_auth_mode != "signed_token"
-        and (not x_workspace_id or not x_user_id)
+        and (not _has_header_value(x_workspace_id) or not _has_header_value(x_user_id))
+        and settings.app_env.lower() in _LOCAL_REPORT_AUTH_APP_ENVS
     ):
         return None
     return get_request_auth_context(
@@ -1008,6 +1010,10 @@ def _optional_report_auth_context(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
+
+
+def _has_header_value(raw: str | None) -> bool:
+    return raw is not None and bool(raw.strip())
 
 
 def _validate_idempotency_key(raw: str | None) -> str | None:

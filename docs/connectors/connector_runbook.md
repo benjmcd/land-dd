@@ -35,25 +35,31 @@ wetland/deepwater mapping intersects a real area.
 
 ---
 
-## Two Fixture Corpora
+## Fixture Corpora
 
-There are two separate, non-interchangeable fixture corpora. Confusing them leads to
-assuming the HTTP API can serve selected-county dossiers — it cannot.
+There are separate fixture corpora for API smoke tests, selected-county operator utility,
+and private-MVP regression. Confusing them leads to overclaiming county coverage.
 
 | Corpus | Location | Reachable via | Connector types | County-specific |
 |---|---|---|---|---|
-| Generic embedded | `backend/app/connectors/fixtures/*.json` (8 files) | HTTP `POST /connector-runs` → `connector_fixture_resource()` in `backend/app/connectors/fixture_resources.py` | 3 only: `fixture_access_static`, `fixture_flood_static`, `fixture_zoning_static` (see `_SUPPORTED_FIXTURE_CONNECTOR_NAMES` in `backend/app/api/connectors.py`) | No |
-| County golden | `tests/fixtures/connectors/*.json` (~47 files) | Filesystem only: `scripts/generate_dossier.py` and `backend/tests/private_mvp/test_manifest_driven.py` | All 8: flood, access, zoning, parcels, soils, terrain, wetlands, buildability | Yes (NC Buncombe / Chatham / Brunswick) |
+| Generic embedded | `backend/app/connectors/fixtures/*.json` (8 files) | HTTP `POST /connector-runs` via `connector_fixture_resource()` in `backend/app/connectors/fixture_resources.py` | 3 only: `fixture_access_static`, `fixture_flood_static`, `fixture_zoning_static` (see `_SUPPORTED_FIXTURE_CONNECTOR_NAMES` in `backend/app/api/connectors.py`) | No |
+| Selected-county operator package | `backend/app/operator_cases/*` | HTTP `GET /operator-cases`, HTTP `POST /operator-cases/{case_id}/report`, and the `/ui/` selected-county launcher | All 8 where present per case: flood, access, zoning, parcels, soils, terrain, wetlands, buildability | Yes (NC Buncombe / Chatham / Brunswick) |
+| County golden regression | `tests/fixtures/connectors/*.json` and `tests/fixtures/golden_aois/*.geojson` | Filesystem only: `scripts/generate_dossier.py` and private-MVP tests | All 8 where present per case: flood, access, zoning, parcels, soils, terrain, wetlands, buildability | Yes (NC Buncombe / Chatham / Brunswick) |
 
-Coverage gap: the HTTP path exposes 3 connector types over generic, non-county fixtures;
-the script/test path covers all 8 domains over county golden fixtures. No HTTP endpoint
-loads the county corpus — `POST /connector-runs` resolves keys only against the embedded
-package, and `POST /report-runs` does not auto-ingest connectors unless
+Coverage boundary: `POST /connector-runs` still exposes only the generic embedded
+package, and `POST /report-runs` does not auto-ingest connector fixtures unless
 `ENABLE_LIVE_CONNECTORS=true` (gated in `backend/app/api/reports.py`; default `false`).
+The selected-county HTTP path is the dedicated fixture-only utility route:
+`POST /operator-cases/{case_id}/report` loads the packaged selected-county case,
+ingests its local connector fixtures, approves eligible connector-QA handoffs, creates
+an approved report, and returns links to the existing report UI, dossier download, and
+JSON artifact routes.
 
-Consequence: a pure-curl operator on a default fixture-mode server cannot produce a
-selected-county, evidence-rich dossier. Use `scripts/generate_dossier.py` (see the MVP
-Operator Runbook, "Local Dossier Generation") for county dossiers.
+Consequence: a pure-curl operator on a default fixture-mode server can now produce one
+of the nine packaged selected-county private-MVP dossiers through `/operator-cases`.
+This remains fixture-only utility coverage; it does not imply live county coverage,
+DS-017 vendor readiness, legal zoning conclusions, surveyed boundaries, or final
+buildability/wetland/access determinations.
 
 ---
 

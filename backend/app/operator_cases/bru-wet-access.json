@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_access_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_brunswick_bru_wetlands_soils_access",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d3d4d5d6-d3d4-4d5d-8d6d-d3d4d5d6d7d8",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "ACCESS_ROAD_ADJACENCY_SCREEN",
+      "domain": "access",
+      "observation": "Fixture road screening: road present for Brunswick County wetlands/soils stress case.",
+      "observed_value": {
+        "public_road_adjacency": true,
+        "has_public_road_adjacency": true,
+        "road_distance_m": 20.0
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_access_road_adjacency_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only road-adjacency screening for Brunswick County wetlands area. Coastal access routes may be subject to flood or tidal closures. Road presence does not confirm legal access, easements, or maintenance obligations.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [
+          [[-78.320, 33.995], [-78.300, 33.995], [-78.300, 34.005], [-78.320, 34.005], [-78.320, 33.995]]
+        ]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 30.0
+    }
+  ]
+}

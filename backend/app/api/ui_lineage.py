@@ -9,8 +9,8 @@ from fastapi.responses import HTMLResponse
 
 from app.api.dependencies import ApiServices, get_services
 from app.api.reports import build_lineage_response
-from app.api.ui_shared import build_css
-from app.api.ui_shared import error_page as _shared_error_page
+from app.api.ui_shared import build_css, error_page, page_head
+from app.domain.enums import ReportReviewStatus
 
 router = APIRouter(prefix="/ui/report-runs", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -25,6 +25,9 @@ _LINEAGE_CSS = build_css(
     ".tag.unknown { background: #fff3cd; }\n"
     ".tag.source-failure { background: #f8d7da; }\n"
     ".section-note { color: #666; font-size: 0.9rem; margin-bottom: 0.75rem; }\n",
+    ".meta { overflow-wrap: anywhere; }\n"
+    ".table-scroll { max-width: 100%; overflow-x: auto; margin-bottom: 1.5rem; }\n"
+    ".table-scroll table { min-width: 680px; margin-bottom: 0; }\n",
 )
 
 
@@ -40,11 +43,23 @@ def ui_report_run_lineage(
 ) -> HTMLResponse:
     report = services.report_service.get_report_run(report_run_id)
     if report is None:
-        return _shared_error_page(
+        return error_page(
             "Not Found",
             f"No report found for ID: {_html.escape(str(report_run_id))}",
             "/ui/report-runs",
             200,
+            css=_LINEAGE_CSS,
+        )
+    if report.review_status != ReportReviewStatus.APPROVED:
+        review_status = _html.escape(report.review_status.value)
+        return error_page(
+            "Approval Required",
+            (
+                "Evidence lineage is available in the operator UI only after report "
+                f"approval. Current review_status={review_status}."
+            ),
+            f"/ui/report-runs/{report_run_id}",
+            409,
             css=_LINEAGE_CSS,
         )
 
@@ -130,10 +145,8 @@ def ui_report_run_lineage(
 
     body = (
         "<!DOCTYPE html><html lang='en'>"
-        "<head><meta charset='UTF-8'>"
-        f"<title>Evidence Lineage &mdash; {run_id_esc}</title>"
-        f"<style>{_LINEAGE_CSS}</style>"
-        "</head><body>"
+        f"{page_head(f'Evidence Lineage - {run_id_esc}', css=_LINEAGE_CSS)}"
+        "<body>"
         f"<a href='{back_url}'>&larr; Back to Report</a>"
         "&nbsp;|&nbsp;"
         "<a href='/ui/report-runs'>All Reports</a>"
@@ -148,20 +161,24 @@ def ui_report_run_lineage(
         "</div>"
         "<h2>Sources &rarr; Ingest Runs</h2>"
         "<p class='section-note'>Each source and its associated ingest run chain.</p>"
+        "<div class='table-scroll'>"
         "<table>"
         "<thead><tr>"
         "<th>Source ID</th><th>Source Name</th><th>Ingest Run IDs</th>"
         "</tr></thead>"
         f"<tbody>{source_rows}</tbody>"
         "</table>"
+        "</div>"
         "<h2>Claims &rarr; Evidence</h2>"
         "<p class='section-note'>Each claim and the evidence records that support it.</p>"
+        "<div class='table-scroll'>"
         "<table>"
         "<thead><tr>"
         "<th>Claim Code</th><th>Domain</th><th>Evidence IDs</th><th>Claim ID</th>"
         "</tr></thead>"
         f"<tbody>{claim_rows}</tbody>"
         "</table>"
+        "</div>"
         "<h2>Evidence &rarr; Claims</h2>"
         "<p class='section-note'>"
         "Each evidence record, its source, and the claims that cite it."
@@ -170,6 +187,7 @@ def ui_report_run_lineage(
         " <span class='tag source-failure'>SOURCE_FAILURE</span>"
         " = source retrieval failure."
         "</p>"
+        "<div class='table-scroll'>"
         "<table>"
         "<thead><tr>"
         "<th>Evidence Code</th><th>Domain</th><th>Source</th>"
@@ -177,6 +195,7 @@ def ui_report_run_lineage(
         "</tr></thead>"
         f"<tbody>{ev_rows}</tbody>"
         "</table>"
+        "</div>"
         "</body></html>"
     )
     return HTMLResponse(content=body, status_code=200)

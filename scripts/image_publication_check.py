@@ -41,6 +41,19 @@ REQUIRED_BLOCKERS = {
     "registry_image_attestation_authority",
     "signed_image_sbom_authority",
 }
+ATTESTATION_EVIDENCE_AUTHORITY = "docs/runbooks/image_publication.md"
+UNAVAILABLE_ATTESTATION_STATUS = "not_available"
+AVAILABLE_ATTESTATION_STATUSES = {
+    "available",
+    "deployed",
+    "production_ready",
+    "published",
+    "ready",
+}
+ALLOWED_ATTESTATION_STATUSES = {
+    UNAVAILABLE_ATTESTATION_STATUS,
+    *AVAILABLE_ATTESTATION_STATUSES,
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -71,6 +84,16 @@ def require_str_list(payload: dict[str, Any], key: str) -> list[str]:
             raise SystemExit(f"{key} entries must be non-empty strings")
         result.append(item)
     return result
+
+
+def is_empty_evidence_value(value: object) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, dict | list | tuple | set):
+        return len(value) == 0
+    return False
 
 
 def validate_required_files() -> None:
@@ -119,6 +142,49 @@ def validate_catalog() -> None:
     blockers = set(require_str_list(payload, "blocked_until"))
     missing_blockers = sorted(REQUIRED_BLOCKERS - blockers)
     require(not missing_blockers, f"missing image publication blockers: {missing_blockers}")
+
+    evidence = payload.get("attestation_evidence")
+    require(isinstance(evidence, dict), "attestation_evidence section missing")
+    status = evidence.get("status")
+    require(
+        isinstance(status, str) and status in ALLOWED_ATTESTATION_STATUSES,
+        "attestation_evidence status must be not_available or an available proof status",
+    )
+    authority = evidence.get("authority")
+    require(
+        authority == ATTESTATION_EVIDENCE_AUTHORITY,
+        "attestation_evidence authority must point to the image publication runbook",
+    )
+    require_existing(ATTESTATION_EVIDENCE_AUTHORITY)
+
+    evidence_fields = set(require_str_list(evidence, "required_fields"))
+    require(
+        evidence_fields == REQUIRED_ATTESTATIONS,
+        "attestation_evidence required_fields must exactly match required_attestations",
+    )
+    evidence_blockers = set(require_str_list(evidence, "blocked_until"))
+    missing_evidence_blockers = sorted(REQUIRED_BLOCKERS - evidence_blockers)
+    require(
+        not missing_evidence_blockers,
+        f"attestation_evidence missing blockers: {missing_evidence_blockers}",
+    )
+    template = evidence.get("evidence_template")
+    require(isinstance(template, dict), "attestation_evidence evidence_template missing")
+    template_keys = {str(key) for key in template}
+    require(
+        template_keys == REQUIRED_ATTESTATIONS,
+        "attestation_evidence evidence_template keys must exactly match required_attestations",
+    )
+    if status in AVAILABLE_ATTESTATION_STATUSES:
+        empty_fields = sorted(
+            field
+            for field in REQUIRED_ATTESTATIONS
+            if is_empty_evidence_value(template.get(field))
+        )
+        require(
+            not empty_fields,
+            f"attestation_evidence status {status} requires values for: {empty_fields}",
+        )
 
     limits = payload.get("limits")
     require(isinstance(limits, dict), "limits section missing")

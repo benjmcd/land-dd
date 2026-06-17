@@ -10,9 +10,12 @@ from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import create_api_services, get_services
 from app.api.report_auth import create_report_identity_token, verify_report_identity_token
+from app.api.reports import _optional_report_auth_context
 from app.core.config import Settings
 from app.main import create_app
 
@@ -59,6 +62,107 @@ def signed_token_client(secret: str | None = SECRET) -> TestClient:
             )
         )
     )
+
+
+def request_with_settings(settings: Settings) -> Request:
+    app = FastAPI()
+    app.state.settings = settings
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [],
+            "app": app,
+        }
+    )
+
+
+def test_optional_report_auth_allows_anonymous_local_trusted_headers() -> None:
+    auth = _optional_report_auth_context(
+        request_with_settings(
+            Settings(APP_ENV="local", REPORT_AUTH_MODE="trusted_headers")
+        ),
+        authorization=None,
+        x_workspace_id=None,
+        x_user_id=None,
+    )
+
+    assert auth is None
+
+
+def test_optional_report_auth_requires_workspace_identity_in_non_local_env() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        _optional_report_auth_context(
+            request_with_settings(
+                Settings(APP_ENV="production", REPORT_AUTH_MODE="trusted_headers")
+            ),
+            authorization=None,
+            x_workspace_id=None,
+            x_user_id=None,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "X-Workspace-Id header is required"
+
+
+def test_report_create_route_requires_workspace_identity_in_non_local_env() -> None:
+    settings = Settings(
+        APP_ENV="production",
+        USE_DB_SERVICES=True,
+        REPORT_AUTH_MODE="trusted_headers",
+    )
+    services = create_api_services(settings)
+    app = create_app(settings=settings)
+    app.dependency_overrides[get_services] = lambda: services
+    client = TestClient(app)
+    area = client.post(
+        "/areas",
+        json={
+            "label": "production fixture polygon",
+            "geom_geojson": load_geometry("valid_polygon.geojson"),
+            "geom_source": "api fixture",
+        },
+    )
+    assert area.status_code == 201
+
+    response = client.post(
+        "/report-runs",
+        json={
+            "area_id": area.json()["area_id"],
+            "intent_code": "homestead_feasibility",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_optional_report_auth_signed_token_fails_closed_without_valid_bearer_token() -> None:
+    request = request_with_settings(
+        Settings(
+            REPORT_AUTH_MODE="signed_token",
+            REPORT_IDENTITY_TOKEN_SECRET=SECRET,
+        )
+    )
+
+    with pytest.raises(HTTPException) as missing_exc:
+        _optional_report_auth_context(
+            request,
+            authorization=None,
+            x_workspace_id=None,
+            x_user_id=None,
+        )
+    with pytest.raises(HTTPException) as invalid_exc:
+        _optional_report_auth_context(
+            request,
+            authorization="Bearer invalid",
+            x_workspace_id=None,
+            x_user_id=None,
+        )
+
+    assert missing_exc.value.status_code == 401
+    assert invalid_exc.value.status_code == 401
 
 
 def test_signed_report_identity_token_binds_report_scope() -> None:

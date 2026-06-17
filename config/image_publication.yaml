@@ -17,6 +17,26 @@ required_attestations:
   - vulnerability_scan
   - dependency_sbom
   - provenance
+attestation_evidence:
+  status: not_available
+  authority: docs/runbooks/image_publication.md
+  required_fields:
+    - image_digest
+    - registry_image_ref
+    - vulnerability_scan
+    - dependency_sbom
+    - provenance
+  blocked_until:
+    - registry_repository_authority
+    - hosted_deployment_authority
+    - registry_image_attestation_authority
+    - signed_image_sbom_authority
+  evidence_template:
+    image_digest: null
+    registry_image_ref: null
+    vulnerability_scan: null
+    dependency_sbom: null
+    provenance: null
 blocked_until:
   - registry_repository_authority
   - hosted_deployment_authority

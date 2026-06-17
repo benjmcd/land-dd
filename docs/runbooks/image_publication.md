@@ -27,6 +27,9 @@ The check verifies that:
 - required release, deployment smoke, container scan, and verification gates exist;
 - required publication evidence remains explicit: image digest, registry image ref,
   vulnerability scan, dependency SBOM, and provenance;
+- `attestation_evidence` records the future production proof contract with
+  `status: not_available`, the required fields, the current blockers, and an empty
+  evidence template;
 - registry and hosted-deployment blockers remain recorded;
 - CI and local scripts do not push registry images as part of validate-only checks.
 
@@ -39,7 +42,9 @@ The check verifies that:
 5. Do not push an image unless `REGISTRY_IMAGE`, registry ownership, deployment
    authority, and attestation authority have been explicitly approved outside this repo.
 6. After any future push, record the immutable image digest and registry image ref before
-   considering the image deployable.
+   considering the image deployable. Fill every field in the
+   `attestation_evidence.evidence_template` contract before changing its status away
+   from `not_available`.
 
 ## Known Limits
 
@@ -50,3 +55,5 @@ The check verifies that:
 - No signed image SBOM, SLSA provenance, or published registry-image attestation exists.
 - `REGISTRY_IMAGE` is intentionally only an expected future input; it is not required for
   the current validate-only check.
+- The structured attestation template is intentionally empty while registry publication
+  authority is unavailable.

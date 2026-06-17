@@ -1,0 +1,52 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "bcbcbcbc-bcbc-4bcb-8bcb-000000000001",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_parcel_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_chatham_cha_zoning_edge_parcels",
+    "metrics": {"fixture_only": true, "source": "local_json"}
+  },
+  "evidence": [
+    {
+      "evidence_id": "bcbcbcbc-bcbc-4bcb-8bcb-000000000002",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "spatial_intersection",
+      "evidence_code": "PARCEL_INTERSECTION_SCREEN",
+      "domain": "parcels",
+      "observation": "Fixture parcel screening: Chatham County parcel intersection — zoning/jurisdiction-edge stress case. AOI intersects 1 parcel at apparent zoning boundary; ownership suppressed per field policy.",
+      "observed_value": {
+        "parcel_count": 1,
+        "parcel_pin": "0074-00001-FX",
+        "parcel_county": "Chatham County, NC",
+        "parcel_zoning": "UNZONED",
+        "owner_display": "NOT_SHOWN",
+        "parcel_class": "residential/rural",
+        "total_acres_approx": 15.2,
+        "source_note": "Fixture parcel data for Chatham County zoning-edge stress case."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_parcel_intersection_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only parcel data for Chatham County. Parcel boundaries are approximate; not survey-grade. Zoning jurisdiction at parcel edges requires confirmation by the Chatham County Planning office and Register of Deeds. Acreage and classification are indicative only.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": {
+        "type": "Polygon",
+        "coordinates": [[[-79.205, 35.698], [-79.195, 35.698], [-79.195, 35.706], [-79.205, 35.706], [-79.205, 35.698]]]
+      },
+      "geometry_srid": 4326,
+      "spatial_precision_meters": 50.0
+    }
+  ]
+}

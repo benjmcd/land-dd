@@ -2,6 +2,1006 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-16 Operator Proof-Semantics Closeout
+
+**Scope:** Reconcile the selected-county operator docs/plan with the implemented
+`/operator-cases` API/UI path without changing source coverage, report semantics, DB
+schema, auth model, or live-source behavior.
+
+**Commands run:**
+
+```powershell
+cd backend; $env:PYTHONPATH='.'; $env:PYTHONDONTWRITEBYTECODE='1'; py -3.12 -m pytest -q tests/test_private_mvp_readiness.py tests/api/test_operator_cases_api.py tests/private_mvp/test_operator_cases.py
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m ruff check tests/test_private_mvp_readiness.py tests/api/test_operator_cases_api.py tests/private_mvp/test_operator_cases.py app/api/operator_cases.py app/operator_cases
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m mypy tests/test_private_mvp_readiness.py tests/api/test_operator_cases_api.py tests/private_mvp/test_operator_cases.py app/api/operator_cases.py app/operator_cases --no-error-summary
+py -3.12 .\scripts\access_control_check.py
+py -3.12 .\scripts\hosted_deployment_check.py
+py -3.12 .\scripts\image_publication_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\private_mvp_readiness_check.py
+.\scripts\validate_workspace.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+attribution-marker scan over changed and untracked files
+$env:DB_PORT='55443'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55443/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55443/land_diligence'; $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+py -3.12 .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:8781
+.\scripts\run_ui_browser_smoke.ps1 -BaseUrl http://127.0.0.1:8781 -Mode both -Json
+cd backend; $env:PYTHONPATH='.'; $env:PYTHONDONTWRITEBYTECODE='1'; py -3.12 -m pytest -q tests/test_access_control_artifacts.py tests/test_private_mvp_readiness.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused private-MVP/operator-case tests passed (`45 passed`, one existing
+  Starlette/FastAPI deprecation warning).
+- Ruff passed on touched test/API/operator-case surfaces. Mypy passed on the same
+  surfaces.
+- Access-control, hosted-deployment, image-publication, release-readiness, and
+  private-MVP validator scripts exited `0`.
+- Workspace validation passed: agent context, JSON, source registry, and structural
+  invariants all ok.
+- `git diff --check` exited `0` with only existing CRLF normalization warnings. Deleted
+  file scan returned no paths. Attribution-marker scan returned no matches.
+- DB-enabled `.\scripts\verify.ps1` passed on isolated Compose project
+  `land-dd-db-verify-0616b` with DB port `55443`: migrations/seeds, backend tests,
+  ruff, mypy, and `scripts/db_smoke_check.py` were green. An earlier DB attempt on
+  port `55442` failed before migration because Postgres was not ready; the retry added
+  an explicit readiness wait.
+- UI runtime smoke passed on `http://127.0.0.1:8781` for home, report runs, connector
+  review queue, operations, API-key auth, and reviewer auth routes.
+- Explicit Chrome UI smoke passed in both `headless` and `headed` modes at desktop and
+  mobile viewports; all checked pages reported `scrollWidth == clientWidth` and no
+  failures.
+- After fixing stale reviewer-session wording and adding the access-control guard,
+  focused access-control/private-MVP artifact tests passed (`31 passed`), ruff/mypy
+  passed on those tests, and final default `.\scripts\verify.ps1` passed on the current
+  tree.
+
+**Residual risk:**
+
+- Deployment smoke was not rerun in this closeout pass. DB-enabled verification and
+  headed/headless UI smoke are current; full Compose backend deployment smoke remains a
+  heavier release-adjacent gate.
+
+## 2026-06-15 Production Report-Create Auth Guard
+
+**Scope:** Prevent non-local runtimes from using the anonymous async `POST /report-runs`
+path while preserving local/private-MVP ergonomics; reconcile the access-control
+validator with the current UI reviewer-session design and route the manifest to explicit
+UI smoke gates.
+
+**Commands run:**
+
+```powershell
+python -m pytest .\backend\tests\api\test_report_auth.py .\backend\tests\api\test_async_report_runs.py -q
+python .\scripts\private_mvp_readiness_check.py
+python -m pytest .\backend\tests\api\test_report_auth.py .\backend\tests\api\test_async_report_runs.py .\backend\tests\test_ui_browser_smoke_scripts.py .\backend\tests\test_access_control_artifacts.py -q
+python -m ruff check .\backend\app\api\reports.py .\backend\tests\api\test_report_auth.py .\backend\tests\test_access_control_artifacts.py .\backend\tests\test_ui_browser_smoke_scripts.py .\scripts\access_control_check.py
+python -m mypy .\backend\app\api\reports.py .\backend\tests\api\test_report_auth.py .\backend\tests\test_access_control_artifacts.py .\backend\tests\test_ui_browser_smoke_scripts.py .\scripts\access_control_check.py
+python .\scripts\access_control_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\source_readiness.py --priority Must --json
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+attribution-marker scan excluding AGENTS.md
+```
+
+**Results:**
+
+- Focused report/auth and async report tests passed (`25 passed`), then the combined
+  report-auth/async/UI-smoke/access-control artifact suite passed (`38 passed`).
+- Ruff passed after mechanical import sorting; mypy passed on the touched Python
+  surfaces.
+- Private-MVP readiness, access-control, release-readiness, and Must-source readiness
+  gates passed. Must-source readiness remained `sources=8 ready=7 blocked=1`, with
+  DS-017 still the only blocked Must source.
+- Default `.\scripts\verify.ps1` passed: workspace validation ok, backend tests passed,
+  ruff clean, mypy clean over 309 source files, and DB smoke skipped because
+  `RUN_DB_SMOKE=1` was not set.
+- Standalone workspace validation passed. `git diff --check` passed with existing CRLF
+  normalization warnings. Deleted-file scan returned no paths. Attribution scan returned
+  no matches outside the standing AGENTS.md instruction.
+
+**Residual risk:**
+
+- `sync_async_create_divergence` remains an accepted private-MVP ergonomics risk:
+  authenticated creates still return synchronous `201` report contracts while local
+  anonymous creates return async `202` job responses. DB smoke remains unrun unless
+  `RUN_DB_SMOKE=1` is set.
+
+## 2026-06-15 Explicit UI Browser Smoke
+
+**Scope:** Add repo-owned, explicit UI smoke checks for a running operator runtime,
+including Chrome desktop/mobile viewport coverage and a lightweight HTTP-only route
+contract check, without seeding data or writing artifacts by default.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\api\test_ui_api_key_auth.py
+python -m ruff check .\app\api\ui_auth.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\api\test_ui_api_key_auth.py ..\scripts\ui_runtime_smoke.py
+python -m mypy .\app\api\ui_auth.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\api\test_ui_api_key_auth.py ..\scripts\ui_runtime_smoke.py
+cd ..
+node --check .\scripts\ui_browser_smoke.mjs
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:8768 --json
+node .\scripts\ui_browser_smoke.mjs --base-url http://127.0.0.1:8768 --mode headless --json --screenshot-dir .\local_artifacts\ui-browser-smoke
+node .\scripts\ui_browser_smoke.mjs --base-url http://127.0.0.1:8768 --mode headless --json --reviewer-id fixture-reviewer --reviewer-token fixture-token-123
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused smoke/auth tests passed (`39 passed` across the full relevant files).
+- Ruff and mypy passed on the touched script tests, auth route, and runtime smoke script.
+- `node --check` passed for `scripts/ui_browser_smoke.mjs`.
+- `scripts/ui_runtime_smoke.py` passed against a fresh memory-backed runtime on port
+  `8768`, checking home, report list, connector-review queue, operations, API-key auth,
+  and reviewer auth surfaces.
+- `scripts/ui_browser_smoke.mjs` passed against the same runtime in headless Chrome at
+  desktop and mobile viewports. The first run caught a `/ui/auth` mobile overflow; after
+  the auth input sizing fix, all checked routes reported `clientWidth == scrollWidth`
+  at mobile width and no failures.
+- Reviewer-session browser smoke passed with fixture reviewer credentials, confirming
+  protected operations UI renders reviewer-session state without screenshot output.
+- Opt-in screenshot evidence was written under
+  `local_artifacts/ui-browser-smoke/`, including API-key auth mobile, report-runs
+  mobile, and operations desktop screenshots.
+- `.\scripts\verify.ps1` passed: workspace validation ok, backend tests passed, ruff
+  passed, and mypy passed over 309 source files.
+
+**Residual risk:**
+
+- Browser smoke remains an explicit operator/deployment check, not a default `verify`
+  step. DB smoke remains unrun because `RUN_DB_SMOKE=1` was not set and no local DB was
+  brought up for this UI-smoke slice.
+
+## 2026-06-15 Report-List Mobile Operator Cards
+
+**Scope:** Make `/ui/report-runs` usable on narrow screens by turning report rows into
+operator-readable cards, keeping status/action visible, stacking report-list nav, and
+preserving accessible table header context.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_routes.py -k "report_run_list_table_has_responsive_scroll_wrapper or report_runs_list_has_connector_review_queue_nav_link"
+python -m ruff check .\app\api\ui.py .\tests\api\test_ui_routes.py
+python -m mypy .\app\api\ui.py .\tests\api\test_ui_routes.py
+python -m pytest -q .\tests\api\test_ui_routes.py
+cd ..
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+# Local attribution-note scan over the current diff.
+
+# Browser proof on local memory-backed preview port 8767.
+.\scripts\run_api.ps1 -StorageBackend memory -Port 8767 -NoReload
+```
+
+**Results:**
+
+- Focused report-list responsive/nav tests passed after replacing mobile
+  `display:none` table headers with a visually-hidden pattern.
+- Ruff and mypy passed on the touched UI route and route tests.
+- Full `test_ui_routes.py` passed.
+- Headed/in-app browser proof captured mobile and desktop screenshots:
+  `local_artifacts/ui-report-list-mobile-cards-mobile.png` and
+  `local_artifacts/ui-report-list-mobile-cards-desktop.png`.
+- Independent headless Chrome proof captured
+  `local_artifacts/ui-report-list-mobile-cards-headless.png` at `390x844`.
+- Browser metrics showed mobile `clientWidth=375`, `scrollWidth=375`, stacked nav,
+  visible status/action cells, and mobile headers visually hidden with `clip-path`
+  rather than removed.
+- `.\scripts\verify.ps1` passed: workspace validation ok, backend tests passed, ruff
+  passed, and mypy passed over 307 source files.
+- `.\scripts\validate_workspace.ps1` passed.
+- `git diff --check` and no-deleted-file scans passed with only Git CRLF normalization
+  warnings. The attribution-note scan returned no matches.
+
+**Residual risk:**
+
+- DB smoke remains unrun because `RUN_DB_SMOKE=1` was not set and no local DB was
+  brought up for this UI slice.
+
+## 2026-06-15 Connector Review Queue Triage List
+
+**Scope:** Make `/ui/connector-review-queue` useful for triage without opening every
+detail page by adding compact payload-derived context and next-action links to the list.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_review_routes.py -k "queue_list"
+python -m pytest -q .\tests\api\test_ui_review_routes.py
+python -m ruff check .\app\api\ui_review.py .\tests\api\test_ui_review_routes.py
+python -m mypy .\app\api\ui_review.py .\tests\api\test_ui_review_routes.py
+cd ..
+node --check .\local_artifacts\capture-session.mjs
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+
+# Browser proof on local preview port 8769.
+$env:PYTHONPATH='./backend'
+python .\local_artifacts\serve-reviewer-session.py
+node .\local_artifacts\capture-session.mjs
+```
+
+**Results:**
+
+- Focused queue-list tests passed (`10 passed`), covering empty/list rows, valid and
+  invalid filters, responsive table wrapper, and triage/next-action rows for
+  needs-review, failed, and succeeded items.
+- Full connector-review UI route file passed (`47 passed`).
+- Ruff and mypy passed on `ui_review.py` and `test_ui_review_routes.py`.
+- Headed and headless Chrome screenshot matrix passed for desktop and mobile reviewer
+  session pages. The queue list screenshot route rendered `Triage` and `Next Action`
+  columns with no page-level viewport overflow.
+- `.\scripts\verify.ps1` passed: workspace validation ok, backend tests passed, ruff
+  passed, and mypy passed over 307 source files.
+- `.\scripts\validate_workspace.ps1` passed after updating the validation log.
+
+**Residual risk:**
+
+- DB smoke remains unrun because `RUN_DB_SMOKE=1` was not set and no local DB was
+  brought up for this UI slice.
+
+## 2026-06-15 Operations Session Entry And Safe Status Filters
+
+**Scope:** Let reviewer-session operators open `/ui/operations` directly when the
+session has `operations:read`, remove the redundant authenticated operations credential
+form, and make report/connector status-filter drilldowns fail closed on unknown status
+values.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_operations_routes.py
+python -m pytest -q .\tests\api\test_ui_routes.py -k "status_filter"
+python -m pytest -q .\tests\api\test_ui_review_routes.py -k "status_filter or queue_list_invalid_status"
+python -m ruff check .\app\api\ui.py .\app\api\ui_review.py .\app\api\ui_operations.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py
+python -m mypy .\app\api\ui.py .\app\api\ui_review.py .\app\api\ui_operations.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py
+cd ..
+node --check .\local_artifacts\capture-session.mjs
+python .\scripts\export_openapi_stub.py
+cd backend
+python -m pytest -q .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py
+python -m pytest -q .\tests\test_planning_pack_schema_copies.py
+cd ..
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+
+# Browser proof on local preview port 8769.
+$env:PYTHONPATH='./backend'
+python .\local_artifacts\serve-reviewer-session.py
+node .\local_artifacts\capture-session.mjs
+```
+
+**Results:**
+
+- Full operations route tests passed (`12 passed`), including direct dashboard render
+  with reviewer session, under-scoped session fallback, submitted-credential dashboard
+  render, and no redundant authenticated **View Dashboard** form.
+- Report-list status-filter tests passed (`4 passed`) and connector-review queue
+  status-filter tests passed (`3 passed`), including safe `422` HTML errors for unknown
+  status values instead of unfiltered results.
+- Ruff and mypy passed on the touched UI routes and tests.
+- Headed and headless Chrome screenshot matrix passed for desktop and mobile reviewer
+  session pages; the operations page loaded directly from `/ui/operations` with reviewer
+  session state, no reviewer-token input, and no viewport overflow.
+- Full touched UI route suite passed (`139 passed`) after the final patch.
+- OpenAPI stubs were regenerated and the planning-pack schema-copy tests passed
+  (`2 passed`) after `response_model=None` changed the generated contract.
+- `.\scripts\verify.ps1` passed after regeneration: workspace validation ok, backend
+  tests passed, ruff passed, and mypy passed over 307 source files.
+- `.\scripts\validate_workspace.ps1` passed after updating the validation log.
+
+**Residual risk:**
+
+- DB smoke remains unrun because `RUN_DB_SMOKE=1` was not set and no local DB was
+  brought up for this UI slice.
+
+## 2026-06-15 Configurable Report Refresh Interval
+
+**Scope:** Close the fixed 3-second queued/running report refresh gap with a
+no-JavaScript interval control that improves long-running monitoring ergonomics without
+changing report state semantics.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_routes.py -k "refresh or report_run_queued or report_run_running"
+python -m ruff check .\app\api\ui.py .\tests\api\test_ui_routes.py
+python -m mypy .\app\api\ui.py .\tests\api\test_ui_routes.py
+cd ..
+node --check .\local_artifacts\capture-refresh.mjs
+.\scripts\verify.ps1
+
+# Browser proof on local preview port 8770.
+$env:PYTHONPATH='./backend'
+python .\local_artifacts\serve-refresh-preview.py
+node .\local_artifacts\capture-refresh.mjs
+```
+
+**Results:**
+
+- Focused queued/running report UI tests passed, including default 3-second refresh,
+  custom 30-second refresh, paused custom interval preservation, and running-state
+  controls.
+- Ruff and mypy passed on the touched UI route and test file.
+- Headed and headless Chrome screenshot matrix passed for desktop and mobile queued,
+  running, paused, default, and custom-refresh states; no viewport overflow was reported.
+- `.\scripts\verify.ps1` passed after the full current tree was verified.
+
+**Residual risk:**
+
+- DB smoke remains unrun because `RUN_DB_SMOKE=1` was not set and no local DB was
+  brought up for this UI slice.
+
+## 2026-06-15 Reviewer UI Session And Operations Mobile Tables
+
+**Scope:** Make reviewer-gated UI workflows usable without repeatedly pasting reviewer
+tokens into every form, while preserving the API header-auth boundary and keeping
+operations tables usable on narrow screens.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_api_key_auth.py `
+  .\tests\api\test_ui_routes.py `
+  .\tests\api\test_ui_operations_routes.py `
+  .\tests\api\test_ui_review_routes.py `
+  .\tests\api\test_reviewer_auth.py
+python -m pytest -q .\tests\api\test_openapi_contract.py `
+  .\tests\test_planning_pack_schema_copies.py
+python -m ruff check .\app\api\reviewer_auth.py `
+  .\app\api\ui.py `
+  .\app\api\ui_auth.py `
+  .\app\api\ui_operations.py `
+  .\app\api\ui_review.py `
+  .\app\api\ui_shared.py `
+  .\tests\api\test_ui_api_key_auth.py `
+  .\tests\api\test_ui_operations_routes.py `
+  .\tests\api\test_ui_review_routes.py `
+  .\tests\api\test_ui_routes.py
+python -m mypy .\app\api\ui_shared.py `
+  .\app\api\ui_auth.py `
+  .\app\api\reviewer_auth.py `
+  .\app\api\ui.py `
+  .\app\api\ui_review.py `
+  .\app\api\ui_operations.py
+cd ..
+node --check .\local_artifacts\capture-session.mjs
+.\scripts\validate_workspace.ps1
+python .\scripts\export_openapi_stub.py
+.\scripts\verify.ps1
+
+# Browser proof on local preview port 8769.
+$env:PYTHONPATH='./backend'
+python .\local_artifacts\serve-reviewer-session.py
+node .\local_artifacts\capture-session.mjs
+```
+
+**Results:**
+
+- Focused reviewer-auth/UI regressions passed for reviewer session cookie issuance,
+  tamper/expiry/token-rotation rejection, API header-only boundaries, logout cookie
+  clearing, CSRF-protected report approval, operations session use, connector-review
+  session use, and operations table scroll wrappers.
+- OpenAPI contract and planning-pack schema-copy checks passed after regenerating
+  `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml` for
+  `/ui/auth/reviewer` and `/ui/auth/reviewer/logout`.
+- Ruff passed on the touched API/test files. Mypy passed on the reviewer auth and UI
+  modules touched in this slice. `node --check` passed for the screenshot capture
+  helper.
+- Workspace validation passed. Fresh default `.\scripts\verify.ps1` passed with
+  workspace validation, backend tests, ruff, and mypy over 307 source files. DB smoke
+  was skipped by design because `RUN_DB_SMOKE=1` was not set.
+- In-app Browser attach timed out for the local preview, so screenshot proof used
+  Chrome via CDP. The capture matrix covered headed desktop, headless desktop,
+  headed mobile, and headless mobile across reviewer auth, report approval,
+  operations, and connector review pages.
+- `local_artifacts/ui-reviewer-session-results.json` recorded 16 page captures with
+  zero viewport-overflow failures, zero reviewer-token input failures on action pages,
+  and zero missing reviewer-session indicators. Screenshot files use the
+  `local_artifacts/ui-reviewer-session-*.png` prefix.
+- Visual inspection caught a report-approval desktop overlap between the reviewer
+  session text and manage-session link. The shared markup/CSS was adjusted, focused
+  UI tests plus ruff/mypy passed again, the screenshot matrix was recaptured with the
+  same zero-failure capture summary, and a fresh default `.\scripts\verify.ps1`
+  passed after the CSS fix.
+
+**Residual risk:**
+
+- Reviewer UI sessions are deliberately scoped to server-rendered `/ui` workflows.
+  API clients still need header reviewer credentials. Live DB smoke remains behind
+  the explicit `RUN_DB_SMOKE=1` gate.
+
+## 2026-06-15 Durable Operator State Runtime Guard
+
+**Scope:** Prevent production-like runtime from accidentally using in-memory API
+repositories/job stores, and make the run wrappers drive the canonical
+`USE_DB_SERVICES` setting instead of only a script-local storage label.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_app_runtime_mode.py `
+  .\tests\test_run_api_script.py `
+  .\tests\api\test_ui_api_key_auth.py
+python -m ruff check .\app\main.py .\app\core\config.py `
+  .\tests\api\test_app_runtime_mode.py `
+  .\tests\api\test_ui_api_key_auth.py `
+  .\tests\test_run_api_script.py
+python -m mypy .\app\main.py .\app\core\config.py `
+  .\tests\api\test_app_runtime_mode.py `
+  .\tests\api\test_ui_api_key_auth.py `
+  .\tests\test_run_api_script.py
+cd ..
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused runtime/script/UI-auth tests passed (`34 passed`) with the expected local
+  `httpx`/Starlette deprecation warning.
+- Ruff passed on the touched app/config/test files. Mypy passed on the same changed
+  file set.
+- Workspace validation passed. Default `.\scripts\verify.ps1` passed with workspace
+  validation, backend tests, ruff, and mypy over 307 source files. DB smoke was skipped
+  by design because `RUN_DB_SMOKE=1` was not set.
+- The app now rejects non-local `APP_ENV` with in-memory services and rejects blank
+  `DATABASE_URL` when DB services are enabled. The PowerShell and POSIX run wrappers
+  now set `USE_DB_SERVICES=true` for Postgres mode and false for memory mode.
+
+**Residual risk:**
+
+- This is a startup/configuration hardening slice. It does not run a live Postgres
+  smoke by itself; DB-backed verification remains covered by the explicit
+  `RUN_DB_SMOKE=1` gate and deployment smoke path.
+
+## 2026-06-15 Evidence Lineage UI Approval Boundary
+
+**Scope:** Ensure the operator UI does not expose evidence lineage for
+succeeded-but-unapproved reports, while preserving the JSON lineage API contract for
+service consumers and keeping the approved lineage table usable on mobile.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\api\test_ui_routes.py -k lineage
+python -m pytest -q .\tests\api\test_ui_routes.py
+python -m ruff check .\app\api\ui_lineage.py .\tests\api\test_ui_routes.py
+python -m mypy .\app\api\ui_lineage.py .\tests\api\test_ui_routes.py
+cd ..
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+
+# Browser proof on local preview port 8768.
+$env:PYTHONPATH='./backend'
+python .\local_artifacts\serve-lineage.py
+# In-app Browser attach timed out; system Chrome via bundled Node Playwright
+# captured headed and headless desktop/mobile screenshots.
+```
+
+**Results:**
+
+- Lineage-focused UI tests passed (`8 passed`) after adding the pending approval
+  guard, approved no-credential access check, and responsive table-wrapper assertion.
+- The full UI route file passed, and workspace validation passed.
+- Ruff and mypy passed on `backend/app/api/ui_lineage.py` and
+  `backend/tests/api/test_ui_routes.py`.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over 307 source files. DB smoke was skipped by design because
+  `RUN_DB_SMOKE=1` was not set.
+- Headless and headed Chrome agreed on page state: pending lineage routes rendered
+  `Approval Required` with no `Evidence Lineage`, approved lineage routes rendered
+  `Evidence Lineage`, and no capture contained `reviewer_token`.
+- Screenshot review initially found mobile overflow on the approved lineage table.
+  After wrapping lineage tables in `.table-scroll`, the recaptured mobile probes
+  reported no page-level overflow: headless mobile `bodyWidth=390`,
+  `documentWidth=390`; headed mobile `bodyWidth=375`, `documentWidth=375`.
+- Final screenshot evidence:
+  `local_artifacts/ui-lineage-pending-desktop-headless-fixed-8768.png`,
+  `local_artifacts/ui-lineage-pending-mobile-headless-fixed-8768.png`,
+  `local_artifacts/ui-lineage-approved-desktop-headless-fixed-8768.png`,
+  `local_artifacts/ui-lineage-approved-mobile-headless-fixed-8768.png`,
+  `local_artifacts/ui-lineage-pending-desktop-headed-fixed-8768.png`,
+  `local_artifacts/ui-lineage-pending-mobile-headed-fixed-8768.png`,
+  `local_artifacts/ui-lineage-approved-desktop-headed-fixed-8768.png`, and
+  `local_artifacts/ui-lineage-approved-mobile-headed-fixed-8768.png`.
+
+**Residual risk:**
+
+- Wide lineage tables remain horizontally scrollable on narrow screens rather than
+  redesigned as stacked mobile records. That matches the current server-rendered table
+  pattern and avoids changing lineage semantics in this slice.
+
+## 2026-06-15 Connector Review Decision Context
+
+**Scope:** Make connector-review detail pages usable for approve/reject decisions by
+rendering the existing connector handoff evidence context before action forms, without
+changing queue transition semantics.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\connectors\test_review_packet.py `
+  .\tests\connectors\test_review_queue.py `
+  .\tests\api\test_ui_review_routes.py
+python -m ruff check .\app\connectors\review_packet.py `
+  .\app\connectors\review_queue.py .\app\connectors\__init__.py `
+  .\app\api\ui_review.py .\tests\connectors\test_review_packet.py `
+  .\tests\connectors\test_review_queue.py .\tests\api\test_ui_review_routes.py
+python -m mypy .\app\connectors\review_packet.py `
+  .\app\connectors\review_queue.py .\app\connectors\__init__.py `
+  .\app\api\ui_review.py .\tests\connectors\test_review_packet.py `
+  .\tests\connectors\test_review_queue.py .\tests\api\test_ui_review_routes.py
+
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused packet/queue/UI tests passed (`57 passed, 6 skipped`) with the expected
+  local `httpx`/Starlette deprecation warning.
+- Ruff passed on the changed packet, queue, UI, and test files. Mypy passed on the
+  same changed file set.
+- Workspace validation passed. Default `.\scripts\verify.ps1` passed with workspace
+  validation, backend tests, ruff, and mypy over 307 source files; DB smoke was skipped
+  by design because `RUN_DB_SMOKE=1` was not set. Backend pytest output was replayed
+  from `local_artifacts/backend-pytest-20260614T235631424Z.log`.
+- A seeded preview server rendered
+  `/ui/connector-review-queue/66666666-6666-4666-8666-666666666666`.
+  In-app Browser attach timed out, so screenshot proof used system Chrome via Node
+  Playwright. Headless and headed desktop/mobile screenshots were captured:
+  `local_artifacts/ui-review-decision-card-headless-desktop-8767.png`,
+  `local_artifacts/ui-review-decision-card-headless-mobile-8767.png`,
+  `local_artifacts/ui-review-decision-card-headed-desktop-8767.png`, and
+  `local_artifacts/ui-review-decision-card-headed-mobile-8767.png`.
+- Screenshot metrics confirmed `Decision Context`, `FLOOD_SOURCE_UNAVAILABLE`, and one
+  `.evidence-card` in all four captures. Reported viewport/body widths showed no
+  horizontal overflow: headless desktop `1412/1412/992`, headless mobile `390/390/390`,
+  headed desktop `1397/1397/992`, headed mobile `375/375/375`.
+
+**Residual risk:**
+
+- Evidence summaries are queue-payload snapshots from connector handoff time, not live
+  joins against the evidence/source services. That keeps the review page deterministic
+  for in-memory and DB-backed queues; richer source authority/licensing joins remain a
+  later lineage deepening.
+
+## 2026-06-15 Compare UI Change Review
+
+**Scope:** Make `/ui/compare` a more useful operator comparison surface without
+changing JSON API semantics or exposing approved-only report content for unapproved
+reports.
+
+**Commands run:**
+
+```powershell
+# Focused compare route regression and style/type checks.
+cd backend
+python -m pytest -q .\tests\api\test_ui_routes.py -k "compare"
+python -m pytest -q .\tests\api\test_ui_routes.py
+python -m ruff check .\app\api\ui.py .\tests\api\test_ui_routes.py
+python -m mypy .\app\api\ui.py .\tests\api\test_ui_routes.py
+
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+
+# Preview server and browser proof.
+.\scripts\run_api.ps1 -Port 8766 -NoReload
+# API-created one area, two same-area reports, and approved the second report.
+# Headless Chrome screenshots:
+# local_artifacts/ui-compare-headless-desktop-8766.png
+# local_artifacts/ui-compare-headless-mobile-8766.png
+# Headed Chrome CDP screenshots:
+# local_artifacts/ui-compare-headed-desktop-8766.png
+# local_artifacts/ui-compare-headed-mobile-8766.png
+```
+
+**Results:**
+
+- Compare-focused UI tests passed (`16 passed`) after adding regressions for review
+  status, delivery status, approval-gated links, high-severity detail rendering,
+  responsive table wrapping, same-area Change Review, cross-area Change Review notes,
+  and UI/API diff-value parity.
+- The full UI route file passed, focused ruff/mypy passed on `backend/app/api/ui.py`
+  and `backend/tests/api/test_ui_routes.py`, workspace validation passed, and default
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 307 source
+  files. Backend pytest output was replayed from
+  `local_artifacts/backend-pytest-20260614T232132631Z.log`.
+- The live preview compare page showed one unapproved report with only
+  `Approve from detail`, one approved report with dossier/artifact/print/lineage links,
+  and a same-area Change Review section. Headed Chrome CDP metrics reported desktop
+  `clientWidth=1412`, `scrollWidth=1412`, `bodyScrollWidth=1132`, and mobile
+  `clientWidth=390`, `scrollWidth=390`, `bodyScrollWidth=390`; both contained
+  `Change Review`, `Delivery available`, and `Approval required`.
+
+**Residual risk:**
+
+- The same-area screenshot used two generated reports with identical local evidence, so
+  added/removed lists rendered `None`; the parity test pins UI values to the existing
+  `/report-runs/{id}/diff` API for non-empty future deltas.
+- The compare table remains a horizontally scrollable table on narrow mobile viewports,
+  matching the current server-rendered report-list pattern rather than a stacked mobile
+  redesign.
+
+## 2026-06-15 QA Runner Output Buffering
+
+**Scope:** Make the canonical local verify gate repeatable after the responsive UI
+slice exposed command-transport fragility while streaming the full backend pytest
+progress output. This does not change application runtime behavior.
+
+**Commands run:**
+
+```powershell
+# Focused runner regression and style/type checks.
+cd backend
+python -m pytest -q .\tests\test_verify_scripts.py
+python -m ruff check .\tests\test_verify_scripts.py
+python -m mypy .\tests\test_verify_scripts.py
+
+# POSIX script parse check under Git Bash.
+& 'C:/Program Files/Git/bin/bash.exe' -n ./scripts/verify.sh
+
+# Canonical fast verification gate after hardening.
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `backend/tests/test_verify_scripts.py` passed (`2 passed, 1 skipped` on
+  Windows; the skipped case is the non-Windows POSIX behavior probe). Ruff and mypy
+  passed for the new test file.
+- The PowerShell behavior probe proved the logged-python helper preserves a failing
+  command's exit code exactly, replays stdout/stderr, and creates a fresh
+  `backend-pytest-*.log` transcript when `backend-pytest.log` already exists.
+- Git Bash parsed `scripts/verify.sh` successfully.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests,
+  ruff, and mypy over 307 source files. Backend pytest output was replayed from
+  `local_artifacts/backend-pytest.log`, then from
+  `local_artifacts/backend-pytest-20260614T230158893Z.log` on the post-ledger rerun
+  because the first transcript was preserved; DB smoke was skipped by design because
+  `RUN_DB_SMOKE=1` was not set for this fast gate.
+
+**Residual risk:**
+
+- The POSIX helper's non-zero behavior is covered by a pytest probe on non-Windows
+  runners and by local Git Bash syntax on this Windows machine; the full POSIX
+  `./scripts/verify.sh` gate was not re-run here because the Windows PowerShell gate
+  is the canonical local gate for this worktree.
+- PowerShell's native redirection may write logs in its host-default encoding on
+  Windows PowerShell, but the helper replays the transcript and the regression test
+  reads either UTF-8 or UTF-16 evidence.
+
+## 2026-06-15 DB-Backed Verify And Deployment Smoke Hardening
+
+**Scope:** Close the DB-backed and container runtime evidence gap for the
+selected-county operator worktree, without expanding live-source coverage,
+source-readiness claims, or hosted-production readiness.
+
+**Commands run:**
+
+```powershell
+# First isolated DB smoke attempt, project land-dd-db-smoke-prod-grade,
+# DB_PORT=55433, RUN_DB_SMOKE=1.
+# Result: failed during migration fallback with a Dockerized psql host-port
+# connection close before schema application.
+
+# Retry after image pull, isolated DB project land-dd-db-smoke-pg2,
+# DB_PORT=55434, DATABASE_URL_SYNC and DATABASE_URL set to the same port.
+.\scripts\verify.ps1
+
+# Deployment smoke before hardening, fresh projects/ports.
+.\scripts\run_deployment_smoke.ps1
+# Result: failed while PostGIS image was still using its temporary init server.
+
+cd backend
+$env:PYTHONPATH='.'
+python -m pytest -q ./tests/test_deployment_smoke_scripts.py
+python -m ruff check ./tests/test_deployment_smoke_scripts.py
+
+# Fresh deployment smoke proof after hardening.
+# DEPLOYMENT_SMOKE_PROJECT=land-diligence-smoke-pg6
+# DEPLOYMENT_SMOKE_DB_PORT=55439
+# DEPLOYMENT_SMOKE_BACKEND_PORT=18084
+.\scripts\run_deployment_smoke.ps1
+
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Isolated DB-enabled `.\scripts\verify.ps1` passed on Docker PostGIS after the
+  retry: migrations and seeds applied, backend tests passed, ruff passed, mypy
+  passed over 304 source files, and `scripts/db_smoke_check.py` reported PostGIS,
+  9 required schemas, 18 required tables, 11 column groups, 2 enums, 8 foreign
+  keys, 25 seeded source-registry rows, 26 total source rows, and 2 seeded
+  intents.
+- Deployment smoke initially failed because `pg_isready` became true during the
+  PostGIS image's temporary initialization server; preserved DB logs showed the
+  image then intentionally shut that server down and restarted PostgreSQL.
+- Hardened `scripts/run_deployment_smoke.ps1` and `.sh` so DB readiness now
+  waits for two matching `pg_postmaster_start_time()` samples before applying
+  migrations. The Windows script also copies SQL into the DB container and runs
+  `psql -f /tmp/deployment-smoke.sql`, avoiding the brittle PowerShell pipe into
+  `docker compose exec`.
+- Added static deployment-smoke script regressions. RED failures were observed
+  before each hardening step; `backend/tests/test_deployment_smoke_scripts.py`
+  then passed (`4 passed`).
+- Fresh deployment smoke passed on isolated Compose project
+  `land-diligence-smoke-pg6` with backend port `18084` and DB port `55439`.
+  It built the backend image, waited through the PostGIS restart, applied
+  migrations/seeds, started the backend, checked health/version/metrics/queue
+  health, created an area and report run, waited for report success, and cleaned
+  up containers/networks.
+- Final default `.\scripts\verify.ps1` passed with workspace validation, backend
+  tests, ruff, and mypy clean on 304 source files. Default DB smoke remained
+  skipped by design because `RUN_DB_SMOKE=1` was not set for that final fast gate.
+
+**Residual risk:**
+
+- This proves local Docker PostGIS, schema/seed smoke, full backend test suite
+  under `RUN_DB_SMOKE=1`, and local Compose deployment smoke. It does not prove
+  hosted deployment, DNS/TLS, cloud secrets, hosted auth/RBAC, billing,
+  production alert delivery, log retention, or DS-017 vendor/source readiness.
+- Isolated Docker named volumes from smoke attempts were left in place because
+  no volume deletion was performed.
+
+## 2026-06-14 Selected-County Operator API/UI Path
+
+**Scope:** App-owned selected-county private-MVP fixture package, operator API routes,
+production-oriented `/ui/` operator console, `DESIGN.md`, OpenAPI stubs, and
+runbook/state updates. This is fixture-only utility coverage; no live-source expansion,
+DS-017 decision, DB schema change, or report-semantic change.
+
+**Commands run:**
+```powershell
+.\scripts\bootstrap.ps1
+python -m pip install -e "backend[dev]"
+.\scripts\verify.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests/private_mvp/test_operator_cases.py tests/api/test_operator_cases_api.py tests/api/test_ui_routes.py
+python .\scripts\export_openapi_stub.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests/private_mvp/test_operator_cases.py tests/api/test_operator_cases_api.py tests/api/test_ui_routes.py tests/api/test_openapi_contract.py tests/test_planning_pack_schema_copies.py
+cd backend; python -m ruff check app/operator_cases app/api/operator_cases.py app/api/ui.py app/main.py tests/private_mvp/test_operator_cases.py tests/api/test_operator_cases_api.py tests/api/test_ui_routes.py
+cd backend; python -m mypy app/operator_cases app/api/operator_cases.py app/api/ui.py app/main.py tests/private_mvp/test_operator_cases.py tests/api/test_operator_cases_api.py tests/api/test_ui_routes.py --no-error-summary
+git diff --check
+.\scripts\verify.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_ui_routes.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_operator_cases_api.py tests\api\test_ui_routes.py -k "operator_case or operator_console_case_table or selected_county"
+python .\scripts\export_openapi_stub.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_operator_cases_api.py tests\api\test_ui_routes.py tests\private_mvp\test_operator_cases.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+cd backend; python -m ruff check app\api\operator_cases.py app\api\ui.py tests\api\test_operator_cases_api.py tests\api\test_ui_routes.py
+cd backend; python -m mypy app\api\operator_cases.py app\api\ui.py tests\api\test_operator_cases_api.py tests\api\test_ui_routes.py --no-error-summary
+.\scripts\verify.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_ui_routes.py -k "custom_geojson_intake or ui_custom"
+python .\scripts\export_openapi_stub.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_ui_routes.py tests\api\test_operator_cases_api.py tests\private_mvp\test_operator_cases.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py
+cd backend; python -m ruff check app\api\ui.py tests\api\test_ui_routes.py
+cd backend; python -m mypy app\api\ui.py tests\api\test_ui_routes.py --no-error-summary
+.\scripts\verify.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_ui_routes.py -k "report_run_returns_404_page_for_unknown_id or report_run_shows_pending_approval_for_unapproved_report or report_run_queued_page_has_safe_action_surface or failed_report_shows_retry_form"
+cd backend; python -m ruff check app\api\ui.py tests\api\test_ui_routes.py
+cd backend; python -m mypy app\api\ui.py tests\api\test_ui_routes.py --no-error-summary
+# Restarted local API on 127.0.0.1:8000 with scripts\run_api.ps1, then posted
+# /ui/intake and fetched the redirected /ui/report-runs/{id} page.
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q tests\api\test_ui_review_routes.py tests\api\test_ui_operations_routes.py tests\api\test_ui_routes.py
+cd backend; python -m ruff check app\api\ui_review.py app\api\ui_operations.py app\api\ui_lineage.py tests\api\test_ui_review_routes.py tests\api\test_ui_operations_routes.py tests\api\test_ui_routes.py
+cd backend; python -m mypy app\api\ui_review.py app\api\ui_operations.py app\api\ui_lineage.py tests\api\test_ui_review_routes.py tests\api\test_ui_operations_routes.py tests\api\test_ui_routes.py --no-error-summary
+# Playwright/browser probes via node_repl against http://127.0.0.1:8000/ui/:
+# - headless desktop/mobile/report screenshots under local_artifacts/
+# - headed Chrome desktop/mobile/report screenshots under local_artifacts/
+# - iPhone 13 mobile overflow probe after stacked table fix
+# - final Boundary-column screenshots:
+#   local_artifacts/ui-boundary-final-desktop-headless.png
+#   local_artifacts/ui-boundary-final-desktop-headed.png
+#   local_artifacts/ui-boundary-final-mobile-headless.png
+#   local_artifacts/ui-boundary-final-mobile-headed.png
+# - custom intake screenshots:
+#   local_artifacts/ui-custom-intake-nojs-landed.png
+#   local_artifacts/ui-custom-intake-js-invalid.png
+git diff --check
+```
+
+**Result:** Focused operator/private-MVP/API/OpenAPI/UI tests passed, including 51
+`test_ui_routes.py` tests after the responsive UI refinements and 75 focused
+operator/UI/private-MVP/OpenAPI tests after the Boundary-column and request-validation
+hardening. Custom-intake fallback tests passed (`7` selected tests), and the broader
+focused operator/UI/private-MVP/OpenAPI set passed (`81` tests). Ruff passed. Mypy
+passed on touched files and full verify passed with no issues over 303 source files.
+`git diff --check` reported no whitespace errors, only CRLF-to-LF warnings for touched
+OpenAPI/docs files. Default verify passed with workspace validation, backend tests, ruff, and mypy; DB
+smoke was skipped because `RUN_DB_SMOKE=1` was not set. Browser smoke: the in-app Browser
+webview timed out attaching twice, but system Chrome loaded `/ui/`, found 9 selected-county
+cases, submitted the first case action, redirected to an approved report page, and found
+the JSON artifact link. Headless and headed Chrome screenshots were captured under
+`local_artifacts/`. Final Boundary-column desktop probes reported `documentScrollWidth:
+1440`, table/wrapper width about `1292`, and the first action button fully visible.
+Final iPhone 13 probes reported `documentScrollWidth: 390`, `bodyScrollWidth: 390`,
+table width about `330`, stacked Boundary cell display `grid`, and no visual horizontal
+overflow. Custom intake browser probes verified no-JavaScript form submission redirected
+to a report page and JavaScript-enhanced invalid GeoJSON rendered a safe inline error
+without horizontal overflow.
+
+**Residual risk:** The new `/operator-cases` path serves only the packaged nine
+selected-county private-MVP fixture cases. It does not prove hosted deployment, DB smoke,
+live county coverage, DS-017 vendor readiness, or legal/buildability/wetland/access
+conclusions.
+
+Report-detail UI slice: the focused report-page contract tests failed red before the
+implementation because the not-found, pending, queued, and failed pages lacked the
+responsive report shell (`name="viewport"` was absent). After implementation, the
+focused report-page tests passed (`4 passed`), the full UI route file passed (`58
+passed`), and the expanded focused operator/UI/private-MVP/OpenAPI set passed (`125
+passed`).
+Ruff passed, mypy passed on the touched UI files, and default `.\scripts\verify.ps1`
+passed with backend tests, lint, and typecheck over 303 source files. A fresh
+memory-backed server restart returned health `ok`; a
+no-JavaScript `/ui/intake` post returned `303` to `/ui/report-runs/{id}`, and the
+redirected page contained the `report-page` body, pending status panel, action panel,
+viewport meta, and approve action. Fresh screenshot capture for this report-detail slice
+was blocked because no local Chrome/Edge executable was discoverable and the Playwright
+browser binary was absent; previous operator-console screenshots remain under
+`local_artifacts/`.
+
+Support-page UI slice: representative connector-review, operations, and evidence-lineage
+tests failed red before implementation because the pages lacked `name="viewport"`. After
+implementation, the focused support/UI route set passed (`101 passed`), ruff passed, and
+mypy passed on the changed support UI files. This did not change connector-review,
+operations, lineage, or reviewer-auth semantics.
+
+Shared UI helper refactor: `ui_shared.error_page` first failed red because it lacked the
+viewport meta, and the direct `page_head` contract test failed because no shared helper
+existed. After implementation, focused shared/support/UI tests passed (`103 passed`),
+the expanded focused operator/UI/private-MVP/OpenAPI set passed (`127 passed`), ruff
+passed, mypy passed on the changed shared/support UI files, and default
+`.\scripts\verify.ps1` passed with typecheck over 304 source files. Review, operations,
+and lineage pages now use the centralized `page_head`/`error_page` helpers instead of
+duplicate module-local page-head/error builders.
+
+Print/export non-happy-path UI slice: the focused print tests failed red before
+implementation because the unapproved and unknown-report print pages lacked the
+report-page viewport/chrome contract. After implementation, focused print tests passed
+(`3 passed`), the expanded focused operator/UI/private-MVP/OpenAPI set passed (`127
+passed`), ruff passed, mypy passed on the touched UI files, and default
+`.\scripts\verify.ps1` passed with typecheck over 304 source files. Approved print
+output was left unchanged; unapproved and unknown print attempts now render
+status/action panels without exposing dossier content before approval.
+
+Report-list compare no-JavaScript slice: focused tests first failed red because
+`/ui/compare?ids=a&ids=b` returned `400` and `/ui/report-runs` did not expose a native
+compare form. After implementation, the focused compare/list tests passed (`9 passed,
+50 deselected`), the full UI route file passed (`59 passed`), ruff passed, and mypy
+passed on `app/api/ui.py` plus `tests/api/test_ui_routes.py`. Regenerating the OpenAPI
+stubs fixed the expected `ids` query-schema drift from scalar string to string array;
+the expanded operator/UI/private-MVP/OpenAPI set then passed (`128 passed`), and default
+`.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 304 source files.
+The live API at `http://127.0.0.1:8000` returned health `ok`, and two selected-county
+fixture reports were created for browser verification setup. Fresh screenshot capture
+for this compare slice was blocked: the in-app Browser webview timed out attaching
+twice, no Chrome/Edge executable existed in command/path/common install locations,
+bundled Playwright was available but its Chromium executable was not installed, and no
+existing Playwright browser cache was present. Installing a browser payload was not
+performed because it would modify runtime/browser cache state outside the focused
+worktree or create a deep workspace-local browser cache.
+
+Connector-review queue navigation slice: focused tests first failed red because neither
+the home operator console nor `/ui/report-runs` exposed a durable
+`/ui/connector-review-queue` navigation link. After implementation, focused nav tests
+passed (`2 passed, 59 deselected`), full `test_ui_routes.py` passed (`61 passed`), ruff
+passed, and mypy passed on `app/api/ui.py` plus `tests/api/test_ui_routes.py`. The
+expanded operator/UI/private-MVP/OpenAPI set passed (`130 passed`), and default
+`.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 304 source files.
+The local API server was restarted with `scripts/run_api.ps1`; health returned `ok`, and
+live HTTP probes confirmed both `/ui/` and `/ui/report-runs` return `200` with
+`href="/ui/connector-review-queue"` present.
+
+Operations-dashboard drilldown slice: focused tests first failed red because operations
+queue-health counts rendered as plain text rather than workflow links. After
+implementation, focused drilldown tests passed (`1 passed, 7 deselected`), API
+operations tests passed (`3 passed`), full UI operations route tests passed (`8 passed`),
+ruff passed, and mypy passed on `app/api/ui_operations.py` plus
+`tests/api/test_ui_operations_routes.py`. A live `/ui/operations` POST with fixture
+reviewer credentials returned `200` and contained drilldown links for report-run status
+filters plus connector-review queue status filters. The expanded
+operator/UI/private-MVP/OpenAPI set passed (`131 passed`), and default
+`.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 304 source files.
+
+Connector-review state-aware action slice: focused tests first failed red because the
+detail page rendered invalid action forms for the current queue state, including requeue
+on open items and approve/reject/cancel on terminal items. After implementation, focused
+state/action tests passed (`5 passed, 35 deselected`), full UI review route tests passed
+(`40 passed`), ruff passed, and mypy passed on `app/api/ui_review.py` plus
+`tests/api/test_ui_review_routes.py`. The expanded operator/UI/private-MVP/OpenAPI set
+collected 135 tests and passed, and default `.\scripts\verify.ps1` passed with workspace
+validation, backend tests, ruff, and mypy over 304 source files. The UI now follows the
+existing queue transition rules without changing repository/API semantics.
+
+Report auto-refresh control slice: focused tests first failed red because queued report
+pages only exposed the old automatic refresh behavior and `?auto_refresh=false` still
+emitted the refresh meta tag. After implementation, focused report-state tests passed
+(`5 passed`), full UI route tests passed (`63` collected tests), ruff passed, and mypy
+passed on `app/api/ui.py` plus `tests/api/test_ui_routes.py`. The first expanded
+operator/UI/private-MVP/OpenAPI run failed closed on stale OpenAPI stubs after the
+`auto_refresh` query parameter was added; regenerating `api/openapi_stub.yaml` and
+`docs/planning_pack/api/openapi_stub.yaml` fixed the schema-copy drift, after which the
+OpenAPI/schema-copy checks passed and the expanded operator/UI/private-MVP/OpenAPI set
+passed. Default `.\scripts\verify.ps1` passed with workspace validation, backend tests,
+ruff, and mypy over 304 source files. System Chrome screenshots of generated server HTML
+were captured under `local_artifacts/ui-report-refresh-default.png` and
+`local_artifacts/ui-report-refresh-paused-fixture.png`; the paused page had no refresh
+meta tag and exposed **Refresh now** plus **Resume auto-refresh**. Queued/running report
+pages now default to 3-second refresh while exposing no-JavaScript pause, manual refresh,
+and resume controls; pending and approved report states do not render refresh controls.
+
+Report-list next-action slice: focused tests first failed red because `/ui/report-runs`
+had no explicit Action column for queued/running, failed, pending-approval, or approved
+rows. After implementation, focused action/responsive tests passed (`6 passed`), full UI
+route tests passed (`69` collected tests), ruff passed, and mypy passed on `app/api/ui.py`
+plus `tests/api/test_ui_routes.py`. The expanded operator/UI/private-MVP/OpenAPI set
+passed, and default `.\scripts\verify.ps1` passed with workspace validation, backend
+tests, ruff, and mypy over 304 source files. System Chrome screenshots of generated
+server HTML were captured under `local_artifacts/ui-report-list-actions-desktop.png`,
+`local_artifacts/ui-report-list-actions-mobile.png`, and
+`local_artifacts/ui-report-list-actions-mobile-action.png`; mobile metrics showed page
+width held at 390px while the table wrapper scrolled internally (`wrapperScrollWidth:
+920`). The list now links each row to the existing correct operator surface and wraps
+the widened table for narrow viewports without adding new credentialed mutation forms or
+endpoints.
+
+Report approval reason slice: focused tests first failed red because the pending approval
+form lacked a `reason` field and submitted UI approval reasons were not persisted. After
+implementation, focused approval tests passed (`5 passed`), full UI route tests passed
+(`71` collected tests), ruff passed, and mypy passed on `app/api/ui.py` plus
+`tests/api/test_ui_routes.py`. UI approval now records trimmed non-empty reason text on
+the existing report review action audit trail and stores blank/whitespace-only reason
+input as omitted. The OpenAPI/schema-copy lane failed closed after the form contract
+changed; regenerating `api/openapi_stub.yaml` and
+`docs/planning_pack/api/openapi_stub.yaml` restored the contract lane (`3 passed`).
+The expanded operator/UI/private-MVP/OpenAPI set passed again (`145` collected tests),
+and default `.\scripts\verify.ps1` passed with workspace validation, backend tests,
+ruff, and mypy over 304 source files; DB smoke was skipped because `RUN_DB_SMOKE=1`
+was not set. Headless desktop, headless mobile, and headed Chrome screenshots were
+captured under `local_artifacts/ui-report-approval-reason*.png`; the first screenshot
+pass exposed cramped default textarea rendering, so the form controls were restyled and
+recaptured with matching reviewer input and reason textarea widths.
+
+Redirect consistency slice: focused tests first failed red because report approval,
+report retry, and connector-review resume-report UI actions returned `200` handoff
+pages with meta refresh instead of the documented success redirects. After
+implementation, approval success returns `303` to the approved report page, retry
+success returns `303` to the new report page, and connector-review resume-report
+returns `303` to the created report page while existing auth, not-found, validation,
+and conflict HTML error paths remain unchanged. Focused approval/retry tests passed
+(`2 passed`), focused connector resume-report tests passed (`7 passed`), combined UI
+route files passed, ruff passed, mypy passed, and OpenAPI/schema-copy checks passed
+(`3 passed`) without regenerating stubs. The expanded operator/UI/private-MVP/OpenAPI
+set passed (`145` collected tests), and default `.\scripts\verify.ps1` passed with
+workspace validation, backend tests, ruff, and mypy over 304 source files; DB smoke was
+skipped because `RUN_DB_SMOKE=1` was not set. Isolated TestClient redirect probes
+captured `303` locations for all three flows in `local_artifacts/ui-redirect-results.json`.
+Headless Chrome screenshots of the redirected-to pages were captured under
+`local_artifacts/ui-approval-redirect-result.png`,
+`local_artifacts/ui-retry-redirect-result.png`, and
+`local_artifacts/ui-review-resume-redirect-result.png`; each rendered the expected
+report surface with the operator action panel.
+
 ## 2026-06-13 Claim Narrative Enrichment Passes 8 and 9
 
 **Scope:** Pass 8: access no-adjacency enriched with road_count=0; "in the fixture" removed from 7 stale/prohibited claim functions. Pass 9: soil screening review claim enriched with SSURGO soil_mapunit_name and hydrologic_group. 2 new regression tests.
@@ -9087,3 +10087,345 @@ cd backend; py -3.12 -m mypy app tests
 - Remote publication incomplete: local `main` is ahead of `origin/main` by 4 commits.
 - Hosted production gates remain blocked: hosted auth/RBAC, hosted deployment, billing,
   key rotation, hosted log retention, and hosted alerting.
+
+---
+
+## 2026-06-14 - UI API-Key Bridge Security and Browser Proof
+
+**Scope:** Private-beta `/ui/auth` bridge for API-key-locked deployments, including
+independent UI-cookie signing material, malformed-cookie fail-closed behavior,
+login-attempt audit events, non-local Secure-cookie behavior, access-control docs, and
+browser screenshot evidence.
+
+**Commands run:**
+
+```powershell
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q ./tests/api/test_ui_api_key_auth.py ./tests/api/test_api_key_auth.py
+cd backend; $env:PYTHONPATH='.'; python -m ruff check .\app\api\api_key_auth.py .\app\api\ui_auth.py .\app\core\config.py .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_api_key_auth.py ..\scripts\access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy .\app\api\api_key_auth.py .\app\api\ui_auth.py .\app\core\config.py .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_api_key_auth.py ..\scripts\access_control_check.py
+.\scripts\run_access_control_check.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q ./tests/api/test_openapi_contract.py ./tests/test_planning_pack_schema_copies.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused UI/API-key auth tests passed with one DB smoke skip.
+- Ruff passed on touched auth/config/test/validator surfaces.
+- Mypy passed on 7 focused source/test files.
+- Access-control static validator passed.
+- OpenAPI contract/schema-copy tests passed.
+- Default verify passed: workspace validation, backend tests, ruff, and mypy over
+  306 source files. DB smoke was skipped by design because `RUN_DB_SMOKE=1` was not set.
+- Browser proof used installed Chrome through Playwright against
+  `http://127.0.0.1:8765` with `REQUIRE_API_KEY=true`, `API_KEYS=production-key`, and
+  `UI_AUTH_COOKIE_SECRET=local-preview-ui-cookie-secret`.
+  Screenshots:
+  `local_artifacts/ui-auth-login-headless.png`,
+  `local_artifacts/ui-home-authenticated-headless.png`,
+  `local_artifacts/ui-auth-login-mobile-headless.png`,
+  `local_artifacts/ui-auth-login-headed.png`, and
+  `local_artifacts/ui-home-authenticated-headed.png`.
+
+**Residual risk:**
+
+- The bridge remains private-beta convenience auth, not full user auth/RBAC, OAuth/OIDC,
+  user account persistence, hosted secret management, automatic key rotation, hosted log
+  retention, or hosted deployment proof.
+- DB-backed API-key audit persistence was covered by existing skipped DB-smoke tests but
+  not rerun in this fast final gate.
+
+---
+
+## 2026-06-14 - Cookie-Authenticated UI CSRF Proof
+
+**Scope:** Add signed CSRF tokens to unsafe `/ui` POST forms authenticated by the UI
+API-key cookie, convert logout from mutating GET to confirmation GET plus
+CSRF-protected POST, and fix custom AOI JavaScript to submit `/ui/intake` form data
+instead of JSON to `/intake`.
+
+**Commands run:**
+
+```powershell
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q ./tests/api/test_ui_api_key_auth.py ./tests/api/test_api_key_auth.py ./tests/api/test_ui_routes.py ./tests/api/test_ui_review_routes.py ./tests/api/test_ui_operations_routes.py ./tests/api/test_openapi_contract.py ./tests/test_planning_pack_schema_copies.py
+cd backend; $env:PYTHONPATH='.'; python -m ruff check .\app\api\api_key_auth.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\ui_operations.py .\app\api\ui_auth.py .\app\api\ui_shared.py .\app\core\config.py .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_ui_review_routes.py .\tests\api\test_api_key_auth.py ..\scripts\access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy .\app\api\api_key_auth.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\ui_operations.py .\app\api\ui_auth.py .\app\api\ui_shared.py .\app\core\config.py .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_ui_review_routes.py .\tests\api\test_api_key_auth.py ..\scripts\access_control_check.py
+.\scripts\run_access_control_check.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused UI/API-key/OpenAPI tests passed with one DB smoke skip.
+- Ruff passed on touched UI/auth/test/validator surfaces.
+- Mypy passed on 12 focused source/test files.
+- Access-control validator passed.
+- Default verify passed: workspace validation, backend tests, ruff, and mypy over
+  306 source files. DB smoke was skipped by design because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:**
+
+- CSRF protection now covers cookie-authenticated server-rendered UI mutation forms, but
+  the bridge remains private-beta convenience auth. It still does not provide full user
+  auth/RBAC, OAuth/OIDC, user account persistence, hosted secret management, automatic
+  key rotation, hosted log retention, or hosted deployment proof.
+
+---
+
+## 2026-06-14 - Non-local UI Cookie Secret Fail-Closed Proof
+
+**Scope:** Require stable `UI_AUTH_COOKIE_SECRET` for non-local API-key-locked UI
+cookie auth, while preserving the per-process fallback for local/dev/development/test
+workflows.
+
+**Commands run:**
+
+```powershell
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q ./tests/api/test_ui_api_key_auth.py ./tests/api/test_api_key_auth.py
+cd backend; $env:PYTHONPATH='.'; python -m ruff check .\app\main.py .\tests\api\test_ui_api_key_auth.py ..\scripts\access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy .\app\main.py .\tests\api\test_ui_api_key_auth.py ..\scripts\access_control_check.py
+.\scripts\run_access_control_check.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused UI/API-key auth tests passed with one DB smoke skip.
+- Ruff and mypy passed on the touched startup/test/validator files.
+- Access-control validator passed and now checks the non-local secret requirement.
+- Default verify passed: workspace validation, backend tests, ruff, and mypy over
+  306 source files. DB smoke was skipped by design because `RUN_DB_SMOKE=1` was not set.
+- Production-like browser smoke used installed Chrome against `http://127.0.0.1:8766`
+  with `APP_ENV=production`, `REQUIRE_API_KEY=true`, `API_KEYS=production-key`, and
+  `UI_AUTH_COOKIE_SECRET=local-preview-ui-cookie-secret-production`. Both headless and
+  headed CDP passes reached `/ui/` after `/ui/auth`, saw 10 CSRF fields, and found the
+  selected-county case table. Screenshots:
+  `local_artifacts/ui-secret-production-auth-cdp.png`,
+  `local_artifacts/ui-secret-production-home-cdp.png`, and
+  `local_artifacts/ui-secret-production-home-headed-cdp.png`.
+
+**Residual risk:**
+
+- This closes the unstable non-local cookie-signing fallback, but the bridge remains
+  private-beta convenience auth rather than full user auth/RBAC, OAuth/OIDC, user-account
+  persistence, hosted secret management, automatic key rotation, hosted log retention,
+  or hosted deployment proof.
+
+---
+
+## 2026-06-14 - UI Auth Design/Config Source-of-Truth Proof
+
+**Scope:** Keep the canonical operator design and settings metadata aligned with the
+implemented `/ui/auth` bridge and the local-only UI-cookie signing-secret fallback.
+
+**Commands run:**
+
+```powershell
+.\scripts\run_access_control_check.ps1
+cd backend; $env:PYTHONPATH='.'; python -m ruff check .\app\core\config.py ..\scripts\access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy .\app\core\config.py ..\scripts\access_control_check.py
+```
+
+**Results:**
+
+- Access-control validator passed and now checks `DESIGN.md` and
+  `docs/runbooks/mvp_operator.md` for the UI API-key cookie bridge, `X-API-Key` API
+  boundary, `UI_AUTH_COOKIE_SECRET` requirement, local fallback allowlist, CSRF-protected
+  sign-out, and stateless reviewer-token separation.
+- Ruff and mypy passed on the changed settings/validator files.
+- Default verify passed after the reviewer-driven `mvp_operator.md` validator addition;
+  this final note update did not change runtime, tests, or validator behavior.
+
+**Residual risk:**
+
+- This is a source-of-truth alignment guard, not a new runtime flow. Browser/runtime
+  proof for the same auth behavior remains the prior production-like Chrome CDP smoke.
+
+---
+
+## 2026-06-14 - UI Auth Manifest/Catalog Authority Proof
+
+**Scope:** Keep the repo routing manifest and access-control catalog aligned with the
+new canonical `DESIGN.md` role and the full UI API-key cookie bridge authority surface.
+
+**Commands run:**
+
+```powershell
+.\scripts\run_access_control_check.ps1
+cd backend; $env:PYTHONPATH='.'; python -m ruff check ..\scripts\access_control_check.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy ..\scripts\access_control_check.py
+```
+
+**Results:**
+
+- Access-control validator passed and now checks that `config/access_control.yaml`
+  keeps `ui_api_key_cookie_bridge` authority entries for runtime auth, UI CSRF/form
+  surfaces, settings, tests, `.env.example`, `DESIGN.md`, and both operator/access
+  runbooks.
+- A read-only review identified that `MANIFEST.md`, `DESIGN.md` canonical ownership,
+  and `backend/app/api/ui_lineage.py` were not yet pinned. The validator now reads the
+  manifest, checks the canonical design ownership statement, includes lineage in the
+  UI bridge authority/read set, and fails on unexpected UI bridge authority entries.
+- Ruff and mypy passed on the changed validator file; access-control validation passed
+  after the reviewer-driven corrections.
+
+**Residual risk:**
+
+- The repo manifest remains intentionally scoped rather than exhaustive; this proof
+  guards the new source-of-truth locations and access-control authority list, not every
+  file in the worktree.
+
+---
+
+## 2026-06-14 - Release-Readiness Full-Catalog Proof
+
+**Scope:** Make the release-readiness validator cover every gate declared in
+`config/release_readiness.yaml`, including newer repeatable-QA and source-of-truth gates.
+
+**Commands run:**
+
+```powershell
+.\scripts\run_release_readiness_check.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\test_release_readiness_artifacts.py .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py
+.\scripts\run_supply_chain_check.ps1
+.\scripts\run_container_scan_check.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\test_release_readiness_artifacts.py .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_supply_chain_artifacts.py .\tests\test_container_scan_artifacts.py
+cd backend; $env:PYTHONPATH='.'; python -m ruff check ..\scripts\release_readiness_check.py .\tests\test_release_readiness_artifacts.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy ..\scripts\release_readiness_check.py .\tests\test_release_readiness_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Release-readiness validation passed with exact check-ID coverage for the declared
+  release gate set.
+- CI-backed catalog checks now have an explicit expected-proof mapping, and validation
+  confirms each declared job runs its proof wrapper rather than merely existing.
+- The performance runbook now states that CI validates load-test artifacts while
+  `run_load_test` live sequential/concurrent scenarios remain local/manual unless
+  explicitly run.
+- Supply-chain and container-image scan proof wrappers passed.
+- Focused release/load/performance/supply-chain/container artifact tests passed.
+- Ruff and mypy passed on the changed validator/test files.
+- Default `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy on 306
+  source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This strengthens repo-local validate-only release proof. It does not run live load
+  tests, create hosted infrastructure, publish images, or clear hosted production
+  blockers.
+
+---
+
+## 2026-06-14 - Operator Console Responsive Browser Proof
+
+**Scope:** Verify and tighten the selected-county operator console layout in real
+Chrome viewports so the private-MVP case launcher remains usable on constrained screens.
+
+**Commands run:**
+
+```powershell
+.\scripts\run_api.ps1 -StorageBackend memory -Port 8765 -NoReload
+& 'C:/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --window-size=1440,1100 --screenshot='C:/Users/benny/OneDrive/Desktop/land_dd/worktrees/prod-grade/local_artifacts/ui-console-headless-desktop-8765-final.png' 'http://127.0.0.1:8765/ui/'
+& 'C:/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --disable-gpu --window-size=390,844 --screenshot='C:/Users/benny/OneDrive/Desktop/land_dd/worktrees/prod-grade/local_artifacts/ui-console-headless-mobile-8765-final.png' 'http://127.0.0.1:8765/ui/'
+Chrome CDP headed screenshot -> local_artifacts/ui-console-headed-desktop-1440-final.png
+Chrome CDP mobile metrics/screenshot -> local_artifacts/ui-console-cdp-mobile-390-final.png
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\api\test_ui_routes.py
+cd backend; $env:PYTHONPATH='.'; python -m ruff check .\app\api\ui.py .\tests\api\test_ui_routes.py
+cd backend; $env:PYTHONPATH='.'; python -m mypy .\app\api\ui.py .\tests\api\test_ui_routes.py
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\api
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\connectors
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\claims_engine .\tests\reports
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\area_geometry .\tests\evidence_ledger .\tests\private_mvp
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\scripts .\tests\source_registry
+cd backend; $env:PYTHONPATH='.'; $files = Get-ChildItem .\tests -File -Filter 'test_*.py' | ForEach-Object { $_.FullName }; python -m pytest -q @files
+cd backend; $env:PYTHONPATH='.'; ruff check .
+cd backend; $env:PYTHONPATH='.'; python -m mypy app tests
+```
+
+**Results:**
+
+- Initial mobile screenshot review found that the selected-county case-card layout was
+  too cramped for long descriptions at small widths.
+- `backend/app/api/ui.py` now renders mobile case-table cells as label-over-value
+  blocks with explicit `overflow-wrap: anywhere` on table cells/descriptions.
+- Final CDP mobile metrics reported `clientWidth=390`, `scrollWidth=390`, and
+  `bodyScroll=390`; the only scroll-width outlier was the intentionally hidden table
+  caption.
+- Full UI route tests passed (`71 passed`); focused ruff and mypy passed on the
+  changed UI route and test files.
+- A monolithic `.\scripts\verify.ps1` attempt timed out during backend pytest output
+  handling and ended with a pytest stdout `OSError: [Errno 22] Invalid argument` after
+  the command stream was interrupted.
+- The verify phases were then run separately: workspace validation passed, all backend
+  tests passed by directory/root-file group, full backend ruff passed, and full backend
+  mypy passed on 306 source files. DB smoke was not run.
+
+**Residual risk:**
+
+- This is a browser-verified responsive polish slice for the current server-rendered
+  UI. It does not add a hosted visual-regression service, automated screenshot gate, or
+  fresh DB-smoke proof.
+
+---
+
+## 2026-06-15 - Production Evidence Contract and No-JS Compare Hardening
+
+**Scope:** Add structured future production evidence contracts for validate-only image
+publication and hosted deployment, and remove the JavaScript dependency from the report
+list compare form.
+
+**Commands run:**
+
+```powershell
+python .\scripts\image_publication_check.py
+python .\scripts\hosted_deployment_check.py
+cd backend; python -m pytest -q .\tests\test_image_publication_artifacts.py .\tests\test_hosted_deployment_artifacts.py
+cd backend; python -m pytest -q .\tests\api\test_ui_routes.py -k "report_list_has_compare_affordance or ui_compare_accepts_repeated_ids_query_params or ui_compare_two_reports_renders_table"
+cd backend; python -m ruff check ..\scripts\image_publication_check.py ..\scripts\hosted_deployment_check.py .\tests\test_image_publication_artifacts.py .\tests\test_hosted_deployment_artifacts.py .\app\api\ui.py .\tests\api\test_ui_routes.py
+cd backend; python -m mypy ..\scripts\image_publication_check.py ..\scripts\hosted_deployment_check.py .\tests\test_image_publication_artifacts.py .\tests\test_hosted_deployment_artifacts.py .\app\api\ui.py .\tests\api\test_ui_routes.py
+.\scripts\run_image_publication_check.ps1
+.\scripts\run_hosted_deployment_check.ps1
+.\scripts\run_release_readiness_check.ps1
+.\scripts\verify.ps1
+.\scripts\validate_workspace.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+git diff -- . | rg -n "<attribution-patterns>"
+```
+
+**Browser proof:**
+
+- `local_artifacts/ui-report-list-compare-desktop.png`
+- `local_artifacts/ui-report-list-compare-mobile.png`
+- `local_artifacts/ui-compare-native-submit.png`
+
+The mobile report-list probe reported `clientWidth=390`, `scrollWidth=390`,
+`bodyScrollWidth=390`, `hasScript=0`, `formAction=/ui/compare`, and two compare inputs.
+The native submit landed on `/ui/compare` with two repeated `ids` parameters, one compare
+table, and zero scripts.
+
+**Results:**
+
+- Image-publication and hosted-deployment validators passed.
+- Focused artifact tests passed (`14 passed`).
+- Focused UI compare tests passed (`3 passed`) with the existing FastAPI/Starlette
+  deprecation warning.
+- Ruff passed on the changed validator, UI, and test files.
+- Mypy passed on the changed validator, UI, and test files.
+- Image-publication, hosted-deployment, and release-readiness wrapper checks passed.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy on 307 source files. DB smoke was skipped by default.
+- Standalone workspace validation passed.
+- `git diff --check` reported no whitespace errors; it only emitted existing CRLF
+  normalization warnings. No deleted files were reported. The attribution scan found no
+  prohibited attribution strings.
+
+**Residual risk:**
+
+- This creates and validates the repo-local evidence contract. It does not publish a
+  registry image, create hosted infrastructure, sign attestations, unblock DS-017, or run
+  DB smoke without `RUN_DB_SMOKE=1`.

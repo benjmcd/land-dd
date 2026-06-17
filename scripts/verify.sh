@@ -15,6 +15,52 @@ if sys.version_info < (3, 12):
 print(f"python: {sys.version.split()[0]}")
 PY
 
+make_log_path() {
+  local log_dir="$1"
+  local log_name="$2"
+  local log_path="$log_dir/$log_name"
+
+  if [[ ! -f "$log_path" ]]; then
+    printf '%s\n' "$log_path"
+    return 0
+  fi
+
+  local stem="${log_name%.*}"
+  local extension=""
+  if [[ "$log_name" == *.* ]]; then
+    extension=".${log_name##*.}"
+  fi
+  local stamp
+  stamp="$("$PYTHON_BIN" - <<'PY'
+from datetime import UTC, datetime
+
+print(datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ"))
+PY
+)"
+  printf '%s/%s-%s%s\n' "$log_dir" "$stem" "$stamp" "$extension"
+}
+
+run_python_with_log() {
+  local label="$1"
+  local log_name="$2"
+  shift 2
+  local log_dir="$ROOT_DIR/local_artifacts"
+
+  mkdir -p "$log_dir"
+  local log_path
+  log_path="$(make_log_path "$log_dir" "$log_name")"
+  if "$PYTHON_BIN" "$@" > "$log_path" 2>&1; then
+    cat "$log_path"
+    echo "$label log: $log_path"
+    return 0
+  fi
+
+  local status=$?
+  cat "$log_path"
+  echo "$label log: $log_path"
+  return "$status"
+}
+
 echo "== agent context =="
 ./scripts/agent-context-check.sh
 
@@ -29,7 +75,7 @@ fi
 echo "== backend tests =="
 (
   cd backend
-  PYTHONPATH=. "$PYTHON_BIN" -m pytest -q
+  PYTHONPATH=. run_python_with_log "backend tests" "backend-pytest.log" -m pytest -q
 )
 
 if command -v ruff >/dev/null 2>&1; then

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
+
+import pytest
 
 yaml = cast(Any, importlib.import_module("yaml"))
 
@@ -14,6 +18,30 @@ REQUIRED_GATES = {
     "scripts/run_release_package_check.ps1",
     "scripts/run_release_readiness_check.ps1",
 }
+REQUIRED_ATTESTATIONS = {
+    "image_digest",
+    "registry_image_ref",
+    "vulnerability_scan",
+    "dependency_sbom",
+    "provenance",
+}
+REQUIRED_BLOCKERS = {
+    "registry_repository_authority",
+    "hosted_deployment_authority",
+    "registry_image_attestation_authority",
+    "signed_image_sbom_authority",
+}
+
+
+def _load_validator() -> ModuleType:
+    script_path = REPO_ROOT / "scripts" / "image_publication_check.py"
+    spec = importlib.util.spec_from_file_location("image_publication_check", script_path)
+    assert spec is not None
+    loader = spec.loader
+    assert loader is not None
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
 
 
 def test_image_publication_catalog_records_publish_boundary_and_blockers() -> None:
@@ -48,6 +76,41 @@ def test_image_publication_catalog_records_publish_boundary_and_blockers() -> No
     assert catalog["limits"]["pushes_registry_image"] is False
     assert catalog["limits"]["creates_hosted_deployment"] is False
     assert catalog["limits"]["signs_or_publishes_attestations"] is False
+
+
+def test_image_publication_catalog_records_structured_attestation_contract() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "image_publication.yaml").read_text(encoding="utf-8"),
+    )
+
+    evidence = catalog["attestation_evidence"]
+    assert evidence["status"] == "not_available"
+    assert evidence["authority"] == "docs/runbooks/image_publication.md"
+    assert set(evidence["required_fields"]) == REQUIRED_ATTESTATIONS
+    assert set(evidence["blocked_until"]) == REQUIRED_BLOCKERS
+    assert set(evidence["blocked_until"]) == set(catalog["blocked_until"])
+    assert set(evidence["evidence_template"]) == REQUIRED_ATTESTATIONS
+    assert all(value is None for value in evidence["evidence_template"].values())
+
+
+def test_image_publication_validator_rejects_available_empty_attestation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "image_publication.yaml").read_text(encoding="utf-8"),
+    )
+    catalog["attestation_evidence"]["status"] = "published"
+
+    def fake_read_text(path_text: str) -> str:
+        if path_text == "config/image_publication.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path_text).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="requires values"):
+        validator.validate_catalog()
 
 
 def test_image_publication_validate_only_artifacts_do_not_push_or_sign() -> None:

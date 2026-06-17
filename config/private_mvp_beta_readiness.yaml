@@ -222,19 +222,16 @@ private_mvp_beta:
       evidence (source_ingest_run_id=None) is approved unconditionally for private MVP.
 
   unauthenticated_workspace_isolation:
-    status: accepted_with_risk
-    evidence: backend/app/api/reports.py (_optional_report_auth_context, lines 698-716)
-    risk: >
-      When no Authorization/X-Workspace-Id/X-User-Id headers are present and
-      report_auth_mode != "signed_token", _optional_report_auth_context returns None
-      and the create_report_run handler skips workspace_id gating entirely. The
-      unauthenticated path proceeds to the async job queue (202 ACCEPTED) without
-      area ownership validation. Acceptable for private MVP where the operator controls
-      all access; must be hardened before hosted multi-tenant production.
+    status: complete
+    evidence: >
+      backend/app/api/reports.py (_optional_report_auth_context local-app-env guard);
+      backend/tests/api/test_report_auth.py
+      (test_report_create_route_requires_workspace_identity_in_non_local_env)
     note: >
-      The authenticated path (auth != None) enforces workspace_id isolation and
-      returns 201 CREATED synchronously. The unauthenticated path (auth == None)
-      returns 202 ACCEPTED and dispatches a background job with no workspace check.
+      The anonymous async report-create fallback is now limited to local/dev/development/test
+      APP_ENV values for private-MVP ergonomics. In non-local APP_ENV values, missing
+      workspace/user identity delegates to the configured report auth mode and fails closed
+      before report creation; signed-token mode keeps its existing bearer-token enforcement.
 
   sync_async_create_divergence:
     status: accepted_with_risk

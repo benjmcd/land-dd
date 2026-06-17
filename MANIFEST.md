@@ -30,6 +30,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Area | Files | Notes |
 |---|---|---|
 | Product scope | `docs/PRODUCT_SPEC.md`, `docs/planning_pack/05_MVP_US_RURAL_LAND_DOSSIER_SPEC.md` | Product behavior and non-goals |
+| Operator UI design | `DESIGN.md` | Active private operator console contract: UI information architecture, visual language, accessibility target, auth posture, and implementation constraints |
 | Architecture | `docs/ARCHITECTURE.md`, `docs/adr/*.md` | Stable component boundaries and decisions |
 | Maturity gates | `MILESTONE_MAP.md` | Authoritative maturity levels and gates |
 | Lane isolation | `LANE_OWNERSHIP.md` | File ownership per lane |
@@ -41,7 +42,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Evidence/claims | `schemas/evidence_schema.json`, `schemas/claim_schema.json`, `config/ruleset_homestead_mvp.yaml` | Claim-first semantics |
 | Reports | `backend/app/domain/report_contracts.py`, `schemas/report_run_schema.json`, `backend/tests/reports/test_report_regression.py` | Report-run contract, JSON schema, and stable artifact semantics |
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |
-| Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `.github/workflows/ci.yml` | Executable gates |
+| Validation | `scripts/verify.sh`, `scripts/verify.ps1`, `scripts/validate_workspace.sh`, `scripts/validate_workspace.ps1`, `scripts/run_ui_browser_smoke.ps1`, `scripts/run_ui_browser_smoke.sh`, `scripts/ui_browser_smoke.mjs`, `scripts/ui_runtime_smoke.py`, `.github/workflows/ci.yml` | Executable gates, including explicit UI smoke gates |
 | Deployment smoke | `scripts/run_deployment_smoke.ps1`, `scripts/run_deployment_smoke.sh` | Compose-backed deployment smoke for health, metrics, queue health, and report workflow |
 | Connector runbook | `docs/connectors/connector_runbook.md` | Connector interface, run lifecycle, failure taxonomy, quality gates, and the two fixture corpora (embedded API vs. county golden) and their reachability gap |
 | MVP operator runbook | `docs/runbooks/mvp_operator.md` | Startup, API workflow, configuration, known limitations |
@@ -53,7 +54,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Dependency provenance | `backend/requirements-prod.lock`, `docs/sbom/backend-prod-sbom.json`, `docs/runbooks/dependency_provenance.md`, `scripts/provenance_check.py`, `scripts/run_provenance_check.ps1`, `scripts/run_provenance_check.sh` | Hashed backend production lock, SBOM, GitHub artifact attestation wiring, and validate-only provenance proof |
 | Container image scan | `backend/Dockerfile`, `.dockerignore`, `.github/workflows/ci.yml`, `docs/runbooks/container_image_scan.md`, `scripts/container_scan_check.py`, `scripts/run_container_scan_check.ps1`, `scripts/run_container_scan_check.sh` | Digest-pinned backend base image plus CI Docker Scout scan for the locally built backend image and runtime base packages |
 | Cost monitoring | `config/ops_cost_monitoring.yaml`, `docs/runbooks/cost_monitoring.md`, `scripts/cost_monitoring_check.py`, `scripts/run_cost_monitoring_check.ps1`, `scripts/run_cost_monitoring_check.sh` | Cost categories, report cost metrics, zero-dollar attribution, and paid-source guardrails |
-| Access control | `config/access_control.yaml`, `docs/runbooks/access_control.md`, `scripts/access_control_check.py`, `scripts/run_access_control_check.ps1`, `scripts/run_access_control_check.sh` | API-key, scoped reviewer service-account, protected-route posture, and full user-RBAC blockers |
+| Access control | `config/access_control.yaml`, `docs/runbooks/access_control.md`, `docs/runbooks/mvp_operator.md`, `DESIGN.md`, `scripts/access_control_check.py`, `scripts/run_access_control_check.ps1`, `scripts/run_access_control_check.sh` | API-key, UI API-key cookie bridge, scoped reviewer service-account, protected-route posture, and full user-RBAC blockers |
 | Release readiness | `config/release_readiness.yaml`, `docs/runbooks/release_readiness.md`, `scripts/run_release_readiness_check.ps1`, `scripts/run_release_readiness_check.sh` | Repo-local release gate catalog and validate-only readiness proof |
 | Release package | `config/release_package.yaml`, `docs/runbooks/release_package.md`, `scripts/build_release_package.py`, `scripts/build_release_package.ps1`, `scripts/build_release_package.sh`, `scripts/release_package_check.py`, `scripts/run_release_package_check.ps1`, `scripts/run_release_package_check.sh` | Local source/runtime/operator ZIP package boundary, manifest, and validate-only package proof |
 | Image publication | `config/image_publication.yaml`, `docs/runbooks/image_publication.md`, `scripts/image_publication_check.py`, `scripts/run_image_publication_check.ps1`, `scripts/run_image_publication_check.sh` | Registry image publication boundary, required evidence, blockers, and validate-only proof |

@@ -1,0 +1,255 @@
+{
+  "manifest_kind": "selected_county_private_mvp_cases",
+  "manifest_version": "2026-06-14",
+  "fixture_scope": "private_mvp_fixture",
+  "fixture_language": "Fixture/private-MVP package copied from tests fixtures; does not imply live county coverage.",
+  "source_fixture_root": "tests/fixtures",
+  "cases": [
+    {
+      "case_id": "BUN-slope",
+      "county": "buncombe",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Mountain/slope/elevation stress case Black Mountain area",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bun-slope.geojson",
+      "connector_fixture_files": {
+        "flood": "bun-slope-flood.json",
+        "access": "bun-slope-access.json",
+        "buildability": "bun-slope-build.json",
+        "terrain": "bun-slope-terrain.json",
+        "parcels": "bun-slope-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "access",
+        "buildability",
+        "terrain",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "BUN-flood",
+      "county": "buncombe",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Mountain floodplain stress case French Broad River area",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bun-flood.geojson",
+      "connector_fixture_files": {
+        "flood": "bun-flood-flood.json",
+        "buildability": "bun-flood-build.json",
+        "terrain": "bun-flood-terrain.json",
+        "parcels": "bun-flood-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "buildability",
+        "terrain",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "BUN-access",
+      "county": "buncombe",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Private-road/access-ambiguity stress case remote north Buncombe",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bun-access.geojson",
+      "connector_fixture_files": {
+        "access": "bun-access-access.json",
+        "buildability": "bun-access-build.json",
+        "terrain": "bun-access-terrain.json",
+        "parcels": "bun-access-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "access",
+        "buildability",
+        "terrain",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "CHA-rural-use",
+      "county": "chatham",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Rural/agricultural land-use stress case Chatham County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "cha-rural.geojson",
+      "connector_fixture_files": {
+        "flood": "cha-rural-flood.json",
+        "access": "cha-rural-access.json",
+        "parcels": "cha-rural-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "access",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "CHA-zoning-edge",
+      "county": "chatham",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Zoning/unzoned/jurisdiction-edge stress case Chatham County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "cha-zone.geojson",
+      "connector_fixture_files": {
+        "zoning": "cha-zone-zoning.json",
+        "parcels": "cha-zone-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "zoning",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "CHA-parcel-tax",
+      "county": "chatham",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Parcel/tax/easement-ambiguity stress case Chatham County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "cha-tax.geojson",
+      "connector_fixture_files": {
+        "flood": "cha-tax-flood.json",
+        "access": "cha-tax-access.json",
+        "parcels": "cha-tax-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "access",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "BRU-coastal-flood",
+      "county": "brunswick",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Coastal flood/low-elevation stress case Brunswick County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bru-coast.geojson",
+      "connector_fixture_files": {
+        "flood": "bru-coast-flood.json",
+        "wetlands": "bru-coast-wetlands.json",
+        "soils": "bru-coast-soils.json",
+        "parcels": "bru-coast-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "wetlands",
+        "soils",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "BRU-wetlands-soils",
+      "county": "brunswick",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Wetlands/soils/septic-proxy stress case Brunswick County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bru-wet.geojson",
+      "connector_fixture_files": {
+        "flood": "bru-wet-flood.json",
+        "access": "bru-wet-access.json",
+        "wetlands": "bru-wet-wetlands.json",
+        "soils": "bru-wet-soils.json",
+        "parcels": "bru-wet-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "flood",
+        "access",
+        "wetlands",
+        "soils",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    },
+    {
+      "case_id": "BRU-jurisdiction",
+      "county": "brunswick",
+      "state": "nc",
+      "intent": "rural_land_purchase",
+      "description": "Municipal-vs-county zoning jurisdiction stress case Brunswick County",
+      "fixture_scope": "private_mvp_fixture",
+      "fixture_language": "Packaged fixture-only selected-county private MVP case; not live coverage.",
+      "geometry_file": "bru-juris.geojson",
+      "connector_fixture_files": {
+        "zoning": "bru-juris-zoning.json",
+        "wetlands": "bru-juris-wetlands.json",
+        "parcels": "bru-juris-parcels.json"
+      },
+      "expected_connector_workflow_domains": [
+        "zoning",
+        "wetlands",
+        "parcels"
+      ],
+      "expected_not_evaluated_domains": [
+        "assessor"
+      ],
+      "expected_unknowns": [
+        "assessor_not_evaluated"
+      ]
+    }
+  ]
+}

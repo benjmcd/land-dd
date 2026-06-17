@@ -145,6 +145,9 @@ def test_ui_review_queue_list_empty_state() -> None:
     response = tc.get("/ui/connector-review-queue")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+    assert 'name="viewport"' in response.text
+    assert "href='/ui/'" in response.text
+    assert "<select name='status'>" in response.text
     assert "Connector Review Queue" in response.text
     assert "No connector review items" in response.text
 
@@ -156,6 +159,73 @@ def test_ui_review_queue_list_renders_items() -> None:
     response = tc.get("/ui/connector-review-queue")
     assert response.status_code == 200
     assert str(item.ingest_run_id)[:8] in response.text
+    assert "class='review-queue-table-wrap'" in response.text
+    assert "class='review-queue-table'" in response.text
+
+
+def test_ui_review_queue_list_shows_needs_review_triage_and_next_action() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = tc.get("/ui/connector-review-queue")
+
+    assert response.status_code == 200
+    assert "<th>Triage</th>" in response.text
+    assert "<th>Next Action</th>" in response.text
+    assert "needs_human_review" in response.text
+    assert "retrieval_not_succeeded" in response.text
+    assert "Review connector retrieval status" in response.text
+    assert "Blocking: 0" in response.text
+    assert "Evidence: 1 created / 0 skipped" in response.text
+    assert "Source failures: 1 created / 0 skipped" in response.text
+    assert f"href='/ui/connector-review-queue/{item.ingest_run_id}'" in response.text
+    assert "Review item" in response.text
+
+
+def test_ui_review_queue_list_shows_failed_triage_and_requeue_action() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    failed = services.connector_review_queue.request_fixture_fix(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+        reason="Needs fixture update",
+    )
+
+    response = tc.get("/ui/connector-review-queue?status=failed")
+
+    assert response.status_code == 200
+    assert str(failed.ingest_run_id)[:8] in response.text
+    assert "needs_human_review" in response.text
+    assert "source_failure_evidence_present" in response.text
+    assert "Requeue or cancel" in response.text
+    assert f"href='/ui/connector-review-queue/{failed.ingest_run_id}'" in response.text
+
+
+def test_ui_review_queue_list_shows_succeeded_triage_and_resume_action() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_success.json")
+    services = cast(ApiServices, app.state.services)
+    succeeded = services.connector_review_queue.approve_for_connector_qa(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+    )
+
+    response = tc.get("/ui/connector-review-queue?status=succeeded")
+
+    assert response.status_code == 200
+    assert str(succeeded.ingest_run_id)[:8] in response.text
+    assert "ready_for_connector_qa" in response.text
+    assert "Confirm connector provenance and evidence counts before promotion." in (
+        response.text
+    )
+    assert "Evidence: 1 created / 0 skipped" in response.text
+    assert "Source failures: 0 created / 0 skipped" in response.text
+    assert "Resume report" in response.text
+    assert f"href='/ui/connector-review-queue/{succeeded.ingest_run_id}'" in response.text
 
 
 def test_ui_review_queue_list_status_filter_dropdown_present() -> None:
@@ -212,15 +282,15 @@ def test_ui_review_queue_list_prev_next_links() -> None:
     assert "Previous" in response.text
 
 
-def test_ui_review_queue_list_invalid_status_returns_200_not_500() -> None:
-    """GET ?status=bogus must return 200 (unfiltered list) not 500 DB CAST error."""
+def test_ui_review_queue_list_invalid_status_fails_closed() -> None:
     app = create_app()
     tc = TestClient(app)
     response = tc.get("/ui/connector-review-queue?status=bogus")
-    assert response.status_code == 200
+    assert response.status_code == 422
     assert "text/html" in response.headers["content-type"]
-    # The invalid status is ignored; the queue list renders normally
-    assert "Connector Review Queue" in response.text
+    assert "Invalid Status Filter" in response.text
+    assert "bogus" in response.text
+    assert "queued" in response.text
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +304,8 @@ def test_ui_review_detail_not_found() -> None:
     response = tc.get(f"/ui/connector-review-queue/{uuid4()}")
     assert response.status_code == 404
     assert "text/html" in response.headers["content-type"]
+    assert 'name="viewport"' in response.text
+    assert "href='/ui/connector-review-queue'" in response.text
     assert "Not Found" in response.text
 
 
@@ -264,16 +336,211 @@ def test_ui_review_detail_renders_quality_issues() -> None:
     assert "Quality Issues" in response.text
 
 
+def test_ui_review_detail_renders_failed_decision_context() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    response = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+
+    assert response.status_code == 200
+    assert "Decision Context" in response.text
+    assert "fixture_flood_static blocked run 66666666" in response.text
+    assert (
+        "1 evidence created, 0 evidence skipped, 1 source failures observed."
+        in response.text
+    )
+    assert "Review connector retrieval status" in response.text
+    assert "source_failure_evidence_present" in response.text
+    assert "<div class='context-label'>Rows</div><div class='context-value'>0</div>" in (
+        response.text
+    )
+    assert "<div class='context-label'>Errors</div><div class='context-value'>1</div>" in (
+        response.text
+    )
+    assert "<div class='context-label'>Warnings</div><div class='context-value'>0</div>" in (
+        response.text
+    )
+    assert "fixture://connectors/flood_failure" in response.text
+    assert "failure_reason" in response.text
+    assert "fixture_source_unavailable" in response.text
+    assert "FLOOD_SOURCE_UNAVAILABLE" in response.text
+    assert "Fixture flood source retrieval was unavailable." in response.text
+    assert "Fixture-only source failure; flood status is not evaluated." in response.text
+    assert "<div class='context-label'>Evidence Created</div>" in response.text
+    assert "<div class='context-value'>1</div>" in response.text
+    assert "1 created, 0 skipped" in response.text
+    assert "77777777-7777-4777-8777-777777777777" in response.text
+    assert "<span class='evidence-pill'>source failure</span>" in response.text
+
+
+def test_ui_review_detail_renders_success_evidence_context_without_failure_framing() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_success.json")
+
+    response = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+
+    assert response.status_code == 200
+    assert "Decision Context" in response.text
+    assert "fixture_flood_static succeeded run 11111111" in response.text
+    assert (
+        "1 evidence created, 0 evidence skipped, 0 source failures observed."
+        in response.text
+    )
+    assert "Confirm connector provenance and evidence counts before promotion." in response.text
+    assert "<div class='context-label'>Rows</div><div class='context-value'>1</div>" in (
+        response.text
+    )
+    assert "<div class='context-label'>Errors</div><div class='context-value'>0</div>" in (
+        response.text
+    )
+    assert "<div class='context-label'>Warnings</div><div class='context-value'>0</div>" in (
+        response.text
+    )
+    assert "fixture://connectors/flood_success" in response.text
+    assert "FLOOD_ZONE_SCREEN" in response.text
+    assert "Fixture flood geometry intersects the subject area." in response.text
+    assert "Fixture-only flood screening; not a final flood determination." in response.text
+    assert "33333333-3333-4333-8333-333333333333" in response.text
+    assert "<span class='evidence-pill'>evidence</span>" in response.text
+    assert "<span class='evidence-pill'>source failure</span>" not in response.text
+    assert "source_failure_evidence_present" not in response.text
+    assert (
+        "Confirm source-failure evidence before downstream claim or report use."
+        not in response.text
+    )
+
+
+def test_ui_review_detail_decision_context_does_not_dump_secret_payload_keys() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    repo = services.connector_review_queue_repo
+    payload = dict(item.payload)
+    payload["api_key"] = "super-secret-value"
+    metrics = dict(cast(dict[str, object], payload["metrics"]))
+    metrics["access_token"] = "nested-secret-value"
+    payload["metrics"] = metrics
+    patched = _dc_replace(item, payload=payload)
+    repo._store[item.ingest_run_id] = patched  # type: ignore[attr-defined]
+
+    response = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+
+    assert response.status_code == 200
+    assert "Decision Context" in response.text
+    assert "super-secret-value" not in response.text
+    assert "nested-secret-value" not in response.text
+
+
 def test_ui_review_detail_has_action_forms() -> None:
     app = create_app()
     tc = TestClient(app)
     item = _enqueue_review_item(app, "flood_failure.json")
     response = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     assert response.status_code == 200
+    assert 'name="viewport"' in response.text
+    assert "href='/ui/connector-review-queue'" in response.text
     assert "Approve" in response.text
     assert "reject" in response.text.lower() or "Request Fix" in response.text
-    assert "Requeue" in response.text or "requeue" in response.text.lower()
     assert "Cancel" in response.text
+    base_action = f"/ui/connector-review-queue/{item.ingest_run_id}"
+    assert f"action='{base_action}/approve'" in response.text
+    assert f"action='{base_action}/reject'" in response.text
+    assert f"action='{base_action}/requeue'" not in response.text
+    assert f"action='{base_action}/cancel'" in response.text
+    assert "reviewer_id" in response.text
+    assert "reviewer_token" in response.text
+
+
+def test_ui_review_detail_open_item_shows_review_actions_without_requeue() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+
+    assert item.status in {JobStatus.NEEDS_REVIEW, JobStatus.QUEUED}
+    response = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+
+    assert response.status_code == 200
+    base_action = f"/ui/connector-review-queue/{item.ingest_run_id}"
+    assert f"action='{base_action}/approve'" in response.text
+    assert f"action='{base_action}/reject'" in response.text
+    assert f"action='{base_action}/cancel'" in response.text
+    assert "reviewer_id" in response.text
+    assert "reviewer_token" in response.text
+    assert f"action='{base_action}/requeue'" not in response.text
+    assert f"action='{base_action}/resume-report'" not in response.text
+
+
+def test_ui_review_detail_failed_item_shows_requeue_and_cancel_only() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    failed = services.connector_review_queue.request_fixture_fix(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+        reason="Needs fixture update",
+    )
+
+    assert failed.status == JobStatus.FAILED
+    assert failed.attempts < failed.max_attempts
+    response = tc.get(f"/ui/connector-review-queue/{failed.ingest_run_id}")
+
+    assert response.status_code == 200
+    base_action = f"/ui/connector-review-queue/{failed.ingest_run_id}"
+    assert f"action='{base_action}/requeue'" in response.text
+    assert f"action='{base_action}/cancel'" in response.text
+    assert f"action='{base_action}/approve'" not in response.text
+    assert f"action='{base_action}/reject'" not in response.text
+    assert f"action='{base_action}/resume-report'" not in response.text
+
+
+def test_ui_review_detail_succeeded_item_shows_resume_report_only() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    succeeded = services.connector_review_queue.approve_for_connector_qa(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+    )
+
+    assert succeeded.status == JobStatus.SUCCEEDED
+    response = tc.get(f"/ui/connector-review-queue/{succeeded.ingest_run_id}")
+
+    assert response.status_code == 200
+    base_action = f"/ui/connector-review-queue/{succeeded.ingest_run_id}"
+    assert f"action='{base_action}/resume-report'" in response.text
+    assert f"action='{base_action}/approve'" not in response.text
+    assert f"action='{base_action}/reject'" not in response.text
+    assert f"action='{base_action}/requeue'" not in response.text
+    assert f"action='{base_action}/cancel'" not in response.text
+
+
+def test_ui_review_detail_cancelled_item_shows_no_actions_message() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    cancelled = services.connector_review_queue.cancel(
+        item.job_id,
+        reason="No longer needed",
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+    )
+
+    assert cancelled.status == JobStatus.CANCELLED
+    response = tc.get(f"/ui/connector-review-queue/{cancelled.ingest_run_id}")
+
+    assert response.status_code == 200
+    base_action = f"/ui/connector-review-queue/{cancelled.ingest_run_id}"
+    assert f"action='{base_action}/approve'" not in response.text
+    assert f"action='{base_action}/reject'" not in response.text
+    assert f"action='{base_action}/requeue'" not in response.text
+    assert f"action='{base_action}/cancel'" not in response.text
+    assert f"action='{base_action}/resume-report'" not in response.text
+    assert "No connector review actions are available for this status." in response.text
 
 
 def test_ui_review_detail_resume_form_shown_for_succeeded() -> None:
@@ -366,6 +633,37 @@ def test_ui_review_approve_valid_scoped_transitions_item() -> None:
     updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
     assert updated is not None
     assert updated.status == JobStatus.SUCCEEDED
+
+
+def test_ui_review_approve_accepts_reviewer_session_without_form_credentials() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+    assert "Using reviewer session" in detail.text
+    assert "reviewer_token" not in detail.text
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/approve",
+        data={},
+    )
+
+    assert response.status_code == 200
+    assert "Approved" in response.text
+    services = cast(ApiServices, app.state.services)
+    updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert updated is not None
+    assert updated.status == JobStatus.SUCCEEDED
+    assert updated.locked_by == _FIXTURE_REVIEWER_ID
 
 
 # ---------------------------------------------------------------------------
@@ -628,8 +926,8 @@ def _register_area_and_enqueue_succeeded(
     return tc, updated, area_id
 
 
-def test_ui_review_resume_report_happy_path_queues_job_and_links_report() -> None:
-    """Happy path: valid reviewer + SUCCEEDED item with registered area_id -> 200."""
+def test_ui_review_resume_report_happy_path_queues_job_and_redirects_to_report() -> None:
+    """Happy path: valid reviewer + SUCCEEDED item with registered area_id -> report redirect."""
     app = create_app()
     tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
 
@@ -640,17 +938,17 @@ def test_ui_review_resume_report_happy_path_queues_job_and_links_report() -> Non
             "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
             "intent_code": "rural_land_purchase",
         },
+        follow_redirects=False,
     )
-    assert response.status_code == 200
-    assert "text/html" in response.headers["content-type"]
-    assert "Report Run Queued" in response.text or "Report Queued" in response.text
-    # Response must contain a link to /ui/report-runs/<new_id>
-    assert "/ui/report-runs/" in response.text
+    assert response.status_code in {302, 303, 307}
+    location = response.headers["location"]
+    assert location.startswith("/ui/report-runs/")
+    report_run_id = location.removeprefix("/ui/report-runs/")
 
     # Verify the job was actually created
     services = cast(ApiServices, app.state.services)
     all_jobs = services.async_report_jobs.list_recent(limit=100)
-    assert len(all_jobs) >= 1
+    assert any(str(job.report_run_id) == report_run_id for job in all_jobs)
 
 
 def test_ui_review_resume_report_non_succeeded_item_returns_409() -> None:
@@ -689,27 +987,26 @@ def test_ui_review_resume_report_unknown_intent_code_returns_422() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Index page pending_connector_review JS handling
+# Index page custom-intake JS handling
 # ---------------------------------------------------------------------------
 
 
-def test_ui_index_contains_pending_connector_review_js() -> None:
+def test_ui_index_custom_intake_js_posts_form_action() -> None:
     app = create_app()
     tc = TestClient(app)
     response = tc.get("/ui/")
     assert response.status_code == 200
-    assert "pending_connector_review" in response.text
-    # The link template must be present in the JS
-    assert "/ui/connector-review-queue/" in response.text
+    assert "fetch(form.action" in response.text
+    assert "new FormData(form)" in response.text
+    assert "credentials: 'same-origin'" in response.text
+    assert "fetch('/intake'" not in response.text
 
 
-def test_ui_index_pending_connector_review_link_template() -> None:
-    """Verify the JS block links to the queue detail page using connector_ingest_run_id."""
+def test_ui_index_custom_intake_js_follows_server_redirect() -> None:
     app = create_app()
     tc = TestClient(app)
     response = tc.get("/ui/")
     assert response.status_code == 200
     html = response.text
-    assert "connector_ingest_run_id" in html
-    # The URL template must reference the connector-review-queue path
-    assert "/ui/connector-review-queue/' + data.connector_ingest_run_id" in html
+    assert "response.redirected" in html
+    assert "window.location.href = response.url" in html

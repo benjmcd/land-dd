@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         alias="USE_DB_SERVICES",
         description=(
             "Use Postgres-backed API repositories and job stores instead of in-memory "
-            "services. Intended for deployed/runtime smoke mode."
+            "services. Required outside local/dev/development/test APP_ENV values."
         ),
     )
     object_store_root: str = Field(
@@ -57,6 +57,23 @@ class Settings(BaseSettings):
         description=(
             "Comma-separated id|status|secret API-key lifecycle specs. "
             "Status must be active or retired; secret may be raw or sha256:<64-hex>."
+        ),
+    )
+    ui_auth_cookie_secret: str | None = Field(
+        default=None,
+        alias="UI_AUTH_COOKIE_SECRET",
+        description=(
+            "Optional high-entropy signing secret for /ui API-key session cookies. "
+            "Required when REQUIRE_API_KEY is true outside local/dev/development/test "
+            "APP_ENV values; otherwise a per-process local fallback is generated."
+        ),
+    )
+    ui_auth_cookie_secure: bool = Field(
+        default=False,
+        alias="UI_AUTH_COOKIE_SECURE",
+        description=(
+            "Force the /ui API-key session cookie to be HTTPS-only. Non-local APP_ENV "
+            "values enable this automatically."
         ),
     )
     enable_rate_limit: bool = Field(default=False, alias="ENABLE_RATE_LIMIT")

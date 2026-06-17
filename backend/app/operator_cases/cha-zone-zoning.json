@@ -1,0 +1,42 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_zoning_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_chatham_cha_zoning_edge_zoning",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c3c4c5c6-c3c4-4c5c-8c6c-c3c4c5c6c7c8",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "ZONING_USE_CLASSIFICATION",
+      "domain": "zoning",
+      "observation": "Fixture zoning screening: parcel is in a jurisdiction-edge or unzoned area — residential use classification is indeterminate from available fixture data.",
+      "observed_value": {
+        "zoning_district": "UNZONED",
+        "jurisdiction_edge": true,
+        "classification_indeterminate": true,
+        "udo_note": "Jurisdiction-edge or unzoned area — residential use classification indeterminate; verify with Chatham County Planning."
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_zoning_classification_lookup",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only zoning screening for Chatham County zoning/unzoned edge. Area may be unzoned or subject to jurisdiction boundary ambiguity. Requires confirmation by Chatham County Planning office.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z"
+    }
+  ]
+}

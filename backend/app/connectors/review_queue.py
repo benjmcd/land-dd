@@ -931,6 +931,20 @@ def _idempotency_key(ingest_run_id: UUID) -> str:
     return f"{CONNECTOR_REVIEW_STATUS_JOB_TYPE}:{ingest_run_id}"
 
 
+def _json_ready(value: Any) -> Any:
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, list | tuple | set):
+        return [_json_ready(item) for item in value]
+    return str(value)
+
+
 def _payload(
     review_status: ConnectorRunReviewStatus,
     *,
@@ -938,19 +952,48 @@ def _payload(
     requested_by: UUID | None = None,
 ) -> dict[str, Any]:
     record = review_status.to_status_record()
+    packet = review_status.handoff.packet
     payload = {
         "kind": CONNECTOR_REVIEW_STATUS_JOB_TYPE,
+        "title": record["title"],
+        "summary": record["summary"],
         "connector_name": record["connector_name"],
         "ingest_run_id": record["ingest_run_id"],
         "area_id": record["area_id"],
         "dataset_version_id": record["dataset_version_id"],
         "retrieval_status": record["retrieval_status"],
+        "retrieval_recorded": packet.retrieval_recorded,
+        "retrieval_skipped": packet.retrieval_skipped,
+        "started_at": packet.started_at.isoformat(),
+        "finished_at": (
+            packet.finished_at.isoformat() if packet.finished_at is not None else None
+        ),
+        "row_count": packet.row_count,
+        "error_count": packet.error_count,
+        "warning_count": packet.warning_count,
+        "log_uri": packet.log_uri,
+        "metrics": _json_ready(packet.metrics),
         "review_required": record["review_required"],
         "disposition": record["disposition"],
         "priority": record["priority"],
         "queue_name": record["queue_name"],
-        "signal_codes": record["signal_codes"],
-        "quality": record["quality"],
+        "signal_codes": _json_ready(record["signal_codes"]),
+        "tasks": _json_ready(record["tasks"]),
+        "evidence_input_count": packet.evidence_input_count,
+        "evidence_created_count": record["evidence_created_count"],
+        "evidence_skipped_count": record["evidence_skipped_count"],
+        "source_failure_created_count": record["source_failure_created_count"],
+        "source_failure_skipped_count": record["source_failure_skipped_count"],
+        "created_evidence_ids": _json_ready(packet.created_evidence_ids),
+        "skipped_evidence_ids": _json_ready(packet.skipped_evidence_ids),
+        "source_failure_evidence_ids": _json_ready(packet.source_failure_evidence_ids),
+        "created_evidence": [
+            summary.to_review_record() for summary in packet.created_evidence
+        ],
+        "skipped_evidence": [
+            summary.to_review_record() for summary in packet.skipped_evidence
+        ],
+        "quality": _json_ready(record["quality"]),
     }
     if workspace_id is not None:
         payload["workspace_id"] = str(workspace_id)

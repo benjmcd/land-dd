@@ -136,6 +136,11 @@ def test_review_packet_summarizes_successful_fixture_workflow() -> None:
     assert packet.created_evidence_ids == (
         result.evidence_ingestion.created_evidence[0].evidence_id,
     )
+    assert packet.created_evidence[0].evidence_code == "FLOOD_ZONE_SCREEN"
+    assert packet.created_evidence[0].observation == (
+        "Fixture flood geometry intersects the subject area."
+    )
+    assert packet.created_evidence[0].is_source_failure is False
     assert packet.skipped_evidence_ids == ()
     assert packet.source_failure_evidence_ids == ()
     assert packet.review_required is False
@@ -164,6 +169,11 @@ def test_review_packet_flags_blocked_source_failure_workflow() -> None:
     assert packet.source_failure_evidence_ids == (
         result.evidence_ingestion.created_evidence[0].evidence_id,
     )
+    assert packet.created_evidence[0].evidence_code == "FLOOD_SOURCE_UNAVAILABLE"
+    assert packet.created_evidence[0].caveat == (
+        "Fixture-only source failure; flood status is not evaluated."
+    )
+    assert packet.created_evidence[0].is_source_failure is True
     assert tuple(signal.code for signal in packet.signals) == (
         ConnectorReviewSignalCode.RETRIEVAL_NOT_SUCCEEDED,
         ConnectorReviewSignalCode.RETRIEVAL_ERRORS_PRESENT,
