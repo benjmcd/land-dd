@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -58,6 +58,24 @@ def _seed(services: ApiServices) -> None:
     )
 
 
+def _create_report_body(client: TestClient) -> dict[str, Any]:
+    response = client.post(
+        "/report-runs",
+        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
+        headers=_auth_headers(),
+    )
+    assert response.status_code == 202
+    report_run_id = response.json()["report_run_id"]
+
+    report = client.get(f"/report-runs/{report_run_id}", headers=_auth_headers())
+    assert report.status_code == 200
+    body = report.json()
+    assert body["report_run_id"] == report_run_id
+    assert body["workspace_id"] == str(_WORKSPACE_ID)
+    assert body["requested_by"] == str(_USER_ID)
+    return cast(dict[str, Any], body)
+
+
 def test_flood_ingest_then_report_produces_flood_high_risk_claim() -> None:
     app = create_app()
     client = TestClient(app)
@@ -70,13 +88,7 @@ def test_flood_ingest_then_report_produces_flood_high_risk_claim() -> None:
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     flood_red_flags = [c for c in body["red_flags"] if c["domain"] == "flood"]
     assert len(flood_red_flags) >= 1, (
@@ -98,13 +110,7 @@ def test_flood_failure_ingest_then_report_produces_flood_unknown_claim() -> None
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     flood_unknowns = [c for c in body["unknowns"] if c["domain"] == "flood"]
     assert len(flood_unknowns) >= 1, (
@@ -130,13 +136,7 @@ def test_zoning_prohibited_ingest_then_report_produces_zoning_red_flag() -> None
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     zoning_red_flags = [c for c in body["red_flags"] if c["domain"] == "zoning"]
     assert len(zoning_red_flags) >= 1, (
@@ -161,13 +161,7 @@ def test_zoning_allowed_ingest_then_report_has_no_zoning_red_flag() -> None:
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     zoning_red_flags = [c for c in body["red_flags"] if c["domain"] == "zoning"]
     assert len(zoning_red_flags) == 0, (
@@ -190,13 +184,7 @@ def test_access_no_road_ingest_then_report_produces_access_red_flag() -> None:
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     access_red_flags = [c for c in body["red_flags"] if c["domain"] == "access"]
     assert len(access_red_flags) >= 1, (
@@ -221,13 +209,7 @@ def test_access_road_ingest_then_report_has_no_access_red_flag() -> None:
     )
     assert ingest.status_code == 201
 
-    report = client.post(
-        "/report-runs",
-        json={"area_id": str(_FIXTURE_AREA_ID), "intent_code": "homestead_feasibility"},
-        headers=_auth_headers(),
-    )
-    assert report.status_code == 201
-    body = report.json()
+    body = _create_report_body(client)
 
     access_red_flags = [c for c in body["red_flags"] if c["domain"] == "access"]
     assert len(access_red_flags) == 0, (

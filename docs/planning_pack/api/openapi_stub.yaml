@@ -222,10 +222,7 @@ paths:
           content:
             application/json:
               schema:
-                anyOf:
-                - $ref: '#/components/schemas/AsyncReportRunResponse'
-                - $ref: '#/components/schemas/ReportRunContract'
-                title: Response Create Report Run Report Runs Post
+                $ref: '#/components/schemas/AsyncReportRunResponse'
         '422':
           description: Validation Error
           content:
@@ -263,6 +260,30 @@ paths:
           minimum: 0
           default: 0
           title: Offset
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
       responses:
         '200':
           description: Successful Response

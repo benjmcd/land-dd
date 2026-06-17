@@ -112,6 +112,8 @@ def run_report_background(
     report_run_id: UUID,
     area_id: UUID,
     intent_code: IntentCode,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
 ) -> None:
     services.async_report_jobs.mark_running(report_run_id)
     logger.info(
@@ -123,6 +125,8 @@ def run_report_background(
             area_id=area_id,
             intent_code=intent_code,
             report_run_id=report_run_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
         )
         services.async_report_jobs.mark_succeeded(report_run_id)
         logger.info(
@@ -142,6 +146,8 @@ def run_db_report_background(
     report_run_id: UUID,
     area_id: UUID,
     intent_code: IntentCode,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
     object_store_root: str,
     settings: Settings,
 ) -> None:
@@ -162,6 +168,8 @@ def run_db_report_background(
                 area_id=area_id,
                 intent_code=intent_code,
                 report_run_id=report_run_id,
+                workspace_id=workspace_id,
+                requested_by=requested_by,
             )
             session.commit()
         job_store.mark_succeeded(report_run_id)
@@ -185,6 +193,8 @@ def schedule_report_background(
     report_run_id: UUID,
     area_id: UUID,
     intent_code: IntentCode,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
 ) -> None:
     logger.info(
         "report job queued",
@@ -196,6 +206,8 @@ def schedule_report_background(
             report_run_id=report_run_id,
             area_id=area_id,
             intent_code=intent_code,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
             object_store_root=str(request_context.app.state.object_store_root),
             settings=cast(Settings, request_context.app.state.settings),
         )
@@ -206,12 +218,14 @@ def schedule_report_background(
         report_run_id=report_run_id,
         area_id=area_id,
         intent_code=intent_code,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
     )
 
 
 @router.post(
     "",
-    response_model=AsyncReportRunResponse | ReportRunContract,
+    response_model=AsyncReportRunResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
 def create_report_run(
@@ -224,7 +238,7 @@ def create_report_run(
     x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-) -> AsyncReportRunResponse | ReportRunContract:
+) -> AsyncReportRunResponse:
     client_key = _validate_idempotency_key(idempotency_key)
     auth = _optional_report_auth_context(
         request_context,
@@ -246,15 +260,13 @@ def create_report_run(
             )
         return _create_authenticated_report_run(
             request=request,
+            background_tasks=background_tasks,
+            request_context=request_context,
             services=services,
             auth=auth,
             response=response,
             client_key=client_key,
         )
-    # Note: the workspace-auth path above (auth is not None) creates a
-    # synchronous report run via report_service. When Idempotency-Key is
-    # supplied, that path uses the async job store as a principal-scoped
-    # idempotency ledger and replays the stored report.
     # Idempotency-Key pre-check: if a job with this key already exists, return it.
     if client_key is not None:
         existing = services.async_report_jobs.get_by_client_idempotency_key(
@@ -335,11 +347,13 @@ def create_report_run(
 def _create_authenticated_report_run(
     *,
     request: ReportRunCreateRequest,
+    background_tasks: BackgroundTasks,
+    request_context: Request,
     services: ApiServices,
     auth: RequestAuthContext,
     response: Response,
     client_key: str | None,
-) -> ReportRunContract:
+) -> AsyncReportRunResponse:
     scoped_client_key = (
         _authenticated_idempotency_key(client_key, auth=auth)
         if client_key is not None
@@ -352,84 +366,68 @@ def _create_authenticated_report_run(
             intent_code=request.intent_code,
         )
         if existing is not None:
-            return _replay_authenticated_idempotent_report(
+            return _replay_authenticated_idempotent_job(
                 existing=existing,
                 request=request,
-                services=services,
                 auth=auth,
                 response=response,
             )
-        job = services.async_report_jobs.create(
+    job = services.async_report_jobs.create(
+        area_id=request.area_id,
+        intent_code=request.intent_code,
+        client_idempotency_key=scoped_client_key,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
+    )
+    if scoped_client_key is not None:
+        _check_idempotency_payload_match(
+            job,
             area_id=request.area_id,
             intent_code=request.intent_code,
-            client_idempotency_key=scoped_client_key,
         )
-        existing_report = services.report_service.get_report_run(job.report_run_id)
-        if existing_report is not None:
-            return _replay_authenticated_idempotent_report(
-                existing=job,
-                request=request,
-                services=services,
-                auth=auth,
-                response=response,
+        if job.workspace_id != auth.workspace_id or job.requested_by != auth.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Idempotency-Key is already associated with another principal",
             )
-        report_run_id = job.report_run_id
-    else:
-        job = None
-        report_run_id = None
-    try:
-        report = services.report_service.create_report_run(
-            area_id=request.area_id,
-            intent_code=request.intent_code,
-            report_run_id=report_run_id,
-            workspace_id=auth.workspace_id,
-            requested_by=auth.user_id,
-        )
-    except ValueError as exc:
-        if job is not None:
-            services.async_report_jobs.mark_failed(job.report_run_id, error_msg=str(exc))
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
-    except Exception as exc:
-        if job is not None:
-            services.async_report_jobs.mark_failed(job.report_run_id, error_msg=str(exc))
-        raise
-    if job is not None:
-        services.async_report_jobs.mark_succeeded(job.report_run_id)
-    response.status_code = status.HTTP_201_CREATED
-    return report
+    schedule_report_background(
+        background_tasks=background_tasks,
+        request_context=request_context,
+        services=services,
+        report_run_id=job.report_run_id,
+        area_id=job.area_id,
+        intent_code=job.intent_code,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
+    )
+    return AsyncReportRunResponse(
+        report_run_id=job.report_run_id,
+        status="queued",
+    )
 
 
-def _replay_authenticated_idempotent_report(
+def _replay_authenticated_idempotent_job(
     *,
     existing: ReportJobRecord,
     request: ReportRunCreateRequest,
-    services: ApiServices,
     auth: RequestAuthContext,
     response: Response,
-) -> ReportRunContract:
+) -> AsyncReportRunResponse:
     _check_idempotency_payload_match(
         existing,
         area_id=request.area_id,
         intent_code=request.intent_code,
     )
-    report = services.report_service.get_report_run(existing.report_run_id)
-    if report is None:
-        detail = "Idempotency-Key is already in use for an unfinished report run"
-        if existing.status == JobStatus.FAILED:
-            detail = "Idempotency-Key is already associated with a failed report run"
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
-    if report.workspace_id != auth.workspace_id or report.requested_by != auth.user_id:
+    if existing.workspace_id != auth.workspace_id or existing.requested_by != auth.user_id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Idempotency-Key is already associated with another principal",
         )
-    if existing.status != JobStatus.SUCCEEDED:
-        services.async_report_jobs.mark_succeeded(existing.report_run_id)
     response.status_code = status.HTTP_200_OK
-    return report
+    return AsyncReportRunResponse(
+        report_run_id=existing.report_run_id,
+        status=existing.status.value,
+    )
 
 
 def _authenticated_idempotency_key(
@@ -496,6 +494,8 @@ def retry_report_run(
         area_id=failed_job.area_id,
         intent_code=failed_job.intent_code,
         retry_of_report_run_id=failed_job.report_run_id,
+        workspace_id=failed_job.workspace_id,
+        requested_by=failed_job.requested_by,
     )
     schedule_report_background(
         background_tasks=background_tasks,
@@ -504,6 +504,8 @@ def retry_report_run(
         report_run_id=retry_job.report_run_id,
         area_id=retry_job.area_id,
         intent_code=retry_job.intent_code,
+        workspace_id=retry_job.workspace_id,
+        requested_by=retry_job.requested_by,
     )
     return AsyncReportRunResponse(
         report_run_id=retry_job.report_run_id,
@@ -602,12 +604,25 @@ class ReportRunListItem(BaseModel):
 @router.get("", response_model=list[ReportRunListItem])
 def list_report_runs(
     services: ServicesDep,
+    request_context: Request,
     status: Annotated[JobStatus | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+    x_workspace_id: Annotated[str | None, Header(alias="X-Workspace-Id")] = None,
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> list[ReportRunListItem]:
+    auth = _optional_report_auth_context(
+        request_context,
+        authorization=authorization,
+        x_workspace_id=x_workspace_id,
+        x_user_id=x_user_id,
+    )
     jobs = services.async_report_jobs.list_recent(
-        limit=limit, offset=offset, status=status
+        limit=limit,
+        offset=offset,
+        status=status,
+        workspace_id=auth.workspace_id if auth is not None else None,
     )
     items: list[ReportRunListItem] = []
     for job in jobs:
@@ -674,16 +689,39 @@ def get_report_run(
     )
     job = services.async_report_jobs.get(report_run_id)
     if job is not None:
+        if (
+            auth is not None
+            and job.workspace_id is not None
+            and job.workspace_id != auth.workspace_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="report run not found",
+            )
         if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            if auth is not None and job.workspace_id != auth.workspace_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="report run not found",
+                )
             return ReportRunContract(
                 report_run_id=report_run_id,
+                workspace_id=job.workspace_id,
+                requested_by=job.requested_by,
                 area_id=job.area_id,
                 intent_code=job.intent_code,
                 status=job.status,
             )
         if job.status == JobStatus.FAILED:
+            if auth is not None and job.workspace_id != auth.workspace_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="report run not found",
+                )
             return ReportRunContract(
                 report_run_id=report_run_id,
+                workspace_id=job.workspace_id,
+                requested_by=job.requested_by,
                 area_id=job.area_id,
                 intent_code=job.intent_code,
                 status=JobStatus.FAILED,
@@ -737,7 +775,11 @@ def get_report_run_dossier(
             headers=headers,
         )
     job = services.async_report_jobs.get(report_run_id)
-    if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+    if (
+        job is not None
+        and (auth is None or job.workspace_id == auth.workspace_id)
+        and job.status in (JobStatus.QUEUED, JobStatus.RUNNING)
+    ):
         return JSONResponse(
             status_code=202,
             content={"status": "pending", "report_run_id": str(report_run_id)},
@@ -799,7 +841,11 @@ def get_report_run_artifact(
             },
         )
     job = services.async_report_jobs.get(report_run_id)
-    if job is not None and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+    if (
+        job is not None
+        and (auth is None or job.workspace_id == auth.workspace_id)
+        and job.status in (JobStatus.QUEUED, JobStatus.RUNNING)
+    ):
         return JSONResponse(
             status_code=202,
             content={"status": "pending", "report_run_id": str(report_run_id)},

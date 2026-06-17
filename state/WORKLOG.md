@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-17 (Async report-create contract)
+
+- Changed authenticated signed-token `POST /report-runs` from synchronous
+  `201 Created` report creation to durable async job queueing with
+  `AsyncReportRunResponse`.
+- Added `workspace_id` and `requested_by` to async report job records and persisted them
+  through in-memory and SQLAlchemy-backed job stores without a migration.
+- Passed job attribution into background report creation so the eventual
+  `ReportRunContract` keeps workspace/requester scope.
+- Preserved principal-scoped idempotency replay for authenticated create requests and
+  kept payload mismatch handling at `409 Conflict`.
+- Scoped report-job reads so authenticated `GET /report-runs` lists only the caller's
+  workspace and `GET /report-runs/{id}` cannot expose another workspace's pending or
+  failed job placeholder.
+- Marked `sync_async_create_divergence` complete in the private-MVP readiness catalog
+  and updated the MVP operator runbook idempotency wording.
+- Regenerated the tracked OpenAPI stub files with `scripts/export_openapi_stub.py` and
+  verified the runtime/stub path-method contract.
+- Updated connector-ingest integration tests to follow the new `202` queue response and
+  fetch the completed report before asserting generated claim content.
+- DB-enabled `.\scripts\verify.ps1` passed on an ephemeral PostGIS container after a
+  short post-readiness settle wait; an earlier verify attempt hit a transient migration
+  connection drop immediately after `pg_isready`.
+
 ## 2026-06-16 (Operator proof-semantics closeout)
 
 - Re-audited `prod-grade-20260614` against the handoff lanes and confirmed the app-owned

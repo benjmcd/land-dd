@@ -39,6 +39,26 @@ def test_create_can_record_retry_lineage() -> None:
     assert found.retry_of_report_run_id == retry_of_report_run_id
 
 
+def test_create_can_record_workspace_and_requester() -> None:
+    store = AsyncReportJobStore()
+    workspace_id = uuid4()
+    requested_by = uuid4()
+
+    record = store.create(
+        area_id=uuid4(),
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+        workspace_id=workspace_id,
+        requested_by=requested_by,
+    )
+
+    assert record.workspace_id == workspace_id
+    assert record.requested_by == requested_by
+    found = store.get(record.report_run_id)
+    assert found is not None
+    assert found.workspace_id == workspace_id
+    assert found.requested_by == requested_by
+
+
 def test_get_returns_none_for_unknown() -> None:
     store = AsyncReportJobStore()
     assert store.get(uuid4()) is None
@@ -151,6 +171,29 @@ def test_list_recent_status_filter_in_memory() -> None:
     assert queued.report_run_id in {r.report_run_id for r in queued_jobs}
     assert all(r.status == JobStatus.FAILED for r in failed_jobs)
     assert failed.report_run_id in {r.report_run_id for r in failed_jobs}
+
+
+def test_list_recent_filters_by_workspace_in_memory() -> None:
+    store = AsyncReportJobStore()
+    workspace_a = uuid4()
+    workspace_b = uuid4()
+    area_id = uuid4()
+    job_a = store.create(
+        area_id=area_id,
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+        workspace_id=workspace_a,
+    )
+    job_b = store.create(
+        area_id=area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+        workspace_id=workspace_b,
+    )
+    store.create(area_id=area_id, intent_code=IntentCode.HOMESTEAD_FEASIBILITY)
+
+    jobs = store.list_recent(limit=50, workspace_id=workspace_a)
+
+    assert [job.report_run_id for job in jobs] == [job_a.report_run_id]
+    assert job_b.report_run_id not in {job.report_run_id for job in jobs}
 
 
 def test_list_recent_offset_beyond_end_returns_empty() -> None:

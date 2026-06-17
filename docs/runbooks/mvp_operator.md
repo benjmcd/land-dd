@@ -129,10 +129,8 @@ creating a duplicate. Reusing the same key with a different area or intent retur
 
 Signed-token report creation scopes the key to the authenticated workspace and user, so
 two different principals can reuse the same raw key without replaying each other's
-report. The signed-token path still returns `201 Created` with a full
-`ReportRunContract` on the first request and `200 OK` with the same contract on replay.
-The unauthenticated operator path returns `202 Accepted` on first queueing and `200 OK`
-with the same queued job on replay.
+report. Both signed-token and unauthenticated operator paths return `202 Accepted` on
+first queueing and `200 OK` with the same job on replay.
 
 ### Identifier glossary
 

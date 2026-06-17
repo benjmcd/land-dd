@@ -2,6 +2,63 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-17 Async Report-Create Contract
+
+**Scope:** Resolve the `sync_async_create_divergence` risk for `POST /report-runs` by
+making authenticated report creation use the same async job response contract as the
+unauthenticated private-MVP path while preserving attribution and idempotency.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/reports/test_job_store.py::test_create_can_record_workspace_and_requester ./backend/tests/api/test_report_auth.py::test_signed_report_identity_token_binds_report_scope ./backend/tests/api/test_report_auth.py::test_signed_report_create_idempotency_replays_same_report ./backend/tests/api/test_report_auth.py::test_signed_report_job_status_reads_do_not_cross_workspace
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/reports/test_job_store.py ./backend/tests/api/test_report_auth.py ./backend/tests/api/test_async_report_runs.py ./backend/tests/api/test_idempotency_key.py
+$env:PYTHONPATH='./backend'; python -m ruff check ./backend/app/reports/job_store.py ./backend/app/api/reports.py ./backend/tests/reports/test_job_store.py ./backend/tests/api/test_report_auth.py
+$env:PYTHONPATH='./backend'; python -m mypy ./backend/app/reports/job_store.py ./backend/app/api/reports.py ./backend/tests/reports/test_job_store.py ./backend/tests/api/test_report_auth.py
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/test_private_mvp_readiness.py
+python ./scripts/private_mvp_readiness_check.py
+$env:PYTHONPATH='./backend'; python ./scripts/export_openapi_stub.py
+$env:PYTHONPATH='./backend'; python -m pytest -q ./backend/tests/api/test_openapi_contract.py
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest -q tests/reports/test_job_store.py tests/api/test_report_auth.py tests/api/test_async_report_runs.py tests/api/test_idempotency_key.py
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m pytest -q tests/api/test_ingest_report_integration.py tests/evidence_ledger/test_sqlalchemy_evidence_repo.py::test_sqlalchemy_evidence_service_persists_supersession_audit_events
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m ruff check app/api/reports.py app/reports/job_store.py tests/api/test_report_auth.py tests/reports/test_job_store.py tests/api/test_ingest_report_integration.py
+cd backend; $env:PYTHONPATH='.'; py -3.12 -m mypy app/api/reports.py app/reports/job_store.py tests/api/test_report_auth.py tests/reports/test_job_store.py tests/api/test_ingest_report_integration.py
+python ./scripts/access_control_check.py
+RUN_DB_SMOKE=1 .\scripts\verify.ps1 against ephemeral PostGIS on localhost:55446
+```
+
+**Results:**
+
+- Initial focused tests failed for the expected RED reasons: job store did not accept
+  workspace/requester attribution and signed-token report create still returned `201`.
+- After implementation, the focused RED set passed (`5 passed`).
+- Focused report job/auth/async/idempotency suite passed (`54 passed`, `7 skipped`),
+  with the existing Starlette/httpx deprecation warning.
+- Ruff passed on touched Python files.
+- Mypy passed on touched Python files.
+- Private-MVP readiness artifact tests passed (`24 passed`).
+- Private-MVP readiness checker exited `0`.
+- OpenAPI stub export wrote `docs/planning_pack/api/openapi_stub.yaml` and
+  `api/openapi_stub.yaml`.
+- OpenAPI contract test passed (`1 passed`).
+- Integration review found `GET /report-runs` still needed workspace filtering. After
+  adding store-level workspace filtering and route auth, focused report job/auth/async/
+  idempotency tests passed from the backend import path, and focused ingest-report
+  integration plus the evidence audit target passed (`6 passed`, `1 skipped` in the
+  non-DB focused run).
+- Access-control checker exited `0`.
+- First DB-enabled verify attempt against ephemeral PostGIS on port `55445` hit a
+  startup race: `pg_isready` had returned ready, but the first migration connection was
+  closed by the server.
+- DB-enabled `.\scripts\verify.ps1` then passed on fresh ephemeral PostGIS port `55446`
+  after an 8-second post-ready settle window: workspace validation, migrations/seeds,
+  backend tests, ruff, mypy over 309 source files, and DB smoke all passed.
+
+**Residual risk:**
+
+- Full generated JSON OpenAPI under `local_artifacts/` was not produced; the tracked
+  stub files were regenerated and checked.
+
 ## 2026-06-16 Operator Proof-Semantics Closeout
 
 **Scope:** Reconcile the selected-county operator docs/plan with the implemented
