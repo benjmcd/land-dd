@@ -22,8 +22,11 @@ from app.core.config import Settings
 from app.db.engine import build_engine
 from app.main import create_app
 
-_CASE_ID = "CHA-zoning-edge"
-_AREA_ID = uuid5(NAMESPACE_URL, "land-dd:selected-county:CHA-zoning-edge")
+_REPRESENTATIVE_CASE_IDS = (
+    "BUN-slope",
+    "CHA-zoning-edge",
+    "BRU-coastal-flood",
+)
 _SOURCE_NAME = "Selected County Private MVP Fixtures"
 
 
@@ -42,14 +45,21 @@ class _SelectedCountySnapshot:
     connector_review_keys: frozenset[str]
 
 
+def _area_id_for(case_id: str) -> UUID:
+    return uuid5(NAMESPACE_URL, f"land-dd:selected-county:{case_id}")
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+@pytest.mark.parametrize("case_id", _REPRESENTATIVE_CASE_IDS)
 def test_db_operator_case_report_persists_selected_county_fixture(
     tmp_path: Path,
+    case_id: str,
 ) -> None:
+    area_id = _area_id_for(case_id)
     engine = build_engine()
     object_store_root = (tmp_path / "object-store").resolve()
     with Session(engine) as session:
-        before = _capture_selected_county_snapshot(session)
+        before = _capture_selected_county_snapshot(session, area_id)
 
     app = create_app(
         settings=Settings(OBJECT_STORE_ROOT=str(object_store_root)),
@@ -58,12 +68,12 @@ def test_db_operator_case_report_persists_selected_county_fixture(
     client = TestClient(app)
 
     try:
-        create_response = client.post(f"/operator-cases/{_CASE_ID}/report")
+        create_response = client.post(f"/operator-cases/{case_id}/report")
 
         assert create_response.status_code == 201
         created = create_response.json()
         report_run_id = UUID(created["report_run_id"])
-        assert created["case_id"] == _CASE_ID
+        assert created["case_id"] == case_id
         assert created["review_status"] == "approved"
         assert created["status"] == "succeeded"
         assert created["evidence_count"] > 0
@@ -81,7 +91,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
         assert get_response.status_code == 200
         report = get_response.json()
         assert report["report_run_id"] == str(report_run_id)
-        assert report["area_id"] == str(_AREA_ID)
+        assert report["area_id"] == str(area_id)
         assert report["review_status"] == "approved"
         assert report["status"] == "succeeded"
         assert report["artifact_metadata"]["persistence"] == "postgres+object_store"
@@ -98,7 +108,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
         assert stored_artifact == artifact_report
 
         with Session(engine) as session:
-            after = _capture_selected_county_snapshot(session)
+            after = _capture_selected_county_snapshot(session, area_id)
             report_row = session.execute(
                 text(
                     """
@@ -110,7 +120,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
                 {"report_run_id": report_run_id},
             ).mappings().one_or_none()
             assert report_row is not None
-            assert UUID(str(report_row["area_id"])) == _AREA_ID
+            assert UUID(str(report_row["area_id"])) == area_id
             assert report_row["status"] == "succeeded"
             assert report_row["output_uri"] == report["output_uri"]
             assert report_row["machine_json_uri"] == report["artifact_metadata"]["machine_json_uri"]
@@ -123,7 +133,7 @@ def test_db_operator_case_report_persists_selected_county_fixture(
                     WHERE area_id = :area_id
                     """
                 ),
-                {"area_id": _AREA_ID},
+                {"area_id": area_id},
             ).mappings().one_or_none()
             assert area_row is not None
             assert "selected-county-private-mvp" in str(area_row["label"])
@@ -145,19 +155,22 @@ def test_db_operator_case_report_persists_selected_county_fixture(
                     WHERE area_id = :area_id
                     """
                 ),
-                {"area_id": _AREA_ID},
+                {"area_id": area_id},
             ).scalar_one()
             assert evidence_count >= created["evidence_count"] > 0
     finally:
-        _cleanup_selected_county_snapshot(engine, before)
+        _cleanup_selected_county_snapshot(engine, before, area_id)
 
 
-def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapshot:
+def _capture_selected_county_snapshot(
+    session: Session,
+    area_id: UUID,
+) -> _SelectedCountySnapshot:
     return _SelectedCountySnapshot(
         area_exists=_row_exists(
             session,
             "SELECT 1 FROM core.areas WHERE area_id = :area_id",
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         source_exists=_row_exists(
             session,
@@ -192,7 +205,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             FROM reports.report_runs
             WHERE area_id = :area_id
             """,
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         evidence_ids=_uuid_set(
             session,
@@ -201,7 +214,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             FROM evidence.observations
             WHERE area_id = :area_id
             """,
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         claim_ids=_uuid_set(
             session,
@@ -210,7 +223,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             FROM claims.claims
             WHERE area_id = :area_id
             """,
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         verification_task_ids=_uuid_set(
             session,
@@ -219,7 +232,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             FROM claims.verification_tasks
             WHERE area_id = :area_id
             """,
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         ingest_run_ids=_uuid_set(
             session,
@@ -229,7 +242,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             WHERE area_id = :area_id
                 AND ingest_run_id IS NOT NULL
             """,
-            area_id=_AREA_ID,
+            area_id=area_id,
         ),
         connector_review_keys=_string_set(
             session,
@@ -239,7 +252,7 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
             WHERE job_type = :job_type
                 AND payload->>'area_id' = :area_id
             """,
-            area_id=str(_AREA_ID),
+            area_id=str(area_id),
             job_type=CONNECTOR_REVIEW_STATUS_JOB_TYPE,
         ),
     )
@@ -248,9 +261,10 @@ def _capture_selected_county_snapshot(session: Session) -> _SelectedCountySnapsh
 def _cleanup_selected_county_snapshot(
     engine: Engine,
     before: _SelectedCountySnapshot,
+    area_id: UUID,
 ) -> None:
     with Session(engine) as session:
-        after = _capture_selected_county_snapshot(session)
+        after = _capture_selected_county_snapshot(session, area_id)
 
         for review_key in after.connector_review_keys - before.connector_review_keys:
             session.execute(
@@ -326,11 +340,11 @@ def _cleanup_selected_county_snapshot(
         if not before.area_exists:
             session.execute(
                 text("DELETE FROM core.area_versions WHERE area_id = :area_id"),
-                {"area_id": _AREA_ID},
+                {"area_id": area_id},
             )
             session.execute(
                 text("DELETE FROM core.areas WHERE area_id = :area_id"),
-                {"area_id": _AREA_ID},
+                {"area_id": area_id},
             )
 
         if not before.dataset_version_exists:
