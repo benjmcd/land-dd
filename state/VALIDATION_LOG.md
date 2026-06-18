@@ -2,6 +2,55 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Source-Rights Export Guard
+
+**Scope:** Add repo-local fail-closed report exposure proof for source-rights metadata
+without approving DS-017, selecting a vendor, changing source statuses, or starting
+hosted production work.
+
+**Commands run:**
+
+```powershell
+Push-Location .\backend
+python -m pytest -q .\tests\source_registry .\tests\reports\test_report_service.py .\tests\reports\test_report_regression.py
+python -m pytest -q .\tests\api\test_fema_nfhl_connector_api.py -k "usgs_tnm or ds001 or live_connector_report_run_waits_for_ds001_ds002_ds004_ds003_then_reports or live_connector_report_resume_after_approval_does_not_refetch or live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_report_flow"
+python -m ruff check .\app\source_registry\usage_rights.py .\app\reports\service.py .\tests\source_registry .\tests\reports\test_report_service.py
+python -m mypy .\app\source_registry\usage_rights.py .\app\reports\service.py .\tests\source_registry .\tests\reports\test_report_service.py
+Pop-Location
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused source-registry/report/report-regression tests passed after a red nested
+  sensitive-field regression exposed fixture expectation issues.
+- Initial full verification exposed an overly broad sensitive-key matcher: generic
+  derived metric field `value` incorrectly filtered approved USGS TNM terrain evidence.
+  The matcher now blocks parcel/tax/market/appraisal value semantics while allowing
+  generic screening metric values.
+- Tier-2 review found camelCase/PascalCase valuation keys could bypass the
+  sensitive-field matcher; focused regressions now cover `parcelTotalValue`,
+  `marketValue`, `taxValue`, and `appraisedValue`.
+- Ruff passed on the touched app and test files.
+- Mypy passed on the touched app and test files.
+- Focused USGS TNM connector-flow regressions passed after narrowing the matcher.
+- Must-source readiness remained `source_count=8`, `ready_count=7`,
+  `blocked_count=1`; DS-017 remains blocked.
+- Readiness-matrix validation passed with active routing moved to `R-013`.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed; DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass guards report exposure and exported report contracts. It does not implement
+  customer entitlement, approve DS-017, add paid-source metering, run hosted freshness
+  monitors, or promote L10 data governance beyond `PARTIAL`.
+
 ## 2026-06-18 Performance Baseline Evidence
 
 **Scope:** Add a local release-candidate performance baseline contract, optional JSON

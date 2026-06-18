@@ -22,6 +22,7 @@ from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.service import EvidenceService
 from app.reports.report_repo import InMemoryReportRunRepository, ReportRunRepository
 from app.source_registry.service import SourceService
+from app.source_registry.usage_rights import source_report_exposure_allowed
 
 _ZONING_RULE_CODE = "ZONING_G001"
 _ZONING_UNKNOWN_CLAIM_CODE = "ZONING_SOURCE_UNAVAILABLE_UNKNOWN"
@@ -305,10 +306,14 @@ class ReportRunService:
         ]
 
     def _is_report_approved_evidence(self, evidence: EvidenceContract) -> bool:
+        source = self._source_service.get(evidence.source_id)
+        if source is None:
+            return False
+        if not source_report_exposure_allowed(source, evidence):
+            return False
         if evidence.source_ingest_run_id is None:
             return True
-        source = self._source_service.get(evidence.source_id)
-        if source is not None and source.review_status not in _SOURCE_APPROVED_STATUSES:
+        if source.review_status not in _SOURCE_APPROVED_STATUSES:
             return False
         if self._connector_review_queue is None:
             return False
