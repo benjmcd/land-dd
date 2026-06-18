@@ -33,6 +33,7 @@ REQUIRED_CHECKS = {
     "data_retention",
     "jurisdiction_readiness",
     "rulepack_readiness",
+    "checklist_dry_run",
     "load_test",
     "performance",
     "data_lineage",
@@ -65,6 +66,7 @@ COMPOSED_VALIDATORS = (
     "scripts/performance_baseline_check.py",
     "scripts/spatial_query_plan_check.py",
     "scripts/threat_proxy_audit_check.py",
+    "scripts/checklist_dry_run_check.py",
 )
 
 
@@ -247,6 +249,8 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "run_performance_baseline_check.ps1",
         "threat_proxy_audit.yaml",
         "run_threat_proxy_audit_check.ps1",
+        "checklist_dry_run.yaml",
+        "run_checklist_dry_run_check.ps1",
         "spatial_query_plan.yaml",
         "run_spatial_query_plan_check.ps1",
         "spatial_query_plan_check.py",
@@ -340,10 +344,13 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"performance"' in script
     assert '"data_lineage"' in script
     assert '"threat_proxy_audit"' in script
+    assert '"checklist_dry_run"' in script
     assert '"config/performance_baseline.yaml"' in script
     assert '"config/threat_proxy_audit.yaml"' in script
+    assert '"config/checklist_dry_run.yaml"' in script
     assert '"scripts/performance_baseline_check.py"' in script
     assert '"scripts/threat_proxy_audit_check.py"' in script
+    assert '"scripts/checklist_dry_run_check.py"' in script
     assert '"config/spatial_query_plan.yaml"' in script
     assert '"scripts/spatial_query_plan_check.py"' in script
     assert '{"DS-017"}' in script

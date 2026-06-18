@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Jurisdiction/rulepack checklist dry run)
+
+- Completed `R-019` from
+  `plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md` without selecting or
+  approving a new geography, rulepack, source, connector, DS-017 path, hosted
+  production path, legal/security review, full IdP/RBAC, billing, alerting, or
+  secret-manager work.
+- Added `config/checklist_dry_run.yaml`, `docs/runbooks/checklist_dry_run.md`,
+  `scripts/checklist_dry_run_check.py`, Windows/POSIX wrappers, and artifact tests as
+  a validate-only dry-run proof for jurisdiction/rulepack checklist executability.
+- The checker extracts every checkbox item from
+  `docs/checklists/jurisdiction_readiness.md` and
+  `docs/checklists/rulepack_readiness.md`, then requires each item to be classified
+  exactly once as repo-confirmed, missing candidate decision, missing repo evidence,
+  blocked external authority, or not applicable to the existing rulepack scope.
+- Review hardening expanded checkbox parsing to checked and unchecked Markdown states,
+  made wrapper files part of the standalone validator surface, required
+  `repo_confirmed` rows to carry matching evidence assertions, and rejected
+  self-referential blocked-external-authority rows.
+- Composed the checklist dry-run checker into release readiness and routed it through
+  `MANIFEST.md` as a durable readiness-checklist proof surface.
+- Kept `L10-DATA-005` and `L10-DATA-006` at `VALIDATE_ONLY`; the dry run proves
+  checklist executability, not geography/rulepack approval.
+- Routed the next active repo-local lane to `R-020` route-scope/RBAC handoff coverage,
+  preserving hosted IdP/RBAC, full user auth, DS-017 entitlement, and production
+  authority blockers.
+
 ## 2026-06-18 (Threat/proxy audit update)
 
 - Completed `R-018` from `plans/2026-06-18-threat-model-proxy-audit.md` without

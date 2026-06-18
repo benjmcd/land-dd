@@ -85,8 +85,8 @@ Status legend:
 | L10-DATA-002 attribution/redistribution/export/AI-use constraints enforced | `PARTIAL` | source registry rights fields, source-readiness checker, report caveats, and repo-local source-rights report exposure guard | Add entitlement enforcement for restricted/vendor datasets after DS-017/vendor authority exists. |
 | L10-DATA-003 source freshness monitoring flags stale data | `PARTIAL` | source-readiness metadata, alert catalog, repo-local freshness/review-drift readiness guard, and source-review cadence prose guard | Hosted alert manager/pager/dashboard evidence remains blocked on external authority. |
 | L10-DATA-004 connector failures/outages visible | `PROVEN_REPO_LOCAL` | source_failure evidence, connector review queue, operations recovery preview | Wire hosted alerts/dashboards for connector outages. |
-| L10-DATA-005 jurisdiction readiness before new geography | `VALIDATE_ONLY` | jurisdiction readiness checklist and release-readiness gate | Complete checklist for each new county/state before expansion. |
-| L10-DATA-006 rulepack readiness before new intent | `VALIDATE_ONLY` | rulepack readiness checklist and release-readiness gate | Complete checklist before new intent/rulepack. |
+| L10-DATA-005 jurisdiction readiness before new geography | `VALIDATE_ONLY` | jurisdiction readiness checklist, checklist dry-run catalog/checker, and release-readiness gate | Complete checklist for each new county/state before expansion. |
+| L10-DATA-006 rulepack readiness before new intent | `VALIDATE_ONLY` | rulepack readiness checklist, checklist dry-run catalog/checker, and release-readiness gate | Complete checklist before new intent/rulepack. |
 | L10-DATA-007 source-to-report lineage queryable | `PROVEN_REPO_LOCAL` | lineage API/UI, evidence IDs in claims/artifacts, DB-backed artifact tests, selected-county DB-backed runtime smoke follows approved-report lineage | Re-run against hosted DB/object store after deployment. |
 | L10-DATA-008 human verification separate/auditable | `PROVEN_REPO_LOCAL` | review status/actions, connector review queues, report approval gate | Bind to hosted user identity/RBAC later. |
 | L10-DATA-009 coverage limitations visible | `PROVEN_PRIVATE_MVP` | selected-county manifests, MVP operator runbook, private-MVP readiness catalog | Keep limitation checks in every release-candidate proof. |
@@ -146,10 +146,9 @@ representative local performance rehearsal while preserving hosted SLO/capacity
 blockers, and `R-017` included compare/diff in local release-candidate workflow smoke
 without ranking/recommendation semantics. `R-018` added repo-local threat/proxy audit
 guarding, report source-rights manifest propagation, and matrix pins without replacing
-external security/legal/hosted authority. The next active pass is `R-019`
-jurisdiction/rulepack checklist dry run: rehearse the existing expansion checklists
-without selecting or approving a new geography, rulepack, source, connector, DS-017
-path, or hosted production proof.
+external security/legal/hosted authority. `R-019` now rehearses the existing expansion
+checklists with a validate-only dry-run catalog/checker without selecting or approving
+a new geography, rulepack, source, connector, DS-017 path, or hosted production proof.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

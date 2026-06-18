@@ -7,7 +7,8 @@ catalog. It gathers the existing verification, DB, deployment smoke, supply-chai
 security-scan, image scan, backup/restore, incident, alerting, cost, access-control,
 threat-proxy-audit, release-package, image-publication, hosted-deployment,
 source-readiness, data-retention, load-test, performance, data-lineage,
-jurisdiction-readiness, and rulepack-readiness proofs into one release boundary.
+jurisdiction-readiness, rulepack-readiness, and checklist-dry-run proofs into one
+release boundary.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -64,6 +65,10 @@ The check is validate-only. It verifies that:
   `scripts/threat_proxy_audit_check.py` as validate-only static proof for protected-class,
   demographic-proxy, residential-steering, recommendation/ranking, suitability,
   access-control, source-rights, overclaim, and error-leakage boundaries;
+- the local checklist dry-run contract is `config/checklist_dry_run.yaml`, and the
+  release proof composes `scripts/run_checklist_dry_run_check.ps1` /
+  `scripts/checklist_dry_run_check.py` as validate-only static proof that every
+  jurisdiction and rulepack checklist item is classified before future expansion;
 - the local load-test JSON result schema is `load_test_result_v1`;
 - jurisdiction and rulepack expansion stay gated by
   `docs/checklists/jurisdiction_readiness.md` and `docs/checklists/rulepack_readiness.md`;
@@ -96,6 +101,9 @@ The check is validate-only. It verifies that:
 - Threat/proxy audit readiness is repo-local drift control only. It does not replace
   external security review, legal fair-housing review, hosted IdP/RBAC design,
   production error/log review, DS-017 entitlement work, or hosted alerting.
+- Checklist dry-run readiness proves checklist executability only. It does not approve a
+  new geography, rulepack, source, connector, vendor, legal review, local professional
+  review, hosted deployment, or DS-017 entitlement.
 - Local release packages can be created with `scripts/build_release_package.ps1`, but this
   readiness proof itself remains validate-only.
 - Performance baseline readiness is release-candidate/local evidence only. It is not a
