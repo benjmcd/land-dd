@@ -1,5 +1,26 @@
 # Project State
 
+## Current checkpoint (2026-06-18 Level 9/10 readiness reconciliation)
+
+The active implementation authority now points at the post-private-MVP
+readiness-reconciliation pass instead of the completed UI CSRF route-coverage slice.
+
+- **Active plan**: `plans/2026-06-18-level9-10-readiness-reconciliation.md`.
+- **Purpose**: reconcile Level 9 product-grade MVP evidence and Level 10 production-grade
+  blockers before selecting the next unblocked implementation slice.
+- **Current authority surfaces**: `MILESTONE_MAP.md`,
+  `config/private_mvp_beta_readiness.yaml`, `config/release_readiness.yaml`,
+  `config/hosted_deployment.yaml`, `plans/README.md`, and `tasks/task_queue.yaml`.
+- **Known production blockers preserved**: hosted deployment attestation, registry image
+  publication attestation, hosted billing reconciliation, non-ready Must sources, full
+  user auth/RBAC, hosted alerting, external secret-manager integration, and hosted
+  platform/TLS/database authority.
+- **Validation**: private-MVP, release-readiness, hosted-deployment, access-control, and
+  Must-source readiness validators passed; Must-source readiness remains
+  `sources=8 ready=7 blocked=1` with DS-017 blocked.
+- **Limit**: this checkpoint changes planning/routing only; it does not claim Level 10
+  completion or create hosted infrastructure.
+
 ## Current checkpoint (2026-06-18 UI CSRF route coverage)
 
 Cookie-authorized UI mutation routes now have route-level CSRF regression coverage and
