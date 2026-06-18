@@ -110,6 +110,274 @@ REQUIRED_IDENTITY_MIGRATIONS = {
     "preserve_static_service_account_breakglass",
     "record_user_bound_audit_events",
 }
+ROUTE_SCOPE_CONSTANTS = {
+    "connector:review": "REVIEWER_SCOPE_CONNECTOR_REVIEW",
+    "connector:run": "REVIEWER_SCOPE_CONNECTOR_RUN",
+    "operations:read": "REVIEWER_SCOPE_OPERATIONS_READ",
+    "report:approve": "REVIEWER_SCOPE_REPORT_APPROVE",
+    "report:retry": "REVIEWER_SCOPE_REPORT_RETRY",
+    "report:run": "REVIEWER_SCOPE_REPORT_RUN",
+    "source:manage": "REVIEWER_SCOPE_SOURCE_MANAGE",
+}
+REQUIRED_ROUTE_SCOPE_MAPPINGS: dict[str, dict[str, Any]] = {
+    "fixture_connector_runs": {
+        "route_scope": "connector:run",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": ("run_fixture_connector",),
+        "route_patterns": ("POST /connector-runs",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_connector_ingest_api.py::"
+            "test_run_connector_requires_reviewer_credentials",
+            "backend/tests/api/test_connector_ingest_api.py::"
+            "test_run_connector_rejects_reviewer_without_connector_run_scope",
+        ),
+    },
+    "live_connector_runs": {
+        "route_scope": "connector:run",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": (
+            "query_fema_nfhl_bbox",
+            "query_usgs_tnm_bbox",
+            "query_ssurgo_bbox",
+            "query_nwi_bbox",
+            "query_osm_road_access_bbox",
+            "query_usgs_water_monitoring_bbox",
+            "query_epa_echo_bbox",
+            "query_fcc_broadband_bbox",
+            "query_blm_mlrs_bbox",
+            "query_usgs_mrds_bbox",
+            "query_nc_geologic_map_bbox",
+            "query_noaa_climate_bbox",
+            "query_census_tiger_bbox",
+            "query_chatham_parcels_bbox",
+            "query_buncombe_parcels_bbox",
+            "query_brunswick_parcels_bbox",
+            "query_chatham_zoning_district",
+            "query_brunswick_zoning_district",
+            "query_assessor_not_evaluated",
+            "schedule_live_connector_sequence_bbox",
+            "schedule_fema_nfhl_bbox",
+            "schedule_usgs_tnm_bbox",
+            "schedule_nwi_bbox",
+            "schedule_ssurgo_bbox",
+        ),
+        "route_patterns": (
+            "POST /connector-runs/{source}/query-*",
+            "POST /connector-runs/{source}/schedule-bbox",
+            "POST /connector-runs/live-sequence/schedule-bbox",
+        ),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_usgs_tnm_connector_api.py::"
+            "test_usgs_tnm_query_bbox_requires_reviewer_auth",
+            "backend/tests/api/test_fema_nfhl_connector_api.py::"
+            "test_fema_nfhl_schedule_bbox_rejects_reviewer_without_connector_run_scope",
+        ),
+    },
+    "connector_review_decisions": {
+        "route_scope": "connector:review",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": (
+            "approve_connector_review_queue_item_compat",
+            "reject_connector_review_queue_item_compat",
+            "requeue_connector_review_queue_item_compat",
+            "cancel_connector_review_queue_item_compat",
+            "approve_for_connector_qa",
+            "request_fixture_fix",
+            "requeue_after_fix",
+            "cancel_review",
+        ),
+        "route_patterns": (
+            "POST /connector-review-queue/{ingest_run_id}/{action}",
+            "POST /connector-runs/{ingest_run_id}/review-actions/{action}",
+        ),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_connector_review_queue_api.py::"
+            "test_connector_review_action_requires_reviewer_credentials",
+            "backend/tests/api/test_connector_review_queue_api.py::"
+            "test_connector_review_action_rejects_reviewer_without_review_scope",
+        ),
+    },
+    "operations_api_reads": {
+        "route_scope": "operations:read",
+        "route_module": "backend/app/api/operations.py",
+        "route_functions": ("queue_health", "recovery_preview"),
+        "route_patterns": ("GET /operations/queue-health", "GET /operations/recovery-preview"),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_operations.py::"
+            "test_queue_health_rejects_reviewer_without_operations_read_scope",
+            "backend/tests/api/test_operations.py::"
+            "test_recovery_preview_rejects_reviewer_without_operations_read_scope",
+        ),
+    },
+    "live_connector_job_reads": {
+        "route_scope": "operations:read",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": ("list_live_connector_jobs", "get_live_connector_job"),
+        "route_patterns": ("GET /connector-runs/live-jobs", "GET /connector-runs/live-jobs/{job_id}"),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_usgs_tnm_connector_api.py::"
+            "test_live_connector_job_inspection_requires_operations_read_scope",
+        ),
+    },
+    "report_approval": {
+        "route_scope": "report:approve",
+        "route_module": "backend/app/api/reports.py",
+        "route_functions": ("approve_report_run",),
+        "route_patterns": ("POST /report-runs/{report_run_id}/approve",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": ("backend/tests/api/test_approved_path_http.py::test_http_approve_requires_credential",),
+    },
+    "report_retry": {
+        "route_scope": "report:retry",
+        "route_module": "backend/app/api/reports.py",
+        "route_functions": ("retry_report_run",),
+        "route_patterns": ("POST /report-runs/{report_run_id}/retry",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_async_report_runs.py::"
+            "test_retry_report_run_rejects_reviewer_without_retry_scope",
+        ),
+    },
+    "selected_county_report_runs": {
+        "route_scope": "report:run",
+        "route_module": "backend/app/api/operator_cases.py",
+        "route_functions": ("create_operator_case_report",),
+        "route_patterns": ("POST /operator-cases/{case_id}/report",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_operator_cases_api.py::"
+            "test_operator_case_report_create_rejects_reviewer_without_report_run_scope",
+        ),
+    },
+    "approved_connector_report_runs": {
+        "route_scope": "report:run",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": ("create_report_run_from_approved_connector",),
+        "route_patterns": ("POST /connector-runs/{ingest_run_id}/report-runs",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_connector_review_actions.py::"
+            "test_connector_report_run_rejects_reviewer_without_report_run_scope",
+        ),
+    },
+    "source_registry_mutation": {
+        "route_scope": "source:manage",
+        "route_module": "backend/app/api/sources.py",
+        "route_functions": ("create_source",),
+        "route_patterns": ("POST /sources",),
+        "enforcement": "api_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_api_scaffold.py::"
+            "test_api_scaffold_source_create_requires_source_manage_scope",
+        ),
+    },
+    "ui_selected_county_report_runs": {
+        "route_scope": "report:run",
+        "route_module": "backend/app/api/ui.py",
+        "route_functions": ("ui_create_selected_county_report",),
+        "route_patterns": ("POST /ui/operator-cases/report",),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_routes.py::"
+            "test_ui_selected_county_fixture_post_requires_report_run_reviewer",
+        ),
+    },
+    "ui_report_approval": {
+        "route_scope": "report:approve",
+        "route_module": "backend/app/api/ui.py",
+        "route_functions": ("ui_approve_report_run",),
+        "route_patterns": ("POST /ui/report-runs/{report_run_id}/approve",),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_routes.py::"
+            "test_ui_approve_report_run_valid_creds_without_approve_scope_returns_403",
+        ),
+    },
+    "ui_report_retry": {
+        "route_scope": "report:retry",
+        "route_module": "backend/app/api/ui.py",
+        "route_functions": ("ui_retry_report_run",),
+        "route_patterns": ("POST /ui/report-runs/{report_run_id}/retry",),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_routes.py::"
+            "test_ui_retry_report_run_valid_creds_without_retry_scope_returns_403",
+        ),
+    },
+    "ui_connector_review_decisions": {
+        "route_scope": "connector:review",
+        "route_module": "backend/app/api/ui_review.py",
+        "route_functions": (
+            "ui_connector_approve",
+            "ui_connector_reject",
+            "ui_connector_requeue",
+            "ui_connector_cancel",
+        ),
+        "route_patterns": ("POST /ui/connector-review-queue/{ingest_run_id}/{action}",),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_review_routes.py::"
+            "test_ui_review_approve_valid_unscoped_returns_403",
+        ),
+    },
+    "ui_connector_resume_report": {
+        "route_scope": "report:run",
+        "route_module": "backend/app/api/ui_review.py",
+        "route_functions": ("ui_connector_resume_report",),
+        "route_patterns": ("POST /ui/connector-review-queue/{ingest_run_id}/resume-report",),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_review_routes.py::"
+            "test_ui_review_resume_report_valid_token_missing_report_run_scope_returns_403",
+        ),
+    },
+    "ui_operations_reads": {
+        "route_scope": "operations:read",
+        "route_module": "backend/app/api/ui_operations.py",
+        "route_functions": ("ui_operations_post", "ui_operations_recovery_preview_post"),
+        "route_patterns": ("POST /ui/operations", "POST /ui/operations/recovery-preview"),
+        "enforcement": "ui_reviewer_scope",
+        "covered_by_tests": (
+            "backend/tests/api/test_ui_operations_routes.py::"
+            "test_ui_operations_post_valid_creds_without_operations_scope_returns_403",
+        ),
+    },
+}
+REQUIRED_IDENTITY_BOUNDARY_MAPPINGS: dict[str, dict[str, Any]] = {
+    "connector_review_read_surfaces": {
+        "identity_boundary": "workspace_identity",
+        "route_module": "backend/app/api/connectors.py",
+        "route_functions": (
+            "list_connector_review_queue_compat",
+            "get_connector_review_queue_item_compat",
+            "get_connector_run_review_status",
+            "get_connector_review_queue_item",
+        ),
+        "route_patterns": (
+            "GET /connector-review-queue",
+            "GET /connector-review-queue/{ingest_run_id}",
+            "GET /connector-runs/{ingest_run_id}/review-status",
+            "GET /connector-runs/{ingest_run_id}/review-queue",
+        ),
+        "enforcement": "workspace_identity_only",
+        "scope_note": "No reviewer route scope is currently enforced; workspace identity must hide cross-workspace rows.",
+        "covered_by_tests": (
+            "backend/tests/api/test_connector_review_status.py::"
+            "test_connector_review_status_endpoint_requires_identity",
+            "backend/tests/api/test_connector_review_status.py::"
+            "test_connector_review_status_endpoint_hides_other_workspace",
+            "backend/tests/api/test_connector_review_status.py::"
+            "test_connector_review_queue_endpoint_requires_identity",
+            "backend/tests/api/test_connector_review_status.py::"
+            "test_connector_review_queue_endpoint_hides_other_workspace",
+        ),
+    },
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -157,6 +425,56 @@ def function_block(text: str, function_name: str) -> str:
     if next_start < 0:
         return text[start:]
     return text[start:next_start]
+
+
+def validate_test_node(node_id: str) -> None:
+    parts = node_id.split("::", maxsplit=1)
+    require(len(parts) == 2, f"test node must use file::test_name form: {node_id}")
+    test_file, test_name = parts
+    require_existing(test_file)
+    test_text = read_text(test_file)
+    require(f"def {test_name}(" in test_text, f"route-scope test missing: {node_id}")
+
+
+def validate_route_scope_function(
+    *,
+    route_module: str,
+    route_function: str,
+    route_scope: str,
+    enforcement: str,
+) -> None:
+    route_text = read_text(route_module)
+    block = function_block(route_text, route_function)
+    scope_constant = ROUTE_SCOPE_CONSTANTS[route_scope]
+    if enforcement == "api_reviewer_scope":
+        require(
+            f"require_reviewer_scope(principal, {scope_constant})" in block,
+            f"{route_function} must enforce {route_scope}",
+        )
+        require("ReviewerPrincipal" in block, f"{route_function} must depend on reviewer principal")
+        return
+    if enforcement == "ui_reviewer_scope":
+        require(
+            f"required_scope={scope_constant}" in block,
+            f"{route_function} must enforce UI {route_scope}",
+        )
+        require("require_ui_reviewer(" in block, f"{route_function} must require UI reviewer")
+        return
+    raise SystemExit(f"unknown route-scope enforcement mode: {enforcement}")
+
+
+def validate_identity_boundary_function(
+    *,
+    route_module: str,
+    route_function: str,
+) -> None:
+    route_text = read_text(route_module)
+    block = function_block(route_text, route_function)
+    require("auth: AuthDep" in block, f"{route_function} must require workspace identity")
+    require(
+        "require_reviewer_scope(" not in block,
+        f"{route_function} must remain identity-only or move to route_scope_mappings",
+    )
 
 
 def validate_required_files() -> None:
@@ -385,6 +703,9 @@ def validate_identity_rbac_contract(payload: dict[str, Any]) -> None:
     missing_scopes = sorted(REQUIRED_ROUTE_SCOPES - mapped_scopes)
     require(not missing_scopes, f"route scopes missing from roles: {missing_scopes}")
 
+    validate_route_scope_mappings(contract)
+    validate_identity_boundary_mappings(contract)
+
     audit_raw = contract.get("audit_requirements")
     require(isinstance(audit_raw, list) and bool(audit_raw), "audit_requirements missing")
     audit_requirements = cast(list[Any], audit_raw)
@@ -420,6 +741,175 @@ def validate_identity_rbac_contract(payload: dict[str, Any]) -> None:
         "identity contract must not implement OIDC",
     )
     require(limits.get("claims_production_rbac") is False, "identity contract must not claim RBAC")
+
+
+def validate_route_scope_mappings(contract: dict[str, Any]) -> None:
+    mappings_raw = contract.get("route_scope_mappings")
+    require(
+        isinstance(mappings_raw, list) and bool(mappings_raw),
+        "route_scope_mappings missing",
+    )
+    mappings_list = cast(list[Any], mappings_raw)
+    mappings_by_id: dict[str, dict[str, Any]] = {}
+    for mapping_raw in mappings_list:
+        require(isinstance(mapping_raw, dict), "route-scope mapping must be a mapping")
+        mapping = cast(dict[str, Any], mapping_raw)
+        mapping_id_raw = mapping.get("id")
+        if not isinstance(mapping_id_raw, str) or not mapping_id_raw:
+            raise SystemExit("route-scope mapping id missing")
+        mapping_id = mapping_id_raw
+        require(mapping_id not in mappings_by_id, f"duplicate route-scope mapping id: {mapping_id}")
+        mappings_by_id[mapping_id] = mapping
+
+    required_ids = set(REQUIRED_ROUTE_SCOPE_MAPPINGS)
+    actual_ids = set(mappings_by_id)
+    missing_ids = sorted(required_ids - actual_ids)
+    extra_ids = sorted(actual_ids - required_ids)
+    require(not missing_ids, f"route-scope mappings missing: {missing_ids}")
+    require(not extra_ids, f"unknown route-scope mappings: {extra_ids}")
+
+    mapped_scopes: set[str] = set()
+    for mapping_id, expected in REQUIRED_ROUTE_SCOPE_MAPPINGS.items():
+        mapping = mappings_by_id[mapping_id]
+        route_scope_raw = mapping.get("route_scope")
+        route_module_raw = mapping.get("route_module")
+        enforcement_raw = mapping.get("enforcement")
+        if not isinstance(route_scope_raw, str):
+            raise SystemExit(f"{mapping_id} route scope must be a string")
+        if not isinstance(route_module_raw, str):
+            raise SystemExit(f"{mapping_id} route module must be a string")
+        if not isinstance(enforcement_raw, str):
+            raise SystemExit(f"{mapping_id} enforcement must be a string")
+        route_scope = route_scope_raw
+        route_module = route_module_raw
+        enforcement = enforcement_raw
+        require(route_scope == expected["route_scope"], f"{mapping_id} route scope mismatch")
+        require(route_scope in REQUIRED_ROUTE_SCOPES, f"{mapping_id} route scope unknown")
+        require(route_module == expected["route_module"], f"{mapping_id} route module mismatch")
+        require(enforcement == expected["enforcement"], f"{mapping_id} enforcement mismatch")
+        require_existing(route_module)
+        mapped_scopes.add(route_scope)
+
+        route_functions_raw = mapping.get("route_functions")
+        require(isinstance(route_functions_raw, list), f"{mapping_id} route_functions missing")
+        route_functions_list = cast(list[Any], route_functions_raw)
+        route_functions = tuple(str(function_name) for function_name in route_functions_list)
+        expected_functions = cast(tuple[str, ...], expected["route_functions"])
+        require(
+            set(route_functions) == set(expected_functions),
+            f"{mapping_id} route functions mismatch",
+        )
+        route_patterns_raw = mapping.get("route_patterns")
+        require(isinstance(route_patterns_raw, list), f"{mapping_id} route_patterns missing")
+        route_patterns_list = cast(list[Any], route_patterns_raw)
+        route_patterns = tuple(str(pattern) for pattern in route_patterns_list)
+        expected_patterns = cast(tuple[str, ...], expected["route_patterns"])
+        require(set(route_patterns) == set(expected_patterns), f"{mapping_id} route patterns mismatch")
+
+        tests_raw = mapping.get("covered_by_tests")
+        require(isinstance(tests_raw, list) and bool(tests_raw), f"{mapping_id} tests missing")
+        tests_list = cast(list[Any], tests_raw)
+        tests = tuple(str(test_node) for test_node in tests_list)
+        expected_tests = cast(tuple[str, ...], expected["covered_by_tests"])
+        require(set(tests) == set(expected_tests), f"{mapping_id} tests mismatch")
+        for test_node in tests:
+            validate_test_node(test_node)
+
+        for route_function in route_functions:
+            validate_route_scope_function(
+                route_module=route_module,
+                route_function=route_function,
+                route_scope=route_scope,
+                enforcement=enforcement,
+            )
+
+    missing_scope_mappings = sorted(REQUIRED_ROUTE_SCOPES - mapped_scopes)
+    require(
+        not missing_scope_mappings,
+        f"route scopes missing from route mappings: {missing_scope_mappings}",
+    )
+
+
+def validate_identity_boundary_mappings(contract: dict[str, Any]) -> None:
+    mappings_raw = contract.get("identity_boundary_mappings")
+    require(
+        isinstance(mappings_raw, list) and bool(mappings_raw),
+        "identity_boundary_mappings missing",
+    )
+    mappings_list = cast(list[Any], mappings_raw)
+    mappings_by_id: dict[str, dict[str, Any]] = {}
+    for mapping_raw in mappings_list:
+        require(isinstance(mapping_raw, dict), "identity-boundary mapping must be a mapping")
+        mapping = cast(dict[str, Any], mapping_raw)
+        mapping_id_raw = mapping.get("id")
+        if not isinstance(mapping_id_raw, str) or not mapping_id_raw:
+            raise SystemExit("identity-boundary mapping id missing")
+        mapping_id = mapping_id_raw
+        require(
+            mapping_id not in mappings_by_id,
+            f"duplicate identity-boundary mapping id: {mapping_id}",
+        )
+        mappings_by_id[mapping_id] = mapping
+
+    required_ids = set(REQUIRED_IDENTITY_BOUNDARY_MAPPINGS)
+    actual_ids = set(mappings_by_id)
+    missing_ids = sorted(required_ids - actual_ids)
+    extra_ids = sorted(actual_ids - required_ids)
+    require(not missing_ids, f"identity-boundary mappings missing: {missing_ids}")
+    require(not extra_ids, f"unknown identity-boundary mappings: {extra_ids}")
+
+    for mapping_id, expected in REQUIRED_IDENTITY_BOUNDARY_MAPPINGS.items():
+        mapping = mappings_by_id[mapping_id]
+        boundary_raw = mapping.get("identity_boundary")
+        route_module_raw = mapping.get("route_module")
+        enforcement_raw = mapping.get("enforcement")
+        scope_note_raw = mapping.get("scope_note")
+        if not isinstance(boundary_raw, str):
+            raise SystemExit(f"{mapping_id} identity boundary must be a string")
+        if not isinstance(route_module_raw, str):
+            raise SystemExit(f"{mapping_id} route module must be a string")
+        if not isinstance(enforcement_raw, str):
+            raise SystemExit(f"{mapping_id} enforcement must be a string")
+        if not isinstance(scope_note_raw, str) or not scope_note_raw:
+            raise SystemExit(f"{mapping_id} scope note missing")
+        require(
+            boundary_raw == expected["identity_boundary"],
+            f"{mapping_id} identity boundary mismatch",
+        )
+        require(route_module_raw == expected["route_module"], f"{mapping_id} route module mismatch")
+        require(enforcement_raw == expected["enforcement"], f"{mapping_id} enforcement mismatch")
+        require(scope_note_raw == expected["scope_note"], f"{mapping_id} scope note mismatch")
+        require_existing(route_module_raw)
+
+        route_functions_raw = mapping.get("route_functions")
+        require(isinstance(route_functions_raw, list), f"{mapping_id} route_functions missing")
+        route_functions_list = cast(list[Any], route_functions_raw)
+        route_functions = tuple(str(function_name) for function_name in route_functions_list)
+        expected_functions = cast(tuple[str, ...], expected["route_functions"])
+        require(
+            set(route_functions) == set(expected_functions),
+            f"{mapping_id} route functions mismatch",
+        )
+        route_patterns_raw = mapping.get("route_patterns")
+        require(isinstance(route_patterns_raw, list), f"{mapping_id} route_patterns missing")
+        route_patterns_list = cast(list[Any], route_patterns_raw)
+        route_patterns = tuple(str(pattern) for pattern in route_patterns_list)
+        expected_patterns = cast(tuple[str, ...], expected["route_patterns"])
+        require(set(route_patterns) == set(expected_patterns), f"{mapping_id} route patterns mismatch")
+
+        tests_raw = mapping.get("covered_by_tests")
+        require(isinstance(tests_raw, list) and bool(tests_raw), f"{mapping_id} tests missing")
+        tests_list = cast(list[Any], tests_raw)
+        tests = tuple(str(test_node) for test_node in tests_list)
+        expected_tests = cast(tuple[str, ...], expected["covered_by_tests"])
+        require(set(tests) == set(expected_tests), f"{mapping_id} tests mismatch")
+        for test_node in tests:
+            validate_test_node(test_node)
+        for route_function in route_functions:
+            validate_identity_boundary_function(
+                route_module=route_module_raw,
+                route_function=route_function,
+            )
 
 
 def validate_api_key_auth() -> None:
@@ -1111,6 +1601,7 @@ def validate_operator_routes() -> None:
             "test_async_report_runs.py",
             "test_fema_nfhl_connector_api.py",
             "test_api_scaffold.py",
+            "test_connector_ingest_api.py",
             "test_connector_review_queue_api.py",
             "test_connector_review_status.py",
             "test_operator_cases_api.py",
@@ -1136,6 +1627,9 @@ def validate_operator_routes() -> None:
             "test_operator_case_report_create_rejects_body_reviewer_mismatch",
             "test_usgs_tnm_schedule_bbox_requires_workspace_identity",
             "test_usgs_tnm_schedule_bbox_hides_area_from_other_workspace",
+            "test_run_connector_requires_reviewer_credentials",
+            "test_run_connector_rejects_reviewer_without_connector_run_scope",
+            "test_connector_report_run_rejects_reviewer_without_report_run_scope",
         ),
         "scoped route tests",
     )
@@ -1243,6 +1737,12 @@ def validate_ci_and_runbook() -> None:
             "identity/RBAC design handoff",
             "subject, email, display_name, workspace_id, user_id, and groups_or_roles",
             "platform_admin, workspace_admin, reviewer, operator, and read_only",
+            "route_scope_mappings",
+            "identity_boundary_mappings",
+            "fixture_connector_runs",
+            "connector_review_read_surfaces",
+            "live_connector_runs",
+            "ui_operations_reads",
             "hosted identity provider remains blocked",
             "no OAuth/OIDC implementation",
             "no production RBAC claim",

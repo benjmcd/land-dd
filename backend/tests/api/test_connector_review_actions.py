@@ -547,6 +547,35 @@ def test_connector_report_run_requires_workspace_identity() -> None:
     assert response.json()["detail"] == "X-Workspace-Id header is required"
 
 
+def test_connector_report_run_rejects_reviewer_without_report_run_scope() -> None:
+    ingest_run_id = uuid4()
+    area_id = uuid4()
+    app = _make_app(
+        ingest_run_id,
+        JobStatus.SUCCEEDED,
+        area_id=area_id,
+        approved_for_report=True,
+        reviewer_accounts="ops-reviewer:ops-token",
+        reviewer_account_scopes="ops-reviewer:connector:review",
+    )
+    _services(app).area_service.create(_area_contract(area_id))
+    client = TestClient(app)
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/report-runs",
+        headers={
+            "X-Reviewer-Id": "ops-reviewer",
+            "X-Reviewer-Token": "ops-token",
+            "X-Workspace-Id": str(_WORKSPACE_ID),
+            "X-User-Id": str(_USER_ID),
+        },
+        json={"intent_code": "homestead_feasibility"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "reviewer scope is required: report:run"
+
+
 def test_connector_report_run_hides_other_workspace_item() -> None:
     ingest_run_id = uuid4()
     area_id = uuid4()

@@ -1,13 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-route-scope-rbac-handoff.md
+active_plan: plans/2026-06-18-audit-retention-proof-hardening.md
 routing_note: >
-  Active lane: route-scope/RBAC handoff coverage
-  (plans/2026-06-18-route-scope-rbac-handoff.md). Goal: prove the repo-local
-  identity/RBAC handoff catalog covers current protected route surfaces without
-  implementing OAuth/OIDC, full user RBAC, DS-017 entitlement, or hosted production
-  identity. Hosted deployment, external security/legal review, IdP/RBAC, billing,
-  alerting, secret-manager, paid-source entitlement, and production workload authority
-  remain external blockers.
+  Active lane: audit-retention proof hardening
+  (plans/2026-06-18-audit-retention-proof-hardening.md). Goal: prove repo-local
+  audit-event retention tooling can be exercised safely in dry-run and explicit-apply
+  modes against isolated database state without provisioning hosted scheduler,
+  hosted log-retention/export/SIEM, user-bound identity audit, OAuth/OIDC, full RBAC,
+  DS-017 entitlement, or hosted production workload authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -551,7 +550,7 @@ tasks:
 
   - id: R-020
     title: Route-scope/RBAC handoff coverage
-    status: active
+    status: done
     depends_on: [R-019]
     lane: coordinator
     spec: plans/2026-06-18-route-scope-rbac-handoff.md
@@ -565,15 +564,41 @@ tasks:
       - .\scripts\run_access_control_check.ps1
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
-      - cd backend; python -m pytest -q .\tests\test_access_control_artifacts.py .\tests\api\test_api_key_auth.py .\tests\api\test_reviewer_auth.py .\tests\api\test_report_auth.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py
+      - cd backend; python -m pytest -q .\tests\test_access_control_artifacts.py .\tests\api\test_connector_ingest_api.py .\tests\api\test_api_key_auth.py .\tests\api\test_reviewer_auth.py .\tests\api\test_report_auth.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
     acceptance:
       - Current protected API/UI route surfaces are audited before any checker changes
       - Identity/RBAC route-scope mappings fail closed if required protected surfaces are omitted
-      - Existing local/private-MVP auth mechanisms remain unchanged
+      - Existing local/private-MVP auth mechanisms remain in place, and the proven fixture connector scope gap is closed with connector:run
       - Hosted identity, full RBAC, DS-017 entitlements, billing, alerting, and secret-manager blockers remain external-authority requirements
+
+  - id: R-021
+    title: Audit-retention proof hardening
+    status: active
+    depends_on: [R-020]
+    lane: coordinator
+    spec: plans/2026-06-18-audit-retention-proof-hardening.md
+    notes: >
+      Prove repo-local audit-event retention tooling can be exercised safely against
+      isolated database state while preserving dry-run defaults and hosted
+      log-retention/scheduler/SIEM blockers.
+    validation:
+      - python .\scripts\data_retention_check.py
+      - .\scripts\run_data_retention_check.ps1
+      - .\scripts\run_purge_audit_events.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Dry-run remains the default purge behavior
+      - Explicit apply proof uses only isolated runtime state
+      - In-scope and out-of-scope audit event types are fail-closed in tests or validators
+      - Hosted scheduler, hosted log retention, SIEM export, and user-bound audit remain external-authority blockers
 
   # --- Completed ---
   - id: T000

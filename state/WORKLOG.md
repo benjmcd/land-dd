@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Route-scope/RBAC handoff coverage)
+
+- Completed `R-020` from `plans/2026-06-18-route-scope-rbac-handoff.md` without
+  implementing OAuth/OIDC, user tables, full org/user RBAC, hosted identity-provider
+  authorization, DS-017 entitlement, hosted deployment, billing, alerting,
+  secret-manager, or production workload authority.
+- Added explicit `identity_rbac_contract.route_scope_mappings` rows to
+  `config/access_control.yaml` for current API and UI reviewer-scoped route surfaces,
+  including connector run/review, operations read, report approve/retry/run, and source
+  manage boundaries.
+- Hardened `scripts/access_control_check.py` so route-scope mapping ids, scopes, route
+  modules, functions, route patterns, enforcement modes, and coverage test nodes must
+  match the cataloged required set.
+- Added identity-boundary mappings for workspace-identity-only connector review reads,
+  so protected reads without reviewer route scopes are intentional and tested rather
+  than silently omitted from the route-scope catalog.
+- Closed a proven route-scope runtime gap by requiring `connector:run` reviewer scope
+  on `POST /connector-runs`, matching the existing connector invocation/scheduling
+  contract.
+- Added direct wrong-scope regression coverage for
+  `POST /connector-runs/{ingest_run_id}/report-runs`, replacing a false coverage row
+  that pointed at a generic report-run test.
+- Updated access-control artifact tests and runbook text so the mapping catalog remains
+  a validate-only hosted identity/RBAC handoff and does not claim production RBAC.
+- Routed the next active repo-local lane to `R-021` audit-retention proof hardening,
+  preserving hosted scheduler, hosted log-retention/export/SIEM, user-bound identity
+  audit, hosted IdP/RBAC, DS-017 entitlement, and production authority blockers.
+
 ## 2026-06-18 (Jurisdiction/rulepack checklist dry run)
 
 - Completed `R-019` from

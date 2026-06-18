@@ -2,6 +2,58 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Route-Scope/RBAC Handoff Coverage
+
+**Scope:** Add repo-local route-scope/RBAC handoff coverage for current protected
+operator/reviewer surfaces without implementing OAuth/OIDC, user tables, full
+org/user RBAC, hosted identity-provider authorization, DS-017 entitlement, hosted
+deployment, billing, alerting, secret-manager, or production workload authority.
+
+**Commands run:**
+
+```powershell
+python .\scripts\access_control_check.py
+.\scripts\run_access_control_check.ps1
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+Push-Location .\backend
+python -m pytest -q .\tests\test_access_control_artifacts.py .\tests\api\test_connector_ingest_api.py .\tests\api\test_reviewer_auth.py .\tests\api\test_connector_review_queue_api.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_operations.py .\tests\api\test_fema_nfhl_connector_api.py .\tests\api\test_usgs_tnm_connector_api.py
+python -m pytest -q .\tests\test_access_control_artifacts.py .\tests\api\test_connector_ingest_api.py .\tests\api\test_connector_review_actions.py .\tests\api\test_connector_review_status.py
+python -m ruff check .\app\api\connectors.py .\tests\test_access_control_artifacts.py .\tests\api\test_connector_ingest_api.py .\tests\api\test_connector_review_actions.py ..\scripts\access_control_check.py
+python -m mypy app\api\connectors.py tests\test_access_control_artifacts.py tests\api\test_connector_ingest_api.py tests\api\test_connector_review_actions.py ..\scripts\access_control_check.py
+Pop-Location
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Access-control checker and Windows wrapper passed.
+- Release-readiness and readiness-matrix validators passed.
+- Focused API/UI/access-control tests passed, including fixture connector missing
+  reviewer credentials, wrong `connector:run` scope, connector report-run wrong
+  `report:run` scope, and connector review read identity isolation.
+- Focused ruff and mypy passed on touched runtime, checker, and test surfaces.
+- Static checker now validates reviewer-scoped route mappings and separate
+  workspace-identity-only boundary mappings.
+- Read-only security, test, and architecture subagent reviews completed. Findings on
+  follow-on plan wording, false connector report-run coverage evidence, and silent
+  identity-only read omissions were fixed and revalidated.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- The route-scope catalog is static handoff evidence. It does not prove hosted IdP
+  behavior, full user-account RBAC, DS-017 entitlement policy, hosted log retention, or
+  production audit/user-bound identity semantics.
+- Identity-only connector review reads remain protected by workspace identity rather
+  than reviewer route scopes; that boundary is now explicit in
+  `identity_boundary_mappings` and must be revisited during hosted identity/RBAC work.
+
 ## 2026-06-18 Jurisdiction/Rulepack Checklist Dry Run
 
 **Scope:** Add repo-local validate-only dry-run proof that jurisdiction and rulepack

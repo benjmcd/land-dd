@@ -36,6 +36,8 @@ _WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 _USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
 _OTHER_WORKSPACE_ID = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 _OTHER_USER_ID = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+_FIXTURE_REVIEWER_ID = "fixture-reviewer"
+_FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
 _FIXTURE_AREA_GEOJSON: dict[str, object] = {
     "type": "Polygon",
     "coordinates": [
@@ -55,6 +57,25 @@ def _auth_headers(
     user_id: UUID = _USER_ID,
 ) -> dict[str, str]:
     return {"X-Workspace-Id": str(workspace_id), "X-User-Id": str(user_id)}
+
+
+def _reviewer_headers(
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> dict[str, str]:
+    return {"X-Reviewer-Id": reviewer_id, "X-Reviewer-Token": reviewer_token}
+
+
+def _operator_headers(
+    workspace_id: UUID = _WORKSPACE_ID,
+    user_id: UUID = _USER_ID,
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> dict[str, str]:
+    return {
+        **_auth_headers(workspace_id=workspace_id, user_id=user_id),
+        **_reviewer_headers(reviewer_id=reviewer_id, reviewer_token=reviewer_token),
+    }
 
 
 def _seed(services: ApiServices) -> None:
@@ -230,7 +251,7 @@ def test_run_flood_connector_success_creates_evidence() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -252,7 +273,7 @@ def test_run_flood_connector_failure_sets_review_required() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_failure"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -274,7 +295,7 @@ def test_run_zoning_connector_allowed_creates_evidence() -> None:
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_allowed",
         },
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -298,7 +319,7 @@ def test_run_zoning_connector_failure_sets_review_required() -> None:
             "connector_name": "fixture_zoning_static",
             "fixture_key": "zoning_failure",
         },
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -319,7 +340,7 @@ def test_run_access_connector_no_road_creates_evidence() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_no_road",
         },
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -342,7 +363,7 @@ def test_run_access_connector_failure_sets_review_required() -> None:
             "connector_name": "fixture_access_static",
             "fixture_key": "access_failure",
         },
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 201
@@ -363,6 +384,39 @@ def test_run_connector_requires_identity() -> None:
     assert response.status_code == 401
 
 
+def test_run_connector_requires_reviewer_credentials() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_auth_headers(),
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "connector reviewer credentials are required"
+
+
+def test_run_connector_rejects_reviewer_without_connector_run_scope() -> None:
+    settings = Settings(
+        REVIEWER_ACCOUNTS="limited:limited-token",
+        REVIEWER_ACCOUNT_SCOPES="limited:operations:read",
+    )
+    client = TestClient(create_app(settings=settings))
+
+    response = client.post(
+        "/connector-runs",
+        json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
+        headers=_operator_headers(
+            reviewer_id="limited",
+            reviewer_token="limited-token",
+        ),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "reviewer scope is required: connector:run"
+
+
 def test_run_connector_rejects_area_outside_authenticated_workspace() -> None:
     app = create_app()
     client = TestClient(app)
@@ -371,7 +425,7 @@ def test_run_connector_rejects_area_outside_authenticated_workspace() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
-        headers=_auth_headers(
+        headers=_operator_headers(
             workspace_id=_OTHER_WORKSPACE_ID,
             user_id=_OTHER_USER_ID,
         ),
@@ -395,7 +449,7 @@ def test_run_connector_returns_409_for_cross_workspace_queue_collision() -> None
                 "connector_name": "fixture_flood_static",
                 "fixture_key": "flood_success",
             },
-            headers=_auth_headers(),
+            headers=_operator_headers(),
         )
         assert response.status_code == 201
         review_status = services.connector_review_statuses[_FIXTURE_INGEST_RUN_ID]
@@ -413,7 +467,7 @@ def test_run_connector_returns_409_for_cross_workspace_queue_collision() -> None
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 409
@@ -440,7 +494,7 @@ def test_run_connector_accepts_signed_identity_token() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", **_reviewer_headers()},
     )
 
     assert response.status_code == 201
@@ -453,7 +507,7 @@ def test_run_connector_returns_422_for_unsupported_connector_name() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "unknown_connector", "fixture_key": "flood_success"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 422
@@ -468,7 +522,7 @@ def test_run_connector_returns_422_for_unknown_fixture_key() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "does_not_exist"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 422
@@ -481,7 +535,7 @@ def test_run_connector_returns_422_for_invalid_fixture_key_characters() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "../etc/passwd"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 422
@@ -504,7 +558,7 @@ def test_run_connector_returns_422_when_fixture_source_is_missing() -> None:
     response = client.post(
         "/connector-runs",
         json={"connector_name": "fixture_flood_static", "fixture_key": "flood_success"},
-        headers=_auth_headers(),
+        headers=_operator_headers(),
     )
 
     assert response.status_code == 422
@@ -531,7 +585,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
                 "connector_name": "fixture_flood_static",
                 "fixture_key": "flood_success",
             },
-            headers=_auth_headers(),
+            headers=_operator_headers(),
         )
 
         assert response.status_code == 201
@@ -549,7 +603,7 @@ def test_db_backed_api_connector_ingest_persists_evidence_and_queue_item(
                 "connector_name": "fixture_access_static",
                 "fixture_key": "access_no_road",
             },
-            headers=_auth_headers(),
+            headers=_operator_headers(),
         )
 
         assert access_response.status_code == 201

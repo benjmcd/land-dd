@@ -1,49 +1,49 @@
 # Project State
 
-## Current checkpoint (2026-06-18 route-scope/RBAC handoff coverage)
+## Current checkpoint (2026-06-18 audit-retention proof hardening)
 
-The jurisdiction/rulepack checklist dry run is complete. The active implementation
-authority now points at route-scope/RBAC handoff coverage: prove that the repo-local
-identity/RBAC handoff catalog covers current protected route surfaces without
-implementing OAuth/OIDC, user tables, full org/user RBAC, paid-data entitlements, or
-hosted identity-provider authorization.
+Route-scope/RBAC handoff coverage is complete. The active implementation authority now
+points at audit-retention proof hardening: prove that repo-local audit-event retention
+tooling can be exercised safely in dry-run and explicit-apply modes against isolated
+database state without provisioning hosted scheduler, hosted log-retention/export/SIEM,
+user-bound identity audit, OAuth/OIDC, full RBAC, DS-017 entitlement, or hosted
+production workload authority.
 
-- **Active plan**: `plans/2026-06-18-route-scope-rbac-handoff.md`.
-- **Purpose**: strengthen the authenticated operator/reviewer handoff path while
-  preserving the Level 9/10 distinction between repo-local private-MVP controls and
-  hosted identity/RBAC authority.
-- **Completed immediately prior**: `R-019` added `config/checklist_dry_run.yaml`,
-  `docs/runbooks/checklist_dry_run.md`, `scripts/checklist_dry_run_check.py`,
-  Windows/POSIX wrappers, and artifact tests. The checker extracts every checkbox item
-  from the jurisdiction and rulepack readiness checklists and requires every item to be
-  classified exactly once as repo-confirmed, missing candidate decision, missing repo
-  evidence, blocked external authority, or not applicable to the existing rulepack
-  scope. Review hardening requires repo-confirmed evidence assertions, rejects
-  self-referential blocked-external-authority rows, and parses checked and unchecked
-  Markdown checkbox states. The proof is composed into release readiness.
-- **R-019 validation so far**: `python .\scripts\checklist_dry_run_check.py`,
-  `.\scripts\run_checklist_dry_run_check.ps1`,
+- **Active plan**: `plans/2026-06-18-audit-retention-proof-hardening.md`.
+- **Purpose**: harden the next repo-local security/audit proof after route-scope
+  handoff while preserving the Level 9/10 distinction between local evidence and
+  hosted production authority.
+- **Completed immediately prior**: `R-020` added explicit
+  `identity_rbac_contract.route_scope_mappings` rows to `config/access_control.yaml`
+  for API and UI reviewer-scoped surfaces, added
+  `identity_rbac_contract.identity_boundary_mappings` for protected
+  workspace-identity-only connector review reads, made `scripts/access_control_check.py`
+  validate mapping ids, scopes/boundaries, modules, route functions, route patterns,
+  enforcement modes, and coverage test nodes, and updated access-control artifact tests
+  and runbook text. The pass also closed a proven runtime gap by requiring
+  `connector:run` reviewer scope on `POST /connector-runs`, matching the existing
+  connector invocation/scheduling boundary.
+- **R-020 validation so far**: `python .\scripts\access_control_check.py`,
+  `.\scripts\run_access_control_check.ps1`,
   `python .\scripts\release_readiness_check.py`,
-  `python .\scripts\readiness_matrix_check.py`, and
-  `python .\scripts\private_mvp_readiness_check.py` passed. Focused checklist,
-  release-readiness, readiness-matrix, and readiness-checklist artifact tests passed.
-  Focused ruff and mypy passed on touched checker/test surfaces. Final full
-  verification is recorded in `state/VALIDATION_LOG.md`.
+  `python .\scripts\readiness_matrix_check.py`, focused API/UI/access-control pytest,
+  focused ruff, and focused mypy passed. Final full verification is recorded in
+  `state/VALIDATION_LOG.md`.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-route-scope-rbac-handoff.md`,
-  `plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md`,
-  `plans/README.md`, `tasks/task_queue.yaml`, `config/access_control.yaml`,
-  `docs/runbooks/access_control.md`, `scripts/access_control_check.py`,
-  `config/checklist_dry_run.yaml`, `docs/runbooks/checklist_dry_run.md`,
-  `scripts/checklist_dry_run_check.py`, `docs/checklists/jurisdiction_readiness.md`,
-  and `docs/checklists/rulepack_readiness.md`.
+  `plans/2026-06-18-audit-retention-proof-hardening.md`,
+  `plans/2026-06-18-route-scope-rbac-handoff.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/data_retention.yaml`,
+  `docs/runbooks/data_retention.md`, `scripts/data_retention_check.py`,
+  `scripts/purge_audit_events.py`, `config/access_control.yaml`,
+  `docs/runbooks/access_control.md`, and `scripts/access_control_check.py`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
-  or RBAC, no OAuth/OIDC, no recommendation/ranking semantics, no
-  demographic/protected-class scoring, no legal/security review claim, no secret
-  writes, no committed measured runtime artifacts, and no Level 10 completion claim.
+  or RBAC, no OAuth/OIDC, no hosted scheduler, no hosted log-retention/export/SIEM, no
+  recommendation/ranking semantics, no demographic/protected-class scoring, no
+  legal/security review claim, no secret writes, no committed measured runtime
+  artifacts, and no Level 10 completion claim.
 
 ## Previous checkpoint (2026-06-18 jurisdiction/rulepack checklist dry run)
 
