@@ -1,5 +1,29 @@
 # Project State
 
+## Current checkpoint (2026-06-18 UI CSRF route coverage)
+
+Cookie-authorized UI mutation routes now have route-level CSRF regression coverage and
+static access-control pinning.
+
+- **Route-level CSRF proofs**: reviewer-session POST coverage now pins missing-CSRF
+  `403` behavior for `/ui/intake`, `/ui/report-runs/{report_run_id}/retry`,
+  connector review `reject`, `requeue`, `cancel`, `resume-report`, and
+  `/ui/operations/recovery-preview`.
+- **Success-side coverage**: connector review `reject`, `requeue`, `cancel`,
+  `resume-report`, and operations recovery-preview also have valid reviewer-session
+  CSRF tests, so the route pins prove both fail-closed rejection and accepted-token
+  continuity.
+- **Header-vs-cookie boundary**: the tests preserve the existing distinction that
+  reviewer credentials submitted in form fields do not require CSRF, while reviewer
+  session cookies do.
+- **Static guard**: `scripts/access_control_check.py` now reads UI review and
+  operations route tests and requires the new named route-level CSRF rejection and
+  accepted-token proofs, so the coverage cannot be removed without failing the
+  access-control gate.
+- **Validation**: focused UI route/review/operations CSRF tests, access-control
+  artifact coverage, ruff, mypy, `scripts/access_control_check.py`, and
+  `.\scripts\verify.ps1` passed.
+
 ## Current checkpoint (2026-06-18 report artifact path trust)
 
 DB-backed report artifact delivery now treats the configured object-store root as the

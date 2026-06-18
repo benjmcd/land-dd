@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -672,6 +673,174 @@ def test_ui_review_approve_accepts_reviewer_session_without_form_credentials() -
     assert updated is not None
     assert updated.status == JobStatus.SUCCEEDED
     assert updated.locked_by == _FIXTURE_REVIEWER_ID
+
+
+@pytest.mark.parametrize(
+    ("route_suffix", "fixture_name"),
+    [
+        ("reject", "flood_failure.json"),
+        ("requeue", "flood_failure.json"),
+        ("cancel", "flood_failure.json"),
+        ("resume-report", "flood_success.json"),
+    ],
+    ids=["reject", "requeue", "cancel", "resume-report"],
+)
+def test_ui_review_mutation_reviewer_session_requires_csrf(
+    route_suffix: str,
+    fixture_name: str,
+) -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, fixture_name)
+    if route_suffix == "resume-report":
+        services = cast(ApiServices, app.state.services)
+        services.connector_review_queue.approve_for_connector_qa(
+            item.job_id,
+            reviewer_id=_FIXTURE_REVIEWER_ID,
+        )
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/{route_suffix}",
+        data={"reason": "operator action", "intent_code": "rural_land_purchase"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert "Security Check Failed" in response.text
+
+
+def test_ui_review_reject_reviewer_session_accepts_valid_csrf() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/reject",
+        data={
+            "reason": "Needs fixture update",
+            _CSRF_FIELD: _csrf_token_from(detail.text),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Fix Requested" in response.text
+    services = cast(ApiServices, app.state.services)
+    updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert updated is not None
+    assert updated.status == JobStatus.FAILED
+
+
+def test_ui_review_requeue_reviewer_session_accepts_valid_csrf() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    services.connector_review_queue.request_fixture_fix(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+        reason="Initial rejection",
+    )
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/requeue",
+        data={
+            "reason": "Fixture has been updated",
+            _CSRF_FIELD: _csrf_token_from(detail.text),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Requeued" in response.text
+    updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert updated is not None
+    assert updated.status == JobStatus.QUEUED
+
+
+def test_ui_review_cancel_reviewer_session_accepts_valid_csrf() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/cancel",
+        data={
+            "reason": "No longer needed",
+            _CSRF_FIELD: _csrf_token_from(detail.text),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Cancelled" in response.text
+    services = cast(ApiServices, app.state.services)
+    updated = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert updated is not None
+    assert updated.status == JobStatus.CANCELLED
+
+
+def test_ui_review_resume_report_reviewer_session_accepts_valid_csrf() -> None:
+    app = create_app()
+    tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
+    response = tc.post(
+        f"/ui/connector-review-queue/{item.ingest_run_id}/resume-report",
+        data={
+            "intent_code": "rural_land_purchase",
+            _CSRF_FIELD: _csrf_token_from(detail.text),
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code in {302, 303, 307}
+    assert response.headers["location"].startswith("/ui/report-runs/")
 
 
 # ---------------------------------------------------------------------------

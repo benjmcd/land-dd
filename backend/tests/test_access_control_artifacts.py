@@ -306,6 +306,31 @@ def test_access_control_validator_tracks_current_ui_reviewer_session_design() ->
         assert phrase in design
 
 
+def test_access_control_validator_tracks_route_level_ui_csrf_proofs() -> None:
+    validator = (REPO_ROOT / "scripts" / "access_control_check.py").read_text(
+        encoding="utf-8",
+    )
+
+    for phrase in (
+        "test_ui_intake_reviewer_session_requires_csrf",
+        "test_ui_retry_report_run_reviewer_session_requires_csrf",
+        "test_ui_review_mutation_reviewer_session_requires_csrf",
+        '("reject", "flood_failure.json")',
+        '("requeue", "flood_failure.json")',
+        '("cancel", "flood_failure.json")',
+        '("resume-report", "flood_success.json")',
+        "assert response.status_code == 403",
+        '"Security Check Failed" in response.text',
+        "test_ui_review_reject_reviewer_session_accepts_valid_csrf",
+        "test_ui_review_requeue_reviewer_session_accepts_valid_csrf",
+        "test_ui_review_cancel_reviewer_session_accepts_valid_csrf",
+        "test_ui_review_resume_report_reviewer_session_accepts_valid_csrf",
+        "test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf",
+        "test_ui_operations_recovery_preview_post_reviewer_session_accepts_valid_csrf",
+    ):
+        assert phrase in validator
+
+
 def test_operator_runbook_tracks_current_ui_reviewer_session_design() -> None:
     runbook = (REPO_ROOT / "docs" / "runbooks" / "mvp_operator.md").read_text(
         encoding="utf-8",

@@ -2,6 +2,22 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (UI CSRF route coverage)
+
+- Added `plans/2026-06-18-ui-csrf-route-coverage.md` and routed the active plan to the
+  UI CSRF proof-hardening slice.
+- Added reviewer-session CSRF regressions for `/ui/intake`,
+  `/ui/report-runs/{report_run_id}/retry`, connector review
+  `reject/requeue/cancel/resume-report`, and `/ui/operations/recovery-preview`.
+- Added valid reviewer-session CSRF success coverage for connector review
+  `reject/requeue/cancel/resume-report` and operations recovery-preview after review
+  identified that rejection-only coverage left a behavioral proof gap.
+- Extended `scripts/access_control_check.py` so it requires the new named route-level
+  CSRF rejection and accepted-token tests across UI route, connector-review UI route,
+  and operations UI route tests.
+- Ran focused UI route/review/operations CSRF tests, access-control artifact proof,
+  ruff, mypy, the static access-control checker, and `.\scripts\verify.ps1`.
+
 ## 2026-06-18 (Report artifact path trust)
 
 - Added `plans/2026-06-18-report-artifact-path-trust.md` and routed the active plan to

@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 UI CSRF Route Coverage
+
+**Scope:** Add route-level CSRF regressions for cookie-authorized UI mutation routes
+and extend the static access-control checker to require those proofs.
+
+**Commands run:**
+
+```powershell
+Push-Location .\backend
+python -m pytest -q .\tests\test_access_control_artifacts.py -k "route_level_ui_csrf_proofs" -vv
+python -m pytest -q .\tests\api\test_ui_routes.py -k "intake_reviewer_session_requires_csrf or retry_report_run_reviewer_session_requires_csrf" -vv
+python -m pytest -q .\tests\api\test_ui_review_routes.py -k "mutation_reviewer_session_requires_csrf" -vv
+python -m pytest -q .\tests\api\test_ui_operations_routes.py -k "recovery_preview_post_reviewer_session_requires_csrf" -vv
+python -m pytest -q .\tests\api\test_ui_review_routes.py -k "mutation_reviewer_session_requires_csrf or reviewer_session_accepts_valid_csrf" -vv
+python -m pytest -q .\tests\api\test_ui_operations_routes.py -k "recovery_preview_post_reviewer_session" -vv
+python -m pytest -q .\tests\test_access_control_artifacts.py -k "route_level_ui_csrf_proofs" -vv
+python -m pytest -q .\tests\api\test_ui_routes.py -k "csrf or retry"
+python -m pytest -q .\tests\api\test_ui_review_routes.py -k "csrf or reviewer_session"
+python -m pytest -q .\tests\api\test_ui_operations_routes.py -k "csrf or recovery_preview"
+python -m pytest -q .\tests\test_access_control_artifacts.py -k "route_level_ui_csrf_proofs"
+python -m ruff check .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py .\tests\test_access_control_artifacts.py ..\scripts\access_control_check.py
+python -m mypy .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_operations_routes.py
+Pop-Location
+python .\scripts\access_control_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red proof: `test_access_control_validator_tracks_route_level_ui_csrf_proofs` failed
+  before `scripts/access_control_check.py` required the new test names.
+- New focused route tests passed: UI route intake/retry reviewer-session CSRF (`2
+  passed`), connector review mutation reviewer-session CSRF (`4 passed`), and
+  operations recovery-preview reviewer-session CSRF (`1 passed`).
+- Reviewer feedback pass passed: connector review mutation missing-CSRF and valid-CSRF
+  success coverage (`8 passed`), operations recovery-preview missing-CSRF and
+  valid-CSRF success coverage (`2 passed`), and route-level access-control artifact
+  proof (`1 passed`).
+- Broader focused selections passed: UI route `csrf or retry` (`14 passed`), UI review
+  `csrf or reviewer_session` (`9 passed`), and UI operations `csrf or recovery_preview`
+  (`5 passed`).
+- Access-control artifact proof passed after validator update (`1 passed`).
+- Ruff passed on touched UI tests, access-control artifact test, and access-control
+  validator.
+- Mypy passed on touched UI route test files (`3 source files`).
+- `python .\scripts\access_control_check.py` passed.
+- `.\scripts\verify.ps1` passed after the reviewer-feedback coverage additions:
+  workspace validation ok, backend tests passed, ruff passed, mypy passed over 316
+  source files, DB smoke skipped.
+
+**Residual risk:**
+
+- This slice proves existing CSRF behavior and static coverage; it does not add a new
+  CSRF mechanism, browser E2E smoke, OAuth/OIDC, user RBAC, or hosted identity
+  integration.
+
 ## 2026-06-18 Report Artifact Path Trust
 
 **Scope:** Constrain DB-backed report artifact file reads to the configured
