@@ -56,6 +56,11 @@ def test_ui_browser_smoke_checks_core_routes_and_viewports() -> None:
     assert "{ name: \"mobile\", width: 390, height: 844, mobile: true }" in script
     assert "headless" in script
     assert "headed" in script
+    assert "Selected-County Private MVP Fixture Cases" in script
+    assert "Create approved fixture reports for the selected-county operator path." in script
+    assert "BUN-slope" in script
+    assert 'action="/ui/operator-cases/report"' in script
+    assert 'name="selected_county_case_id"' in script
     assert "page-level horizontal overflow" in script
     assert "missing viewport meta" in script
     assert "found forbidden text" in script
@@ -88,7 +93,10 @@ def test_mvp_operator_runbook_documents_ui_browser_smoke() -> None:
     assert "## UI Browser Smoke" in runbook
     assert ".\\scripts\\run_ui_browser_smoke.ps1" in runbook
     assert "ui_runtime_smoke.py" in runbook
+    assert "selected-county launcher table and form contract" in runbook
     assert "does not create areas, report runs, connector-review items" in runbook
+    assert "--reviewer-id fixture-reviewer" in runbook
+    assert "--reviewer-token fixture-token-123" in runbook
     assert "--operator-case-id BUN-slope" in runbook
     assert "creates an in-memory approved report" in runbook
     assert "--expect-artifact-persistence postgres+object_store" in runbook

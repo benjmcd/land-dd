@@ -22,10 +22,8 @@ from app.core.config import Settings
 from app.db.engine import build_engine
 from app.main import create_app
 
-_REPRESENTATIVE_CASE_IDS = (
-    "BUN-slope",
-    "CHA-zoning-edge",
-    "BRU-coastal-flood",
+_ALL_SELECTED_COUNTY_CASE_IDS = tuple(
+    case.case_id for case in selected_county_cases.list_selected_county_cases()
 )
 _SOURCE_NAME = "Selected County Private MVP Fixtures"
 _DEMO_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
@@ -69,7 +67,7 @@ def _auth_headers() -> dict[str, str]:
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
-@pytest.mark.parametrize("case_id", _REPRESENTATIVE_CASE_IDS)
+@pytest.mark.parametrize("case_id", _ALL_SELECTED_COUNTY_CASE_IDS)
 def test_db_operator_case_report_persists_selected_county_fixture(
     tmp_path: Path,
     case_id: str,

@@ -1,39 +1,38 @@
 # Project State
 
-## Current checkpoint (2026-06-18 selected-county release-candidate proof refresh)
+## Current checkpoint (2026-06-18 selected-county lineage smoke proof)
 
 The active implementation authority now points at the next unblocked selected-county
-private-MVP release-candidate proof refresh selected from the Level 9/10 gate matrix.
-The prior workflow-valid load proof completed locally and strengthens `L10-PERF-006`;
-hosted load, production SLO, dashboard, alert-routing, DS-017, IdP, and capacity proof
-remain future work.
+release-candidate smoke slice: make the opt-in UI runtime smoke prove approved report
+lineage reachability and evidence-linked content after packaged selected-county report
+creation. The prior selected-county release-candidate proof refresh completed locally
+and strengthens the Level 9/10 private-MVP proof ladder; hosted deployment, production
+SLO, dashboard, alert-routing, DS-017, IdP, full RBAC, and capacity proof remain future
+work.
 
-- **Active plan**: `plans/2026-06-18-county-rc-proof.md`.
-- **Purpose**: audit and harden the selected-county proof ladder across packaged
-  operator cases, DB-backed persistence, and explicit UI/browser smoke evidence without
-  making hosted production claims.
+- **Active plan**: `plans/2026-06-18-lineage-smoke.md`.
+- **Purpose**: extend existing selected-county runtime smoke so the approved report page
+  proves lineage content, not just the presence of a "View evidence lineage" link.
 - **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `config/private_mvp_beta_readiness.yaml`, `scripts/private_mvp_readiness_check.py`,
-  `scripts/run_private_mvp_readiness_check.ps1`, `scripts/run_mvp_regression.ps1`,
-  `scripts/run_ui_browser_smoke.ps1`, `scripts/ui_runtime_smoke.py`,
-  `backend/tests/api/test_operator_cases_api.py`,
-  `backend/tests/api/test_operator_cases_db.py`,
-  `backend/tests/test_private_mvp_readiness.py`, `docs/runbooks/mvp_operator.md`,
-  `plans/README.md`, and `tasks/task_queue.yaml`.
+  `config/private_mvp_beta_readiness.yaml`, `scripts/ui_runtime_smoke.py`,
+  `backend/tests/test_ui_runtime_smoke_script.py`, `backend/tests/api/test_ui_routes.py`,
+  lineage API/UI tests, `docs/runbooks/mvp_operator.md`, `plans/README.md`, and
+  `tasks/task_queue.yaml`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no hosted
   deployment, no production SLO, no new county/source/rulepack, no full user identity or
   RBAC, no committed generated evidence artifacts, and no Level 10 completion claim.
-- **Completed immediately prior**: `R-007` updated `scripts/load_test_runner.py` so
-  local sequential/concurrent load scenarios create valid areas and queue report runs
-  from returned `area_id` values; temporary local live load proof passed sequential
-  `20/20` and concurrent `40/40` workflow requests with `POST /areas` returning `201`
-  and `POST /report-runs` returning `202`. Default `.\scripts\verify.ps1` passed on
-  the branch; DB smoke was skipped by default.
-- **Validation so far**: initial authority validators passed before edits:
-  Must source readiness remains `sources=8 ready=7 blocked=1` with DS-017 blocked;
-  private-MVP, release-readiness, hosted-deployment, access-control, and readiness-matrix
-  validators passed. Focused `R-007` validation passed; validation for `R-008` has not
-  started.
+- **Completed immediately prior**: `R-008` hardened selected-county release-candidate
+  proof. Chrome browser smoke now asserts the selected-county launcher/form contract on
+  `/ui/`; UI runtime smoke includes CSRF for reviewer-session operator-case report
+  creation; DB-gated operator-case proof covers all nine packaged selected-county cases;
+  isolated DB-backed runtime smoke proved selected-county UI report artifact persistence
+  as `postgres+object_store`. DS-017 and hosted-production blockers remain unchanged.
+- **Validation so far**: `R-008` validation passed. Must source readiness remains
+  `sources=8 ready=7 blocked=1` with DS-017 blocked; private-MVP, release-readiness,
+  hosted-deployment, and readiness-matrix validators passed; headed/headless Chrome
+  browser smoke passed against a local runtime; in-memory and DB-backed selected-county
+  runtime smoke passed; all-nine DB-gated operator-case smoke passed against an isolated
+  local PostGIS runtime. Validation for `R-009` has not started.
 
 ## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
 

@@ -196,6 +196,45 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_api_key_cookie() -> None:
     ) in handler.post_bodies
 
 
+def test_ui_runtime_smoke_operator_case_uses_csrf_with_reviewer_session() -> None:
+    routes = _required_routes(reviewer_session=True)
+    routes["/ui/"] = _html(
+        "Land Diligence",
+        '<input name="csrf_token" type="hidden" value="csrf-fixture">',
+    )
+    routes["/ui/report-runs/operator-smoke"] = _html(
+        "Executive Summary",
+        "Download dossier (.md)",
+        "Download report (.json)",
+        "View evidence lineage",
+    )
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--reviewer-id",
+            "fixture-reviewer",
+            "--reviewer-token",
+            "fixture-token-123",
+            "--operator-case-id",
+            "BUN-slope",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert (
+        "/ui/operator-cases/report",
+        {
+            "selected_county_case_id": ["BUN-slope"],
+            "csrf_token": ["csrf-fixture"],
+        },
+    ) in handler.post_bodies
+
+
 def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> None:
     routes = _required_routes()
     routes["/ui/report-runs/operator-smoke"] = _html(

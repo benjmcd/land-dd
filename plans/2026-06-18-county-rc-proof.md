@@ -107,3 +107,9 @@ isolating generated evidence under ignored `local_artifacts`.
 ## Progress log
 - 2026-06-18: Plan opened after workflow-valid local load proof completed; no
   implementation work has started under this plan yet.
+- 2026-06-18: Completed proof refresh. Chrome browser smoke now asserts the
+  selected-county launcher/form contract on `/ui/`; UI runtime smoke includes CSRF for
+  reviewer-session operator-case report creation; DB-gated operator-case proof covers
+  all nine packaged selected-county cases; isolated DB-backed runtime smoke proved
+  `postgres+object_store` artifact persistence. DS-017, hosted deployment, full RBAC,
+  SLO, billing, and alert routing remain out of scope.

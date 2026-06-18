@@ -457,14 +457,15 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
             "`/operator-cases/{case_id}/report`, or DB artifact persistence"
         ),
         (
-            "representative selected-county operator DB smoke cases "
-            "`BUN-slope`, `CHA-zoning-edge`, and `BRU-coastal-flood`"
+            "all nine packaged selected-county operator DB smoke cases"
         ),
         "backend/tests/api/test_operator_cases_db.py",
         "does not prove full hosted production",
         "outside the selected private-MVP set",
         "the `/ui/operator-cases/report` launcher",
         "approved UI delivery links",
+        "--reviewer-id fixture-reviewer",
+        "--reviewer-token fixture-token-123",
         "--expect-artifact-persistence postgres+object_store",
         "artifact_metadata.persistence",
     ):
@@ -537,7 +538,7 @@ def test_private_mvp_catalog_rejects_stale_selected_county_source_scope_prose() 
         assert stale_phrase not in catalog
 
 
-def test_db_backed_regression_path_names_representative_operator_cases(
+def test_db_backed_regression_path_names_all_packaged_operator_cases(
     readiness: dict[str, Any],
 ) -> None:
     gate = readiness["private_mvp_beta"]["db_backed_regression_path"]
@@ -550,9 +551,15 @@ def test_db_backed_regression_path_names_representative_operator_cases(
         "test_db_operator_case_report_persists_selected_county_fixture",
         "test_db_ui_operator_case_report_persists_selected_county_fixture",
         "BUN-slope",
+        "BUN-flood",
+        "BUN-access",
+        "CHA-rural-use",
         "CHA-zoning-edge",
+        "CHA-parcel-tax",
         "BRU-coastal-flood",
-        "representative selected-county operator cases",
+        "BRU-wetlands-soils",
+        "BRU-jurisdiction",
+        "all nine packaged selected-county operator cases",
         "/ui/operator-cases/report",
         "approved UI delivery links",
     ):

@@ -64,6 +64,10 @@ RUNBOOK_REQUIRED_CURRENT_PHRASES = (
     "not the packaged selected-county corpus path",
     "the `/ui/operator-cases/report` launcher",
     "approved UI delivery links",
+    "selected-county launcher table and form contract",
+    "all nine packaged selected-county operator DB smoke cases",
+    "--reviewer-id fixture-reviewer",
+    "--reviewer-token fixture-token-123",
     "--expect-artifact-persistence postgres+object_store",
     "artifact_metadata.persistence",
     (
@@ -82,6 +86,8 @@ RUNBOOK_STALE_PHRASES = (
     "generic report creation loads the packaged selected-county connector fixtures",
     "/report-runs/{id}",
     "/ui/report-runs/{id}",
+    "representative selected-county operator DB smoke cases",
+    "representative selected-county operator cases",
 )
 CATALOG_STALE_PHRASES = (
     "Chatham parcels/zoning, Brunswick coastal/wetlands",
