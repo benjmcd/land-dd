@@ -272,7 +272,7 @@ class ReportRunService:
         existing = self._source_service.get(_NOT_EVALUATED_SOURCE_ID)
         if existing is not None:
             return existing
-        return self._source_service.register(
+        return self._source_service.get_or_register_by_id(
             SourceContract(
                 source_id=_NOT_EVALUATED_SOURCE_ID,
                 name=NOT_EVALUATED_SOURCE_NAME,

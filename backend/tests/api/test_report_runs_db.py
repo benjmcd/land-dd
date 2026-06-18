@@ -2,15 +2,21 @@ from __future__ import annotations
 
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier, Lock, get_ident
 from typing import cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+import app.reports.service as report_service_module
+from app.api.reports import run_db_report_background
+from app.area_geometry.area_repo import SqlAlchemyAreaRepository
+from app.area_geometry.service import AreaService
 from app.claims_engine.not_evaluated import (
     NOT_EVALUATED_CLAIM_CODES,
     NOT_EVALUATED_DOMAINS,
@@ -19,7 +25,12 @@ from app.claims_engine.not_evaluated import (
 )
 from app.core.config import Settings
 from app.db.engine import build_engine
+from app.domain.area_contracts import AreaContract
+from app.domain.enums import IntentCode, JobStatus
+from app.domain.source_contracts import SourceContract
 from app.main import create_app
+from app.reports.job_store import SqlAlchemyAsyncReportJobStore
+from app.source_registry.source_repo import SqlAlchemySourceRepository
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "geometries"
 
@@ -207,6 +218,142 @@ def test_db_backed_full_reviewed_dossier_path(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_report_background_concurrent_first_sentinel_insert_succeeds(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = build_engine()
+    object_store_root = tmp_path / "object-store"
+    settings = Settings(OBJECT_STORE_ROOT=str(object_store_root))
+    job_store = SqlAlchemyAsyncReportJobStore()
+    sentinel_source_id = uuid4()
+    area_ids: list[UUID] = []
+    report_run_ids: list[UUID] = []
+
+    monkeypatch.setattr(
+        report_service_module,
+        "_NOT_EVALUATED_SOURCE_ID",
+        sentinel_source_id,
+    )
+    monkeypatch.setattr(
+        report_service_module,
+        "NOT_EVALUATED_SOURCE_NAME",
+        f"test unsupported sentinel {sentinel_source_id}",
+    )
+    monkeypatch.setattr(
+        report_service_module,
+        "NOT_EVALUATED_SOURCE_ORG",
+        "internal-test",
+    )
+
+    original_get = SqlAlchemySourceRepository.get
+    first_missing_threads: set[int] = set()
+    first_missing_lock = Lock()
+    first_missing_barrier = Barrier(2)
+
+    def synchronized_first_missing_get(
+        self: SqlAlchemySourceRepository,
+        source_id: UUID,
+    ) -> SourceContract | None:
+        result = original_get(self, source_id)
+        if source_id != sentinel_source_id or result is not None:
+            return result
+        thread_id = get_ident()
+        with first_missing_lock:
+            should_wait = thread_id not in first_missing_threads
+            if should_wait:
+                first_missing_threads.add(thread_id)
+        if should_wait:
+            first_missing_barrier.wait(timeout=10)
+        return result
+
+    monkeypatch.setattr(
+        SqlAlchemySourceRepository,
+        "get",
+        synchronized_first_missing_get,
+    )
+
+    try:
+        with Session(engine) as session:
+            area_service = AreaService(SqlAlchemyAreaRepository(session))
+            for index in range(2):
+                area = area_service.create(
+                    AreaContract(
+                        label=f"db sentinel race fixture {index}",
+                        geom_geojson=load_geometry("valid_polygon.geojson"),
+                        geom_source="db sentinel race fixture",
+                    )
+                )
+                area_ids.append(area.area_id)
+            session.commit()
+
+        for area_id in area_ids:
+            job = job_store.create(
+                area_id=area_id,
+                intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+            )
+            report_run_ids.append(job.report_run_id)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(
+                    run_db_report_background,
+                    report_run_id=report_run_id,
+                    area_id=area_id,
+                    intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+                    object_store_root=str(object_store_root),
+                    settings=settings,
+                )
+                for area_id, report_run_id in zip(area_ids, report_run_ids, strict=True)
+            ]
+            for future in futures:
+                future.result(timeout=30)
+
+        for report_run_id in report_run_ids:
+            stored_job = job_store.get(report_run_id)
+            assert stored_job is not None
+            assert stored_job.status == JobStatus.SUCCEEDED, stored_job.error_msg
+
+        with Session(engine) as session:
+            sentinel_count = session.execute(
+                text(
+                    """
+                    SELECT count(*)
+                    FROM source.sources
+                    WHERE source_id = :source_id
+                    """
+                ),
+                {"source_id": sentinel_source_id},
+            ).scalar_one()
+            report_count = session.execute(
+                text(
+                    """
+                    SELECT count(*)
+                    FROM reports.report_runs
+                    WHERE report_run_id IN (:first_report_run_id, :second_report_run_id)
+                    """
+                ),
+                {
+                    "first_report_run_id": report_run_ids[0],
+                    "second_report_run_id": report_run_ids[1],
+                },
+            ).scalar_one()
+
+        assert sentinel_count == 1
+        assert report_count == 2
+    finally:
+        for index, area_id in enumerate(area_ids):
+            _cleanup_db_api_report(
+                area_id=area_id,
+                report_run_id=report_run_ids[index]
+                if index < len(report_run_ids)
+                else None,
+                delete_sentinel_source=False,
+            )
+        _delete_source_by_id(sentinel_source_id)
+
+
 def _sentinel_source_exists() -> bool:
     engine = build_engine()
     with Session(engine) as session:
@@ -277,4 +424,14 @@ def _cleanup_db_api_report(
                     "organization": NOT_EVALUATED_SOURCE_ORG,
                 },
             )
+        session.commit()
+
+
+def _delete_source_by_id(source_id: UUID) -> None:
+    engine = build_engine()
+    with Session(engine) as session:
+        session.execute(
+            text("DELETE FROM source.sources WHERE source_id = :source_id"),
+            {"source_id": source_id},
+        )
         session.commit()

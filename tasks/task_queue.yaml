@@ -1,15 +1,14 @@
 version: 2
-active_plan: plans/2026-06-18-representative-performance-rehearsal.md
+active_plan: plans/2026-06-18-compare-diff-workflow-smoke.md
 routing_note: >
-  Active lane: representative local performance rehearsal
-  (plans/2026-06-18-representative-performance-rehearsal.md). Goal: exercise the
-  existing local release-candidate load/spatial performance evidence path after the
-  package boundary rehearsal, keeping measured artifacts under ignored local_artifacts
-  and preserving the distinction between local rehearsal evidence and hosted production
-  SLO/capacity proof. Release-candidate package rehearsal is complete; DS-017, hosted
-  deployment, IdP/RBAC, secret-manager, billing, alerting, image publication, and
-  production workload decisions remain external authority requirements separated from
-  repo-local proof.
+  Active lane: compare/diff workflow smoke
+  (plans/2026-06-18-compare-diff-workflow-smoke.md). Goal: include the existing
+  compare/diff API and UI surfaces in release-candidate smoke after representative
+  local performance rehearsal completed, while preserving the distinction between
+  report comparison/change review and recommendations, arbitrary geography utility, or
+  hosted production proof. DS-017, hosted deployment, IdP/RBAC, secret-manager,
+  billing, alerting, image publication, and production workload decisions remain
+  external authority requirements separated from repo-local proof.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -422,22 +421,27 @@ tasks:
 
   - id: R-016
     title: Representative local performance rehearsal
-    status: active
+    status: done
     depends_on: [R-015]
     lane: coordinator
     spec: plans/2026-06-18-representative-performance-rehearsal.md
     notes: >
-      Rehearse the existing local release-candidate performance evidence path after the
-      package handoff boundary is proven. This lane should use the current load-test and
-      spatial runtime plan harnesses before adding implementation, keep measured runtime
-      artifacts ignored under local_artifacts, and preserve hosted SLO/capacity,
-      alerting, registry, DS-017, IdP/RBAC, billing, and secret-manager blockers.
+      Rehearsed the existing local release-candidate performance evidence path after the
+      package handoff boundary was proven. Static performance/spatial validators passed,
+      isolated local load/spatial runtime evidence was captured under ignored
+      local_artifacts, and a real concurrent background-report race on the fixed
+      internal not-evaluated sentinel source was fixed with a DB conflict-safe fixed-ID
+      get-or-add path. Normal source registration remains strict. This did not promote
+      hosted SLO/capacity, alerting, registry, DS-017, IdP/RBAC, billing, or
+      secret-manager blockers.
     validation:
       - python .\scripts\performance_baseline_check.py
       - .\scripts\run_performance_baseline_check.ps1
       - .\scripts\run_load_test.ps1 -ValidateOnly
       - python .\scripts\spatial_query_plan_check.py
       - .\scripts\run_spatial_query_plan_check.ps1
+      - cd backend; python -m pytest -q .\tests\source_registry\test_source_service.py .\tests\source_registry\test_sqlalchemy_source_repo.py .\tests\reports\test_report_service.py
+      - $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:<isolated-db-port>/land_diligence'; cd backend; python -m pytest -q .\tests\api\test_report_runs_db.py::test_db_report_background_concurrent_first_sentinel_insert_succeeds
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
       - git diff --check
@@ -448,6 +452,32 @@ tasks:
       - Spatial runtime proof uses an explicit prepared area_id and does not seed data from validate-only actions
       - Performance gates are not promoted to hosted SLO/capacity readiness without external hosted workload evidence
       - DS-017, hosted deployment, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
+
+  - id: R-017
+    title: Compare/diff workflow smoke
+    status: active
+    depends_on: [R-016]
+    lane: coordinator
+    spec: plans/2026-06-18-compare-diff-workflow-smoke.md
+    notes: >
+      Include the existing compare/diff API and UI surfaces in release-candidate
+      workflow smoke after local performance rehearsal. This is repo-local workflow
+      proof only: no ranking, recommendation, suitability scoring, arbitrary geography
+      claim, hosted production proof, DS-017 work, billing, alerting, IdP/RBAC, or
+      image publication.
+    validation:
+      - python .\scripts\private_mvp_readiness_check.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\api\test_report_comparison.py .\tests\api\test_ui_routes.py .\tests\test_ui_runtime_smoke_script.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Existing compare/diff surfaces are audited before new smoke behavior is added
+      - Release-candidate smoke follows compare and same-area diff only where current report contracts support it
+      - Compare/diff output remains report-summary/change-review proof, not ranking, recommendation, or suitability scoring
+      - Hosted production, DS-017, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---
   - id: T000

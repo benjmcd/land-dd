@@ -1,51 +1,56 @@
 # Project State
 
-## Current checkpoint (2026-06-18 representative performance rehearsal)
+## Current checkpoint (2026-06-18 compare/diff workflow smoke)
 
-The release-candidate package rehearsal is complete. The active implementation authority
-now points at a representative local performance rehearsal: exercise the existing
-release-candidate load and spatial runtime evidence paths from a prepared local runtime
-without claiming hosted production capacity, formal SLOs, or Level 10 completion.
+The representative local performance rehearsal is complete. The active implementation
+authority now points at compare/diff workflow smoke: include the existing report compare
+and same-area diff API/UI surfaces in release-candidate smoke without turning comparison
+into ranking, recommendation, suitability scoring, arbitrary-geography proof, or hosted
+production proof.
 
-- **Active plan**: `plans/2026-06-18-representative-performance-rehearsal.md`.
-- **Purpose**: make local release-candidate performance evidence repeatable and
-  inspectable after the source/runtime/operator package boundary has been proven, while
-  keeping measured artifacts ignored under `local_artifacts/`.
-- **Completed immediately prior**: `R-015` expanded and guarded the local release
-  package boundary so it carries startup, routing, selected state, plan, task, lane,
-  backend-test, selected-county fixture, and planning-pack verifier inputs. It also
-  explicitly excludes volatile `state/agent-inbox` coordination state and preserves the
-  local-only/no-publish/no-hosted/no-secret/no-DS-017 boundary.
-- **Also completed prior**: `R-014` added a validate-only alert/source-review cadence
-  guard requiring Must current-effective source-review docs to distinguish the 90-day
-  repo-local `Last Checked At` freshness horizon from source-specific upstream update
-  cadence and terms/source-page review triggers. DS-017 remains blocked/unreviewed and
-  is not promoted.
+- **Active plan**: `plans/2026-06-18-compare-diff-workflow-smoke.md`.
+- **Purpose**: prove the existing compare/diff operator workflow at release-candidate
+  smoke depth after local package and performance rehearsal, while keeping the product
+  contract limited to report summaries and caveated change review.
+- **Completed immediately prior**: `R-016` rehearsed the local load and spatial runtime
+  evidence path against isolated candidate databases/runtimes. Static performance,
+  load-test validate-only, spatial query-plan, release-readiness, and readiness-matrix
+  validators passed. Runtime proof observed the configured spatial GIST indexes and
+  passed `20/20` sequential plus `40/40` concurrent workflow-load requests.
+- **R-016 defect found and fixed**: the first runtime rehearsal exposed a real
+  background-job race where concurrent report jobs could both observe the fixed
+  internal not-evaluated sentinel source as absent and one job could fail on duplicate
+  `source_id` insert. The fix added a fixed-ID source `get_or_add` path using
+  PostgreSQL `ON CONFLICT (source_id) DO NOTHING` and switched only the internal
+  sentinel ensure path to it; normal source registration remains strict.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-representative-performance-rehearsal.md`,
-  `plans/2026-06-18-release-package-rehearsal.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `config/performance_baseline.yaml`,
-  `config/spatial_query_plan.yaml`, `docs/runbooks/performance.md`,
-  `docs/runbooks/load_testing.md`, `config/release_package.yaml`,
-  `docs/runbooks/release_package.md`, `scripts/load_test_runner.py`,
-  `scripts/performance_baseline_check.py`, `scripts/spatial_query_plan_check.py`,
-  `scripts/spatial_query_plan_runtime_check.py`, `scripts/release_package_check.py`,
-  and `scripts/release_readiness_check.py`.
+  `plans/2026-06-18-compare-diff-workflow-smoke.md`,
+  `plans/2026-06-18-representative-performance-rehearsal.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `docs/runbooks/mvp_operator.md`,
+  `backend/app/api/reports.py`, `backend/app/api/ui.py`,
+  `backend/tests/api/test_report_comparison.py`, `backend/tests/api/test_ui_routes.py`,
+  and `scripts/ui_runtime_smoke.py`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
-  or RBAC, no secret writes, no committed generated evidence artifacts, and no Level 10
-  completion claim.
-- **Validation so far**: R-015 release-package validator and wrapper passed; focused
-  release-package/release-readiness tests passed; focused ruff/mypy over the touched
-  release-package files passed; release-readiness and readiness-matrix validators
-  passed; current Must-source readiness still reports `sources=8 ready=7 blocked=1`
-  with DS-017 blocked; corrected package proof `2026-06-18-r015-proof4` produced
-  ignored ZIP/manifest artifacts under `local_artifacts/releases` with no missing
-  required handoff files and no forbidden local state/cache/artifact entries. Full
-  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `322` source
-  files; DB smoke was skipped by default.
+  or RBAC, no recommendation/ranking semantics, no secret writes, no committed measured
+  runtime artifacts, and no Level 10 completion claim.
+- **Validation so far**: focused source/report tests passed (`35 passed`); focused
+  ruff passed; focused mypy passed on `6` source files; DB-gated concurrent background
+  report regression passed against isolated Postgres on port `55461`; R-016 patched
+  runtime proof had no report-job errors and durable DB state showed all `12` report
+  jobs succeeded with one sentinel source row. DB-enabled full `.\scripts\verify.ps1`
+  passed against a fresh isolated Postgres target on port `55462` with backend tests,
+  ruff, mypy over `322` source files, and DB smoke green.
+
+## Previous checkpoint (2026-06-18 representative performance rehearsal)
+
+`R-016` completed the representative local performance rehearsal after `R-015` proved
+the release-candidate package boundary. It kept measured artifacts ignored under
+`local_artifacts/`, fixed the sentinel source concurrency race described above, and did
+not promote hosted SLO/capacity, DS-017, hosted deployment, IdP/RBAC, billing, alerting,
+image publication, or secret-manager blockers.
 
 ## Previous checkpoint (2026-06-18 source review cadence consistency)
 

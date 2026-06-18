@@ -57,6 +57,19 @@ def test_register_duplicate_name_and_org_raises(service: SourceService) -> None:
         service.register(_make_source())
 
 
+def test_get_or_register_by_id_is_idempotent(service: SourceService) -> None:
+    source = _make_source()
+
+    first = service.get_or_register_by_id(source)
+    second = service.get_or_register_by_id(
+        source.model_copy(update={"name": "Changed local copy"}),
+    )
+
+    assert first == source
+    assert second == source
+    assert service.list_all() == [source]
+
+
 def test_register_same_name_different_org_is_allowed(service: SourceService) -> None:
     service.register(_make_source(organization="Org A"))
     result = service.register(_make_source(organization="Org B"))
