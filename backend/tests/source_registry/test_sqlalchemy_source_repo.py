@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 from uuid import UUID, uuid4
 
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
 from app.domain.enums import AuthorityLevel
@@ -34,6 +35,7 @@ class _FakeSession:
         self.added: list[SourceModel] = []
         self.flushed = False
         self.get_value: SourceModel | None = None
+        self.get_values: list[SourceModel | None] = []
         self.scalar_models: list[SourceModel] = []
         self.execute_exists = False
         self.last_get_model: type[SourceModel] | None = None
@@ -51,6 +53,8 @@ class _FakeSession:
     def get(self, model: type[SourceModel], source_id: UUID) -> SourceModel | None:
         self.last_get_model = model
         self.last_get_id = source_id
+        if self.get_values:
+            return self.get_values.pop(0)
         return self.get_value
 
     def scalars(self, statement: Any) -> _ScalarResult:
@@ -149,6 +153,39 @@ def test_sqlalchemy_source_repository_add_maps_contract_to_model() -> None:
     assert result.redistribution_status == source.redistribution_status
     assert result.freshness_class == source.freshness_class
     assert result.review_owner == source.review_owner
+
+
+def test_sqlalchemy_source_repository_get_or_add_returns_existing_source() -> None:
+    fake_session = _FakeSession()
+    source = _make_source()
+    fake_session.get_value = _make_model(source)
+    repo = SqlAlchemySourceRepository(cast(Session, fake_session))
+
+    result = repo.get_or_add(source)
+
+    assert result.source_id == source.source_id
+    assert fake_session.flushed is False
+    assert fake_session.last_execute_statement is None
+
+
+def test_sqlalchemy_source_repository_get_or_add_uses_conflict_safe_insert() -> None:
+    fake_session = _FakeSession()
+    source = _make_source()
+    fake_session.get_values = [None, _make_model(source)]
+    repo = SqlAlchemySourceRepository(cast(Session, fake_session))
+
+    result = repo.get_or_add(source)
+
+    assert result.source_id == source.source_id
+    assert fake_session.flushed is True
+    assert fake_session.last_execute_statement is not None
+    compiled = str(
+        fake_session.last_execute_statement.compile(
+            dialect=cast(Any, postgresql).dialect(),
+        ),
+    )
+    assert "ON CONFLICT" in compiled
+    assert "DO NOTHING" in compiled
 
 
 def test_sqlalchemy_source_repository_get_maps_model_to_contract() -> None:

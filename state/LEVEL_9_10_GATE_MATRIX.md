@@ -98,14 +98,14 @@ Status legend:
 |---|---|---|---|
 | L10-PERF-001 async report jobs with status/retry/failure | `PROVEN_REPO_LOCAL` | async job store, DB-backed jobs, retry lineage, status APIs/UI | Validate under hosted workload. |
 | L10-PERF-002 batch screening bounded concurrency/cost | `PARTIAL` | live sequence scheduler, cost catalog | Batch workflow and concurrency guardrails need explicit hosted-scale proof. |
-| L10-PERF-003 spatial indexes/query plans for workloads | `PARTIAL` | PostGIS schema, DB smoke, static `spatial_query_plan_v1` contract/checker, opt-in runtime checker, and isolated local runtime proof for the configured target GIST indexes | Re-run read-only runtime `EXPLAIN ANALYZE` against representative selected-county or release-candidate DB workloads before promoting beyond PARTIAL. |
+| L10-PERF-003 spatial indexes/query plans for workloads | `PARTIAL` | PostGIS schema, DB smoke, static `spatial_query_plan_v1` contract/checker, opt-in runtime checker, and R-016 isolated release-candidate runtime proof for the configured target GIST indexes | Re-run read-only runtime `EXPLAIN ANALYZE` against hosted or externally accepted representative selected-county DB workloads before promoting beyond PARTIAL. |
 | L10-PERF-004 large artifacts use object storage/reference pattern | `PROVEN_REPO_LOCAL` | `OBJECT_STORE_ROOT`, DB artifact metadata, artifact path trust tests | Map object store to hosted storage service during deployment. |
 | L10-PERF-005 cache strategy and invalidation are source-version aware | `VALIDATE_ONLY` | performance runbook | Implement/cache only when a real cache is introduced. |
-| L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | workflow-valid load-test scripts/runbook/checker and local temporary-backend proof for area creation -> report-run admission | Run against staging/hosted target with recorded thresholds before promoting beyond repo-local release-candidate proof. |
+| L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | workflow-valid load-test scripts/runbook/checker and R-016 isolated local runtime proof for area creation -> report-run admission, including sequential and concurrent request evidence | Run against staging/hosted target with recorded thresholds before promoting beyond repo-local release-candidate proof. |
 | L10-PERF-007 queue depth/job latency/failure metrics monitored | `PARTIAL` | metrics, queue health, recovery preview | Add hosted dashboard/alert evidence. |
 | L10-PERF-008 backpressure/degraded mode for outages/load | `PARTIAL` | fail-closed source failures, runbook guidance, and default-off runtime queue backpressure for report/live-connector admission | Add hosted workload, dashboard, alert-routing, and threshold-tuning evidence before promoting beyond repo-local proof. |
 | L10-PERF-009 DB pooling and transaction boundaries configured | `PROVEN_REPO_LOCAL` | DB pool settings/tests and SQLAlchemy request-scoped sessions | Tune values under hosted workload. |
-| L10-PERF-010 performance regressions observable before release | `VALIDATE_ONLY` | performance runbook, baseline contract, optional JSON result output, and release-readiness gate | Active `R-016` rehearses local measured evidence for a release candidate without promoting hosted SLO/capacity proof. |
+| L10-PERF-010 performance regressions observable before release | `VALIDATE_ONLY` | performance runbook, baseline contract, optional JSON result output, release-readiness gate, and R-016 local measured rehearsal evidence | Repeat the local rehearsal for each release candidate and add hosted workload proof before any SLO/capacity claim. |
 
 ## Level 10 - Product Correctness
 
@@ -141,11 +141,13 @@ source/vendor authority. `R-010` completed the post-RC authority split, `R-011`
 completed the production authority packet, `R-012` added repo-local source-rights
 report exposure guarding, `R-013` added repo-local source freshness review-drift
 readiness guarding, `R-014` added source-review cadence consistency guarding, and
-`R-015` proved the local source/runtime/operator package boundary. The next active pass
-is `R-016` representative local performance rehearsal: exercise the existing local
-load/spatial performance evidence path without publishing an image, creating hosted
-infrastructure, writing secrets, committing measured runtime artifacts, or claiming
-hosted SLO/capacity proof.
+`R-015` proved the local source/runtime/operator package boundary, and `R-016`
+completed representative local performance rehearsal while preserving hosted
+SLO/capacity blockers. The next active pass is `R-017` compare/diff workflow smoke:
+include the existing compare/diff API and UI surfaces in release-candidate smoke
+without ranking candidate areas, adding recommendation semantics, publishing an image,
+creating hosted infrastructure, writing secrets, committing measured runtime artifacts,
+or claiming hosted production proof.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

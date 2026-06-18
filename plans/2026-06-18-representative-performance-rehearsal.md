@@ -127,3 +127,20 @@ Full handoff gate:
 
 - 2026-06-18: Plan opened after release-candidate package rehearsal proved the local
   source/runtime/operator handoff package boundary.
+- 2026-06-18: Static performance/spatial/release validators passed. Isolated local
+  runtime rehearsal first exposed a real background-job race: concurrent report jobs
+  could both see the fixed internal not-evaluated sentinel source as absent, then one
+  failed on duplicate `source_id` insert even though HTTP load-test requests were
+  accepted.
+- 2026-06-18: Fixed the race with a separate fixed-ID source `get_or_add` path using
+  PostgreSQL `ON CONFLICT (source_id) DO NOTHING`; kept normal source registration
+  strict for name/organization duplicates.
+- 2026-06-18: Added focused source-service/source-repository coverage and a DB-gated
+  concurrent background report regression that forces both sessions to observe the
+  sentinel as missing, then asserts both jobs and report rows succeed and exactly one
+  sentinel source row exists.
+- 2026-06-18: Re-ran the patched local runtime rehearsal against an isolated DB on
+  port `55461`: spatial runtime proof observed the configured target GIST indexes,
+  workflow load passed `20/20` sequential and `40/40` concurrent requests, no report
+  job errors were logged, and durable DB state showed `12` succeeded report jobs with
+  one sentinel source row.

@@ -18,6 +18,9 @@ class SourceService:
             )
         return self._repo.add(source)
 
+    def get_or_register_by_id(self, source: SourceContract) -> SourceContract:
+        return self._repo.get_or_add(source)
+
     def get(self, source_id: UUID) -> SourceContract | None:
         return self._repo.get(source_id)
 

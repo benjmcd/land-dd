@@ -3478,3 +3478,32 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Marked `R-015` done and routed the active plan to
   `plans/2026-06-18-representative-performance-rehearsal.md`; the next lane is local
   performance rehearsal, not hosted SLO/capacity proof.
+
+## 2026-06-18 Representative local performance rehearsal
+
+- Completed `R-016` by exercising the current local release-candidate performance
+  evidence path instead of adding a new framework first.
+- Revalidated static performance, load-test validate-only, spatial query-plan,
+  release-readiness, and readiness-matrix gates.
+- Prepared isolated local Postgres/PostGIS candidate databases and synthetic spatial
+  workload rows, then ran read-only spatial runtime proof that observed the configured
+  target GIST indexes.
+- Ran local workflow-load proof against a temporary backend. The first rehearsal proved
+  HTTP request admission but exposed a real background-job failure: one concurrent
+  report job failed with a duplicate fixed internal not-evaluated sentinel `source_id`.
+- Fixed the race by adding a separate source repository/service `get_or_add` path for
+  fixed-ID singleton/internal sources using PostgreSQL
+  `ON CONFLICT (source_id) DO NOTHING`. Normal `SourceService.register()` remains
+  strict for name/organization duplicates.
+- Added focused in-memory/fake-session tests plus a DB-gated concurrent background
+  report regression that forces both sessions to observe the sentinel as missing, then
+  asserts both jobs and report rows succeed with exactly one sentinel row.
+- Re-ran patched runtime proof against an isolated backend/DB: sequential load passed
+  `20/20`, concurrent load passed `40/40`, no report-job errors were logged, and durable
+  DB state showed `12` succeeded report jobs with one sentinel source row.
+- DB-enabled full `.\scripts\verify.ps1` passed against a fresh isolated Postgres target
+  on port `55462`, including migrations/seeds, the full backend suite, ruff, mypy, and
+  DB smoke.
+- Marked `R-016` done and routed the active plan to
+  `plans/2026-06-18-compare-diff-workflow-smoke.md`; the next lane is compare/diff
+  workflow smoke, not hosted deployment, DS-017 approval, or production SLO proof.

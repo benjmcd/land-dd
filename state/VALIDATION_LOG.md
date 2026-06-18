@@ -11599,3 +11599,70 @@ git diff --name-only --diff-filter=D
 - Generated ZIP/manifest proof artifacts are intentionally ignored and uncommitted.
 - DS-017, hosted platform, external secret manager, full IdP/RBAC, billing, hosted
   alerting, image publication, and hosted workload proof remain blocked or future work.
+
+---
+
+## 2026-06-18 - Representative Local Performance Rehearsal
+
+**Scope:** Complete `R-016` by rehearsing local release-candidate workflow load and
+spatial runtime proof, fixing any discovered reproducibility gap, and routing the next
+repo-local lane without promoting hosted SLO/capacity, DS-017, hosted deployment,
+IdP/RBAC, billing, alerting, image publication, or secret-manager blockers.
+
+**Commands run:**
+
+```powershell
+python .\scripts\performance_baseline_check.py
+.\scripts\run_performance_baseline_check.ps1
+.\scripts\run_load_test.ps1 -ValidateOnly
+python .\scripts\spatial_query_plan_check.py
+.\scripts\run_spatial_query_plan_check.ps1
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+.\scripts\db_apply_migrations.ps1
+python .\scripts\db_smoke_check.py
+.\scripts\run_spatial_query_plan_runtime_check.ps1 -AreaId bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb -OutputJson .\local_artifacts\spatial-query-plan\r016b-runtime-plan.json
+.\scripts\run_load_test.ps1 -BaseUrl http://127.0.0.1:18191 -ResultDir .\local_artifacts\performance-baseline\r016b
+cd backend; python -m pytest -q .\tests\source_registry\test_source_service.py .\tests\source_registry\test_sqlalchemy_source_repo.py .\tests\reports\test_report_service.py
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55461/land_diligence'; cd backend; python -m pytest -q .\tests\api\test_report_runs_db.py::test_db_report_background_concurrent_first_sentinel_insert_succeeds
+cd backend; python -m ruff check .\app\source_registry\service.py .\app\source_registry\source_repo.py .\app\reports\service.py .\tests\source_registry\test_source_service.py .\tests\source_registry\test_sqlalchemy_source_repo.py .\tests\api\test_report_runs_db.py
+cd backend; python -m mypy .\app\source_registry\service.py .\app\source_registry\source_repo.py .\app\reports\service.py .\tests\source_registry\test_source_service.py .\tests\source_registry\test_sqlalchemy_source_repo.py .\tests\api\test_report_runs_db.py
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\performance_baseline_check.py
+```
+
+**Results:**
+
+- Static performance baseline, load-test validate-only, spatial query-plan,
+  release-readiness, readiness-matrix, and private-MVP readiness validators passed.
+- Isolated spatial runtime proof observed `parcels_geom_gix`,
+  `reference_features_geom_gix`, and `observations_geom_gix`.
+- Initial local workflow-load rehearsal accepted HTTP traffic but exposed a background
+  report-job duplicate `source_id` race on the fixed internal not-evaluated sentinel.
+- Patched local workflow-load rehearsal passed sequential `20/20` and concurrent
+  `40/40` requests; backend error-log scan found no `ERROR`, `Traceback`,
+  `IntegrityError`, `UniqueViolation`, or `report job failed` entries for the patched
+  run.
+- Patched DB summary showed report statuses `succeeded=12`, job statuses
+  `succeeded=12`, and exactly one sentinel source row.
+- Focused source/report pytest passed (`35 passed`).
+- DB-gated concurrent background report regression passed against isolated Postgres on
+  port `55461`.
+- Focused ruff passed and focused mypy passed on `6` source files.
+- Read-only code review found no blockers and approved the fix shape, with the DB-smoke
+  regression run recommended and then completed locally.
+- DB-enabled full `.\scripts\verify.ps1` passed against fresh isolated Postgres on port
+  `55462`; backend tests passed, ruff passed, mypy passed on `322` source files, and DB
+  smoke passed.
+
+**Residual risk:**
+
+- Runtime load/spatial evidence remains local, machine-specific release-candidate proof
+  and is intentionally ignored under `local_artifacts/`.
+- Hosted workload, formal SLO/capacity, dashboards/alerts, DS-017, hosted deployment,
+  image publication, billing, full IdP/RBAC, and secret-manager proof remain external
+  authority blockers.
+- Default non-DB verify was not run separately after the DB-enabled pass because the
+  DB-enabled full gate ran the same backend suite plus DB-gated tests and DB smoke.

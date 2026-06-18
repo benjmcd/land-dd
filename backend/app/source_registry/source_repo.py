@@ -4,6 +4,7 @@ from typing import Any, Protocol, cast
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.domain.enums import AuthorityLevel
@@ -13,6 +14,8 @@ from app.source_registry.models import SourceModel
 
 class SourceRepository(Protocol):
     def add(self, source: SourceContract) -> SourceContract: ...
+
+    def get_or_add(self, source: SourceContract) -> SourceContract: ...
 
     def get(self, source_id: UUID) -> SourceContract | None: ...
 
@@ -26,6 +29,13 @@ class InMemorySourceRepository:
         self._store: dict[UUID, SourceContract] = {}
 
     def add(self, source: SourceContract) -> SourceContract:
+        self._store[source.source_id] = source
+        return source
+
+    def get_or_add(self, source: SourceContract) -> SourceContract:
+        existing = self.get(source.source_id)
+        if existing is not None:
+            return existing
         self._store[source.source_id] = source
         return source
 
@@ -52,6 +62,22 @@ class SqlAlchemySourceRepository:
         self._session.flush()
         return _model_to_source(model)
 
+    def get_or_add(self, source: SourceContract) -> SourceContract:
+        existing = self.get(source.source_id)
+        if existing is not None:
+            return existing
+        statement = (
+            pg_insert(SourceModel)
+            .values(**_source_to_values(source))
+            .on_conflict_do_nothing(index_elements=[SourceModel.source_id])
+        )
+        self._session.execute(statement)
+        self._session.flush()
+        stored = self.get(source.source_id)
+        if stored is None:
+            raise RuntimeError(f"source was not stored: {source.source_id}")
+        return stored
+
     def get(self, source_id: UUID) -> SourceContract | None:
         model = self._session.get(SourceModel, source_id)
         if model is None:
@@ -75,6 +101,10 @@ class SqlAlchemySourceRepository:
 
 
 def _source_to_model(source: SourceContract) -> SourceModel:
+    return SourceModel(**_source_to_values(source))
+
+
+def _source_to_values(source: SourceContract) -> dict[str, Any]:
     source_metadata = {
         **source.metadata,
         "source_type": source.source_type,
@@ -85,25 +115,25 @@ def _source_to_model(source: SourceContract) -> SourceModel:
         "review_owner": source.review_owner,
         "review_status": source.review_status,
     }
-    return SourceModel(
-        source_id=source.source_id,
-        name=source.name,
-        organization=source.organization,
-        homepage_url=str(source.homepage_url) if source.homepage_url is not None else None,
-        authority_level=source.authority_level.value,
-        geographic_scope=source.geographic_scope,
-        domain=source.domain,
-        update_cadence=source.update_cadence,
-        commercial_use_status=source.commercial_use_status,
-        license_summary=source.license_summary,
-        attribution_required=source.attribution_required,
-        ai_use_allowed=source.ai_use_allowed,
-        cache_allowed=source.cache_allowed,
-        export_allowed=source.export_allowed,
-        raw_data_allowed=source.raw_data_allowed,
-        notes=source.notes,
-        source_metadata=source_metadata,
-    )
+    return {
+        "source_id": source.source_id,
+        "name": source.name,
+        "organization": source.organization,
+        "homepage_url": str(source.homepage_url) if source.homepage_url is not None else None,
+        "authority_level": source.authority_level.value,
+        "geographic_scope": source.geographic_scope,
+        "domain": source.domain,
+        "update_cadence": source.update_cadence,
+        "commercial_use_status": source.commercial_use_status,
+        "license_summary": source.license_summary,
+        "attribution_required": source.attribution_required,
+        "ai_use_allowed": source.ai_use_allowed,
+        "cache_allowed": source.cache_allowed,
+        "export_allowed": source.export_allowed,
+        "raw_data_allowed": source.raw_data_allowed,
+        "notes": source.notes,
+        "source_metadata": source_metadata,
+    }
 
 
 def _model_to_source(model: SourceModel) -> SourceContract:
