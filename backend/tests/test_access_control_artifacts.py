@@ -56,6 +56,25 @@ REQUIRED_ROUTE_SCOPES = {
     "report:approve",
     "source:manage",
 }
+REQUIRED_ROUTE_SCOPE_MAPPING_IDS = {
+    "approved_connector_report_runs",
+    "connector_review_decisions",
+    "fixture_connector_runs",
+    "live_connector_job_reads",
+    "live_connector_runs",
+    "operations_api_reads",
+    "report_approval",
+    "report_retry",
+    "selected_county_report_runs",
+    "source_registry_mutation",
+    "ui_connector_resume_report",
+    "ui_connector_review_decisions",
+    "ui_operations_reads",
+    "ui_report_approval",
+    "ui_report_retry",
+    "ui_selected_county_report_runs",
+}
+REQUIRED_IDENTITY_BOUNDARY_MAPPING_IDS = {"connector_review_read_surfaces"}
 REQUIRED_IDENTITY_AUDIT_REQUIREMENTS = {
     "idp_subject",
     "workspace_id",
@@ -158,6 +177,48 @@ def test_access_control_catalog_records_identity_rbac_contract() -> None:
         for scope in role["scopes"]
     }
     assert REQUIRED_ROUTE_SCOPES == mapped_scopes
+
+    route_scope_mappings = contract["route_scope_mappings"]
+    mappings_by_id = {mapping["id"]: mapping for mapping in route_scope_mappings}
+    assert REQUIRED_ROUTE_SCOPE_MAPPING_IDS == set(mappings_by_id)
+    mapped_route_scopes = {mapping["route_scope"] for mapping in route_scope_mappings}
+    assert REQUIRED_ROUTE_SCOPES == mapped_route_scopes
+    for mapping in route_scope_mappings:
+        assert mapping["route_scope"] in REQUIRED_ROUTE_SCOPES
+        assert mapping["enforcement"] in {"api_reviewer_scope", "ui_reviewer_scope"}
+        assert (REPO_ROOT / mapping["route_module"]).exists()
+        assert mapping["route_functions"]
+        assert mapping["route_patterns"]
+        assert mapping["covered_by_tests"]
+        module_text = (REPO_ROOT / mapping["route_module"]).read_text(encoding="utf-8")
+        for function_name in mapping["route_functions"]:
+            assert f"def {function_name}(" in module_text
+        for test_node in mapping["covered_by_tests"]:
+            test_path, test_name = test_node.split("::", 1)
+            test_text = (REPO_ROOT / test_path).read_text(encoding="utf-8")
+            assert f"def {test_name}(" in test_text
+
+    identity_boundary_mappings = contract["identity_boundary_mappings"]
+    identity_mappings_by_id = {
+        mapping["id"]: mapping for mapping in identity_boundary_mappings
+    }
+    assert REQUIRED_IDENTITY_BOUNDARY_MAPPING_IDS == set(identity_mappings_by_id)
+    for mapping in identity_boundary_mappings:
+        assert mapping["identity_boundary"] == "workspace_identity"
+        assert mapping["enforcement"] == "workspace_identity_only"
+        assert "No reviewer route scope is currently enforced" in mapping["scope_note"]
+        assert (REPO_ROOT / mapping["route_module"]).exists()
+        assert mapping["route_functions"]
+        assert mapping["route_patterns"]
+        assert mapping["covered_by_tests"]
+        module_text = (REPO_ROOT / mapping["route_module"]).read_text(encoding="utf-8")
+        for function_name in mapping["route_functions"]:
+            assert f"def {function_name}(" in module_text
+        for test_node in mapping["covered_by_tests"]:
+            test_path, test_name = test_node.split("::", 1)
+            test_text = (REPO_ROOT / test_path).read_text(encoding="utf-8")
+            assert f"def {test_name}(" in test_text
+
     assert REQUIRED_IDENTITY_AUDIT_REQUIREMENTS.issubset(
         set(contract["audit_requirements"]),
     )
@@ -217,6 +278,12 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "platform_admin, workspace_admin, reviewer, operator, and read_only",
         "connector:run, connector:review, operations:read",
         "report:retry, report:run, report:approve, and source:manage",
+        "route_scope_mappings",
+        "identity_boundary_mappings",
+        "fixture_connector_runs",
+        "connector_review_read_surfaces",
+        "live_connector_runs",
+        "ui_operations_reads",
         "user-bound audit events",
         "IdP subject",
         "workspace/user id",

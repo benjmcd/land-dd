@@ -68,6 +68,22 @@ by the future identity provider.
 Canonical claim list: subject, email, display_name, workspace_id, user_id, and groups_or_roles.
 Required role mappings are platform_admin, workspace_admin, reviewer, operator, and read_only.
 Route-scope mappings include connector:run, connector:review, operations:read, report:retry, report:run, report:approve, and source:manage.
+The `route_scope_mappings` rows bind reviewer-scoped API and UI surfaces to current
+route modules, route functions, route patterns, enforcement modes, and coverage tests.
+Required mapping ids are `fixture_connector_runs`,
+`live_connector_runs`, `connector_review_decisions`, `operations_api_reads`,
+`live_connector_job_reads`, `report_approval`, `report_retry`,
+`selected_county_report_runs`, `approved_connector_report_runs`,
+`source_registry_mutation`, `ui_selected_county_report_runs`, `ui_report_approval`,
+`ui_report_retry`, `ui_connector_review_decisions`,
+`ui_connector_resume_report`, and `ui_operations_reads`. The mapping catalog is
+handoff evidence for future hosted identity/RBAC work; it does not create a user
+account table, IdP integration, entitlement system, or production RBAC policy.
+The `identity_boundary_mappings` rows separately list protected workspace-identity
+surfaces that currently do not enforce a reviewer route scope. The required
+`connector_review_read_surfaces` row covers connector review queue/status reads that
+must require workspace identity and hide cross-workspace rows; moving those routes to a
+reviewer scope requires updating the route-scope mapping catalog and tests.
 
 Identity audit evidence must support user-bound audit events and include the IdP subject, workspace/user id, session/token id, route-scope decision, and decision outcome.
 The current API-key and reviewer service-account controls remain static

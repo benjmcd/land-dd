@@ -204,6 +204,234 @@ identity_rbac_contract:
     read_only:
       scopes:
         - operations:read
+  route_scope_mappings:
+    - id: fixture_connector_runs
+      route_scope: connector:run
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - run_fixture_connector
+      route_patterns:
+        - POST /connector-runs
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_connector_ingest_api.py::test_run_connector_requires_reviewer_credentials
+        - backend/tests/api/test_connector_ingest_api.py::test_run_connector_rejects_reviewer_without_connector_run_scope
+    - id: live_connector_runs
+      route_scope: connector:run
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - query_fema_nfhl_bbox
+        - query_usgs_tnm_bbox
+        - query_ssurgo_bbox
+        - query_nwi_bbox
+        - query_osm_road_access_bbox
+        - query_usgs_water_monitoring_bbox
+        - query_epa_echo_bbox
+        - query_fcc_broadband_bbox
+        - query_blm_mlrs_bbox
+        - query_usgs_mrds_bbox
+        - query_nc_geologic_map_bbox
+        - query_noaa_climate_bbox
+        - query_census_tiger_bbox
+        - query_chatham_parcels_bbox
+        - query_buncombe_parcels_bbox
+        - query_brunswick_parcels_bbox
+        - query_chatham_zoning_district
+        - query_brunswick_zoning_district
+        - query_assessor_not_evaluated
+        - schedule_live_connector_sequence_bbox
+        - schedule_fema_nfhl_bbox
+        - schedule_usgs_tnm_bbox
+        - schedule_nwi_bbox
+        - schedule_ssurgo_bbox
+      route_patterns:
+        - POST /connector-runs/{source}/query-*
+        - POST /connector-runs/{source}/schedule-bbox
+        - POST /connector-runs/live-sequence/schedule-bbox
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_usgs_tnm_connector_api.py::test_usgs_tnm_query_bbox_requires_reviewer_auth
+        - backend/tests/api/test_fema_nfhl_connector_api.py::test_fema_nfhl_schedule_bbox_rejects_reviewer_without_connector_run_scope
+    - id: connector_review_decisions
+      route_scope: connector:review
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - approve_connector_review_queue_item_compat
+        - reject_connector_review_queue_item_compat
+        - requeue_connector_review_queue_item_compat
+        - cancel_connector_review_queue_item_compat
+        - approve_for_connector_qa
+        - request_fixture_fix
+        - requeue_after_fix
+        - cancel_review
+      route_patterns:
+        - POST /connector-review-queue/{ingest_run_id}/{action}
+        - POST /connector-runs/{ingest_run_id}/review-actions/{action}
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_connector_review_queue_api.py::test_connector_review_action_requires_reviewer_credentials
+        - backend/tests/api/test_connector_review_queue_api.py::test_connector_review_action_rejects_reviewer_without_review_scope
+    - id: operations_api_reads
+      route_scope: operations:read
+      route_module: backend/app/api/operations.py
+      route_functions:
+        - queue_health
+        - recovery_preview
+      route_patterns:
+        - GET /operations/queue-health
+        - GET /operations/recovery-preview
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_operations.py::test_queue_health_rejects_reviewer_without_operations_read_scope
+        - backend/tests/api/test_operations.py::test_recovery_preview_rejects_reviewer_without_operations_read_scope
+    - id: live_connector_job_reads
+      route_scope: operations:read
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - list_live_connector_jobs
+        - get_live_connector_job
+      route_patterns:
+        - GET /connector-runs/live-jobs
+        - GET /connector-runs/live-jobs/{job_id}
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_usgs_tnm_connector_api.py::test_live_connector_job_inspection_requires_operations_read_scope
+    - id: report_approval
+      route_scope: report:approve
+      route_module: backend/app/api/reports.py
+      route_functions:
+        - approve_report_run
+      route_patterns:
+        - POST /report-runs/{report_run_id}/approve
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_approved_path_http.py::test_http_approve_requires_credential
+    - id: report_retry
+      route_scope: report:retry
+      route_module: backend/app/api/reports.py
+      route_functions:
+        - retry_report_run
+      route_patterns:
+        - POST /report-runs/{report_run_id}/retry
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_async_report_runs.py::test_retry_report_run_rejects_reviewer_without_retry_scope
+    - id: selected_county_report_runs
+      route_scope: report:run
+      route_module: backend/app/api/operator_cases.py
+      route_functions:
+        - create_operator_case_report
+      route_patterns:
+        - POST /operator-cases/{case_id}/report
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_operator_cases_api.py::test_operator_case_report_create_rejects_reviewer_without_report_run_scope
+    - id: approved_connector_report_runs
+      route_scope: report:run
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - create_report_run_from_approved_connector
+      route_patterns:
+        - POST /connector-runs/{ingest_run_id}/report-runs
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_connector_review_actions.py::test_connector_report_run_rejects_reviewer_without_report_run_scope
+    - id: source_registry_mutation
+      route_scope: source:manage
+      route_module: backend/app/api/sources.py
+      route_functions:
+        - create_source
+      route_patterns:
+        - POST /sources
+      enforcement: api_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_api_scaffold.py::test_api_scaffold_source_create_requires_source_manage_scope
+    - id: ui_selected_county_report_runs
+      route_scope: report:run
+      route_module: backend/app/api/ui.py
+      route_functions:
+        - ui_create_selected_county_report
+      route_patterns:
+        - POST /ui/operator-cases/report
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_routes.py::test_ui_selected_county_fixture_post_requires_report_run_reviewer
+    - id: ui_report_approval
+      route_scope: report:approve
+      route_module: backend/app/api/ui.py
+      route_functions:
+        - ui_approve_report_run
+      route_patterns:
+        - POST /ui/report-runs/{report_run_id}/approve
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_routes.py::test_ui_approve_report_run_valid_creds_without_approve_scope_returns_403
+    - id: ui_report_retry
+      route_scope: report:retry
+      route_module: backend/app/api/ui.py
+      route_functions:
+        - ui_retry_report_run
+      route_patterns:
+        - POST /ui/report-runs/{report_run_id}/retry
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_routes.py::test_ui_retry_report_run_valid_creds_without_retry_scope_returns_403
+    - id: ui_connector_review_decisions
+      route_scope: connector:review
+      route_module: backend/app/api/ui_review.py
+      route_functions:
+        - ui_connector_approve
+        - ui_connector_reject
+        - ui_connector_requeue
+        - ui_connector_cancel
+      route_patterns:
+        - POST /ui/connector-review-queue/{ingest_run_id}/{action}
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_review_routes.py::test_ui_review_approve_valid_unscoped_returns_403
+    - id: ui_connector_resume_report
+      route_scope: report:run
+      route_module: backend/app/api/ui_review.py
+      route_functions:
+        - ui_connector_resume_report
+      route_patterns:
+        - POST /ui/connector-review-queue/{ingest_run_id}/resume-report
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_review_routes.py::test_ui_review_resume_report_valid_token_missing_report_run_scope_returns_403
+    - id: ui_operations_reads
+      route_scope: operations:read
+      route_module: backend/app/api/ui_operations.py
+      route_functions:
+        - ui_operations_post
+        - ui_operations_recovery_preview_post
+      route_patterns:
+        - POST /ui/operations
+        - POST /ui/operations/recovery-preview
+      enforcement: ui_reviewer_scope
+      covered_by_tests:
+        - backend/tests/api/test_ui_operations_routes.py::test_ui_operations_post_valid_creds_without_operations_scope_returns_403
+  identity_boundary_mappings:
+    - id: connector_review_read_surfaces
+      identity_boundary: workspace_identity
+      route_module: backend/app/api/connectors.py
+      route_functions:
+        - list_connector_review_queue_compat
+        - get_connector_review_queue_item_compat
+        - get_connector_run_review_status
+        - get_connector_review_queue_item
+      route_patterns:
+        - GET /connector-review-queue
+        - GET /connector-review-queue/{ingest_run_id}
+        - GET /connector-runs/{ingest_run_id}/review-status
+        - GET /connector-runs/{ingest_run_id}/review-queue
+      enforcement: workspace_identity_only
+      scope_note: "No reviewer route scope is currently enforced; workspace identity must hide cross-workspace rows."
+      covered_by_tests:
+        - backend/tests/api/test_connector_review_status.py::test_connector_review_status_endpoint_requires_identity
+        - backend/tests/api/test_connector_review_status.py::test_connector_review_status_endpoint_hides_other_workspace
+        - backend/tests/api/test_connector_review_status.py::test_connector_review_queue_endpoint_requires_identity
+        - backend/tests/api/test_connector_review_status.py::test_connector_review_queue_endpoint_hides_other_workspace
   audit_requirements:
     - idp_subject
     - workspace_id

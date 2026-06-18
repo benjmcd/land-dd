@@ -635,7 +635,9 @@ def run_fixture_connector(
     request: ConnectorRunRequest,
     services: ServicesDep,
     auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorRunResultContract:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_RUN)
     if request.connector_name not in _SUPPORTED_FIXTURE_CONNECTOR_NAMES:
         raise HTTPException(
             status_code=_HTTP_422_UNPROCESSABLE,

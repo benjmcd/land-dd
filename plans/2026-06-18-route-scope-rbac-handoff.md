@@ -57,7 +57,8 @@ Rejected alternatives:
    runbook text, and current protected route tests.
 2. Build the route-scope evidence map from current code/tests; keep it static and
    validate-only unless a runtime gap is proven.
-3. Add focused artifact tests for fail-closed route-scope mapping coverage.
+3. Add focused artifact tests for fail-closed route-scope mapping coverage and close
+   any proven current route-scope runtime gap narrowly.
 4. Run access-control, release-readiness, readiness-matrix, focused pytest, ruff, mypy,
    and full verification.
 5. Update state logs without claiming hosted identity or production RBAC.
@@ -98,7 +99,8 @@ files.
 - Mapping route scopes too broadly can hide privilege-boundary gaps; mapping too
   narrowly can create brittle false positives.
 - Existing reviewer-token and signed UI identity-token bridges remain private-MVP
-  controls, not production RBAC.
+  controls, not production RBAC. The fixture connector run path now requires the same
+  `connector:run` reviewer scope as other connector invocation/scheduling surfaces.
 
 ## Decision log
 
@@ -110,3 +112,6 @@ files.
 ## Progress log
 
 - 2026-06-18: Plan opened as the next active repo-local lane after R-019.
+- 2026-06-18: Implemented route-scope handoff mapping coverage, fixed the
+  `POST /connector-runs` connector-run scope gap, and routed the next repo-local lane
+  to audit-retention proof hardening.
