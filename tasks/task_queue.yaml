@@ -37,6 +37,9 @@ tasks:
       - python .\scripts\hosted_deployment_check.py
       - python .\scripts\access_control_check.py
       - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\readiness_matrix_check.py
+      - .\scripts\run_readiness_matrix_check.ps1
+      - cd backend; python -m pytest -q .\tests\test_readiness_matrix_artifacts.py
       - git diff --check
     acceptance:
       - Active plan routes away from the completed UI CSRF route-coverage slice

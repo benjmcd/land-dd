@@ -72,10 +72,15 @@ Rejected alternatives:
 Future matrix pass may change:
 | File | Expected change |
 |---|---|
+| `state/LEVEL_9_10_GATE_MATRIX.md` | Gate-by-gate Level 9/10 evidence classification |
 | `state/PROJECT_STATE.md` | Gate matrix summary and next selected implementation pass |
 | `plans/*.md` | New implementation plan for the selected unblocked pass |
 | `config/release_readiness.yaml` | Only if the matrix identifies a stale or missing gate |
 | `scripts/*_check.py` | Only if a readiness validator misses a current required invariant |
+| `scripts/readiness_matrix_check.py` | Validate-only guard that the matrix covers every Level 9/10 gate |
+| `scripts/run_readiness_matrix_check.ps1` | Windows wrapper for the matrix guard |
+| `scripts/run_readiness_matrix_check.sh` | POSIX wrapper for the matrix guard |
+| `backend/tests/test_readiness_matrix_artifacts.py` | Focused artifact coverage for the matrix guard |
 
 ## Tests / verification
 Planning/routing slice:
@@ -85,6 +90,8 @@ python .\scripts\release_readiness_check.py
 python .\scripts\hosted_deployment_check.py
 python .\scripts\access_control_check.py
 python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\readiness_matrix_check.py
+cd backend; python -m pytest -q .\tests\test_readiness_matrix_artifacts.py
 git diff --check
 ```
 
@@ -115,3 +122,13 @@ Full handoff gate if any validator or runtime proof changes:
 - 2026-06-18: Validate-only readiness checks passed for private MVP, release readiness,
   hosted deployment boundary, access control, and Must-source readiness. Current
   Must-source readiness remains `sources=8 ready=7 blocked=1`, with DS-017 blocked.
+- 2026-06-18: Added `state/LEVEL_9_10_GATE_MATRIX.md` to classify Level 9 and Level 10
+  gates as proven, validate-only, partial, blocked, or missing from current evidence.
+- 2026-06-18: Added `scripts/readiness_matrix_check.py`, thin platform wrappers, and a
+  focused test so the matrix must cover every Level 9/10 gate from `MILESTONE_MAP.md`.
+- 2026-06-18: Matrix validator, Windows wrapper, focused matrix artifact tests, ruff,
+  mypy, whitespace check, and existing readiness validators passed; DS-017 remains the
+  only blocked Must source.
+- 2026-06-18: Read-only review found the matrix prose was safer than the checker. The
+  checker now pins high-risk hosted/source/auth/security/performance statuses and `R-001`
+  includes the matrix validator and focused artifact test.

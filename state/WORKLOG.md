@@ -14,6 +14,17 @@ Append concise entries. Do not rely on chat history.
 - Ran private-MVP, release-readiness, hosted-deployment, access-control, and Must-source
   readiness validators; current Must-source readiness remains `sources=8 ready=7
   blocked=1` with DS-017 blocked.
+- Added `state/LEVEL_9_10_GATE_MATRIX.md` so Level 9/10 readiness is classified from
+  current evidence instead of historical progress logs.
+- Added `scripts/readiness_matrix_check.py`, Windows/POSIX wrappers, and
+  `backend/tests/test_readiness_matrix_artifacts.py` to pin matrix coverage against
+  `MILESTONE_MAP.md`.
+- Ran the matrix validator, Windows wrapper, focused matrix artifact tests, ruff, mypy,
+  whitespace check, and existing readiness validators; DS-017 remains the only blocked
+  Must source.
+- Tightened the matrix guard after read-only review so high-risk hosted/source/auth/
+  security/performance gates cannot be promoted past their current guarded status
+  without changing the checker, and routed the matrix validator/test through `R-001`.
 
 ## 2026-06-18 (UI CSRF route coverage)
 
