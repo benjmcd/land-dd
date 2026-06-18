@@ -87,6 +87,30 @@ class Settings(BaseSettings):
     enable_rate_limit: bool = Field(default=False, alias="ENABLE_RATE_LIMIT")
     rate_limit_requests: int = Field(default=120, alias="RATE_LIMIT_REQUESTS")
     rate_limit_window_seconds: int = Field(default=60, alias="RATE_LIMIT_WINDOW_SECONDS")
+    enable_queue_backpressure: bool = Field(
+        default=False,
+        alias="ENABLE_QUEUE_BACKPRESSURE",
+        description=(
+            "When true, report and live connector queue admission fails closed with "
+            "HTTP 503 after explicit queue health thresholds are exceeded."
+        ),
+    )
+    max_report_queue_depth: int = Field(default=100, ge=0, alias="MAX_REPORT_QUEUE_DEPTH")
+    max_live_connector_queue_depth: int = Field(
+        default=100,
+        ge=0,
+        alias="MAX_LIVE_CONNECTOR_QUEUE_DEPTH",
+    )
+    max_queue_oldest_queued_seconds: int = Field(
+        default=900,
+        ge=0,
+        alias="MAX_QUEUE_OLDEST_QUEUED_SECONDS",
+    )
+    max_queue_stale_running: int = Field(
+        default=0,
+        ge=0,
+        alias="MAX_QUEUE_STALE_RUNNING",
+    )
     enable_metrics: bool = Field(default=True, alias="ENABLE_METRICS")
     reviewer_accounts: str = Field(
         default=DEFAULT_REVIEWER_ACCOUNTS,

@@ -11033,3 +11033,56 @@ $env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:
   target-index checks work, but it is not hosted proof and not sufficient to promote
   `L10-PERF-003` beyond `PARTIAL` until repeated against a representative
   selected-county or release-candidate DB workload.
+
+---
+
+## 2026-06-18 - Queue Backpressure Runtime Guard
+
+**Scope:** Add default-off runtime admission control for report and live connector queues
+while keeping `L10-PERF-008` partial until hosted workload/alert/dashboard proof exists.
+
+**Commands run:**
+
+```powershell
+cd backend; python -m pytest -q .\tests\api\test_backpressure.py
+cd backend; python -m pytest -q .\tests\api\test_backpressure.py .\tests\api\test_async_report_runs.py .\tests\api\test_fema_nfhl_connector_api.py .\tests\api\test_operations.py
+cd backend; python -m ruff check .\tests\api\test_backpressure.py .\app\operations\backpressure.py .\app\core\config.py .\app\api\reports.py .\app\api\connectors.py .\app\api\intake.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\live_connectors.py .\app\api\dependencies.py .\app\api\areas.py
+cd backend; python -m mypy .\tests\api\test_backpressure.py .\app\operations\backpressure.py .\app\core\config.py .\app\api\reports.py .\app\api\connectors.py .\app\api\intake.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\live_connectors.py .\app\api\dependencies.py .\app\api\areas.py
+python .\scripts\readiness_matrix_check.py
+.\scripts\run_readiness_matrix_check.ps1
+cd backend; python -m pytest -q .\tests\test_readiness_matrix_artifacts.py
+python .\scripts\release_readiness_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+rg -n "HTTP_422_UNPROCESSABLE_ENTITY|status\.HTTP_422_UNPROCESSABLE_CONTENT" .\backend\app .\backend\tests .\scripts
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused backpressure tests passed (`9 passed`).
+- Broader affected API set passed (`46 passed, 3 skipped`).
+- Focused ruff passed; focused mypy passed.
+- Readiness matrix validator, Windows wrapper, artifact tests, and release-readiness
+  validator passed.
+- `git diff --check` reported no whitespace errors. No deleted files were reported.
+- No raw `status.HTTP_422_UNPROCESSABLE_CONTENT` or deprecated
+  `HTTP_422_UNPROCESSABLE_ENTITY` references remain in app/test/scripts.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy on 321 source files. DB smoke was skipped by default.
+- Earlier broad API validation reproduced an existing invalid 422 status constant in
+  connector error handling; the cross-version 422 compatibility repair resolved that
+  blocker.
+- Review follow-up fixed projected queue-depth admission and idempotent replay under
+  backpressure before final verification.
+- Follow-up read-only code review found no blocking issues after the projected-depth and
+  idempotency-race fixes. Residual non-blocking gaps: authenticated idempotency replay is
+  implemented but not directly race-tested, true concurrent non-idempotent requests can
+  still overshoot without a DB-side admission lock, and age/stale branches are
+  helper-tested but not API-tested.
+
+**Residual risk:**
+
+- Queue backpressure is default-off repo-local behavior. Hosted threshold tuning,
+  dashboard proof, alert routing, and production workload evidence are still required
+  before this can become a Level 10 production claim.

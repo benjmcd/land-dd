@@ -8,7 +8,10 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Qu
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from app.api.dependencies import ApiServices, get_services
-from app.api.reports import schedule_report_background
+from app.api.reports import (
+    raise_report_queue_backpressure_if_needed,
+    schedule_report_background,
+)
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_CONNECTOR_REVIEW,
     REVIEWER_SCOPE_REPORT_RUN,
@@ -1023,6 +1026,19 @@ def ui_connector_resume_report(
             f"Area {area_id} is not registered.",
             detail_url,
             409,
+            css=_REVIEW_CSS,
+        )
+    try:
+        raise_report_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
+    except HTTPException as exc:
+        return error_page(
+            "Queue Backpressure",
+            str(exc.detail),
+            detail_url,
+            exc.status_code,
             css=_REVIEW_CSS,
         )
     job = services.async_report_jobs.create(

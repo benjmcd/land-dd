@@ -28,6 +28,7 @@ from app.api.reports import (
     ReportRunDiffResponse,
     _build_comparison_summary,
     _parse_compare_ids,
+    raise_report_queue_backpressure_if_needed,
     schedule_report_background,
 )
 from app.api.reviewer_auth import (
@@ -1599,6 +1600,18 @@ def ui_retry_report_run(
                 f"<a href='{_html.escape(failed_url)}'>Back</a></body></html>"
             ),
             status_code=409,
+        )
+    try:
+        raise_report_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
+    except HTTPException as exc:
+        return error_page(
+            "Queue Backpressure",
+            str(exc.detail),
+            failed_url,
+            exc.status_code,
         )
     retry_job = services.async_report_jobs.create(
         area_id=failed_job.area_id,

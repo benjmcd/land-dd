@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime
 from importlib.resources import as_file
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import (
@@ -61,7 +61,7 @@ from app.api.live_connectors import (
     orchestrate_usgs_tnm_for_area,
     orchestrate_usgs_water_for_area,
 )
-from app.api.reports import schedule_report_background
+from app.api.reports import raise_report_queue_backpressure_if_needed, schedule_report_background
 from app.api.reviewer_auth import (
     REVIEWER_SCOPE_CONNECTOR_REVIEW,
     REVIEWER_SCOPE_CONNECTOR_RUN,
@@ -120,13 +120,17 @@ from app.connectors.usgs_mrds import (
 )
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS, UsgsTnmBbox
 from app.connectors.usgs_water_monitoring import UsgsWaterConnectorError
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
 )
 from app.domain.enums import IntentCode, JobStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
+from app.operations.backpressure import (
+    QueueBackpressureThresholds,
+    evaluate_queue_backpressure,
+)
 
 router = APIRouter(prefix="/connector-runs", tags=["connector-runs"])
 review_queue_router = APIRouter(
@@ -634,18 +638,18 @@ def run_fixture_connector(
 ) -> ConnectorRunResultContract:
     if request.connector_name not in _SUPPORTED_FIXTURE_CONNECTOR_NAMES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"unsupported connector: {request.connector_name!r}",
         )
     if not _is_safe_fixture_key(request.fixture_key):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="fixture_key must be non-empty alphanumeric with underscores or hyphens",
         )
     fixture_resource = connector_fixture_resource(request.fixture_key)
     if fixture_resource is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"fixture not found: {request.fixture_key!r}",
         )
     connector = _FIXTURE_CONNECTORS[request.connector_name]
@@ -667,7 +671,7 @@ def run_fixture_connector(
             result = workflow.ingest_fixture(fixture_path)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -868,7 +872,7 @@ def _get_live_connector_area_or_422(
     area = services.area_service.get(area_id)
     if area is None or area.workspace_id != auth.workspace_id:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"Area '{area_id}' is not registered",
         )
     return area.model_copy(update={"created_by": auth.user_id})
@@ -882,7 +886,7 @@ def _ensure_fixture_provenance(services: ApiServices) -> None:
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -957,7 +961,7 @@ def _run_compat_queue_action(
         return _connector_review_queue_item_contract(action())
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -966,7 +970,7 @@ def _compat_reviewer_id(principal: ReviewerPrincipal, reviewer_id: str) -> str:
     reviewer = reviewer_id.strip()
     if not reviewer:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="reviewer_id is required",
         )
     if reviewer != principal.reviewer_id:
@@ -980,7 +984,7 @@ def _compat_reviewer_id(principal: ReviewerPrincipal, reviewer_id: str) -> str:
 def _required_compat_reason(reason: str | None) -> str:
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="connector review queue reason is required",
         )
     return reason
@@ -1251,7 +1255,7 @@ def query_osm_road_access_bbox(
         handoff = review_status.handoff
     except OsmRoadAccessConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1312,7 +1316,7 @@ def query_usgs_water_monitoring_bbox(
         handoff = review_status.handoff
     except UsgsWaterConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1409,7 +1413,7 @@ def query_epa_echo_bbox(
         handoff = review_status.handoff
     except EpaEchoConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1506,7 +1510,7 @@ def query_fcc_broadband_bbox(
         handoff = review_status.handoff
     except FccBroadbandConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1667,7 +1671,7 @@ def query_blm_mlrs_bbox(
         handoff = review_status.handoff
     except BlmMlrsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1735,7 +1739,7 @@ def query_usgs_mrds_bbox(
         handoff = review_status.handoff
     except UsgsMrdsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1803,7 +1807,7 @@ def query_nc_geologic_map_bbox(
         handoff = review_status.handoff
     except NcGeologicMapConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1931,7 +1935,7 @@ def query_noaa_climate_bbox(
         handoff = review_status.handoff
     except NoaaClimateConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -1999,7 +2003,7 @@ def query_census_tiger_bbox(
         handoff = review_status.handoff
     except CensusTigerConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except HTTPException:
@@ -2209,7 +2213,7 @@ def query_chatham_zoning_district(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"Area '{request.area_id}' is not registered",
         )
     zoning_code = request.zoning_code
@@ -2259,7 +2263,7 @@ def query_brunswick_zoning_district(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"Area '{request.area_id}' is not registered",
         )
     zoning_code = request.zoning_code
@@ -2321,7 +2325,7 @@ def query_assessor_not_evaluated(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"Area '{request.area_id}' is not registered",
         )
     orchestrate_assessor_not_evaluated_for_area(services=services, area=area)
@@ -2389,6 +2393,7 @@ def _validate_live_sequence_limits(request: LiveConnectorSequenceScheduleRequest
 )
 def schedule_live_connector_sequence_bbox(
     request: LiveConnectorSequenceScheduleRequest,
+    request_context: Request,
     services: ServicesDep,
     auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
@@ -2421,6 +2426,11 @@ def schedule_live_connector_sequence_bbox(
             ymax=request.bbox.ymax,
         )
         _validate_live_sequence_limits(request)
+        _raise_live_connector_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+            admission_count=4,
+        )
         jobs = (
             services.live_connector_jobs.enqueue_usgs_tnm(
                 area_id=request.area_id,
@@ -2453,7 +2463,7 @@ def schedule_live_connector_sequence_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     return {
@@ -2470,6 +2480,7 @@ def schedule_live_connector_sequence_bbox(
 )
 def schedule_fema_nfhl_bbox(
     request: FemaNfhlQueryRequest,
+    request_context: Request,
     services: ServicesDep,
     auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
@@ -2483,6 +2494,10 @@ def schedule_fema_nfhl_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
+        _raise_live_connector_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
         job = services.live_connector_jobs.enqueue_fema_nfhl(
             area_id=request.area_id,
             workspace_id=auth.workspace_id,
@@ -2492,7 +2507,7 @@ def schedule_fema_nfhl_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -2505,6 +2520,7 @@ def schedule_fema_nfhl_bbox(
 )
 def schedule_usgs_tnm_bbox(
     request: UsgsTnmQueryRequest,
+    request_context: Request,
     services: ServicesDep,
     auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
@@ -2518,6 +2534,10 @@ def schedule_usgs_tnm_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
+        _raise_live_connector_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
         job = services.live_connector_jobs.enqueue_usgs_tnm(
             area_id=request.area_id,
             workspace_id=auth.workspace_id,
@@ -2527,7 +2547,7 @@ def schedule_usgs_tnm_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -2540,6 +2560,7 @@ def schedule_usgs_tnm_bbox(
 )
 def schedule_nwi_bbox(
     request: NwiQueryRequest,
+    request_context: Request,
     services: ServicesDep,
     auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
@@ -2553,6 +2574,10 @@ def schedule_nwi_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
+        _raise_live_connector_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
         job = services.live_connector_jobs.enqueue_nwi(
             area_id=request.area_id,
             workspace_id=auth.workspace_id,
@@ -2562,7 +2587,7 @@ def schedule_nwi_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -2575,6 +2600,7 @@ def schedule_nwi_bbox(
 )
 def schedule_ssurgo_bbox(
     request: SsurgoQueryRequest,
+    request_context: Request,
     services: ServicesDep,
     auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
@@ -2588,6 +2614,10 @@ def schedule_ssurgo_bbox(
             xmax=request.bbox.xmax,
             ymax=request.bbox.ymax,
         )
+        _raise_live_connector_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
         job = services.live_connector_jobs.enqueue_ssurgo(
             area_id=request.area_id,
             workspace_id=auth.workspace_id,
@@ -2597,7 +2627,7 @@ def schedule_ssurgo_bbox(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     return _live_connector_job_response(job)
@@ -2619,7 +2649,7 @@ def list_live_connector_jobs(
     require_reviewer_scope(principal, REVIEWER_SCOPE_OPERATIONS_READ)
     if stale and job_status not in (None, JobStatus.RUNNING):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="stale live connector job filtering requires status=running",
         )
     jobs = services.live_connector_jobs.list_recent(
@@ -2847,6 +2877,10 @@ def create_report_run_from_approved_connector(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="connector review queue item not found",
         )
+    raise_report_queue_backpressure_if_needed(
+        request_context=request_context,
+        services=services,
+    )
     job = services.async_report_jobs.create(
         area_id=area_id,
         intent_code=request.intent_code,
@@ -2924,6 +2958,31 @@ def _live_connector_job_response(
         "connector_review_status": job.connector_review_status,
         "request_url": job.request_url,
     }
+
+
+def _raise_live_connector_queue_backpressure_if_needed(
+    *,
+    request_context: Request,
+    services: ApiServices,
+    admission_count: int = 1,
+) -> None:
+    settings = cast(Settings, request_context.app.state.settings)
+    decision = evaluate_queue_backpressure(
+        services.live_connector_jobs.health(),
+        QueueBackpressureThresholds(
+            enabled=settings.enable_queue_backpressure,
+            max_report_queue_depth=settings.max_report_queue_depth,
+            max_live_connector_queue_depth=settings.max_live_connector_queue_depth,
+            max_queue_oldest_queued_seconds=settings.max_queue_oldest_queued_seconds,
+            max_queue_stale_running=settings.max_queue_stale_running,
+        ),
+        admission_count=admission_count,
+    )
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=decision.detail or "queue backpressure",
+        )
 
 
 def _live_connector_running_age_seconds(

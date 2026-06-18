@@ -21,6 +21,7 @@ from app.api.reports import (
     _authenticated_idempotency_key,
     _optional_report_auth_context,
     _validate_idempotency_key,
+    raise_report_queue_backpressure_if_needed,
     schedule_report_background,
 )
 from app.core.config import Settings
@@ -127,6 +128,10 @@ def intake_report(
         _effective_intake_idempotency_key(client_key, request.intent_code, auth=auth)
         if client_key is not None
         else None
+    )
+    raise_report_queue_backpressure_if_needed(
+        request_context=request_context,
+        services=services,
     )
     job = services.async_report_jobs.create(
         area_id=created.area_id,

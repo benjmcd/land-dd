@@ -190,13 +190,19 @@ Use when report jobs accumulate, fail repeatedly, or do not reach `succeeded`.
    The preview only returns detail paths and recommended next inspection steps. It does
    not retry reports, requeue live connector jobs, lease work, or call live sources.
 
-3. Inspect a specific report:
+3. If API responses return queue backpressure HTTP 503, treat the response body as an
+   admission-control signal, not as a completed report or connector failure. Confirm the
+   reported queue type, reason code, observed value, and threshold against
+   `/operations/queue-health` before changing `ENABLE_QUEUE_BACKPRESSURE` or threshold
+   settings.
+
+4. Inspect a specific report:
 
    ```powershell
    curl http://localhost:8000/report-runs/<report_run_id>
    ```
 
-4. Retry only failed report jobs, and preserve lineage:
+5. Retry only failed report jobs, and preserve lineage:
 
    ```powershell
    curl -X POST http://localhost:8000/report-runs/<report_run_id>/retry `
@@ -204,7 +210,7 @@ Use when report jobs accumulate, fail repeatedly, or do not reach `succeeded`.
      -H "X-Reviewer-Token: fixture-token-123"
    ```
 
-5. If retry fails repeatedly, classify as at least SEV2 and inspect DB/job/log evidence
+6. If retry fails repeatedly, classify as at least SEV2 and inspect DB/job/log evidence
    before further retries.
 
 ## Recovery Criteria

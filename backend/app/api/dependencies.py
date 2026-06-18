@@ -105,6 +105,9 @@ class ApiServices:
         return self.connector_review_queue
 
 
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
+
+
 @dataclass(frozen=True)
 class RequestAuthContext:
     workspace_id: UUID
@@ -302,7 +305,7 @@ def _parse_uuid_header(value: str, header_name: str) -> UUID:
         return UUID(value.strip())
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"{header_name} header must be a UUID",
         ) from exc
 
