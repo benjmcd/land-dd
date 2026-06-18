@@ -382,6 +382,23 @@ def _create_authenticated_report_run(
                 auth=auth,
                 response=response,
             )
+    if _live_connectors_enabled(request_context):
+        area = services.area_service.get(request.area_id)
+        if area is None or area.workspace_id != auth.workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="area not found",
+            )
+        connector_result = orchestrate_request_time_live_connectors_for_area(
+            services=services,
+            area=area.model_copy(update={"created_by": auth.user_id}),
+        )
+        if connector_result is not None:
+            return AsyncReportRunResponse(
+                status="pending_connector_review",
+                connector_ingest_run_id=connector_result.ingest_run_id,
+                connector_review_status=connector_result.queue_item.status.value,
+            )
     job = services.async_report_jobs.create(
         area_id=request.area_id,
         intent_code=request.intent_code,

@@ -31,12 +31,20 @@ _VALID_HEADERS = {
 }
 _WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
 _USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_OTHER_WORKSPACE_ID = UUID("33333333-3333-4333-8333-333333333333")
+_OTHER_USER_ID = UUID("44444444-4444-4444-8444-444444444444")
 _VALID_HEADERS.update(
     {
         "X-Workspace-Id": str(_WORKSPACE_ID),
         "X-User-Id": str(_USER_ID),
     }
 )
+_OTHER_VALID_HEADERS = {
+    "X-Reviewer-Id": "fixture-reviewer",
+    "X-Reviewer-Token": "fixture-token-123",
+    "X-Workspace-Id": str(_OTHER_WORKSPACE_ID),
+    "X-User-Id": str(_OTHER_USER_ID),
+}
 
 
 def _area(area_id: UUID, *, workspace_id: UUID | None = None) -> AreaContract:
@@ -891,8 +899,52 @@ def test_live_connector_intake_pauses_for_connector_review() -> None:
     assert body["connector_review_status"] == "queued"
 
 
+def test_intake_idempotency_key_is_scoped_by_request_identity() -> None:
+    client, services, _area_id = _client_with_seeded_services(
+        fetch_payload={"type": "FeatureCollection", "features": [_feature()]},
+        settings=Settings(ENABLE_LIVE_CONNECTORS=False),
+    )
+    key = str(uuid4())
+    payload = {
+        "area_geojson": _area(uuid4()).geom_geojson,
+        "intent_code": "homestead_feasibility",
+    }
+
+    first = client.post(
+        "/intake",
+        headers={**_VALID_HEADERS, "Idempotency-Key": key},
+        json=payload,
+    )
+    replay = client.post(
+        "/intake",
+        headers={**_VALID_HEADERS, "Idempotency-Key": key},
+        json=payload,
+    )
+    other_principal = client.post(
+        "/intake",
+        headers={**_OTHER_VALID_HEADERS, "Idempotency-Key": key},
+        json=payload,
+    )
+
+    assert first.status_code == 202
+    assert replay.status_code == 200
+    assert other_principal.status_code == 202
+    first_body = first.json()
+    other_body = other_principal.json()
+    assert replay.json()["report_run_id"] == first_body["report_run_id"]
+    assert other_body["report_run_id"] != first_body["report_run_id"]
+    first_job = services.async_report_jobs.get(UUID(first_body["report_run_id"]))
+    other_job = services.async_report_jobs.get(UUID(other_body["report_run_id"]))
+    assert first_job is not None
+    assert first_job.workspace_id == _WORKSPACE_ID
+    assert first_job.requested_by == _USER_ID
+    assert other_job is not None
+    assert other_job.workspace_id == _OTHER_WORKSPACE_ID
+    assert other_job.requested_by == _OTHER_USER_ID
+
+
 def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_report_flow() -> None:
-    client, _services, _area_id = _client_with_seeded_services(
+    client, services, _area_id = _client_with_seeded_services(
         fetch_payload={"type": "FeatureCollection", "features": [_feature()]},
         nwi_fetch_payload={"type": "FeatureCollection", "features": [_nwi_feature()]},
         ssurgo_fetch_payload=_ssurgo_table(),
@@ -901,6 +953,7 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
 
     intake_response = client.post(
         "/intake",
+        headers=_VALID_HEADERS,
         json={
             "area_geojson": _area(uuid4()).geom_geojson,
             "intent_code": "homestead_feasibility",
@@ -912,6 +965,17 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
     area_id = intake["area_id"]
     usgs_tnm_ingest_run_id = intake["connector_ingest_run_id"]
     assert usgs_tnm_ingest_run_id is not None
+    created_area = services.area_service.get(UUID(area_id))
+    assert created_area is not None
+    assert created_area.workspace_id == _WORKSPACE_ID
+    assert created_area.created_by == _USER_ID
+    usgs_tnm_item = services.connector_review_queue.get_by_ingest_run_id(
+        UUID(usgs_tnm_ingest_run_id)
+    )
+    assert usgs_tnm_item is not None
+    assert usgs_tnm_item.workspace_id == _WORKSPACE_ID
+    assert usgs_tnm_item.payload["workspace_id"] == str(_WORKSPACE_ID)
+    assert usgs_tnm_item.payload["requested_by"] == str(_USER_ID)
 
     usgs_tnm_approval = client.post(
         f"/connector-runs/{usgs_tnm_ingest_run_id}/review-actions/approve_for_connector_qa",
@@ -921,6 +985,7 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
 
     fema_pending_response = client.post(
         "/report-runs",
+        headers=_VALID_HEADERS,
         json={
             "area_id": area_id,
             "intent_code": "homestead_feasibility",
@@ -942,6 +1007,7 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
 
     nwi_pending_response = client.post(
         "/report-runs",
+        headers=_VALID_HEADERS,
         json={
             "area_id": area_id,
             "intent_code": "homestead_feasibility",
@@ -963,6 +1029,7 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
 
     ssurgo_pending_response = client.post(
         "/report-runs",
+        headers=_VALID_HEADERS,
         json={
             "area_id": area_id,
             "intent_code": "homestead_feasibility",
@@ -988,6 +1055,7 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
 
     report_response = client.post(
         "/report-runs",
+        headers=_VALID_HEADERS,
         json={
             "area_id": area_id,
             "intent_code": "homestead_feasibility",
@@ -997,6 +1065,10 @@ def test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_repo
     report_body = report_response.json()
     assert report_body["status"] == "queued"
     assert report_body["report_run_id"] is not None
+    report_job = services.async_report_jobs.get(UUID(report_body["report_run_id"]))
+    assert report_job is not None
+    assert report_job.workspace_id == _WORKSPACE_ID
+    assert report_job.requested_by == _USER_ID
 
     report = client.get(f"/report-runs/{report_body['report_run_id']}").json()
     assert report["status"] == "succeeded"

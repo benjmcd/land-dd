@@ -102,6 +102,8 @@ class SqlAlchemyEvidenceRepository:
                 INSERT INTO evidence.observations (
                     evidence_id,
                     area_id,
+                    dataset_version_id,
+                    ingest_run_id,
                     evidence_type,
                     domain,
                     observation,
@@ -120,6 +122,8 @@ class SqlAlchemyEvidenceRepository:
                 VALUES (
                     :evidence_id,
                     :area_id,
+                    :dataset_version_id,
+                    :ingest_run_id,
                     :evidence_type,
                     :domain,
                     :observation,
@@ -141,6 +145,8 @@ class SqlAlchemyEvidenceRepository:
                 RETURNING
                     evidence_id,
                     area_id,
+                    dataset_version_id,
+                    ingest_run_id,
                     evidence_type,
                     domain,
                     observation,
@@ -202,6 +208,8 @@ class SqlAlchemyEvidenceRepository:
                 RETURNING
                     evidence_id,
                     area_id,
+                    dataset_version_id,
+                    ingest_run_id,
                     evidence_type,
                     domain,
                     observation,
@@ -277,6 +285,8 @@ def _select_evidence_statement(suffix: str) -> TextClause:
         SELECT
             evidence_id,
             area_id,
+            dataset_version_id,
+            ingest_run_id,
             evidence_type,
             domain,
             observation,
@@ -302,6 +312,8 @@ def _evidence_params(evidence: EvidenceContract) -> dict[str, object]:
     return {
         "evidence_id": evidence.evidence_id,
         "area_id": evidence.area_id,
+        "dataset_version_id": evidence.dataset_version_id,
+        "ingest_run_id": evidence.source_ingest_run_id,
         "evidence_type": evidence.evidence_type.value,
         "domain": evidence.domain,
         "observation": evidence.observation,
@@ -350,7 +362,11 @@ def _row_to_evidence(row: Any) -> EvidenceContract:
         observation=row["observation"],
         observed_value=_json_object(row["observed_value"], "observed_value"),
         source_id=_required_metadata_uuid(metadata, "source_id"),
-        source_ingest_run_id=_optional_metadata_uuid(metadata, "source_ingest_run_id"),
+        dataset_version_id=_optional_uuid_value(row["dataset_version_id"]),
+        source_ingest_run_id=(
+            _optional_uuid_value(row["ingest_run_id"])
+            or _optional_metadata_uuid(metadata, "source_ingest_run_id")
+        ),
         method_code=row["method_code"],
         method_version=row["method_version"],
         confidence=row["confidence"],
@@ -387,6 +403,16 @@ def _optional_metadata_uuid(metadata: dict[str, object], key: str) -> UUID | Non
     if not isinstance(value, str) or not value:
         raise ValueError(f"evidence.observations metadata.{key} must be a UUID string")
     return UUID(value)
+
+
+def _optional_uuid_value(value: object) -> UUID | None:
+    if value is None:
+        return None
+    if isinstance(value, UUID):
+        return value
+    if isinstance(value, str) and value:
+        return UUID(value)
+    raise ValueError("evidence.observations returned invalid UUID value")
 
 
 def _optional_metadata_float(metadata: dict[str, object], key: str) -> float | None:

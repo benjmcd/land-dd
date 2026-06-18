@@ -2,6 +2,109 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Connector Review Workspace Scope
+
+**Scope:** Require workspace identity for legacy connector review mutations and
+connector-derived report creation; propagate authenticated intake identity into areas,
+review queue items, idempotency keys, and async report jobs; preserve request-time live
+connector orchestration for authenticated report creation; persist evidence dataset
+and retrieval-run lineage into the existing SQLAlchemy evidence columns.
+
+**Commands run:**
+
+```powershell
+git fetch origin --prune --tags
+git merge --ff-only origin/main
+git diff --check
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\hosted_deployment_check.py
+python .\scripts\access_control_check.py
+.\scripts\verify.ps1
+cd backend
+python -m pytest -q .\tests\api\test_fema_nfhl_connector_api.py::test_live_connector_intake_can_continue_through_ds001_ds002_ds004_ds003_report_flow
+python -m pytest -q .\tests\api\test_connector_review_actions.py
+python -m pytest -q .\tests\api\test_fema_nfhl_connector_api.py -k "review-actions or report-runs or approved or intake"
+python -m pytest -q .\tests\api\test_intake.py .\tests\api\test_idempotency_key.py
+python -m pytest -q .\tests\api\test_report_auth.py .\tests\api\test_idempotency_key.py
+cd ..
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend
+py -3.12 -m pytest -q .\tests\test_planning_pack_schema_copies.py .\tests\api\test_openapi_contract.py
+python -m ruff check .\app\api\connectors.py .\app\api\intake.py .\app\api\reports.py .\tests\api\test_connector_review_actions.py .\tests\api\test_fema_nfhl_connector_api.py .\tests\api\test_report_auth.py
+python -m mypy .\app\api\connectors.py .\app\api\intake.py .\app\api\reports.py .\tests\api\test_connector_review_actions.py .\tests\api\test_fema_nfhl_connector_api.py .\tests\api\test_report_auth.py
+cd ..
+.\scripts\verify.ps1
+$env:COMPOSE_PROJECT_NAME='lddv2258'; $env:DB_PORT='55448'; docker compose up -d db
+$env:RUN_DB_SMOKE='1'
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55448/land_diligence'
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55448/land_diligence'
+.\scripts\db_apply_migrations.ps1
+cd backend
+python -m pytest -q .\tests\api\test_operator_cases_db.py -vv
+python -m pytest -q .\tests\evidence_ledger\test_sqlalchemy_evidence_repo.py .\tests\claims_engine\test_sqlalchemy_claim_repo.py .\tests\connectors\test_public_wiring.py -vv
+cd ..
+.\scripts\verify.ps1
+python .\scripts\source_readiness.py --priority Must --json
+```
+
+**Results:**
+
+- Local `main` fast-forwarded cleanly to live `origin/main`
+  `3aff43184e46c36dd4ee3caaac902cd7ba7f1d62`; the latest remote main CI run for that
+  SHA was green before editing.
+- Pre-change cheap validators passed: private-MVP readiness, hosted deployment check,
+  access-control check, and default `.\scripts\verify.ps1`.
+- Initial focused connector review action test run failed on an exercised invalid 422
+  status constant under the default Python environment; the reason-validation path now
+  uses a compatibility alias and the suite passed (`21 passed`).
+- Initial focused intake/idempotency run exposed the same 422 constant issue on invalid
+  intake geometry; intake now uses the compatibility alias and the suite passed
+  (`35 passed`, `2 skipped` when rerun together with connector review actions).
+- Re-audit found authenticated `POST /report-runs` bypassed request-time live connector
+  orchestration. The authenticated DS-001 -> DS-002 -> DS-004 -> DS-003 intake
+  continuation regression passed after the fix (`1 passed`).
+- Focused live-connector/intake slice passed (`4 passed`).
+- Report-auth plus idempotency tests passed after the authenticated report continuation
+  change (`29 passed`, `2 skipped`).
+- OpenAPI stubs were regenerated, and planning-pack schema copy plus OpenAPI contract
+  tests passed (`3 passed`).
+- Focused ruff passed on touched API/test files.
+- Focused mypy passed on touched API/test files (`6 source files`).
+- Final `git diff --check` exited `0`; Git reported line-ending normalization warnings
+  on generated/touched files but no whitespace errors.
+- Final default `.\scripts\verify.ps1` passed on Python 3.12.10: workspace validation,
+  backend tests, ruff, and mypy over 316 source files all passed. DB smoke remained
+  intentionally skipped because `RUN_DB_SMOKE=1` was not set.
+- DB-enabled verification initially exposed a SQLAlchemy evidence mapper gap:
+  `source_ingest_run_id` round-tripped through metadata, but new rows left the
+  relational `evidence.observations.ingest_run_id` column empty. That broke
+  selected-county DB snapshots/cleanup and obscured source retrieval lineage.
+- `SqlAlchemyEvidenceRepository` now inserts/selects/maps `dataset_version_id` and
+  `ingest_run_id`, while retaining the metadata `source_ingest_run_id` fallback for
+  older rows.
+- Focused DB-gated evidence repository, claim repository, and public connector wiring
+  tests passed on isolated Postgres port `55448` (`23 passed`).
+- Focused DB-gated selected-county operator API/UI persistence tests passed on the same
+  isolated DB (`4 passed`).
+- Final DB-enabled `.\scripts\verify.ps1` passed on Python 3.12.10 against isolated
+  Postgres port `55448`: migrations/seeds, backend tests, ruff, mypy over 316 source
+  files, and `scripts\db_smoke_check.py` all passed. DB smoke reported PostGIS 3.4,
+  26 total sources after runtime test insertion, 25 seeded source registry rows, 2
+  seeded intents, and `DB smoke check passed`.
+- Final Must-source readiness check returned 8 Must sources, 7 ready, and 1 blocked;
+  DS-017 commercial parcel vendor remains blocked pending license/source-review and
+  connector implementation.
+
+**Residual risk:**
+
+- This slice does not address the separate artifact-path trust, broader non-local
+  API-key enforcement, or UI CSRF findings from the read-only security audit.
+- Several older connector endpoints still use the repo's historical 422 constant style;
+  only the newly exercised/touched paths were made cross-interpreter compatible.
+- DB containers started for verification (`land_diligence_dual_agent_workspace`,
+  `lddv2249`, and `lddv2258`) were stopped after validation without deleting
+  containers or volumes.
+
 ## 2026-06-17 Non-local Secret Hygiene
 
 **Scope:** Fail closed for raw API/reviewer secrets and fixture reviewer defaults outside

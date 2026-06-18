@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Connector review workspace scope)
+
+- Fast-forwarded local `main` to live `origin/main` at
+  `3aff43184e46c36dd4ee3caaac902cd7ba7f1d62` before selecting the slice.
+- Added `plans/2026-06-18-connector-review-workspace-scope.md` for the scoped
+  connector review mutation/report-resume work.
+- Required request workspace/user identity on legacy connector review mutation routes
+  and changed those routes to use workspace-scoped queue lookup.
+- Made connector-derived report creation verify the queue item's area workspace and
+  persist `workspace_id`/`requested_by` onto async report jobs/background execution.
+- Made authenticated `/intake` propagate request identity into the created area,
+  request-time live connector queue items, intake idempotency keys, and queued report
+  jobs while preserving the allowed local unauthenticated path.
+- Restored request-time live connector orchestration for authenticated `POST /report-runs`
+  so authenticated intake-created connector review chains can continue through report
+  creation without relying on local unauthenticated calls.
+- Fixed SQLAlchemy evidence lineage persistence after DB-gated verification showed
+  evidence `source_ingest_run_id` was stored only in metadata and not in the existing
+  `evidence.observations.ingest_run_id` column used by DB snapshots, cleanup, and
+  lineage queries.
+- Regenerated `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml`.
+- Updated stale plan/task routing and superseded the historical bootstrap remote-state
+  note in `state/PROJECT_STATE.md`.
+- Ran focused DB-gated selected-county, evidence repository, claim repository, and
+  public connector wiring tests plus full DB-enabled `.\scripts\verify.ps1` on an
+  isolated Postgres instance.
+
 ## 2026-06-17 (Non-local secret hygiene)
 
 - Added settings-level non-local secret-hygiene validation for API-key and reviewer

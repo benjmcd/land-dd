@@ -135,6 +135,7 @@ review_queue_router = APIRouter(
 )
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 
 _SUPPORTED_FIXTURE_CONNECTOR_NAMES = frozenset(
     {"fixture_access_static", "fixture_flood_static", "fixture_zoning_static"}
@@ -2684,11 +2685,12 @@ def get_connector_review_queue_item(
 def approve_for_connector_qa(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     request: ConnectorReviewActionRequest | None = None,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
-    item = _get_queue_item_or_404(services, ingest_run_id)
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     reason = _optional_action_reason(request)
     try:
         updated_item = services.connector_review_queue.approve_for_connector_qa(
@@ -2717,11 +2719,12 @@ def approve_for_connector_qa(
 def request_fixture_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
-    item = _get_queue_item_or_404(services, ingest_run_id)
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     reason = _required_action_reason(request)
     try:
         updated_item = services.connector_review_queue.request_fixture_fix(
@@ -2750,11 +2753,12 @@ def request_fixture_fix(
 def requeue_after_fix(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
-    item = _get_queue_item_or_404(services, ingest_run_id)
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     reason = _required_action_reason(request)
     try:
         updated_item = services.connector_review_queue.requeue_failed(
@@ -2783,11 +2787,12 @@ def requeue_after_fix(
 def cancel_review(
     ingest_run_id: UUID,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
     request: RequiredConnectorReviewActionRequest,
 ) -> dict[str, object]:
     require_reviewer_scope(principal, REVIEWER_SCOPE_CONNECTOR_REVIEW)
-    item = _get_queue_item_or_404(services, ingest_run_id)
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     reason = _required_action_reason(request)
     try:
         updated_item = services.connector_review_queue.cancel(
@@ -2820,10 +2825,11 @@ def create_report_run_from_approved_connector(
     background_tasks: BackgroundTasks,
     request_context: Request,
     services: ServicesDep,
+    auth: AuthDep,
     principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
 ) -> ConnectorReportRunResponse:
     require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_RUN)
-    item = _get_queue_item_or_404(services, ingest_run_id)
+    item = _get_compat_queue_item_or_404(services, auth, ingest_run_id)
     if not _queue_item_approved_for_report(item):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -2836,9 +2842,16 @@ def create_report_run_from_approved_connector(
             status_code=status.HTTP_409_CONFLICT,
             detail="connector review item area is not registered",
         )
+    if area.workspace_id != auth.workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="connector review queue item not found",
+        )
     job = services.async_report_jobs.create(
         area_id=area_id,
         intent_code=request.intent_code,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
     )
     schedule_report_background(
         background_tasks=background_tasks,
@@ -2847,6 +2860,8 @@ def create_report_run_from_approved_connector(
         report_run_id=job.report_run_id,
         area_id=area_id,
         intent_code=request.intent_code,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
     )
     return ConnectorReportRunResponse(
         report_run_id=job.report_run_id,
@@ -2988,7 +3003,7 @@ def _required_action_reason(
     reason = _optional_action_reason(request)
     if reason is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="reason is required",
         )
     return reason
@@ -3002,7 +3017,7 @@ def _optional_action_reason(
     reason = request.reason.strip()
     if not reason:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="reason is required",
         )
     return reason

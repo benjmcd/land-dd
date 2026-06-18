@@ -1,5 +1,41 @@
 # Project State
 
+## Current checkpoint (2026-06-18 connector review workspace scope)
+
+Legacy connector review mutations and connector-derived report creation now preserve
+workspace boundaries instead of relying on reviewer credentials alone.
+
+- **Scoped review mutations**: legacy
+  `/connector-runs/{ingest_run_id}/review-actions/*` routes now require request
+  workspace/user identity and use workspace-scoped connector review queue lookup before
+  approve, fixture-fix request, requeue, or cancel transitions.
+- **Scoped connector report resume**: `POST /connector-runs/{ingest_run_id}/report-runs`
+  now hides other-workspace queue items, verifies the queue item's area belongs to the
+  caller workspace, and stores `workspace_id`/`requested_by` on the queued async report
+  job and background report execution.
+- **Intake producer alignment**: authenticated `/intake` requests now copy report
+  identity into the created `AreaContract`, scope intake idempotency keys by principal,
+  and propagate workspace/requester identity through report job creation. Legacy local
+  unauthenticated intake remains available when the existing report-auth rules allow it.
+- **Authenticated continuation**: authenticated `POST /report-runs` now still runs
+  request-time live connector orchestration before queueing a report job, so
+  authenticated intake-created DS-001 -> DS-002 -> DS-004 -> DS-003 review chains can
+  continue without falling back to local unauthenticated report creation.
+- **Evidence lineage persistence**: DB-gated verification exposed a repository mapper
+  gap where SQLAlchemy evidence rows preserved `source_ingest_run_id` only in JSON
+  metadata. `SqlAlchemyEvidenceRepository` now writes and reads the existing
+  `dataset_version_id` and `ingest_run_id` columns while retaining metadata fallback
+  for legacy rows.
+- **OpenAPI and routing**: tracked OpenAPI stubs were regenerated with
+  `scripts/export_openapi_stub.py`; `plans/README.md` and `tasks/task_queue.yaml` now
+  route the current checkpoint to
+  `plans/2026-06-18-connector-review-workspace-scope.md` instead of the older
+  source-readiness closure plan.
+- **Validation**: focused connector review action, intake/idempotency, report-auth,
+  live-connector intake/report continuation, OpenAPI parity, ruff, mypy, focused
+  DB-gated selected-county/evidence/claim/public-wiring tests, and full DB-enabled
+  `.\scripts\verify.ps1` passed on isolated Postgres port `55448`.
+
 ## Current checkpoint (2026-06-17 deployment recovery smoke)
 
 Deployment smoke now exercises the read-only recovery-preview operations surface in
@@ -1755,10 +1791,12 @@ hardening continues as a separate blocked lane and does not gate private MVP uti
   `python ./scripts/private_mvp_readiness_check.py`, and `python -m ruff check` on the
   touched readiness files.
 
-## Local repo bootstrap state
+## Historical local repo bootstrap state (superseded)
 
 - Local Git initialized on `main`.
 - `origin` is configured as `https://github.com/benjmcd/land-dd.git`.
 - Local baseline commit exists on `main`: `ffb73e1` (`Establish governed scaffold baseline`).
-- No GitHub push has been performed; `origin/main` remains at `13b75a9`.
+- This bootstrap snapshot is historical. Current remote authority is live `origin/main`,
+  which was fetched and fast-forwarded locally to `3aff43184e46c36dd4ee3caaac902cd7ba7f1d62`
+  before the 2026-06-18 connector review workspace-scope slice.
 - Local Codesight index exists at `.codesight/`; regenerate after significant code changes.
