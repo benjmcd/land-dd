@@ -153,6 +153,25 @@ def fema_live_evidence(
     )
 
 
+def sensitive_parcel_evidence(area: AreaContract, source: SourceContract) -> EvidenceContract:
+    return EvidenceContract(
+        area_id=area.area_id,
+        source_id=source.source_id,
+        evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+        evidence_code="COUNTY_PARCEL_SCREEN",
+        domain="parcels",
+        observation="County parcel screening includes raw owner and value fields.",
+        observed_value={
+            "intersects": True,
+            "parcel_owner": "Fixture Owner",
+            "parcel_total_value": 250000,
+        },
+        method_code="county_parcel_screen",
+        confidence=ConfidenceBand.MEDIUM,
+        caveat="County GIS restricted parcel screening only.",
+    )
+
+
 def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> None:
     source_service, area_service, evidence_service, _, report_service = make_service()
     source = register_source(source_service)
@@ -328,6 +347,38 @@ def test_create_report_run_excludes_unapproved_connector_evidence() -> None:
         "ZONING_SOURCE_UNAVAILABLE_UNKNOWN",
     ]
     assert report_run.red_flags == []
+    assert report_run.source_manifest["evidence_count"] == 6
+
+
+def test_create_report_run_includes_restricted_non_sensitive_screening_evidence() -> None:
+    source_service, area_service, evidence_service, _, report_service = make_service()
+    source = register_source(source_service)
+    area = register_area(area_service)
+    stored = evidence_service.create_observation(flood_evidence(area, source))
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert report_run.evidence[0] == stored
+    assert "FLOOD_001" in [claim.claim_code for claim in report_run.claims]
+
+
+def test_create_report_run_excludes_restricted_sensitive_evidence() -> None:
+    source_service, area_service, evidence_service, _, report_service = make_service()
+    source = register_source(source_service)
+    area = register_area(area_service)
+    stored = evidence_service.create_observation(sensitive_parcel_evidence(area, source))
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert stored not in report_run.evidence
+    assert all("parcel_owner" not in record.observed_value for record in report_run.evidence)
+    assert all("parcel_total_value" not in record.observed_value for record in report_run.evidence)
     assert report_run.source_manifest["evidence_count"] == 6
 
 

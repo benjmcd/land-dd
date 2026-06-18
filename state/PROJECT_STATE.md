@@ -1,36 +1,43 @@
 # Project State
 
-## Current checkpoint (2026-06-18 source-rights export guard)
+## Current checkpoint (2026-06-18 source freshness review-drift guard)
 
-The production authority packet is complete. The active implementation authority now
-points at a source-rights export guard: add repo-local fail-closed proof that
-source-rights metadata controls report/export exposure for restricted or vendor-derived
-fields without approving DS-017 or starting hosted production work.
+The source-rights export guard is complete. The active implementation authority now
+points at a source freshness review-drift guard: add repo-local fail-closed proof that
+Must-source registry freshness and review metadata cannot silently drift stale while
+still being treated as production-ready.
 
-- **Active plan**: `plans/2026-06-18-source-rights-export-guard.md`.
-- **Purpose**: trace source-rights fields from the registry/usage-rights layer to
-  report artifact and export surfaces, then prove blocked, unknown, or restricted
-  source rights cannot leak unapproved vendor/raw fields.
-- **Completed immediately prior**: `R-011` added
-  `state/PRODUCTION_AUTHORITY_PACKET.md`, requiring DS-017 field-level allow/deny
-  policy, entitlement, export/cache/raw-data/AI-use, cost, failure-mode, and source
-  authority before any DS-017 implementation. The readiness-matrix validator now
-  requires the packet and critical fail-closed phrases.
+- **Active plan**: `plans/2026-06-18-source-freshness-review-drift.md`.
+- **Purpose**: trace `Freshness Class`, `Last Checked At`, review status, source
+  readiness, and stale-source alert contracts, then prove Must-source freshness/review
+  drift fails closed without starting hosted alerting.
+- **Completed immediately prior**: `R-012` added `source_report_exposure_allowed` and
+  report-service filtering so blocked/unknown sources fail closed for report exposure,
+  restricted sources allow non-sensitive screening fields, sensitive observed-value
+  paths are blocked recursively, and source-failure evidence remains reportable when it
+  does not expose sensitive fields.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-source-rights-export-guard.md`, `plans/README.md`,
+  `plans/2026-06-18-source-freshness-review-drift.md`, `plans/README.md`,
   `tasks/task_queue.yaml`, `registers/data_source_registry.csv`,
-  `db/seeds/002_seed_source_registry.sql`, source-readiness/usage-rights helpers, and
-  report/export paths identified by the next audit.
+  `db/seeds/source_registry_seeds.py`, `scripts/source_readiness.py`, and
+  `config/ops_alert_rules.yaml`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
-  connector, no hosted deployment, no production SLO/capacity claim, no new
-  county/source/rulepack, no full user identity or RBAC, no secret writes, no committed
-  generated evidence artifacts, and no Level 10 completion claim.
-- **Validation so far**: the updated readiness-matrix validator passed and focused
-  readiness-matrix artifact tests passed after adding packet guards. Earlier R-011
-  baseline validators preserved Must-source readiness at
-  `sources=8 ready=7 blocked=1` with DS-017 blocked. Full `.\scripts\verify.ps1`
-  passed after the final state updates; DB smoke was skipped by default.
+  connector, no hosted deployment or hosted alert route, no production SLO/capacity
+  claim, no new county/source/rulepack, no full user identity or RBAC, no secret writes,
+  no committed generated evidence artifacts, and no Level 10 completion claim.
+- **Validation so far**: focused R-012 tests, report regressions, connector-flow
+  regressions, ruff, mypy, readiness-matrix validation, and full `.\scripts\verify.ps1`
+  passed; source readiness still reports `sources=8 ready=7 blocked=1` with DS-017
+  blocked. DB smoke was skipped by default.
+
+## Previous checkpoint (2026-06-18 source-rights export guard)
+
+The production authority packet routed the next repo-local lane to a source-rights
+export guard: prove source-rights metadata controls report/export exposure for
+restricted or vendor-derived fields without approving DS-017 or starting hosted
+production work. `R-012` completed that guard and routed the next active lane to
+source freshness review-drift proof.
 
 ## Previous checkpoint (2026-06-18 production authority packet)
 

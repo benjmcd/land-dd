@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Source-rights export guard)
+
+- Completed `R-012` from `plans/2026-06-18-source-rights-export-guard.md` without
+  approving DS-017, selecting a vendor, changing source statuses, or starting hosted
+  production work.
+- Added a report-exposure rights helper that keeps `restricted` and
+  `approved-with-restrictions` production-use readiness intact while separately
+  blocking report exposure for blocked/unknown sources and sensitive restricted-source
+  observed-value paths.
+- Wired report construction through the exposure guard so JSON artifacts, dossier
+  rendering, full report responses, and UI report views inherit the same filtered report
+  contract.
+- Preserved source-failure evidence as reportable when it does not expose sensitive
+  fields, so vendor/license/outage failures remain first-class evidence instead of
+  clean findings.
+- Added focused source-rights and report-service regressions for restricted
+  non-sensitive screening fields, sensitive owner/value-like fields, nested sensitive
+  payloads, blocked non-failure evidence, and blocked-source source failures.
+- Tightened the sensitive-value matcher after full verification caught that blocking all
+  generic `value` fields incorrectly suppressed allowed USGS TNM terrain metric
+  evidence.
+- Closed the Tier-2 review finding that camelCase and PascalCase valuation keys could
+  bypass the restricted-source sensitive-field matcher.
+- Routed the next active repo-local lane to `R-013` source freshness review-drift guard,
+  keeping L10 data-governance status `PARTIAL` and hosted/DS-017 blockers intact.
+
 ## 2026-06-18 (Performance baseline evidence)
 
 - Selected `L10-PERF-010` from `state/LEVEL_9_10_GATE_MATRIX.md` as the next unblocked

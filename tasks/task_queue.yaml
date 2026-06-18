@@ -1,17 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-source-rights-export-guard.md
+active_plan: plans/2026-06-18-source-freshness-review-drift.md
 routing_note: >
-  Active lane: source-rights export guard
-  (plans/2026-06-18-source-rights-export-guard.md). Goal: add repo-local fail-closed
-  proof that source-rights metadata controls export/report exposure for restricted or
-  vendor-derived source fields without approving DS-017 or starting hosted work.
-  The completed production authority packet records DS-017, hosted deployment,
-  IdP/RBAC, secret-manager, billing, alerting, image publication, and production
-  workload decisions as external authority requirements separated from repo-local proof.
-  Completed readiness reconciliation, performance baseline, static spatial proof,
-  SQL-contract guard, spatial runtime proof, queue backpressure, workflow-valid load
-  proof, selected-county RC proof refresh, lineage smoke proof, and post-RC authority
-  split plans remain historical context.
+  Active lane: source freshness review-drift guard
+  (plans/2026-06-18-source-freshness-review-drift.md). Goal: add repo-local
+  fail-closed proof that Must-source freshness and review metadata cannot silently drift
+  stale while still being treated as production-ready. The source-rights export guard is
+  complete; DS-017, hosted deployment, IdP/RBAC, secret-manager, billing, alerting,
+  image publication, and production workload decisions remain external authority
+  requirements separated from repo-local proof.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -325,7 +321,7 @@ tasks:
 
   - id: R-012
     title: Source-rights export guard
-    status: active
+    status: done
     depends_on: [R-011]
     lane: coordinator
     spec: plans/2026-06-18-source-rights-export-guard.md
@@ -345,6 +341,30 @@ tasks:
       - Blocked or unknown source-rights fields fail closed for export/report exposure
       - Restricted rights have explicit enforcement tests before exposed output is allowed
       - DS-017 remains blocked unless external source/vendor authority changes
+
+  - id: R-013
+    title: Source freshness review-drift guard
+    status: active
+    depends_on: [R-012]
+    lane: coordinator
+    spec: plans/2026-06-18-source-freshness-review-drift.md
+    notes: >
+      Add repo-local fail-closed proof that Must-source registry freshness and review
+      metadata cannot silently drift stale while still being treated as production-ready.
+      DS-017 remains blocked; hosted source freshness alerts and dashboards remain
+      external-authority work.
+    validation:
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\readiness_matrix_check.py
+      - python .\scripts\alert_rules_check.py
+      - cd backend; python -m pytest -q .\tests\source_registry
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Must current-effective sources fail closed when freshness or review metadata is missing, malformed, or stale
+      - Intentionally unreviewed or blocked sources remain explicit blockers, not ready sources
+      - Hosted alerting/source-monitoring remains blocked unless external authority changes
 
   # --- Completed ---
   - id: T000

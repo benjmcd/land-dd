@@ -96,3 +96,10 @@ git diff --name-only --diff-filter=D
 ## Progress log
 
 - 2026-06-18: Plan opened after `R-011` production authority packet.
+- 2026-06-18: Implemented `source_report_exposure_allowed` and report-service
+  filtering so blocked/unknown sources fail closed for report exposure, restricted
+  sources allow non-sensitive screening fields, sensitive observed-value paths are
+  blocked recursively, and source-failure evidence remains reportable when it does not
+  expose sensitive fields. The sensitive-value matcher blocks parcel, tax, market, and
+  appraisal value semantics while allowing generic public screening metric `value`
+  fields such as USGS TNM terrain relief. DS-017 remains blocked.

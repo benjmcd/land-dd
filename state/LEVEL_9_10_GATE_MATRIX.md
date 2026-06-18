@@ -82,8 +82,8 @@ Status legend:
 | Gate | Status | Current evidence | Next action |
 |---|---|---|---|
 | L10-DATA-001 production source license/terms reviewed | `PARTIAL` | Must-source readiness `8 total, 7 ready, 1 blocked`; DS-017 blocked | Resolve DS-017 or remove it from full-release Must scope by explicit product decision. |
-| L10-DATA-002 attribution/redistribution/export/AI-use constraints enforced | `PARTIAL` | source registry rights fields, source-readiness checker, report caveats | Add entitlement enforcement for restricted/vendor datasets. |
-| L10-DATA-003 source freshness monitoring flags stale data | `PARTIAL` | source-readiness freshness checks and alert catalog | Add hosted source freshness monitoring and alert evidence. |
+| L10-DATA-002 attribution/redistribution/export/AI-use constraints enforced | `PARTIAL` | source registry rights fields, source-readiness checker, report caveats, and repo-local source-rights report exposure guard | Add entitlement enforcement for restricted/vendor datasets after DS-017/vendor authority exists. |
+| L10-DATA-003 source freshness monitoring flags stale data | `PARTIAL` | source-readiness metadata and alert catalog | Add repo-local source freshness/review-drift guard next; hosted alert evidence remains blocked. |
 | L10-DATA-004 connector failures/outages visible | `PROVEN_REPO_LOCAL` | source_failure evidence, connector review queue, operations recovery preview | Wire hosted alerts/dashboards for connector outages. |
 | L10-DATA-005 jurisdiction readiness before new geography | `VALIDATE_ONLY` | jurisdiction readiness checklist and release-readiness gate | Complete checklist for each new county/state before expansion. |
 | L10-DATA-006 rulepack readiness before new intent | `VALIDATE_ONLY` | rulepack readiness checklist and release-readiness gate | Complete checklist before new intent/rulepack. |
@@ -137,11 +137,12 @@ secret-manager, billing, alerting, image publication, or production workload wor
 
 The lowest-dependency next pass is not hosted deployment. Hosted production remains
 blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
-source/vendor authority. `R-010` completed the post-RC authority split, and `R-011`
-completed the production authority packet. The next active pass is `R-012`
-source-rights export guard: add repo-local fail-closed proof that source-rights metadata
-controls report/export exposure for restricted or vendor-derived fields without
-approving DS-017 or starting hosted work.
+source/vendor authority. `R-010` completed the post-RC authority split, `R-011`
+completed the production authority packet, and `R-012` added repo-local source-rights
+report exposure guarding. The next active pass is `R-013` source freshness
+review-drift guard: add repo-local fail-closed proof that Must-source freshness and
+review metadata cannot silently drift stale while still being treated as
+production-ready.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
