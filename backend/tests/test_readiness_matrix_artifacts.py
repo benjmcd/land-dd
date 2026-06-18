@@ -43,9 +43,13 @@ def test_readiness_matrix_validator_guards_high_risk_statuses() -> None:
     guarded_statuses = validator.REQUIRED_STATUS_BY_GATE
 
     assert set(guarded_statuses).issubset(set(rows))
-    for gate_id in guarded_statuses:
+    for gate_id, required_status in guarded_statuses.items():
         promoted_rows = dict(rows)
-        promoted_rows[gate_id] = "PROVEN_REPO_LOCAL"
+        promoted_rows[gate_id] = (
+            "PROVEN_REPO_LOCAL"
+            if required_status != "PROVEN_REPO_LOCAL"
+            else "PARTIAL"
+        )
         with pytest.raises(SystemExit, match=gate_id):
             validator.validate_guarded_statuses(promoted_rows)
 

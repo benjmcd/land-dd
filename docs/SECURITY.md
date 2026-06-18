@@ -24,7 +24,10 @@ It may produce source-linked screening observations and verification tasks.
 
 ## Residential/fair-housing guardrail
 
-Do not create protected-class, demographic, neighborhood desirability, safety-by-demographic, school-by-demographic, or steering features. Residential area recommendations must avoid proxies that could function as steering.
+Do not recommend, rank, score, or steer residential areas. Do not use
+protected-class, demographic, school-quality, neighborhood-quality,
+safety-by-demographic, lending, insurance, appraisal, market desirability, or
+residential-steering proxy features.
 
 ## Data licensing
 

@@ -1,47 +1,57 @@
 # Project State
 
-## Current checkpoint (2026-06-18 threat-model/proxy audit update)
+## Current checkpoint (2026-06-18 jurisdiction/rulepack checklist dry run)
 
-The compare/diff workflow smoke is complete. The active implementation authority now
-points at a threat-model/proxy audit update: audit and harden repo-local security,
-access-control, protected-class, and residential-steering safeguards before any hosted
-or residential expansion claim. This pass must stay repo-local and must not replace
-external security review, legal review, hosted IdP/RBAC work, production error/log
-review, DS-017 entitlement work, billing, alerting, or deployment authority.
+The threat/proxy audit update is complete. The active implementation authority now
+points at a jurisdiction/rulepack checklist dry run: rehearse the existing jurisdiction
+and rulepack readiness checklists against a future expansion shape without selecting or
+approving a new geography, rulepack, source, connector, or hosted production path.
 
-- **Active plan**: `plans/2026-06-18-threat-model-proxy-audit.md`.
-- **Purpose**: map current security/proxy risks to existing controls, tests, and
-  blockers so future expansion cannot quietly weaken protected-class, recommendation,
-  ranking, suitability, or residential-steering boundaries.
-- **Completed immediately prior**: `R-017` added `--compare-same-area` to
-  `scripts/ui_runtime_smoke.py`, creating two approved reports for one selected-county
-  operator case and checking UI compare, JSON compare summary shape, and same-area diff
-  API output. The smoke remains report-summary/change-review proof only, not ranking,
-  recommendation, suitability scoring, arbitrary-geography proof, or hosted production
-  proof.
-- **R-017 validation**: focused compare/UI/runtime-smoke tests passed; focused ruff
-  passed; focused mypy passed on the smoke script and tests; private-MVP,
-  release-readiness, readiness-matrix, and performance-baseline validators passed;
-  local in-memory FastAPI smoke on `127.0.0.1:18192` passed with
-  `--operator-case-id BUN-slope --compare-same-area --json`; `git diff --check`
-  passed; no deleted files were reported; full `.\scripts\verify.ps1` passed with
-  workspace validation, backend tests, ruff, and mypy over `322` source files. DB smoke
-  was skipped by default.
+- **Active plan**: `plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md`.
+- **Purpose**: prove checklist executability and fail-closed behavior before future
+  expansion decisions, while preserving the Level 9/10 distinction between repo-local
+  readiness evidence and hosted/legal/source authority.
+- **Completed immediately prior**: `R-018` added a validate-only threat/proxy audit
+  catalog and checker, composed it into release readiness, strengthened
+  residential/fair-housing boundary wording, propagated source-rights fields into
+  report `source_manifest.source_details`, pinned `L10-SEC-008` and compare semantics
+  in readiness-matrix validation, and added direct compare/diff API semantic guards.
+- **R-018 validation**: `python .\scripts\threat_proxy_audit_check.py`,
+  `.\scripts\run_threat_proxy_audit_check.ps1`,
+  `python .\scripts\private_mvp_readiness_check.py`,
+  `python .\scripts\release_readiness_check.py`,
+  `python .\scripts\readiness_matrix_check.py`, and
+  `python .\scripts\access_control_check.py` passed. `.\scripts\run_security_scan.ps1`
+  passed with `0` high/critical findings and reported medium findings as review debt.
+  Focused pytest, ruff, and mypy passed on threat/proxy artifacts,
+  release/readiness-matrix artifacts, compare/diff API tests, runtime-smoke tests,
+  report service/schema tests, report-overclaim tests, report-export tests, and touched
+  scripts. `git diff --check` passed; no deleted files were reported; full
+  `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff, and
+  mypy over `323` source files. DB smoke was skipped by default.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-threat-model-proxy-audit.md`,
-  `plans/2026-06-18-compare-diff-workflow-smoke.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `docs/SECURITY.md`, `docs/runbooks/access_control.md`,
-  `config/access_control.yaml`, `docs/runbooks/mvp_operator.md`,
-  `backend/app/api/reports.py`, `backend/app/api/ui.py`,
-  `backend/tests/api/test_report_comparison.py`, `backend/tests/api/test_ui_routes.py`,
-  `backend/tests/test_ui_runtime_smoke_script.py`, and `scripts/ui_runtime_smoke.py`.
+  `plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md`,
+  `plans/2026-06-18-threat-model-proxy-audit.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/threat_proxy_audit.yaml`,
+  `docs/runbooks/threat_proxy_audit.md`, `scripts/threat_proxy_audit_check.py`,
+  `docs/checklists/jurisdiction_readiness.md`,
+  `docs/checklists/rulepack_readiness.md`, and `docs/runbooks/release_readiness.md`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
   or RBAC, no recommendation/ranking semantics, no demographic/protected-class scoring,
-  no secret writes, no committed measured runtime artifacts, and no Level 10 completion
-  claim.
+  no legal/security review claim, no secret writes, no committed measured runtime
+  artifacts, and no Level 10 completion claim.
+
+## Previous checkpoint (2026-06-18 threat-model/proxy audit update)
+
+`R-018` completed the threat/proxy audit update after `R-017` proved compare/diff
+workflow smoke. It added repo-local drift controls for security, access-control,
+protected-class, demographic-proxy, residential-steering, recommendation/ranking,
+suitability, source-rights, overclaim, and error-leakage boundaries without replacing
+external security review, legal review, hosted IdP/RBAC, production error/log review,
+DS-017 entitlement work, billing, alerting, or deployment authority.
 
 ## Previous checkpoint (2026-06-18 compare/diff workflow smoke)
 

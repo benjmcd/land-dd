@@ -34,6 +34,9 @@ required_checks:
   - id: access_control
     proof: scripts/run_access_control_check.ps1
     ci_job: access-control
+  - id: threat_proxy_audit
+    proof: scripts/run_threat_proxy_audit_check.ps1
+    ci_job: null
   - id: release_package
     proof: scripts/run_release_package_check.ps1
     ci_job: null

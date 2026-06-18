@@ -223,6 +223,14 @@ def test_create_report_run_collects_evidence_claims_unknowns_and_caveats() -> No
     details_by_name = {str(detail["name"]): detail for detail in source_details}
     assert details_by_name["Fixture FEMA Flood Map"]["freshness_class"] == "unknown"
     assert details_by_name["Fixture FEMA Flood Map"]["review_status"] == "approved"
+    assert details_by_name["Fixture FEMA Flood Map"]["redistribution_status"] == "restricted"
+    assert details_by_name["Fixture FEMA Flood Map"]["cache_allowed"] == "approved"
+    assert (
+        details_by_name["Fixture FEMA Flood Map"]["export_allowed"]
+        == "approved-with-restrictions"
+    )
+    assert details_by_name["Fixture FEMA Flood Map"]["raw_data_allowed"] == "approved"
+    assert details_by_name["Fixture FEMA Flood Map"]["ai_use_allowed"] == "restricted"
     assert set(report_run.caveats) == {
         "FEMA fixture endpoint returned 503.",
         "Screening fixture only; confirm locally.",

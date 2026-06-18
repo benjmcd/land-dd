@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Threat/proxy audit update)
+
+- Completed `R-018` from `plans/2026-06-18-threat-model-proxy-audit.md` without
+  adding hosted identity/RBAC, external security review, legal review, production
+  error/log review, DS-017 entitlement work, billing, alerting, secret-manager work,
+  deployment work, demographic/protected-class inputs, or recommendation/ranking
+  product semantics.
+- Added `config/threat_proxy_audit.yaml`, `docs/runbooks/threat_proxy_audit.md`,
+  `scripts/threat_proxy_audit_check.py`, Windows/POSIX wrappers, and artifact tests as
+  a validate-only map from threat/proxy risks to existing controls and blockers.
+- Composed the threat/proxy audit checker into release readiness and routed it through
+  `MANIFEST.md` as a durable source-of-truth area.
+- Tightened `docs/SECURITY.md` to directly ban residential recommendation, ranking,
+  scoring, steering, and proxy features.
+- Propagated source-rights fields into report `source_manifest.source_details` so
+  exported artifacts carry redistribution/cache/export/raw/AI-use constraints.
+- Added direct compare/diff API tests for exact output keys and absence of
+  ranking/recommendation/suitability keys, supplementing the runtime smoke guard.
+- Pinned `L10-SEC-008` and `L10-PROD-006` in readiness-matrix validation so
+  protected-class/proxy and compare semantics cannot be silently overpromoted.
+- Routed the next active repo-local lane to `R-019` jurisdiction/rulepack checklist dry
+  run, preserving all expansion, hosted, legal/security, and DS-017 blockers.
+
 ## 2026-06-18 (Compare/diff workflow smoke)
 
 - Completed `R-017` from `plans/2026-06-18-compare-diff-workflow-smoke.md` without

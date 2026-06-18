@@ -21,6 +21,49 @@ def _make_client() -> TestClient:
     return TestClient(create_app())
 
 
+FORBIDDEN_COMPARE_KEYS = {
+    "rank",
+    "ranking",
+    "recommendation",
+    "recommended",
+    "recommendations",
+    "suitability_score",
+}
+COMPARE_SUMMARY_KEYS = {
+    "report_run_id",
+    "area_id",
+    "intent_code",
+    "claims_count",
+    "unknowns_count",
+    "red_flags_count",
+    "high_severity_claims",
+    "verification_tasks_count",
+}
+DIFF_KEYS = {
+    "report_run_id",
+    "base_report_run_id",
+    "area_id",
+    "same_area",
+    "ruleset_changed",
+    "added_claim_codes",
+    "removed_claim_codes",
+    "added_sources",
+    "removed_sources",
+    "evidence_count_delta",
+}
+
+
+def _assert_no_forbidden_keys(value: object) -> None:
+    if isinstance(value, dict):
+        forbidden = FORBIDDEN_COMPARE_KEYS & {str(key).lower() for key in value}
+        assert not forbidden, f"forbidden compare/diff keys present: {sorted(forbidden)}"
+        for nested in value.values():
+            _assert_no_forbidden_keys(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            _assert_no_forbidden_keys(nested)
+
+
 def _create_area(client: TestClient) -> str:
     resp = client.post(
         "/areas",
@@ -88,13 +131,9 @@ def test_compare_returns_summaries() -> None:
     assert run1 in ids_returned
     assert run2 in ids_returned
     for s in summaries:
-        assert "claims_count" in s
-        assert "unknowns_count" in s
-        assert "red_flags_count" in s
-        assert "high_severity_claims" in s
-        assert "verification_tasks_count" in s
-        assert "area_id" in s
-        assert "intent_code" in s
+        assert set(s) == COMPARE_SUMMARY_KEYS
+        _assert_no_forbidden_keys(s)
+    _assert_no_forbidden_keys(data)
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +178,8 @@ def test_diff_same_area() -> None:
     assert data["base_report_run_id"] == run2
     assert data["area_id"] == area_id
     assert data["same_area"] is True
+    assert set(data) == DIFF_KEYS
+    _assert_no_forbidden_keys(data)
     assert "ruleset_changed" in data
     assert isinstance(data["added_claim_codes"], list)
     assert isinstance(data["removed_claim_codes"], list)

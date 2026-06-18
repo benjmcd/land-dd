@@ -35,6 +35,7 @@ REQUIRED_STATUS_BY_GATE = {
     "L10-SEC-003": "PARTIAL",
     "L10-SEC-006": "PARTIAL",
     "L10-SEC-007": "VALIDATE_ONLY",
+    "L10-SEC-008": "PROVEN_PRIVATE_MVP",
     "L10-SEC-009": "PARTIAL",
     "L10-SEC-010": "BLOCKED",
     "L10-DATA-001": "PARTIAL",
@@ -50,6 +51,7 @@ REQUIRED_STATUS_BY_GATE = {
     "L10-PERF-008": "PARTIAL",
     "L10-PERF-010": "VALIDATE_ONLY",
     "L10-PROD-001": "PARTIAL",
+    "L10-PROD-006": "PROVEN_REPO_LOCAL",
     "L10-PROD-008": "PARTIAL",
 }
 REQUIRED_MATRIX_PHRASES = (
@@ -61,6 +63,9 @@ REQUIRED_MATRIX_PHRASES = (
     "Do not start external hosted deployment work until",
     "config/hosted_deployment.yaml",
     "scripts/source_readiness.py --priority Must --json",
+    "Private-MVP negative coverage only",
+    "production proxy-audit review before hosted residential expansion",
+    "do not add ranking/recommendation semantics",
 )
 REQUIRED_PRODUCTION_AUTHORITY_PACKET_PHRASES = (
     "Must-source readiness remains `sources=8 ready=7 blocked=1`; `DS-017` is blocked.",

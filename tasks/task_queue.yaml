@@ -1,13 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-threat-model-proxy-audit.md
+active_plan: plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md
 routing_note: >
-  Active lane: threat-model/proxy audit update
-  (plans/2026-06-18-threat-model-proxy-audit.md). Goal: map current security,
-  access-control, protected-class, and residential-steering risks to existing
-  repo-local controls, tests, and blockers before any hosted or residential expansion
-  claim. This does not replace external security review, legal review, hosted IdP/RBAC,
-  production error/log review, DS-017 entitlement work, billing, alerting,
-  secret-manager, deployment, or production workload authority.
+  Active lane: jurisdiction/rulepack checklist dry run
+  (plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md). Goal: rehearse the
+  existing jurisdiction and rulepack readiness checklists against a future expansion
+  shape without selecting or approving a new geography, rulepack, source, connector, or
+  hosted production path. DS-017, hosted deployment, external security/legal review,
+  IdP/RBAC, billing, alerting, secret-manager, and production workload authority remain
+  external blockers.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -486,21 +486,28 @@ tasks:
 
   - id: R-018
     title: Threat-model/proxy audit update
-    status: active
+    status: done
     depends_on: [R-017]
     lane: coordinator
     spec: plans/2026-06-18-threat-model-proxy-audit.md
     notes: >
-      Audit and harden repo-local security, access-control, protected-class, and
-      residential-steering safeguards before any hosted or residential expansion claim.
-      This is a repo-local coherence and drift-control pass only; it does not replace
-      external security review, legal review, hosted IdP/RBAC work, production error/log
-      review, DS-017 entitlement work, billing, alerting, or deployment authority.
+      Completed repo-local threat/proxy audit hardening. Added a validate-only
+      threat/proxy audit catalog/checker, composed it into release readiness, tightened
+      security boundary wording, propagated source-rights fields into report source
+      manifests, pinned L10-SEC-008 and compare semantics in readiness-matrix
+      validation, and added direct compare/diff API semantic guards. This does not
+      replace external security review, legal review, hosted IdP/RBAC work, production
+      error/log review, DS-017 entitlement work, billing, alerting, or deployment
+      authority.
     validation:
+      - python .\scripts\threat_proxy_audit_check.py
+      - .\scripts\run_threat_proxy_audit_check.ps1
       - python .\scripts\private_mvp_readiness_check.py
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
-      - cd backend; python -m pytest -q .\tests\api .\tests\reports .\tests\source_registry
+      - cd backend; python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\test_ui_runtime_smoke_script.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py .\tests\reports\test_report_overclaim.py .\tests\api\test_report_export.py
+      - cd backend; python -m ruff check .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py ..\scripts\threat_proxy_audit_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py .\app\reports\service.py
+      - cd backend; python -m mypy .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py ..\scripts\threat_proxy_audit_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py .\app\reports\service.py
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
@@ -509,6 +516,32 @@ tasks:
       - Protected-class, demographic proxy, recommendation/ranking, and residential-steering controls are traced to tests or explicit blockers
       - Any added guard is narrow, repo-local, and validates existing boundaries instead of adding new product semantics
       - Hosted IdP/RBAC, external security/legal review, production error/log review, DS-017, billing, alerting, and secret-manager blockers remain external-authority requirements
+
+  - id: R-019
+    title: Jurisdiction/rulepack checklist dry run
+    status: active
+    depends_on: [R-018]
+    lane: coordinator
+    spec: plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md
+    notes: >
+      Dry-run existing jurisdiction and rulepack readiness checklists against a future
+      expansion shape without selecting or approving a new geography, rulepack, source,
+      connector, or hosted production path. This is checklist executability proof only;
+      it must preserve DS-017, hosted deployment, external security/legal review,
+      IdP/RBAC, billing, alerting, secret-manager, and production workload blockers.
+    validation:
+      - python .\scripts\private_mvp_readiness_check.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Checklist files are classified as exhaustive or intentionally scoped before edits
+      - Dry-run result distinguishes repo-confirmed evidence, missing evidence, and external blockers
+      - No new geography, rulepack, source, connector, or DS-017 approval is made
+      - Hosted production, legal/security review, IdP/RBAC, billing, alerting, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---
   - id: T000

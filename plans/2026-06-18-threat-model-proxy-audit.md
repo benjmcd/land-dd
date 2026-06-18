@@ -118,8 +118,19 @@ Narrow checks may be refined after the audit identifies the actual affected file
   and `state/POST_RC_AUTHORITY_SPLIT.md` lists threat-model/proxy audit update as the
   next unblocked repo-local candidate. This protects the Level 9/10 boundary around
   `L10-SEC-005`, `L10-SEC-008`, and `L10-SEC-009` without replacing external proof.
+- 2026-06-18: Added a validate-only threat/proxy audit catalog and checker, composed it
+  into release readiness, strengthened the security product boundary wording, and
+  recorded Bandit medium findings as review debt rather than release blockers.
+- 2026-06-18: Included two repo-confirmed audit hardening items: report source manifests
+  now carry source-rights fields, and readiness-matrix validation pins
+  `L10-SEC-008` plus compare semantics so future edits cannot silently overpromote
+  protected-class/proxy or ranking/recommendation readiness.
 
 ## Progress log
 
 - 2026-06-18: Plan opened after R-017 completed local release-candidate compare/diff
   workflow smoke.
+- 2026-06-18: Read-only security, data-governance, and test-review audits completed.
+  They found no need for hosted/auth runtime changes, but did identify the missing
+  canonical threat/proxy map, source-rights manifest propagation, matrix pinning, and
+  direct compare/diff API semantic guards as narrow repo-local hardening.
