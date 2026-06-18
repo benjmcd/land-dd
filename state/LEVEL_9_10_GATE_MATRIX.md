@@ -16,6 +16,7 @@ Canonical inputs used here:
 - `config/access_control.yaml`
 - `registers/data_source_registry.csv`
 - `scripts/source_readiness.py --priority Must --json`
+- `state/POST_RC_AUTHORITY_SPLIT.md`
 
 Status legend:
 
@@ -120,14 +121,22 @@ Status legend:
 | L10-PROD-009 MVP scope boundaries enforced | `PROVEN_PRIVATE_MVP` | selected-county readiness catalog/manifests and runbook | Enforce jurisdiction readiness before expansion. |
 | L10-PROD-010 red-flag and clean-ish regression suite | `PROVEN_PRIVATE_MVP` | nine golden AOIs and private-MVP regression tests | Add new fixtures for each expansion source/geography. |
 
+## Post-RC Authority Split
+
+`state/POST_RC_AUTHORITY_SPLIT.md` records the current split between external
+authority blockers, repo-local implementation candidates, and audit-only evidence
+candidates. The split preserves the conclusion that local selected-county
+release-candidate proof is not hosted production proof.
+
 ## Next Unblocked Pass
 
 The lowest-dependency next pass is not hosted deployment. Hosted production remains
 blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
-source/vendor authority. `R-008` and `R-009` completed the selected-county
-release-candidate proof refresh and lineage smoke proof. The next active pass is
-`R-010` post-RC authority split: classify remaining Level 9/10 gaps as external
-authority, repo-local implementation, or audit-only before starting more code.
+source/vendor authority. `R-010` completed the post-RC authority split. The next active
+pass is `R-011` production authority packet: turn DS-017, hosted deployment,
+secret-manager, IdP/RBAC, billing, alerting, image-publication, and production workload
+blockers into explicit decision/evidence requests before starting more implementation.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
-blockers have named authorities and evidence.
+blockers have named authorities and evidence. Do not start DS-017 connector work until
+source/vendor blockers have named authorities and evidence.

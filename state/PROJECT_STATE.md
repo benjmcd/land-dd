@@ -1,40 +1,39 @@
 # Project State
 
-## Current checkpoint (2026-06-18 post-RC authority split)
+## Current checkpoint (2026-06-18 production authority packet)
 
-The selected-county lineage smoke proof is complete. The active implementation
-authority now points at a post-release-candidate authority split: classify the
-remaining Level 9/10 gaps as repo-local implementation candidates, audit-only evidence
-work, or external-authority blockers before starting more code. Hosted deployment,
-production SLO/capacity, dashboard/alert-routing, DS-017, IdP, full RBAC, billing, and
-external secret-manager decisions remain outside current repo-local authority.
+The post-RC authority split is complete. The active implementation authority now points
+at a production authority packet: turn the remaining external blockers into explicit
+decision/evidence requests before starting hosted, paid-source, full identity/RBAC,
+secret-manager, billing, alerting, image-publication, or production workload work.
+DS-017 is first because it is the only current Must-source readiness blocker.
 
-- **Active plan**: `plans/2026-06-18-post-rc-authority-split.md`.
-- **Purpose**: avoid treating the hardened private-MVP/release-candidate proof ladder
-  as hosted or multi-user production proof; select the next lane only after authority is
-  separated from inference.
-- **Completed immediately prior**: `R-009` extended `scripts/ui_runtime_smoke.py` so the
-  selected-county operator-case path follows the approved report lineage route and
-  requires source, evidence, and claim lineage content. Missing/empty lineage fails
-  closed. The MVP operator runbook and private-MVP readiness guard now name this proof.
-- **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-post-rc-authority-split.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `scripts/ui_runtime_smoke.py`,
-  `backend/tests/test_ui_runtime_smoke_script.py`, lineage API/UI tests,
-  `docs/runbooks/mvp_operator.md`, and the readiness/source/hosted/access-control
-  validators.
+- **Active plan**: `plans/2026-06-18-production-authority-packet.md`.
+- **Purpose**: convert external blockers into concrete decision fields, evidence
+  templates, and unblock criteria while preserving the boundary between selected-county
+  private-MVP proof and hosted production proof.
+- **Completed immediately prior**: `R-010` added
+  `state/POST_RC_AUTHORITY_SPLIT.md`, classifying remaining work as external-authority
+  blockers, repo-local implementation candidates, or audit-only evidence candidates.
+  The split says not to start hosted deployment or DS-017 connector work from repo-local
+  inference alone.
+- **Current authority surfaces**: `state/POST_RC_AUTHORITY_SPLIT.md`,
+  `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `plans/2026-06-18-production-authority-packet.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/hosted_deployment.yaml`,
+  `config/access_control.yaml`, `config/release_readiness.yaml`,
+  `config/ops_alert_rules.yaml`, `config/ops_cost_monitoring.yaml`,
+  `registers/data_source_registry.csv`, and the canonical readiness/source validators.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no hosted
   deployment, no production SLO/capacity claim, no new county/source/rulepack, no full
-  user identity or RBAC, no committed generated evidence artifacts, and no Level 10
-  completion claim.
-- **Validation so far**: focused smoke-script tests passed (`11 passed`); focused
-  lineage UI/API/private-MVP tests passed (`127 passed`); private-MVP, release-readiness,
-  readiness-matrix, focused ruff, focused mypy, `git diff --check`, and no-deletion
-  checks passed; in-memory selected-county runtime smoke passed with `operator-case-lineage`;
-  isolated DB-backed selected-county runtime smoke passed with
-  `--expect-artifact-persistence postgres+object_store` and `operator-case-lineage`.
-  Final full `.\scripts\verify.ps1` passed after state/routing updates; DB smoke was
-  skipped by default.
+  user identity or RBAC, no secret writes, no committed generated evidence artifacts,
+  and no Level 10 completion claim.
+- **Validation so far**: private-MVP readiness, Must-source readiness, release-readiness,
+  hosted-deployment, access-control, and readiness-matrix validators passed. Must-source
+  readiness remained `sources=8 ready=7 blocked=1` with DS-017 blocked. Data-retention
+  validation passed. Diff hygiene and no-deletion checks passed. Full
+  `.\scripts\verify.ps1` passed after state/routing updates; DB smoke was skipped by
+  default.
 
 ## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
 

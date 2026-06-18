@@ -3346,3 +3346,18 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Marked `R-009` done and routed the active plan to
   `plans/2026-06-18-post-rc-authority-split.md`, keeping hosted deployment, DS-017,
   IdP/RBAC, billing, alerting, and production workload proof outside repo-local claims.
+
+## 2026-06-18 Post-RC authority split
+
+- Revalidated the current authority baseline after `R-009`: private-MVP readiness,
+  Must-source readiness, release-readiness, hosted-deployment, access-control, and
+  readiness-matrix validators passed.
+- Confirmed Must-source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains
+  the only Must-source blocker.
+- Added `state/POST_RC_AUTHORITY_SPLIT.md` to classify remaining work as external
+  blockers, repo-local implementation candidates, and audit-only evidence candidates.
+- Recorded that hosted deployment, external secret manager, IdP/RBAC, billing, alerting,
+  image publication, production workload/SLO proof, and DS-017 source/vendor authority
+  must not be inferred from local selected-county proof.
+- Marked `R-010` done and routed the active plan to
+  `plans/2026-06-18-production-authority-packet.md`, with DS-017 source authority first.
