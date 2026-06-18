@@ -53,7 +53,8 @@ The check is validate-only. It verifies that:
   `scripts/performance_baseline_check.py` as validate-only proof;
 - the local spatial query-plan contract is `config/spatial_query_plan.yaml`, and the
   release proof composes `scripts/run_spatial_query_plan_check.ps1` /
-  `scripts/spatial_query_plan_check.py` as validate-only static proof;
+  `scripts/spatial_query_plan_check.py` as validate-only static proof; the DB-enabled
+  `scripts/run_spatial_query_plan_runtime_check.ps1` harness remains manual and opt-in;
 - the local load-test JSON result schema is `load_test_result_v1`;
 - jurisdiction and rulepack expansion stay gated by
   `docs/checklists/jurisdiction_readiness.md` and `docs/checklists/rulepack_readiness.md`;
@@ -91,6 +92,8 @@ The check is validate-only. It verifies that:
   requests or create measured result artifacts.
 - Spatial query-plan readiness is a static repo contract only. It validates canonical
   DDL/index coverage and runbook alignment, but does not run `EXPLAIN ANALYZE` against a live or hosted database by default.
+  Runtime plan proof requires explicit `DATABASE_URL_SYNC`/`--db-url` and
+  `SPATIAL_QUERY_PLAN_AREA_ID`/`--area-id` inputs.
 - No live-load CI gate is added; CI does not start a server or fail on latency
   thresholds.
 - No container image is pushed to a registry by this proof.

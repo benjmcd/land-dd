@@ -3232,3 +3232,27 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   (`35 passed`); focused ruff and mypy passed; `git diff --check` passed; no deleted
   files were reported; default `.\scripts\verify.ps1` passed with backend tests, ruff,
   and mypy over 318 source files. DB smoke was skipped by default.
+
+## 2026-06-18 Spatial runtime query-plan proof
+
+- Added opt-in runtime metadata to `config/spatial_query_plan.yaml` while keeping the
+  static contract as the default release-readiness proof.
+- Added `scripts/spatial_query_plan_runtime_check.py` plus Windows/POSIX wrappers. The
+  runtime checker requires an explicit DB URL and `area_id`, validates the static
+  contract before connecting, runs in a read-only transaction, writes JSON only when
+  `--output-json` is supplied, and fails closed when expected target GIST indexes are
+  absent from plan evidence.
+- Updated performance/release runbooks and static artifact tests so runtime plan review
+  is documented as manual/opt-in rather than a hosted or CI performance claim.
+- Isolated DB proof: migrations/seeds and DB smoke passed on local port `55450`; a local
+  synthetic spatial workload produced runtime checker evidence for `parcels_geom_gix`,
+  `reference_features_geom_gix`, and `observations_geom_gix`. `L10-PERF-003` remains
+  `PARTIAL` until equivalent proof exists for a representative selected-county or
+  release-candidate DB workload.
+- Verification: spatial checker and Windows wrapper passed; runtime Windows wrapper
+  passed against the isolated workload; release-readiness and readiness-matrix
+  validators/wrappers passed; focused spatial/performance/release/matrix artifact tests
+  passed (`46 passed`); focused ruff and mypy passed; `git diff --check` passed; no
+  deleted files were reported; default `.\scripts\verify.ps1` passed; DB-enabled
+  `.\scripts\verify.ps1` passed against a separate clean isolated PostGIS DB on port
+  `55451`.

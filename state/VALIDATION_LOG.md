@@ -10972,3 +10972,64 @@ git diff --name-only --diff-filter=D
 
 - This prevents static contract SQL drift. It still does not supply live
   representative `EXPLAIN ANALYZE` evidence for `L10-PERF-003`.
+
+---
+
+## 2026-06-18 - Spatial Runtime Query-Plan Proof
+
+**Scope:** Add an opt-in read-only runtime checker for the configured spatial query-plan
+contract while keeping default release-readiness validation DB-free and artifact-free.
+
+**Commands run:**
+
+```powershell
+python .\scripts\spatial_query_plan_check.py
+.\scripts\run_spatial_query_plan_check.ps1
+python .\scripts\release_readiness_check.py
+.\scripts\run_release_readiness_check.ps1
+python .\scripts\readiness_matrix_check.py
+.\scripts\run_readiness_matrix_check.ps1
+cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py
+cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\spatial_query_plan_runtime_check.py
+cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\spatial_query_plan_runtime_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\spatial_query_plan_runtime_check.py
+cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\spatial_query_plan_runtime_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55450/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55450/land_diligence'; python .\scripts\db_smoke_check.py
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55450/land_diligence'; python .\scripts\spatial_query_plan_runtime_check.py --area-id aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa --output-json .\local_artifacts\spatial-query-plan\runtime-plan-20260618.json
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55450/land_diligence'; .\scripts\run_spatial_query_plan_runtime_check.ps1 --area-id aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55451/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55451/land_diligence'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Static spatial checker passed; Windows wrapper printed `spatial query plan check: ok`.
+- Focused spatial artifact/runtime tests passed (`21 passed`).
+- Release-readiness and readiness-matrix validators passed; Windows wrappers printed
+  `release readiness check: ok` and `readiness matrix check: ok`.
+- Focused spatial/performance/release/matrix artifact tests passed (`46 passed`).
+- Focused ruff passed; focused mypy passed.
+- `git diff --check` reported no whitespace errors. No deleted files were reported.
+- Isolated PostGIS DB smoke passed on port `55450`.
+- Runtime checker printed `spatial query plan runtime check: ok` and observed
+  `parcels_geom_gix`, `reference_features_geom_gix`, and `observations_geom_gix` in the
+  local runtime plan evidence.
+- Default `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy on 319 source
+  files. DB smoke was skipped by default.
+- DB-enabled `.\scripts\verify.ps1` passed against a separate clean isolated PostGIS DB
+  on port `55451`.
+- A DB-enabled full verification attempt against the runtime synthetic-workload DB on
+  port `55450` failed because the manual workload inserted observations without the
+  repository metadata expected by evidence-ledger tests. The clean DB rerun above is the
+  authoritative DB-enabled full verification result for this branch.
+
+**Residual risk:**
+
+- The runtime proof used an isolated local synthetic workload. It proves the harness and
+  target-index checks work, but it is not hosted proof and not sufficient to promote
+  `L10-PERF-003` beyond `PARTIAL` until repeated against a representative
+  selected-county or release-candidate DB workload.

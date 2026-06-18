@@ -15,6 +15,7 @@ CONFIG_PATH = REPO_ROOT / "config" / "spatial_query_plan.yaml"
 CHECKER_PATH = REPO_ROOT / "scripts" / "spatial_query_plan_check.py"
 DDL_PATH = REPO_ROOT / "db" / "migrations" / "0001_initial_spine.sql"
 RUNBOOK_PATH = REPO_ROOT / "docs" / "runbooks" / "performance.md"
+RUNTIME_CHECKER_PATH = REPO_ROOT / "scripts" / "spatial_query_plan_runtime_check.py"
 
 EXPECTED_INDEXES = {
     "areas_geom_gix": {"schema": "core", "table": "areas", "column": "geom"},
@@ -105,6 +106,18 @@ def test_spatial_query_plan_config_pins_validate_only_contract() -> None:
         "windows": "scripts/run_spatial_query_plan_check.ps1",
         "posix": "scripts/run_spatial_query_plan_check.sh",
     }
+    assert config["runtime_review"] == {
+        "checker": "scripts/spatial_query_plan_runtime_check.py",
+        "wrappers": {
+            "windows": "scripts/run_spatial_query_plan_runtime_check.ps1",
+            "posix": "scripts/run_spatial_query_plan_runtime_check.sh",
+        },
+        "db_url_env": "DATABASE_URL_SYNC",
+        "area_id_env": "SPATIAL_QUERY_PLAN_AREA_ID",
+        "statement_timeout_ms": 30000,
+        "output_schema_version": "spatial_query_plan_runtime_result_v1",
+        "success_marker": "spatial query plan runtime check: ok",
+    }
 
     limits = config["limits"]
     assert limits["opens_database_connection_by_default"] is False
@@ -139,6 +152,8 @@ def test_spatial_query_plan_config_pins_required_indexes_and_queries() -> None:
         assert query["default_release_readiness"] is False
         assert query["expected_plan_node"] == "Index Scan"
         assert set(query["required_indexes"]).issubset(set(EXPECTED_INDEXES))
+        assert query["runtime_requires_target_index"] in query["required_indexes"]
+        assert query["runtime_requires_target_index"] != "areas_geom_gix"
 
 
 def test_spatial_query_plan_statements_pin_canonical_identifiers() -> None:
@@ -224,6 +239,25 @@ def test_spatial_query_plan_wrappers_delegate_to_shared_validator() -> None:
         assert "spatial query plan check: ok" in script
 
 
+def test_spatial_query_plan_runtime_wrappers_are_manual_opt_in() -> None:
+    config = _config()
+    runtime_review = config["runtime_review"]
+
+    for script_path in (
+        REPO_ROOT / runtime_review["wrappers"]["windows"],
+        REPO_ROOT / runtime_review["wrappers"]["posix"],
+    ):
+        script = script_path.read_text(encoding="utf-8")
+
+        assert "spatial_query_plan_runtime_check.py" in script
+        assert "--area-id" not in script
+        assert "SPATIAL_QUERY_PLAN_AREA_ID" not in script
+        assert "DATABASE_URL_SYNC" not in script
+
+    runtime_checker = RUNTIME_CHECKER_PATH.read_text(encoding="utf-8")
+    assert "spatial query plan runtime check: ok" in runtime_checker
+
+
 def test_spatial_indexes_declared_in_canonical_ddl() -> None:
     ddl = DDL_PATH.read_text(encoding="utf-8").lower()
 
@@ -248,7 +282,11 @@ def test_performance_runbook_records_spatial_plan_review_boundary() -> None:
         "GIST index",
         "Index Scan using <idx>",
         "opens no database connection by default",
+        "run_spatial_query_plan_runtime_check.ps1",
+        "SPATIAL_QUERY_PLAN_AREA_ID",
+        "DATABASE_URL_SYNC",
         "Runtime `EXPLAIN ANALYZE` evidence remains manual/read-only",
+        "writes JSON only when `--output-json` is supplied",
         "No automated live spatial query-plan gate in CI",
     ):
         assert phrase in runbook
