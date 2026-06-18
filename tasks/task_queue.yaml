@@ -1,15 +1,15 @@
 version: 2
-active_plan: plans/2026-06-18-post-rc-authority-split.md
+active_plan: plans/2026-06-18-production-authority-packet.md
 routing_note: >
-  Active lane: post-release-candidate authority split
-  (plans/2026-06-18-post-rc-authority-split.md). Goal: classify the remaining
-  Level 9/10 gaps after the selected-county proof refresh and lineage smoke proof,
-  separating repo-local work from DS-017, hosted production, IdP/RBAC, secret-manager,
-  billing, alerting, and production workload decisions that require external authority.
+  Active lane: production authority packet
+  (plans/2026-06-18-production-authority-packet.md). Goal: turn the remaining
+  post-RC external blockers into explicit decision/evidence requests, with DS-017 source
+  authority first and hosted deployment, IdP/RBAC, secret-manager, billing, alerting,
+  image publication, and production workload authority separated from repo-local proof.
   Completed readiness reconciliation, performance baseline, static spatial proof,
   SQL-contract guard, spatial runtime proof, queue backpressure, workflow-valid load
-  proof, selected-county RC proof refresh, and lineage smoke proof plans remain
-  historical context.
+  proof, selected-county RC proof refresh, lineage smoke proof, and post-RC authority
+  split plans remain historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -270,7 +270,7 @@ tasks:
 
   - id: R-010
     title: Post-RC authority split
-    status: active
+    status: done
     depends_on: [R-009]
     lane: coordinator
     spec: plans/2026-06-18-post-rc-authority-split.md
@@ -278,6 +278,8 @@ tasks:
       Separate remaining Level 9/10 gaps into repo-local implementation candidates,
       evidence-only audit candidates, and external-authority blockers after the
       selected-county release-candidate proof ladder and lineage smoke proof complete.
+      Completed with `state/POST_RC_AUTHORITY_SPLIT.md`; next lane is a production
+      authority packet with DS-017 source authority first.
     validation:
       - python .\scripts\private_mvp_readiness_check.py
       - python .\scripts\source_readiness.py --priority Must --json
@@ -291,6 +293,31 @@ tasks:
       - Remaining gaps are classified as external-authority, repo-local, or audit-only
       - Hosted production and DS-017 blockers are not promoted from local proof
       - The next implementation slice is selected only from confirmed repo-local authority
+
+  - id: R-011
+    title: Production authority packet
+    status: active
+    depends_on: [R-010]
+    lane: coordinator
+    spec: plans/2026-06-18-production-authority-packet.md
+    notes: >
+      Build the external decision/evidence packet needed before hosted, paid-source,
+      identity/RBAC, secret-manager, billing, alerting, image-publication, or production
+      workload work can be claimed or started safely. DS-017 source authority is first.
+    validation:
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\private_mvp_readiness_check.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\hosted_deployment_check.py
+      - python .\scripts\access_control_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - python .\scripts\data_retention_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+    acceptance:
+      - DS-017 decision and evidence requirements are explicit
+      - Hosted, identity/RBAC, secret-manager, billing, alerting, and image-publication blockers have evidence templates
+      - No blocker is treated as resolved without external authority
 
   # --- Completed ---
   - id: T000

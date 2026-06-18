@@ -11273,3 +11273,54 @@ python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18187 --reviewe
 - Hosted lineage proof still requires hosted DB/object-store deployment authority.
 - DS-017, full IdP/RBAC, external secret manager, billing, alert routing, and production
   workload proof remain blocked or future work.
+
+---
+
+## 2026-06-18 - Post-RC Authority Split
+
+**Scope:** Classify remaining post-release-candidate Level 9/10 gaps into external
+authority blockers, repo-local implementation candidates, and audit-only evidence
+candidates. Route the next active plan to a production authority packet with DS-017
+source authority first.
+
+**Commands run:**
+
+```powershell
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\release_readiness_check.py
+python .\scripts\hosted_deployment_check.py
+python .\scripts\access_control_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\data_retention_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Private-MVP, release-readiness, hosted-deployment, access-control, readiness-matrix,
+  and data-retention validators passed.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`; DS-017 is still blocked.
+- `state/POST_RC_AUTHORITY_SPLIT.md` now records external blockers, repo-local
+  candidates, audit-only candidates, and the decision to prepare a production authority
+  packet before hosted or DS-017 implementation.
+- `git diff --check` passed and no deleted files were reported.
+- Full `.\scripts\verify.ps1` passed; backend tests passed, ruff passed, mypy passed on
+  `321` source files, and DB smoke was skipped by default.
+
+**Corrected failed attempts:**
+
+- The first `readiness_matrix_check.py` rerun rejected the new active plan because it did
+  not cite `state/LEVEL_9_10_GATE_MATRIX.md` and did not include literal `Level 9/10`
+  authority context. The active plan was updated and the check passed.
+- The matrix guardrail phrase `Do not start external hosted deployment work until` was
+  accidentally narrowed while adding the DS-017 guard. The original phrase was restored
+  and extended with a separate DS-017 sentence; the check passed.
+
+**Residual risk:**
+
+- The authority split does not resolve external blockers. DS-017 source authority,
+  hosted platform, secret manager, identity/RBAC, billing, alerting, image publication,
+  and production workload evidence still require user or external-system decisions.

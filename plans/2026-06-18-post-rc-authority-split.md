@@ -74,6 +74,17 @@ Run `.\scripts\verify.ps1` before handoff if any executable contract changes.
 - 2026-06-18: Selected authority split as the next active plan after `R-009` because the
   lowest-risk repo-local proof gaps were hardened and the remaining major Level 10
   blockers require external decisions before implementation.
+- 2026-06-18: Completed the split in `state/POST_RC_AUTHORITY_SPLIT.md`. DS-017 source
+  authority is first because it is the only Must-source readiness blocker and also drives
+  paid-source entitlement, export/cache/raw-data, AI-use, and cost decisions.
+- 2026-06-18: Routed the next active lane to
+  `plans/2026-06-18-production-authority-packet.md` rather than hosted implementation.
 
 ## Progress log
 - 2026-06-18: Plan opened after selected-county lineage smoke proof completed.
+- 2026-06-18: Ran private-MVP, Must-source, release, hosted-deployment, access-control,
+  and readiness-matrix validators. All passed; Must-source readiness remained
+  `sources=8 ready=7 blocked=1` with DS-017 blocked.
+- 2026-06-18: Added `state/POST_RC_AUTHORITY_SPLIT.md` with external blockers,
+  repo-local candidates, audit-only candidates, and the decision to make a production
+  authority packet the next lane.
