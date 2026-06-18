@@ -90,7 +90,7 @@ with urllib.request.urlopen(sys.argv[1], timeout=10) as response:
 PY
 }
 
-queue_health_get() {
+reviewer_json_get() {
   python - "$1" <<'PY'
 import json
 import sys
@@ -200,13 +200,24 @@ version="$(json_get "${BASE_URL}/version")"
 [[ -n "$(json_field "$version" version)" ]]
 metrics="$(json_get "${BASE_URL}/metrics")"
 [[ "$(json_field "$metrics" schema_version)" == "runtime_metrics_v1" ]]
-queue_health="$(queue_health_get "${BASE_URL}/operations/queue-health")"
+queue_health="$(reviewer_json_get "${BASE_URL}/operations/queue-health")"
 [[ "$(json_field "$queue_health" schema_version)" == "operations_queue_health_v1" ]]
 for queue_name in report_jobs live_connector_jobs; do
   json_field "$queue_health" "${queue_name}.oldest_running_age_seconds" >/dev/null
   json_field "$queue_health" "${queue_name}.oldest_running_job_id" >/dev/null
   json_field "$queue_health" "${queue_name}.stale_running" >/dev/null
   [[ "$(json_field "$queue_health" "${queue_name}.stale_running_threshold_seconds")" == "900" ]]
+done
+recovery_preview="$(reviewer_json_get "${BASE_URL}/operations/recovery-preview")"
+[[ "$(json_field "$recovery_preview" schema_version)" == "operations_recovery_preview_v1" ]]
+[[ "$(json_field "$recovery_preview" stale_running_threshold_seconds)" == "900" ]]
+for queue_name in report_jobs live_connector_jobs; do
+  json_field "$recovery_preview" "${queue_name}.failed_count" >/dev/null
+  json_field "$recovery_preview" "${queue_name}.stale_running_count" >/dev/null
+  json_field "$recovery_preview" "${queue_name}.queued_count" >/dev/null
+  json_field "$recovery_preview" "${queue_name}.failed_candidates_truncated" >/dev/null
+  json_field "$recovery_preview" "${queue_name}.stale_running_candidates_truncated" >/dev/null
+  json_field "$recovery_preview" "${queue_name}.candidates" >/dev/null
 done
 
 area_body='{"label":"deployment smoke polygon","geom_source":"deployment-smoke","geom_geojson":{"type":"Polygon","coordinates":[[[-77.10,38.80],[-77.00,38.80],[-77.00,38.90],[-77.10,38.90],[-77.10,38.80]]]}}'

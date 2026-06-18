@@ -29,9 +29,20 @@ def test_deployment_smoke_scripts_cover_runtime_contract() -> None:
         assert "oldest_running_job_id" in script
         assert "stale_running" in script
         assert "stale_running_threshold_seconds" in script
+        assert "/operations/recovery-preview" in script
+        assert "operations_recovery_preview_v1" in script
+        assert "failed_count" in script
+        assert "stale_running_count" in script
+        assert "queued_count" in script
+        assert "failed_candidates_truncated" in script
+        assert "stale_running_candidates_truncated" in script
+        assert "candidates" in script
         assert "/areas" in script
         assert "/report-runs" in script
         assert "deployment smoke: ok" in script
+
+    assert "recoveryPreview.stale_running_threshold_seconds" in powershell
+    assert 'json_field "$recovery_preview" stale_running_threshold_seconds' in posix
 
 
 def test_deployment_smoke_scripts_feed_sql_through_stable_psql_file_modes() -> None:
