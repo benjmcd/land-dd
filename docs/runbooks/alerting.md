@@ -23,7 +23,7 @@ investment conclusions.
 | DB smoke | `scripts/verify.ps1`, `scripts/db_smoke_check.py` | Migrations, seeds, and DB schema proof when `RUN_DB_SMOKE=1` |
 | Backup/restore | `scripts/run_backup_restore_check.ps1` | Dump, restore, DB smoke, and restore DB cleanup proof |
 | Source readiness | `scripts/source_readiness.py --priority Must --json` | Reviewed source-rights readiness for Must sources |
-| Source freshness | `registers/data_source_registry.csv` | `Freshness Class` and `Last Checked At` for reviewed source rows |
+| Source freshness | `registers/data_source_registry.csv` | `Freshness Class` and `Last Checked At`; Must current-effective source reviews must stay within the 90-day repo-local freshness horizon |
 | Cost monitoring | `scripts/run_cost_monitoring_check.ps1` | Cost categories, report count metrics, and paid-source guardrails |
 
 ## Validate Rules
@@ -40,7 +40,10 @@ and CI validation use the same validate-only logic.
 The check is validate-only. It verifies that the alert catalog and runbook exist, required
 high-severity and stale-data rules are present, referenced proof artifacts exist,
 `docker compose config --quiet` passes when Docker is available, source-readiness JSON has
-the expected shape, and Must source rows carry parseable freshness metadata.
+the expected shape, Must source rows carry parseable freshness metadata, and Must
+current-effective source-review docs distinguish the 90-day repo-local `Last Checked At`
+freshness horizon from source-specific upstream/update cadence and terms/source-page
+review triggers.
 
 ## Operator Workflow
 
@@ -79,5 +82,7 @@ the expected shape, and Must source rows carry parseable freshness metadata.
   service-account headers in deployed environments.
 - `/operations/recovery-preview` is read-only. It does not retry reports, requeue live
   connector jobs, lease worker jobs, or call live sources.
-- Source freshness rules validate registry metadata and operator review cadence; they do
-  not independently verify every upstream vendor dataset in real time.
+- Source freshness rules validate registry metadata and the 90-day repo-local
+  `Last Checked At` review freshness horizon; they do not independently verify every
+  upstream vendor dataset in real time, crawl source pages, approve DS-017, or create
+  hosted alert delivery.

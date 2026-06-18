@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -55,6 +56,13 @@ REQUIRED_FIELDS = {
     "runbook",
     "validation",
 }
+SOURCE_REVIEW_REQUIRED_PHRASES = (
+    "Source-specific upstream/update cadence:",
+    "Terms/source-page review triggers:",
+    "Last Checked At must remain within the 90-day repo-local freshness horizon "
+    "enforced by source_readiness.py and alert_rules_check.py.",
+)
+SOURCE_REVIEW_FORBIDDEN_PATTERNS = (re.compile(r"\bnext\s+review\s+date\b", re.I),)
 
 
 def require(condition: bool, message: str) -> None:
@@ -212,6 +220,56 @@ def validate_source_freshness_inputs(
         )
 
 
+def validate_must_current_effective_source_review_docs(
+    *,
+    registry_path: Path | None = None,
+    docs_dir: Path | None = None,
+) -> None:
+    registry = (
+        registry_path
+        if registry_path is not None
+        else ROOT / "registers" / "data_source_registry.csv"
+    )
+    source_review_docs_dir = (
+        docs_dir if docs_dir is not None else ROOT / "docs" / "source-reviews"
+    )
+    with registry.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    must_current_effective_rows = [
+        row
+        for row in rows
+        if row.get("MVP Priority") == "Must"
+        and row.get("Freshness Class", "").strip().lower() == "current-effective"
+    ]
+    require(
+        bool(must_current_effective_rows),
+        "source registry has no Must current-effective rows",
+    )
+
+    for row in must_current_effective_rows:
+        source_id = row.get("Source ID", "<unknown>")
+        doc_path = source_review_docs_dir / f"{source_id.lower()}.md"
+        require(
+            doc_path.is_file(),
+            f"{source_id} source review doc missing",
+        )
+
+        text = doc_path.read_text(encoding="utf-8")
+        for pattern in SOURCE_REVIEW_FORBIDDEN_PATTERNS:
+            require(
+                pattern.search(text) is None,
+                f"{source_id} has conflicting Next review date label",
+            )
+        missing_phrases = [
+            phrase for phrase in SOURCE_REVIEW_REQUIRED_PHRASES if phrase not in text
+        ]
+        require(
+            not missing_phrases,
+            f"{source_id} source review missing cadence language: {missing_phrases}",
+        )
+
+
 def _has_real_review_owner(review_owner: str | None) -> bool:
     if review_owner is None:
         return False
@@ -233,6 +291,7 @@ def main() -> int:
     validate_rules(payload)
     validate_source_readiness()
     validate_source_freshness_inputs()
+    validate_must_current_effective_source_review_docs()
     validate_compose_config_when_available()
     return 0
 

@@ -93,3 +93,11 @@ git diff --name-only --diff-filter=D
 ## Progress log
 
 - 2026-06-18: Plan opened after `R-013` source freshness review-drift guard.
+- 2026-06-18: Added validate-only source-review cadence guard to
+  `scripts/alert_rules_check.py`; Must current-effective source-review docs now fail
+  closed on missing docs, generic `next review date` prose, or missing canonical
+  distinction between source-specific upstream/update cadence, terms/source-page review
+  triggers, and the 90-day repo-local `Last Checked At` freshness horizon.
+- 2026-06-18: Updated current Must source-review docs (`DS-001`, `DS-002`, `DS-003`,
+  `DS-004`, `DS-010`, `DS-011`, `DS-023`) plus alerting and release-readiness runbooks.
+  DS-017 remains blocked/unreviewed; hosted alert delivery remains externally blocked.

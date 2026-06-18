@@ -1,44 +1,55 @@
 # Project State
 
-## Current checkpoint (2026-06-18 source review cadence consistency)
+## Current checkpoint (2026-06-18 release-candidate package rehearsal)
 
-The source freshness review-drift guard is complete. The active implementation
-authority now points at source review cadence consistency: make source-review cadence
-prose and runbook guidance align with the repo-local 90-day Must-source freshness
-horizon without starting hosted alerting or changing source approval decisions.
+The source review cadence consistency pass is complete. The active implementation
+authority now points at a local release-candidate package rehearsal: prove the
+current source/runtime/operator package boundary is adequate for handoff without
+publishing an image, creating hosted infrastructure, writing secrets, or claiming
+hosted production readiness.
 
-- **Active plan**: `plans/2026-06-18-review-cadence.md`.
-- **Purpose**: audit and guard source-review cadence language so human-facing
-  source-review/runbook prose cannot contradict the freshness horizon now enforced by
-  source readiness and alert-rule validation.
-- **Completed immediately prior**: `R-013` added review-freshness fields to
+- **Active plan**: `plans/2026-06-18-release-package-rehearsal.md`.
+- **Purpose**: rehearse the release-candidate package boundary from current repo
+  authority so local handoff completeness is proven before any hosted or registry
+  publication authority exists.
+- **Completed immediately prior**: `R-014` added a validate-only alert/source-review
+  cadence guard requiring Must current-effective source-review docs to distinguish the
+  90-day repo-local `Last Checked At` freshness horizon from source-specific upstream
+  update cadence and terms/source-page review triggers. The guard rejects generic
+  `next review date` prose and missing current-effective source-review docs. DS-017
+  remains blocked/unreviewed and is not promoted.
+- **Also completed prior**: `R-013` added review-freshness fields to
   `scripts/source_readiness.py`; Must current-effective sources fail closed when
   `Last Checked At` is missing, malformed, future-dated, older than 90 days, or lacks a
   real review owner. Otherwise-ready Must sources with non-current freshness classes
   are blocked, while DS-017 remains blocked by existing review/rights/connector fields.
-- **Also completed prior**: `R-012` added `source_report_exposure_allowed` and
-  report-service filtering so blocked/unknown sources fail closed for report exposure,
-  restricted sources allow non-sensitive screening fields, sensitive observed-value
-  paths are blocked recursively, and source-failure evidence remains reportable when it
-  does not expose sensitive fields.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-review-cadence.md`,
-  `plans/2026-06-18-source-freshness-review-drift.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `registers/data_source_registry.csv`,
-  `db/seeds/source_registry_seeds.py`, `scripts/source_readiness.py`, and
-  `config/ops_alert_rules.yaml`.
+  `plans/2026-06-18-release-package-rehearsal.md`,
+  `plans/2026-06-18-review-cadence.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/release_package.yaml`,
+  `docs/runbooks/release_package.md`, `scripts/build_release_package.py`,
+  `scripts/release_package_check.py`, `registers/data_source_registry.csv`,
+  `scripts/source_readiness.py`, and `config/ops_alert_rules.yaml`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
-  connector, no hosted deployment or hosted alert route, no production SLO/capacity
-  claim, no new county/source/rulepack, no full user identity or RBAC, no secret writes,
-  no committed generated evidence artifacts, and no Level 10 completion claim.
-- **Validation so far**: focused R-013 source-readiness and alerting tests passed;
-  focused ruff/mypy over the touched readiness/alerting files passed; source-registry,
-  Must-source readiness, alert-rules, release-readiness, and readiness-matrix
-  validators passed; `git diff --check` and no-deletions checks passed; full
-  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `322` source
-  files. Current Must-source readiness still reports `sources=8 ready=7 blocked=1`
-  with DS-017 blocked. DB smoke was skipped by default.
+  connector, no hosted deployment or hosted alert route, no registry image push, no
+  production SLO/capacity claim, no new county/source/rulepack, no full user identity
+  or RBAC, no secret writes, no committed generated evidence artifacts, and no Level 10
+  completion claim.
+- **Validation so far**: focused R-014 alerting/source-registry tests passed; focused
+  ruff/mypy over the touched alerting/source-registry files passed; source-registry,
+  Must-source readiness, alert-rules, release-readiness, and readiness-matrix validators
+  passed. Current Must-source readiness still reports `sources=8 ready=7 blocked=1`
+  with DS-017 blocked. Full `.\scripts\verify.ps1` passed with backend tests, ruff, and
+  mypy over `322` source files; DB smoke was skipped by default.
+
+## Previous checkpoint (2026-06-18 source review cadence consistency)
+
+The source freshness review-drift guard routed work to source review cadence
+consistency: make source-review cadence prose and runbook guidance align with the
+repo-local 90-day Must-source freshness horizon without starting hosted alerting or
+changing source approval decisions. `R-014` completed that guard and routed the next
+active lane to local release-candidate package rehearsal.
 
 ## Previous checkpoint (2026-06-18 source freshness review-drift guard)
 

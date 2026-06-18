@@ -1,13 +1,14 @@
 version: 2
-active_plan: plans/2026-06-18-review-cadence.md
+active_plan: plans/2026-06-18-release-package-rehearsal.md
 routing_note: >
-  Active lane: source review cadence consistency
-  (plans/2026-06-18-review-cadence.md). Goal: make source-review cadence prose and
-  runbook guidance consistent with the repo-local 90-day Must-source freshness horizon.
-  The source freshness review-drift guard is complete; DS-017, hosted deployment,
-  IdP/RBAC, secret-manager, billing, alerting, image publication, and production
-  workload decisions remain external authority requirements separated from repo-local
-  proof.
+  Active lane: release-candidate package rehearsal
+  (plans/2026-06-18-release-package-rehearsal.md). Goal: prove the local
+  source/runtime/operator package boundary is adequate for handoff without publishing
+  an image, creating hosted infrastructure, writing secrets, or claiming hosted
+  production readiness. Source review cadence consistency is complete; DS-017, hosted
+  deployment, IdP/RBAC, secret-manager, billing, alerting, image publication, and
+  production workload decisions remain external authority requirements separated from
+  repo-local proof.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -368,7 +369,7 @@ tasks:
 
   - id: R-014
     title: Source review cadence consistency
-    status: active
+    status: done
     depends_on: [R-013]
     lane: coordinator
     spec: plans/2026-06-18-review-cadence.md
@@ -390,6 +391,31 @@ tasks:
       - Source-review/runbook cadence prose cannot contradict the 90-day Must-source freshness horizon
       - Upstream source update cadence remains distinct from local review freshness
       - DS-017 and hosted alerting remain blocked unless external authority changes
+
+  - id: R-015
+    title: Release-candidate package rehearsal
+    status: active
+    depends_on: [R-014]
+    lane: coordinator
+    spec: plans/2026-06-18-release-package-rehearsal.md
+    notes: >
+      Audit and prove the local release-candidate package boundary for current
+      source/runtime/operator handoff completeness. This must remain local-only:
+      no registry image push, hosted deployment, secret write, generated artifact
+      commit, DS-017 approval, or hosted production claim.
+    validation:
+      - python .\scripts\release_package_check.py
+      - .\scripts\run_release_package_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Local package include/exclude boundary is intentional and validated
+      - Package rehearsal does not publish, deploy, mutate hosted infrastructure, write secrets, or commit generated package artifacts
+      - DS-017, hosted deployment, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---
   - id: T000

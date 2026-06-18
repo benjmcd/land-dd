@@ -11489,3 +11489,54 @@ git diff --name-only --diff-filter=D
   remain blocked or future work.
 - The next repo-local lane is source-rights/export enforcement; it must not treat
   restricted rights as safe for exposed output without explicit enforcement.
+
+---
+
+## 2026-06-18 - Source Review Cadence Consistency
+
+**Scope:** Complete `R-014` by aligning Must current-effective source-review prose and
+runbook guidance with the repo-local 90-day source freshness horizon enforced by
+`scripts/source_readiness.py` and `scripts/alert_rules_check.py`.
+
+**Commands run:**
+
+```powershell
+python .\scripts\check_source_registry.py
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\alert_rules_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+cd backend; python -m pytest -q .\tests\test_alerting_artifacts.py .\tests\source_registry
+cd backend; python -m ruff check .\tests\test_alerting_artifacts.py .\tests\source_registry ..\scripts\alert_rules_check.py
+cd backend; python -m mypy .\tests\test_alerting_artifacts.py .\tests\source_registry ..\scripts\alert_rules_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Source registry validation passed with `25` rows.
+- Must-source readiness stayed `sources=8 ready=7 blocked=1`; DS-017 remains the only
+  blocked Must source.
+- Alert-rules, release-readiness, and readiness-matrix validators passed.
+- Focused alerting/source-registry pytest passed; focused ruff passed; focused mypy
+  passed on `15` source files.
+- Full `.\scripts\verify.ps1` passed; backend tests passed, ruff passed, mypy passed on
+  `322` source files, and DB smoke was skipped by default.
+
+**Corrected failed attempts:**
+
+- The first source-review cadence guard only rejected the exact bullet
+  `- Next review date:`. It now rejects normalized `next review date` prose, including
+  non-bulleted or formatted variants.
+- The first guard skipped missing Must current-effective source-review docs as long as
+  at least one existed. It now fails per missing current-effective source review doc.
+- The first new active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan now
+  cites the exact Level 9/10 matrix path and the readiness-matrix guard passes.
+
+**Residual risk:**
+
+- This pass does not create hosted alert delivery, crawl source pages, refresh live
+  terms, approve DS-017, publish an image, deploy hosted infrastructure, or prove Level
+  10 production completion.
+- The next active lane is local release-candidate package rehearsal and must keep
+  generated package artifacts out of git.
