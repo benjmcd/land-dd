@@ -11540,3 +11540,62 @@ cd backend; python -m mypy .\tests\test_alerting_artifacts.py .\tests\source_reg
   10 production completion.
 - The next active lane is local release-candidate package rehearsal and must keep
   generated package artifacts out of git.
+
+---
+
+## 2026-06-18 - Release-Candidate Package Rehearsal
+
+**Scope:** Complete `R-015` by proving the local release package boundary carries
+source/runtime/operator handoff authority while keeping generated package artifacts local
+and preserving the no-hosted/no-registry/no-secret/no-DS-017 boundary. Route the next
+active plan to representative local performance rehearsal.
+
+**Commands run:**
+
+```powershell
+python .\scripts\release_package_check.py
+.\scripts\run_release_package_check.ps1
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\source_readiness.py --priority Must --json
+cd backend; python -m pytest -q .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py
+cd backend; python -m ruff check .\tests\test_release_package_artifacts.py ..\scripts\release_package_check.py
+cd backend; python -m mypy .\tests\test_release_package_artifacts.py ..\scripts\release_package_check.py
+python .\scripts\performance_baseline_check.py
+.\scripts\run_performance_baseline_check.ps1
+.\scripts\run_load_test.ps1 -ValidateOnly
+python .\scripts\spatial_query_plan_check.py
+.\scripts\run_spatial_query_plan_check.ps1
+.\scripts\build_release_package.ps1 -Version 2026-06-18-r015-proof4
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Release-package validator passed, and the Windows wrapper reported
+  `release package check: ok`.
+- Release-readiness and readiness-matrix validators passed after the active route moved
+  from `R-015` to `R-016`.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`; DS-017 remains blocked.
+- Focused release-package/release-readiness tests passed (`23 passed`).
+- Focused ruff and mypy passed for the release-package checker/test surfaces.
+- R-016 entry-gate checks passed: performance baseline checker/wrapper,
+  load-test validate-only wrapper, spatial query-plan checker/wrapper,
+  release-readiness validator, and readiness-matrix validator.
+- Prefinal package review found `2026-06-18-r015-proof3` included local `.omc` state
+  under an included source tree, so that package proof was superseded.
+- Local package build proof `2026-06-18-r015-proof4` wrote ignored ZIP/manifest
+  artifacts under `local_artifacts/releases`; manifest inspection found no missing
+  required handoff paths and no forbidden local state/cache/artifact packaged entries.
+- `git diff --check` passed and no deleted files were reported.
+- Full `.\scripts\verify.ps1` passed; DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This remains a local release-candidate handoff package, not a hosted release, image
+  publication, deployment attestation, or production SLO/capacity claim.
+- Generated ZIP/manifest proof artifacts are intentionally ignored and uncommitted.
+- DS-017, hosted platform, external secret manager, full IdP/RBAC, billing, hosted
+  alerting, image publication, and hosted workload proof remain blocked or future work.

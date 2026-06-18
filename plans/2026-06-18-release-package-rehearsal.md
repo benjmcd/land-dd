@@ -105,3 +105,12 @@ git diff --name-only --diff-filter=D
 ## Progress log
 
 - 2026-06-18: Plan opened after source review cadence consistency was guarded.
+- 2026-06-18: Rehearsal gap audit found the package omitted backend tests,
+  selected-county fixture roots, startup/state/plan/task routing surfaces, lanes, and
+  `.dockerignore`; it also lacked an explicit volatile exclusion for
+  `state/agent-inbox` and a positive guard that `docs/planning_pack` stays packaged
+  while verifier inputs depend on it.
+- 2026-06-18: Updated the package catalog, static checker, artifact tests, and runbook
+  to include source/runtime/operator handoff authority while preserving local-only
+  limits. Focused package/readiness tests, release-package validators, ruff, mypy,
+  whitespace check, and deletion check passed.
