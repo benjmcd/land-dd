@@ -74,6 +74,13 @@ here.
 - **Rate limiter** (`ENABLE_RATE_LIMIT`, default: `false`): when enabled, the API returns
   HTTP 429 once the request count exceeds `RATE_LIMIT_REQUESTS` within
   `RATE_LIMIT_WINDOW_SECONDS`. No distributed counter; limits are per-process.
+- **Queue backpressure** (`ENABLE_QUEUE_BACKPRESSURE`, default: `false`): when enabled,
+  report and live-connector admission checks existing queue health before creating new
+  jobs. Thresholds are `MAX_REPORT_QUEUE_DEPTH`, `MAX_LIVE_CONNECTOR_QUEUE_DEPTH`,
+  `MAX_QUEUE_OLDEST_QUEUED_SECONDS`, and `MAX_QUEUE_STALE_RUNNING`. Exceeded thresholds
+  return HTTP 503 with a structured queue/backpressure detail and no new queue record.
+  Operators should inspect `/operations/queue-health` and
+  `/operations/recovery-preview` before raising thresholds or retrying failed work.
 - **Fail-closed source preflight**: a connector is blocked from running if its data-source
   rights have not been reviewed. Unreviewed sources never produce silent "no issue found"
   results.
@@ -91,6 +98,10 @@ here.
 
 - **Audit sink failure**: the API responds with HTTP 503 if a configured audit-sink write
   fails. This is the fail-closed posture for audit integrity.
+
+Queue backpressure is repo-local runtime behavior. It does not prove hosted alert routing,
+dashboard coverage, or production workload capacity until the deployed platform has
+recorded those proofs.
 
 ---
 

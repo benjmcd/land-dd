@@ -1,5 +1,42 @@
 # Project State
 
+## Current checkpoint (2026-06-18 queue backpressure runtime guard)
+
+The active implementation authority now points at the next unblocked `L10-PERF-008`
+runtime degraded-mode slice selected from the Level 9/10 gate matrix.
+
+- **Active plan**: `plans/2026-06-18-queue-backpressure.md`.
+- **Purpose**: add default-off runtime queue admission control for report and live
+  connector queues when queue depth, queued age, or stale-running counts exceed explicit
+  thresholds.
+- **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `backend/app/domain/job_health.py`, `backend/app/api/operations.py`,
+  `backend/app/api/reports.py`, `backend/app/api/intake.py`,
+  `backend/app/api/connectors.py`, `backend/app/api/ui.py`,
+  `backend/app/api/ui_review.py`, `backend/app/api/live_connectors.py`,
+  `docs/runbooks/performance.md`, `docs/runbooks/incident_response.md`,
+  `plans/README.md`, and `tasks/task_queue.yaml`.
+- **Known boundaries preserved**: no DB schema change, no hosted deployment claim, no
+  distributed rate limiter claim, no source/vendor calls, no generated validate-only
+  artifacts, no alert-manager claim, and no Level 10 completion claim.
+- **Design direction**: use existing queue health as canonical runtime state, evaluate it
+  through a pure operations backpressure helper, fail closed with structured HTTP 503
+  details before creating new queue records, and keep the behavior disabled unless
+  explicitly enabled through settings.
+- **Implemented proof so far**: `backend/app/operations/backpressure.py` evaluates queue
+  health against explicit settings, report/intake/UI retry/connector-review resume/live
+  connector scheduling paths check backpressure before creating new queue records, and
+  affected invalid raw 422 status accesses now use a cross-version local compatibility
+  constant. Queue-depth checks use projected admission count, including the four-job live
+  connector sequence, and keyed report requests re-check/replay existing idempotent jobs
+  before returning backpressure.
+- **Validation so far**: focused backpressure tests passed (`9 passed`), the broader
+  affected API set passed (`46 passed, 3 skipped`), focused ruff passed, focused mypy
+  passed, readiness/release validators passed, `git diff --check` passed, no deleted
+  files were reported, no raw `status.HTTP_422_UNPROCESSABLE_CONTENT` or deprecated
+  `HTTP_422_UNPROCESSABLE_ENTITY` references remain in app/test/scripts, and default
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
 
 The active implementation authority now points at the next unblocked `L10-PERF-003`

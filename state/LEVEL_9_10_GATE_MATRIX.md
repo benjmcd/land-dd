@@ -101,7 +101,7 @@ Status legend:
 | L10-PERF-005 cache strategy and invalidation are source-version aware | `VALIDATE_ONLY` | performance runbook | Implement/cache only when a real cache is introduced. |
 | L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | load-test scripts/runbook/checker | Run against staging/hosted target with recorded thresholds. |
 | L10-PERF-007 queue depth/job latency/failure metrics monitored | `PARTIAL` | metrics, queue health, recovery preview | Add hosted dashboard/alert evidence. |
-| L10-PERF-008 backpressure/degraded mode for outages/load | `PARTIAL` | fail-closed source failures and runbook guidance | Add explicit runtime backpressure behavior for hosted operation. |
+| L10-PERF-008 backpressure/degraded mode for outages/load | `PARTIAL` | fail-closed source failures, runbook guidance, and default-off runtime queue backpressure for report/live-connector admission | Add hosted workload, dashboard, alert-routing, and threshold-tuning evidence before promoting beyond repo-local proof. |
 | L10-PERF-009 DB pooling and transaction boundaries configured | `PROVEN_REPO_LOCAL` | DB pool settings/tests and SQLAlchemy request-scoped sessions | Tune values under hosted workload. |
 | L10-PERF-010 performance regressions observable before release | `VALIDATE_ONLY` | performance runbook and release-readiness gate | Add measured baseline artifacts for release candidates. |
 

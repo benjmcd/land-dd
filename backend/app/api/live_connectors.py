@@ -91,6 +91,8 @@ from app.domain.area_contracts import AreaContract
 from app.domain.enums import JobStatus
 from app.domain.source_contracts import SourceContract
 
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
+
 DS_001_REGISTRY_ID = "DS-001"
 DS_002_REGISTRY_ID = "DS-002"
 DS_003_REGISTRY_ID = "DS-003"
@@ -359,12 +361,12 @@ def orchestrate_fema_nfhl_for_area(
         ).ingest(connector_result)
     except FemaNfhlConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -418,12 +420,12 @@ def orchestrate_usgs_tnm_for_area(
         ).ingest(connector_result)
     except UsgsTnmConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -477,12 +479,12 @@ def orchestrate_nwi_for_area(
         ).ingest(connector_result)
     except NwiConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -536,12 +538,12 @@ def orchestrate_ssurgo_for_area(
         ).ingest(connector_result)
     except SsurgoConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -595,12 +597,12 @@ def orchestrate_osm_road_access_for_area(
         ).ingest(connector_result)
     except OsmRoadAccessConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -652,12 +654,12 @@ def orchestrate_usgs_water_for_area(
         ).ingest(connector_result)
     except UsgsWaterConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -709,12 +711,12 @@ def orchestrate_epa_echo_for_area(
         ).ingest(connector_result)
     except EpaEchoConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -768,12 +770,12 @@ def orchestrate_blm_mlrs_for_area(
         ).ingest(connector_result)
     except BlmMlrsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -827,12 +829,12 @@ def orchestrate_usgs_mrds_for_area(
         ).ingest(connector_result)
     except UsgsMrdsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -886,12 +888,12 @@ def orchestrate_nc_geologic_map_for_area(
         ).ingest(connector_result)
     except NcGeologicMapConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -943,12 +945,12 @@ def orchestrate_noaa_climate_for_area(
         ).ingest(connector_result)
     except NoaaClimateConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1000,12 +1002,12 @@ def orchestrate_fcc_broadband_for_area(
         ).ingest(connector_result)
     except FccBroadbandConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1059,12 +1061,12 @@ def orchestrate_census_tiger_for_area(
         ).ingest(connector_result)
     except CensusTigerConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1118,12 +1120,12 @@ def orchestrate_chatham_parcels_for_area(
         ).ingest(connector_result)
     except ChathamParcelsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1177,12 +1179,12 @@ def orchestrate_buncombe_parcels_for_area(
         ).ingest(connector_result)
     except BuncombeParcelsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1236,12 +1238,12 @@ def orchestrate_brunswick_parcels_for_area(
         ).ingest(connector_result)
     except BrunswickParcelsConnectorError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 
@@ -1583,7 +1585,7 @@ def _coordinates_for_bbox(
     coordinates = _collect_positions(area.geom_geojson)
     if not coordinates:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"area geometry has no coordinates for {connector_label} bbox",
         )
     return coordinates

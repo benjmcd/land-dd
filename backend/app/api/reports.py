@@ -40,6 +40,10 @@ from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
+from app.operations.backpressure import (
+    QueueBackpressureThresholds,
+    evaluate_queue_backpressure,
+)
 from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord, SqlAlchemyAsyncReportJobStore
@@ -51,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 _RED_FLAG_BANDS: frozenset[SeverityBand] = frozenset({SeverityBand.HIGH, SeverityBand.CRITICAL})
 _LOCAL_REPORT_AUTH_APP_ENVS = frozenset({"local", "dev", "development", "test"})
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 
 
 def _flat_claims(report: ReportRunContract) -> list[ClaimContract]:
@@ -280,7 +285,7 @@ def create_report_run(
     area = services.area_service.get(request.area_id)
     if area is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"Area '{request.area_id}' is not registered",
         )
     if auth is not None:
@@ -327,6 +332,30 @@ def create_report_run(
                 connector_ingest_run_id=connector_result.ingest_run_id,
                 connector_review_status=connector_result.queue_item.status.value,
             )
+    try:
+        raise_report_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
+    except HTTPException:
+        if client_key is not None:
+            existing = services.async_report_jobs.get_by_client_idempotency_key(
+                client_key,
+                area_id=request.area_id,
+                intent_code=request.intent_code,
+            )
+            if existing is not None:
+                _check_idempotency_payload_match(
+                    existing,
+                    area_id=request.area_id,
+                    intent_code=request.intent_code,
+                )
+                response.status_code = status.HTTP_200_OK
+                return AsyncReportRunResponse(
+                    report_run_id=existing.report_run_id,
+                    status=existing.status.value,
+                )
+        raise
     job = services.async_report_jobs.create(
         area_id=request.area_id,
         intent_code=request.intent_code,
@@ -418,6 +447,26 @@ def _create_authenticated_report_run(
                 connector_ingest_run_id=connector_result.ingest_run_id,
                 connector_review_status=connector_result.queue_item.status.value,
             )
+    try:
+        raise_report_queue_backpressure_if_needed(
+            request_context=request_context,
+            services=services,
+        )
+    except HTTPException:
+        if scoped_client_key is not None:
+            existing = services.async_report_jobs.get_by_client_idempotency_key(
+                scoped_client_key,
+                area_id=request.area_id,
+                intent_code=request.intent_code,
+            )
+            if existing is not None:
+                return _replay_authenticated_idempotent_job(
+                    existing=existing,
+                    request=request,
+                    auth=auth,
+                    response=response,
+                )
+        raise
     job = services.async_report_jobs.create(
         area_id=request.area_id,
         intent_code=request.intent_code,
@@ -536,6 +585,10 @@ def retry_report_run(
             detail="report run retry requires a failed report job",
         )
 
+    raise_report_queue_backpressure_if_needed(
+        request_context=request_context,
+        services=services,
+    )
     retry_job = services.async_report_jobs.create(
         area_id=failed_job.area_id,
         intent_code=failed_job.intent_code,
@@ -662,7 +715,7 @@ def _parse_compare_ids(ids: str) -> list[UUID]:
         return [UUID(rid) for rid in raw_ids]
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=f"malformed UUID in ids: {exc}",
         ) from exc
 
@@ -1129,6 +1182,33 @@ def _live_connectors_enabled(request_context: Request) -> bool:
     return settings.enable_live_connectors
 
 
+def raise_report_queue_backpressure_if_needed(
+    *,
+    request_context: Request,
+    services: ApiServices,
+) -> None:
+    settings = cast(Settings, request_context.app.state.settings)
+    decision = evaluate_queue_backpressure(
+        services.async_report_jobs.health(),
+        _queue_backpressure_thresholds(settings),
+    )
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=decision.detail or "queue backpressure",
+        )
+
+
+def _queue_backpressure_thresholds(settings: Settings) -> QueueBackpressureThresholds:
+    return QueueBackpressureThresholds(
+        enabled=settings.enable_queue_backpressure,
+        max_report_queue_depth=settings.max_report_queue_depth,
+        max_live_connector_queue_depth=settings.max_live_connector_queue_depth,
+        max_queue_oldest_queued_seconds=settings.max_queue_oldest_queued_seconds,
+        max_queue_stale_running=settings.max_queue_stale_running,
+    )
+
+
 def _next_queued_report_job(
     services: ApiServices,
     *,
@@ -1177,7 +1257,7 @@ def _validate_report_worker_id(raw: str) -> str:
     worker_id = raw.strip()
     if not worker_id:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail="worker_id is required",
         )
     return worker_id

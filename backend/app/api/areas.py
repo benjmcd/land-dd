@@ -13,6 +13,7 @@ from app.domain.area_contracts import AreaContract
 
 router = APIRouter(prefix="/areas", tags=["areas"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 
 
 @router.get("", response_model=list[AreaContract])
@@ -50,7 +51,7 @@ def create_area(
         return services.area_service.create(area)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=_HTTP_422_UNPROCESSABLE,
             detail=str(exc),
         ) from exc
 

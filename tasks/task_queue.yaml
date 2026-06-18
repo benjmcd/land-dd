@@ -1,12 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-spatial-runtime-plan-proof.md
+active_plan: plans/2026-06-18-queue-backpressure.md
 routing_note: >
-  Active lane: spatial runtime query-plan proof
-  (plans/2026-06-18-spatial-runtime-plan-proof.md). Goal: add an opt-in read-only
-  runtime EXPLAIN harness for the configured selected-county spatial workloads without
-  making release readiness open a DB connection, seeding runtime state, or claiming
-  hosted production performance. Completed readiness-reconciliation, performance
-  baseline, static spatial proof, and SQL-contract guard plans remain historical context.
+  Active lane: queue backpressure runtime guard
+  (plans/2026-06-18-queue-backpressure.md). Goal: add default-off runtime admission
+  control for report and live connector queues when queue health is degraded without
+  making hosted production, alert-routing, or SLO claims. Completed readiness
+  reconciliation, performance baseline, static spatial proof, SQL-contract guard, and
+  spatial runtime proof plans remain historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -129,7 +129,7 @@ tasks:
 
   - id: R-005
     title: Spatial runtime query-plan proof
-    status: active
+    status: done
     depends_on: [R-004]
     lane: coordinator
     spec: plans/2026-06-18-spatial-runtime-plan-proof.md
@@ -156,6 +156,32 @@ tasks:
       - Runtime checker fails closed when expected target GIST indexes are absent from plan evidence
       - Default static/release-readiness validation remains DB-free, validate-only, and artifact-free
       - Runbooks preserve the boundary between opt-in runtime evidence and hosted performance claims
+
+  - id: R-006
+    title: Queue backpressure runtime guard
+    status: active
+    depends_on: [R-005]
+    lane: coordinator
+    spec: plans/2026-06-18-queue-backpressure.md
+    notes: >
+      Add default-off runtime admission control for report and live connector queue
+      creation when queue depth, queued age, or stale-running counts exceed configured
+      thresholds. This is repo-local degraded-mode behavior only; hosted dashboards,
+      alert routing, and production workload proof remain out of scope.
+    validation:
+      - cd backend; python -m pytest -q .\tests\api\test_backpressure.py
+      - cd backend; python -m pytest -q .\tests\api\test_backpressure.py .\tests\api\test_async_report_runs.py .\tests\api\test_fema_nfhl_connector_api.py .\tests\api\test_operations.py
+      - cd backend; python -m ruff check .\tests\api\test_backpressure.py .\app\operations\backpressure.py .\app\core\config.py .\app\api\reports.py .\app\api\connectors.py .\app\api\intake.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\live_connectors.py .\app\api\dependencies.py .\app\api\areas.py
+      - cd backend; python -m mypy .\tests\api\test_backpressure.py .\app\operations\backpressure.py .\app\core\config.py .\app\api\reports.py .\app\api\connectors.py .\app\api\intake.py .\app\api\ui.py .\app\api\ui_review.py .\app\api\live_connectors.py .\app\api\dependencies.py .\app\api\areas.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Queue-backpressure settings are explicit and disabled by default
+      - Enabled backpressure returns structured fail-closed HTTP 503 responses before new report/live-connector jobs are created
+      - Disabled backpressure preserves current report and live connector scheduling behavior
+      - Matrix and runbooks keep L10-PERF-008 PARTIAL until hosted alerting/workload proof exists
 
   # --- Completed ---
   - id: T000

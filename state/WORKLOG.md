@@ -3256,3 +3256,29 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   deleted files were reported; default `.\scripts\verify.ps1` passed; DB-enabled
   `.\scripts\verify.ps1` passed against a separate clean isolated PostGIS DB on port
   `55451`.
+
+## 2026-06-18 Queue backpressure runtime guard
+
+- Added `backend/app/operations/backpressure.py` as a pure queue-admission helper that
+  evaluates existing `JobQueueHealth` against explicit settings-backed thresholds.
+- Added default-off queue-backpressure settings for report queue depth, live connector
+  queue depth, oldest queued age, and stale-running count.
+- Guarded report-run creation/retry, intake-created reports, UI report retry,
+  connector-review report resume, and live connector scheduling so enabled thresholds
+  return structured HTTP 503 before creating new queue records.
+- Updated performance and incident-response runbooks to tell operators to inspect
+  `/operations/queue-health` and `/operations/recovery-preview` before changing
+  thresholds or retrying work under backpressure.
+- Updated the Level 9/10 matrix while keeping `L10-PERF-008` `PARTIAL`; hosted workload,
+  dashboard, alert-routing, and threshold-tuning proof remain future work.
+- Fixed affected invalid raw 422 status accesses with a cross-version compatibility
+  constant, which unblocked connector error-path tests without deprecation warnings.
+- Resolved review findings by making queue-depth checks use projected admission count,
+  including four jobs for the live connector sequence, and by replaying existing
+  idempotent report jobs before returning queue backpressure.
+- Validation: focused backpressure tests passed (`9 passed`), the broader affected API
+  set passed (`46 passed, 3 skipped`), focused ruff and mypy passed, readiness/release
+  validators passed, `git diff --check` passed, no deleted files were reported, no raw
+  `status.HTTP_422_UNPROCESSABLE_CONTENT` or deprecated
+  `HTTP_422_UNPROCESSABLE_ENTITY` references remain in app/test/scripts, and default
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
