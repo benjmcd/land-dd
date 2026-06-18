@@ -8,34 +8,76 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.connectors import router as connectors_router
-from app.api.dependencies import create_api_services, get_services
+from app.api.dependencies import ApiServices, create_api_services, get_services
 from app.connectors.review_queue import (
     ConnectorReviewQueueItem,
     InMemoryConnectorReviewQueueRepository,
 )
 from app.core.config import Settings
+from app.domain.area_contracts import AreaContract
 from app.domain.enums import JobStatus
 
-_VALID_HEADERS = {
+_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
+_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+_OTHER_WORKSPACE_ID = UUID("33333333-3333-4333-8333-333333333333")
+_OTHER_USER_ID = UUID("44444444-4444-4444-8444-444444444444")
+_REVIEWER_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "fixture-token-123",
+}
+_VALID_HEADERS = {
+    **_REVIEWER_HEADERS,
+    "X-Workspace-Id": str(_WORKSPACE_ID),
+    "X-User-Id": str(_USER_ID),
+}
+_OTHER_WORKSPACE_HEADERS = {
+    **_REVIEWER_HEADERS,
+    "X-Workspace-Id": str(_OTHER_WORKSPACE_ID),
+    "X-User-Id": str(_OTHER_USER_ID),
 }
 _INVALID_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
     "X-Reviewer-Token": "wrong-token",
+    "X-Workspace-Id": str(_WORKSPACE_ID),
+    "X-User-Id": str(_USER_ID),
 }
 _REASON_BODY = {"reason": "reviewed connector output and found a correction needed"}
 
 
-def _make_queue_item(ingest_run_id: UUID, job_status: JobStatus) -> ConnectorReviewQueueItem:
+def _make_queue_item(
+    ingest_run_id: UUID,
+    job_status: JobStatus,
+    *,
+    area_id: UUID | None = None,
+    workspace_id: UUID | None = _WORKSPACE_ID,
+    requested_by: UUID | None = _USER_ID,
+    approved_for_report: bool = False,
+) -> ConnectorReviewQueueItem:
+    payload: dict[str, object] = {"ingest_run_id": str(ingest_run_id)}
+    if area_id is not None:
+        payload["area_id"] = str(area_id)
+    if workspace_id is not None:
+        payload["workspace_id"] = str(workspace_id)
+    if requested_by is not None:
+        payload["requested_by"] = str(requested_by)
+    if approved_for_report:
+        decided_at = datetime.now(UTC).isoformat()
+        payload["review_decision"] = {
+            "action": "approve_for_connector_qa",
+            "reviewer_id": "fixture-reviewer",
+            "reason": "approved for connector QA",
+            "decided_at": decided_at,
+        }
+        payload["review_action_history"] = [payload["review_decision"]]
     return ConnectorReviewQueueItem(
         job_id=ingest_run_id,
+        workspace_id=workspace_id,
         ingest_run_id=ingest_run_id,
         job_type="connector_review_status",
         status=job_status,
         priority=10,
         idempotency_key=f"connector_review_status:{ingest_run_id}",
-        payload={"ingest_run_id": str(ingest_run_id)},
+        payload=payload,
         created_at=datetime.now(UTC),
         max_attempts=3,
     )
@@ -45,6 +87,10 @@ def _make_app(
     ingest_run_id: UUID | None = None,
     job_status: JobStatus | None = None,
     *,
+    area_id: UUID | None = None,
+    workspace_id: UUID | None = _WORKSPACE_ID,
+    requested_by: UUID | None = _USER_ID,
+    approved_for_report: bool = False,
     reviewer_accounts: str | None = None,
     reviewer_account_scopes: str | None = None,
 ) -> FastAPI:
@@ -59,12 +105,51 @@ def _make_app(
         else None
     )
     base_services = create_api_services(settings)
+    resolved_settings = settings or Settings()
+    app.state.settings = resolved_settings
+    app.state.services = base_services
     if ingest_run_id is not None and job_status is not None:
         repo = cast(InMemoryConnectorReviewQueueRepository, base_services.connector_review_queue)
-        item = _make_queue_item(ingest_run_id, job_status)
+        item = _make_queue_item(
+            ingest_run_id,
+            job_status,
+            area_id=area_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+            approved_for_report=approved_for_report,
+        )
         repo._store[ingest_run_id] = item
     app.dependency_overrides[get_services] = lambda: base_services
     return app
+
+
+def _services(app: FastAPI) -> ApiServices:
+    return cast(ApiServices, app.state.services)
+
+
+def _area_contract(
+    area_id: UUID,
+    *,
+    workspace_id: UUID = _WORKSPACE_ID,
+    created_by: UUID = _USER_ID,
+) -> AreaContract:
+    return AreaContract(
+        area_id=area_id,
+        workspace_id=workspace_id,
+        created_by=created_by,
+        geom_geojson={
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-79.0, 35.0],
+                    [-79.0, 35.01],
+                    [-78.99, 35.01],
+                    [-78.99, 35.0],
+                    [-79.0, 35.0],
+                ]
+            ],
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +188,44 @@ def test_approve_for_connector_qa_marks_review_succeeded() -> None:
             ],
         }
     ]
+
+
+def test_approve_for_connector_qa_requires_workspace_identity() -> None:
+    ingest_run_id = uuid4()
+    client = TestClient(_make_app(ingest_run_id, JobStatus.NEEDS_REVIEW))
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/review-actions/approve_for_connector_qa",
+        headers=_REVIEWER_HEADERS,
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_approve_for_connector_qa_hides_other_workspace_and_does_not_mutate() -> None:
+    ingest_run_id = uuid4()
+    app = _make_app(
+        ingest_run_id,
+        JobStatus.NEEDS_REVIEW,
+        workspace_id=_OTHER_WORKSPACE_ID,
+        requested_by=_OTHER_USER_ID,
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/review-actions/approve_for_connector_qa",
+        headers=_VALID_HEADERS,
+        json={"reason": "should not see another workspace"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connector review queue item not found"
+    item = _services(app).connector_review_queue.get_by_ingest_run_id(ingest_run_id)
+    assert item is not None
+    assert item.status == JobStatus.NEEDS_REVIEW
+    assert item.locked_by is None
+    assert "review_decision" not in item.payload
 
 
 def test_approve_for_connector_qa_returns_409_for_final_job() -> None:
@@ -169,6 +292,8 @@ def test_request_fixture_fix_uses_settings_backed_reviewer_accounts() -> None:
         headers={
             "X-Reviewer-Id": "ops-reviewer",
             "X-Reviewer-Token": "ops-token",
+            "X-Workspace-Id": str(_WORKSPACE_ID),
+            "X-User-Id": str(_USER_ID),
         },
         json=_REASON_BODY,
     )
@@ -193,6 +318,8 @@ def test_request_fixture_fix_rejects_reviewer_without_review_scope() -> None:
         headers={
             "X-Reviewer-Id": "runner",
             "X-Reviewer-Token": "runner-token",
+            "X-Workspace-Id": str(_WORKSPACE_ID),
+            "X-User-Id": str(_USER_ID),
         },
         json=_REASON_BODY,
     )
@@ -391,3 +518,87 @@ def test_cancel_review_returns_404_for_unknown_run() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "connector review queue item not found"
+
+
+# ---------------------------------------------------------------------------
+# report-runs
+# ---------------------------------------------------------------------------
+
+
+def test_connector_report_run_requires_workspace_identity() -> None:
+    ingest_run_id = uuid4()
+    area_id = uuid4()
+    app = _make_app(
+        ingest_run_id,
+        JobStatus.SUCCEEDED,
+        area_id=area_id,
+        approved_for_report=True,
+    )
+    _services(app).area_service.create(_area_contract(area_id))
+    client = TestClient(app)
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/report-runs",
+        headers=_REVIEWER_HEADERS,
+        json={"intent_code": "homestead_feasibility"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "X-Workspace-Id header is required"
+
+
+def test_connector_report_run_hides_other_workspace_item() -> None:
+    ingest_run_id = uuid4()
+    area_id = uuid4()
+    app = _make_app(
+        ingest_run_id,
+        JobStatus.SUCCEEDED,
+        area_id=area_id,
+        workspace_id=_OTHER_WORKSPACE_ID,
+        requested_by=_OTHER_USER_ID,
+        approved_for_report=True,
+    )
+    _services(app).area_service.create(
+        _area_contract(
+            area_id,
+            workspace_id=_OTHER_WORKSPACE_ID,
+            created_by=_OTHER_USER_ID,
+        )
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/report-runs",
+        headers=_VALID_HEADERS,
+        json={"intent_code": "homestead_feasibility"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connector review queue item not found"
+    assert _services(app).async_report_jobs.list_recent() == []
+
+
+def test_connector_report_run_stores_workspace_and_requester_identity() -> None:
+    ingest_run_id = uuid4()
+    area_id = uuid4()
+    app = _make_app(
+        ingest_run_id,
+        JobStatus.SUCCEEDED,
+        area_id=area_id,
+        approved_for_report=True,
+    )
+    _services(app).area_service.create(_area_contract(area_id))
+    client = TestClient(app)
+
+    response = client.post(
+        f"/connector-runs/{ingest_run_id}/report-runs",
+        headers=_VALID_HEADERS,
+        json={"intent_code": "homestead_feasibility"},
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    job = _services(app).async_report_jobs.get(UUID(body["report_run_id"]))
+    assert job is not None
+    assert job.workspace_id == _WORKSPACE_ID
+    assert job.requested_by == _USER_ID

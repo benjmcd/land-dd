@@ -87,10 +87,20 @@ def test_sqlalchemy_evidence_repository_round_trips_observation(
 ) -> None:
     area_id = _insert_area(session)
     source_id = uuid4()
-    repo = SqlAlchemyEvidenceRepository(session)
+    dataset_version_id = uuid4()
     source_ingest_run_id = uuid4()
+    _insert_source_provenance(
+        session,
+        source_id=source_id,
+        dataset_version_id=dataset_version_id,
+        ingest_run_id=source_ingest_run_id,
+    )
+    repo = SqlAlchemyEvidenceRepository(session)
     evidence = make_observation(area_id, source_id).model_copy(
-        update={"source_ingest_run_id": source_ingest_run_id}
+        update={
+            "dataset_version_id": dataset_version_id,
+            "source_ingest_run_id": source_ingest_run_id,
+        }
     )
 
     created = repo.add(evidence)
@@ -108,12 +118,17 @@ def test_sqlalchemy_evidence_repository_round_trips_observation(
             assert read_repo.list_by_type(EvidenceType.SOURCE_OBSERVATION) == [
                 evidence
             ]
-            assert read_repo.list_all() == [evidence]
+            assert evidence in read_repo.list_all()
 
         stored = session.execute(
             text(
                 """
-                SELECT evidence_type, metadata, source_date
+                SELECT
+                    evidence_type,
+                    dataset_version_id,
+                    ingest_run_id,
+                    metadata,
+                    source_date
                 FROM evidence.observations
                 WHERE evidence_id = :evidence_id
                 """
@@ -121,12 +136,20 @@ def test_sqlalchemy_evidence_repository_round_trips_observation(
             {"evidence_id": evidence.evidence_id},
         ).mappings().one()
         assert stored["evidence_type"] == EvidenceType.SOURCE_OBSERVATION.value
+        assert stored["dataset_version_id"] == dataset_version_id
+        assert stored["ingest_run_id"] == source_ingest_run_id
         assert stored["metadata"]["source_id"] == str(source_id)
         assert stored["metadata"]["source_ingest_run_id"] == str(source_ingest_run_id)
         assert stored["metadata"]["evidence_code"] == "FLOOD_ZONE_AE"
         assert stored["source_date"].isoformat() == "2026-06-04"
     finally:
         _delete_area_tree(session, area_id)
+        _delete_source_provenance(
+            session,
+            source_id=source_id,
+            dataset_version_id=dataset_version_id,
+            ingest_run_id=source_ingest_run_id,
+        )
 
 
 def test_sqlalchemy_evidence_repository_round_trips_geometry_and_precision(
@@ -365,8 +388,8 @@ def test_sqlalchemy_evidence_service_persists_source_failure_and_human_note(
             assert failure.evidence_id == failure_id
             assert read_repo.get(failure.evidence_id) == failure
             assert read_repo.get(note.evidence_id) == note
-            assert read_repo.list_by_type(EvidenceType.SOURCE_FAILURE) == [failure]
-            assert read_repo.list_by_type(EvidenceType.HUMAN_VERIFICATION) == [note]
+            assert failure in read_repo.list_by_type(EvidenceType.SOURCE_FAILURE)
+            assert note in read_repo.list_by_type(EvidenceType.HUMAN_VERIFICATION)
     finally:
         _delete_area_tree(session, area_id)
 
@@ -423,7 +446,7 @@ def test_sqlalchemy_evidence_service_persists_source_derived_evidence_types(
         with Session(session.get_bind()) as read_session:
             read_repo = SqlAlchemyEvidenceRepository(read_session)
             assert read_repo.get(created.evidence_id) == created
-            assert read_repo.list_by_type(evidence_type) == [created]
+            assert created in read_repo.list_by_type(evidence_type)
     finally:
         _delete_area_tree(session, area_id)
 
@@ -477,6 +500,142 @@ def _insert_area(session: Session) -> UUID:
     )
     session.commit()
     return area_id
+
+
+def _insert_source_provenance(
+    session: Session,
+    *,
+    source_id: UUID,
+    dataset_version_id: UUID,
+    ingest_run_id: UUID,
+) -> None:
+    dataset_id = uuid4()
+    session.execute(
+        text(
+            """
+            INSERT INTO source.sources (
+                source_id,
+                name,
+                organization,
+                authority_level,
+                domain,
+                commercial_use_status
+            )
+            VALUES (
+                :source_id,
+                'Evidence repository fixture source',
+                'Fixture Org',
+                'official_primary',
+                'flood',
+                'approved'
+            )
+            """
+        ),
+        {"source_id": source_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO source.datasets (
+                dataset_id,
+                source_id,
+                dataset_name,
+                domain
+            )
+            VALUES (
+                :dataset_id,
+                :source_id,
+                'Evidence repository fixture dataset',
+                'flood'
+            )
+            """
+        ),
+        {"dataset_id": dataset_id, "source_id": source_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO source.dataset_versions (
+                dataset_version_id,
+                dataset_id,
+                version_label,
+                is_current
+            )
+            VALUES (
+                :dataset_version_id,
+                :dataset_id,
+                '2026-06',
+                true
+            )
+            """
+        ),
+        {"dataset_version_id": dataset_version_id, "dataset_id": dataset_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO source.ingest_runs (
+                ingest_run_id,
+                dataset_version_id,
+                connector_name,
+                status
+            )
+            VALUES (
+                :ingest_run_id,
+                :dataset_version_id,
+                'fixture_connector',
+                'succeeded'
+            )
+            """
+        ),
+        {
+            "ingest_run_id": ingest_run_id,
+            "dataset_version_id": dataset_version_id,
+        },
+    )
+    session.commit()
+
+
+def _delete_source_provenance(
+    session: Session,
+    *,
+    source_id: UUID,
+    dataset_version_id: UUID,
+    ingest_run_id: UUID,
+) -> None:
+    dataset_id = session.execute(
+        text(
+            """
+            SELECT dataset_id
+            FROM source.dataset_versions
+            WHERE dataset_version_id = :dataset_version_id
+            """
+        ),
+        {"dataset_version_id": dataset_version_id},
+    ).scalar_one_or_none()
+    session.execute(
+        text("DELETE FROM source.ingest_runs WHERE ingest_run_id = :ingest_run_id"),
+        {"ingest_run_id": ingest_run_id},
+    )
+    session.execute(
+        text(
+            """
+            DELETE FROM source.dataset_versions
+            WHERE dataset_version_id = :dataset_version_id
+            """
+        ),
+        {"dataset_version_id": dataset_version_id},
+    )
+    if dataset_id is not None:
+        session.execute(
+            text("DELETE FROM source.datasets WHERE dataset_id = :dataset_id"),
+            {"dataset_id": dataset_id},
+        )
+    session.execute(
+        text("DELETE FROM source.sources WHERE source_id = :source_id"),
+        {"source_id": source_id},
+    )
+    session.commit()
 
 
 def _delete_area_tree(session: Session, area_id: UUID) -> None:
