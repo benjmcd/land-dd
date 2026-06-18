@@ -147,7 +147,15 @@ function buildRoutes({ apiKey, reviewerSession }) {
     {
       label: "home",
       path: "/ui/",
-      required: ["Land Diligence"],
+      required: [
+        "Land Diligence",
+        "Selected-County Private MVP Fixture Cases",
+        "Create approved fixture reports for the selected-county operator path.",
+        "BUN-slope",
+        'action="/ui/operator-cases/report"',
+        'name="selected_county_case_id"',
+        "Create report",
+      ],
     },
     {
       label: "report-runs",

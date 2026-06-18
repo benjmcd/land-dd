@@ -179,15 +179,17 @@ private_mvp_beta:
       → API reload confirms review_status=approved, reviewed_by=fixture-reviewer),
       plus backend/tests/api/test_operator_cases_db.py
       (test_db_operator_case_report_persists_selected_county_fixture, RUN_DB_SMOKE=1-gated;
-      parametrized representative selected-county operator cases BUN-slope,
-      CHA-zoning-edge, and BRU-coastal-flood; proves /operator-cases/{case_id}/report
+      parametrized all nine packaged selected-county operator cases:
+      BUN-slope, BUN-flood, BUN-access, CHA-rural-use, CHA-zoning-edge,
+      CHA-parcel-tax, BRU-coastal-flood, BRU-wetlands-soils, and
+      BRU-jurisdiction; proves /operator-cases/{case_id}/report
       persists approved report/artifact state, selected-county evidence, and
       connector-review handoff rows through SqlAlchemy + real Postgres;
       test_db_ui_operator_case_report_persists_selected_county_fixture proves
       the /ui/operator-cases/report launcher redirects to the approved report UI
       and serves the persisted postgres+object_store artifact)
     note: >
-      Full AOI-to-approved-dossier DB-backed path proven, plus representative
+      Full AOI-to-approved-dossier DB-backed path proven, plus all nine packaged
       selected-county operator cases proven through the DB-backed
       /operator-cases/{case_id}/report path and one DB-backed UI launcher proof
       for /ui/operator-cases/report. The tests exercise SqlAlchemy persistence,
@@ -320,9 +322,10 @@ private_mvp_beta:
     note: >
       Operator runbook updated with private MVP path: DB startup, fixture-backed
       AOI intake, report creation, review/approval, Markdown dossier retrieval,
-      selected-county DS-010/DS-023 scope, DS-011 assessor sentinel status, and
-      known limitations that separate fixture regression, selected-county live
-      connector paths, DS-017, DB smoke, and hosted-production blockers.
+      selected-county UI launcher/browser-smoke contract, selected-county
+      DS-010/DS-023 scope, DS-011 assessor sentinel status, and known limitations
+      that separate fixture regression, selected-county live connector paths,
+      DS-017, DB smoke, and hosted-production blockers.
 
 hosted_production:
   # These gates are NOT required for private MVP beta.

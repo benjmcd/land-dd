@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import argparse
-from html.parser import HTMLParser
 import json
 import sys
 from dataclasses import dataclass, field
+from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -213,7 +213,8 @@ def check_artifact_persistence(
         failures.append(f"artifact persistence check expected HTTP 200, got {status}")
     if "application/json" not in content_type.lower():
         failures.append(
-            f"artifact persistence check expected application/json, got {content_type or '<missing>'}"
+            "artifact persistence check expected application/json, got "
+            f"{content_type or '<missing>'}"
         )
     try:
         payload = json.loads(body)
@@ -353,7 +354,7 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                 base_url,
                 args.operator_case_id,
                 args.timeout,
-                include_csrf=bool(args.api_key),
+                include_csrf=bool(args.api_key) or reviewer_session,
                 expected_artifact_persistence=args.expect_artifact_persistence,
             )
         )

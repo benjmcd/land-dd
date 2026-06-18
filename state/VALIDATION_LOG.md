@@ -11140,3 +11140,78 @@ diff attribution scan over forbidden coauthor/generated marker patterns
 
 - The live load proof is local single-node runtime evidence. It is not hosted/staging
   capacity proof, not an SLO, and not a production workload claim.
+
+---
+
+## 2026-06-18 - Selected-county Release-candidate Proof Refresh
+
+**Scope:** Harden selected-county private-MVP release-candidate proof across packaged
+operator cases, DB-backed persistence, and UI/browser smoke without making DS-017,
+hosted production, IdP/RBAC, SLO, billing, or alert-routing claims.
+
+**Commands run:**
+
+```powershell
+python .\scripts\private_mvp_readiness_check.py
+.\scripts\run_private_mvp_readiness_check.ps1
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\release_readiness_check.py
+python .\scripts\hosted_deployment_check.py
+python .\scripts\readiness_matrix_check.py
+node --check .\scripts\ui_browser_smoke.mjs
+$env:PYTHONPATH='./backend'; python -m pytest -q .\backend\tests\test_ui_browser_smoke_scripts.py .\backend\tests\test_ui_runtime_smoke_script.py .\backend\tests\test_private_mvp_readiness.py .\backend\tests\api\test_operator_cases_api.py .\backend\tests\private_mvp\test_operator_cases.py
+Push-Location .\backend
+$env:PYTHONPATH='.'
+python -m ruff check .\tests\api\test_operator_cases_db.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_private_mvp_readiness.py ..\scripts\ui_runtime_smoke.py ..\scripts\private_mvp_readiness_check.py
+python -m mypy .\tests\api\test_operator_cases_db.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_private_mvp_readiness.py ..\scripts\ui_runtime_smoke.py ..\scripts\private_mvp_readiness_check.py
+Pop-Location
+$env:DB_PORT='55452'; docker compose -p land-dd-r008 up -d db
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55452/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55452/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55452/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55452/land_diligence'; $env:PYTHONPATH='./backend'; python -m pytest -q .\backend\tests\api\test_operator_cases_db.py
+.\scripts\run_ui_browser_smoke.ps1 with LAND_DD_UI_SMOKE_BASE_URL=http://127.0.0.1:18182 and LAND_DD_UI_SMOKE_MODE=both
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18184 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --json
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18185 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --expect-artifact-persistence postgres+object_store --json
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- Private-MVP readiness validator and Windows wrapper passed.
+- Must source readiness remained `sources=8 ready=7 blocked=1`; DS-017 remains blocked.
+- Release-readiness, hosted-deployment, and readiness-matrix validators passed.
+- Node syntax check passed for `scripts/ui_browser_smoke.mjs`.
+- Focused browser/runtime/private-MVP/operator-case tests passed (`69 passed` in the
+  broader focused set; `43 passed` after the reviewer-session CSRF update).
+- Focused ruff passed and focused mypy passed for touched Python scripts/tests.
+- Isolated DB migrations/seeds applied on port `55452`.
+- DB-gated `backend/tests/api/test_operator_cases_db.py` passed (`10 passed`): all
+  nine packaged selected-county operator cases plus the DB UI launcher proof.
+- Chrome UI browser smoke passed in headless and headed modes across desktop and mobile
+  viewports against a local runtime; the home route now proves the selected-county
+  launcher/form contract without creating report state.
+- In-memory selected-county UI runtime smoke passed with reviewer credentials and CSRF.
+- DB-backed selected-county UI runtime smoke passed with
+  `--expect-artifact-persistence postgres+object_store`.
+- `git diff --check` passed and no deleted files were reported.
+
+**Corrected failed attempts:**
+
+- `ui_runtime_smoke.py --operator-case-id BUN-slope` without reviewer credentials
+  correctly failed with `401`; the runbook now includes reviewer credentials.
+- Reviewer-session runtime smoke initially failed with `403` because the smoke script did
+  not submit CSRF for reviewer cookies; `scripts/ui_runtime_smoke.py` now includes CSRF
+  when reviewer-session auth is used.
+- A focused ruff attempt incorrectly included the JavaScript `.mjs` file; the correct
+  syntax gate is `node --check`, and ruff was rerun on Python files only.
+- A root-level focused mypy attempt resolved `app` as an installed untyped module; mypy
+  was rerun from `backend` with `PYTHONPATH=.` and passed.
+
+**Residual risk:**
+
+- The proof is local/private-MVP release-candidate evidence. It is not hosted production
+  proof, not a production SLO/capacity claim, not full user RBAC/IdP, and does not
+  unblock DS-017 commercial parcel vendor coverage.
+- The current runtime smoke checks the approved report page includes a lineage link; the
+  next active pass (`R-009`) is to follow that lineage route and assert stable
+  evidence-linked content.

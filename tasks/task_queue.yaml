@@ -1,13 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-county-rc-proof.md
+active_plan: plans/2026-06-18-lineage-smoke.md
 routing_note: >
-  Active lane: selected-county release-candidate proof refresh
-  (plans/2026-06-18-county-rc-proof.md). Goal: refresh the selected-county private-MVP
-  release-candidate proof ladder across packaged operator cases, DB-backed persistence,
-  and explicit UI/browser smoke evidence without making DS-017, hosted production, IdP,
-  SLO, or capacity claims. Completed readiness reconciliation, performance baseline,
-  static spatial proof, SQL-contract guard, spatial runtime proof, queue backpressure,
-  and workflow-valid load proof plans remain historical context.
+  Active lane: selected-county lineage release-candidate smoke proof
+  (plans/2026-06-18-lineage-smoke.md). Goal: make the opt-in selected-county
+  UI runtime smoke prove that approved report lineage is reachable and evidence-linked,
+  without making DS-017, hosted production, IdP, SLO, capacity, or full RBAC claims.
+  Completed readiness reconciliation, performance baseline, static spatial proof,
+  SQL-contract guard, spatial runtime proof, queue backpressure, workflow-valid load
+  proof, and selected-county RC proof refresh plans remain historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -213,15 +213,18 @@ tasks:
 
   - id: R-008
     title: Selected-county release-candidate proof refresh
-    status: active
+    status: done
     depends_on: [R-007]
     lane: coordinator
     spec: plans/2026-06-18-county-rc-proof.md
     notes: >
       Refresh and harden the selected-county private-MVP proof ladder for packaged
       operator cases, DB-backed persistence, and explicit UI/browser smoke evidence.
-      This is repo-local release-candidate proof only; DS-017, hosted platform, IdP,
-      billing, alert-routing, and production SLO decisions remain out of scope.
+      Completed with Chrome selected-county launcher contract proof, reviewer-session
+      CSRF runtime-smoke repair, all-nine packaged operator-case DB smoke coverage,
+      and DB-backed runtime artifact-persistence proof. This is repo-local
+      release-candidate proof only; DS-017, hosted platform, IdP, billing,
+      alert-routing, and production SLO decisions remain out of scope.
     validation:
       - python .\scripts\source_readiness.py --priority Must --json
       - python .\scripts\private_mvp_readiness_check.py
@@ -237,6 +240,30 @@ tasks:
       - Any missing or weak proof link is either hardened or recorded as a concrete blocker
       - DS-017 remains blocked unless product/vendor authority changes
       - Hosted production and full user-RBAC proof remain out of scope
+
+  - id: R-009
+    title: Selected-county lineage smoke proof
+    status: active
+    depends_on: [R-008]
+    lane: coordinator
+    spec: plans/2026-06-18-lineage-smoke.md
+    notes: >
+      Extend the existing opt-in selected-county UI runtime smoke so an approved
+      operator-case report proves lineage reachability and evidence-linked content,
+      not just the presence of a "View evidence lineage" link.
+    validation:
+      - python .\scripts\private_mvp_readiness_check.py
+      - cd backend; python -m pytest -q .\tests\test_ui_runtime_smoke_script.py .\tests\api\test_ui_routes.py .\tests\api\test_report_lineage.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Runtime smoke follows selected-county approved report lineage after report creation
+      - Lineage proof asserts stable evidence-linked content and fails closed on missing lineage
+      - Default non-mutating browser smoke remains non-mutating
+      - Hosted production, DS-017, and full RBAC remain out of scope
 
   # --- Completed ---
   - id: T000

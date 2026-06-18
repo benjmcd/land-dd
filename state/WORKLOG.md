@@ -3305,3 +3305,25 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   load wrapper, focused ruff/mypy, release-readiness, readiness-matrix, diff hygiene,
   no-deletions check, attribution scan, and default `.\scripts\verify.ps1` passed.
   DB smoke was skipped by default.
+
+## 2026-06-18 Selected-county release-candidate proof refresh
+
+- Hardened `scripts/ui_browser_smoke.mjs` so the non-mutating Chrome browser smoke now
+  asserts the selected-county launcher/form contract on `/ui/`, including the packaged
+  `BUN-slope` case and `/ui/operator-cases/report` form field.
+- Expanded DB-gated selected-county operator-case proof from three representative cases
+  to all nine packaged cases by deriving the parametrized DB smoke IDs from
+  `app.operator_cases.list_selected_county_cases()`.
+- Fixed `scripts/ui_runtime_smoke.py` so reviewer-session selected-county report
+  creation fetches and submits the required CSRF token. Updated runbook examples and
+  static private-MVP guards so documented runtime smoke commands include reviewer
+  credentials.
+- Updated `config/private_mvp_beta_readiness.yaml` and `docs/runbooks/mvp_operator.md`
+  to distinguish all-nine DB operator-case persistence proof from the one-case DB UI
+  launcher proof, while preserving DS-017, hosted deployment, full RBAC, SLO, billing,
+  and alert routing as out of scope.
+- Verified headed and headless Chrome browser smoke against a local runtime, in-memory
+  selected-county runtime smoke, isolated DB-gated all-nine operator-case smoke, and
+  isolated DB-backed runtime artifact persistence (`postgres+object_store`).
+- Opened `plans/2026-06-18-lineage-smoke.md` and routed `tasks/task_queue.yaml` to
+  `R-009` as the next unblocked selected-county release-candidate smoke pass.
