@@ -75,9 +75,11 @@ def test_performance_runbook_contains_backpressure_or_degraded() -> None:
 
 
 def test_performance_runbook_contains_spatial() -> None:
-    assert "spatial" in _runbook_text().lower(), (
-        "performance.md must contain spatial index coverage documentation"
-    )
+    text = _runbook_text()
+    assert "spatial" in text.lower(), "performance.md must contain spatial documentation"
+    assert "config/spatial_query_plan.yaml" in text
+    assert "run_spatial_query_plan_check.ps1" in text
+    assert "No automated live spatial query-plan gate in CI" in text
 
 
 def test_performance_runbook_contains_db_pool_size() -> None:

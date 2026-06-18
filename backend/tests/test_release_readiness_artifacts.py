@@ -62,6 +62,7 @@ COMPOSED_VALIDATORS = (
     "scripts/image_publication_check.py",
     "scripts/hosted_deployment_check.py",
     "scripts/performance_baseline_check.py",
+    "scripts/spatial_query_plan_check.py",
 )
 
 
@@ -241,6 +242,10 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "performance.md",
         "performance_baseline.yaml",
         "run_performance_baseline_check.ps1",
+        "spatial_query_plan.yaml",
+        "run_spatial_query_plan_check.ps1",
+        "spatial_query_plan_check.py",
+        "validate-only static proof",
         "load_test_result_v1",
         "jurisdiction_readiness.md",
         "rulepack_readiness.md",
@@ -253,6 +258,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "run_hosted_deployment_check.ps1",
         "executes the image-publication and hosted-deployment validators",
         "No container image is pushed",
+        "does not run `EXPLAIN ANALYZE` against a live or hosted database by default",
         "published registry-image attestation",
     ):
         assert phrase in runbook
@@ -330,6 +336,8 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"data_lineage"' in script
     assert '"config/performance_baseline.yaml"' in script
     assert '"scripts/performance_baseline_check.py"' in script
+    assert '"config/spatial_query_plan.yaml"' in script
+    assert '"scripts/spatial_query_plan_check.py"' in script
     assert '{"DS-017"}' in script
     assert '{"DS-011", "DS-017"}' not in script
     assert '{"DS-011", "DS-017", "DS-023"}' not in script

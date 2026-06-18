@@ -1,5 +1,35 @@
 # Project State
 
+## Current checkpoint (2026-06-18 spatial query-plan proof)
+
+The active implementation authority now points at the next unblocked Level 10
+performance-readiness slice selected from the Level 9/10 gate matrix.
+
+- **Active plan**: `plans/2026-06-18-spatial-query-plan-proof.md`.
+- **Purpose**: turn the current manual spatial query-plan review gap into a repo-local
+  validate-only contract/checker for selected private-MVP spatial workloads without
+  claiming hosted production performance readiness.
+- **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `db/migrations/0001_initial_spine.sql`, `docs/runbooks/performance.md`,
+  `scripts/release_readiness_check.py`, `scripts/readiness_matrix_check.py`,
+  `config/release_readiness.yaml`, `plans/README.md`, and `tasks/task_queue.yaml`.
+- **Known boundaries preserved**: no DB schema change, no live DB query-plan gate by
+  default, no seeded runtime state, no committed measured plan artifacts, no hosted
+  performance/SLO claim, and no Level 10 completion claim.
+- **Canonical DDL facts**: the initial PostGIS spine already defines GIST indexes for
+  `core.areas.geom`, `core.area_versions.geom`, `geo.parcels.geom`,
+  `geo.reference_features.geom`, and `evidence.observations.geometry`.
+- **Implemented proof**: `spatial_query_plan_v1` contract, validate-only checker,
+  Windows/POSIX wrappers, release-readiness composition, and performance/release runbook
+  boundaries. The matrix keeps `L10-PERF-003` at `PARTIAL` until representative
+  DB-enabled `EXPLAIN ANALYZE` evidence exists.
+- **Validation so far**: spatial query-plan checker and Windows wrapper passed,
+  release-readiness and readiness-matrix validators/wrappers passed, focused
+  spatial/performance/release/matrix artifact tests passed (`32 passed`), ruff passed,
+  mypy passed, `git diff --check` passed, no deleted files were reported, and full
+  `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff, and
+  mypy over `318` source files. DB smoke was skipped by default.
+
 ## Current checkpoint (2026-06-18 performance baseline evidence)
 
 The active implementation authority now points at the next unblocked Level 10

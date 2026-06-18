@@ -1,12 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-performance-baseline-evidence.md
+active_plan: plans/2026-06-18-spatial-query-plan-proof.md
 routing_note: >
-  Active lane: performance baseline evidence
-  (plans/2026-06-18-performance-baseline-evidence.md). Goal: turn the existing
-  load-test runner into a release-candidate baseline evidence surface without claiming
-  hosted production performance or adding a CI live-load gate. Completed
-  readiness-reconciliation plans remain historical context; they are not the current
-  implementation authority.
+  Active lane: spatial query-plan proof
+  (plans/2026-06-18-spatial-query-plan-proof.md). Goal: turn the manual spatial
+  query-plan review gap into a repo-local validate-only contract/checker without
+  claiming hosted production performance, adding a DB schema change, or promoting
+  Level 10 performance completion. Completed readiness-reconciliation and performance
+  baseline plans remain historical context; they are not the current implementation
+  authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -49,7 +50,7 @@ tasks:
 
   - id: R-002
     title: Performance baseline evidence
-    status: active
+    status: done
     depends_on: [R-001]
     lane: coordinator
     spec: plans/2026-06-18-performance-baseline-evidence.md
@@ -72,6 +73,32 @@ tasks:
       - Load-test runner can write JSON evidence without changing existing stdout or exit semantics
       - Validate-only gates do not send HTTP traffic or create measured artifacts by default
       - Runbooks preserve the boundary between local release-candidate evidence and hosted production proof
+
+  - id: R-003
+    title: Spatial query-plan proof
+    status: active
+    depends_on: [R-002]
+    lane: coordinator
+    spec: plans/2026-06-18-spatial-query-plan-proof.md
+    notes: >
+      Add a repo-local spatial workload/index contract and validate-only checker for
+      the canonical PostGIS GIST indexes. This is static release-readiness proof only;
+      it does not claim hosted performance readiness, representative DB plan evidence,
+      or Level 10 completion.
+    validation:
+      - python .\scripts\spatial_query_plan_check.py
+      - .\scripts\run_spatial_query_plan_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+      - cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - git diff --check
+    acceptance:
+      - Selected spatial workloads and required GIST indexes are machine-readable
+      - Checker validates the contract against canonical migration DDL and runbook wording
+      - Default validation remains DB-free, validate-only, and artifact-free
+      - Runbooks preserve the boundary between static repo proof and future DB-enabled plan evidence
 
   # --- Completed ---
   - id: T000

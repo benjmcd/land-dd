@@ -3188,3 +3188,29 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   `$env:PYTHONPATH='./backend'; python ./scripts/private_mvp_readiness_check.py`, and
   `python -m ruff check ./backend/tests/test_private_mvp_readiness.py ./scripts/private_mvp_readiness_check.py`
   all passed.
+
+## 2026-06-18 Spatial query-plan proof
+
+- Added `config/spatial_query_plan.yaml` as the static selected-county private-MVP
+  spatial workload/index contract for the canonical PostGIS GIST indexes in
+  `db/migrations/0001_initial_spine.sql`.
+- Added `scripts/spatial_query_plan_check.py` plus Windows/POSIX wrappers. The default
+  checker is repo-file-only and validate-only: no DB connection, no runtime seed, no
+  network, and no generated artifacts.
+- Corrected `docs/runbooks/performance.md` to name the actual canonical tables/indexes
+  (`core.areas.geom`, `core.area_versions.geom`, `geo.parcels.geom`,
+  `geo.reference_features.geom`, and `evidence.observations.geometry`) and to preserve
+  the boundary between static release-readiness proof and future read-only
+  `EXPLAIN ANALYZE` evidence.
+- Composed the spatial checker into `scripts/release_readiness_check.py` and updated
+  `docs/runbooks/release_readiness.md` so operators can see that release readiness now
+  validates the static spatial query-plan contract without running live DB plans.
+- Updated `state/LEVEL_9_10_GATE_MATRIX.md`, `plans/README.md`, `tasks/task_queue.yaml`,
+  and `state/PROJECT_STATE.md` for the active `L10-PERF-003` slice while keeping that
+  gate `PARTIAL` until representative candidate DB plan evidence exists.
+- Verification: spatial query-plan checker and Windows wrapper passed;
+  release-readiness and readiness-matrix validators/wrappers passed; focused
+  spatial/performance/release/matrix artifact tests passed (`32 passed`); focused ruff
+  and mypy passed; `git diff --check` passed; no deleted files were reported; default
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 318 source
+  files. DB smoke was skipped by default.
