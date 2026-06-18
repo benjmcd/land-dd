@@ -61,6 +61,7 @@ EXPECTED_CI_PROOFS = {
 COMPOSED_VALIDATORS = (
     "scripts/image_publication_check.py",
     "scripts/hosted_deployment_check.py",
+    "scripts/performance_baseline_check.py",
 )
 
 
@@ -238,6 +239,9 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "run_load_test.ps1",
         "load_testing.md",
         "performance.md",
+        "performance_baseline.yaml",
+        "run_performance_baseline_check.ps1",
+        "load_test_result_v1",
         "jurisdiction_readiness.md",
         "rulepack_readiness.md",
         "data_lineage",
@@ -324,6 +328,8 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"load_test"' in script
     assert '"performance"' in script
     assert '"data_lineage"' in script
+    assert '"config/performance_baseline.yaml"' in script
+    assert '"scripts/performance_baseline_check.py"' in script
     assert '{"DS-017"}' in script
     assert '{"DS-011", "DS-017"}' not in script
     assert '{"DS-011", "DS-017", "DS-023"}' not in script

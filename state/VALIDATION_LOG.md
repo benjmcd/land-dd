@@ -2,6 +2,49 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Performance Baseline Evidence
+
+**Scope:** Add a local release-candidate performance baseline contract, optional JSON
+load-test result output, validate-only baseline checks, runbook documentation, and
+release-readiness composition without claiming hosted production performance readiness.
+
+**Commands run:**
+
+```powershell
+python .\scripts\performance_baseline_check.py
+.\scripts\run_performance_baseline_check.ps1
+.\scripts\run_load_test.ps1 -ValidateOnly
+Push-Location .\backend
+python -m pytest -q .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+python -m ruff check .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+python -m mypy .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+Pop-Location
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Performance baseline checker passed.
+- Windows performance baseline wrapper passed.
+- Load-test wrapper validate-only mode passed and skipped live HTTP requests.
+- Focused load/performance/release/matrix artifact tests passed (`40 passed`).
+- Ruff passed on touched tests and validators.
+- Mypy passed on touched tests and validators (`8 source files`).
+- Release-readiness validator passed with the performance baseline checker composed.
+- Readiness-matrix validator passed with matrix-derived active-plan routing.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation, backend tests, ruff, and
+  mypy over `317` source files passed. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass records local release-candidate performance evidence shape only. It does not
+  run hosted load tests, define production SLOs, tune DB/object-store settings, add a
+  live-load CI gate, or commit measured runtime artifacts.
+
 ## 2026-06-18 Level 9/10 Readiness Reconciliation
 
 **Scope:** Route active work away from the completed UI CSRF slice and revalidate the

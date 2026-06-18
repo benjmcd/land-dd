@@ -4,7 +4,10 @@
 
 Validate that the local server handles both a sequential baseline and a concurrent
 expected-workload scenario without exceeding latency or error-rate thresholds. This
-is a development and CI-readiness check, not a performance SLA or capacity benchmark.
+is release-candidate/local evidence, not a production SLO, hosted production proof,
+performance SLA, or capacity benchmark. `config/performance_baseline.yaml` is the
+canonical local performance baseline contract. Live JSON result files use the
+`load_test_result_v1` schema.
 
 ## Required Setup
 
@@ -52,10 +55,17 @@ $env:LOAD_TEST_BASE_URL = "http://127.0.0.1:8102"
 ```
 
 To check that all script files and this runbook exist without sending any live HTTP
-requests, use `-ValidateOnly`:
+requests or creating measured result artifacts, use `-ValidateOnly`:
 
 ```powershell
 .\scripts\run_load_test.ps1 -ValidateOnly
+```
+
+To write release-candidate JSON result evidence for a live local run, pass a local
+result directory:
+
+```powershell
+.\scripts\run_load_test.ps1 -ResultDir .\local_artifacts\performance-baseline\<release-id>
 ```
 
 ### Bash (Linux / macOS / WSL)
@@ -81,10 +91,18 @@ bash scripts/run_load_test.sh --base-url http://127.0.0.1:8102
 LOAD_TEST_BASE_URL=http://127.0.0.1:8102 bash scripts/run_load_test.sh
 ```
 
-To use the safe validation mode that checks artifacts without live requests:
+To use the safe validation mode that checks artifacts without live requests or measured
+result artifacts:
 
 ```bash
 bash scripts/run_load_test.sh --validate-only
+```
+
+To write release-candidate JSON result evidence for a live local run, pass a local
+result directory:
+
+```bash
+bash scripts/run_load_test.sh --result-dir ./local_artifacts/performance-baseline/<release-id>
 ```
 
 ## Scenarios
@@ -176,6 +194,15 @@ load test [concurrent] summary: workers=8  total=40  p50=0.018s  p95=0.045s
 - **4xx responses** (validation errors on POST payloads) are expected and are not
   counted as errors.
 
+### JSON result artifacts
+
+When a live run is given a result directory, each measured result is written as
+`load_test_result_v1` JSON under that local artifact path. Use
+`.\local_artifacts\performance-baseline\<release-id>` on Windows or
+`./local_artifacts/performance-baseline/<release-id>` on POSIX for release-candidate
+evidence. Do not commit measured result files; they are machine-local evidence for the
+candidate run.
+
 ## Scope Limitations and Single-Node Caveat
 
 Both scenarios run **entirely on localhost against a single server process**. They do
@@ -198,9 +225,11 @@ are not currently integrated and must be run manually outside of this script.
 
 ## Notes
 
-- The `-ValidateOnly` / `--validate-only` flag checks that all three script artifacts
-  and this runbook exist and are non-empty. Use this in CI pipelines that do not have
-  a live server available.
+- The `-ValidateOnly` / `--validate-only` flag checks that required script, runbook,
+  and baseline-contract artifacts exist and are non-empty. It must not send HTTP
+  requests or create measured result artifacts. Use this in CI pipelines that do not
+  have a live server available.
+- The canonical local baseline contract is `config/performance_baseline.yaml`.
 - The Python runner (`scripts/load_test_runner.py`) uses only Python standard library
   (`urllib.request`, `threading`, `statistics`). No extra packages are required.
 - Both wrappers (`run_load_test.ps1` and `run_load_test.sh`) delegate to the same

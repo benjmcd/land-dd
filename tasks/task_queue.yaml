@@ -1,12 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-level9-10-readiness-reconciliation.md
+active_plan: plans/2026-06-18-performance-baseline-evidence.md
 routing_note: >
-  Active lane: Level 9/10 readiness reconciliation
-  (plans/2026-06-18-level9-10-readiness-reconciliation.md). Goal: reconcile the
-  selected-county private-MVP proof, release-readiness catalog, hosted-deployment
-  blockers, and Level 9/10 milestone gates before selecting the next implementation
-  slice. Completed route-hardening plans remain historical context; they are not the
-  current implementation authority.
+  Active lane: performance baseline evidence
+  (plans/2026-06-18-performance-baseline-evidence.md). Goal: turn the existing
+  load-test runner into a release-candidate baseline evidence surface without claiming
+  hosted production performance or adding a CI live-load gate. Completed
+  readiness-reconciliation plans remain historical context; they are not the current
+  implementation authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -23,7 +23,7 @@ tasks:
   # --- Active coordinator task ---
   - id: R-001
     title: Level 9/10 readiness reconciliation
-    status: active
+    status: done
     depends_on: [T060]
     lane: coordinator
     spec: plans/2026-06-18-level9-10-readiness-reconciliation.md
@@ -46,6 +46,32 @@ tasks:
       - Current readiness facts are revalidated from canonical validators
       - Next implementation slice is selected from Level 9/10 gate evidence, not stale
         historical progress logs
+
+  - id: R-002
+    title: Performance baseline evidence
+    status: active
+    depends_on: [R-001]
+    lane: coordinator
+    spec: plans/2026-06-18-performance-baseline-evidence.md
+    notes: >
+      Add a repo-local performance baseline contract and optional JSON result output for
+      the existing local load-test runner. This is release-candidate evidence only; it
+      does not claim hosted performance readiness or production SLOs.
+    validation:
+      - python .\scripts\performance_baseline_check.py
+      - .\scripts\run_performance_baseline_check.ps1
+      - .\scripts\run_load_test.ps1 -ValidateOnly
+      - cd backend; python -m pytest -q .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+      - cd backend; python -m ruff check .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - cd backend; python -m mypy .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+    acceptance:
+      - Performance baseline thresholds and evidence schema are machine-readable
+      - Load-test runner can write JSON evidence without changing existing stdout or exit semantics
+      - Validate-only gates do not send HTTP traffic or create measured artifacts by default
+      - Runbooks preserve the boundary between local release-candidate evidence and hosted production proof
 
   # --- Completed ---
   - id: T000

@@ -48,6 +48,10 @@ The check is validate-only. It verifies that:
 - load testing is represented by `scripts/run_load_test.ps1` and documented in
   `docs/runbooks/load_testing.md`;
 - performance posture is documented in `docs/runbooks/performance.md`;
+- the local performance baseline contract is `config/performance_baseline.yaml`, and
+  the release proof composes `scripts/run_performance_baseline_check.ps1` /
+  `scripts/performance_baseline_check.py` as validate-only proof;
+- the local load-test JSON result schema is `load_test_result_v1`;
 - jurisdiction and rulepack expansion stay gated by
   `docs/checklists/jurisdiction_readiness.md` and `docs/checklists/rulepack_readiness.md`;
 - report data lineage remains represented by the report API lineage surface
@@ -78,6 +82,12 @@ The check is validate-only. It verifies that:
 - Release readiness is repo-local and validate-only.
 - Local release packages can be created with `scripts/build_release_package.ps1`, but this
   readiness proof itself remains validate-only.
+- Performance baseline readiness is release-candidate/local evidence only. It is not a
+  production SLO, hosted production proof, or capacity benchmark.
+- The performance baseline checker and load-test validate-only modes must not send HTTP
+  requests or create measured result artifacts.
+- No live-load CI gate is added; CI does not start a server or fail on latency
+  thresholds.
 - No container image is pushed to a registry by this proof.
 - Image publication readiness is cataloged in `config/image_publication.yaml`, but
   registry push and attestation publication remain blocked.

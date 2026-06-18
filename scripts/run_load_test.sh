@@ -7,12 +7,14 @@ cd "$ROOT"
 VALIDATE_ONLY=0
 SCENARIO=""
 BASE_URL_ARG=""
+RESULT_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --validate-only) VALIDATE_ONLY=1 ;;
     --scenario)      SCENARIO="$2"; shift ;;
     --base-url)      BASE_URL_ARG="$2"; shift ;;
+    --result-dir)    RESULT_DIR="$2"; shift ;;
     *) echo "unknown argument: $1" >&2; exit 1 ;;
   esac
   shift
@@ -22,6 +24,7 @@ required_files=(
   "scripts/run_load_test.ps1"
   "scripts/run_load_test.sh"
   "scripts/load_test_runner.py"
+  "config/performance_baseline.yaml"
   "docs/runbooks/load_testing.md"
 )
 
@@ -61,7 +64,12 @@ fi
 
 for s in "${SCENARIOS[@]}"; do
   echo "load test: running scenario=$s base_url=$LOAD_TEST_BASE_URL"
-  python3 "$RUNNER" --scenario "$s" --base-url "$LOAD_TEST_BASE_URL" || FAILED=1
+  runner_args=(--scenario "$s" --base-url "$LOAD_TEST_BASE_URL")
+  if [[ -n "$RESULT_DIR" ]]; then
+    mkdir -p "$RESULT_DIR"
+    runner_args+=(--json-output "$RESULT_DIR/load-test-$s.json")
+  fi
+  python3 "$RUNNER" "${runner_args[@]}" || FAILED=1
 done
 
 if [[ "$FAILED" -ne 0 ]]; then

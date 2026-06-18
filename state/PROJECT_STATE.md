@@ -1,5 +1,35 @@
 # Project State
 
+## Current checkpoint (2026-06-18 performance baseline evidence)
+
+The active implementation authority now points at the next unblocked Level 10
+readiness slice selected from the Level 9/10 gate matrix.
+
+- **Active plan**: `plans/2026-06-18-performance-baseline-evidence.md`.
+- **Purpose**: make release-candidate performance regression evidence observable and
+  repeatable for the selected-county private-MVP runtime without claiming hosted
+  production performance readiness.
+- **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `config/performance_baseline.yaml`, `scripts/performance_baseline_check.py`,
+  `docs/runbooks/load_testing.md`, `docs/runbooks/performance.md`,
+  `scripts/load_test_runner.py`, `scripts/run_load_test.ps1`,
+  `scripts/run_load_test.sh`, `scripts/release_readiness_check.py`,
+  `scripts/readiness_matrix_check.py`, `config/release_readiness.yaml`,
+  `plans/README.md`, and `tasks/task_queue.yaml`.
+- **Known boundaries preserved**: no hosted load test, no production SLO, no CI
+  live-load gate, no new dependency, no committed measured runtime artifact, and no
+  Level 10 completion claim.
+- **Implemented proof**: local release-candidate baseline contract
+  `performance_baseline_v1`; optional `load_test_result_v1` JSON output from the
+  existing load-test runner; result-directory support in Windows/POSIX wrappers;
+  validate-only baseline checker; release-readiness composition; runbook boundaries.
+- **Validation so far**: performance-baseline checker and Windows wrapper passed,
+  load-test validate-only wrapper passed, focused load/performance/release/matrix
+  artifact tests passed (`40 passed`), ruff passed, mypy passed, release-readiness
+  validator passed, readiness-matrix validator passed, `git diff --check` passed, and
+  full `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `317` source files. DB smoke was skipped by default.
+
 ## Current checkpoint (2026-06-18 Level 9/10 readiness reconciliation)
 
 The active implementation authority now points at the post-private-MVP

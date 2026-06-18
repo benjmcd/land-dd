@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 MATRIX_PATH = "state/LEVEL_9_10_GATE_MATRIX.md"
-ACTIVE_PLAN = "plans/2026-06-18-level9-10-readiness-reconciliation.md"
+MATRIX_PLAN = "plans/2026-06-18-level9-10-readiness-reconciliation.md"
 ALLOWED_STATUSES = {
     "PROVEN_PRIVATE_MVP",
     "PROVEN_REPO_LOCAL",
@@ -84,6 +84,13 @@ def require_existing_file(path_text: str) -> None:
     )
 
 
+def current_active_plan(task_queue: str) -> str:
+    for line in task_queue.splitlines():
+        if line.startswith("active_plan: "):
+            return line.removeprefix("active_plan: ").strip()
+    raise SystemExit("tasks/task_queue.yaml must declare active_plan")
+
+
 def milestone_gate_ids() -> set[str]:
     milestone = read_text("MILESTONE_MAP.md")
     return set(re.findall(r"\bL(?:9|10)-(?:[A-Z]+-)?\d{3}\b", milestone))
@@ -106,25 +113,37 @@ def matrix_rows() -> dict[str, str]:
             status in ALLOWED_STATUSES,
             f"{gate_id} has unsupported readiness status: {status}",
         )
-        require(cells[2], f"{gate_id} current evidence cell must not be empty")
-        require(cells[3], f"{gate_id} next action cell must not be empty")
+        require(bool(cells[2]), f"{gate_id} current evidence cell must not be empty")
+        require(bool(cells[3]), f"{gate_id} next action cell must not be empty")
         rows[gate_id] = status
     return rows
 
 
 def validate_routing() -> None:
-    require_existing_file(ACTIVE_PLAN)
+    require_existing_file(MATRIX_PLAN)
     plan_readme = read_text("plans/README.md")
     task_queue = read_text("tasks/task_queue.yaml")
+    active_plan = current_active_plan(task_queue)
+    require_existing_file(active_plan)
     require(
-        "2026-06-18-level9-10-readiness-reconciliation.md" in plan_readme,
-        "plans/README.md must route to the Level 9/10 readiness reconciliation plan",
+        active_plan in plan_readme or Path(active_plan).name in plan_readme,
+        "plans/README.md must route to the task_queue active plan",
     )
     require(
-        f"active_plan: {ACTIVE_PLAN}" in task_queue,
-        "tasks/task_queue.yaml must route to the Level 9/10 readiness reconciliation plan",
+        MATRIX_PLAN in task_queue,
+        "tasks/task_queue.yaml must retain the Level 9/10 readiness reconciliation task",
     )
     require("id: R-001" in task_queue, "tasks/task_queue.yaml must contain task R-001")
+    if active_plan != MATRIX_PLAN:
+        active_plan_text = read_text(active_plan)
+        require(
+            MATRIX_PATH in active_plan_text,
+            "active follow-on plan must cite the Level 9/10 gate matrix",
+        )
+        require(
+            "Level 9/10" in active_plan_text,
+            "active follow-on plan must preserve Level 9/10 authority context",
+        )
     for command in REQUIRED_TASK_VALIDATION_COMMANDS:
         require(
             command in task_queue,

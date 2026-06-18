@@ -3,6 +3,7 @@ Shared load-test runner for sequential and concurrent scenarios.
 
 Usage:
     python load_test_runner.py [--scenario sequential|concurrent] [--base-url URL]
+        [--json-output PATH]
 
 Environment overrides (all optional):
     LOAD_TEST_BASE_URL          default http://127.0.0.1:8000
@@ -21,6 +22,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -33,6 +36,8 @@ SEQ_THRESHOLD_SECONDS: float = float(os.environ.get("LOAD_TEST_SEQ_THRESHOLD", "
 CONC_WORKERS: int = int(os.environ.get("LOAD_TEST_CONC_WORKERS", "8"))
 CONC_P95_LIMIT: float = float(os.environ.get("LOAD_TEST_CONC_P95_LIMIT", "3.0"))
 CONC_ERR_RATE_LIMIT: float = float(os.environ.get("LOAD_TEST_CONC_ERR_RATE", "0.1"))
+RESULT_SCHEMA_VERSION = "load_test_result_v1"
+LAST_RESULT: dict[str, Any] | None = None
 
 # ---------------------------------------------------------------------------
 # Shared payloads
@@ -74,6 +79,28 @@ REQUEST_MIX: list[tuple[str, str, str | None]] = [
 ]
 
 
+def _utc_timestamp() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _record_result(result: dict[str, Any]) -> None:
+    global LAST_RESULT
+    LAST_RESULT = result
+
+
+def write_json_result(path_text: str, result: dict[str, Any]) -> None:
+    path = Path(path_text)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _is_runtime_error(status: int) -> bool:
+    return status == 0 or status >= 500
+
+
 # ---------------------------------------------------------------------------
 # Core HTTP helper
 # ---------------------------------------------------------------------------
@@ -105,7 +132,7 @@ def send_request(
 
 
 # ---------------------------------------------------------------------------
-# Sequential scenario (unchanged semantics from original)
+# Sequential scenario
 # ---------------------------------------------------------------------------
 
 
@@ -133,7 +160,14 @@ def run_sequential(base_url: str) -> int:
     for i, (method, path, body) in enumerate(requests, start=1):
         status, elapsed = send_request(base_url, method, path, body)
         label = f"[{i:02d}/{total}] {method} {path}"
-        passed = elapsed <= SEQ_THRESHOLD_SECONDS
+        failure_reasons: list[str] = []
+        if elapsed > SEQ_THRESHOLD_SECONDS:
+            failure_reasons.append(
+                f"elapsed {elapsed:.3f}s > {SEQ_THRESHOLD_SECONDS}s"
+            )
+        if _is_runtime_error(status):
+            failure_reasons.append(f"runtime status {status}")
+        passed = not failure_reasons
         flag = "PASS" if passed else "FAIL"
         print(f"  {flag}  {label}  status={status}  elapsed={elapsed:.3f}s")
         results.append(
@@ -143,20 +177,42 @@ def run_sequential(base_url: str) -> int:
                 "status": status,
                 "elapsed": elapsed,
                 "passed": passed,
+                "failure_reasons": failure_reasons,
             }
         )
-        if not passed:
-            failures.append(
-                f"{label} exceeded threshold: {elapsed:.3f}s > {SEQ_THRESHOLD_SECONDS}s"
-            )
+        for reason in failure_reasons:
+            failures.append(f"{label} failed: {reason}")
 
     times = [r["elapsed"] for r in results]
+    passed_count = sum(1 for r in results if r["passed"])
+    failed_count = total - passed_count
+    summary = {
+        "min_seconds": min(times),
+        "max_seconds": max(times),
+        "avg_seconds": sum(times) / len(times),
+        "passed": passed_count,
+        "failed": failed_count,
+    }
+    _record_result(
+        {
+            "schema_version": RESULT_SCHEMA_VERSION,
+            "runner_timestamp": _utc_timestamp(),
+            "scenario": "sequential",
+            "base_url": base_url,
+            "thresholds": {"max_request_seconds": SEQ_THRESHOLD_SECONDS},
+            "total_requests": total,
+            "ok": not failures,
+            "failures": failures,
+            "requests": results,
+            "summary": summary,
+        }
+    )
     print(
         f"\nload test [sequential] summary: total={total}  "
-        f"min={min(times):.3f}s  max={max(times):.3f}s  "
-        f"avg={sum(times) / len(times):.3f}s  "
-        f"passed={sum(1 for r in results if r['passed'])}  "
-        f"failed={len(failures)}"
+        f"min={summary['min_seconds']:.3f}s  max={summary['max_seconds']:.3f}s  "
+        f"avg={summary['avg_seconds']:.3f}s  "
+        f"passed={passed_count}  "
+        f"failed={failed_count}"
     )
 
     if failures:
@@ -189,6 +245,7 @@ def _worker(
             "path": path,
             "status": status,
             "elapsed": elapsed,
+            "runtime_error": _is_runtime_error(status),
         }
         with lock:
             results.append(record)
@@ -229,6 +286,32 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
     total = len(results)
     if total == 0:
         print("load test [concurrent]: no results — something went wrong")
+        _record_result(
+            {
+                "schema_version": RESULT_SCHEMA_VERSION,
+                "runner_timestamp": _utc_timestamp(),
+                "scenario": "concurrent",
+                "base_url": base_url,
+                "thresholds": {
+                    "p95_seconds": CONC_P95_LIMIT,
+                    "max_error_rate": CONC_ERR_RATE_LIMIT,
+                },
+                "workers": n_workers,
+                "total_requests": 0,
+                "ok": False,
+                "failures": ["no request results were recorded"],
+                "requests": [],
+                "summary": {
+                    "p50_seconds": 0.0,
+                    "p95_seconds": 0.0,
+                    "max_seconds": 0.0,
+                    "error_count": 0,
+                    "error_rate": 1.0,
+                    "throughput_requests_per_second": 0.0,
+                    "wall_seconds": wall_elapsed,
+                },
+            }
+        )
         return 1
 
     times = [r["elapsed"] for r in results]
@@ -280,6 +363,33 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
             f"{CONC_ERR_RATE_LIMIT * 100:.0f}%"
         )
 
+    _record_result(
+        {
+            "schema_version": RESULT_SCHEMA_VERSION,
+            "runner_timestamp": _utc_timestamp(),
+            "scenario": "concurrent",
+            "base_url": base_url,
+            "thresholds": {
+                "p95_seconds": CONC_P95_LIMIT,
+                "max_error_rate": CONC_ERR_RATE_LIMIT,
+            },
+            "workers": n_workers,
+            "total_requests": total,
+            "ok": not failures,
+            "failures": failures,
+            "requests": results,
+            "summary": {
+                "p50_seconds": p50,
+                "p95_seconds": p95,
+                "max_seconds": p_max,
+                "error_count": error_count,
+                "error_rate": error_rate,
+                "throughput_requests_per_second": throughput,
+                "wall_seconds": wall_elapsed,
+            },
+        }
+    )
+
     if failures:
         print("\nFAILURES:")
         for msg in failures:
@@ -308,14 +418,26 @@ def main() -> int:
         default=None,
         help="override base URL (default: LOAD_TEST_BASE_URL env or http://127.0.0.1:8000)",
     )
+    parser.add_argument(
+        "--json-output",
+        default=None,
+        help="optional path for writing structured load_test_result_v1 JSON evidence",
+    )
     args = parser.parse_args()
 
     base_url = args.base_url if args.base_url else BASE_URL
 
     if args.scenario == "sequential":
-        return run_sequential(base_url)
+        exit_code = run_sequential(base_url)
     else:
-        return run_concurrent(base_url, n_workers=CONC_WORKERS)
+        exit_code = run_concurrent(base_url, n_workers=CONC_WORKERS)
+
+    if args.json_output is not None:
+        if LAST_RESULT is None:
+            raise RuntimeError("load-test result was not recorded")
+        write_json_result(args.json_output, LAST_RESULT)
+
+    return exit_code
 
 
 if __name__ == "__main__":

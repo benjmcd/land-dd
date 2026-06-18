@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Performance baseline evidence)
+
+- Selected `L10-PERF-010` from `state/LEVEL_9_10_GATE_MATRIX.md` as the next unblocked
+  repo-local implementation pass.
+- Added `plans/2026-06-18-performance-baseline-evidence.md` and routed
+  `plans/README.md` plus `tasks/task_queue.yaml` to active task `R-002`.
+- Audited the existing load-test runner, Windows/POSIX wrappers, load-testing runbook,
+  performance runbook, release-readiness validator, and focused artifact tests before
+  implementation.
+- Added `config/performance_baseline.yaml`, a validate-only performance baseline
+  checker plus Windows/POSIX wrappers, optional `load_test_result_v1` JSON output from
+  the existing load-test runner, and opt-in result-directory support in both load-test
+  wrappers.
+- Updated load-testing, performance, and release-readiness runbooks to keep the
+  baseline scoped to local release-candidate evidence, not a production SLO or hosted
+  production proof.
+- Composed the performance baseline checker into release readiness and updated the
+  readiness-matrix guard so current active plans may be matrix-derived follow-on slices
+  while the Level 9/10 reconciliation task remains required.
+- Ran focused validation: performance baseline checker/wrapper, load-test validate-only
+  wrapper, `40` focused artifact tests, ruff, mypy, release-readiness validator,
+  readiness-matrix validator, and `git diff --check` all passed.
+- Ran full `.\scripts\verify.ps1`; workspace validation, backend tests, ruff, and mypy
+  over `317` source files passed. DB smoke was skipped by default.
+
 ## 2026-06-18 (Level 9/10 readiness reconciliation)
 
 - Added `plans/2026-06-18-level9-10-readiness-reconciliation.md` as the active
