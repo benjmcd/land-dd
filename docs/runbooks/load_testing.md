@@ -112,10 +112,14 @@ bash scripts/run_load_test.sh --result-dir ./local_artifacts/performance-baselin
 Sends **20 sequential requests** (4 each to `/health`, `/version`, `/metrics`,
 `POST /areas`, `POST /report-runs`) from a single thread, one after the other.
 
-**Pass condition:** every request completes within 5 seconds.
+**Pass condition:** every request completes within 5 seconds and returns the expected
+workflow status. Health, version, and metrics requests must return `200`; `POST /areas`
+must return `201`; `POST /report-runs` must return `200` or `202`.
 
 This baseline ensures the server responds to each endpoint type without timing out
-under zero concurrency.
+under zero concurrency. The POST sequence is a real local workflow: each area request
+sends a valid `geom_geojson` area-create payload, reads the returned `area_id`, and
+then starts a `rural_land_purchase` report run for that area.
 
 ### Concurrent (expected-workload)
 
@@ -123,12 +127,13 @@ Spins up **N parallel worker threads** (default 8, each sending the 5-endpoint
 request mix once), all launched simultaneously, to model a burst of concurrent users.
 
 - **Total requests:** `N workers × 5 requests = 40` by default.
-- **Measured metrics:** p50, p95, and max latency; per-request error count; overall
+- **Measured metrics:** p50, p95, and max latency; per-request failure count; overall
   throughput (req/s); total wall-clock time.
 - **Pass conditions (both must hold):**
   - p95 latency ≤ 3.0 seconds
-  - Error rate ≤ 10 % (errors are HTTP 5xx responses and connection failures; 4xx
-    responses are not counted as errors)
+  - Failure rate ≤ 10 % (failures include connection failures, HTTP 5xx responses,
+    unexpected status codes, and skipped report-run requests when `/areas` does not
+    return a usable `area_id`)
 
 ## Environment Overrides
 
@@ -141,7 +146,7 @@ All thresholds and parameters are overridable via environment variables:
 | `LOAD_TEST_SEQ_THRESHOLD` | `5.0` | Sequential per-request wall-clock limit (seconds) |
 | `LOAD_TEST_CONC_WORKERS` | `8` | Number of parallel workers for concurrent scenario |
 | `LOAD_TEST_CONC_P95_LIMIT` | `3.0` | Concurrent p95 latency limit (seconds) |
-| `LOAD_TEST_CONC_ERR_RATE` | `0.1` | Concurrent max error rate (0.0–1.0) |
+| `LOAD_TEST_CONC_ERR_RATE` | `0.1` | Concurrent max failure rate (0.0–1.0) |
 
 Example — tighter thresholds for a fast local machine:
 
@@ -167,7 +172,8 @@ A summary line follows with min/max/avg elapsed times and a pass/fail count.
 
 - A `FAIL` line means that request exceeded the 5-second threshold. The server may be
   starting up, under other load, or experiencing a slow database query.
-- `status=4xx` does not count as a sequential failure — only elapsed time is evaluated.
+- `status=4xx` on `POST /areas` or `POST /report-runs` is a failed workflow proof,
+  not an acceptable validation result.
 
 ### Concurrent output
 
@@ -175,24 +181,27 @@ The script prints one line per completed request (sorted by worker, then path):
 
 ```
   worker=01  GET  /health               status=200  elapsed=0.014s
-  worker=01  POST /areas                status=422  elapsed=0.021s
+  worker=01  POST /areas                status=201  elapsed=0.021s
   ...
 ```
 
-A summary line follows with p50/p95/max latency, error count, error rate, throughput,
+A summary line follows with p50/p95/max latency, failure count, failure rate, throughput,
 and total wall-clock time:
 
 ```
 load test [concurrent] summary: workers=8  total=40  p50=0.018s  p95=0.045s
-  max=0.098s  errors=0  error_rate=0.0%  throughput=112.3 req/s  wall=0.356s
+  max=0.098s  failures=0  failure_rate=0.0%  throughput=112.3 req/s  wall=0.356s
 ```
 
 - **p95 > limit**: the slowest 5 % of requests are too slow — investigate slow
   endpoints (often `POST /areas` or `POST /report-runs` which touch the DB).
-- **error_rate > limit**: too many 5xx/connection failures — check server logs for
-  panics, DB pool exhaustion, or unhandled exceptions.
-- **4xx responses** (validation errors on POST payloads) are expected and are not
-  counted as errors.
+- **failure_rate > limit**: too many failed workflow requests — check server logs for
+  validation errors, panics, DB pool exhaustion, or unhandled exceptions.
+- **4xx responses** on POST endpoints mean the load-test workflow is invalid or the API
+  rejected it. Treat them as failures, not performance evidence.
+- A single invalid POST workflow chain, including an `/areas` response without a usable
+  `area_id`, fails the concurrent scenario even when the aggregate failure rate remains
+  below 10 percent.
 
 ### JSON result artifacts
 
@@ -234,5 +243,6 @@ are not currently integrated and must be run manually outside of this script.
   (`urllib.request`, `threading`, `statistics`). No extra packages are required.
 - Both wrappers (`run_load_test.ps1` and `run_load_test.sh`) delegate to the same
   Python runner, so scenario logic stays in one place and the two wrappers cannot drift.
-- POST payloads are minimal fixtures. The server may return 4xx for validation failures
-  on those endpoints; that is expected and does not affect threshold evaluation.
+- POST payloads are minimal valid workflow fixtures. The runner creates an area first,
+  parses `area_id` from the response, and then posts `/report-runs` with
+  `intent_code=rural_land_purchase`. POST validation 4xx responses fail the run.

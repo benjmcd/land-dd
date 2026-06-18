@@ -31,6 +31,13 @@ EXPECTED_REQUESTS = {
     ("POST", "/areas"),
     ("POST", "/report-runs"),
 }
+EXPECTED_STATUSES = {
+    ("GET", "/health"): {200},
+    ("GET", "/version"): {200},
+    ("GET", "/metrics"): {200},
+    ("POST", "/areas"): {201},
+    ("POST", "/report-runs"): {200, 202},
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -149,6 +156,15 @@ def validate_request_mix(scenario: dict[str, Any], *, per_worker: bool) -> None:
         count = entry.get(count_key)
         if not isinstance(count, int) or count <= 0:
             raise SystemExit(f"{key} count must be positive")
+        statuses = entry.get("expected_statuses")
+        if not isinstance(statuses, list) or not statuses:
+            raise SystemExit(f"{key} expected_statuses must be a non-empty list")
+        status_set = set(statuses)
+        require(key in EXPECTED_STATUSES, f"{key} has no expected status contract")
+        require(
+            status_set == EXPECTED_STATUSES[key],
+            f"{key} expected_statuses mismatch: {sorted(status_set)}",
+        )
         total += count
     require(seen == EXPECTED_REQUESTS, f"unexpected request mix: {sorted(seen)}")
     expected_total = 5 if per_worker else scenario.get("request_count")
@@ -173,6 +189,9 @@ def validate_runner_and_wrappers() -> None:
         "SEQ_THRESHOLD_SECONDS",
         "CONC_P95_LIMIT",
         "CONC_ERR_RATE_LIMIT",
+        "rural_land_purchase",
+        "load-test-fixture",
+        "unexpected status",
     ):
         require(phrase in runner, f"load-test runner missing phrase: {phrase}")
 
@@ -195,6 +214,9 @@ def validate_runbooks() -> None:
         "release-candidate",
         "not a production SLO",
         "hosted production",
+        "POST /areas",
+        "POST /report-runs",
+        "4xx",
     ):
         require(phrase in text, f"performance runbooks missing phrase: {phrase}")
 

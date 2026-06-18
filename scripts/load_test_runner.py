@@ -43,29 +43,24 @@ LAST_RESULT: dict[str, Any] | None = None
 # Shared payloads
 # ---------------------------------------------------------------------------
 
-GEOJSON_POLYGON = json.dumps(
-    {
-        "type": "Feature",
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    [-105.0, 40.0],
-                    [-104.9, 40.0],
-                    [-104.9, 40.1],
-                    [-105.0, 40.1],
-                    [-105.0, 40.0],
-                ]
-            ],
-        },
-        "properties": {},
-    }
-)
+GEOJSON_POLYGON: dict[str, object] = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [-105.0, 40.0],
+            [-104.9, 40.0],
+            [-104.9, 40.1],
+            [-105.0, 40.1],
+            [-105.0, 40.0],
+        ]
+    ],
+}
 
-REPORT_RUN_PAYLOAD = json.dumps(
+AREA_CREATE_PAYLOAD = json.dumps(
     {
-        "area_id": "test-area-001",
-        "requested_by": "load-test",
+        "label": "load-test-area",
+        "geom_geojson": GEOJSON_POLYGON,
+        "geom_source": "load-test-fixture",
     }
 )
 
@@ -74,8 +69,8 @@ REQUEST_MIX: list[tuple[str, str, str | None]] = [
     ("GET", "/health", None),
     ("GET", "/version", None),
     ("GET", "/metrics", None),
-    ("POST", "/areas", GEOJSON_POLYGON),
-    ("POST", "/report-runs", REPORT_RUN_PAYLOAD),
+    ("POST", "/areas", AREA_CREATE_PAYLOAD),
+    ("POST", "/report-runs", None),
 ]
 
 
@@ -101,6 +96,85 @@ def _is_runtime_error(status: int) -> bool:
     return status == 0 or status >= 500
 
 
+def _expected_statuses(method: str, path: str) -> set[int]:
+    if method == "GET" and path in {"/health", "/version", "/metrics"}:
+        return {200}
+    if method == "POST" and path == "/areas":
+        return {201}
+    if method == "POST" and path == "/report-runs":
+        return {200, 202}
+    return set(range(200, 300))
+
+
+def _report_run_payload(area_id: str) -> str:
+    return json.dumps({"area_id": area_id, "intent_code": "rural_land_purchase"})
+
+
+def _area_id_from_response(body_text: str) -> tuple[str | None, str | None]:
+    try:
+        body = json.loads(body_text)
+    except json.JSONDecodeError:
+        return None, "area create response was not valid JSON"
+    if not isinstance(body, dict):
+        return None, "area create response was not a JSON object"
+    area_id = body.get("area_id")
+    if not isinstance(area_id, str) or not area_id.strip():
+        return None, "area create response did not include area_id"
+    return area_id, None
+
+
+def _request_failure_reasons(
+    *,
+    status: int,
+    elapsed: float,
+    expected_statuses: set[int],
+    max_seconds: float | None = None,
+) -> list[str]:
+    failure_reasons: list[str] = []
+    if max_seconds is not None and elapsed > max_seconds:
+        failure_reasons.append(f"elapsed {elapsed:.3f}s > {max_seconds}s")
+    if _is_runtime_error(status):
+        failure_reasons.append(f"runtime status {status}")
+    elif status not in expected_statuses:
+        expected = ", ".join(str(value) for value in sorted(expected_statuses))
+        failure_reasons.append(f"unexpected status {status}; expected {expected}")
+    return failure_reasons
+
+
+def _request_record(
+    *,
+    method: str,
+    path: str,
+    status: int,
+    elapsed: float,
+    failure_reasons: list[str],
+    worker_id: int | None = None,
+) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "method": method,
+        "path": path,
+        "status": status,
+        "elapsed": elapsed,
+        "passed": not failure_reasons,
+        "failure_reasons": failure_reasons,
+        "runtime_error": _is_runtime_error(status),
+    }
+    if worker_id is not None:
+        record["worker"] = worker_id
+    return record
+
+
+def _skipped_report_record(worker_id: int | None = None) -> dict[str, Any]:
+    return _request_record(
+        method="POST",
+        path="/report-runs",
+        status=0,
+        elapsed=0.0,
+        failure_reasons=["skipped because /areas did not return a valid area_id"],
+        worker_id=worker_id,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Core HTTP helper
 # ---------------------------------------------------------------------------
@@ -112,8 +186,8 @@ def send_request(
     path: str,
     body: str | None = None,
     timeout: float = TIMEOUT_SECONDS,
-) -> tuple[int, float]:
-    """Send one HTTP request; return (status_code, elapsed_seconds)."""
+) -> tuple[int, float, str]:
+    """Send one HTTP request; return (status_code, elapsed_seconds, response_body)."""
     url = base_url + path
     data: bytes | None = body.encode("utf-8") if body is not None else None
     headers: dict[str, str] = {"Content-Type": "application/json"} if data else {}
@@ -121,14 +195,16 @@ def send_request(
     t0 = time.monotonic()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            resp.read()
+            body_text = resp.read().decode("utf-8", errors="replace")
             status = resp.status
     except urllib.error.HTTPError as exc:
         status = exc.code
+        body_text = exc.read().decode("utf-8", errors="replace")
     except Exception:
         status = 0  # connection-level failure
+        body_text = ""
     elapsed = time.monotonic() - t0
-    return status, elapsed
+    return status, elapsed, body_text
 
 
 # ---------------------------------------------------------------------------
@@ -145,9 +221,8 @@ def run_sequential(base_url: str) -> int:
     for _ in range(4):
         requests.append(("GET", "/metrics", None))
     for _ in range(4):
-        requests.append(("POST", "/areas", GEOJSON_POLYGON))
-    for _ in range(4):
-        requests.append(("POST", "/report-runs", REPORT_RUN_PAYLOAD))
+        requests.append(("POST", "/areas", AREA_CREATE_PAYLOAD))
+        requests.append(("POST", "/report-runs", None))
 
     total = len(requests)
     assert total == 20, f"expected 20 requests, got {total}"  # noqa: S101
@@ -157,31 +232,47 @@ def run_sequential(base_url: str) -> int:
 
     print(f"load test [sequential]: sending {total} sequential requests to {base_url}")
 
+    pending_area_id: str | None = None
     for i, (method, path, body) in enumerate(requests, start=1):
-        status, elapsed = send_request(base_url, method, path, body)
         label = f"[{i:02d}/{total}] {method} {path}"
-        failure_reasons: list[str] = []
-        if elapsed > SEQ_THRESHOLD_SECONDS:
-            failure_reasons.append(
-                f"elapsed {elapsed:.3f}s > {SEQ_THRESHOLD_SECONDS}s"
-            )
-        if _is_runtime_error(status):
-            failure_reasons.append(f"runtime status {status}")
-        passed = not failure_reasons
-        flag = "PASS" if passed else "FAIL"
-        print(f"  {flag}  {label}  status={status}  elapsed={elapsed:.3f}s")
-        results.append(
-            {
-                "method": method,
-                "path": path,
-                "status": status,
-                "elapsed": elapsed,
-                "passed": passed,
-                "failure_reasons": failure_reasons,
-            }
+        if method == "POST" and path == "/report-runs":
+            if pending_area_id is None:
+                record = _skipped_report_record()
+                results.append(record)
+                print(f"  FAIL  {label}  status=0  elapsed=0.000s")
+                failures.append(f"{label} failed: {record['failure_reasons'][0]}")
+                continue
+            body = _report_run_payload(pending_area_id)
+            pending_area_id = None
+
+        status, elapsed, body_text = send_request(base_url, method, path, body)
+        failure_reasons = _request_failure_reasons(
+            status=status,
+            elapsed=elapsed,
+            expected_statuses=_expected_statuses(method, path),
+            max_seconds=SEQ_THRESHOLD_SECONDS,
         )
+        record = _request_record(
+            method=method,
+            path=path,
+            status=status,
+            elapsed=elapsed,
+            failure_reasons=failure_reasons,
+        )
+        if method == "POST" and path == "/areas" and record["passed"]:
+            pending_area_id, parse_error = _area_id_from_response(body_text)
+            if parse_error is not None:
+                record["failure_reasons"].append(parse_error)
+                record["passed"] = False
+                pending_area_id = None
+        flag = "PASS" if record["passed"] else "FAIL"
+        print(f"  {flag}  {label}  status={status}  elapsed={elapsed:.3f}s")
+        results.append(record)
         for reason in failure_reasons:
             failures.append(f"{label} failed: {reason}")
+        if not record["passed"]:
+            for reason in record["failure_reasons"][len(failure_reasons):]:
+                failures.append(f"{label} failed: {reason}")
 
     times = [r["elapsed"] for r in results]
     passed_count = sum(1 for r in results if r["passed"])
@@ -237,16 +328,36 @@ def _worker(
     lock: threading.Lock,
 ) -> None:
     """Each worker issues one full REQUEST_MIX cycle."""
+    pending_area_id: str | None = None
     for method, path, body in REQUEST_MIX:
-        status, elapsed = send_request(base_url, method, path, body)
-        record = {
-            "worker": worker_id,
-            "method": method,
-            "path": path,
-            "status": status,
-            "elapsed": elapsed,
-            "runtime_error": _is_runtime_error(status),
-        }
+        if method == "POST" and path == "/report-runs":
+            if pending_area_id is None:
+                with lock:
+                    results.append(_skipped_report_record(worker_id))
+                continue
+            body = _report_run_payload(pending_area_id)
+            pending_area_id = None
+
+        status, elapsed, body_text = send_request(base_url, method, path, body)
+        failure_reasons = _request_failure_reasons(
+            status=status,
+            elapsed=elapsed,
+            expected_statuses=_expected_statuses(method, path),
+        )
+        record = _request_record(
+            method=method,
+            path=path,
+            status=status,
+            elapsed=elapsed,
+            failure_reasons=failure_reasons,
+            worker_id=worker_id,
+        )
+        if method == "POST" and path == "/areas" and record["passed"]:
+            pending_area_id, parse_error = _area_id_from_response(body_text)
+            if parse_error is not None:
+                record["failure_reasons"].append(parse_error)
+                record["passed"] = False
+                pending_area_id = None
         with lock:
             results.append(record)
 
@@ -261,7 +372,7 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
     )
     print(
         f"  thresholds: p95 <= {CONC_P95_LIMIT}s, "
-        f"error rate <= {CONC_ERR_RATE_LIMIT * 100:.0f}%"
+        f"failure rate <= {CONC_ERR_RATE_LIMIT * 100:.0f}%"
     )
 
     wall_start = time.monotonic()
@@ -307,6 +418,7 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
                     "max_seconds": 0.0,
                     "error_count": 0,
                     "error_rate": 1.0,
+                    "workflow_failure_count": 0,
                     "throughput_requests_per_second": 0.0,
                     "wall_seconds": wall_elapsed,
                 },
@@ -326,12 +438,16 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
     p95 = percentile(sorted_times, 95)
     p_max = max(sorted_times)
 
-    error_count = sum(
+    error_count = sum(1 for r in results if not r["passed"])
+    error_rate = error_count / total
+    workflow_failure_count = sum(
         1
         for r in results
-        if r["status"] == 0 or (r["status"] >= 500)
+        for reason in r.get("failure_reasons", [])
+        if reason.startswith("unexpected status")
+        or reason.startswith("skipped because")
+        or reason.startswith("area create response")
     )
-    error_rate = error_count / total
 
     throughput = total / wall_elapsed if wall_elapsed > 0 else 0.0
 
@@ -346,7 +462,7 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
         f"\nload test [concurrent] summary: "
         f"workers={n_workers}  total={total}  "
         f"p50={p50:.3f}s  p95={p95:.3f}s  max={p_max:.3f}s  "
-        f"errors={error_count}  error_rate={error_rate:.1%}  "
+        f"failures={error_count}  failure_rate={error_rate:.1%}  "
         f"throughput={throughput:.1f} req/s  "
         f"wall={wall_elapsed:.3f}s"
     )
@@ -359,8 +475,13 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
         )
     if error_rate > CONC_ERR_RATE_LIMIT:
         failures.append(
-            f"error rate {error_rate:.1%} exceeds limit "
+            f"failure rate {error_rate:.1%} exceeds limit "
             f"{CONC_ERR_RATE_LIMIT * 100:.0f}%"
+        )
+    if workflow_failure_count:
+        failures.append(
+            f"workflow request failures {workflow_failure_count}; "
+            "expected successful area creation and report-run admission"
         )
 
     _record_result(
@@ -384,6 +505,7 @@ def run_concurrent(base_url: str, n_workers: int = CONC_WORKERS) -> int:
                 "max_seconds": p_max,
                 "error_count": error_count,
                 "error_rate": error_rate,
+                "workflow_failure_count": workflow_failure_count,
                 "throughput_requests_per_second": throughput,
                 "wall_seconds": wall_elapsed,
             },

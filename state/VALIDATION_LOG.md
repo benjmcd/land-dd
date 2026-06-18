@@ -11086,3 +11086,57 @@ rg -n "HTTP_422_UNPROCESSABLE_ENTITY|status\.HTTP_422_UNPROCESSABLE_CONTENT" .\b
 - Queue backpressure is default-off repo-local behavior. Hosted threshold tuning,
   dashboard proof, alert routing, and production workload evidence are still required
   before this can become a Level 10 production claim.
+
+---
+
+## 2026-06-18 - Workflow-valid Local Load Proof
+
+**Scope:** Strengthen `L10-PERF-006` local release-candidate load proof so the runner
+uses valid area creation and report-run admission traffic while preserving that hosted
+load, SLO, dashboard, alert-routing, and production capacity proof remain unproven.
+
+**Commands run:**
+
+```powershell
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\hosted_deployment_check.py
+python .\scripts\readiness_matrix_check.py
+cd backend; python -m pytest -q .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py
+python .\scripts\performance_baseline_check.py
+.\scripts\run_load_test.ps1 -ValidateOnly
+cd backend; python -m ruff check .\tests\test_load_test_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py
+cd backend; python -m mypy .\tests\test_load_test_artifacts.py ..\scripts\load_test_runner.py ..\scripts\performance_baseline_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+.\scripts\run_load_test.ps1 -BaseUrl http://127.0.0.1:18181
+git diff --check
+git diff --name-only --diff-filter=D
+diff attribution scan over forbidden coauthor/generated marker patterns
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Must source readiness reported `sources=8 ready=7 blocked=1`; DS-017 remains blocked.
+- Private-MVP, release-readiness, hosted-deployment, and readiness-matrix validators
+  passed before implementation.
+- Focused load/performance artifact tests passed (`25 passed`).
+- Performance baseline checker passed.
+- Validate-only load wrapper printed `load test: artifact validation ok` and skipped live
+  HTTP requests.
+- Focused ruff passed; focused mypy passed.
+- Release-readiness and readiness-matrix validators passed after implementation.
+- `git diff --check` reported no whitespace errors. No deleted files were reported.
+- Diff attribution scan found no forbidden coauthor/generated marker strings.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy on 321 source files. DB smoke was skipped by default.
+- Temporary local live load proof passed against a hidden Uvicorn backend on port
+  `18181`: sequential scenario passed `20/20` requests and concurrent scenario passed
+  `40/40` requests; `POST /areas` returned `201` and `POST /report-runs` returned `202`.
+
+**Residual risk:**
+
+- The live load proof is local single-node runtime evidence. It is not hosted/staging
+  capacity proof, not an SLO, and not a production workload claim.

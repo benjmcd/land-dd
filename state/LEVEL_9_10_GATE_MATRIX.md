@@ -99,7 +99,7 @@ Status legend:
 | L10-PERF-003 spatial indexes/query plans for workloads | `PARTIAL` | PostGIS schema, DB smoke, static `spatial_query_plan_v1` contract/checker, opt-in runtime checker, and isolated local runtime proof for the configured target GIST indexes | Re-run read-only runtime `EXPLAIN ANALYZE` against representative selected-county or release-candidate DB workloads before promoting beyond PARTIAL. |
 | L10-PERF-004 large artifacts use object storage/reference pattern | `PROVEN_REPO_LOCAL` | `OBJECT_STORE_ROOT`, DB artifact metadata, artifact path trust tests | Map object store to hosted storage service during deployment. |
 | L10-PERF-005 cache strategy and invalidation are source-version aware | `VALIDATE_ONLY` | performance runbook | Implement/cache only when a real cache is introduced. |
-| L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | load-test scripts/runbook/checker | Run against staging/hosted target with recorded thresholds. |
+| L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | workflow-valid load-test scripts/runbook/checker and local temporary-backend proof for area creation -> report-run admission | Run against staging/hosted target with recorded thresholds before promoting beyond repo-local release-candidate proof. |
 | L10-PERF-007 queue depth/job latency/failure metrics monitored | `PARTIAL` | metrics, queue health, recovery preview | Add hosted dashboard/alert evidence. |
 | L10-PERF-008 backpressure/degraded mode for outages/load | `PARTIAL` | fail-closed source failures, runbook guidance, and default-off runtime queue backpressure for report/live-connector admission | Add hosted workload, dashboard, alert-routing, and threshold-tuning evidence before promoting beyond repo-local proof. |
 | L10-PERF-009 DB pooling and transaction boundaries configured | `PROVEN_REPO_LOCAL` | DB pool settings/tests and SQLAlchemy request-scoped sessions | Tune values under hosted workload. |
@@ -124,11 +124,11 @@ Status legend:
 
 The lowest-dependency next implementation pass is not hosted deployment. Hosted production
 is blocked by external platform/secret/billing/alerting/source decisions. The next
-unblocked implementation pass should choose one `PARTIAL` repo-local gate with no
-external blocker, preferably representative spatial query-plan evidence, hosted-smoke
-preparation, or source-readiness DS-017 decision recording if product chooses to defer
-DS-017 from full-release Must scope. Keep this matrix and its checker current as a
-validation precondition rather than treating matrix creation as the next product slice.
+unblocked implementation pass is `R-008` selected-county release-candidate proof refresh:
+audit and harden the packaged operator-case, DB-backed persistence, and explicit
+UI/browser smoke proof ladder without making DS-017, hosted production, IdP, SLO, or
+capacity claims. Keep this matrix and its checker current as a validation precondition
+rather than treating matrix creation as the next product slice.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence.
