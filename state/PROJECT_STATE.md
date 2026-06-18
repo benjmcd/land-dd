@@ -1,5 +1,34 @@
 # Project State
 
+## Current checkpoint (2026-06-18 spatial query SQL contract guard)
+
+The active implementation authority now points at a follow-up hardening slice for the
+static spatial query-plan proof.
+
+- **Active plan**: `plans/2026-06-18-spatial-query-sql-contract.md`.
+- **Purpose**: correct and guard the configured spatial plan-review SQL so static
+  release-readiness proof cannot name non-existent canonical schema columns.
+- **Current authority surfaces**: `db/migrations/0001_initial_spine.sql`,
+  `config/spatial_query_plan.yaml`, `scripts/spatial_query_plan_check.py`,
+  `backend/tests/test_spatial_query_plan_artifacts.py`, `plans/README.md`, and
+  `tasks/task_queue.yaml`.
+- **Known boundaries preserved**: no DB schema change, no default live DB plan execution,
+  no seeded runtime state, no generated artifacts, no hosted performance/SLO claim, and
+  no Level 10 completion claim.
+- **Issue fixed**: the pre-fix static observations workload selected
+  `o.observation_id`, but canonical `evidence.observations` uses `evidence_id`.
+- **Implemented proof**: `area_observation_intersections` now selects canonical
+  `o.evidence_id`, and `scripts/spatial_query_plan_check.py` validates configured
+  review statements against canonical DDL-derived table/column identifiers, aliases,
+  primary-key projections, spatial predicates, area filters, and expected index/table
+  relationships.
+- **Validation**: spatial query-plan checker and Windows wrapper passed, focused
+  spatial artifact tests passed (`10 passed`), release-readiness and readiness-matrix
+  validators passed, focused spatial/performance/release/matrix artifact tests passed
+  (`35 passed`), focused ruff/mypy passed, `git diff --check` passed, no deleted files
+  were reported, and default `.\scripts\verify.ps1` passed with backend tests, ruff,
+  and mypy over `318` source files. DB smoke was skipped by default.
+
 ## Current checkpoint (2026-06-18 spatial query-plan proof)
 
 The active implementation authority now points at the next unblocked Level 10

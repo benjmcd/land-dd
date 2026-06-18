@@ -3214,3 +3214,21 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   and mypy passed; `git diff --check` passed; no deleted files were reported; default
   `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over 318 source
   files. DB smoke was skipped by default.
+
+## 2026-06-18 Spatial query SQL contract guard
+
+- Found and corrected a static proof defect: `area_observation_intersections` selected
+  `o.observation_id`, but the canonical `evidence.observations` table defines
+  `evidence_id`.
+- Hardened `scripts/spatial_query_plan_check.py` to derive table columns from
+  `db/migrations/0001_initial_spine.sql` and fail closed when configured review SQL
+  references unexpected aliases or non-canonical columns.
+- Added statement-contract checks for selected primary keys, target table aliases,
+  `ST_Intersects` predicates, `JOIN core.areas a`, `WHERE a.area_id = :area_id`, and
+  expected index/table relationships.
+- Validation: spatial checker and Windows wrapper passed; focused
+  spatial artifact tests passed (`10 passed`); release-readiness and readiness-matrix
+  validators passed; focused spatial/performance/release/matrix artifact tests passed
+  (`35 passed`); focused ruff and mypy passed; `git diff --check` passed; no deleted
+  files were reported; default `.\scripts\verify.ps1` passed with backend tests, ruff,
+  and mypy over 318 source files. DB smoke was skipped by default.

@@ -4,7 +4,9 @@ import importlib
 import importlib.util
 from pathlib import Path
 from types import ModuleType
-from typing import Any, cast
+from typing import Any, TypedDict, cast
+
+import pytest
 
 yaml = cast(Any, importlib.import_module("yaml"))
 
@@ -37,6 +39,39 @@ EXPECTED_QUERY_IDS = {
     "area_parcel_intersections",
     "area_reference_feature_intersections",
     "area_observation_intersections",
+}
+
+
+class ExpectedStatement(TypedDict):
+    alias: str
+    table_ref: str
+    primary_key: str
+    spatial_column: str
+    indexes: set[str]
+
+
+EXPECTED_STATEMENTS: dict[str, ExpectedStatement] = {
+    "area_parcel_intersections": {
+        "alias": "p",
+        "table_ref": "geo.parcels p",
+        "primary_key": "parcel_id",
+        "spatial_column": "geom",
+        "indexes": {"areas_geom_gix", "parcels_geom_gix"},
+    },
+    "area_reference_feature_intersections": {
+        "alias": "rf",
+        "table_ref": "geo.reference_features rf",
+        "primary_key": "feature_id",
+        "spatial_column": "geom",
+        "indexes": {"areas_geom_gix", "reference_features_geom_gix"},
+    },
+    "area_observation_intersections": {
+        "alias": "o",
+        "table_ref": "evidence.observations o",
+        "primary_key": "evidence_id",
+        "spatial_column": "geometry",
+        "indexes": {"areas_geom_gix", "observations_geom_gix"},
+    },
 }
 
 
@@ -104,6 +139,57 @@ def test_spatial_query_plan_config_pins_required_indexes_and_queries() -> None:
         assert query["default_release_readiness"] is False
         assert query["expected_plan_node"] == "Index Scan"
         assert set(query["required_indexes"]).issubset(set(EXPECTED_INDEXES))
+
+
+def test_spatial_query_plan_statements_pin_canonical_identifiers() -> None:
+    config = _config()
+    queries = config["query_plan_reviews"]
+    assert isinstance(queries, list)
+    by_id = {query["id"]: query for query in queries}
+
+    for query_id, expected in EXPECTED_STATEMENTS.items():
+        statement = by_id[query_id]["statement"]
+        assert isinstance(statement, str)
+        alias = expected["alias"]
+        primary_key = expected["primary_key"]
+        spatial_column = expected["spatial_column"]
+
+        assert f"SELECT {alias}.{primary_key}" in statement
+        assert expected["table_ref"] in statement
+        assert f"ST_Intersects({alias}.{spatial_column}, a.geom)" in statement
+        assert "JOIN core.areas a" in statement
+        assert "WHERE a.area_id = :area_id" in statement
+        assert set(by_id[query_id]["required_indexes"]) == expected["indexes"]
+
+    assert "observation_id" not in by_id["area_observation_intersections"]["statement"]
+
+
+def test_spatial_query_plan_checker_rejects_noncanonical_statement_column(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = cast(Any, _load_checker())
+    config = _config()
+
+    for query in config["query_plan_reviews"]:
+        if query["id"] == "area_observation_intersections":
+            query["statement"] = query["statement"].replace(
+                "o.evidence_id",
+                "o.observation_id",
+            )
+
+    monkeypatch.setattr(checker, "load_config", lambda: config)
+
+    with pytest.raises(SystemExit, match="observation_id"):
+        checker.validate_config()
+
+
+def test_spatial_query_plan_checker_reads_observation_primary_key_from_ddl() -> None:
+    checker = cast(Any, _load_checker())
+
+    primary_keys = checker.load_canonical_primary_keys()
+
+    assert primary_keys["evidence.observations"] == "evidence_id"
+    assert "observation_id" not in checker.load_canonical_columns()["evidence.observations"]
 
 
 def test_spatial_query_plan_checker_imports_and_passes() -> None:

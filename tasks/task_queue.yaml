@@ -1,13 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-spatial-query-plan-proof.md
+active_plan: plans/2026-06-18-spatial-query-sql-contract.md
 routing_note: >
-  Active lane: spatial query-plan proof
-  (plans/2026-06-18-spatial-query-plan-proof.md). Goal: turn the manual spatial
-  query-plan review gap into a repo-local validate-only contract/checker without
-  claiming hosted production performance, adding a DB schema change, or promoting
-  Level 10 performance completion. Completed readiness-reconciliation and performance
-  baseline plans remain historical context; they are not the current implementation
-  authority.
+  Active lane: spatial query SQL contract guard
+  (plans/2026-06-18-spatial-query-sql-contract.md). Goal: harden the static spatial
+  query-plan contract so configured review SQL cannot name non-existent canonical
+  schema columns. This does not claim hosted production performance, add a DB schema
+  change, or promote Level 10 performance completion. Completed readiness-reconciliation,
+  performance baseline, and static spatial proof plans remain historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -76,7 +75,7 @@ tasks:
 
   - id: R-003
     title: Spatial query-plan proof
-    status: active
+    status: done
     depends_on: [R-002]
     lane: coordinator
     spec: plans/2026-06-18-spatial-query-plan-proof.md
@@ -99,6 +98,34 @@ tasks:
       - Checker validates the contract against canonical migration DDL and runbook wording
       - Default validation remains DB-free, validate-only, and artifact-free
       - Runbooks preserve the boundary between static repo proof and future DB-enabled plan evidence
+
+  - id: R-004
+    title: Spatial query SQL contract guard
+    status: active
+    depends_on: [R-003]
+    lane: coordinator
+    spec: plans/2026-06-18-spatial-query-sql-contract.md
+    notes: >
+      Correct the static spatial plan-review SQL contract and fail closed if configured
+      statements drift from canonical DDL identifiers. This is still repo-file-only
+      proof, not live DB EXPLAIN evidence.
+    validation:
+      - python .\scripts\spatial_query_plan_check.py
+      - .\scripts\run_spatial_query_plan_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - .\scripts\run_release_readiness_check.ps1
+      - python .\scripts\readiness_matrix_check.py
+      - .\scripts\run_readiness_matrix_check.ps1
+      - cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+      - cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Observation workload SQL selects the canonical `evidence_id`, not `observation_id`
+      - Checker validates expected statement aliases, table references, primary keys, and area filter tokens
+      - Default validation remains DB-free, validate-only, and artifact-free
 
   # --- Completed ---
   - id: T000
