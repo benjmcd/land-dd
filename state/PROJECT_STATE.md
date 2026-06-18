@@ -1,5 +1,32 @@
 # Project State
 
+## Current checkpoint (2026-06-18 report artifact path trust)
+
+DB-backed report artifact delivery now treats the configured object-store root as the
+artifact file trust boundary.
+
+- **Object-store root authority**: `SqlAlchemyReportRunRepository` resolves
+  `OBJECT_STORE_ROOT`, accepts only artifact paths under that root, and requires the
+  persisted artifact filename to match `{report_run_id}.json`.
+- **Artifact body consistency**: DB-backed report reloads now reject artifact JSON whose
+  `report_run_id` does not match the report row being read.
+- **Artifact endpoint hardening**: `GET /report-runs/{report_run_id}/artifact` no
+  longer performs a second filesystem read from URIs embedded in the artifact payload;
+  it returns the validated report contract already loaded by the repository.
+- **API failure mode**: report API reads now translate artifact path trust-boundary
+  failures to `409` for authorized callers instead of leaking implementation
+  exceptions from the repository; workspace-scoped reads check DB row ownership before
+  loading artifact files, so wrong-workspace callers still receive `404`.
+- **Tamper regression**: DB-gated artifact export coverage now updates an approved
+  report row to point outside `OBJECT_STORE_ROOT` and verifies artifact delivery fails
+  closed with `409`; it also verifies in-root wrong filenames fail with `409` for the
+  owning workspace and `404` for another workspace. Repository coverage rejects
+  unexpected artifact filenames and artifact JSON whose `report_run_id` differs from
+  the DB row.
+- **Validation**: focused in-memory artifact tests, focused DB-gated artifact tests,
+  report repository/export tests, ruff, mypy, default `.\scripts\verify.ps1`, and
+  DB-enabled `.\scripts\verify.ps1` passed on isolated Postgres port `55449`.
+
 ## Current checkpoint (2026-06-18 connector review workspace scope)
 
 Legacy connector review mutations and connector-derived report creation now preserve

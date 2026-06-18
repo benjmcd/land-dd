@@ -2,6 +2,66 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Report Artifact Path Trust
+
+**Scope:** Constrain DB-backed report artifact file reads to the configured
+`OBJECT_STORE_ROOT`, reject mismatched persisted artifact identities, and remove the
+artifact endpoint's second filesystem dereference from report payload URI fields.
+
+**Commands run:**
+
+```powershell
+Push-Location .\backend
+python -m pytest -q .\tests\reports\test_report_repository.py -k "resolve"
+python -m pytest -q .\tests\api\test_report_export.py -k "artifact and not db"
+Pop-Location
+$env:COMPOSE_PROJECT_NAME='lddv2300'; $env:DB_PORT='55449'; docker compose up -d db
+$env:RUN_DB_SMOKE='1'
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55449/land_diligence'
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55449/land_diligence'
+.\scripts\db_apply_migrations.ps1
+Push-Location .\backend
+python -m pytest -q .\tests\api\test_report_export.py -k "artifact" -vv
+python -m pytest -q .\tests\reports\test_report_repository.py .\tests\api\test_report_export.py -k "artifact or repository"
+python -m pytest -q .\tests\api\test_report_auth.py -k "wrong_workspace or adjacent_routes"
+python -m ruff check .\app\api\reports.py .\app\reports\report_repo.py .\app\reports\service.py .\tests\api\test_report_export.py .\tests\reports\test_report_repository.py .\tests\api\test_report_auth.py
+python -m mypy .\app\api\reports.py .\app\reports\report_repo.py .\app\reports\service.py .\tests\api\test_report_export.py .\tests\reports\test_report_repository.py .\tests\api\test_report_auth.py
+Pop-Location
+.\scripts\verify.ps1
+$env:RUN_DB_SMOKE='1'
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55449/land_diligence'
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55449/land_diligence'
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Report artifact resolver coverage passed (`3 passed`).
+- In-memory artifact endpoint coverage passed (`10 passed`).
+- Isolated Postgres project `lddv2300` on port `55449` reached healthy status;
+  migrations and seeds applied successfully.
+- DB-gated artifact tests passed, including out-of-root tampered URI, in-root wrong
+  filename, and wrong-workspace concealment regressions (`11 passed`, `4 deselected`).
+- Report repository plus artifact export focused tests passed (`15 passed`).
+- Existing wrong-workspace report auth regressions passed (`4 passed`).
+- Ruff passed on touched report API/repository/test files.
+- Mypy passed on touched report API/repository/service/test files (`6 source files`).
+- Default `.\scripts\verify.ps1` passed on Python 3.12.10: workspace validation,
+  backend tests, ruff, and mypy over 316 source files passed; DB smoke skipped.
+- DB-enabled `.\scripts\verify.ps1` passed against isolated Postgres port `55449`:
+  migrations/seeds, backend tests, ruff, mypy over 316 source files, and DB smoke all
+  passed. DB smoke reported PostGIS 3.4, 25 seeded source registry rows, 26 total
+  sources after runtime test insertion, 2 seeded intents, and `DB smoke check passed`.
+
+**Residual risk:**
+
+- DB container `lddv2300-db-1` was started for validation and has not yet been deleted;
+  stop it non-destructively when no further DB checks are needed.
+- This slice does not add checksum/object-storage-provider integrity verification; it
+  only closes local path-authority confusion for DB-backed artifacts.
+- The separate UI CSRF route-level coverage gap remains a follow-up; current audit found
+  shared CSRF helpers in place, but not exhaustive route-specific tests.
+
 ## 2026-06-18 Connector Review Workspace Scope
 
 **Scope:** Require workspace identity for legacy connector review mutations and

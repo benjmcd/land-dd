@@ -70,6 +70,13 @@ def _make_app_client_with_unapproved_report() -> tuple[FastAPI, TestClient, str]
     return app, client, run_resp.json()["report_run_id"]
 
 
+def _trusted_header_identity(workspace_id: UUID, user_id: UUID) -> dict[str, str]:
+    return {
+        "X-Workspace-Id": str(workspace_id),
+        "X-User-Id": str(user_id),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Dossier download param tests
 # ---------------------------------------------------------------------------
@@ -243,21 +250,50 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
     settings = Settings(OBJECT_STORE_ROOT=str(tmp_path / "object-store"))
     app = create_app(settings=settings, use_db_services=True)
     client = TestClient(app)
-
-    area_resp = client.post(
-        "/areas",
-        json={
-            "label": "artifact export fixture polygon",
-            "geom_geojson": _valid_geojson(),
-            "geom_source": "artifact export fixture",
-        },
-    )
-    assert area_resp.status_code == 201
-    area_id = area_resp.json()["area_id"]
-    report_run_id: UUID | None = None
+    workspace_a = uuid4()
+    workspace_b = uuid4()
+    user_id = uuid4()
+    headers_a = _trusted_header_identity(workspace_a, user_id)
+    headers_b = _trusted_header_identity(workspace_b, user_id)
 
     sentinel_preexisting: bool
     with Session(engine) as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO core.workspaces (workspace_id, name)
+                VALUES (:workspace_id, :name)
+                ON CONFLICT (workspace_id) DO UPDATE SET name = EXCLUDED.name
+                """
+            ),
+            {"workspace_id": workspace_a, "name": "artifact export workspace a"},
+        )
+        session.execute(
+            text(
+                """
+                INSERT INTO core.workspaces (workspace_id, name)
+                VALUES (:workspace_id, :name)
+                ON CONFLICT (workspace_id) DO UPDATE SET name = EXCLUDED.name
+                """
+            ),
+            {"workspace_id": workspace_b, "name": "artifact export workspace b"},
+        )
+        session.execute(
+            text(
+                """
+                INSERT INTO core.users (user_id, workspace_id, email)
+                VALUES (:user_id, :workspace_id, :email)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    workspace_id = EXCLUDED.workspace_id,
+                    email = EXCLUDED.email
+                """
+            ),
+            {
+                "user_id": user_id,
+                "workspace_id": workspace_a,
+                "email": "artifact-export-user@example.test",
+            },
+        )
         sentinel_preexisting = (
             session.execute(
                 text(
@@ -267,17 +303,35 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
             ).first()
             is not None
         )
+        session.commit()
+
+    area_resp = client.post(
+        "/areas",
+        json={
+            "label": "artifact export fixture polygon",
+            "geom_geojson": _valid_geojson(),
+            "geom_source": "artifact export fixture",
+        },
+        headers=headers_a,
+    )
+    assert area_resp.status_code == 201
+    area_id = area_resp.json()["area_id"]
+    report_run_id: UUID | None = None
 
     try:
         run_resp = client.post(
             "/report-runs",
             json={"area_id": area_id, "intent_code": "rural_land_purchase"},
+            headers=headers_a,
         )
         assert run_resp.status_code == 202
         report_run_id = UUID(run_resp.json()["report_run_id"])
 
         # Pre-approval: artifact must be gated (409)
-        pre_resp = client.get(f"/report-runs/{report_run_id}/artifact")
+        pre_resp = client.get(
+            f"/report-runs/{report_run_id}/artifact",
+            headers=headers_a,
+        )
         assert pre_resp.status_code == 409
 
         # Approve
@@ -292,7 +346,10 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
         assert approve_resp.json()["review_status"] == "approved"
 
         # Post-approval: artifact should come from the persisted file
-        artifact_resp = client.get(f"/report-runs/{report_run_id}/artifact")
+        artifact_resp = client.get(
+            f"/report-runs/{report_run_id}/artifact",
+            headers=headers_a,
+        )
         assert artifact_resp.status_code == 200
         assert "application/json" in artifact_resp.headers["content-type"]
         cd = artifact_resp.headers.get("content-disposition", "")
@@ -307,6 +364,64 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
         stored = json.loads(artifact_path.read_text(encoding="utf-8"))
         assert body == stored
         assert stored["report_run_id"] == str(report_run_id)
+
+        wrong_name_artifact = artifact_path.parent / "wrong-report.json"
+        wrong_name_artifact.write_text(json.dumps(stored), encoding="utf-8")
+        with Session(engine) as session:
+            session.execute(
+                text(
+                    """
+                    UPDATE reports.report_runs
+                    SET output_uri = :artifact_uri,
+                        machine_json_uri = :artifact_uri
+                    WHERE report_run_id = :report_run_id
+                    """
+                ),
+                {
+                    "artifact_uri": str(wrong_name_artifact),
+                    "report_run_id": report_run_id,
+                },
+            )
+            session.commit()
+
+        wrong_name_resp = client.get(
+            f"/report-runs/{report_run_id}/artifact",
+            headers=headers_a,
+        )
+        assert wrong_name_resp.status_code == 409
+        assert "does not match expected file" in wrong_name_resp.json()["detail"]
+
+        hidden_resp = client.get(
+            f"/report-runs/{report_run_id}/artifact",
+            headers=headers_b,
+        )
+        assert hidden_resp.status_code == 404
+
+        outside_artifact = (tmp_path / "outside-report.json").resolve()
+        outside_artifact.write_text(json.dumps(stored), encoding="utf-8")
+        with Session(engine) as session:
+            session.execute(
+                text(
+                    """
+                    UPDATE reports.report_runs
+                    SET output_uri = :artifact_uri,
+                        machine_json_uri = :artifact_uri
+                    WHERE report_run_id = :report_run_id
+                    """
+                ),
+                {
+                    "artifact_uri": str(outside_artifact),
+                    "report_run_id": report_run_id,
+                },
+            )
+            session.commit()
+
+        tampered_resp = client.get(
+            f"/report-runs/{report_run_id}/artifact",
+            headers=headers_a,
+        )
+        assert tampered_resp.status_code == 409
+        assert "outside object store root" in tampered_resp.json()["detail"]
     finally:
         with Session(engine) as session:
             if report_run_id is not None:
@@ -335,6 +450,14 @@ def test_db_artifact_endpoint_serves_persisted_file(tmp_path: Path) -> None:
             session.execute(
                 text("DELETE FROM core.areas WHERE area_id = :area_id"),
                 {"area_id": UUID(area_id)},
+            )
+            session.execute(
+                text("DELETE FROM core.users WHERE user_id = :user_id"),
+                {"user_id": user_id},
+            )
+            session.execute(
+                text("DELETE FROM core.workspaces WHERE workspace_id IN (:a, :b)"),
+                {"a": workspace_a, "b": workspace_b},
             )
             if not sentinel_preexisting:
                 session.execute(
