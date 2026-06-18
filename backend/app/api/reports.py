@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated, cast
 from uuid import UUID
 
@@ -44,6 +43,7 @@ from app.domain.report_contracts import ReportRunContract
 from app.reports.artifacts import serialize_report_artifact
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord, SqlAlchemyAsyncReportJobStore
+from app.reports.report_repo import ReportArtifactPathError
 
 router = APIRouter(prefix="/report-runs", tags=["report-runs"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -55,6 +55,25 @@ _LOCAL_REPORT_AUTH_APP_ENVS = frozenset({"local", "dev", "development", "test"})
 
 def _flat_claims(report: ReportRunContract) -> list[ClaimContract]:
     return list(report.claims) + list(report.unknowns) + list(report.red_flags)
+
+
+def _get_report_run_or_artifact_conflict(
+    services: ApiServices,
+    report_run_id: UUID,
+    auth: RequestAuthContext | None = None,
+) -> ReportRunContract | None:
+    try:
+        if auth is not None:
+            return services.report_service.get_report_run_for_workspace(
+                report_run_id,
+                auth.workspace_id,
+            )
+        return services.report_service.get_report_run(report_run_id)
+    except ReportArtifactPathError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
 
 class ReportRunCreateRequest(BaseModel):
@@ -477,7 +496,7 @@ def approve_report_run(
     body: ReportApproveRequest | None = None,
 ) -> ReportRunContract:
     require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_APPROVE)
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id)
     if report is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     if report.review_status == ReportReviewStatus.APPROVED:
@@ -712,7 +731,11 @@ def list_report_runs(
     for job in jobs:
         review_status: str | None = None
         if job.status == JobStatus.SUCCEEDED:
-            report = services.report_service.get_report_run(job.report_run_id)
+            report = _get_report_run_or_artifact_conflict(
+                services,
+                job.report_run_id,
+                auth,
+            )
             if report is not None:
                 review_status = report.review_status.value
         running_age_seconds = _report_job_running_age_seconds(job)
@@ -752,7 +775,7 @@ def compare_report_runs(
 
     summaries: list[ReportRunComparisonSummary] = []
     for run_id in run_ids:
-        report = services.report_service.get_report_run(run_id)
+        report = _get_report_run_or_artifact_conflict(services, run_id, auth)
         if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -819,7 +842,7 @@ def get_report_run(
             )
         # SUCCEEDED — fall through to fetch full report from repo
 
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id, auth)
     if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return report
@@ -841,7 +864,7 @@ def get_report_run_dossier(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id, auth)
     if report is not None:
         if auth is not None and report.workspace_id != auth.workspace_id:
             raise HTTPException(
@@ -890,7 +913,7 @@ def get_report_run_artifact(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id, auth)
     if report is not None:
         if auth is not None and report.workspace_id != auth.workspace_id:
             raise HTTPException(
@@ -902,22 +925,6 @@ def get_report_run_artifact(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"report run is not approved for delivery (review_status={report.review_status})",  # noqa: E501
             )
-        # DB mode: serve persisted artifact file if available
-        artifact_uri = report.artifact_metadata.get("machine_json_uri") or report.output_uri
-        if artifact_uri is not None:
-            artifact_path = Path(str(artifact_uri))
-            if artifact_path.exists():
-                artifact_bytes = artifact_path.read_bytes()
-                return Response(
-                    content=artifact_bytes,
-                    media_type="application/json",
-                    headers={
-                        "Content-Disposition": (
-                            f'attachment; filename="report_{report_run_id}.json"'
-                        )
-                    },
-                )
-        # In-memory mode (or missing file): serialize the contract
         artifact_json = serialize_report_artifact(report)
         return Response(
             content=artifact_json.encode("utf-8"),
@@ -1038,7 +1045,7 @@ def get_report_run_lineage(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id, auth)
     if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report run not found")
     return build_lineage_response(report)
@@ -1060,13 +1067,13 @@ def diff_report_runs(
         x_workspace_id=x_workspace_id,
         x_user_id=x_user_id,
     )
-    report = services.report_service.get_report_run(report_run_id)
+    report = _get_report_run_or_artifact_conflict(services, report_run_id, auth)
     if report is None or (auth is not None and report.workspace_id != auth.workspace_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"report run '{report_run_id}' not found",
         )
-    base = services.report_service.get_report_run(base_id)
+    base = _get_report_run_or_artifact_conflict(services, base_id, auth)
     if base is None or (auth is not None and base.workspace_id != auth.workspace_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

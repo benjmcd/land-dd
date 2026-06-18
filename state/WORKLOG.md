@@ -2,6 +2,26 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Report artifact path trust)
+
+- Added `plans/2026-06-18-report-artifact-path-trust.md` and routed the active plan to
+  the DB-backed report artifact path boundary slice.
+- Made `SqlAlchemyReportRunRepository` resolve artifact paths against the configured
+  object-store root, reject out-of-root paths, reject mismatched artifact filenames, and
+  reject artifact bodies whose `report_run_id` differs from the report row.
+- Simplified `/report-runs/{report_run_id}/artifact` so it returns the validated report
+  contract loaded by the repository instead of dereferencing artifact payload URIs a
+  second time.
+- Routed report API reads through a shared helper that maps artifact path trust-boundary
+  failures to `409` only after workspace-scoped repository reads preserve
+  wrong-workspace `404` concealment.
+- Added resolver regressions for out-of-root paths and unexpected artifact filenames,
+  plus DB-gated artifact regressions for out-of-root row tampering, in-root wrong
+  filename tampering, wrong-workspace concealment, and mismatched artifact body
+  identity.
+- Ran focused artifact/report repository tests, ruff, mypy, default verification, and
+  DB-enabled verification on isolated Postgres port `55449`.
+
 ## 2026-06-18 (Connector review workspace scope)
 
 - Fast-forwarded local `main` to live `origin/main` at

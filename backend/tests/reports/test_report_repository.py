@@ -27,7 +27,11 @@ from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
-from app.reports.report_repo import SqlAlchemyReportRunRepository
+from app.reports.report_repo import (
+    ReportArtifactPathError,
+    SqlAlchemyReportRunRepository,
+    resolve_report_artifact_path,
+)
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository
@@ -119,6 +123,47 @@ def _seed_area_row(session: Session, area: AreaContract) -> None:
     )
 
 
+def test_resolve_report_artifact_path_accepts_expected_file(tmp_path: Path) -> None:
+    report_run_id = uuid4()
+    root = tmp_path / "object-store"
+    artifact_path = root / f"{report_run_id}.json"
+
+    assert (
+        resolve_report_artifact_path(
+            artifact_path,
+            object_store_root=root,
+            report_run_id=report_run_id,
+        )
+        == artifact_path.resolve()
+    )
+
+
+def test_resolve_report_artifact_path_rejects_out_of_root_file(tmp_path: Path) -> None:
+    report_run_id = uuid4()
+    root = tmp_path / "object-store"
+    outside_path = tmp_path / "other-store" / f"{report_run_id}.json"
+
+    with pytest.raises(ReportArtifactPathError, match="outside object store root"):
+        resolve_report_artifact_path(
+            outside_path,
+            object_store_root=root,
+            report_run_id=report_run_id,
+        )
+
+
+def test_resolve_report_artifact_path_rejects_unexpected_filename(tmp_path: Path) -> None:
+    report_run_id = uuid4()
+    root = tmp_path / "object-store"
+    wrong_path = root / "other-report.json"
+
+    with pytest.raises(ReportArtifactPathError, match="does not match expected file"):
+        resolve_report_artifact_path(
+            wrong_path,
+            object_store_root=root,
+            report_run_id=report_run_id,
+        )
+
+
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
 def test_sqlalchemy_report_run_repository_persists_and_round_trips(
     tmp_path: Path,
@@ -208,6 +253,15 @@ def test_sqlalchemy_report_run_repository_persists_and_round_trips(
         retrieved = repo.get(report_run.report_run_id)
 
     assert retrieved == report_run
+
+    tampered_payload = json.loads(Path(report_uri).read_text(encoding="utf-8"))
+    tampered_payload["report_run_id"] = str(uuid4())
+    Path(report_uri).write_text(json.dumps(tampered_payload), encoding="utf-8")
+
+    with Session(engine) as session:
+        repo = SqlAlchemyReportRunRepository(session, report_store)
+        with pytest.raises(ReportArtifactPathError, match="body does not match"):
+            repo.get(report_run.report_run_id)
 
     with Session(engine) as session:
         session.execute(

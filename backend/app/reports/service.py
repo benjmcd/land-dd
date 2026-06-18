@@ -147,6 +147,13 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def get_report_run_for_workspace(
+        self,
+        report_run_id: UUID,
+        workspace_id: UUID,
+    ) -> ReportRunContract | None:
+        return self._report_repo.get_for_workspace(report_run_id, workspace_id)
+
     def approve_report_run(
         self,
         report_run_id: UUID,

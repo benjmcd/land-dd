@@ -1,12 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-connector-review-workspace-scope.md
+active_plan: plans/2026-06-18-report-artifact-path-trust.md
 routing_note: >
-  Active lane: Connector review workspace scope
-  (plans/2026-06-18-connector-review-workspace-scope.md). Goal: keep legacy
-  connector review mutations, connector-derived report creation, and authenticated
-  intake-created live connector work bounded by request workspace/user identity.
-  The older source-readiness closure plan remains historical/backlog context; it is
-  not the current implementation authority.
+  Active lane: Report artifact path trust
+  (plans/2026-06-18-report-artifact-path-trust.md). Goal: ensure DB-backed report
+  artifact delivery only reads persisted JSON from the configured object-store root
+  and fails closed on tampered out-of-root artifact paths. The older source-readiness
+  closure plan remains historical/backlog context; it is not the current
+  implementation authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
