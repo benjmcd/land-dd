@@ -72,7 +72,7 @@ query_plan_reviews:
       - observations_geom_gix
     statement: >
       EXPLAIN (ANALYZE, BUFFERS)
-      SELECT o.observation_id
+      SELECT o.evidence_id
       FROM evidence.observations o
       JOIN core.areas a ON ST_Intersects(o.geometry, a.geom)
       WHERE a.area_id = :area_id;

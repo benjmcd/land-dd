@@ -10930,3 +10930,45 @@ git diff --name-only --diff-filter=D
 - This is static repo proof, not representative runtime query-plan proof. Promotion of
   `L10-PERF-003` beyond `PARTIAL` still requires read-only `EXPLAIN ANALYZE` evidence
   against a representative candidate DB workload.
+
+---
+
+## 2026-06-18 - Spatial Query SQL Contract Guard
+
+**Scope:** Correct the static spatial plan-review SQL contract and make the checker fail
+closed when configured review statements reference non-canonical schema identifiers.
+
+**Commands run:**
+
+```powershell
+python .\scripts\spatial_query_plan_check.py
+.\scripts\run_spatial_query_plan_check.ps1
+python .\scripts\release_readiness_check.py
+.\scripts\run_release_readiness_check.ps1
+python .\scripts\readiness_matrix_check.py
+.\scripts\run_readiness_matrix_check.ps1
+cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py
+cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Spatial query-plan checker passed; Windows wrapper printed `spatial query plan check: ok`.
+- Focused spatial artifact tests passed (`10 passed`).
+- Release-readiness and readiness-matrix validators passed; Windows wrappers printed
+  `release readiness check: ok` and `readiness matrix check: ok`.
+- Focused spatial/performance/release/matrix artifact tests passed (`35 passed`).
+- Focused ruff passed; focused mypy passed.
+- `git diff --check` reported no whitespace errors. No deleted files were reported.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy on 318 source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This prevents static contract SQL drift. It still does not supply live
+  representative `EXPLAIN ANALYZE` evidence for `L10-PERF-003`.
