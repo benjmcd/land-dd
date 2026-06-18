@@ -1,11 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-production-authority-packet.md
+active_plan: plans/2026-06-18-source-rights-export-guard.md
 routing_note: >
-  Active lane: production authority packet
-  (plans/2026-06-18-production-authority-packet.md). Goal: turn the remaining
-  post-RC external blockers into explicit decision/evidence requests, with DS-017 source
-  authority first and hosted deployment, IdP/RBAC, secret-manager, billing, alerting,
-  image publication, and production workload authority separated from repo-local proof.
+  Active lane: source-rights export guard
+  (plans/2026-06-18-source-rights-export-guard.md). Goal: add repo-local fail-closed
+  proof that source-rights metadata controls export/report exposure for restricted or
+  vendor-derived source fields without approving DS-017 or starting hosted work.
+  The completed production authority packet records DS-017, hosted deployment,
+  IdP/RBAC, secret-manager, billing, alerting, image publication, and production
+  workload decisions as external authority requirements separated from repo-local proof.
   Completed readiness reconciliation, performance baseline, static spatial proof,
   SQL-contract guard, spatial runtime proof, queue backpressure, workflow-valid load
   proof, selected-county RC proof refresh, lineage smoke proof, and post-RC authority
@@ -296,14 +298,16 @@ tasks:
 
   - id: R-011
     title: Production authority packet
-    status: active
+    status: done
     depends_on: [R-010]
     lane: coordinator
     spec: plans/2026-06-18-production-authority-packet.md
     notes: >
       Build the external decision/evidence packet needed before hosted, paid-source,
       identity/RBAC, secret-manager, billing, alerting, image-publication, or production
-      workload work can be claimed or started safely. DS-017 source authority is first.
+      workload work can be claimed or started safely. Completed with
+      `state/PRODUCTION_AUTHORITY_PACKET.md`; DS-017 source authority is first, and
+      the next repo-local lane is a source-rights export guard.
     validation:
       - python .\scripts\source_readiness.py --priority Must --json
       - python .\scripts\private_mvp_readiness_check.py
@@ -318,6 +322,29 @@ tasks:
       - DS-017 decision and evidence requirements are explicit
       - Hosted, identity/RBAC, secret-manager, billing, alerting, and image-publication blockers have evidence templates
       - No blocker is treated as resolved without external authority
+
+  - id: R-012
+    title: Source-rights export guard
+    status: active
+    depends_on: [R-011]
+    lane: coordinator
+    spec: plans/2026-06-18-source-rights-export-guard.md
+    notes: >
+      Add repo-local fail-closed proof that source-rights metadata controls whether
+      restricted or vendor-derived source fields can appear in reports, JSON artifacts,
+      or exports. DS-017 remains blocked; this lane prepares the enforcement shape
+      without selecting a vendor or approving paid-source use.
+    validation:
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\source_registry .\tests\reports
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Blocked or unknown source-rights fields fail closed for export/report exposure
+      - Restricted rights have explicit enforcement tests before exposed output is allowed
+      - DS-017 remains blocked unless external source/vendor authority changes
 
   # --- Completed ---
   - id: T000

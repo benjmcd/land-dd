@@ -81,6 +81,9 @@ Run `.\scripts\verify.ps1` before handoff if executable contracts change.
 - 2026-06-18: Selected this as the next active lane after `R-010` because the remaining
   high-leverage work depends on external source, hosted, identity, secret-manager,
   billing, alerting, and production-workload authority.
+- 2026-06-18: Completed the packet in `state/PRODUCTION_AUTHORITY_PACKET.md` and routed
+  the next repo-local implementation lane to
+  `plans/2026-06-18-source-rights-export-guard.md`.
 
 ## Progress log
 - 2026-06-18: Plan opened after post-RC authority split.
@@ -88,3 +91,6 @@ Run `.\scripts\verify.ps1` before handoff if executable contracts change.
   readiness, private-MVP readiness, release readiness, hosted deployment, access
   control, readiness matrix, data retention, diff hygiene, and default verification
   passed.
+- 2026-06-18: Added the production authority packet, tightened the readiness-matrix
+  checker to require the packet and critical fail-closed phrases, and selected the next
+  repo-local source-rights export guard lane.

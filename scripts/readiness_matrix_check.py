@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 MATRIX_PATH = "state/LEVEL_9_10_GATE_MATRIX.md"
 MATRIX_PLAN = "plans/2026-06-18-level9-10-readiness-reconciliation.md"
+PRODUCTION_AUTHORITY_PACKET_PATH = "state/PRODUCTION_AUTHORITY_PACKET.md"
 ALLOWED_STATUSES = {
     "PROVEN_PRIVATE_MVP",
     "PROVEN_REPO_LOCAL",
@@ -60,6 +61,19 @@ REQUIRED_MATRIX_PHRASES = (
     "Do not start external hosted deployment work until",
     "config/hosted_deployment.yaml",
     "scripts/source_readiness.py --priority Must --json",
+)
+REQUIRED_PRODUCTION_AUTHORITY_PACKET_PHRASES = (
+    "Must-source readiness remains `sources=8 ready=7 blocked=1`; `DS-017` is blocked.",
+    "Do not implement a DS-017 connector",
+    "No owner",
+    "PII, raw vendor record, assessed or market value",
+    "lending, appraisal",
+    "Alternative unblock: DS-017 is removed or deferred from full-release Must scope",
+    "Filled attestation fields are deployment evidence, not production approval",
+    "secret values are not evidence and must not appear",
+    "named owning",
+    "rotation, escalation path",
+    "Local release-candidate load results are not reused as hosted SLO proof.",
 )
 REQUIRED_TASK_VALIDATION_COMMANDS = (
     r"python .\scripts\readiness_matrix_check.py",
@@ -159,8 +173,19 @@ def validate_guarded_statuses(rows: dict[str, str]) -> None:
         )
 
 
+def validate_production_authority_packet() -> None:
+    require_existing_file(PRODUCTION_AUTHORITY_PACKET_PATH)
+    packet = read_text(PRODUCTION_AUTHORITY_PACKET_PATH)
+    for phrase in REQUIRED_PRODUCTION_AUTHORITY_PACKET_PHRASES:
+        require(
+            phrase in packet,
+            f"production authority packet missing phrase: {phrase}",
+        )
+
+
 def validate_matrix() -> None:
     require_existing_file(MATRIX_PATH)
+    validate_production_authority_packet()
     validate_routing()
     matrix = read_text(MATRIX_PATH)
     for phrase in REQUIRED_MATRIX_PHRASES:

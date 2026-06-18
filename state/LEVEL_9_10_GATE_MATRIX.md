@@ -17,6 +17,7 @@ Canonical inputs used here:
 - `registers/data_source_registry.csv`
 - `scripts/source_readiness.py --priority Must --json`
 - `state/POST_RC_AUTHORITY_SPLIT.md`
+- `state/PRODUCTION_AUTHORITY_PACKET.md`
 
 Status legend:
 
@@ -128,14 +129,19 @@ authority blockers, repo-local implementation candidates, and audit-only evidenc
 candidates. The split preserves the conclusion that local selected-county
 release-candidate proof is not hosted production proof.
 
+`state/PRODUCTION_AUTHORITY_PACKET.md` now turns the external blockers into decision
+and evidence requests. It does not approve DS-017, hosted deployment, full IdP/RBAC,
+secret-manager, billing, alerting, image publication, or production workload work.
+
 ## Next Unblocked Pass
 
 The lowest-dependency next pass is not hosted deployment. Hosted production remains
 blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
-source/vendor authority. `R-010` completed the post-RC authority split. The next active
-pass is `R-011` production authority packet: turn DS-017, hosted deployment,
-secret-manager, IdP/RBAC, billing, alerting, image-publication, and production workload
-blockers into explicit decision/evidence requests before starting more implementation.
+source/vendor authority. `R-010` completed the post-RC authority split, and `R-011`
+completed the production authority packet. The next active pass is `R-012`
+source-rights export guard: add repo-local fail-closed proof that source-rights metadata
+controls report/export exposure for restricted or vendor-derived fields without
+approving DS-017 or starting hosted work.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
