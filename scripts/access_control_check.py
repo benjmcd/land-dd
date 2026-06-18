@@ -415,7 +415,10 @@ def validate_identity_rbac_contract(payload: dict[str, Any]) -> None:
         limits.get("creates_user_account_tables") is False,
         "identity contract must not create user account tables",
     )
-    require(limits.get("implements_oauth_oidc") is False, "identity contract must not implement OIDC")
+    require(
+        limits.get("implements_oauth_oidc") is False,
+        "identity contract must not implement OIDC",
+    )
     require(limits.get("claims_production_rbac") is False, "identity contract must not claim RBAC")
 
 
@@ -554,6 +557,8 @@ def validate_ui_api_key_bridge() -> None:
     settings = read_text("backend/app/core/config.py")
     ui_tests = read_text("backend/tests/api/test_ui_api_key_auth.py")
     ui_route_tests = read_text("backend/tests/api/test_ui_routes.py")
+    ui_review_route_tests = read_text("backend/tests/api/test_ui_review_routes.py")
+    ui_operations_tests = read_text("backend/tests/api/test_ui_operations_routes.py")
     report_auth_tests = read_text("backend/tests/api/test_report_auth.py")
     runbook = read_text("docs/runbooks/access_control.md")
     mvp_operator = read_text("docs/runbooks/mvp_operator.md")
@@ -804,6 +809,8 @@ def validate_ui_api_key_bridge() -> None:
             "test_ui_identity_auth_requires_csrf_when_ui_cookie_auth_applies",
             "test_ui_selected_county_fixture_post_requires_csrf_with_identity_and_reviewer_sessions",
             "test_ui_selected_county_cookie_sessions_require_csrf_without_api_key_auth",
+            "test_ui_intake_reviewer_session_requires_csrf",
+            "test_ui_retry_report_run_reviewer_session_requires_csrf",
             "def _assert_ui_identity_cookie",
             '"HttpOnly" in set_cookie',
             '"SameSite=lax" in set_cookie',
@@ -811,6 +818,33 @@ def validate_ui_api_key_bridge() -> None:
             "raw_token not in set_cookie",
         ),
         "ui report identity route tests",
+    )
+    require_phrases(
+        ui_review_route_tests,
+        (
+            "test_ui_review_approve_accepts_reviewer_session_without_form_credentials",
+            "test_ui_review_mutation_reviewer_session_requires_csrf",
+            '("reject", "flood_failure.json")',
+            '("requeue", "flood_failure.json")',
+            '("cancel", "flood_failure.json")',
+            '("resume-report", "flood_success.json")',
+            "assert response.status_code == 403",
+            '"Security Check Failed" in response.text',
+            "test_ui_review_reject_reviewer_session_accepts_valid_csrf",
+            "test_ui_review_requeue_reviewer_session_accepts_valid_csrf",
+            "test_ui_review_cancel_reviewer_session_accepts_valid_csrf",
+            "test_ui_review_resume_report_reviewer_session_accepts_valid_csrf",
+        ),
+        "ui connector review route csrf tests",
+    )
+    require_phrases(
+        ui_operations_tests,
+        (
+            "test_ui_operations_post_reviewer_session_requires_csrf",
+            "test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf",
+            "test_ui_operations_recovery_preview_post_reviewer_session_accepts_valid_csrf",
+        ),
+        "ui operations route csrf tests",
     )
     require_phrases(
         report_auth_tests,
@@ -1233,11 +1267,20 @@ def validate_ci_and_runbook() -> None:
             f"{text_name} missing report identity secret env",
         )
     require("sha256:<64-hex>" in env_example, ".env.example missing hashed secret guidance")
-    require("REPORT_AUTH_MODE=trusted_headers" in env_example, ".env.example missing report auth mode")
-    require("API_KEYS is local/dev/development/test only" in env_example, ".env.example missing local-only API_KEYS guidance")
+    require(
+        "REPORT_AUTH_MODE=trusted_headers" in env_example,
+        ".env.example missing report auth mode",
+    )
+    require(
+        "API_KEYS is local/dev/development/test only" in env_example,
+        ".env.example missing local-only API_KEYS guidance",
+    )
     require("non-local APP_ENV" in compose, "docker-compose.yml missing non-local secret guidance")
     require("REPORT_AUTH_MODE" in compose, "docker-compose.yml missing report auth mode")
-    require("report:approve" in compose, "docker-compose.yml fixture reviewer scopes missing report approval")
+    require(
+        "report:approve" in compose,
+        "docker-compose.yml fixture reviewer scopes missing report approval",
+    )
     require_phrases(
         mvp_operator,
         (

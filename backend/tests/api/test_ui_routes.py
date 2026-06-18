@@ -848,6 +848,38 @@ def test_ui_selected_county_cookie_sessions_require_csrf_without_api_key_auth(
     assert report.reviewed_by == "reviewer"
 
 
+def test_ui_intake_reviewer_session_requires_csrf() -> None:
+    tc = TestClient(create_app())
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    missing_csrf = tc.post(
+        "/ui/intake",
+        data={"area_geojson": "not-json", "intent": "rural_land_purchase"},
+    )
+    page = tc.get("/ui/")
+    valid_csrf = tc.post(
+        "/ui/intake",
+        data={
+            "area_geojson": "not-json",
+            "intent": "rural_land_purchase",
+            _CSRF_FIELD: _csrf_token_from(page.text),
+        },
+    )
+
+    assert missing_csrf.status_code == 403
+    assert "Security Check Failed" in missing_csrf.text
+    assert valid_csrf.status_code == 422
+    assert "Invalid GeoJSON" in valid_csrf.text
+
+
 def test_ui_report_run_returns_404_page_for_unknown_id() -> None:
     response = client.get(f"/ui/report-runs/{uuid4()}")
     assert response.status_code == 200  # We return 200 HTML with "not found" message
@@ -1370,6 +1402,41 @@ def _make_app_client_with_failed_report() -> tuple[FastAPI, TestClient, str]:
     services = cast(ApiServices, app.state.services)
     services.async_report_jobs.mark_failed(UUID(report_run_id), error_msg="test failure")
     return app, tc, report_run_id
+
+
+def test_ui_retry_report_run_reviewer_session_requires_csrf() -> None:
+    app, tc, report_run_id = _make_app_client_with_failed_report()
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    missing_csrf = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        follow_redirects=False,
+    )
+    report_page = tc.get(f"/ui/report-runs/{report_run_id}")
+    valid_csrf = tc.post(
+        f"/ui/report-runs/{report_run_id}/retry",
+        data={_CSRF_FIELD: _csrf_token_from(report_page.text)},
+        follow_redirects=False,
+    )
+
+    assert missing_csrf.status_code == 403
+    assert "Security Check Failed" in missing_csrf.text
+    assert valid_csrf.status_code == 303
+    services = cast(ApiServices, app.state.services)
+    retry_jobs = [
+        job
+        for job in services.async_report_jobs.list_recent(limit=100)
+        if job.retry_of_report_run_id == UUID(report_run_id)
+    ]
+    assert len(retry_jobs) == 1
 
 
 def test_ui_failed_report_shows_retry_form() -> None:

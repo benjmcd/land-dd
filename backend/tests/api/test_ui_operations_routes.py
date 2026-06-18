@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import cast
@@ -16,6 +17,13 @@ from app.main import create_app
 
 _FIXTURE_REVIEWER_ID = "fixture-reviewer"
 _FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
+_CSRF_FIELD = "csrf_token"
+
+
+def _csrf_token_from(html: str) -> str:
+    match = re.search(r'name="csrf_token" type="hidden" value="([^"]+)"', html)
+    assert match is not None
+    return match.group(1)
 
 
 def _client() -> TestClient:
@@ -298,6 +306,54 @@ def test_ui_operations_recovery_preview_with_session_renders_candidates() -> Non
     stored_live_job = services.live_connector_jobs.get(live_job_id)
     assert stored_live_job is not None
     assert stored_live_job.status == JobStatus.RUNNING
+
+
+def test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    response = tc.post(
+        "/ui/operations/recovery-preview",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert "Security Check Failed" in response.text
+
+
+def test_ui_operations_recovery_preview_post_reviewer_session_accepts_valid_csrf() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    session_page = tc.get("/ui/auth/reviewer")
+    response = tc.post(
+        "/ui/operations/recovery-preview",
+        data={_CSRF_FIELD: _csrf_token_from(session_page.text)},
+    )
+
+    assert response.status_code == 200
+    assert "Recovery Preview" in response.text
+    assert "Showing up to 25 failed and 25 stale-running candidates per queue." in (
+        response.text
+    )
 
 
 def test_ui_operations_links_oldest_running_jobs_to_detail_pages() -> None:
