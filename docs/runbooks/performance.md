@@ -121,7 +121,11 @@ sequential baseline and the concurrent expected-workload scenario documented in
 it with `-BaseUrl` or `LOAD_TEST_BASE_URL` when the local server uses another port.
 `config/performance_baseline.yaml` is the canonical local performance baseline
 contract. Live result artifacts written for a release candidate use the
-`load_test_result_v1` JSON schema.
+`load_test_result_v1` JSON schema. The POST portion must exercise valid workflow
+traffic: `POST /areas` creates an area from a valid local fixture payload, the runner
+parses the returned `area_id`, and `POST /report-runs` uses that `area_id` with
+`intent_code=rural_land_purchase`. POST 4xx validation responses fail the run and do
+not count as acceptable performance proof.
 Run the live scenarios before any change that touches report generation, connector
 execution, or DB query paths:
 

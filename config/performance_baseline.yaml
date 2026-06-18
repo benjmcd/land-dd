@@ -25,18 +25,23 @@ scenarios:
       - method: GET
         path: /health
         count: 4
+        expected_statuses: [200]
       - method: GET
         path: /version
         count: 4
+        expected_statuses: [200]
       - method: GET
         path: /metrics
         count: 4
+        expected_statuses: [200]
       - method: POST
         path: /areas
         count: 4
+        expected_statuses: [201]
       - method: POST
         path: /report-runs
         count: 4
+        expected_statuses: [200, 202]
     thresholds:
       max_request_seconds: 5.0
   - id: concurrent
@@ -46,18 +51,23 @@ scenarios:
       - method: GET
         path: /health
         count_per_worker: 1
+        expected_statuses: [200]
       - method: GET
         path: /version
         count_per_worker: 1
+        expected_statuses: [200]
       - method: GET
         path: /metrics
         count_per_worker: 1
+        expected_statuses: [200]
       - method: POST
         path: /areas
         count_per_worker: 1
+        expected_statuses: [201]
       - method: POST
         path: /report-runs
         count_per_worker: 1
+        expected_statuses: [200, 202]
     thresholds:
       p95_seconds: 3.0
       max_error_rate: 0.1

@@ -3282,3 +3282,26 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   `status.HTTP_422_UNPROCESSABLE_CONTENT` or deprecated
   `HTTP_422_UNPROCESSABLE_ENTITY` references remain in app/test/scripts, and default
   `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-06-18 Workflow-valid local load proof
+
+- Rerouted active task state from completed `R-006` queue backpressure to active `R-007`
+  workflow-valid local load proof.
+- Updated `scripts/load_test_runner.py` so the local sequential/concurrent scenarios send
+  a valid `/areas` payload, parse the returned `area_id`, and post `/report-runs` with
+  `intent_code=rural_land_purchase`.
+- Pinned expected success statuses in `config/performance_baseline.yaml` and
+  `scripts/performance_baseline_check.py`: health/version/metrics `200`, areas `201`,
+  and report-runs `200`/`202`.
+- Updated load/performance runbooks and tests so POST 4xx validation responses fail the
+  workflow proof instead of counting as acceptable load-test evidence. Concurrent invalid
+  workflow chains fail even when aggregate failure rate remains below the configured
+  threshold.
+- Temporary local live proof passed against a hidden Uvicorn backend on port `18181`:
+  sequential `20/20` passed and concurrent `40/40` passed with report admission traffic.
+  This remains local release-candidate evidence, not hosted production capacity or SLO
+  proof.
+- Focused load/performance artifact tests, performance baseline checker, validate-only
+  load wrapper, focused ruff/mypy, release-readiness, readiness-matrix, diff hygiene,
+  no-deletions check, attribution scan, and default `.\scripts\verify.ps1` passed.
+  DB smoke was skipped by default.

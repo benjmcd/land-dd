@@ -1,41 +1,39 @@
 # Project State
 
-## Current checkpoint (2026-06-18 queue backpressure runtime guard)
+## Current checkpoint (2026-06-18 selected-county release-candidate proof refresh)
 
-The active implementation authority now points at the next unblocked `L10-PERF-008`
-runtime degraded-mode slice selected from the Level 9/10 gate matrix.
+The active implementation authority now points at the next unblocked selected-county
+private-MVP release-candidate proof refresh selected from the Level 9/10 gate matrix.
+The prior workflow-valid load proof completed locally and strengthens `L10-PERF-006`;
+hosted load, production SLO, dashboard, alert-routing, DS-017, IdP, and capacity proof
+remain future work.
 
-- **Active plan**: `plans/2026-06-18-queue-backpressure.md`.
-- **Purpose**: add default-off runtime queue admission control for report and live
-  connector queues when queue depth, queued age, or stale-running counts exceed explicit
-  thresholds.
+- **Active plan**: `plans/2026-06-18-county-rc-proof.md`.
+- **Purpose**: audit and harden the selected-county proof ladder across packaged
+  operator cases, DB-backed persistence, and explicit UI/browser smoke evidence without
+  making hosted production claims.
 - **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `backend/app/domain/job_health.py`, `backend/app/api/operations.py`,
-  `backend/app/api/reports.py`, `backend/app/api/intake.py`,
-  `backend/app/api/connectors.py`, `backend/app/api/ui.py`,
-  `backend/app/api/ui_review.py`, `backend/app/api/live_connectors.py`,
-  `docs/runbooks/performance.md`, `docs/runbooks/incident_response.md`,
+  `config/private_mvp_beta_readiness.yaml`, `scripts/private_mvp_readiness_check.py`,
+  `scripts/run_private_mvp_readiness_check.ps1`, `scripts/run_mvp_regression.ps1`,
+  `scripts/run_ui_browser_smoke.ps1`, `scripts/ui_runtime_smoke.py`,
+  `backend/tests/api/test_operator_cases_api.py`,
+  `backend/tests/api/test_operator_cases_db.py`,
+  `backend/tests/test_private_mvp_readiness.py`, `docs/runbooks/mvp_operator.md`,
   `plans/README.md`, and `tasks/task_queue.yaml`.
-- **Known boundaries preserved**: no DB schema change, no hosted deployment claim, no
-  distributed rate limiter claim, no source/vendor calls, no generated validate-only
-  artifacts, no alert-manager claim, and no Level 10 completion claim.
-- **Design direction**: use existing queue health as canonical runtime state, evaluate it
-  through a pure operations backpressure helper, fail closed with structured HTTP 503
-  details before creating new queue records, and keep the behavior disabled unless
-  explicitly enabled through settings.
-- **Implemented proof so far**: `backend/app/operations/backpressure.py` evaluates queue
-  health against explicit settings, report/intake/UI retry/connector-review resume/live
-  connector scheduling paths check backpressure before creating new queue records, and
-  affected invalid raw 422 status accesses now use a cross-version local compatibility
-  constant. Queue-depth checks use projected admission count, including the four-job live
-  connector sequence, and keyed report requests re-check/replay existing idempotent jobs
-  before returning backpressure.
-- **Validation so far**: focused backpressure tests passed (`9 passed`), the broader
-  affected API set passed (`46 passed, 3 skipped`), focused ruff passed, focused mypy
-  passed, readiness/release validators passed, `git diff --check` passed, no deleted
-  files were reported, no raw `status.HTTP_422_UNPROCESSABLE_CONTENT` or deprecated
-  `HTTP_422_UNPROCESSABLE_ENTITY` references remain in app/test/scripts, and default
-  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no hosted
+  deployment, no production SLO, no new county/source/rulepack, no full user identity or
+  RBAC, no committed generated evidence artifacts, and no Level 10 completion claim.
+- **Completed immediately prior**: `R-007` updated `scripts/load_test_runner.py` so
+  local sequential/concurrent load scenarios create valid areas and queue report runs
+  from returned `area_id` values; temporary local live load proof passed sequential
+  `20/20` and concurrent `40/40` workflow requests with `POST /areas` returning `201`
+  and `POST /report-runs` returning `202`. Default `.\scripts\verify.ps1` passed on
+  the branch; DB smoke was skipped by default.
+- **Validation so far**: initial authority validators passed before edits:
+  Must source readiness remains `sources=8 ready=7 blocked=1` with DS-017 blocked;
+  private-MVP, release-readiness, hosted-deployment, access-control, and readiness-matrix
+  validators passed. Focused `R-007` validation passed; validation for `R-008` has not
+  started.
 
 ## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
 

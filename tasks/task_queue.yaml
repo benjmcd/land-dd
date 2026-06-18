@@ -1,12 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-queue-backpressure.md
+active_plan: plans/2026-06-18-county-rc-proof.md
 routing_note: >
-  Active lane: queue backpressure runtime guard
-  (plans/2026-06-18-queue-backpressure.md). Goal: add default-off runtime admission
-  control for report and live connector queues when queue health is degraded without
-  making hosted production, alert-routing, or SLO claims. Completed readiness
-  reconciliation, performance baseline, static spatial proof, SQL-contract guard, and
-  spatial runtime proof plans remain historical context.
+  Active lane: selected-county release-candidate proof refresh
+  (plans/2026-06-18-county-rc-proof.md). Goal: refresh the selected-county private-MVP
+  release-candidate proof ladder across packaged operator cases, DB-backed persistence,
+  and explicit UI/browser smoke evidence without making DS-017, hosted production, IdP,
+  SLO, or capacity claims. Completed readiness reconciliation, performance baseline,
+  static spatial proof, SQL-contract guard, spatial runtime proof, queue backpressure,
+  and workflow-valid load proof plans remain historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -159,7 +160,7 @@ tasks:
 
   - id: R-006
     title: Queue backpressure runtime guard
-    status: active
+    status: done
     depends_on: [R-005]
     lane: coordinator
     spec: plans/2026-06-18-queue-backpressure.md
@@ -182,6 +183,60 @@ tasks:
       - Enabled backpressure returns structured fail-closed HTTP 503 responses before new report/live-connector jobs are created
       - Disabled backpressure preserves current report and live connector scheduling behavior
       - Matrix and runbooks keep L10-PERF-008 PARTIAL until hosted alerting/workload proof exists
+
+  - id: R-007
+    title: Workflow-valid local load proof
+    status: done
+    depends_on: [R-006]
+    lane: coordinator
+    spec: plans/2026-06-18-workflow-load-proof.md
+    notes: >
+      Strengthen the local release-candidate load-test contract so POST workload traffic
+      creates valid areas and queues report runs from returned area IDs. This is
+      repo-local workflow proof for L10-PERF-006 only; hosted load, SLO, dashboard,
+      alert-routing, and production capacity proof remain out of scope.
+    validation:
+      - cd backend; python -m pytest -q .\tests\test_load_test_artifacts.py .\tests\test_performance_artifacts.py
+      - python .\scripts\performance_baseline_check.py
+      - .\scripts\run_load_test.ps1 -ValidateOnly
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Load-test POST /areas requests use the API's valid area-create shape
+      - Load-test POST /report-runs requests use area IDs returned by successful area creation
+      - Unexpected 4xx POST responses fail the workflow workload instead of counting as acceptable proof
+      - Validate-only checks still send no HTTP traffic and create no measured artifacts
+      - Matrix and runbooks keep hosted production and SLO proof out of scope
+
+  - id: R-008
+    title: Selected-county release-candidate proof refresh
+    status: active
+    depends_on: [R-007]
+    lane: coordinator
+    spec: plans/2026-06-18-county-rc-proof.md
+    notes: >
+      Refresh and harden the selected-county private-MVP proof ladder for packaged
+      operator cases, DB-backed persistence, and explicit UI/browser smoke evidence.
+      This is repo-local release-candidate proof only; DS-017, hosted platform, IdP,
+      billing, alert-routing, and production SLO decisions remain out of scope.
+    validation:
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\private_mvp_readiness_check.py
+      - .\scripts\run_private_mvp_readiness_check.ps1
+      - cd backend; python -m pytest -q .\tests\test_private_mvp_readiness.py .\tests\api\test_operator_cases_api.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Existing selected-county proof ladder is audited from current repo authority
+      - Any missing or weak proof link is either hardened or recorded as a concrete blocker
+      - DS-017 remains blocked unless product/vendor authority changes
+      - Hosted production and full user-RBAC proof remain out of scope
 
   # --- Completed ---
   - id: T000
