@@ -78,6 +78,28 @@ def _required_routes(*, reviewer_session: bool = False) -> dict[str, str]:
     }
 
 
+def _operator_report_html() -> str:
+    return _html(
+        "Executive Summary",
+        "Download dossier (.md)",
+        "Download report (.json)",
+        "View evidence lineage",
+    )
+
+
+def _operator_lineage_html(*body: str) -> str:
+    return _html(
+        "Evidence Lineage",
+        "Sources: 1",
+        "Evidence records: 2",
+        "Claims: 1",
+        "Sources -> Ingest Runs",
+        "Claims -> Evidence",
+        "Evidence -> Claims",
+        *body,
+    )
+
+
 def _run_server(route_bodies: dict[str, str]) -> tuple[ThreadingHTTPServer, str]:
     handler = type(
         "SmokeHandler",
@@ -129,12 +151,8 @@ def test_ui_runtime_smoke_script_passes_against_core_ui_routes() -> None:
 
 def test_ui_runtime_smoke_operator_case_flag_posts_and_checks_report_page() -> None:
     routes = _required_routes()
-    routes["/ui/report-runs/operator-smoke"] = _html(
-        "Executive Summary",
-        "Download dossier (.md)",
-        "Download report (.json)",
-        "View evidence lineage",
-    )
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     server, base_url = _run_server(routes)
     handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
     try:
@@ -145,10 +163,18 @@ def test_ui_runtime_smoke_operator_case_flag_posts_and_checks_report_page() -> N
 
     assert result.returncode == 0, result.stderr + result.stdout
     payload = json.loads(result.stdout)
-    operator_result = payload["routes"][-1]
+    operator_result = payload["routes"][-2]
     assert operator_result == {
         "label": "operator-case-report",
         "path": "/ui/report-runs/operator-smoke",
+        "status": 200,
+        "ok": True,
+        "failures": [],
+    }
+    lineage_result = payload["routes"][-1]
+    assert lineage_result == {
+        "label": "operator-case-lineage",
+        "path": "/ui/report-runs/operator-smoke/lineage",
         "status": 200,
         "ok": True,
         "failures": [],
@@ -165,12 +191,8 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_api_key_cookie() -> None:
         "Land Diligence",
         '<input name="csrf_token" type="hidden" value="csrf-fixture">',
     )
-    routes["/ui/report-runs/operator-smoke"] = _html(
-        "Executive Summary",
-        "Download dossier (.md)",
-        "Download report (.json)",
-        "View evidence lineage",
-    )
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     server, base_url = _run_server(routes)
     handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
     try:
@@ -202,12 +224,8 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_reviewer_session() -> Non
         "Land Diligence",
         '<input name="csrf_token" type="hidden" value="csrf-fixture">',
     )
-    routes["/ui/report-runs/operator-smoke"] = _html(
-        "Executive Summary",
-        "Download dossier (.md)",
-        "Download report (.json)",
-        "View evidence lineage",
-    )
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     server, base_url = _run_server(routes)
     handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
     try:
@@ -237,12 +255,8 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_reviewer_session() -> Non
 
 def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> None:
     routes = _required_routes()
-    routes["/ui/report-runs/operator-smoke"] = _html(
-        "Executive Summary",
-        "Download dossier (.md)",
-        "Download report (.json)",
-        "View evidence lineage",
-    )
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     routes["/report-runs/operator-smoke/artifact"] = json.dumps(
         {"artifact_metadata": {"persistence": "postgres+object_store"}},
     )
@@ -267,12 +281,7 @@ def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> Non
 
 def test_ui_runtime_smoke_operator_case_fails_on_artifact_persistence_mismatch() -> None:
     routes = _required_routes()
-    routes["/ui/report-runs/operator-smoke"] = _html(
-        "Executive Summary",
-        "Download dossier (.md)",
-        "Download report (.json)",
-        "View evidence lineage",
-    )
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
     routes["/report-runs/operator-smoke/artifact"] = json.dumps(
         {"artifact_metadata": {"persistence": "memory"}},
     )
@@ -334,6 +343,31 @@ def test_ui_runtime_smoke_operator_case_fails_when_report_delivery_link_missing(
         in result.stdout
     )
     assert "missing required text: Download report (.json)" in result.stdout
+
+
+def test_ui_runtime_smoke_operator_case_fails_when_lineage_records_missing() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _html(
+        "Evidence Lineage",
+        "Sources: 1",
+        "Evidence records: 0",
+        "Claims: 1",
+        "No evidence records.",
+    )
+    server, base_url = _run_server(routes)
+    try:
+        result = _run_smoke(base_url, "--operator-case-id", "BUN-slope")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 1
+    assert (
+        "fail: operator-case-lineage /ui/report-runs/operator-smoke/lineage status=200"
+        in result.stdout
+    )
+    assert "found forbidden text: No evidence records." in result.stdout
 
 
 def test_ui_runtime_smoke_script_supports_reviewer_session_expectations() -> None:

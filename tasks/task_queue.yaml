@@ -1,13 +1,15 @@
 version: 2
-active_plan: plans/2026-06-18-lineage-smoke.md
+active_plan: plans/2026-06-18-post-rc-authority-split.md
 routing_note: >
-  Active lane: selected-county lineage release-candidate smoke proof
-  (plans/2026-06-18-lineage-smoke.md). Goal: make the opt-in selected-county
-  UI runtime smoke prove that approved report lineage is reachable and evidence-linked,
-  without making DS-017, hosted production, IdP, SLO, capacity, or full RBAC claims.
+  Active lane: post-release-candidate authority split
+  (plans/2026-06-18-post-rc-authority-split.md). Goal: classify the remaining
+  Level 9/10 gaps after the selected-county proof refresh and lineage smoke proof,
+  separating repo-local work from DS-017, hosted production, IdP/RBAC, secret-manager,
+  billing, alerting, and production workload decisions that require external authority.
   Completed readiness reconciliation, performance baseline, static spatial proof,
   SQL-contract guard, spatial runtime proof, queue backpressure, workflow-valid load
-  proof, and selected-county RC proof refresh plans remain historical context.
+  proof, selected-county RC proof refresh, and lineage smoke proof plans remain
+  historical context.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -243,14 +245,15 @@ tasks:
 
   - id: R-009
     title: Selected-county lineage smoke proof
-    status: active
+    status: done
     depends_on: [R-008]
     lane: coordinator
     spec: plans/2026-06-18-lineage-smoke.md
     notes: >
       Extend the existing opt-in selected-county UI runtime smoke so an approved
       operator-case report proves lineage reachability and evidence-linked content,
-      not just the presence of a "View evidence lineage" link.
+      not just the presence of a "View evidence lineage" link. Completed with
+      in-memory and isolated DB-backed runtime smoke proof.
     validation:
       - python .\scripts\private_mvp_readiness_check.py
       - cd backend; python -m pytest -q .\tests\test_ui_runtime_smoke_script.py .\tests\api\test_ui_routes.py .\tests\api\test_report_lineage.py
@@ -264,6 +267,30 @@ tasks:
       - Lineage proof asserts stable evidence-linked content and fails closed on missing lineage
       - Default non-mutating browser smoke remains non-mutating
       - Hosted production, DS-017, and full RBAC remain out of scope
+
+  - id: R-010
+    title: Post-RC authority split
+    status: active
+    depends_on: [R-009]
+    lane: coordinator
+    spec: plans/2026-06-18-post-rc-authority-split.md
+    notes: >
+      Separate remaining Level 9/10 gaps into repo-local implementation candidates,
+      evidence-only audit candidates, and external-authority blockers after the
+      selected-county release-candidate proof ladder and lineage smoke proof complete.
+    validation:
+      - python .\scripts\private_mvp_readiness_check.py
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\hosted_deployment_check.py
+      - python .\scripts\access_control_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+    acceptance:
+      - Remaining gaps are classified as external-authority, repo-local, or audit-only
+      - Hosted production and DS-017 blockers are not promoted from local proof
+      - The next implementation slice is selected only from confirmed repo-local authority
 
   # --- Completed ---
   - id: T000

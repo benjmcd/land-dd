@@ -464,6 +464,7 @@ def test_operator_runbook_has_selected_county_proof_matrix() -> None:
         "outside the selected private-MVP set",
         "the `/ui/operator-cases/report` launcher",
         "approved UI delivery links",
+        "follows the approved report lineage route",
         "--reviewer-id fixture-reviewer",
         "--reviewer-token fixture-token-123",
         "--expect-artifact-persistence postgres+object_store",

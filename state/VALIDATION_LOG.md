@@ -11215,3 +11215,61 @@ git diff --name-only --diff-filter=D
 - The current runtime smoke checks the approved report page includes a lineage link; the
   next active pass (`R-009`) is to follow that lineage route and assert stable
   evidence-linked content.
+
+---
+
+## 2026-06-18 - Selected-county Lineage Smoke Proof
+
+**Scope:** Make the opt-in selected-county UI runtime smoke prove approved-report lineage
+reachability and source/evidence/claim lineage content, not just the presence of the
+delivery-page lineage link. Route the next active plan to a post-RC authority split
+without making hosted production, DS-017, IdP/RBAC, billing, alerting, or production
+workload claims.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='./backend'; python -m pytest -q .\backend\tests\test_ui_runtime_smoke_script.py
+python .\scripts\private_mvp_readiness_check.py
+Push-Location .\backend
+$env:PYTHONPATH='.'
+python -m pytest -q .\tests\api\test_ui_routes.py .\tests\api\test_report_lineage.py .\tests\test_private_mvp_readiness.py
+python -m ruff check .\tests\test_ui_runtime_smoke_script.py .\tests\test_private_mvp_readiness.py ..\scripts\ui_runtime_smoke.py ..\scripts\private_mvp_readiness_check.py
+python -m mypy .\tests\test_ui_runtime_smoke_script.py .\tests\test_private_mvp_readiness.py ..\scripts\ui_runtime_smoke.py ..\scripts\private_mvp_readiness_check.py
+Pop-Location
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+python -m uvicorn app.main:create_app --factory --host 127.0.0.1 --port 18186
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18186 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --json
+$env:DB_PORT='55453'; docker compose -p land-dd-r009 up -d db
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55453/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:USE_DB_SERVICES='true'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55453/land_diligence'; python -m uvicorn app.main:create_app --factory --host 127.0.0.1 --port 18187
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18187 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --expect-artifact-persistence postgres+object_store --json
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused smoke-script tests passed (`11 passed`).
+- Private-MVP readiness validator passed.
+- Focused lineage UI/API/private-MVP route tests passed (`127 passed`).
+- Focused ruff passed and focused mypy passed.
+- Release-readiness and readiness-matrix validators passed.
+- `git diff --check` passed and no deleted files were reported.
+- In-memory selected-county UI runtime smoke passed on port `18186`; JSON output included
+  `operator-case-report` and `operator-case-lineage` with HTTP `200` and no failures.
+- Isolated PostGIS migrations/seeds applied on port `55453`; DB-backed selected-county
+  UI runtime smoke passed on port `18187` with
+  `--expect-artifact-persistence postgres+object_store`; JSON output included
+  `operator-case-lineage` with HTTP `200` and no failures.
+- `.\scripts\verify.ps1` passed after state/routing updates; backend tests passed, ruff
+  passed, mypy passed on `321` source files, and DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This remains local/private-MVP release-candidate evidence, not hosted production proof.
+- Hosted lineage proof still requires hosted DB/object-store deployment authority.
+- DS-017, full IdP/RBAC, external secret manager, billing, alert routing, and production
+  workload proof remain blocked or future work.
