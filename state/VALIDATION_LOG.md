@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Compare/Diff Workflow Smoke
+
+**Scope:** Add release-candidate workflow smoke for existing compare/diff surfaces
+without adding ranking, recommendation, suitability, arbitrary-geography, hosted
+production, DS-017, billing, alerting, IdP/RBAC, or image-publication claims.
+
+**Commands run:**
+
+```powershell
+Push-Location .\backend
+python -m pytest -q .\tests\api\test_report_comparison.py .\tests\api\test_ui_routes.py .\tests\test_ui_runtime_smoke_script.py
+python -m ruff check .\tests\test_ui_runtime_smoke_script.py ..\scripts\ui_runtime_smoke.py
+python -m mypy .\tests\test_ui_runtime_smoke_script.py ..\scripts\ui_runtime_smoke.py
+Pop-Location
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\performance_baseline_check.py
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18192 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --compare-same-area --json
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused compare/API/UI/runtime-smoke tests passed.
+- Focused ruff passed on the smoke script and script tests.
+- Focused mypy passed on the smoke script and script tests.
+- Private-MVP, release-readiness, readiness-matrix, and performance-baseline validators
+  passed after the active plan in `tasks/task_queue.yaml` was corrected to route to
+  `plans/2026-06-18-threat-model-proxy-audit.md`.
+- Local in-memory FastAPI smoke on `127.0.0.1:18192` passed with
+  `--operator-case-id BUN-slope --compare-same-area --json`; it checked UI compare,
+  JSON compare, and same-area diff API routes.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, backend tests, ruff, and
+  mypy over `322` source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass is repo-local release-candidate workflow proof only. It does not prove
+  hosted production behavior, arbitrary multi-geography utility, DS-017 source/vendor
+  readiness, production SLO/capacity, image publication, billing, alerting, full
+  IdP/RBAC, or legal/security review completion.
+
 ## 2026-06-18 Source Freshness Review-Drift Guard
 
 **Scope:** Add repo-local fail-closed freshness/review metadata gating to Must-source

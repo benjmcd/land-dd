@@ -1,14 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-compare-diff-workflow-smoke.md
+active_plan: plans/2026-06-18-threat-model-proxy-audit.md
 routing_note: >
-  Active lane: compare/diff workflow smoke
-  (plans/2026-06-18-compare-diff-workflow-smoke.md). Goal: include the existing
-  compare/diff API and UI surfaces in release-candidate smoke after representative
-  local performance rehearsal completed, while preserving the distinction between
-  report comparison/change review and recommendations, arbitrary geography utility, or
-  hosted production proof. DS-017, hosted deployment, IdP/RBAC, secret-manager,
-  billing, alerting, image publication, and production workload decisions remain
-  external authority requirements separated from repo-local proof.
+  Active lane: threat-model/proxy audit update
+  (plans/2026-06-18-threat-model-proxy-audit.md). Goal: map current security,
+  access-control, protected-class, and residential-steering risks to existing
+  repo-local controls, tests, and blockers before any hosted or residential expansion
+  claim. This does not replace external security review, legal review, hosted IdP/RBAC,
+  production error/log review, DS-017 entitlement work, billing, alerting,
+  secret-manager, deployment, or production workload authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -455,21 +454,27 @@ tasks:
 
   - id: R-017
     title: Compare/diff workflow smoke
-    status: active
+    status: done
     depends_on: [R-016]
     lane: coordinator
     spec: plans/2026-06-18-compare-diff-workflow-smoke.md
     notes: >
-      Include the existing compare/diff API and UI surfaces in release-candidate
-      workflow smoke after local performance rehearsal. This is repo-local workflow
-      proof only: no ranking, recommendation, suitability scoring, arbitrary geography
-      claim, hosted production proof, DS-017 work, billing, alerting, IdP/RBAC, or
-      image publication.
+      Completed repo-local compare/diff workflow smoke after local performance
+      rehearsal. The smoke now creates two approved reports for one selected-county
+      operator case, checks UI compare, checks JSON compare summary shape, and verifies
+      same-area diff API output. This is repo-local workflow proof only: no ranking,
+      recommendation, suitability scoring, arbitrary geography claim, hosted production
+      proof, DS-017 work, billing, alerting, IdP/RBAC, or image publication.
     validation:
       - python .\scripts\private_mvp_readiness_check.py
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
+      - python .\scripts\performance_baseline_check.py
       - cd backend; python -m pytest -q .\tests\api\test_report_comparison.py .\tests\api\test_ui_routes.py .\tests\test_ui_runtime_smoke_script.py
+      - cd backend; python -m pytest -q .\tests\test_ui_runtime_smoke_script.py .\tests\api\test_report_comparison.py .\tests\api\test_ui_routes.py -k "compare or ui_runtime_smoke"
+      - cd backend; python -m ruff check .\tests\test_ui_runtime_smoke_script.py ..\scripts\ui_runtime_smoke.py
+      - cd backend; python -m mypy .\tests\test_ui_runtime_smoke_script.py ..\scripts\ui_runtime_smoke.py
+      - python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18192 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --compare-same-area --json
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
@@ -478,6 +483,32 @@ tasks:
       - Release-candidate smoke follows compare and same-area diff only where current report contracts support it
       - Compare/diff output remains report-summary/change-review proof, not ranking, recommendation, or suitability scoring
       - Hosted production, DS-017, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
+
+  - id: R-018
+    title: Threat-model/proxy audit update
+    status: active
+    depends_on: [R-017]
+    lane: coordinator
+    spec: plans/2026-06-18-threat-model-proxy-audit.md
+    notes: >
+      Audit and harden repo-local security, access-control, protected-class, and
+      residential-steering safeguards before any hosted or residential expansion claim.
+      This is a repo-local coherence and drift-control pass only; it does not replace
+      external security review, legal review, hosted IdP/RBAC work, production error/log
+      review, DS-017 entitlement work, billing, alerting, or deployment authority.
+    validation:
+      - python .\scripts\private_mvp_readiness_check.py
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\api .\tests\reports .\tests\source_registry
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Canonical security/proxy authority files are identified before any edit
+      - Protected-class, demographic proxy, recommendation/ranking, and residential-steering controls are traced to tests or explicit blockers
+      - Any added guard is narrow, repo-local, and validates existing boundaries instead of adding new product semantics
+      - Hosted IdP/RBAC, external security/legal review, production error/log review, DS-017, billing, alerting, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---
   - id: T000

@@ -203,6 +203,15 @@ def artifact_path_for_ui_report(path: str) -> str | None:
     return f"/report-runs/{report_run_id}/artifact"
 
 
+def report_run_id_from_ui_report(path: str) -> str | None:
+    path_only = urlparse(path).path
+    prefix = "/ui/report-runs/"
+    if not path_only.startswith(prefix):
+        return None
+    report_run_id = path_only[len(prefix) :].split("/", 1)[0]
+    return report_run_id or None
+
+
 def lineage_path_for_ui_report(path: str) -> str | None:
     path_only = urlparse(path).path
     prefix = "/ui/report-runs/"
@@ -289,6 +298,238 @@ def check_artifact_persistence(
     return failures
 
 
+def fetch_json_payload(
+    opener: Any,
+    base_url: str,
+    label: str,
+    path: str,
+    timeout: float,
+) -> tuple[RouteResult, Any | None]:
+    url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
+    failures: list[str] = []
+    status: int | None = None
+    try:
+        with opener.open(url, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+    except HTTPError as exc:
+        status = int(exc.code)
+        body = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("content-type", "")
+        failures.append(f"HTTP {status}")
+    except URLError as exc:
+        return RouteResult(
+            label,
+            path,
+            None,
+            False,
+            [f"runtime unavailable: {exc.reason}"],
+        ), None
+
+    if status != 200:
+        failures.append(f"expected HTTP 200, got {status}")
+    if not body.strip():
+        failures.append("empty body")
+    if "application/json" not in content_type.lower():
+        failures.append(
+            f"expected application/json content-type, got {content_type or '<missing>'}"
+        )
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        failures.append(f"invalid JSON: {exc}")
+        payload = None
+    return RouteResult(label, path, status, not failures, failures), payload
+
+
+def _contains_forbidden_compare_semantics(payload: Any) -> list[str]:
+    forbidden_keys = {
+        "rank",
+        "ranking",
+        "recommendation",
+        "recommended",
+        "recommendations",
+        "suitability_score",
+    }
+    found: list[str] = []
+
+    def _walk(value: Any) -> None:
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                if str(key).lower() in forbidden_keys:
+                    found.append(str(key))
+                _walk(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                _walk(nested)
+
+    _walk(payload)
+    return found
+
+
+def check_compare_api(
+    opener: Any,
+    base_url: str,
+    first_report_id: str,
+    second_report_id: str,
+    timeout: float,
+) -> RouteResult:
+    ids = f"{first_report_id},{second_report_id}"
+    path = f"/report-runs/compare?{urlencode({'ids': ids})}"
+    result, payload = fetch_json_payload(
+        opener,
+        base_url,
+        "operator-case-compare-api",
+        path,
+        timeout,
+    )
+    if not isinstance(payload, dict):
+        result.failures.append("compare API payload is not an object")
+        result.ok = False
+        return result
+    summaries = payload.get("summaries")
+    if not isinstance(summaries, list) or len(summaries) != 2:
+        result.failures.append("compare API expected exactly 2 summaries")
+    else:
+        summary_ids = {
+            str(summary.get("report_run_id"))
+            for summary in summaries
+            if isinstance(summary, dict)
+        }
+        expected_ids = {first_report_id, second_report_id}
+        if summary_ids != expected_ids:
+            result.failures.append(
+                "compare API report_run_id mismatch: "
+                f"expected {expected_ids}, got {summary_ids}"
+            )
+        required_fields = {
+            "report_run_id",
+            "area_id",
+            "intent_code",
+            "claims_count",
+            "unknowns_count",
+            "red_flags_count",
+            "high_severity_claims",
+            "verification_tasks_count",
+        }
+        for summary in summaries:
+            if not isinstance(summary, dict):
+                result.failures.append("compare API summary is not an object")
+                continue
+            missing = sorted(required_fields - set(summary))
+            if missing:
+                result.failures.append(
+                    f"compare API summary missing fields: {', '.join(missing)}"
+                )
+    forbidden = _contains_forbidden_compare_semantics(payload)
+    if forbidden:
+        result.failures.append(
+            "compare API exposed ranking/recommendation keys: " + ", ".join(sorted(forbidden))
+        )
+    result.ok = not result.failures
+    return result
+
+
+def check_diff_api(
+    opener: Any,
+    base_url: str,
+    first_report_id: str,
+    second_report_id: str,
+    timeout: float,
+) -> RouteResult:
+    path = (
+        f"/report-runs/{second_report_id}/diff?"
+        f"{urlencode({'base_id': first_report_id})}"
+    )
+    result, payload = fetch_json_payload(
+        opener,
+        base_url,
+        "operator-case-diff-api",
+        path,
+        timeout,
+    )
+    if not isinstance(payload, dict):
+        result.failures.append("diff API payload is not an object")
+        result.ok = False
+        return result
+    required_fields = {
+        "report_run_id",
+        "base_report_run_id",
+        "area_id",
+        "same_area",
+        "ruleset_changed",
+        "added_claim_codes",
+        "removed_claim_codes",
+        "added_sources",
+        "removed_sources",
+        "evidence_count_delta",
+    }
+    missing = sorted(required_fields - set(payload))
+    if missing:
+        result.failures.append(f"diff API missing fields: {', '.join(missing)}")
+    if str(payload.get("report_run_id")) != second_report_id:
+        result.failures.append("diff API report_run_id did not match compared report")
+    if str(payload.get("base_report_run_id")) != first_report_id:
+        result.failures.append("diff API base_report_run_id did not match base report")
+    if payload.get("same_area") is not True:
+        result.failures.append("diff API did not confirm same_area=true")
+    forbidden = _contains_forbidden_compare_semantics(payload)
+    if forbidden:
+        result.failures.append(
+            "diff API exposed ranking/recommendation keys: " + ", ".join(sorted(forbidden))
+        )
+    result.ok = not result.failures
+    return result
+
+
+def check_compare_ui(
+    opener: Any,
+    base_url: str,
+    first_report_id: str,
+    second_report_id: str,
+    timeout: float,
+) -> RouteResult:
+    path = "/ui/compare?" + urlencode(
+        [("ids", first_report_id), ("ids", second_report_id)]
+    )
+    return fetch_route(
+        opener,
+        base_url,
+        RouteCheck(
+            "operator-case-compare-ui",
+            path,
+            (
+                "Compare Report Runs",
+                "Review Status",
+                "Delivery Status",
+                "Delivery available",
+                "View dossier",
+                "Download JSON",
+                "Lineage",
+                "Change Review",
+                "Same Area",
+                "Added Claim Codes",
+                "Removed Claim Codes",
+                "Added Sources",
+                "Removed Sources",
+                "Evidence Count Delta",
+                "Screening Tool Only.",
+            ),
+            forbidden=(
+                "Traceback",
+                "Internal Server Error",
+                "Recommendation",
+                "Recommended",
+                "Ranking",
+                "Ranked",
+                "Suitability Score",
+            ),
+        ),
+        timeout,
+    )
+
+
 def post_operator_case_report(
     opener: Any,
     base_url: str,
@@ -297,8 +538,16 @@ def post_operator_case_report(
     *,
     include_csrf: bool,
     expected_artifact_persistence: str,
+    label: str = "operator-case-report",
 ) -> RouteResult:
-    check = OPERATOR_CASE_REPORT_CHECK
+    check = RouteCheck(
+        label,
+        OPERATOR_CASE_REPORT_CHECK.path,
+        OPERATOR_CASE_REPORT_CHECK.required,
+        forbidden=OPERATOR_CASE_REPORT_CHECK.forbidden,
+        expect_html=OPERATOR_CASE_REPORT_CHECK.expect_html,
+        expect_viewport=OPERATOR_CASE_REPORT_CHECK.expect_viewport,
+    )
     url = urljoin(base_url.rstrip("/") + "/", "ui/operator-cases/report")
     fields = {"selected_county_case_id": case_id}
     failures: list[str] = []
@@ -398,6 +647,8 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
         )
     if args.expect_artifact_persistence and not args.operator_case_id:
         raise RuntimeError("--expect-artifact-persistence requires --operator-case-id")
+    if args.compare_same_area and not args.operator_case_id:
+        raise RuntimeError("--compare-same-area requires --operator-case-id")
 
     results = [
         fetch_route(opener, base_url, check, args.timeout)
@@ -422,6 +673,75 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                     args.timeout,
                 )
             )
+        if args.compare_same_area and operator_result.ok:
+            first_report_id = report_run_id_from_ui_report(operator_result.path)
+            if first_report_id is None:
+                results.append(
+                    RouteResult(
+                        "operator-case-compare-ui",
+                        operator_result.path,
+                        None,
+                        False,
+                        [
+                            "could not derive report_run_id from final path: "
+                            f"{operator_result.path}"
+                        ],
+                    )
+                )
+                return results
+            compare_report_result = post_operator_case_report(
+                opener,
+                base_url,
+                args.operator_case_id,
+                args.timeout,
+                include_csrf=bool(args.api_key) or reviewer_session,
+                expected_artifact_persistence="",
+                label="operator-case-report-compare",
+            )
+            results.append(compare_report_result)
+            if compare_report_result.ok:
+                second_report_id = report_run_id_from_ui_report(compare_report_result.path)
+                if second_report_id is None:
+                    results.append(
+                        RouteResult(
+                            "operator-case-compare-ui",
+                            compare_report_result.path,
+                            None,
+                            False,
+                            [
+                                "could not derive report_run_id from final path: "
+                                f"{compare_report_result.path}"
+                            ],
+                        )
+                    )
+                else:
+                    results.append(
+                        check_compare_ui(
+                            opener,
+                            base_url,
+                            first_report_id,
+                            second_report_id,
+                            args.timeout,
+                        )
+                    )
+                    results.append(
+                        check_compare_api(
+                            opener,
+                            base_url,
+                            first_report_id,
+                            second_report_id,
+                            args.timeout,
+                        )
+                    )
+                    results.append(
+                        check_diff_api(
+                            opener,
+                            base_url,
+                            first_report_id,
+                            second_report_id,
+                            args.timeout,
+                        )
+                    )
     return results
 
 
@@ -443,6 +763,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--expect-artifact-persistence",
         default="",
         help="with --operator-case-id, assert final report artifact persistence value",
+    )
+    parser.add_argument(
+        "--compare-same-area",
+        action="store_true",
+        help=(
+            "with --operator-case-id, create a second approved selected-county report "
+            "for the same case and check UI compare plus API compare/diff"
+        ),
     )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     return parser

@@ -775,14 +775,28 @@ It then follows the approved report lineage route and requires source, evidence,
 claim lineage content to be present, not only the delivery link.
 It creates an in-memory approved report in the target runtime when that runtime uses
 the default in-memory services; use it only when mutating fixture state is intentional.
+
+To also prove the compare and same-area diff workflow, add `--compare-same-area`:
+
+```powershell
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --compare-same-area
+```
+
+That option creates a second approved report for the same selected-county case, opens
+the UI compare page, requires the same-area **Change Review** section, checks the JSON
+compare summary shape, and verifies the diff API reports `same_area=true`. It remains a
+workflow smoke check only; it must not be used as ranking, recommendation, suitability,
+or arbitrary-geography proof.
+
 For a DB-backed runtime, add an artifact persistence assertion:
 
 ```powershell
-python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --expect-artifact-persistence postgres+object_store
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --compare-same-area --expect-artifact-persistence postgres+object_store
 ```
 
-That DB-backed invocation follows the same UI path and then fetches the linked JSON
-artifact, requiring `artifact_metadata.persistence` to equal `postgres+object_store`.
+That DB-backed invocation follows the same UI path, performs the compare/diff checks,
+and fetches the linked JSON artifact, requiring `artifact_metadata.persistence` to equal
+`postgres+object_store`.
 
 Set these optional environment variables only when the target runtime requires them or
 when collecting explicit visual evidence:
