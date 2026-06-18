@@ -2,6 +2,19 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Level 9/10 readiness reconciliation)
+
+- Added `plans/2026-06-18-level9-10-readiness-reconciliation.md` as the active
+  coordinator plan after the UI CSRF route-coverage slice merged.
+- Routed `plans/README.md` and `tasks/task_queue.yaml` away from the completed CSRF plan
+  and added active task `R-001`.
+- Recorded the current checkpoint in `state/PROJECT_STATE.md`, preserving the distinction
+  between complete selected-county private-MVP proof, validate-only release/hosted
+  catalogs, and blocked hosted-production authorities.
+- Ran private-MVP, release-readiness, hosted-deployment, access-control, and Must-source
+  readiness validators; current Must-source readiness remains `sources=8 ready=7
+  blocked=1` with DS-017 blocked.
+
 ## 2026-06-18 (UI CSRF route coverage)
 
 - Added `plans/2026-06-18-ui-csrf-route-coverage.md` and routed the active plan to the
