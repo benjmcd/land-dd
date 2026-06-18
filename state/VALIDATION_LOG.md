@@ -2,6 +2,57 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Threat/Proxy Audit Update
+
+**Scope:** Add repo-local threat/proxy audit drift control for security,
+access-control, protected-class, demographic-proxy, residential-steering,
+recommendation/ranking, suitability, source-rights, overclaim, and error-leakage
+boundaries without replacing hosted, legal, security, identity, DS-017, billing,
+alerting, or deployment authority.
+
+**Commands run:**
+
+```powershell
+python .\scripts\threat_proxy_audit_check.py
+.\scripts\run_threat_proxy_audit_check.ps1
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\access_control_check.py
+.\scripts\run_security_scan.ps1
+Push-Location .\backend
+python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\test_ui_runtime_smoke_script.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py .\tests\reports\test_report_overclaim.py .\tests\api\test_report_export.py
+python -m ruff check .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py ..\scripts\threat_proxy_audit_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py .\app\reports\service.py
+python -m mypy .\tests\test_threat_proxy_audit_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py .\tests\api\test_report_comparison.py .\tests\reports\test_report_service.py .\tests\reports\test_report_schema_contract.py ..\scripts\threat_proxy_audit_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py .\app\reports\service.py
+Pop-Location
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Threat/proxy audit checker and Windows wrapper passed.
+- Private-MVP, release-readiness, readiness-matrix, and access-control validators
+  passed with the new composed threat/proxy audit check.
+- Security scan passed with `0` high/critical findings; medium findings remain review
+  debt under `config/threat_proxy_audit.yaml`.
+- Focused tests passed for threat/proxy artifacts, release-readiness artifacts,
+  readiness-matrix artifacts, compare/diff API semantics, runtime-smoke script, report
+  service source manifests, report schema contract, overclaim guards, and report export.
+- Focused ruff and mypy passed on touched tests, scripts, and report service.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, backend tests, ruff, and
+  mypy over `323` source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass is repo-local drift control only. It does not replace external security
+  review, legal fair-housing review, hosted IdP/RBAC design, production error/log
+  review, DS-017 vendor entitlement, hosted alerting, billing, secret-manager, hosted
+  deployment, or production workload proof.
+
 ## 2026-06-18 Compare/Diff Workflow Smoke
 
 **Scope:** Add release-candidate workflow smoke for existing compare/diff surfaces

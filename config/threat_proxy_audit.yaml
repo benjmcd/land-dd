@@ -1,0 +1,107 @@
+schema_version: threat_proxy_audit_v1
+operator_runbook: docs/runbooks/threat_proxy_audit.md
+status: repo_local_validate_only
+validation: scripts/run_threat_proxy_audit_check.ps1
+
+risk_register:
+  - id: protected_class_demographic_inputs
+    status: guarded_repo_local
+    risk: Protected-class or demographic variables could become report inputs or scoring features.
+    controls:
+      - docs/SECURITY.md
+      - docs/PRODUCT_SPEC.md
+      - docs/source-reviews/ds-022.md
+      - backend/app/connectors/census_tiger.py
+      - backend/tests/connectors/test_census_tiger_connector.py
+      - backend/tests/api/test_census_tiger_connector_api.py
+  - id: residential_steering_proxy
+    status: guarded_repo_local
+    risk: Neighborhood, school, safety, market, or demographic proxy language could become residential steering.
+    controls:
+      - docs/SECURITY.md
+      - docs/source-reviews/ds-022.md
+      - backend/app/connectors/census_tiger.py
+      - backend/tests/connectors/test_census_tiger_connector.py
+      - backend/tests/claims_engine/test_not_evaluated_claims.py
+  - id: ranking_recommendation_suitability
+    status: guarded_repo_local
+    risk: Compare/diff or report output could be mistaken for ranking, recommendation, or suitability scoring.
+    controls:
+      - docs/runbooks/mvp_operator.md
+      - scripts/ui_runtime_smoke.py
+      - backend/tests/test_ui_runtime_smoke_script.py
+      - backend/tests/reports/test_dossier_enrichment.py
+  - id: legal_financial_overclaim
+    status: guarded_repo_local
+    risk: Reports could imply final legal, water, buildability, safety, appraisal, lending, or investment conclusions.
+    controls:
+      - docs/SECURITY.md
+      - docs/PRODUCT_SPEC.md
+      - config/private_mvp_beta_readiness.yaml
+      - backend/tests/reports/test_report_overclaim.py
+      - backend/tests/api/test_report_export.py
+      - backend/tests/private_mvp/test_mvp_regression.py
+  - id: source_rights_sensitive_exposure
+    status: guarded_repo_local
+    risk: Restricted source rights or sensitive source-derived values could leak into reports.
+    controls:
+      - docs/runbooks/mvp_operator.md
+      - backend/app/source_registry/usage_rights.py
+      - backend/tests/source_registry/test_usage_rights.py
+      - scripts/source_readiness.py
+  - id: auth_access_control
+    status: guarded_repo_local
+    risk: Restricted operator/report/source actions could bypass current API-key, reviewer, workspace, or scope controls.
+    controls:
+      - config/access_control.yaml
+      - docs/runbooks/access_control.md
+      - scripts/access_control_check.py
+      - backend/tests/api/test_api_key_auth.py
+      - backend/tests/api/test_reviewer_auth.py
+      - backend/tests/api/test_report_auth.py
+  - id: production_error_leakage
+    status: partial_repo_local
+    risk: User-facing errors or logs could expose internals before hosted error/log review.
+    controls:
+      - backend/app/api/ui_shared.py
+      - backend/tests/api/test_ui_shared.py
+      - backend/tests/api/test_ui_routes.py
+      - docs/runbooks/incident_response.md
+
+external_blockers:
+  - id: external_security_review
+    status: blocked
+    authority: state/LEVEL_9_10_GATE_MATRIX.md
+  - id: legal_fair_housing_review
+    status: blocked
+    authority: docs/SECURITY.md
+  - id: hosted_idp_rbac
+    status: blocked
+    authority: docs/runbooks/access_control.md
+  - id: production_error_log_review
+    status: blocked
+    authority: state/LEVEL_9_10_GATE_MATRIX.md
+  - id: ds017_vendor_entitlement
+    status: blocked
+    authority: docs/runbooks/mvp_operator.md
+  - id: hosted_monitoring_alerting
+    status: blocked
+    authority: docs/runbooks/alerting.md
+
+residual_review_items:
+  - id: bandit_medium_findings
+    status: review_debt_not_release_blocking
+    authority: docs/runbooks/security_scan.md
+    note: >
+      The security-scan gate reports medium-and-above Bandit findings, but the current
+      CI blocker threshold is HIGH/CRITICAL. Medium findings remain periodic review debt
+      and must not be treated as external security-review completion.
+
+limits:
+  validate_only_catalog: true
+  adds_product_semantics: false
+  uses_demographic_inputs: false
+  creates_recommendations: false
+  claims_security_review_complete: false
+  claims_legal_review_complete: false
+  claims_hosted_production_ready: false

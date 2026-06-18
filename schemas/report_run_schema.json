@@ -222,6 +222,11 @@
               "authority_level",
               "license_status",
               "commercial_use_status",
+              "redistribution_status",
+              "cache_allowed",
+              "export_allowed",
+              "raw_data_allowed",
+              "ai_use_allowed",
               "freshness_class",
               "review_status",
               "review_owner",
@@ -251,6 +256,21 @@
                 "type": "string"
               },
               "commercial_use_status": {
+                "type": "string"
+              },
+              "redistribution_status": {
+                "type": "string"
+              },
+              "cache_allowed": {
+                "type": "string"
+              },
+              "export_allowed": {
+                "type": "string"
+              },
+              "raw_data_allowed": {
+                "type": "string"
+              },
+              "ai_use_allowed": {
                 "type": "string"
               },
               "freshness_class": {

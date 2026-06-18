@@ -82,6 +82,11 @@ def test_report_run_schema_tightens_source_manifest_shape() -> None:
         "authority_level",
         "license_status",
         "commercial_use_status",
+        "redistribution_status",
+        "cache_allowed",
+        "export_allowed",
+        "raw_data_allowed",
+        "ai_use_allowed",
         "freshness_class",
         "review_status",
         "review_owner",
@@ -94,6 +99,14 @@ def test_report_run_schema_tightens_source_manifest_shape() -> None:
     assert source_detail_properties["authority_level"]["enum"] == [
         item.value for item in AuthorityLevel
     ]
+    for field in (
+        "redistribution_status",
+        "cache_allowed",
+        "export_allowed",
+        "raw_data_allowed",
+        "ai_use_allowed",
+    ):
+        assert source_detail_properties[field]["type"] == "string"
     assert source_detail_properties["review_owner"]["type"] == ["string", "null"]
     assert source_detail_properties["last_checked_at"]["type"] == ["string", "null"]
     assert source_detail_item["additionalProperties"] is True

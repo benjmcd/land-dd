@@ -5,9 +5,9 @@
 Use `config/release_readiness.yaml` as the repo-local Level 10 release readiness
 catalog. It gathers the existing verification, DB, deployment smoke, supply-chain,
 security-scan, image scan, backup/restore, incident, alerting, cost, access-control,
-release-package, image-publication, hosted-deployment, source-readiness, data-retention,
-load-test, performance, data-lineage, jurisdiction-readiness, and rulepack-readiness
-proofs into one release boundary.
+threat-proxy-audit, release-package, image-publication, hosted-deployment,
+source-readiness, data-retention, load-test, performance, data-lineage,
+jurisdiction-readiness, and rulepack-readiness proofs into one release boundary.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -27,8 +27,8 @@ The check is validate-only. It verifies that:
 - `config/release_readiness.yaml` names all required release gates;
 - referenced proof scripts, runbooks, lockfiles, SBOM, Dockerfile, Compose, CI,
   access-control, release-package, image-publication, hosted-deployment,
-  source-readiness, security-scan, data-retention, load-testing, performance, checklist,
-  and data-lineage artifacts exist;
+  threat-proxy-audit, source-readiness, security-scan, data-retention, load-testing,
+  performance, checklist, and data-lineage artifacts exist;
 - CI contains `verify`, `db-verify`, `supply-chain`, `dependency-attestations`,
   `container-image-scan`, `access-control`, `image-publication`, `hosted-deployment`, and
   `security-scan`, and `release-readiness` jobs;
@@ -59,6 +59,11 @@ The check is validate-only. It verifies that:
   release proof composes `scripts/run_spatial_query_plan_check.ps1` /
   `scripts/spatial_query_plan_check.py` as validate-only static proof; the DB-enabled
   `scripts/run_spatial_query_plan_runtime_check.ps1` harness remains manual and opt-in;
+- the local threat/proxy audit contract is `config/threat_proxy_audit.yaml`, and the
+  release proof composes `scripts/run_threat_proxy_audit_check.ps1` /
+  `scripts/threat_proxy_audit_check.py` as validate-only static proof for protected-class,
+  demographic-proxy, residential-steering, recommendation/ranking, suitability,
+  access-control, source-rights, overclaim, and error-leakage boundaries;
 - the local load-test JSON result schema is `load_test_result_v1`;
 - jurisdiction and rulepack expansion stay gated by
   `docs/checklists/jurisdiction_readiness.md` and `docs/checklists/rulepack_readiness.md`;
@@ -88,6 +93,9 @@ The check is validate-only. It verifies that:
 ## Known Limits
 
 - Release readiness is repo-local and validate-only.
+- Threat/proxy audit readiness is repo-local drift control only. It does not replace
+  external security review, legal fair-housing review, hosted IdP/RBAC design,
+  production error/log review, DS-017 entitlement work, or hosted alerting.
 - Local release packages can be created with `scripts/build_release_package.ps1`, but this
   readiness proof itself remains validate-only.
 - Performance baseline readiness is release-candidate/local evidence only. It is not a

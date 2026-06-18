@@ -70,11 +70,11 @@ Status legend:
 | L10-SEC-002 authorization for user/org/report/data entitlements | `PARTIAL` | workspace-scoped report/connector paths, reviewer scopes | Full org/user RBAC and data entitlements remain blocked. |
 | L10-SEC-003 secrets through approved store/env, never repo | `PARTIAL` | hashed non-local specs and no committed secret values | External secret-manager integration remains blocked. |
 | L10-SEC-004 dependency and supply-chain scanning in CI | `PROVEN_REPO_LOCAL` | supply-chain, dependency-attestations, image-scan CI jobs | Registry image attestation remains blocked until publication authority exists. |
-| L10-SEC-005 static/security checks for API/auth/input/injection | `PROVEN_REPO_LOCAL` | security-scan and access-control CI/jobs/checkers | Expand with threat-model review before hosted launch. |
+| L10-SEC-005 static/security checks for API/auth/input/injection | `PROVEN_REPO_LOCAL` | security-scan, access-control, and threat/proxy audit CI/jobs/checkers | Add external threat-model review before hosted launch. |
 | L10-SEC-006 audit logs for decision-impacting actions | `PARTIAL` | API-key audit events, review actions, report status/review records | Hosted log retention/SIEM and user-bound identity audit remain blocked. |
 | L10-SEC-007 data retention/deletion policy | `VALIDATE_ONLY` | data-retention catalog/runbook/checker | Run policy against hosted data stores before production claim. |
-| L10-SEC-008 protected-class/residential steering safeguards | `PROVEN_PRIVATE_MVP` | Private-MVP negative coverage only: no protected-class inputs, demographic desirability scoring, or residential steering features in current rules/connectors | Add production proxy-audit review before hosted residential expansion. |
-| L10-SEC-009 production errors avoid leaks | `PARTIAL` | route error tests and auth failure pages | Add hosted error/log review before production launch. |
+| L10-SEC-008 protected-class/residential steering safeguards | `PROVEN_PRIVATE_MVP` | Private-MVP negative coverage only plus threat/proxy audit guard: no protected-class inputs, demographic desirability scoring, or residential steering features in current rules/connectors | Add production proxy-audit review before hosted residential expansion. |
+| L10-SEC-009 production errors avoid leaks | `PARTIAL` | route error tests, auth failure pages, and threat/proxy audit error-leakage guard | Add hosted error/log review before production launch. |
 | L10-SEC-010 paid/vendor data entitlement control | `BLOCKED` | DS-017 remains blocked; no paid vendor data in private MVP | Resolve vendor license/entitlement model before paid data enters reports. |
 
 ## Level 10 - Data Governance
@@ -144,11 +144,12 @@ readiness guarding, `R-014` added source-review cadence consistency guarding, `R
 proved the local source/runtime/operator package boundary, `R-016` completed
 representative local performance rehearsal while preserving hosted SLO/capacity
 blockers, and `R-017` included compare/diff in local release-candidate workflow smoke
-without ranking/recommendation semantics. The next active pass is `R-018`
-threat-model/proxy audit update: map security, access-control, protected-class, and
-residential-steering risks to existing repo-local controls without replacing external
-security review, legal review, hosted IdP/RBAC, production error/log review, DS-017
-entitlement work, or hosted production proof.
+without ranking/recommendation semantics. `R-018` added repo-local threat/proxy audit
+guarding, report source-rights manifest propagation, and matrix pins without replacing
+external security/legal/hosted authority. The next active pass is `R-019`
+jurisdiction/rulepack checklist dry run: rehearse the existing expansion checklists
+without selecting or approving a new geography, rulepack, source, connector, DS-017
+path, or hosted production proof.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

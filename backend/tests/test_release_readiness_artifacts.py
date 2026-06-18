@@ -24,6 +24,7 @@ REQUIRED_CHECKS = {
     "alert_rules",
     "cost_monitoring",
     "access_control",
+    "threat_proxy_audit",
     "release_package",
     "image_publication",
     "hosted_deployment",
@@ -63,6 +64,7 @@ COMPOSED_VALIDATORS = (
     "scripts/hosted_deployment_check.py",
     "scripts/performance_baseline_check.py",
     "scripts/spatial_query_plan_check.py",
+    "scripts/threat_proxy_audit_check.py",
 )
 
 
@@ -230,6 +232,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "dependency-attestations",
         "container-image-scan",
         "access-control",
+        "threat-proxy-audit",
         "release-package",
         "image-publication",
         "hosted-deployment",
@@ -242,6 +245,8 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "performance.md",
         "performance_baseline.yaml",
         "run_performance_baseline_check.ps1",
+        "threat_proxy_audit.yaml",
+        "run_threat_proxy_audit_check.ps1",
         "spatial_query_plan.yaml",
         "run_spatial_query_plan_check.ps1",
         "spatial_query_plan_check.py",
@@ -334,8 +339,11 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"load_test"' in script
     assert '"performance"' in script
     assert '"data_lineage"' in script
+    assert '"threat_proxy_audit"' in script
     assert '"config/performance_baseline.yaml"' in script
+    assert '"config/threat_proxy_audit.yaml"' in script
     assert '"scripts/performance_baseline_check.py"' in script
+    assert '"scripts/threat_proxy_audit_check.py"' in script
     assert '"config/spatial_query_plan.yaml"' in script
     assert '"scripts/spatial_query_plan_check.py"' in script
     assert '{"DS-017"}' in script
