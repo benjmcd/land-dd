@@ -15,11 +15,18 @@ readiness-reconciliation pass instead of the completed UI CSRF route-coverage sl
   publication attestation, hosted billing reconciliation, non-ready Must sources, full
   user auth/RBAC, hosted alerting, external secret-manager integration, and hosted
   platform/TLS/database authority.
-- **Validation**: private-MVP, release-readiness, hosted-deployment, access-control, and
-  Must-source readiness validators passed; Must-source readiness remains
-  `sources=8 ready=7 blocked=1` with DS-017 blocked.
-- **Limit**: this checkpoint changes planning/routing only; it does not claim Level 10
-  completion or create hosted infrastructure.
+- **Validation**: private-MVP, release-readiness, hosted-deployment, access-control,
+  Must-source readiness, and readiness-matrix validators passed; Must-source readiness
+  remains `sources=8 ready=7 blocked=1` with DS-017 blocked. Focused matrix artifact
+  tests, ruff, mypy, and whitespace checks also passed.
+- **Gate matrix**: `state/LEVEL_9_10_GATE_MATRIX.md` now classifies every Level 9 and
+  Level 10 gate against current evidence and names the next unblocked pass.
+- **Static guard**: `scripts/readiness_matrix_check.py` validates the matrix covers every
+  Level 9/10 gate from `MILESTONE_MAP.md`, pins the canonical routing commands, and
+  prevents high-risk hosted/source/auth/security/performance gates from being promoted
+  without an intentional checker update.
+- **Limit**: this checkpoint changes planning/readiness-state artifacts only; it does
+  not claim Level 10 completion or create hosted infrastructure.
 
 ## Current checkpoint (2026-06-18 UI CSRF route coverage)
 

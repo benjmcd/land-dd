@@ -16,7 +16,15 @@ python .\scripts\release_readiness_check.py
 python .\scripts\hosted_deployment_check.py
 python .\scripts\access_control_check.py
 python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\readiness_matrix_check.py
+.\scripts\run_readiness_matrix_check.ps1
+Push-Location .\backend
+python -m pytest -q .\tests\test_readiness_matrix_artifacts.py
+python -m ruff check .\tests\test_readiness_matrix_artifacts.py ..\scripts\readiness_matrix_check.py
+python -m mypy .\tests\test_readiness_matrix_artifacts.py
+Pop-Location
 git diff --check
+.\scripts\verify.ps1
 ```
 
 **Results:**
@@ -28,13 +36,19 @@ git diff --check
 - Must-source readiness JSON reported `source_count=8`, `ready_count=7`,
   `blocked_count=1`; DS-017 remains blocked on source review/licensing/commercial-use
   fields and connector implementation.
+- Readiness matrix validator passed, including the Windows wrapper.
+- Focused matrix artifact tests passed (`4 passed`).
+- Ruff passed on the matrix validator and focused artifact tests.
+- Mypy passed on the focused matrix artifact tests (`1 source file`).
 - `git diff --check` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation, backend tests, ruff,
+  and mypy over 317 source files passed. DB smoke was skipped by default.
 
 **Residual risk:**
 
-- This is a planning/routing reconciliation pass only. It does not create hosted
-  infrastructure, publish a registry image, write secrets, implement full user RBAC,
-  resolve DS-017, or complete Level 10.
+- This is a planning/readiness-state reconciliation pass only. It does not create
+  hosted infrastructure, publish a registry image, write secrets, implement full user
+  RBAC, resolve DS-017, or complete Level 10.
 
 ## 2026-06-18 UI CSRF Route Coverage
 
