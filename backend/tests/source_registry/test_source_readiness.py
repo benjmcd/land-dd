@@ -4,8 +4,10 @@ import importlib.util
 import json
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 
 def _repo_root() -> Path:
@@ -34,6 +36,46 @@ def _load_seed_module() -> ModuleType:
     return module
 
 
+def _must_source(source_id: str) -> Any:
+    seed_module = _load_seed_module()
+    return next(
+        source
+        for source in seed_module.load_registry_sources(priority="Must")
+        if source.metadata["source_registry_id"] == source_id
+    )
+
+
+def _with_review_metadata(
+    source: Any,
+    *,
+    freshness_class: str = "current-effective",
+    last_checked_at: str | None = "2026-06-05",
+    review_owner: str | None = "operator",
+) -> Any:
+    metadata = {
+        **source.metadata,
+        "freshness_class": freshness_class,
+        "last_checked_at": last_checked_at,
+        "review_owner": review_owner,
+    }
+    return source.model_copy(
+        update={
+            "freshness_class": freshness_class,
+            "last_checked_at": last_checked_at,
+            "review_owner": review_owner,
+            "metadata": metadata,
+        }
+    )
+
+
+def _single_record(source: Any) -> Any:
+    readiness = _load_readiness_module()
+    return readiness.build_readiness_records(
+        [source],
+        as_of=date(2026, 6, 18),
+    )[0]
+
+
 def test_load_registry_sources_defaults_to_all_registry_rows() -> None:
     seed_module = _load_seed_module()
 
@@ -50,7 +92,10 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
     readiness = _load_readiness_module()
     seed_module = _load_seed_module()
 
-    records = readiness.build_readiness_records(seed_module.load_registry_sources())
+    records = readiness.build_readiness_records(
+        seed_module.load_registry_sources(),
+        as_of=date(2026, 6, 18),
+    )
 
     assert len(records) == 25
     ready = [record for record in records if record.connector_ready]
@@ -127,6 +172,132 @@ def test_readiness_records_surface_current_ready_and_blocked_sources() -> None:
     assert census_tiger.connector_ready is True
 
 
+def test_must_source_readiness_baseline_preserves_review_freshness_fields() -> None:
+    readiness = _load_readiness_module()
+    seed_module = _load_seed_module()
+
+    records = readiness.build_readiness_records(
+        seed_module.load_registry_sources(priority="Must"),
+        as_of=date(2026, 6, 18),
+    )
+
+    assert len(records) == 8
+    assert sum(1 for record in records if record.connector_ready) == 7
+    blocked = [record for record in records if not record.connector_ready]
+    assert [record.source_registry_id for record in blocked] == ["DS-017"]
+
+    ds001 = next(record for record in records if record.source_registry_id == "DS-001")
+    assert ds001.freshness_class == "current-effective"
+    assert ds001.last_checked_at == "2026-06-05"
+    assert ds001.last_checked_age_days == 13
+    assert ds001.stale_after_days == 90
+    assert ds001.review_owner == "operator"
+    assert ds001.review_freshness_allowed is True
+    assert ds001.review_freshness_blocked_fields == ()
+
+    ds017 = blocked[0]
+    assert ds017.source_registry_id == "DS-017"
+    assert ds017.connector_ready is False
+    assert ds017.review_freshness_blocked_fields == ()
+    assert "last_checked_at" not in ds017.blocked_fields
+
+
+def test_must_current_effective_source_blocks_stale_last_checked_at() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), last_checked_at="2026-03-19")
+
+    record = _single_record(source)
+
+    assert record.connector_ready is False
+    assert record.review_freshness_allowed is False
+    assert record.last_checked_age_days == 91
+    assert record.review_freshness_blocked_fields == ("last_checked_at",)
+    assert record.blocked_fields == ("last_checked_at",)
+
+
+def test_must_current_effective_source_allows_exactly_90_day_last_checked_at() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), last_checked_at="2026-03-20")
+
+    record = _single_record(source)
+
+    assert record.connector_ready is True
+    assert record.review_freshness_allowed is True
+    assert record.last_checked_age_days == 90
+    assert record.review_freshness_blocked_fields == ()
+    assert record.blocked_fields == ()
+
+
+def test_must_current_effective_source_blocks_missing_last_checked_at() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), last_checked_at=None)
+
+    record = _single_record(source)
+
+    assert record.connector_ready is False
+    assert record.review_freshness_allowed is False
+    assert record.last_checked_age_days is None
+    assert record.review_freshness_blocked_fields == ("last_checked_at",)
+
+
+def test_must_current_effective_source_blocks_malformed_last_checked_at() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), last_checked_at="not-a-date")
+
+    record = _single_record(source)
+
+    assert record.connector_ready is False
+    assert record.review_freshness_allowed is False
+    assert record.last_checked_age_days is None
+    assert record.review_freshness_blocked_fields == ("last_checked_at",)
+
+
+def test_must_current_effective_source_blocks_future_last_checked_at() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), last_checked_at="2026-06-19")
+
+    record = _single_record(source)
+
+    assert record.connector_ready is False
+    assert record.review_freshness_allowed is False
+    assert record.last_checked_age_days is None
+    assert record.review_freshness_blocked_fields == ("last_checked_at",)
+
+
+def test_must_current_effective_source_blocks_blank_or_unassigned_review_owner() -> None:
+    blank_owner = _with_review_metadata(_must_source("DS-001"), review_owner=" ")
+    unassigned_owner = _with_review_metadata(_must_source("DS-001"), review_owner="unassigned")
+
+    blank_record = _single_record(blank_owner)
+    unassigned_record = _single_record(unassigned_owner)
+
+    assert blank_record.connector_ready is False
+    assert blank_record.review_freshness_blocked_fields == ("review_owner",)
+    assert unassigned_record.connector_ready is False
+    assert unassigned_record.review_freshness_blocked_fields == ("review_owner",)
+
+
+def test_otherwise_approved_must_source_blocks_unreviewed_freshness_class() -> None:
+    source = _with_review_metadata(_must_source("DS-001"), freshness_class="unreviewed")
+
+    record = _single_record(source)
+
+    assert record.production_use_allowed is True
+    assert record.connector_implemented is True
+    assert record.connector_ready is False
+    assert record.review_freshness_allowed is False
+    assert record.review_freshness_blocked_fields == ("freshness_class",)
+    assert record.blocked_fields == ("freshness_class",)
+
+
+def test_ds017_stays_blocked_without_current_effective_last_checked_error() -> None:
+    record = _single_record(_must_source("DS-017"))
+
+    assert record.connector_ready is False
+    assert record.production_use_allowed is False
+    assert record.connector_implemented is False
+    assert record.freshness_class == "unreviewed"
+    assert record.last_checked_at is None
+    assert record.review_owner == "unassigned"
+    assert record.review_freshness_blocked_fields == ()
+    assert "last_checked_at" not in record.blocked_fields
+
+
 def test_ds011_assessor_not_evaluated_connector_is_implemented() -> None:
     readiness = _load_readiness_module()
     seed_module = _load_seed_module()
@@ -139,7 +310,10 @@ def test_ds011_assessor_not_evaluated_connector_is_implemented() -> None:
         if source.metadata["source_registry_id"] == "DS-011"
     )
 
-    record = readiness.build_readiness_records([source])[0]
+    record = readiness.build_readiness_records(
+        [source],
+        as_of=date(2026, 6, 18),
+    )[0]
 
     assert record.production_use_allowed is True
     assert record.connector_implemented is True
@@ -155,7 +329,10 @@ def test_readiness_records_expose_aggregate_selected_county_connector_scopes() -
     readiness = _load_readiness_module()
     seed_module = _load_seed_module()
 
-    records = readiness.build_readiness_records(seed_module.load_registry_sources())
+    records = readiness.build_readiness_records(
+        seed_module.load_registry_sources(),
+        as_of=date(2026, 6, 18),
+    )
     county_gis = next(record for record in records if record.source_registry_id == "DS-010")
     zoning = next(record for record in records if record.source_registry_id == "DS-023")
 
@@ -200,6 +377,8 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
             "scripts/source_readiness.py",
             "--priority",
             "Must",
+            "--as-of",
+            "2026-06-18",
             "--json",
         ],
         cwd=_repo_root(),
@@ -231,6 +410,13 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
         for source in payload["sources"]
         if source["source_registry_id"] == "DS-011"
     )
+    assert ds011["freshness_class"] == "current-effective"
+    assert ds011["last_checked_at"] == "2026-06-10"
+    assert ds011["last_checked_age_days"] == 8
+    assert ds011["stale_after_days"] == 90
+    assert ds011["review_owner"] == "operator"
+    assert ds011["review_freshness_allowed"] is True
+    assert ds011["review_freshness_blocked_fields"] == []
     assert ds011["connector_implemented"] is True
     assert "immediate_operator_api" in ds011["connector_surfaces"]
     assert ds011["connector_ready"] is True
@@ -258,6 +444,16 @@ def test_source_readiness_json_reports_blocked_sources() -> None:
     ]
     assert len(ds023["connector_scope_notes"]) == 2
     assert ds023["connector_ready"] is True
+    ds017 = next(
+        source
+        for source in payload["sources"]
+        if source["source_registry_id"] == "DS-017"
+    )
+    assert ds017["connector_ready"] is False
+    assert ds017["freshness_class"] == "unreviewed"
+    assert ds017["last_checked_at"] is None
+    assert ds017["review_freshness_blocked_fields"] == []
+    assert "last_checked_at" not in ds017["blocked_fields"]
 
 
 def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None:
@@ -267,6 +463,8 @@ def test_source_readiness_require_ready_passes_when_candidate_is_ready() -> None
             "scripts/source_readiness.py",
             "--priority",
             "Must",
+            "--as-of",
+            "2026-06-18",
             "--require-ready",
         ],
         cwd=_repo_root(),

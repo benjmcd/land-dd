@@ -1,23 +1,29 @@
 # Project State
 
-## Current checkpoint (2026-06-18 source freshness review-drift guard)
+## Current checkpoint (2026-06-18 source review cadence consistency)
 
-The source-rights export guard is complete. The active implementation authority now
-points at a source freshness review-drift guard: add repo-local fail-closed proof that
-Must-source registry freshness and review metadata cannot silently drift stale while
-still being treated as production-ready.
+The source freshness review-drift guard is complete. The active implementation
+authority now points at source review cadence consistency: make source-review cadence
+prose and runbook guidance align with the repo-local 90-day Must-source freshness
+horizon without starting hosted alerting or changing source approval decisions.
 
-- **Active plan**: `plans/2026-06-18-source-freshness-review-drift.md`.
-- **Purpose**: trace `Freshness Class`, `Last Checked At`, review status, source
-  readiness, and stale-source alert contracts, then prove Must-source freshness/review
-  drift fails closed without starting hosted alerting.
-- **Completed immediately prior**: `R-012` added `source_report_exposure_allowed` and
+- **Active plan**: `plans/2026-06-18-review-cadence.md`.
+- **Purpose**: audit and guard source-review cadence language so human-facing
+  source-review/runbook prose cannot contradict the freshness horizon now enforced by
+  source readiness and alert-rule validation.
+- **Completed immediately prior**: `R-013` added review-freshness fields to
+  `scripts/source_readiness.py`; Must current-effective sources fail closed when
+  `Last Checked At` is missing, malformed, future-dated, older than 90 days, or lacks a
+  real review owner. Otherwise-ready Must sources with non-current freshness classes
+  are blocked, while DS-017 remains blocked by existing review/rights/connector fields.
+- **Also completed prior**: `R-012` added `source_report_exposure_allowed` and
   report-service filtering so blocked/unknown sources fail closed for report exposure,
   restricted sources allow non-sensitive screening fields, sensitive observed-value
   paths are blocked recursively, and source-failure evidence remains reportable when it
   does not expose sensitive fields.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `plans/2026-06-18-review-cadence.md`,
   `plans/2026-06-18-source-freshness-review-drift.md`, `plans/README.md`,
   `tasks/task_queue.yaml`, `registers/data_source_registry.csv`,
   `db/seeds/source_registry_seeds.py`, `scripts/source_readiness.py`, and
@@ -26,10 +32,21 @@ still being treated as production-ready.
   connector, no hosted deployment or hosted alert route, no production SLO/capacity
   claim, no new county/source/rulepack, no full user identity or RBAC, no secret writes,
   no committed generated evidence artifacts, and no Level 10 completion claim.
-- **Validation so far**: focused R-012 tests, report regressions, connector-flow
-  regressions, ruff, mypy, readiness-matrix validation, and full `.\scripts\verify.ps1`
-  passed; source readiness still reports `sources=8 ready=7 blocked=1` with DS-017
-  blocked. DB smoke was skipped by default.
+- **Validation so far**: focused R-013 source-readiness and alerting tests passed;
+  focused ruff/mypy over the touched readiness/alerting files passed; source-registry,
+  Must-source readiness, alert-rules, release-readiness, and readiness-matrix
+  validators passed; `git diff --check` and no-deletions checks passed; full
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `322` source
+  files. Current Must-source readiness still reports `sources=8 ready=7 blocked=1`
+  with DS-017 blocked. DB smoke was skipped by default.
+
+## Previous checkpoint (2026-06-18 source freshness review-drift guard)
+
+The source-rights export guard routed work to a source freshness review-drift guard:
+add repo-local fail-closed proof that Must-source registry freshness and review
+metadata cannot silently drift stale while still being treated as production-ready.
+`R-013` completed that guard and routed the next active lane to source review cadence
+consistency.
 
 ## Previous checkpoint (2026-06-18 source-rights export guard)
 

@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Source freshness review-drift guard)
+
+- Completed `R-013` from `plans/2026-06-18-source-freshness-review-drift.md` without
+  changing source approvals, approving DS-017, adding hosted alerting, or starting
+  hosted production work.
+- Added review-freshness metadata to source-readiness output:
+  `freshness_class`, `last_checked_at`, `last_checked_age_days`, `stale_after_days`,
+  `review_owner`, `review_freshness_allowed`, and
+  `review_freshness_blocked_fields`.
+- Made Must current-effective sources fail closed for readiness when `Last Checked At`
+  is missing, malformed, future-dated, or older than 90 days, or when the review owner
+  is blank/unassigned.
+- Made otherwise-ready Must sources with non-current freshness classes fail closed on
+  `freshness_class`, while preserving DS-017 as blocked by existing review, rights, and
+  connector fields rather than by a freshness-refresh path.
+- Extended the alert-rules validator so the stale-source alert contract enforces
+  missing, malformed, future-dated, stale, and ownerless current-effective Must rows.
+- Pinned the 90-day horizon between `config/ops_alert_rules.yaml`,
+  `scripts/alert_rules_check.py`, and `scripts/source_readiness.py`.
+- Routed the next active repo-local lane to `R-014` source review cadence consistency,
+  keeping `L10-DATA-003` `PARTIAL` because hosted alert delivery evidence remains
+  blocked.
+
 ## 2026-06-18 (Source-rights export guard)
 
 - Completed `R-012` from `plans/2026-06-18-source-rights-export-guard.md` without

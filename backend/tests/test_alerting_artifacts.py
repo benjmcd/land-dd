@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import csv
 import importlib
+import importlib.util
+import sys
+from datetime import date
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
+
+import pytest
 
 yaml = cast(Any, importlib.import_module("yaml"))
 
@@ -24,6 +30,47 @@ REQUIRED_RULE_IDS = {
     "source_readiness_ready_drop",
     "source_registry_last_checked_stale",
 }
+
+
+def _load_alert_rules_check_module() -> ModuleType:
+    module_path = REPO_ROOT / "scripts" / "alert_rules_check.py"
+    spec = importlib.util.spec_from_file_location("alert_rules_check", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_source_readiness_module() -> ModuleType:
+    module_path = REPO_ROOT / "scripts" / "source_readiness.py"
+    spec = importlib.util.spec_from_file_location("source_readiness", module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _write_registry_with_must_row(
+    tmp_path: Path,
+    *,
+    overrides: dict[str, str],
+) -> Path:
+    registry_path = REPO_ROOT / "registers" / "data_source_registry.csv"
+    with registry_path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    row = next(row for row in rows if row["Source ID"] == "DS-001")
+    updated_row = {**row, **overrides}
+    output_path = tmp_path / "registry.csv"
+    with output_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(updated_row))
+        writer.writeheader()
+        writer.writerow(updated_row)
+    return output_path
 
 
 def test_alert_rule_catalog_covers_l10_failure_and_stale_data_signals() -> None:
@@ -99,6 +146,82 @@ def test_must_source_rows_have_freshness_metadata_for_alerting() -> None:
         assert row["Freshness Class"]
         if row["Review Status"] != "pending":
             assert row["Last Checked At"]
+
+
+def test_stale_source_review_horizon_matches_readiness_guard() -> None:
+    catalog = yaml.safe_load(
+        (REPO_ROOT / "config" / "ops_alert_rules.yaml").read_text(encoding="utf-8"),
+    )
+    rule = next(
+        rule
+        for rule in catalog["rules"]
+        if rule["id"] == "source_registry_last_checked_stale"
+    )
+    alert_rules_check = _load_alert_rules_check_module()
+    source_readiness = _load_source_readiness_module()
+
+    assert "older than 90 days" in rule["condition"]
+    assert alert_rules_check.STALE_SOURCE_REVIEW_AFTER_DAYS == 90
+    assert source_readiness.STALE_AFTER_DAYS == 90
+    assert (
+        alert_rules_check.STALE_SOURCE_REVIEW_AFTER_DAYS
+        == source_readiness.STALE_AFTER_DAYS
+    )
+
+
+def test_alert_rule_source_freshness_validator_accepts_current_reviews(
+    tmp_path: Path,
+) -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+    registry_path = _write_registry_with_must_row(
+        tmp_path,
+        overrides={
+            "Freshness Class": "current-effective",
+            "Last Checked At": "2026-06-05",
+            "Review Owner": "operator",
+            "Review Status": "approved-with-restrictions",
+        },
+    )
+
+    alert_rules_check.validate_source_freshness_inputs(
+        registry_path=registry_path,
+        as_of=date(2026, 6, 18),
+    )
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected"),
+    [
+        ({"Last Checked At": "2026-03-19"}, "stale Last Checked At"),
+        ({"Last Checked At": ""}, "missing Last Checked At"),
+        ({"Last Checked At": "not-a-date"}, "invalid Last Checked At"),
+        ({"Last Checked At": "2026-06-19"}, "future Last Checked At"),
+        ({"Review Owner": "unassigned"}, "missing Review Owner"),
+        ({"Review Owner": " "}, "missing Review Owner"),
+    ],
+)
+def test_alert_rule_source_freshness_validator_fails_closed_for_review_drift(
+    tmp_path: Path,
+    overrides: dict[str, str],
+    expected: str,
+) -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+    registry_path = _write_registry_with_must_row(
+        tmp_path,
+        overrides={
+            "Freshness Class": "current-effective",
+            "Last Checked At": "2026-06-05",
+            "Review Owner": "operator",
+            "Review Status": "approved-with-restrictions",
+            **overrides,
+        },
+    )
+
+    with pytest.raises(SystemExit, match=expected):
+        alert_rules_check.validate_source_freshness_inputs(
+            registry_path=registry_path,
+            as_of=date(2026, 6, 18),
+        )
 
 
 def test_alerting_wrappers_delegate_to_shared_validator() -> None:
