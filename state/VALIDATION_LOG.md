@@ -11173,6 +11173,7 @@ python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18184 --reviewe
 python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:18185 --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --operator-case-id BUN-slope --expect-artifact-persistence postgres+object_store --json
 git diff --check
 git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
 ```
 
 **Results:**
@@ -11324,3 +11325,64 @@ git diff --name-only --diff-filter=D
 - The authority split does not resolve external blockers. DS-017 source authority,
   hosted platform, secret manager, identity/RBAC, billing, alerting, image publication,
   and production workload evidence still require user or external-system decisions.
+
+---
+
+## 2026-06-18 - Production Authority Packet
+
+**Scope:** Complete `R-011` by creating the production authority packet, guarding it
+with the readiness-matrix validator, and routing the next repo-local lane to
+source-rights export enforcement without approving DS-017 or hosted work.
+
+**Commands run:**
+
+```powershell
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\private_mvp_readiness_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\hosted_deployment_check.py
+python .\scripts\access_control_check.py
+python .\scripts\data_retention_check.py
+python .\scripts\readiness_matrix_check.py
+cd backend; $env:PYTHONPATH='.'; python -m pytest -q .\tests\test_readiness_matrix_artifacts.py
+cd backend; python -m ruff check .\tests\test_readiness_matrix_artifacts.py ..\scripts\readiness_matrix_check.py
+cd backend; python -m mypy .\tests\test_readiness_matrix_artifacts.py ..\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- Added `state/PRODUCTION_AUTHORITY_PACKET.md` with DS-017-first decision/evidence
+  requirements, hosted platform, secret-manager, identity/RBAC, image-publication,
+  billing/cost, alerting/on-call, and production workload/retention unblock criteria.
+- DS-017 remains blocked; Must-source readiness stayed
+  `sources=8 ready=7 blocked=1`.
+- Private-MVP readiness, release-readiness, hosted-deployment, access-control,
+  data-retention, and readiness-matrix validators passed.
+- Focused readiness-matrix artifact tests passed (`4 passed`).
+- Focused ruff and mypy passed for the updated checker/test surfaces.
+- `git diff --check` passed and no deleted files were reported.
+- Full `.\scripts\verify.ps1` passed; backend tests passed, ruff passed, mypy passed on
+  `321` source files, and DB smoke was skipped by default.
+
+**Corrected failed attempts:**
+
+- The first packet phrase guard used a long line-wrapped DS-017 field policy phrase and
+  failed even though the packet contained the content. The guard was changed to shorter
+  stable phrases and passed.
+- The first packet phrase guard for named alert rotation had the same line-wrapping
+  problem. The guard was changed to shorter stable phrases and passed.
+- The first active-plan routing check failed because
+  `plans/2026-06-18-source-rights-export-guard.md` cited the Level 9/10 matrix
+  conceptually but not by exact `state/LEVEL_9_10_GATE_MATRIX.md` path. The plan now
+  cites the path and the check passes.
+
+**Residual risk:**
+
+- This packet does not resolve external authority. DS-017 vendor/license/cost/entitlement
+  decisions, hosted platform, secret manager, IdP/RBAC, billing, alerting,
+  image-publication, hosted workload proof, hosted scheduler, and hosted log retention
+  remain blocked or future work.
+- The next repo-local lane is source-rights/export enforcement; it must not treat
+  restricted rights as safe for exposed output without explicit enforcement.

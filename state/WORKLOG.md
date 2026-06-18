@@ -3361,3 +3361,23 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   must not be inferred from local selected-county proof.
 - Marked `R-010` done and routed the active plan to
   `plans/2026-06-18-production-authority-packet.md`, with DS-017 source authority first.
+
+## 2026-06-18 Production authority packet
+
+- Added `state/PRODUCTION_AUTHORITY_PACKET.md` as the external decision/evidence packet
+  required before DS-017, hosted deployment, full identity/RBAC, secret-manager,
+  billing, alerting, image-publication, or production workload work can be claimed or
+  started.
+- Made DS-017 first and explicit: vendor/source authority, registry rights, field-level
+  allow/deny policy, entitlement, cost, cache/export/raw-data/AI-use, failure-mode, and
+  connector-scope decisions must exist before implementation. The packet also records
+  the alternative unblock of explicitly removing or deferring DS-017 from full-release
+  Must scope.
+- Added hosted platform, secrets, identity/RBAC, image-publication, billing/cost,
+  alerting/on-call, and production workload/retention evidence requirements with
+  fail-closed boundaries between local proof and hosted production proof.
+- Tightened `scripts/readiness_matrix_check.py` so the Level 9/10 readiness guard now
+  requires the packet and critical fail-closed phrases.
+- Marked `R-011` done and routed the active plan to
+  `plans/2026-06-18-source-rights-export-guard.md`; the next lane is repo-local
+  source-rights/export enforcement, not DS-017 approval or hosted deployment.

@@ -1,39 +1,45 @@
 # Project State
 
-## Current checkpoint (2026-06-18 production authority packet)
+## Current checkpoint (2026-06-18 source-rights export guard)
 
-The post-RC authority split is complete. The active implementation authority now points
-at a production authority packet: turn the remaining external blockers into explicit
-decision/evidence requests before starting hosted, paid-source, full identity/RBAC,
-secret-manager, billing, alerting, image-publication, or production workload work.
-DS-017 is first because it is the only current Must-source readiness blocker.
+The production authority packet is complete. The active implementation authority now
+points at a source-rights export guard: add repo-local fail-closed proof that
+source-rights metadata controls report/export exposure for restricted or vendor-derived
+fields without approving DS-017 or starting hosted production work.
 
-- **Active plan**: `plans/2026-06-18-production-authority-packet.md`.
-- **Purpose**: convert external blockers into concrete decision fields, evidence
-  templates, and unblock criteria while preserving the boundary between selected-county
-  private-MVP proof and hosted production proof.
-- **Completed immediately prior**: `R-010` added
-  `state/POST_RC_AUTHORITY_SPLIT.md`, classifying remaining work as external-authority
-  blockers, repo-local implementation candidates, or audit-only evidence candidates.
-  The split says not to start hosted deployment or DS-017 connector work from repo-local
-  inference alone.
-- **Current authority surfaces**: `state/POST_RC_AUTHORITY_SPLIT.md`,
-  `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-production-authority-packet.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `config/hosted_deployment.yaml`,
-  `config/access_control.yaml`, `config/release_readiness.yaml`,
-  `config/ops_alert_rules.yaml`, `config/ops_cost_monitoring.yaml`,
-  `registers/data_source_registry.csv`, and the canonical readiness/source validators.
-- **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no hosted
-  deployment, no production SLO/capacity claim, no new county/source/rulepack, no full
-  user identity or RBAC, no secret writes, no committed generated evidence artifacts,
-  and no Level 10 completion claim.
-- **Validation so far**: private-MVP readiness, Must-source readiness, release-readiness,
-  hosted-deployment, access-control, and readiness-matrix validators passed. Must-source
-  readiness remained `sources=8 ready=7 blocked=1` with DS-017 blocked. Data-retention
-  validation passed. Diff hygiene and no-deletion checks passed. Full
-  `.\scripts\verify.ps1` passed after state/routing updates; DB smoke was skipped by
-  default.
+- **Active plan**: `plans/2026-06-18-source-rights-export-guard.md`.
+- **Purpose**: trace source-rights fields from the registry/usage-rights layer to
+  report artifact and export surfaces, then prove blocked, unknown, or restricted
+  source rights cannot leak unapproved vendor/raw fields.
+- **Completed immediately prior**: `R-011` added
+  `state/PRODUCTION_AUTHORITY_PACKET.md`, requiring DS-017 field-level allow/deny
+  policy, entitlement, export/cache/raw-data/AI-use, cost, failure-mode, and source
+  authority before any DS-017 implementation. The readiness-matrix validator now
+  requires the packet and critical fail-closed phrases.
+- **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
+  `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `plans/2026-06-18-source-rights-export-guard.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `registers/data_source_registry.csv`,
+  `db/seeds/002_seed_source_registry.sql`, source-readiness/usage-rights helpers, and
+  report/export paths identified by the next audit.
+- **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
+  connector, no hosted deployment, no production SLO/capacity claim, no new
+  county/source/rulepack, no full user identity or RBAC, no secret writes, no committed
+  generated evidence artifacts, and no Level 10 completion claim.
+- **Validation so far**: the updated readiness-matrix validator passed and focused
+  readiness-matrix artifact tests passed after adding packet guards. Earlier R-011
+  baseline validators preserved Must-source readiness at
+  `sources=8 ready=7 blocked=1` with DS-017 blocked. Full `.\scripts\verify.ps1`
+  passed after the final state updates; DB smoke was skipped by default.
+
+## Previous checkpoint (2026-06-18 production authority packet)
+
+The post-RC authority split routed work to a production authority packet: turn the
+remaining external blockers into explicit decision/evidence requests before starting
+hosted, paid-source, full identity/RBAC, secret-manager, billing, alerting,
+image-publication, or production workload work. DS-017 was first because it is the only
+current Must-source readiness blocker. `state/PRODUCTION_AUTHORITY_PACKET.md` completed
+that packet and selected source-rights export guarding as the next repo-local lane.
 
 ## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
 
