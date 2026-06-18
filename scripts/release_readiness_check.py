@@ -16,6 +16,7 @@ REQUIRED_FILES = (
     "config/image_publication.yaml",
     "config/hosted_deployment.yaml",
     "config/performance_baseline.yaml",
+    "config/spatial_query_plan.yaml",
     "docs/runbooks/release_readiness.md",
     "docs/runbooks/release_package.md",
     "docs/runbooks/image_publication.md",
@@ -50,6 +51,9 @@ REQUIRED_FILES = (
     "scripts/performance_baseline_check.py",
     "scripts/run_performance_baseline_check.ps1",
     "scripts/run_performance_baseline_check.sh",
+    "scripts/spatial_query_plan_check.py",
+    "scripts/run_spatial_query_plan_check.ps1",
+    "scripts/run_spatial_query_plan_check.sh",
     "scripts/source_readiness.py",
     "scripts/release_readiness_check.py",
 )
@@ -115,6 +119,7 @@ COMPOSED_VALIDATORS = (
     "scripts/image_publication_check.py",
     "scripts/hosted_deployment_check.py",
     "scripts/performance_baseline_check.py",
+    "scripts/spatial_query_plan_check.py",
 )
 
 
@@ -426,6 +431,10 @@ def validate_runbook() -> None:
         "performance.md",
         "performance_baseline.yaml",
         "run_performance_baseline_check.ps1",
+        "spatial_query_plan.yaml",
+        "run_spatial_query_plan_check.ps1",
+        "spatial_query_plan_check.py",
+        "validate-only static proof",
         "load_test_result_v1",
         "jurisdiction_readiness.md",
         "rulepack_readiness.md",
@@ -438,6 +447,7 @@ def validate_runbook() -> None:
         "run_hosted_deployment_check.ps1",
         "executes the image-publication and hosted-deployment validators",
         "No container image is pushed",
+        "does not run `EXPLAIN ANALYZE` against a live or hosted database by default",
         "published registry-image attestation",
     ):
         require(phrase in runbook, f"release readiness runbook missing phrase: {phrase}")

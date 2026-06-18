@@ -10886,3 +10886,47 @@ python -m ruff check ./backend/tests/test_private_mvp_readiness.py ./scripts/pri
 - This slice hardens documentation and validation semantics only. It does not add new
   HTTP, DB-smoke, or live-network runtime coverage beyond the authority already exercised
   by the existing readiness tests and validator.
+
+---
+
+## 2026-06-18 - Spatial Query-Plan Proof
+
+**Scope:** Add a repo-local static contract/checker for selected private-MVP spatial
+query-plan review, compose it into release readiness, and keep `L10-PERF-003` `PARTIAL`
+until representative DB-enabled plan evidence exists.
+
+**Commands run:**
+
+```powershell
+python .\scripts\spatial_query_plan_check.py
+.\scripts\run_spatial_query_plan_check.ps1
+python .\scripts\readiness_matrix_check.py
+python .\scripts\release_readiness_check.py
+.\scripts\run_release_readiness_check.ps1
+.\scripts\run_readiness_matrix_check.ps1
+cd backend; python -m pytest -q .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+cd backend; python -m ruff check .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+cd backend; python -m mypy .\tests\test_spatial_query_plan_artifacts.py .\tests\test_performance_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py ..\scripts\spatial_query_plan_check.py ..\scripts\release_readiness_check.py ..\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Spatial query-plan checker passed with no output; Windows wrapper printed
+  `spatial query plan check: ok`.
+- Readiness-matrix validator passed; Windows wrapper printed `readiness matrix check: ok`.
+- Release-readiness validator passed; Windows wrapper printed `release readiness check: ok`.
+- Focused artifact tests passed (`32 passed`).
+- Focused ruff passed; focused mypy passed with `Success: no issues found in 7 source
+  files`.
+- `git diff --check` reported no whitespace errors. No deleted files were reported.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy on 318 source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This is static repo proof, not representative runtime query-plan proof. Promotion of
+  `L10-PERF-003` beyond `PARTIAL` still requires read-only `EXPLAIN ANALYZE` evidence
+  against a representative candidate DB workload.

@@ -48,13 +48,15 @@ policy changes.
 
 ## Spatial index coverage
 
-All PostGIS geometry columns carry GIST indexes to support bounding-box and spatial
-containment queries. Current coverage (see `db/migrations/` for the authoritative DDL):
+All PostGIS geometry columns in the canonical schema carry GIST indexes to support
+bounding-box and spatial containment queries. Current coverage is defined by
+`db/migrations/0001_initial_spine.sql`, not by ORM declarations:
 
-- `area_geometry.areas.geometry` — GIST index for bounding-box queries against parcel and
-  area geometries.
-- `evidence.observations.geometry` — GIST index for spatial evidence queries (flood zone,
-  wetland, etc.).
+- `core.areas.geom` - `areas_geom_gix`
+- `core.area_versions.geom` - `area_versions_geom_gix`
+- `geo.parcels.geom` - `parcels_geom_gix`
+- `geo.reference_features.geom` - `reference_features_geom_gix`
+- `evidence.observations.geometry` - `observations_geom_gix`
 
 Spatial query bounding boxes are capped by connector-level env vars to prevent runaway
 queries:
@@ -137,14 +139,30 @@ local/manual unless an operator explicitly runs the wrapper against a running se
 
 ### Spatial query plan review
 
-For every new database migration that adds or modifies a geometry column or spatial query:
+`config/spatial_query_plan.yaml` is the repo-local spatial query-plan contract for the
+selected-county private-MVP workload. `scripts/spatial_query_plan_check.py` validates
+that the contract, wrapper scripts, this runbook, and the authoritative migration agree
+on the required GIST indexes. This check opens no database connection by default. It is
+validate-only, reads only repo files, seeds no runtime state, sends no network traffic,
+and generates no artifacts:
+
+```powershell
+.\scripts\run_spatial_query_plan_check.ps1
+```
+
+For every new database migration that adds or modifies a geometry column or spatial
+query, keep the static contract current and then perform read-only runtime review
+against a representative local or release-candidate database:
 
 1. Apply the migration to a local Postgres instance.
-2. Run `EXPLAIN ANALYZE` on the affected queries.
+2. Run the relevant `EXPLAIN ANALYZE` query from `config/spatial_query_plan.yaml`.
 3. Confirm the query plan uses the GIST index (look for `Index Scan using <idx>`).
-4. Record the plan in the PR description or in `docs/adr/` if the change is architecture-level.
+4. Record the plan in the PR description or in `docs/adr/` if the change is
+   architecture-level.
 
-There is no automated plan-regression gate; validation is manual at this stage.
+Release readiness validates the static `spatial_query_plan_v1` contract, not a live DB
+query plan. Runtime `EXPLAIN ANALYZE` evidence remains manual/read-only until a
+representative candidate database exists and an explicit DB-enabled plan gate is added.
 
 ---
 
@@ -161,6 +179,9 @@ There is no automated plan-regression gate; validation is manual at this stage.
   the baseline contract, checker, scripts, and runbooks as validate-only proof. The
   `run_load_test` wrappers can run live sequential and concurrent scenarios locally,
   but CI does not start a server or fail builds on latency thresholds.
+- **No automated live spatial query-plan gate in CI.** Release readiness validates
+  `spatial_query_plan_v1` and the canonical DDL/index contract, but it does not run
+  `EXPLAIN ANALYZE` against a live or hosted database by default.
 - **DB pool settings not yet tuned for production.** `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`,
   `DB_POOL_TIMEOUT`, and `DB_POOL_RECYCLE` use SQLAlchemy defaults in local mode. Set
   explicit values in production `.env`.

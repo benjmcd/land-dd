@@ -1,0 +1,89 @@
+schema_version: spatial_query_plan_v1
+scope: selected_county_private_mvp_spatial_queries
+default_mode: validate_only_static
+ddl_authority: db/migrations/0001_initial_spine.sql
+wrappers:
+  windows: scripts/run_spatial_query_plan_check.ps1
+  posix: scripts/run_spatial_query_plan_check.sh
+required_indexes:
+  - name: areas_geom_gix
+    schema: core
+    table: areas
+    column: geom
+    method: gist
+    authority: db/migrations/0001_initial_spine.sql
+  - name: area_versions_geom_gix
+    schema: core
+    table: area_versions
+    column: geom
+    method: gist
+    authority: db/migrations/0001_initial_spine.sql
+  - name: parcels_geom_gix
+    schema: geo
+    table: parcels
+    column: geom
+    method: gist
+    authority: db/migrations/0001_initial_spine.sql
+  - name: reference_features_geom_gix
+    schema: geo
+    table: reference_features
+    column: geom
+    method: gist
+    authority: db/migrations/0001_initial_spine.sql
+  - name: observations_geom_gix
+    schema: evidence
+    table: observations
+    column: geometry
+    method: gist
+    authority: db/migrations/0001_initial_spine.sql
+query_plan_reviews:
+  - id: area_parcel_intersections
+    review_mode: manual_read_only_explain
+    default_release_readiness: false
+    expected_plan_node: Index Scan
+    required_indexes:
+      - areas_geom_gix
+      - parcels_geom_gix
+    statement: >
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT p.parcel_id
+      FROM geo.parcels p
+      JOIN core.areas a ON ST_Intersects(p.geom, a.geom)
+      WHERE a.area_id = :area_id;
+  - id: area_reference_feature_intersections
+    review_mode: manual_read_only_explain
+    default_release_readiness: false
+    expected_plan_node: Index Scan
+    required_indexes:
+      - areas_geom_gix
+      - reference_features_geom_gix
+    statement: >
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT rf.feature_id
+      FROM geo.reference_features rf
+      JOIN core.areas a ON ST_Intersects(rf.geom, a.geom)
+      WHERE a.area_id = :area_id;
+  - id: area_observation_intersections
+    review_mode: manual_read_only_explain
+    default_release_readiness: false
+    expected_plan_node: Index Scan
+    required_indexes:
+      - areas_geom_gix
+      - observations_geom_gix
+    statement: >
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT o.observation_id
+      FROM evidence.observations o
+      JOIN core.areas a ON ST_Intersects(o.geometry, a.geom)
+      WHERE a.area_id = :area_id;
+limits:
+  opens_database_connection_by_default: false
+  seeds_runtime_state: false
+  generates_artifacts: false
+  network_access: false
+  hosted_performance_claim: false
+  level_10_completion_claim: false
+  notes:
+    - Default validation is static and reads only repo files.
+    - Runtime EXPLAIN review is manual/read-only and not part of default release readiness.
+    - This proves declared plan-review coverage, not hosted performance or Level 10 completion.

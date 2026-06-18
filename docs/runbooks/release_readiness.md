@@ -51,6 +51,9 @@ The check is validate-only. It verifies that:
 - the local performance baseline contract is `config/performance_baseline.yaml`, and
   the release proof composes `scripts/run_performance_baseline_check.ps1` /
   `scripts/performance_baseline_check.py` as validate-only proof;
+- the local spatial query-plan contract is `config/spatial_query_plan.yaml`, and the
+  release proof composes `scripts/run_spatial_query_plan_check.ps1` /
+  `scripts/spatial_query_plan_check.py` as validate-only static proof;
 - the local load-test JSON result schema is `load_test_result_v1`;
 - jurisdiction and rulepack expansion stay gated by
   `docs/checklists/jurisdiction_readiness.md` and `docs/checklists/rulepack_readiness.md`;
@@ -86,6 +89,8 @@ The check is validate-only. It verifies that:
   production SLO, hosted production proof, or capacity benchmark.
 - The performance baseline checker and load-test validate-only modes must not send HTTP
   requests or create measured result artifacts.
+- Spatial query-plan readiness is a static repo contract only. It validates canonical
+  DDL/index coverage and runbook alignment, but does not run `EXPLAIN ANALYZE` against a live or hosted database by default.
 - No live-load CI gate is added; CI does not start a server or fail on latency
   thresholds.
 - No container image is pushed to a registry by this proof.
