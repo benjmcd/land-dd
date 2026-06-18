@@ -1,48 +1,54 @@
 # Project State
 
-## Current checkpoint (2026-06-18 compare/diff workflow smoke)
+## Current checkpoint (2026-06-18 threat-model/proxy audit update)
 
-The representative local performance rehearsal is complete. The active implementation
-authority now points at compare/diff workflow smoke: include the existing report compare
-and same-area diff API/UI surfaces in release-candidate smoke without turning comparison
-into ranking, recommendation, suitability scoring, arbitrary-geography proof, or hosted
-production proof.
+The compare/diff workflow smoke is complete. The active implementation authority now
+points at a threat-model/proxy audit update: audit and harden repo-local security,
+access-control, protected-class, and residential-steering safeguards before any hosted
+or residential expansion claim. This pass must stay repo-local and must not replace
+external security review, legal review, hosted IdP/RBAC work, production error/log
+review, DS-017 entitlement work, billing, alerting, or deployment authority.
 
-- **Active plan**: `plans/2026-06-18-compare-diff-workflow-smoke.md`.
-- **Purpose**: prove the existing compare/diff operator workflow at release-candidate
-  smoke depth after local package and performance rehearsal, while keeping the product
-  contract limited to report summaries and caveated change review.
-- **Completed immediately prior**: `R-016` rehearsed the local load and spatial runtime
-  evidence path against isolated candidate databases/runtimes. Static performance,
-  load-test validate-only, spatial query-plan, release-readiness, and readiness-matrix
-  validators passed. Runtime proof observed the configured spatial GIST indexes and
-  passed `20/20` sequential plus `40/40` concurrent workflow-load requests.
-- **R-016 defect found and fixed**: the first runtime rehearsal exposed a real
-  background-job race where concurrent report jobs could both observe the fixed
-  internal not-evaluated sentinel source as absent and one job could fail on duplicate
-  `source_id` insert. The fix added a fixed-ID source `get_or_add` path using
-  PostgreSQL `ON CONFLICT (source_id) DO NOTHING` and switched only the internal
-  sentinel ensure path to it; normal source registration remains strict.
+- **Active plan**: `plans/2026-06-18-threat-model-proxy-audit.md`.
+- **Purpose**: map current security/proxy risks to existing controls, tests, and
+  blockers so future expansion cannot quietly weaken protected-class, recommendation,
+  ranking, suitability, or residential-steering boundaries.
+- **Completed immediately prior**: `R-017` added `--compare-same-area` to
+  `scripts/ui_runtime_smoke.py`, creating two approved reports for one selected-county
+  operator case and checking UI compare, JSON compare summary shape, and same-area diff
+  API output. The smoke remains report-summary/change-review proof only, not ranking,
+  recommendation, suitability scoring, arbitrary-geography proof, or hosted production
+  proof.
+- **R-017 validation**: focused compare/UI/runtime-smoke tests passed; focused ruff
+  passed; focused mypy passed on the smoke script and tests; private-MVP,
+  release-readiness, readiness-matrix, and performance-baseline validators passed;
+  local in-memory FastAPI smoke on `127.0.0.1:18192` passed with
+  `--operator-case-id BUN-slope --compare-same-area --json`; `git diff --check`
+  passed; no deleted files were reported; full `.\scripts\verify.ps1` passed with
+  workspace validation, backend tests, ruff, and mypy over `322` source files. DB smoke
+  was skipped by default.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-compare-diff-workflow-smoke.md`,
-  `plans/2026-06-18-representative-performance-rehearsal.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `docs/runbooks/mvp_operator.md`,
+  `plans/2026-06-18-threat-model-proxy-audit.md`,
+  `plans/2026-06-18-compare-diff-workflow-smoke.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `docs/SECURITY.md`, `docs/runbooks/access_control.md`,
+  `config/access_control.yaml`, `docs/runbooks/mvp_operator.md`,
   `backend/app/api/reports.py`, `backend/app/api/ui.py`,
   `backend/tests/api/test_report_comparison.py`, `backend/tests/api/test_ui_routes.py`,
-  and `scripts/ui_runtime_smoke.py`.
+  `backend/tests/test_ui_runtime_smoke_script.py`, and `scripts/ui_runtime_smoke.py`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
-  or RBAC, no recommendation/ranking semantics, no secret writes, no committed measured
-  runtime artifacts, and no Level 10 completion claim.
-- **Validation so far**: focused source/report tests passed (`35 passed`); focused
-  ruff passed; focused mypy passed on `6` source files; DB-gated concurrent background
-  report regression passed against isolated Postgres on port `55461`; R-016 patched
-  runtime proof had no report-job errors and durable DB state showed all `12` report
-  jobs succeeded with one sentinel source row. DB-enabled full `.\scripts\verify.ps1`
-  passed against a fresh isolated Postgres target on port `55462` with backend tests,
-  ruff, mypy over `322` source files, and DB smoke green.
+  or RBAC, no recommendation/ranking semantics, no demographic/protected-class scoring,
+  no secret writes, no committed measured runtime artifacts, and no Level 10 completion
+  claim.
+
+## Previous checkpoint (2026-06-18 compare/diff workflow smoke)
+
+`R-017` completed the compare/diff workflow smoke after `R-016` rehearsed local
+performance. It extended the release-candidate UI runtime smoke to follow two approved
+selected-county reports through compare UI, compare API, and same-area diff API checks,
+and kept compare/diff scoped to report summaries and caveated change review.
 
 ## Previous checkpoint (2026-06-18 representative performance rehearsal)
 

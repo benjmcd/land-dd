@@ -16,13 +16,18 @@ SCRIPT = ROOT / "scripts" / "ui_runtime_smoke.py"
 class _SmokeHandler(BaseHTTPRequestHandler):
     route_bodies: ClassVar[dict[str, str]] = {}
     post_bodies: ClassVar[list[tuple[str, dict[str, list[str]]]]] = []
+    operator_report_ids: ClassVar[list[str]] = ["operator-smoke"]
 
     def do_GET(self) -> None:  # noqa: N802
         body = self.route_bodies.get(self.path, "")
         self.send_response(200)
         content_type = (
             "application/json"
-            if self.path.endswith("/artifact")
+            if (
+                self.path.endswith("/artifact")
+                or self.path.startswith("/report-runs/compare?")
+                or "/diff?" in self.path
+            )
             else "text/html; charset=utf-8"
         )
         self.send_header("content-type", content_type)
@@ -34,8 +39,10 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         raw_body = self.rfile.read(length).decode("utf-8") if length else ""
         self.post_bodies.append((self.path, parse_qs(raw_body)))
         self.send_response(303)
+        report_index = sum(1 for path, _body in self.post_bodies if path == self.path) - 1
+        report_id = self.operator_report_ids[min(report_index, len(self.operator_report_ids) - 1)]
         location = (
-            "/ui/report-runs/operator-smoke"
+            f"/ui/report-runs/{report_id}"
             if self.path == "/ui/operator-cases/report"
             else "/ui/"
         )
@@ -104,7 +111,11 @@ def _run_server(route_bodies: dict[str, str]) -> tuple[ThreadingHTTPServer, str]
     handler = type(
         "SmokeHandler",
         (_SmokeHandler,),
-        {"route_bodies": route_bodies, "post_bodies": []},
+        {
+            "route_bodies": route_bodies,
+            "post_bodies": [],
+            "operator_report_ids": ["operator-smoke"],
+        },
     )
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -277,6 +288,202 @@ def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> Non
     assert result.returncode == 0, result.stderr + result.stdout
     payload = json.loads(result.stdout)
     assert payload["routes"][-1]["ok"] is True
+
+
+def test_ui_runtime_smoke_operator_case_can_follow_compare_and_diff() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke-a"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke-a/lineage"] = _operator_lineage_html()
+    routes["/ui/report-runs/operator-smoke-b"] = _operator_report_html()
+    routes["/ui/compare?ids=operator-smoke-a&ids=operator-smoke-b"] = _html(
+        "Compare Report Runs",
+        "Review Status",
+        "Delivery Status",
+        "Delivery available",
+        "View dossier",
+        "Download JSON",
+        "Lineage",
+        "Change Review",
+        "Same Area",
+        "Added Claim Codes",
+        "Removed Claim Codes",
+        "Added Sources",
+        "Removed Sources",
+        "Evidence Count Delta",
+        "Screening Tool Only.",
+    )
+    routes["/report-runs/compare?ids=operator-smoke-a%2Coperator-smoke-b"] = json.dumps(
+        {
+            "summaries": [
+                {
+                    "report_run_id": "operator-smoke-a",
+                    "area_id": "area-smoke",
+                    "intent_code": "rural_land_purchase",
+                    "claims_count": 1,
+                    "unknowns_count": 1,
+                    "red_flags_count": 0,
+                    "high_severity_claims": [],
+                    "verification_tasks_count": 1,
+                },
+                {
+                    "report_run_id": "operator-smoke-b",
+                    "area_id": "area-smoke",
+                    "intent_code": "rural_land_purchase",
+                    "claims_count": 1,
+                    "unknowns_count": 1,
+                    "red_flags_count": 0,
+                    "high_severity_claims": [],
+                    "verification_tasks_count": 1,
+                },
+            ],
+        },
+    )
+    routes["/report-runs/operator-smoke-b/diff?base_id=operator-smoke-a"] = json.dumps(
+        {
+            "report_run_id": "operator-smoke-b",
+            "base_report_run_id": "operator-smoke-a",
+            "area_id": "area-smoke",
+            "same_area": True,
+            "ruleset_changed": False,
+            "added_claim_codes": [],
+            "removed_claim_codes": [],
+            "added_sources": [],
+            "removed_sources": [],
+            "evidence_count_delta": 0,
+        },
+    )
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    handler.operator_report_ids = ["operator-smoke-a", "operator-smoke-b"]
+    try:
+        result = _run_smoke(
+            base_url,
+            "--operator-case-id",
+            "BUN-slope",
+            "--compare-same-area",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    labels = [route["label"] for route in payload["routes"]]
+    assert labels[-6:] == [
+        "operator-case-report",
+        "operator-case-lineage",
+        "operator-case-report-compare",
+        "operator-case-compare-ui",
+        "operator-case-compare-api",
+        "operator-case-diff-api",
+    ]
+    assert (
+        "/ui/operator-cases/report",
+        {"selected_county_case_id": ["BUN-slope"]},
+    ) in handler.post_bodies
+    assert handler.post_bodies.count(
+        (
+            "/ui/operator-cases/report",
+            {"selected_county_case_id": ["BUN-slope"]},
+        )
+    ) == 2
+
+
+def test_ui_runtime_smoke_compare_same_area_requires_operator_case() -> None:
+    server, base_url = _run_server(_required_routes())
+    try:
+        result = _run_smoke(base_url, "--compare-same-area", "--json")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
+    assert "--compare-same-area requires --operator-case-id" in payload["error"]
+
+
+def test_ui_runtime_smoke_compare_api_rejects_recommendation_semantics() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke-a"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke-a/lineage"] = _operator_lineage_html()
+    routes["/ui/report-runs/operator-smoke-b"] = _operator_report_html()
+    routes["/ui/compare?ids=operator-smoke-a&ids=operator-smoke-b"] = _html(
+        "Compare Report Runs",
+        "Review Status",
+        "Delivery Status",
+        "Delivery available",
+        "View dossier",
+        "Download JSON",
+        "Lineage",
+        "Change Review",
+        "Same Area",
+        "Added Claim Codes",
+        "Removed Claim Codes",
+        "Added Sources",
+        "Removed Sources",
+        "Evidence Count Delta",
+        "Screening Tool Only.",
+    )
+    routes["/report-runs/compare?ids=operator-smoke-a%2Coperator-smoke-b"] = json.dumps(
+        {
+            "summaries": [
+                {
+                    "report_run_id": "operator-smoke-a",
+                    "area_id": "area-smoke",
+                    "intent_code": "rural_land_purchase",
+                    "claims_count": 1,
+                    "unknowns_count": 1,
+                    "red_flags_count": 0,
+                    "high_severity_claims": [],
+                    "verification_tasks_count": 1,
+                    "recommendation": "choose this report",
+                },
+                {
+                    "report_run_id": "operator-smoke-b",
+                    "area_id": "area-smoke",
+                    "intent_code": "rural_land_purchase",
+                    "claims_count": 1,
+                    "unknowns_count": 1,
+                    "red_flags_count": 0,
+                    "high_severity_claims": [],
+                    "verification_tasks_count": 1,
+                },
+            ],
+        },
+    )
+    routes["/report-runs/operator-smoke-b/diff?base_id=operator-smoke-a"] = json.dumps(
+        {
+            "report_run_id": "operator-smoke-b",
+            "base_report_run_id": "operator-smoke-a",
+            "area_id": "area-smoke",
+            "same_area": True,
+            "ruleset_changed": False,
+            "added_claim_codes": [],
+            "removed_claim_codes": [],
+            "added_sources": [],
+            "removed_sources": [],
+            "evidence_count_delta": 0,
+        },
+    )
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    handler.operator_report_ids = ["operator-smoke-a", "operator-smoke-b"]
+    try:
+        result = _run_smoke(
+            base_url,
+            "--operator-case-id",
+            "BUN-slope",
+            "--compare-same-area",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 1
+    assert "fail: operator-case-compare-api" in result.stdout
+    assert "ranking/recommendation keys: recommendation" in result.stdout
 
 
 def test_ui_runtime_smoke_operator_case_fails_on_artifact_persistence_mismatch() -> None:

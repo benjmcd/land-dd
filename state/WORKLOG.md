@@ -2,6 +2,26 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Compare/diff workflow smoke)
+
+- Completed `R-017` from `plans/2026-06-18-compare-diff-workflow-smoke.md` without
+  adding ranking, recommendation, suitability scoring, arbitrary-geography proof,
+  hosted production proof, DS-017 work, billing, alerting, IdP/RBAC, secret-manager
+  work, image publication, or committed runtime artifacts.
+- Extended `scripts/ui_runtime_smoke.py` with `--compare-same-area`, which requires
+  `--operator-case-id`, creates a second approved report for the same selected-county
+  case, opens the UI compare page, checks JSON compare summary shape, and verifies the
+  same-area diff API reports `same_area=true`.
+- Added focused smoke-script regressions for the positive compare/diff path, the
+  missing-operator-case guard, and forbidden recommendation/ranking semantics in JSON
+  compare output.
+- Updated `docs/runbooks/mvp_operator.md` so operators can run the compare/diff smoke
+  and understand that it is workflow proof only, not ranking, recommendation,
+  suitability, or arbitrary-geography proof.
+- Routed the next active repo-local lane to `R-018` threat-model/proxy audit update,
+  keeping security, protected-class, residential-steering, hosted IdP/RBAC, external
+  review, and production error/log claims scoped to existing evidence and blockers.
+
 ## 2026-06-18 (Source freshness review-drift guard)
 
 - Completed `R-013` from `plans/2026-06-18-source-freshness-review-drift.md` without

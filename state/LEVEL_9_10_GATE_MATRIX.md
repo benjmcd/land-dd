@@ -114,9 +114,9 @@ Status legend:
 | L10-PROD-001 end-to-end workflow from clean deployment | `PARTIAL` | local deployment smoke and DB-backed private-MVP paths | Hosted clean-deployment smoke remains blocked. |
 | L10-PROD-002 reports include claims/evidence/unknowns/caveats/tasks | `PROVEN_REPO_LOCAL` | report contract/regression/dossier tests | Preserve in schema and artifact checks. |
 | L10-PROD-003 exports preserve run identity/evidence links | `PROVEN_REPO_LOCAL` | JSON artifact/dossier endpoints and tests | Re-run against hosted object store. |
-| L10-PROD-004 reruns show source/rule/version differences | `PROVEN_REPO_LOCAL` | report diff API and compare UI change review tests | Include in release-candidate workflow smoke. |
+| L10-PROD-004 reruns show source/rule/version differences | `PROVEN_REPO_LOCAL` | report diff API, compare UI change review tests, and local release-candidate same-area diff smoke | Re-run against hosted runtime before production claim. |
 | L10-PROD-005 human review workflow usable and audited | `PROVEN_REPO_LOCAL` | UI reviewer paths, approval, connector review, action history | Bind to hosted user identity/RBAC later. |
-| L10-PROD-006 candidate comparison consistent with reports | `PROVEN_REPO_LOCAL` | compare API/UI tests and shared summary helpers | Keep compare coupled to report contract. |
+| L10-PROD-006 candidate comparison consistent with reports | `PROVEN_REPO_LOCAL` | compare API/UI tests, shared summary helpers, and local release-candidate compare smoke | Keep compare coupled to report contract; do not add ranking/recommendation semantics. |
 | L10-PROD-007 user-facing language caveated/no overclaim | `PROVEN_PRIVATE_MVP` | overclaim tests, report language tests, source caveats | Revalidate for every source/geography/rulepack addition. |
 | L10-PROD-008 error states understandable/actionable | `PARTIAL` | UI/API error pages, retry, recovery preview | Add hosted operator incident workflow proof. |
 | L10-PROD-009 MVP scope boundaries enforced | `PROVEN_PRIVATE_MVP` | selected-county readiness catalog/manifests and runbook | Enforce jurisdiction readiness before expansion. |
@@ -140,14 +140,15 @@ blocked by external platform, secret-manager, billing, alerting, identity/RBAC, 
 source/vendor authority. `R-010` completed the post-RC authority split, `R-011`
 completed the production authority packet, `R-012` added repo-local source-rights
 report exposure guarding, `R-013` added repo-local source freshness review-drift
-readiness guarding, `R-014` added source-review cadence consistency guarding, and
-`R-015` proved the local source/runtime/operator package boundary, and `R-016`
-completed representative local performance rehearsal while preserving hosted
-SLO/capacity blockers. The next active pass is `R-017` compare/diff workflow smoke:
-include the existing compare/diff API and UI surfaces in release-candidate smoke
-without ranking candidate areas, adding recommendation semantics, publishing an image,
-creating hosted infrastructure, writing secrets, committing measured runtime artifacts,
-or claiming hosted production proof.
+readiness guarding, `R-014` added source-review cadence consistency guarding, `R-015`
+proved the local source/runtime/operator package boundary, `R-016` completed
+representative local performance rehearsal while preserving hosted SLO/capacity
+blockers, and `R-017` included compare/diff in local release-candidate workflow smoke
+without ranking/recommendation semantics. The next active pass is `R-018`
+threat-model/proxy audit update: map security, access-control, protected-class, and
+residential-steering risks to existing repo-local controls without replacing external
+security review, legal review, hosted IdP/RBAC, production error/log review, DS-017
+entitlement work, or hosted production proof.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

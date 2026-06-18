@@ -28,8 +28,9 @@ hosted production readiness, or new report semantics.
   `/ui/compare` have unit/API/UI coverage.
 - `docs/runbooks/mvp_operator.md` documents compare and same-area diff behavior for
   selected reports.
-- `scripts/ui_runtime_smoke.py` currently checks that the report list exposes the
-  compare form, but it does not yet drive an approved-report compare/diff flow.
+- `scripts/ui_runtime_smoke.py` now supports `--compare-same-area`, which creates a
+  second approved report for the same selected-county case and checks the UI compare
+  page plus JSON compare/diff APIs.
 
 ## Proposed design
 
@@ -90,7 +91,7 @@ git diff --name-only --diff-filter=D
 Optional runtime proof, only after a local release-candidate runtime is prepared:
 
 ```powershell
-python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:<port> --selected-county-case <case-id> --reviewer-id <id> --reviewer-token <token>
+python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:<port> --reviewer-id <id> --reviewer-token <token> --operator-case-id <case-id> --compare-same-area
 ```
 
 ## Risks and blockers
@@ -107,8 +108,19 @@ python .\scripts\ui_runtime_smoke.py --base-url http://127.0.0.1:<port> --select
 - 2026-06-18: Selected after `R-016` because local performance rehearsal completed and
   `state/POST_RC_AUTHORITY_SPLIT.md` lists compare/diff workflow smoke as the next
   unblocked repo-local release-candidate candidate.
+- 2026-06-18: Completed as repo-local workflow proof only. The smoke follows two
+  approved reports for one selected-county case through UI compare, JSON compare, and
+  same-area diff checks; it does not add ranking, recommendation, suitability scoring,
+  arbitrary-geography claims, hosted proof, or image publication.
 
 ## Progress log
 
 - 2026-06-18: Plan opened after the representative local performance rehearsal proved
   local load/spatial evidence and fixed the concurrent internal sentinel source race.
+- 2026-06-18: Audited existing report comparison APIs/UI and extended
+  `scripts/ui_runtime_smoke.py` with `--compare-same-area`. Added script regressions for
+  the positive compare/diff path, missing operator-case guard, and forbidden
+  recommendation semantics in compare output. Local runtime smoke passed against an
+  in-memory FastAPI runtime on `127.0.0.1:18192`.
+- 2026-06-18: Full `.\scripts\verify.ps1` passed after state/routing updates; DB smoke
+  was skipped by default.
