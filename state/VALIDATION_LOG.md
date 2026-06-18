@@ -2,6 +2,55 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Jurisdiction/Rulepack Checklist Dry Run
+
+**Scope:** Add repo-local validate-only dry-run proof that jurisdiction and rulepack
+readiness checklists are executable and fail closed before future expansion decisions,
+without approving a new geography, rulepack, source, connector, DS-017 path, hosted
+production path, legal/security review, or full IdP/RBAC.
+
+**Commands run:**
+
+```powershell
+python .\scripts\checklist_dry_run_check.py
+.\scripts\run_checklist_dry_run_check.ps1
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+python .\scripts\private_mvp_readiness_check.py
+Push-Location .\backend
+python -m pytest -q .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_checklists.py .\tests\test_readiness_matrix_artifacts.py
+python -m ruff check .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\checklist_dry_run_check.py ..\scripts\release_readiness_check.py
+python -m mypy .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\checklist_dry_run_check.py ..\scripts\release_readiness_check.py
+Pop-Location
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Checklist dry-run checker and Windows wrapper passed.
+- Release-readiness composed the checklist dry-run validator and passed.
+- Readiness-matrix and private-MVP validators passed.
+- Focused artifact tests passed for checklist dry-run artifacts, release-readiness
+  artifacts, existing readiness checklists, and readiness-matrix artifacts.
+- Review hardening added regression coverage for checked and unchecked checkbox
+  parsing, wrapper presence, stale `repo_confirmed` evidence assertions,
+  self-referential blocked authority, and release-readiness failure propagation when the
+  checklist dry-run validator fails.
+- Focused ruff and mypy passed on touched checker/test surfaces.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass proves checklist executability only. It does not approve a new geography,
+  rulepack, source, connector, DS-017 entitlement, hosted deployment, legal/security
+  review, full IdP/RBAC, billing, alerting, secret-manager, or production workload
+  proof.
+
 ## 2026-06-18 Threat/Proxy Audit Update
 
 **Scope:** Add repo-local threat/proxy audit drift control for security,

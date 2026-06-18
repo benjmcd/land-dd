@@ -1,13 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md
+active_plan: plans/2026-06-18-route-scope-rbac-handoff.md
 routing_note: >
-  Active lane: jurisdiction/rulepack checklist dry run
-  (plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md). Goal: rehearse the
-  existing jurisdiction and rulepack readiness checklists against a future expansion
-  shape without selecting or approving a new geography, rulepack, source, connector, or
-  hosted production path. DS-017, hosted deployment, external security/legal review,
-  IdP/RBAC, billing, alerting, secret-manager, and production workload authority remain
-  external blockers.
+  Active lane: route-scope/RBAC handoff coverage
+  (plans/2026-06-18-route-scope-rbac-handoff.md). Goal: prove the repo-local
+  identity/RBAC handoff catalog covers current protected route surfaces without
+  implementing OAuth/OIDC, full user RBAC, DS-017 entitlement, or hosted production
+  identity. Hosted deployment, external security/legal review, IdP/RBAC, billing,
+  alerting, secret-manager, paid-source entitlement, and production workload authority
+  remain external blockers.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -519,21 +519,27 @@ tasks:
 
   - id: R-019
     title: Jurisdiction/rulepack checklist dry run
-    status: active
+    status: done
     depends_on: [R-018]
     lane: coordinator
     spec: plans/2026-06-18-jurisdiction-rulepack-checklist-dry-run.md
     notes: >
-      Dry-run existing jurisdiction and rulepack readiness checklists against a future
-      expansion shape without selecting or approving a new geography, rulepack, source,
-      connector, or hosted production path. This is checklist executability proof only;
-      it must preserve DS-017, hosted deployment, external security/legal review,
-      IdP/RBAC, billing, alerting, secret-manager, and production workload blockers.
+      Completed validate-only checklist dry-run proof. Added a structured dry-run
+      catalog/checker that extracts every checkbox item from the jurisdiction and
+      rulepack readiness checklists and requires each item to be classified exactly
+      once as repo-confirmed, missing candidate decision, missing repo evidence,
+      blocked external authority, or not applicable to the existing rulepack scope.
+      Composed the checker into release readiness without selecting or approving a new
+      geography, rulepack, source, connector, DS-017 path, or hosted production path.
     validation:
+      - python .\scripts\checklist_dry_run_check.py
+      - .\scripts\run_checklist_dry_run_check.ps1
       - python .\scripts\private_mvp_readiness_check.py
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
-      - cd backend; python -m pytest -q .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_matrix_artifacts.py
+      - cd backend; python -m pytest -q .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py .\tests\test_readiness_checklists.py .\tests\test_readiness_matrix_artifacts.py
+      - cd backend; python -m ruff check .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\checklist_dry_run_check.py ..\scripts\release_readiness_check.py
+      - cd backend; python -m mypy .\tests\test_checklist_dry_run_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\checklist_dry_run_check.py ..\scripts\release_readiness_check.py
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
@@ -542,6 +548,32 @@ tasks:
       - Dry-run result distinguishes repo-confirmed evidence, missing evidence, and external blockers
       - No new geography, rulepack, source, connector, or DS-017 approval is made
       - Hosted production, legal/security review, IdP/RBAC, billing, alerting, and secret-manager blockers remain external-authority requirements
+
+  - id: R-020
+    title: Route-scope/RBAC handoff coverage
+    status: active
+    depends_on: [R-019]
+    lane: coordinator
+    spec: plans/2026-06-18-route-scope-rbac-handoff.md
+    notes: >
+      Prove the repo-local identity/RBAC handoff catalog names protected route surfaces
+      future hosted identity must preserve. This is validate-only handoff coverage,
+      not OAuth/OIDC, user-table, org/user RBAC, hosted identity-provider, paid-data
+      entitlement, or production RBAC implementation.
+    validation:
+      - python .\scripts\access_control_check.py
+      - .\scripts\run_access_control_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_access_control_artifacts.py .\tests\api\test_api_key_auth.py .\tests\api\test_reviewer_auth.py .\tests\api\test_report_auth.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_review_routes.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Current protected API/UI route surfaces are audited before any checker changes
+      - Identity/RBAC route-scope mappings fail closed if required protected surfaces are omitted
+      - Existing local/private-MVP auth mechanisms remain unchanged
+      - Hosted identity, full RBAC, DS-017 entitlements, billing, alerting, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---
   - id: T000

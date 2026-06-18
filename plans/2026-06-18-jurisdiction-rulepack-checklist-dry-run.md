@@ -109,3 +109,15 @@ Narrow checks may be refined after the audit identifies the actual affected file
 
 - 2026-06-18: Plan opened after R-018 added threat/proxy audit guardrails and kept
   external security/legal/hosted/identity/source blockers intact.
+- 2026-06-18: Added `checklist_dry_run_v1` validate-only catalog, checker, runbook,
+  wrappers, and artifact tests. The checker extracts every checkbox item from
+  `docs/checklists/jurisdiction_readiness.md` and
+  `docs/checklists/rulepack_readiness.md`, then requires each item to be classified
+  exactly once as repo-confirmed, missing candidate decision, missing repo evidence,
+  blocked external authority, or not applicable to the existing rulepack scope. It is
+  composed into release readiness and does not select or approve a geography, rulepack,
+  source, connector, DS-017 path, or hosted production path.
+- 2026-06-18: Review hardening added support for checked and unchecked Markdown
+  checkbox states, required dry-run wrappers as standalone validator inputs, required
+  evidence assertions for repo-confirmed rows, and rejected blocked-external-authority
+  rows whose authority pointed only at the originating checklist.

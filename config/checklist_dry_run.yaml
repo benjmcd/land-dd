@@ -1,0 +1,384 @@
+schema_version: checklist_dry_run_v1
+operator_runbook: docs/runbooks/checklist_dry_run.md
+status: repo_local_validate_only
+validation: scripts/run_checklist_dry_run_check.ps1
+
+candidate_shape:
+  id: hypothetical_next_county_existing_homestead_mvp
+  status: hypothetical_not_selected
+  description: >
+    A future, unselected county-like jurisdiction for the existing rural land /
+    homestead MVP intent. This shape exists only to exercise the readiness checklists;
+    it is not a geography, source, connector, rulepack, or release approval.
+  authority:
+    - README.md
+    - state/POST_RC_AUTHORITY_SPLIT.md
+    - state/LEVEL_9_10_GATE_MATRIX.md
+    - state/PROJECT_STATE.md
+  approvals:
+    new_geography_selected: false
+    new_rulepack_approved: false
+    new_source_approved: false
+    ds017_unblocked: false
+    hosted_production_ready: false
+
+limits:
+  validate_only_catalog: true
+  selects_new_geography: false
+  approves_new_rulepack: false
+  approves_new_source: false
+  unblocks_ds017: false
+  runs_live_connectors: false
+  creates_runtime_artifacts: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+
+checklists:
+  - id: jurisdiction_readiness
+    source: docs/checklists/jurisdiction_readiness.md
+    scope: intentionally_scoped_pre_expansion_gate
+    dry_run:
+      - item_id: county_township_boundary_source_identified_and_registered_in_data_source_registry_csv
+        status: missing_candidate_decision
+        evidence: [registers/data_source_registry.csv, docs/DATA_SOURCE_STRATEGY.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Select a candidate jurisdiction before registering its boundary source.
+      - item_id: administrative_hierarchy_state_county_township_modeled_in_area_geometry
+        status: missing_candidate_decision
+        evidence: [docs/ARCHITECTURE.md, docs/POSTGRES_FIRST_STORAGE.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Model the selected jurisdiction hierarchy after a candidate is authorized.
+      - item_id: boundary_source_license_reviewed_and_recorded
+        status: blocked_external_authority
+        evidence: [registers/data_source_registry.csv, schemas/source_schema.json]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - registers/data_source_registry.csv
+          - schemas/source_schema.json
+        next_action: Complete source/license review for the candidate boundary source.
+      - item_id: parcel_cadastre_availability_assessed_for_this_jurisdiction
+        status: missing_candidate_decision
+        evidence: [docs/source-reviews/ds-010.md, scripts/source_readiness.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Assess parcel availability only after the candidate jurisdiction is named.
+      - item_id: if_available_parcel_source_license_reviewed_connector_added_to_scope
+        status: missing_candidate_decision
+        evidence: [docs/source-reviews/ds-010.md, backend/app/source_registry/connector_inventory.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Add parcel connector scope only after source review approves that jurisdiction's parcel source.
+      - item_id: if_unavailable_unknown_parcel_claim_added_to_rulepack
+        status: missing_candidate_decision
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_not_evaluated_claims.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Add candidate-specific UNKNOWN behavior if parcel data is unavailable.
+      - item_id: county_municipal_zoning_authority_identified
+        status: missing_candidate_decision
+        evidence: [docs/source-reviews/ds-023.md, docs/checklists/jurisdiction_readiness.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Identify zoning authority after a candidate jurisdiction is selected.
+      - item_id: zoning_data_source_gis_layer_or_manual_records_assessed
+        status: missing_candidate_decision
+        evidence: [docs/source-reviews/ds-023.md, backend/tests/api/test_chatham_zoning_connector_api.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Assess zoning source shape for the selected candidate only.
+      - item_id: zoning_source_license_reviewed
+        status: blocked_external_authority
+        evidence: [docs/source-reviews/ds-023.md, schemas/source_schema.json]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - docs/source-reviews/ds-023.md
+          - schemas/source_schema.json
+        next_action: Complete zoning source license review before any candidate zoning data is used.
+      - item_id: water_rights_regime_prior_appropriation_riparian_documented
+        status: blocked_external_authority
+        evidence: [docs/PRODUCT_SPEC.md, docs/checklists/jurisdiction_readiness.md]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - docs/PRODUCT_SPEC.md
+          - docs/SECURITY.md
+        next_action: Document candidate water-rights regime without making legal water-rights conclusions.
+      - item_id: well_permit_water_right_query_source_identified_if_relevant
+        status: missing_candidate_decision
+        evidence: [docs/DATA_SOURCE_STRATEGY.md, registers/data_source_registry.csv]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Identify local water/well source only after candidate jurisdiction and relevance are known.
+      - item_id: water_source_license_reviewed
+        status: blocked_external_authority
+        evidence: [schemas/source_schema.json, registers/data_source_registry.csv]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - registers/data_source_registry.csv
+          - schemas/source_schema.json
+        next_action: Complete water source license review before adding source-derived records.
+      - item_id: surface_mineral_split_deed_prevalence_assessed
+        status: blocked_external_authority
+        evidence: [docs/PRODUCT_SPEC.md, docs/source-reviews/ds-007.md]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - docs/PRODUCT_SPEC.md
+          - docs/source-reviews/ds-007.md
+        next_action: Assess candidate-specific prevalence without making title or mineral-rights conclusions.
+      - item_id: state_blm_glo_records_or_state_equivalent_identified
+        status: missing_candidate_decision
+        evidence: [docs/source-reviews/ds-007.md, docs/DATA_SOURCE_STRATEGY.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Identify candidate state/federal records after candidate jurisdiction is known.
+      - item_id: resource_rights_caveat_language_added_to_rulepack
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: RESOURCE_NOT_EVALUATED
+      - item_id: local_disclosure_requirements_reviewed
+        status: blocked_external_authority
+        evidence: [docs/SECURITY.md, docs/checklists/jurisdiction_readiness.md]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - docs/SECURITY.md
+        next_action: Obtain candidate-specific local disclosure review before expansion approval.
+      - item_id: septic_perc_testing_jurisdiction_rules_documented
+        status: missing_candidate_decision
+        evidence: [config/ruleset_homestead_mvp.yaml, docs/PRODUCT_SPEC.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Document candidate septic/perc rules after candidate jurisdiction is selected.
+      - item_id: professional_wetland_delineation_requirement_confirmed
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: Order professional wetland delineation before site planning.
+      - item_id: floodplain_administrator_contact_process_documented
+        status: missing_candidate_decision
+        evidence: [config/ruleset_homestead_mvp.yaml, docs/checklists/jurisdiction_readiness.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Document local floodplain administrator contact process for the selected candidate.
+      - item_id: all_required_sources_registered_in_registers_data_source_registry_csv
+        status: missing_candidate_decision
+        evidence: [registers/data_source_registry.csv, scripts/source_readiness.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Register candidate-required sources after source decisions are made.
+      - item_id: each_source_has_ds_001_through_ds_010_readiness_gates_evaluated
+        status: missing_repo_evidence
+        evidence: [scripts/source_readiness.py, backend/tests/source_registry/test_source_readiness.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Run and record source-readiness evaluation for candidate-required sources.
+      - item_id: source_readiness_py_priority_must_passes_for_jurisdiction_sources
+        status: missing_repo_evidence
+        evidence: [scripts/source_readiness.py, config/release_readiness.yaml]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Prove candidate Must-source readiness after candidate sources are declared.
+      - item_id: homestead_mvp_ruleset_reviewed_for_jurisdiction_specific_concepts
+        status: missing_candidate_decision
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_forbidden_language.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Review homestead rules against the selected candidate's local concepts.
+      - item_id: any_jurisdiction_specific_hard_gates_added_or_disabled
+        status: missing_candidate_decision
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Add or disable candidate-specific hard gates only through a planned rulepack change.
+      - item_id: forbidden_language_list_reviewed_for_local_context
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_forbidden_language.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: forbidden_language
+      - item_id: at_least_one_sample_area_created_and_report_run_generated
+        status: missing_repo_evidence
+        evidence: [backend/tests/private_mvp/test_mvp_regression.py, backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Generate candidate sample report only after candidate source and area fixtures are approved.
+      - item_id: report_reviewed_for_overclaiming_missing_caveats_or_incorrect_claim_codes
+        status: missing_repo_evidence
+        evidence: [backend/tests/reports/test_report_overclaim.py, backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Review candidate sample report before expansion approval.
+      - item_id: if_high_stakes_output_qualified_local_domain_expert_reviewed_sample
+        status: blocked_external_authority
+        evidence: [docs/SECURITY.md, state/LEVEL_9_10_GATE_MATRIX.md]
+        blocker_authority:
+          - docs/checklists/jurisdiction_readiness.md
+          - docs/SECURITY.md
+          - state/LEVEL_9_10_GATE_MATRIX.md
+        next_action: Obtain qualified local domain review where required; repo-local tests cannot replace it.
+      - item_id: coverage_limitations_statement_added_to_docs_planning_pack_or_report_scope
+        status: missing_repo_evidence
+        evidence: [docs/planning_pack/05_MVP_US_RURAL_LAND_DOSSIER_SPEC.md, docs/runbooks/mvp_operator.md]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Add candidate-specific coverage limitations after source coverage is known.
+      - item_id: user_visible_caveat_language_reviewed_for_this_jurisdiction
+        status: missing_repo_evidence
+        evidence: [docs/runbooks/mvp_operator.md, backend/tests/reports/test_report_overclaim.py]
+        blocker_authority: [docs/checklists/jurisdiction_readiness.md]
+        next_action: Review candidate-specific caveat language before approval.
+
+  - id: rulepack_readiness
+    source: docs/checklists/rulepack_readiness.md
+    scope: intentionally_scoped_pre_expansion_gate
+    dry_run:
+      - item_id: intent_code_added_to_backend_app_domain_enums_py_intentcode_enum
+        status: not_applicable_existing_scope
+        evidence: [backend/app/domain/enums.py, config/ruleset_homestead_mvp.yaml]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Open a separate planned rulepack slice before adding any new intent code.
+      - item_id: user_who_uses_this_decision_what_they_decide_non_goals_what_it_does_not_determine_documented
+        status: repo_confirmed
+        evidence: [docs/PRODUCT_SPEC.md, README.md]
+        evidence_assertions:
+          - path: docs/PRODUCT_SPEC.md
+            contains: rural land purchase / homestead feasibility
+      - item_id: prohibited_claims_listed_e_g_no_appraisal_value_no_legal_access_determination
+        status: repo_confirmed
+        evidence: [docs/PRODUCT_SPEC.md, docs/SECURITY.md, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: docs/PRODUCT_SPEC.md
+            contains: final legal access determination
+      - item_id: required_domains_listed_flood_wetlands_soil_septic_access_zoning_water_buildability_etc
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, docs/planning_pack/05_MVP_US_RURAL_LAND_DOSSIER_SPEC.md]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: "domain: wetlands"
+      - item_id: each_domain_has_a_registered_data_source_with_reviewed_license
+        status: missing_candidate_decision
+        evidence: [registers/data_source_registry.csv, scripts/source_readiness.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Confirm domain-source coverage for a selected candidate before rulepack approval.
+      - item_id: source_failures_for_each_domain_produce_explicit_unknown_claims
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_not_evaluated_claims.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: source_failures_are_unknowns
+      - item_id: hard_gates_critical_high_severity_explicitly_listed_in_rulepack_yaml
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: "severity_on_fail: critical"
+      - item_id: scoring_bands_not_raw_scores_defined_if_scoring_is_used
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, docs/SECURITY.md]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: confidence_separate_from_suitability
+      - item_id: suitability_and_confidence_are_separate_fields_in_all_output_claims
+        status: repo_confirmed
+        evidence: [schemas/claim_schema.json, backend/tests/claims_engine/test_rule_engine.py]
+        evidence_assertions:
+          - path: schemas/claim_schema.json
+            contains: '"confidence"'
+      - item_id: config_ruleset_intent_yaml_created_with_version_field
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: "version: 0.1"
+      - item_id: at_least_one_fixture_test_that_exercises_each_hard_gate
+        status: missing_candidate_decision
+        evidence: [backend/tests/claims_engine/test_rule_engine.py, backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Add candidate or new-intent fixtures when the candidate scope is authorized.
+      - item_id: tests_cover_positive_case_gate_triggers_negative_case_gate_does_not_trigger_source_failure_case_unknown
+        status: missing_candidate_decision
+        evidence: [backend/tests/claims_engine/test_rule_engine.py, backend/tests/claims_engine/test_not_evaluated_claims.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Add full positive, negative, and source-failure coverage for the selected candidate scope.
+      - item_id: each_claim_code_has_a_human_readable_verification_task_string
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: verification_task
+      - item_id: verification_tasks_name_the_professional_or_record_type_required
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: licensed surveyor
+      - item_id: no_verification_task_says_it_is_safe_or_no_issues_found
+        status: repo_confirmed
+        evidence: [backend/tests/reports/test_report_overclaim.py, backend/tests/claims_engine/test_forbidden_language.py]
+        evidence_assertions:
+          - path: backend/tests/reports/test_report_overclaim.py
+            contains: FORBIDDEN_PHRASES
+      - item_id: user_safe_language_user_safe_language_field_reviewed_for_forbidden_phrases
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_forbidden_language.py]
+        evidence_assertions:
+          - path: backend/tests/claims_engine/test_forbidden_language.py
+            contains: test_evaluate_raises_on_forbidden_user_safe_language
+      - item_id: forbidden_language_list_in_rulepack_yaml_covers_key_overstatement_patterns
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_forbidden_language.py]
+        evidence_assertions:
+          - path: backend/tests/claims_engine/test_forbidden_language.py
+            contains: test_from_file_loads_all_six_forbidden_phrases
+      - item_id: all_language_reviewed_against_the_agents_md_non_negotiables_list
+        status: repo_confirmed
+        evidence: [AGENTS.md, docs/SECURITY.md, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: AGENTS.md
+            contains: No report may assert final legal access
+      - item_id: not_evaluated_claim_codes_defined_for_unsupported_domains
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_not_evaluated_claims.py]
+        evidence_assertions:
+          - path: backend/tests/claims_engine/test_not_evaluated_claims.py
+            contains: NOT_EVALUATED_CLAIM_CODES
+      - item_id: each_unknown_case_has_a_verification_task
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py, backend/tests/claims_engine/test_not_evaluated_claims.py]
+        evidence_assertions:
+          - path: backend/tests/claims_engine/test_not_evaluated_claims.py
+            contains: claim.verification_task is not None
+      - item_id: test_cases_cover_conflicting_evidence_and_stale_evidence_scenarios
+        status: missing_repo_evidence
+        evidence: [backend/tests/claims_engine, backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Add candidate/new-intent conflict and stale-evidence fixtures before approval.
+      - item_id: applies_to_country_and_applies_to_geography_scope_fields_set_in_ruleset_yaml
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/claims_engine/test_rule_engine.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: "geography_scope: target_mvp_counties"
+      - item_id: rulepack_does_not_apply_outside_documented_geography_without_review
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, docs/SECURITY.md]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: applies_to
+      - item_id: professional_review_requirements_documented_in_verification_tasks
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: qualified local professionals
+      - item_id: no_claim_asserts_final_legal_title_survey_wetland_or_buildability_determination
+        status: repo_confirmed
+        evidence: [docs/SECURITY.md, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: docs/SECURITY.md
+            contains: buildability/permitting
+      - item_id: legal_regulatory_interpretation_requires_human_review_flag
+        status: repo_confirmed
+        evidence: [config/ruleset_homestead_mvp.yaml, backend/tests/reports/test_report_overclaim.py]
+        evidence_assertions:
+          - path: config/ruleset_homestead_mvp.yaml
+            contains: title review
+      - item_id: test_report_regression_py_updated_with_known_red_flag_case_for_this_intent
+        status: missing_candidate_decision
+        evidence: [backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Add candidate/new-intent regression cases after the candidate scope is authorized.
+      - item_id: known_clean_ish_case_added_to_regression_test
+        status: missing_candidate_decision
+        evidence: [backend/tests/reports/test_report_regression.py]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Add a clean-ish candidate/new-intent regression case before approval.
+      - item_id: rulepack_version_pinned_in_regression_fixtures
+        status: missing_candidate_decision
+        evidence: [backend/tests/reports/test_report_regression.py, config/ruleset_homestead_mvp.yaml]
+        blocker_authority: [docs/checklists/rulepack_readiness.md]
+        next_action: Pin candidate/new-intent rulepack version in regression fixtures when added.

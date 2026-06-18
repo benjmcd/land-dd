@@ -61,6 +61,9 @@ required_checks:
   - id: rulepack_readiness
     proof: docs/checklists/rulepack_readiness.md
     ci_job: null
+  - id: checklist_dry_run
+    proof: scripts/run_checklist_dry_run_check.ps1
+    ci_job: null
   - id: load_test
     proof: scripts/run_load_test.ps1
     ci_job: null
