@@ -36,6 +36,10 @@ The check is validate-only. It verifies that:
   `RUN_DB_SMOKE='1'` is enabled;
 - the `release-readiness` CI job runs the POSIX readiness proof;
 - current Must-source readiness remains explicit about `sources=8 ready=7 blocked=1`;
+- Must current-effective source reviews keep `Last Checked At` within the 90-day
+  repo-local freshness horizon enforced by `scripts/source_readiness.py` and
+  `scripts/alert_rules_check.py`, while source-specific upstream/update cadence and
+  terms/source-page triggers remain separate prose;
 - the local release package boundary and builders are validated by
   `scripts/run_release_package_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;

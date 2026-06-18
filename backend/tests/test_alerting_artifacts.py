@@ -73,6 +73,23 @@ def _write_registry_with_must_row(
     return output_path
 
 
+def _write_registry_with_rows(
+    tmp_path: Path,
+    rows: list[dict[str, str]],
+) -> Path:
+    registry_path = REPO_ROOT / "registers" / "data_source_registry.csv"
+    with registry_path.open(newline="", encoding="utf-8") as handle:
+        fieldnames = list(cast(Any, csv.DictReader(handle)).fieldnames or [])
+
+    output_path = tmp_path / "registry.csv"
+    with output_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+    return output_path
+
+
 def test_alert_rule_catalog_covers_l10_failure_and_stale_data_signals() -> None:
     catalog = yaml.safe_load(
         (REPO_ROOT / "config" / "ops_alert_rules.yaml").read_text(encoding="utf-8"),
@@ -222,6 +239,128 @@ def test_alert_rule_source_freshness_validator_fails_closed_for_review_drift(
             registry_path=registry_path,
             as_of=date(2026, 6, 18),
         )
+
+
+def test_source_review_cadence_validator_accepts_canonical_current_effective_docs(
+    tmp_path: Path,
+) -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+    registry_path = _write_registry_with_rows(
+        tmp_path,
+        rows=[
+            {
+                "Source ID": "DS-001",
+                "MVP Priority": "Must",
+                "Freshness Class": "current-effective",
+                "Review Status": "approved-with-restrictions",
+            },
+            {
+                "Source ID": "DS-017",
+                "MVP Priority": "Must",
+                "Freshness Class": "unreviewed",
+                "Review Status": "pending",
+            },
+        ],
+    )
+    docs_dir = tmp_path / "source-reviews"
+    docs_dir.mkdir()
+    (docs_dir / "ds-001.md").write_text(
+        "\n".join(
+            [
+                "# DS-001",
+                "- Source-specific upstream/update cadence: dynamic.",
+                "- Terms/source-page review triggers: review earlier if source pages change.",
+                "- Local readiness freshness: Last Checked At must remain within the "
+                "90-day repo-local freshness horizon enforced by source_readiness.py "
+                "and alert_rules_check.py.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+    (docs_dir / "ds-017.md").write_text(
+        "\n".join(
+            [
+                "# DS-017",
+                "- Next review date: blocked until vendor authority changes.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+
+    alert_rules_check.validate_must_current_effective_source_review_docs(
+        registry_path=registry_path,
+        docs_dir=docs_dir,
+    )
+
+
+def test_source_review_cadence_validator_rejects_next_review_date_label(
+    tmp_path: Path,
+) -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+    registry_path = _write_registry_with_rows(
+        tmp_path,
+        rows=[
+            {
+                "Source ID": "DS-001",
+                "MVP Priority": "Must",
+                "Freshness Class": "current-effective",
+                "Review Status": "approved-with-restrictions",
+            },
+        ],
+    )
+    docs_dir = tmp_path / "source-reviews"
+    docs_dir.mkdir()
+    (docs_dir / "ds-001.md").write_text(
+        "\n".join(
+            [
+                "# DS-001",
+                "- Source-specific upstream/update cadence: dynamic.",
+                "- Terms/source-page review triggers: review earlier if source pages change.",
+                "- Local readiness freshness: Last Checked At must remain within the "
+                "90-day repo-local freshness horizon enforced by source_readiness.py "
+                "and alert_rules_check.py.",
+                "**Next review date:** 2027-06-05.",
+            ],
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit, match="DS-001 has conflicting Next review date"):
+        alert_rules_check.validate_must_current_effective_source_review_docs(
+            registry_path=registry_path,
+            docs_dir=docs_dir,
+        )
+
+
+def test_source_review_cadence_validator_rejects_missing_current_effective_doc(
+    tmp_path: Path,
+) -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+    registry_path = _write_registry_with_rows(
+        tmp_path,
+        rows=[
+            {
+                "Source ID": "DS-001",
+                "MVP Priority": "Must",
+                "Freshness Class": "current-effective",
+                "Review Status": "approved-with-restrictions",
+            },
+        ],
+    )
+    docs_dir = tmp_path / "source-reviews"
+    docs_dir.mkdir()
+
+    with pytest.raises(SystemExit, match="DS-001 source review doc missing"):
+        alert_rules_check.validate_must_current_effective_source_review_docs(
+            registry_path=registry_path,
+            docs_dir=docs_dir,
+        )
+
+
+def test_current_must_source_reviews_name_repo_local_freshness_boundary() -> None:
+    alert_rules_check = _load_alert_rules_check_module()
+
+    alert_rules_check.validate_must_current_effective_source_review_docs()
 
 
 def test_alerting_wrappers_delegate_to_shared_validator() -> None:

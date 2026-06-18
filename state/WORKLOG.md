@@ -3430,3 +3430,21 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Marked `R-011` done and routed the active plan to
   `plans/2026-06-18-source-rights-export-guard.md`; the next lane is repo-local
   source-rights/export enforcement, not DS-017 approval or hosted deployment.
+
+## 2026-06-18 Source review cadence consistency
+
+- Completed `R-014` by adding a validate-only source-review cadence guard to
+  `scripts/alert_rules_check.py`.
+- The guard now checks Must current-effective source-review docs, requires canonical
+  language separating source-specific upstream/update cadence, terms/source-page review
+  triggers, and the 90-day repo-local `Last Checked At` freshness horizon, rejects
+  generic `next review date` prose, and fails closed when a current-effective source
+  review doc is missing.
+- Updated source reviews for `DS-001`, `DS-002`, `DS-003`, `DS-004`, `DS-010`,
+  `DS-011`, and `DS-023`, plus the alerting and release-readiness runbooks.
+- DS-017 remains blocked/unreviewed. Hosted alert routing, hosted dashboards, pager
+  delivery, registry publication, hosted deployment, full IdP/RBAC, billing, and
+  secret-manager work remain external-authority blockers.
+- Marked `R-014` done and routed the active plan to
+  `plans/2026-06-18-release-package-rehearsal.md`; the next lane is local
+  release-candidate package rehearsal, not publishing or hosted deployment.
