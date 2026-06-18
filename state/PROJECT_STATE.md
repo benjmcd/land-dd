@@ -1,47 +1,51 @@
 # Project State
 
-## Current checkpoint (2026-06-18 release-candidate package rehearsal)
+## Current checkpoint (2026-06-18 representative performance rehearsal)
 
-The source review cadence consistency pass is complete. The active implementation
-authority now points at a local release-candidate package rehearsal: prove the
-current source/runtime/operator package boundary is adequate for handoff without
-publishing an image, creating hosted infrastructure, writing secrets, or claiming
-hosted production readiness.
+The release-candidate package rehearsal is complete. The active implementation authority
+now points at a representative local performance rehearsal: exercise the existing
+release-candidate load and spatial runtime evidence paths from a prepared local runtime
+without claiming hosted production capacity, formal SLOs, or Level 10 completion.
 
-- **Active plan**: `plans/2026-06-18-release-package-rehearsal.md`.
-- **Purpose**: rehearse the release-candidate package boundary from current repo
-  authority so local handoff completeness is proven before any hosted or registry
-  publication authority exists.
-- **Completed immediately prior**: `R-014` added a validate-only alert/source-review
-  cadence guard requiring Must current-effective source-review docs to distinguish the
-  90-day repo-local `Last Checked At` freshness horizon from source-specific upstream
-  update cadence and terms/source-page review triggers. The guard rejects generic
-  `next review date` prose and missing current-effective source-review docs. DS-017
-  remains blocked/unreviewed and is not promoted.
-- **Also completed prior**: `R-013` added review-freshness fields to
-  `scripts/source_readiness.py`; Must current-effective sources fail closed when
-  `Last Checked At` is missing, malformed, future-dated, older than 90 days, or lacks a
-  real review owner. Otherwise-ready Must sources with non-current freshness classes
-  are blocked, while DS-017 remains blocked by existing review/rights/connector fields.
+- **Active plan**: `plans/2026-06-18-representative-performance-rehearsal.md`.
+- **Purpose**: make local release-candidate performance evidence repeatable and
+  inspectable after the source/runtime/operator package boundary has been proven, while
+  keeping measured artifacts ignored under `local_artifacts/`.
+- **Completed immediately prior**: `R-015` expanded and guarded the local release
+  package boundary so it carries startup, routing, selected state, plan, task, lane,
+  backend-test, selected-county fixture, and planning-pack verifier inputs. It also
+  explicitly excludes volatile `state/agent-inbox` coordination state and preserves the
+  local-only/no-publish/no-hosted/no-secret/no-DS-017 boundary.
+- **Also completed prior**: `R-014` added a validate-only alert/source-review cadence
+  guard requiring Must current-effective source-review docs to distinguish the 90-day
+  repo-local `Last Checked At` freshness horizon from source-specific upstream update
+  cadence and terms/source-page review triggers. DS-017 remains blocked/unreviewed and
+  is not promoted.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-release-package-rehearsal.md`,
-  `plans/2026-06-18-review-cadence.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `config/release_package.yaml`,
-  `docs/runbooks/release_package.md`, `scripts/build_release_package.py`,
-  `scripts/release_package_check.py`, `registers/data_source_registry.csv`,
-  `scripts/source_readiness.py`, and `config/ops_alert_rules.yaml`.
+  `plans/2026-06-18-representative-performance-rehearsal.md`,
+  `plans/2026-06-18-release-package-rehearsal.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/performance_baseline.yaml`,
+  `config/spatial_query_plan.yaml`, `docs/runbooks/performance.md`,
+  `docs/runbooks/load_testing.md`, `config/release_package.yaml`,
+  `docs/runbooks/release_package.md`, `scripts/load_test_runner.py`,
+  `scripts/performance_baseline_check.py`, `scripts/spatial_query_plan_check.py`,
+  `scripts/spatial_query_plan_runtime_check.py`, `scripts/release_package_check.py`,
+  and `scripts/release_readiness_check.py`.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
   or RBAC, no secret writes, no committed generated evidence artifacts, and no Level 10
   completion claim.
-- **Validation so far**: focused R-014 alerting/source-registry tests passed; focused
-  ruff/mypy over the touched alerting/source-registry files passed; source-registry,
-  Must-source readiness, alert-rules, release-readiness, and readiness-matrix validators
-  passed. Current Must-source readiness still reports `sources=8 ready=7 blocked=1`
-  with DS-017 blocked. Full `.\scripts\verify.ps1` passed with backend tests, ruff, and
-  mypy over `322` source files; DB smoke was skipped by default.
+- **Validation so far**: R-015 release-package validator and wrapper passed; focused
+  release-package/release-readiness tests passed; focused ruff/mypy over the touched
+  release-package files passed; release-readiness and readiness-matrix validators
+  passed; current Must-source readiness still reports `sources=8 ready=7 blocked=1`
+  with DS-017 blocked; corrected package proof `2026-06-18-r015-proof4` produced
+  ignored ZIP/manifest artifacts under `local_artifacts/releases` with no missing
+  required handoff files and no forbidden local state/cache/artifact entries. Full
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `322` source
+  files; DB smoke was skipped by default.
 
 ## Previous checkpoint (2026-06-18 source review cadence consistency)
 

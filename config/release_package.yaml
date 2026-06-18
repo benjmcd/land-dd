@@ -5,32 +5,64 @@ manifest_filename: release-manifest.json
 include_paths:
   - .env.example
   - .github/workflows/ci.yml
+  - .dockerignore
   - AGENTS.md
+  - CLAUDE.md
+  - DESIGN.md
+  - LANE_OWNERSHIP.md
   - MANIFEST.md
+  - MILESTONE_MAP.md
   - README.md
+  - START_HERE.md
   - backend/app
   - backend/Dockerfile
   - backend/pyproject.toml
   - backend/requirements-prod.lock
+  - backend/tests
   - config
   - db
   - docker-compose.yml
-  - docs/adr
-  - docs/runbooks
-  - docs/sbom
-  - docs/source-reviews
+  - docs
+  - lanes
+  - plans
   - registers
   - schemas
   - scripts
+  - state/connector-state.md
+  - state/DECISION_LEDGER.md
+  - state/lane-a-state.md
+  - state/lane-b-state.md
+  - state/lane-c-state.md
+  - state/lane-d-state.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+  - state/OPEN_QUESTIONS.md
+  - state/POST_RC_AUTHORITY_SPLIT.md
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/PROJECT_STATE.md
+  - state/VALIDATION_LOG.md
+  - state/WORKLOG.md
+  - tasks
+  - tests/fixtures
 exclude_path_parts:
   - .git
+  - .codesight
+  - .codex
+  - .coverage
+  - .claude
+  - .gstack
   - .mypy_cache
+  - .omc
   - .pytest_cache
   - .ruff_cache
+  - .venv
   - __pycache__
+  - agent-inbox
+  - htmlcov
   - local_artifacts
+  - venv
   - worktrees
 exclude_suffixes:
+  - .log
   - .pyc
   - .pyo
   - .tmp

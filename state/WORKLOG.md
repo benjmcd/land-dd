@@ -3448,3 +3448,33 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Marked `R-014` done and routed the active plan to
   `plans/2026-06-18-release-package-rehearsal.md`; the next lane is local
   release-candidate package rehearsal, not publishing or hosted deployment.
+
+## 2026-06-18 Release-candidate package rehearsal
+
+- Completed `R-015` by making the local release package boundary carry the authority
+  needed for source/runtime/operator handoff and resumability.
+- Expanded `config/release_package.yaml` from a narrow runtime/docs bundle to include
+  root startup/routing files, `plans/`, `tasks/`, `lanes/`, selected state authority
+  files, backend tests, selected-county fixtures, `.dockerignore`, and all `docs/`.
+- Added package-boundary checks in `scripts/release_package_check.py` so the validator
+  fails closed when required handoff paths are outside the package, when
+  `state/agent-inbox` would be packaged, when the operator-case `source_fixture_root`
+  is outside the boundary, when local agent/cache state would be packaged, or when
+  `scripts/verify.ps1` is a required gate but backend tests are absent.
+- Kept `docs/planning_pack` included because current verifier and artifact tests still
+  compare planning-pack schemas, OpenAPI, and cost-input references. The package now
+  excludes volatile `state/agent-inbox` coordination state instead of excluding verifier
+  inputs.
+- Updated the release-package runbook and focused artifact tests so the catalog,
+  checker, and operator guidance all describe the same local-only boundary.
+- Prefinal review found the earlier `2026-06-18-r015-proof3` package still included
+  local `.omc` state under an included source tree. The catalog, validator, tests, and
+  runbook were tightened to exclude `.omc`, `.gstack`, `.codesight`, `.codex`,
+  `.claude`, caches, local virtualenvs, logs, and adjacent local-state artifacts.
+- Built a corrected local ignored package proof with version `2026-06-18-r015-proof4`;
+  the manifest inspection found no missing required handoff paths, no forbidden local
+  state/cache/artifact entries, a present ZIP SHA-256, and package limits that still say
+  no hosted deployment, no secrets, and no registry image push.
+- Marked `R-015` done and routed the active plan to
+  `plans/2026-06-18-representative-performance-rehearsal.md`; the next lane is local
+  performance rehearsal, not hosted SLO/capacity proof.

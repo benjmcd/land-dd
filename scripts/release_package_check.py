@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
+import build_release_package
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,31 +20,89 @@ REQUIRED_FILES = (
     "scripts/run_release_package_check.sh",
 )
 REQUIRED_INCLUDES = {
+    ".dockerignore",
     ".env.example",
     ".github/workflows/ci.yml",
     "AGENTS.md",
+    "CLAUDE.md",
+    "DESIGN.md",
+    "LANE_OWNERSHIP.md",
     "MANIFEST.md",
+    "MILESTONE_MAP.md",
     "README.md",
+    "START_HERE.md",
     "backend/app",
     "backend/Dockerfile",
     "backend/pyproject.toml",
     "backend/requirements-prod.lock",
+    "backend/tests",
     "config",
     "db",
     "docker-compose.yml",
-    "docs/runbooks",
-    "docs/sbom",
+    "docs",
+    "lanes",
+    "plans",
     "registers",
     "schemas",
     "scripts",
+    "state/connector-state.md",
+    "state/DECISION_LEDGER.md",
+    "state/lane-a-state.md",
+    "state/lane-b-state.md",
+    "state/lane-c-state.md",
+    "state/lane-d-state.md",
+    "state/LEVEL_9_10_GATE_MATRIX.md",
+    "state/OPEN_QUESTIONS.md",
+    "state/POST_RC_AUTHORITY_SPLIT.md",
+    "state/PRODUCTION_AUTHORITY_PACKET.md",
+    "state/PROJECT_STATE.md",
+    "state/VALIDATION_LOG.md",
+    "state/WORKLOG.md",
+    "tasks",
+    "tests/fixtures",
 }
 REQUIRED_EXCLUDE_PARTS = {
     ".git",
+    ".codesight",
+    ".codex",
+    ".coverage",
+    ".claude",
+    ".gstack",
     ".mypy_cache",
+    ".omc",
     ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
     "__pycache__",
+    "agent-inbox",
+    "htmlcov",
     "local_artifacts",
+    "venv",
     "worktrees",
+}
+REQUIRED_HANDOFF_PATHS = {
+    ".dockerignore",
+    "START_HERE.md",
+    "CLAUDE.md",
+    "MILESTONE_MAP.md",
+    "LANE_OWNERSHIP.md",
+    "DESIGN.md",
+    "plans",
+    "state/PROJECT_STATE.md",
+    "state/LEVEL_9_10_GATE_MATRIX.md",
+    "state/POST_RC_AUTHORITY_SPLIT.md",
+    "state/PRODUCTION_AUTHORITY_PACKET.md",
+    "state/VALIDATION_LOG.md",
+    "state/WORKLOG.md",
+    "tasks",
+    "lanes",
+    "backend/tests",
+    "tests/fixtures",
+    "docs/planning_pack",
+}
+REQUIRED_EXCLUDED_BOUNDARY_PATHS = {
+    "state/agent-inbox",
+    "state/agent-inbox/for-codex.md",
 }
 
 
@@ -57,7 +117,10 @@ def read_text(path_text: str) -> str:
 
 def require_existing(path_text: str) -> None:
     normalized = path_text.replace("\\", "/")
-    require((ROOT / normalized).exists(), f"release package referenced path missing: {normalized}")
+    require(
+        (ROOT / normalized).exists(),
+        f"release package referenced path missing: {normalized}",
+    )
 
 
 def require_list(payload: dict[str, Any], key: str) -> list[str]:
@@ -73,11 +136,73 @@ def require_list(payload: dict[str, Any], key: str) -> list[str]:
     return result
 
 
+def boundary_includes_path(
+    path_text: str,
+    includes: set[str],
+    exclude_parts: set[str],
+    exclude_suffixes: set[str],
+) -> bool:
+    relative = Path(path_text.replace("\\", "/"))
+    if any(part in exclude_parts for part in relative.parts):
+        return False
+    if relative.suffix in exclude_suffixes:
+        return False
+    for include_text in includes:
+        include = Path(include_text.replace("\\", "/"))
+        if relative == include or include in relative.parents:
+            return True
+    return False
+
+
 def validate_required_files() -> None:
     for path_text in REQUIRED_FILES:
         require(
             (ROOT / path_text).is_file(),
             f"required release-package artifact missing: {path_text}",
+        )
+
+
+def validate_handoff_boundary(
+    includes: set[str],
+    exclude_parts: set[str],
+    exclude_suffixes: set[str],
+    gates: set[str],
+) -> None:
+    for path in REQUIRED_HANDOFF_PATHS:
+        require((ROOT / path).exists(), f"required handoff path missing: {path}")
+
+    missing_handoff_paths = sorted(
+        path
+        for path in REQUIRED_HANDOFF_PATHS
+        if not boundary_includes_path(path, includes, exclude_parts, exclude_suffixes)
+    )
+    require(not missing_handoff_paths, f"missing handoff package paths: {missing_handoff_paths}")
+
+    unexpectedly_included = sorted(
+        path
+        for path in REQUIRED_EXCLUDED_BOUNDARY_PATHS
+        if boundary_includes_path(path, includes, exclude_parts, exclude_suffixes)
+    )
+    require(
+        not unexpectedly_included,
+        f"release package must exclude volatile/planning paths: {unexpectedly_included}",
+    )
+
+    manifest = json.loads(read_text("backend/app/operator_cases/manifest.json"))
+    fixture_root = manifest.get("source_fixture_root")
+    require(
+        isinstance(fixture_root, str) and bool(fixture_root),
+        "source_fixture_root is required",
+    )
+    require(
+        boundary_includes_path(fixture_root, includes, exclude_parts, exclude_suffixes),
+        f"operator_cases source_fixture_root is outside package boundary: {fixture_root}",
+    )
+
+    if "scripts/verify.ps1" in gates:
+        require(
+            boundary_includes_path("backend/tests", includes, exclude_parts, exclude_suffixes),
+            "scripts/verify.ps1 package gate requires backend/tests in the package",
         )
 
 
@@ -119,7 +244,7 @@ def validate_catalog() -> None:
 
     suffixes = set(require_list(payload, "exclude_suffixes"))
     require(
-        {".pyc", ".pyo", ".tmp", ".bak"}.issubset(suffixes),
+        {".log", ".pyc", ".pyo", ".tmp", ".bak"}.issubset(suffixes),
         "missing generated-file suffix excludes",
     )
 
@@ -130,6 +255,34 @@ def validate_catalog() -> None:
     require(
         "scripts/run_release_readiness_check.ps1" in gates,
         "release package must require release readiness gate",
+    )
+    validate_handoff_boundary(includes, exclude_parts, suffixes, gates)
+    validate_builder_file_list(includes, exclude_parts, suffixes)
+
+
+def validate_builder_file_list(
+    includes: set[str],
+    exclude_parts: set[str],
+    exclude_suffixes: set[str],
+) -> None:
+    files = build_release_package.iter_release_files(
+        sorted(includes),
+        exclude_parts,
+        exclude_suffixes,
+    )
+    forbidden_paths: list[str] = []
+    forbidden_suffixes: list[str] = []
+    for path in files:
+        relative = path.relative_to(ROOT)
+        if set(relative.parts) & exclude_parts:
+            forbidden_paths.append(relative.as_posix())
+        if relative.suffix in exclude_suffixes:
+            forbidden_suffixes.append(relative.as_posix())
+
+    require(not forbidden_paths, f"release package includes excluded paths: {forbidden_paths}")
+    require(
+        not forbidden_suffixes,
+        f"release package includes excluded suffixes: {forbidden_suffixes}",
     )
 
 
@@ -171,7 +324,15 @@ def validate_runbook() -> None:
         "does not delete, overwrite, push, deploy, or publish",
         "No registry image is pushed",
         "No hosted deployment",
+        "blocked sources",
+        "DS-017",
         "current worktree",
+        "startup/routing/state/plan/task authority",
+        "backend tests",
+        "selected-county fixtures",
+        "excludes state/agent-inbox",
+        "local agent state",
+        "includes docs/planning_pack",
     ):
         require(phrase in runbook, f"release package runbook missing phrase: {phrase}")
 

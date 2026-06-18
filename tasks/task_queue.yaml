@@ -1,11 +1,12 @@
 version: 2
-active_plan: plans/2026-06-18-release-package-rehearsal.md
+active_plan: plans/2026-06-18-representative-performance-rehearsal.md
 routing_note: >
-  Active lane: release-candidate package rehearsal
-  (plans/2026-06-18-release-package-rehearsal.md). Goal: prove the local
-  source/runtime/operator package boundary is adequate for handoff without publishing
-  an image, creating hosted infrastructure, writing secrets, or claiming hosted
-  production readiness. Source review cadence consistency is complete; DS-017, hosted
+  Active lane: representative local performance rehearsal
+  (plans/2026-06-18-representative-performance-rehearsal.md). Goal: exercise the
+  existing local release-candidate load/spatial performance evidence path after the
+  package boundary rehearsal, keeping measured artifacts under ignored local_artifacts
+  and preserving the distinction between local rehearsal evidence and hosted production
+  SLO/capacity proof. Release-candidate package rehearsal is complete; DS-017, hosted
   deployment, IdP/RBAC, secret-manager, billing, alerting, image publication, and
   production workload decisions remain external authority requirements separated from
   repo-local proof.
@@ -394,15 +395,17 @@ tasks:
 
   - id: R-015
     title: Release-candidate package rehearsal
-    status: active
+    status: done
     depends_on: [R-014]
     lane: coordinator
     spec: plans/2026-06-18-release-package-rehearsal.md
     notes: >
-      Audit and prove the local release-candidate package boundary for current
-      source/runtime/operator handoff completeness. This must remain local-only:
-      no registry image push, hosted deployment, secret write, generated artifact
-      commit, DS-017 approval, or hosted production claim.
+      Audited and proved the local release-candidate package boundary for current
+      source/runtime/operator handoff completeness. The boundary now includes startup,
+      plan, state, task, lane, backend-test, selected-county fixture, and planning-pack
+      verifier inputs while excluding volatile state/agent-inbox coordination dirt.
+      This remained local-only: no registry image push, hosted deployment, secret write,
+      generated artifact commit, DS-017 approval, or hosted production claim.
     validation:
       - python .\scripts\release_package_check.py
       - .\scripts\run_release_package_check.ps1
@@ -415,6 +418,35 @@ tasks:
     acceptance:
       - Local package include/exclude boundary is intentional and validated
       - Package rehearsal does not publish, deploy, mutate hosted infrastructure, write secrets, or commit generated package artifacts
+      - DS-017, hosted deployment, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
+
+  - id: R-016
+    title: Representative local performance rehearsal
+    status: active
+    depends_on: [R-015]
+    lane: coordinator
+    spec: plans/2026-06-18-representative-performance-rehearsal.md
+    notes: >
+      Rehearse the existing local release-candidate performance evidence path after the
+      package handoff boundary is proven. This lane should use the current load-test and
+      spatial runtime plan harnesses before adding implementation, keep measured runtime
+      artifacts ignored under local_artifacts, and preserve hosted SLO/capacity,
+      alerting, registry, DS-017, IdP/RBAC, billing, and secret-manager blockers.
+    validation:
+      - python .\scripts\performance_baseline_check.py
+      - .\scripts\run_performance_baseline_check.ps1
+      - .\scripts\run_load_test.ps1 -ValidateOnly
+      - python .\scripts\spatial_query_plan_check.py
+      - .\scripts\run_spatial_query_plan_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Local workflow-load evidence is repeatable from a prepared local runtime without committing measured artifacts
+      - Spatial runtime proof uses an explicit prepared area_id and does not seed data from validate-only actions
+      - Performance gates are not promoted to hosted SLO/capacity readiness without external hosted workload evidence
       - DS-017, hosted deployment, image publication, alerting, billing, IdP/RBAC, and secret-manager blockers remain external-authority requirements
 
   # --- Completed ---

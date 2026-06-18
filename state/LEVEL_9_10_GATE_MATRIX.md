@@ -105,7 +105,7 @@ Status legend:
 | L10-PERF-007 queue depth/job latency/failure metrics monitored | `PARTIAL` | metrics, queue health, recovery preview | Add hosted dashboard/alert evidence. |
 | L10-PERF-008 backpressure/degraded mode for outages/load | `PARTIAL` | fail-closed source failures, runbook guidance, and default-off runtime queue backpressure for report/live-connector admission | Add hosted workload, dashboard, alert-routing, and threshold-tuning evidence before promoting beyond repo-local proof. |
 | L10-PERF-009 DB pooling and transaction boundaries configured | `PROVEN_REPO_LOCAL` | DB pool settings/tests and SQLAlchemy request-scoped sessions | Tune values under hosted workload. |
-| L10-PERF-010 performance regressions observable before release | `VALIDATE_ONLY` | performance runbook and release-readiness gate | Add measured baseline artifacts for release candidates. |
+| L10-PERF-010 performance regressions observable before release | `VALIDATE_ONLY` | performance runbook, baseline contract, optional JSON result output, and release-readiness gate | Active `R-016` rehearses local measured evidence for a release candidate without promoting hosted SLO/capacity proof. |
 
 ## Level 10 - Product Correctness
 
@@ -140,11 +140,12 @@ blocked by external platform, secret-manager, billing, alerting, identity/RBAC, 
 source/vendor authority. `R-010` completed the post-RC authority split, `R-011`
 completed the production authority packet, `R-012` added repo-local source-rights
 report exposure guarding, `R-013` added repo-local source freshness review-drift
-readiness guarding, and `R-014` added source-review cadence consistency guarding. The
-next active pass is `R-015` release-candidate package rehearsal: prove the local
-source/runtime/operator package boundary for handoff without publishing an image,
-creating hosted infrastructure, writing secrets, or claiming hosted production
-readiness.
+readiness guarding, `R-014` added source-review cadence consistency guarding, and
+`R-015` proved the local source/runtime/operator package boundary. The next active pass
+is `R-016` representative local performance rehearsal: exercise the existing local
+load/spatial performance evidence path without publishing an image, creating hosted
+infrastructure, writing secrets, committing measured runtime artifacts, or claiming
+hosted SLO/capacity proof.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
