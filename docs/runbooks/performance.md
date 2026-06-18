@@ -152,11 +152,28 @@ and generates no artifacts:
 
 For every new database migration that adds or modifies a geometry column or spatial
 query, keep the static contract current and then perform read-only runtime review
-against a representative local or release-candidate database:
+against a representative local or release-candidate database. The opt-in runtime harness
+requires `DATABASE_URL_SYNC` or `--db-url` and `SPATIAL_QUERY_PLAN_AREA_ID` or
+`--area-id`; it validates the static contract before connecting, opens a read-only
+transaction, sets a local statement timeout, rolls back, and writes JSON only when `--output-json` is supplied:
+
+```powershell
+.\scripts\run_spatial_query_plan_runtime_check.ps1 --area-id <area-id>
+```
+
+The POSIX wrapper forwards the same runtime-checker flags:
+
+```bash
+bash scripts/run_spatial_query_plan_runtime_check.sh --area-id <area-id>
+```
+
+Manual review steps:
 
 1. Apply the migration to a local Postgres instance.
-2. Run the relevant `EXPLAIN ANALYZE` query from `config/spatial_query_plan.yaml`.
-3. Confirm the query plan uses the GIST index (look for `Index Scan using <idx>`).
+2. Run the configured runtime checker or the relevant `EXPLAIN ANALYZE` query from
+   `config/spatial_query_plan.yaml`.
+3. Confirm the query plan uses the target-table GIST index (look for
+   `Index Scan using <idx>` or the JSON `Index Name`).
 4. Record the plan in the PR description or in `docs/adr/` if the change is
    architecture-level.
 

@@ -5,6 +5,16 @@ ddl_authority: db/migrations/0001_initial_spine.sql
 wrappers:
   windows: scripts/run_spatial_query_plan_check.ps1
   posix: scripts/run_spatial_query_plan_check.sh
+runtime_review:
+  checker: scripts/spatial_query_plan_runtime_check.py
+  wrappers:
+    windows: scripts/run_spatial_query_plan_runtime_check.ps1
+    posix: scripts/run_spatial_query_plan_runtime_check.sh
+  db_url_env: DATABASE_URL_SYNC
+  area_id_env: SPATIAL_QUERY_PLAN_AREA_ID
+  statement_timeout_ms: 30000
+  output_schema_version: spatial_query_plan_runtime_result_v1
+  success_marker: "spatial query plan runtime check: ok"
 required_indexes:
   - name: areas_geom_gix
     schema: core
@@ -44,6 +54,7 @@ query_plan_reviews:
     required_indexes:
       - areas_geom_gix
       - parcels_geom_gix
+    runtime_requires_target_index: parcels_geom_gix
     statement: >
       EXPLAIN (ANALYZE, BUFFERS)
       SELECT p.parcel_id
@@ -57,6 +68,7 @@ query_plan_reviews:
     required_indexes:
       - areas_geom_gix
       - reference_features_geom_gix
+    runtime_requires_target_index: reference_features_geom_gix
     statement: >
       EXPLAIN (ANALYZE, BUFFERS)
       SELECT rf.feature_id
@@ -70,6 +82,7 @@ query_plan_reviews:
     required_indexes:
       - areas_geom_gix
       - observations_geom_gix
+    runtime_requires_target_index: observations_geom_gix
     statement: >
       EXPLAIN (ANALYZE, BUFFERS)
       SELECT o.evidence_id

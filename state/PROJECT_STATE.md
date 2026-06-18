@@ -1,5 +1,38 @@
 # Project State
 
+## Current checkpoint (2026-06-18 spatial runtime query-plan proof)
+
+The active implementation authority now points at the next unblocked `L10-PERF-003`
+runtime-evidence slice selected from the Level 9/10 gate matrix.
+
+- **Active plan**: `plans/2026-06-18-spatial-runtime-plan-proof.md`.
+- **Purpose**: add an opt-in DB-enabled runtime `EXPLAIN ANALYZE` harness for the
+  configured selected-county private-MVP spatial workloads without making static
+  release-readiness validation open a DB connection or seed runtime state.
+- **Current authority surfaces**: `state/LEVEL_9_10_GATE_MATRIX.md`,
+  `config/spatial_query_plan.yaml`, `scripts/spatial_query_plan_check.py`,
+  `scripts/spatial_query_plan_runtime_check.py`,
+  `docs/runbooks/performance.md`, `docs/runbooks/release_readiness.md`,
+  `plans/README.md`, and `tasks/task_queue.yaml`.
+- **Known boundaries preserved**: no DB schema change, no fixture/source seeding in
+  validate-only actions, no default DB runtime gate, no hosted performance/SLO claim,
+  and no Level 10 completion claim.
+- **Design direction**: runtime evidence must require a caller-provided local or
+  release-candidate database and `area_id`, run configured plan-review SQL in a
+  read-only transaction, fail closed when the expected target GIST index is absent from
+  JSON plan evidence, and write a JSON result only when explicitly requested.
+- **Implemented proof**: `spatial_query_plan_runtime_result_v1` runtime checker and
+  Windows/POSIX wrappers now run the configured statements as read-only
+  `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` checks against a caller-supplied DB/area.
+- **Validation**: static checker and Windows wrapper passed, runtime Windows wrapper
+  passed against an isolated local workload, focused spatial/performance/release/matrix
+  artifact tests passed (`46 passed`), release-readiness and readiness-matrix validators
+  and wrappers passed, focused ruff/mypy passed, `git diff --check` passed, no deleted
+  files were reported, isolated DB smoke passed on port `55450`, default
+  `.\scripts\verify.ps1` passed, and DB-enabled `.\scripts\verify.ps1` passed on a clean
+  isolated DB at port `55451`. The runtime evidence observed `parcels_geom_gix`,
+  `reference_features_geom_gix`, and `observations_geom_gix`.
+
 ## Current checkpoint (2026-06-18 spatial query SQL contract guard)
 
 The active implementation authority now points at a follow-up hardening slice for the

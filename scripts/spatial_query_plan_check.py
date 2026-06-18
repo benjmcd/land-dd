@@ -11,7 +11,23 @@ CONFIG_PATH = "config/spatial_query_plan.yaml"
 DDL_AUTHORITY = "db/migrations/0001_initial_spine.sql"
 WINDOWS_WRAPPER = "scripts/run_spatial_query_plan_check.ps1"
 POSIX_WRAPPER = "scripts/run_spatial_query_plan_check.sh"
+RUNTIME_CHECKER = "scripts/spatial_query_plan_runtime_check.py"
+RUNTIME_WINDOWS_WRAPPER = "scripts/run_spatial_query_plan_runtime_check.ps1"
+RUNTIME_POSIX_WRAPPER = "scripts/run_spatial_query_plan_runtime_check.sh"
 PERFORMANCE_RUNBOOK = "docs/runbooks/performance.md"
+
+EXPECTED_RUNTIME_REVIEW = {
+    "checker": RUNTIME_CHECKER,
+    "wrappers": {
+        "windows": RUNTIME_WINDOWS_WRAPPER,
+        "posix": RUNTIME_POSIX_WRAPPER,
+    },
+    "db_url_env": "DATABASE_URL_SYNC",
+    "area_id_env": "SPATIAL_QUERY_PLAN_AREA_ID",
+    "statement_timeout_ms": 30000,
+    "output_schema_version": "spatial_query_plan_runtime_result_v1",
+    "success_marker": "spatial query plan runtime check: ok",
+}
 
 EXPECTED_INDEXES = {
     "areas_geom_gix": {"schema": "core", "table": "areas", "column": "geom"},
@@ -46,6 +62,7 @@ class QueryContract(TypedDict):
     target_primary_key: str
     target_spatial_column: str
     required_indexes: set[str]
+    runtime_target_index: str
 
 
 EXPECTED_QUERY_CONTRACTS: dict[str, QueryContract] = {
@@ -56,6 +73,7 @@ EXPECTED_QUERY_CONTRACTS: dict[str, QueryContract] = {
         "target_primary_key": "parcel_id",
         "target_spatial_column": "geom",
         "required_indexes": {"areas_geom_gix", "parcels_geom_gix"},
+        "runtime_target_index": "parcels_geom_gix",
     },
     "area_reference_feature_intersections": {
         "target_schema": "geo",
@@ -64,6 +82,7 @@ EXPECTED_QUERY_CONTRACTS: dict[str, QueryContract] = {
         "target_primary_key": "feature_id",
         "target_spatial_column": "geom",
         "required_indexes": {"areas_geom_gix", "reference_features_geom_gix"},
+        "runtime_target_index": "reference_features_geom_gix",
     },
     "area_observation_intersections": {
         "target_schema": "evidence",
@@ -72,6 +91,7 @@ EXPECTED_QUERY_CONTRACTS: dict[str, QueryContract] = {
         "target_primary_key": "evidence_id",
         "target_spatial_column": "geometry",
         "required_indexes": {"areas_geom_gix", "observations_geom_gix"},
+        "runtime_target_index": "observations_geom_gix",
     },
 }
 
@@ -212,6 +232,19 @@ def validate_statement_contract(
         required_indexes == contract["required_indexes"],
         f"{review_id} required indexes do not match expected table relationship",
     )
+    runtime_target_index = review.get("runtime_requires_target_index")
+    require(
+        runtime_target_index == contract["runtime_target_index"],
+        f"{review_id} runtime target index mismatch",
+    )
+    require(
+        runtime_target_index in required_indexes,
+        f"{review_id} runtime target index must be a required index",
+    )
+    require(
+        runtime_target_index != "areas_geom_gix",
+        f"{review_id} runtime target index must be the target-table GIST index",
+    )
     for index_name in required_indexes:
         index = EXPECTED_INDEXES[index_name]
         if index_name == "areas_geom_gix":
@@ -270,6 +303,12 @@ def validate_config() -> None:
     wrappers = require_mapping(config.get("wrappers"), "spatial wrappers missing")
     require(wrappers.get("windows") == WINDOWS_WRAPPER, "Windows wrapper mismatch")
     require(wrappers.get("posix") == POSIX_WRAPPER, "POSIX wrapper mismatch")
+
+    runtime_review = require_mapping(
+        config.get("runtime_review"),
+        "spatial runtime review metadata missing",
+    )
+    require(runtime_review == EXPECTED_RUNTIME_REVIEW, "spatial runtime review mismatch")
 
     indexes = require_list(config.get("required_indexes"), "spatial indexes missing")
     by_name = {
@@ -358,6 +397,20 @@ def validate_wrappers() -> None:
             f"{path_text} must print success marker",
         )
 
+    require_existing_file(RUNTIME_CHECKER)
+    runtime_checker = read_text(RUNTIME_CHECKER)
+    require(
+        "spatial query plan runtime check: ok" in runtime_checker,
+        "runtime checker must print success marker",
+    )
+    for path_text in (RUNTIME_WINDOWS_WRAPPER, RUNTIME_POSIX_WRAPPER):
+        require_existing_file(path_text)
+        text = read_text(path_text)
+        require(
+            "spatial_query_plan_runtime_check.py" in text,
+            f"{path_text} must delegate to shared runtime validator",
+        )
+
 
 def validate_runbook() -> None:
     require_existing_file(PERFORMANCE_RUNBOOK)
@@ -371,7 +424,11 @@ def validate_runbook() -> None:
         "GIST index",
         "Index Scan using <idx>",
         "opens no database connection by default",
+        "run_spatial_query_plan_runtime_check.ps1",
+        "SPATIAL_QUERY_PLAN_AREA_ID",
+        "DATABASE_URL_SYNC",
         "Runtime `EXPLAIN ANALYZE` evidence remains manual/read-only",
+        "writes JSON only when `--output-json` is supplied",
         "No automated live spatial query-plan gate in CI",
     ):
         require(phrase in runbook, f"performance runbook missing phrase: {phrase}")

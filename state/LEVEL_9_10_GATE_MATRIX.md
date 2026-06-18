@@ -96,7 +96,7 @@ Status legend:
 |---|---|---|---|
 | L10-PERF-001 async report jobs with status/retry/failure | `PROVEN_REPO_LOCAL` | async job store, DB-backed jobs, retry lineage, status APIs/UI | Validate under hosted workload. |
 | L10-PERF-002 batch screening bounded concurrency/cost | `PARTIAL` | live sequence scheduler, cost catalog | Batch workflow and concurrency guardrails need explicit hosted-scale proof. |
-| L10-PERF-003 spatial indexes/query plans for workloads | `PARTIAL` | PostGIS schema, DB smoke, and static `spatial_query_plan_v1` contract/checker | Run read-only `EXPLAIN ANALYZE` against representative candidate DB workloads before promoting beyond PARTIAL. |
+| L10-PERF-003 spatial indexes/query plans for workloads | `PARTIAL` | PostGIS schema, DB smoke, static `spatial_query_plan_v1` contract/checker, opt-in runtime checker, and isolated local runtime proof for the configured target GIST indexes | Re-run read-only runtime `EXPLAIN ANALYZE` against representative selected-county or release-candidate DB workloads before promoting beyond PARTIAL. |
 | L10-PERF-004 large artifacts use object storage/reference pattern | `PROVEN_REPO_LOCAL` | `OBJECT_STORE_ROOT`, DB artifact metadata, artifact path trust tests | Map object store to hosted storage service during deployment. |
 | L10-PERF-005 cache strategy and invalidation are source-version aware | `VALIDATE_ONLY` | performance runbook | Implement/cache only when a real cache is introduced. |
 | L10-PERF-006 load tests cover MVP workload | `VALIDATE_ONLY` | load-test scripts/runbook/checker | Run against staging/hosted target with recorded thresholds. |
