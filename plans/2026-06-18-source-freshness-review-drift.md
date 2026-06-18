@@ -91,7 +91,21 @@ git diff --name-only --diff-filter=D
 - 2026-06-18: Selected as the next repo-local follow-on after the source-rights export
   guard because it addresses the adjacent data-governance drift risk without requiring
   hosted alerting or source/vendor authority.
+- 2026-06-18: Placed the guard in `scripts/source_readiness.py` rather than a detached
+  checker so stale Must current-effective source metadata changes the readiness result
+  that release and private-MVP validators already consume.
+- 2026-06-18: Kept the stale horizon at 90 days to match
+  `config/ops_alert_rules.yaml`; the alerting artifact test pins the readiness and
+  alert-rule constants to that machine-readable contract.
 
 ## Progress log
 
 - 2026-06-18: Plan opened after `R-012` source-rights export guard.
+- 2026-06-18: Added review-freshness fields and readiness blocking for Must
+  current-effective sources with missing, malformed, future-dated, or older-than-90-day
+  `Last Checked At` values, blank/unassigned review owners, or otherwise-ready
+  non-current freshness classes. DS-017 remains blocked by existing review/rights/
+  connector fields and is not treated as ready.
+- 2026-06-18: Added source-readiness and alerting regressions for current, exactly
+  90-day, stale, missing, malformed, future-dated, blank-owner, unassigned-owner,
+  approved-but-unreviewed, and DS-017 blocked cases.

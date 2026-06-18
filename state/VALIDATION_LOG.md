@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Source Freshness Review-Drift Guard
+
+**Scope:** Add repo-local fail-closed freshness/review metadata gating to Must-source
+readiness without changing source approvals, approving DS-017, adding hosted alerting,
+or claiming Level 10 completion.
+
+**Commands run:**
+
+```powershell
+Push-Location .\backend
+$env:PYTHONPATH='.'
+python -m pytest -q .\tests\source_registry\test_source_readiness.py .\tests\test_alerting_artifacts.py
+python -m ruff check .\tests\source_registry\test_source_readiness.py .\tests\test_alerting_artifacts.py ..\scripts\source_readiness.py ..\scripts\alert_rules_check.py
+python -m mypy .\tests\source_registry\test_source_readiness.py .\tests\test_alerting_artifacts.py ..\scripts\source_readiness.py ..\scripts\alert_rules_check.py
+Pop-Location
+python .\scripts\check_source_registry.py
+python .\scripts\source_readiness.py --priority Must --json
+python .\scripts\source_readiness.py --priority Must --as-of 2026-09-04 --json
+python .\scripts\alert_rules_check.py
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused source-readiness and alerting tests passed (`29 passed`).
+- Focused ruff passed on touched readiness/alerting scripts and tests.
+- Focused mypy passed on touched readiness/alerting scripts and tests (`4 source files`).
+- Source registry check passed (`25 rows`).
+- Current Must-source readiness passed and remained `source_count=8`, `ready_count=7`,
+  `blocked_count=1`; DS-017 remains the only blocked Must source.
+- Future as-of source-readiness probe showed stale current-effective rows stop counting
+  as ready once `Last Checked At` is older than 90 days.
+- Alert-rules, release-readiness, and readiness-matrix validators passed.
+- The first readiness-matrix rerun rejected the new active plan until it included the
+  literal Level 9/10 authority phrase. The plan was corrected and the validator passed.
+- Read-only review found deterministic baseline tests still using the wall-clock default
+  `as_of`; the tests now pass an explicit `2026-06-18` as-of date, and focused tests,
+  ruff, mypy, diff checks, readiness-matrix validation, and full verification were
+  rerun after the fix.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, backend tests, ruff, and
+  mypy over `322` source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This pass is repo-local freshness/review-drift proof only. It does not refresh live
+  source terms, approve DS-017, add hosted alert routing, provision dashboards, bind an
+  on-call owner, or promote `L10-DATA-003` beyond `PARTIAL`.
+
 ## 2026-06-18 Source-Rights Export Guard
 
 **Scope:** Add repo-local fail-closed report exposure proof for source-rights metadata

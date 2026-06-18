@@ -1,13 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-source-freshness-review-drift.md
+active_plan: plans/2026-06-18-review-cadence.md
 routing_note: >
-  Active lane: source freshness review-drift guard
-  (plans/2026-06-18-source-freshness-review-drift.md). Goal: add repo-local
-  fail-closed proof that Must-source freshness and review metadata cannot silently drift
-  stale while still being treated as production-ready. The source-rights export guard is
-  complete; DS-017, hosted deployment, IdP/RBAC, secret-manager, billing, alerting,
-  image publication, and production workload decisions remain external authority
-  requirements separated from repo-local proof.
+  Active lane: source review cadence consistency
+  (plans/2026-06-18-review-cadence.md). Goal: make source-review cadence prose and
+  runbook guidance consistent with the repo-local 90-day Must-source freshness horizon.
+  The source freshness review-drift guard is complete; DS-017, hosted deployment,
+  IdP/RBAC, secret-manager, billing, alerting, image publication, and production
+  workload decisions remain external authority requirements separated from repo-local
+  proof.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -344,7 +344,7 @@ tasks:
 
   - id: R-013
     title: Source freshness review-drift guard
-    status: active
+    status: done
     depends_on: [R-012]
     lane: coordinator
     spec: plans/2026-06-18-source-freshness-review-drift.md
@@ -365,6 +365,31 @@ tasks:
       - Must current-effective sources fail closed when freshness or review metadata is missing, malformed, or stale
       - Intentionally unreviewed or blocked sources remain explicit blockers, not ready sources
       - Hosted alerting/source-monitoring remains blocked unless external authority changes
+
+  - id: R-014
+    title: Source review cadence consistency
+    status: active
+    depends_on: [R-013]
+    lane: coordinator
+    spec: plans/2026-06-18-review-cadence.md
+    notes: >
+      Audit and guard source-review cadence prose so the repo-local 90-day Must-source
+      freshness horizon cannot drift from human-facing source-review or runbook
+      guidance. This does not refresh live terms, approve DS-017, or start hosted
+      alerting.
+    validation:
+      - python .\scripts\check_source_registry.py
+      - python .\scripts\source_readiness.py --priority Must --json
+      - python .\scripts\alert_rules_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_alerting_artifacts.py .\tests\source_registry
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Source-review/runbook cadence prose cannot contradict the 90-day Must-source freshness horizon
+      - Upstream source update cadence remains distinct from local review freshness
+      - DS-017 and hosted alerting remain blocked unless external authority changes
 
   # --- Completed ---
   - id: T000

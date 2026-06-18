@@ -12,6 +12,7 @@ from typing import Any, cast
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+STALE_SOURCE_REVIEW_AFTER_DAYS = 90
 
 REQUIRED_FILES = (
     "config/ops_alert_rules.yaml",
@@ -166,8 +167,17 @@ def validate_source_readiness() -> None:
     )
 
 
-def validate_source_freshness_inputs() -> None:
-    registry = ROOT / "registers" / "data_source_registry.csv"
+def validate_source_freshness_inputs(
+    *,
+    registry_path: Path | None = None,
+    as_of: date | None = None,
+) -> None:
+    registry = (
+        registry_path
+        if registry_path is not None
+        else ROOT / "registers" / "data_source_registry.csv"
+    )
+    effective_as_of = as_of if as_of is not None else date.today()
     with registry.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
 
@@ -177,10 +187,36 @@ def validate_source_freshness_inputs() -> None:
         source_id = row.get("Source ID", "<unknown>")
         freshness_class = row.get("Freshness Class", "")
         last_checked = row.get("Last Checked At", "")
+        review_owner = row.get("Review Owner", "")
         require(bool(freshness_class.strip()), f"{source_id} missing Freshness Class")
-        if row.get("Review Status") != "pending":
-            require(bool(last_checked.strip()), f"{source_id} missing Last Checked At")
-            date.fromisoformat(last_checked)
+        if freshness_class.strip().lower() != "current-effective":
+            continue
+
+        require(bool(last_checked.strip()), f"{source_id} missing Last Checked At")
+        try:
+            parsed_last_checked = date.fromisoformat(last_checked)
+        except ValueError as exc:
+            raise SystemExit(f"{source_id} invalid Last Checked At") from exc
+        require(
+            parsed_last_checked <= effective_as_of,
+            f"{source_id} future Last Checked At",
+        )
+        age_days = (effective_as_of - parsed_last_checked).days
+        require(
+            age_days <= STALE_SOURCE_REVIEW_AFTER_DAYS,
+            f"{source_id} stale Last Checked At",
+        )
+        require(
+            _has_real_review_owner(review_owner),
+            f"{source_id} missing Review Owner",
+        )
+
+
+def _has_real_review_owner(review_owner: str | None) -> bool:
+    if review_owner is None:
+        return False
+    normalized = review_owner.strip().lower()
+    return bool(normalized) and normalized != "unassigned"
 
 
 def validate_compose_config_when_available() -> None:
