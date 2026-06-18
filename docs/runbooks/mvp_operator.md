@@ -771,6 +771,8 @@ python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL -
 This posts the existing UI form field to `/ui/operator-cases/report`, follows the
 redirect to the approved report UI page, and checks the final page for the executive
 summary, Markdown dossier download, JSON report download, and evidence-lineage link.
+It then follows the approved report lineage route and requires source, evidence, and
+claim lineage content to be present, not only the delivery link.
 It creates an in-memory approved report in the target runtime when that runtime uses
 the default in-memory services; use it only when mutating fixture state is intentional.
 For a DB-backed runtime, add an artifact persistence assertion:

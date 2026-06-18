@@ -79,4 +79,12 @@ generated evidence under ignored `local_artifacts/`.
 
 ## Progress log
 - 2026-06-18: Plan opened after `R-008` selected-county release-candidate proof refresh
-  completed. No implementation work has started under this plan yet.
+  completed. No implementation work had started under this plan at opening.
+- 2026-06-18: Implemented lineage follow-through in `scripts/ui_runtime_smoke.py`.
+  The opt-in selected-county operator-case path now appends an
+  `operator-case-lineage` result after the approved report page passes, derives
+  `/ui/report-runs/{id}/lineage`, and requires source, evidence, and claim lineage
+  content while failing closed on approval-required or empty lineage states.
+- 2026-06-18: Focused tests, private-MVP readiness, release/readiness validators,
+  in-memory runtime smoke, and isolated DB-backed runtime smoke passed. Routed the next
+  active plan to `plans/2026-06-18-post-rc-authority-split.md`.

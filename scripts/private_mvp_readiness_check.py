@@ -64,6 +64,7 @@ RUNBOOK_REQUIRED_CURRENT_PHRASES = (
     "not the packaged selected-county corpus path",
     "the `/ui/operator-cases/report` launcher",
     "approved UI delivery links",
+    "follows the approved report lineage route",
     "selected-county launcher table and form contract",
     "all nine packaged selected-county operator DB smoke cases",
     "--reviewer-id fixture-reviewer",

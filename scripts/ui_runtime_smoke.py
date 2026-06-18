@@ -99,6 +99,23 @@ OPERATOR_CASE_REPORT_CHECK = RouteCheck(
         "View evidence lineage",
     ),
 )
+OPERATOR_CASE_LINEAGE_REQUIRED = (
+    "Evidence Lineage",
+    "Sources:",
+    "Evidence records:",
+    "Claims:",
+    "Sources",
+    "Claims",
+    "Evidence",
+)
+OPERATOR_CASE_LINEAGE_FORBIDDEN = (
+    "Traceback",
+    "Internal Server Error",
+    "Approval Required",
+    "No source entries.",
+    "No evidence records.",
+    "No claims.",
+)
 
 
 def request_form(opener: Any, url: str, fields: dict[str, str], timeout: float) -> None:
@@ -184,6 +201,45 @@ def artifact_path_for_ui_report(path: str) -> str | None:
     if not report_run_id:
         return None
     return f"/report-runs/{report_run_id}/artifact"
+
+
+def lineage_path_for_ui_report(path: str) -> str | None:
+    path_only = urlparse(path).path
+    prefix = "/ui/report-runs/"
+    if not path_only.startswith(prefix):
+        return None
+    report_run_id = path_only[len(prefix) :].split("/", 1)[0]
+    if not report_run_id:
+        return None
+    return f"/ui/report-runs/{report_run_id}/lineage"
+
+
+def check_report_lineage(
+    opener: Any,
+    base_url: str,
+    report_ui_path: str,
+    timeout: float,
+) -> RouteResult:
+    lineage_path = lineage_path_for_ui_report(report_ui_path)
+    if lineage_path is None:
+        return RouteResult(
+            "operator-case-lineage",
+            report_ui_path,
+            None,
+            False,
+            [f"could not derive lineage route from final path: {report_ui_path}"],
+        )
+    return fetch_route(
+        opener,
+        base_url,
+        RouteCheck(
+            "operator-case-lineage",
+            lineage_path,
+            OPERATOR_CASE_LINEAGE_REQUIRED,
+            forbidden=OPERATOR_CASE_LINEAGE_FORBIDDEN,
+        ),
+        timeout,
+    )
 
 
 def check_artifact_persistence(
@@ -348,16 +404,24 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
         for check in build_route_checks(reviewer_session=reviewer_session)
     ]
     if args.operator_case_id:
-        results.append(
-            post_operator_case_report(
-                opener,
-                base_url,
-                args.operator_case_id,
-                args.timeout,
-                include_csrf=bool(args.api_key) or reviewer_session,
-                expected_artifact_persistence=args.expect_artifact_persistence,
-            )
+        operator_result = post_operator_case_report(
+            opener,
+            base_url,
+            args.operator_case_id,
+            args.timeout,
+            include_csrf=bool(args.api_key) or reviewer_session,
+            expected_artifact_persistence=args.expect_artifact_persistence,
         )
+        results.append(operator_result)
+        if operator_result.ok:
+            results.append(
+                check_report_lineage(
+                    opener,
+                    base_url,
+                    operator_result.path,
+                    args.timeout,
+                )
+            )
     return results
 
 

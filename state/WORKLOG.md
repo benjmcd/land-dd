@@ -3327,3 +3327,22 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   isolated DB-backed runtime artifact persistence (`postgres+object_store`).
 - Opened `plans/2026-06-18-lineage-smoke.md` and routed `tasks/task_queue.yaml` to
   `R-009` as the next unblocked selected-county release-candidate smoke pass.
+
+## 2026-06-18 Selected-county lineage smoke proof
+
+- Extended `scripts/ui_runtime_smoke.py` so the opt-in selected-county operator-case
+  runtime smoke follows the approved report lineage route after report delivery passes.
+- Added `operator-case-lineage` route results that require the UI lineage page to expose
+  source, evidence, and claim lineage content and fail closed on approval-required,
+  source-empty, evidence-empty, or claim-empty lineage states.
+- Updated `backend/tests/test_ui_runtime_smoke_script.py` with lineage success coverage
+  and a missing-lineage-content failure case while preserving the non-mutating default
+  route smoke.
+- Updated the MVP operator runbook and private-MVP readiness guard so the documented
+  selected-county runtime smoke names lineage follow-through, not only delivery links.
+- Proved the path against an in-memory local runtime and an isolated DB-backed runtime
+  with `--expect-artifact-persistence postgres+object_store`; both returned
+  `operator-case-lineage` as HTTP 200 with no failures.
+- Marked `R-009` done and routed the active plan to
+  `plans/2026-06-18-post-rc-authority-split.md`, keeping hosted deployment, DS-017,
+  IdP/RBAC, billing, alerting, and production workload proof outside repo-local claims.

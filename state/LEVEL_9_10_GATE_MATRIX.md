@@ -35,7 +35,7 @@ Status legend:
 | L9-001 operator can complete workflow | `PROVEN_PRIVATE_MVP` | `docs/runbooks/mvp_operator.md`; `config/private_mvp_beta_readiness.yaml`; UI runtime smoke guidance | Re-run full UI/runtime smoke during the next release-candidate pass. |
 | L9-002 area/select intent flow | `PROVEN_PRIVATE_MVP` | `/ui/`, `/intake`, `/operator-cases`; private-MVP and API tests | Keep scope limited to selected counties until jurisdiction readiness passes. |
 | L9-003 report status tracking | `PROVEN_REPO_LOCAL` | async report job store, `/report-runs/{id}`, UI status pages, retry lineage tests | Hosted monitoring remains Level 10 work. |
-| L9-004 evidence behind claims inspectable | `PROVEN_REPO_LOCAL` | `GET /report-runs/{id}/lineage`; `/ui/report-runs/{id}/lineage`; lineage UI/API tests | Include lineage in release-candidate smoke evidence. |
+| L9-004 evidence behind claims inspectable | `PROVEN_REPO_LOCAL` | `GET /report-runs/{id}/lineage`; `/ui/report-runs/{id}/lineage`; lineage UI/API tests; selected-county runtime smoke now follows approved-report lineage | Re-run lineage smoke during each release-candidate pass. |
 | L9-005 red flags, unknowns, blockers, verification tasks visible | `PROVEN_PRIVATE_MVP` | report regression tests, dossier tests, private-MVP overclaim/unknown checks | Keep adding red-flag/unknown fixtures with new sources or rulepacks. |
 | L9-006 export preserves source/caveat appendix | `PROVEN_REPO_LOCAL` | Markdown dossier and JSON artifact endpoints; artifact path trust tests; DB artifact persistence tests | Hosted artifact storage evidence remains Level 10 deployment work. |
 | L9-007 human review without overwriting source evidence | `PROVEN_REPO_LOCAL` | reviewer-scoped approval/review actions, action history, connector review queue tests | Full user-bound audit identity remains blocked with production RBAC. |
@@ -85,7 +85,7 @@ Status legend:
 | L10-DATA-004 connector failures/outages visible | `PROVEN_REPO_LOCAL` | source_failure evidence, connector review queue, operations recovery preview | Wire hosted alerts/dashboards for connector outages. |
 | L10-DATA-005 jurisdiction readiness before new geography | `VALIDATE_ONLY` | jurisdiction readiness checklist and release-readiness gate | Complete checklist for each new county/state before expansion. |
 | L10-DATA-006 rulepack readiness before new intent | `VALIDATE_ONLY` | rulepack readiness checklist and release-readiness gate | Complete checklist before new intent/rulepack. |
-| L10-DATA-007 source-to-report lineage queryable | `PROVEN_REPO_LOCAL` | lineage API/UI, evidence IDs in claims/artifacts, DB-backed artifact tests | Re-run against hosted DB/object store after deployment. |
+| L10-DATA-007 source-to-report lineage queryable | `PROVEN_REPO_LOCAL` | lineage API/UI, evidence IDs in claims/artifacts, DB-backed artifact tests, selected-county DB-backed runtime smoke follows approved-report lineage | Re-run against hosted DB/object store after deployment. |
 | L10-DATA-008 human verification separate/auditable | `PROVEN_REPO_LOCAL` | review status/actions, connector review queues, report approval gate | Bind to hosted user identity/RBAC later. |
 | L10-DATA-009 coverage limitations visible | `PROVEN_PRIVATE_MVP` | selected-county manifests, MVP operator runbook, private-MVP readiness catalog | Keep limitation checks in every release-candidate proof. |
 | L10-DATA-010 data-quality failures fail closed | `PROVEN_REPO_LOCAL` | fixture quality gates, connector source-use preflight, artifact path trust checks | Extend gates for every new source and connector. |
@@ -122,13 +122,12 @@ Status legend:
 
 ## Next Unblocked Pass
 
-The lowest-dependency next implementation pass is not hosted deployment. Hosted production
-is blocked by external platform/secret/billing/alerting/source decisions. The next
-unblocked implementation pass is `R-008` selected-county release-candidate proof refresh:
-audit and harden the packaged operator-case, DB-backed persistence, and explicit
-UI/browser smoke proof ladder without making DS-017, hosted production, IdP, SLO, or
-capacity claims. Keep this matrix and its checker current as a validation precondition
-rather than treating matrix creation as the next product slice.
+The lowest-dependency next pass is not hosted deployment. Hosted production remains
+blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
+source/vendor authority. `R-008` and `R-009` completed the selected-county
+release-candidate proof refresh and lineage smoke proof. The next active pass is
+`R-010` post-RC authority split: classify remaining Level 9/10 gaps as external
+authority, repo-local implementation, or audit-only before starting more code.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence.
