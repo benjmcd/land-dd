@@ -15,6 +15,7 @@ REQUIRED_FILES = (
     "config/release_package.yaml",
     "config/image_publication.yaml",
     "config/hosted_deployment.yaml",
+    "config/performance_baseline.yaml",
     "docs/runbooks/release_readiness.md",
     "docs/runbooks/release_package.md",
     "docs/runbooks/image_publication.md",
@@ -46,6 +47,9 @@ REQUIRED_FILES = (
     "scripts/run_load_test.ps1",
     "scripts/run_load_test.sh",
     "scripts/load_test_runner.py",
+    "scripts/performance_baseline_check.py",
+    "scripts/run_performance_baseline_check.ps1",
+    "scripts/run_performance_baseline_check.sh",
     "scripts/source_readiness.py",
     "scripts/release_readiness_check.py",
 )
@@ -110,6 +114,7 @@ EXPECTED_CI_PROOFS = {
 COMPOSED_VALIDATORS = (
     "scripts/image_publication_check.py",
     "scripts/hosted_deployment_check.py",
+    "scripts/performance_baseline_check.py",
 )
 
 
@@ -419,6 +424,9 @@ def validate_runbook() -> None:
         "run_load_test.ps1",
         "load_testing.md",
         "performance.md",
+        "performance_baseline.yaml",
+        "run_performance_baseline_check.ps1",
+        "load_test_result_v1",
         "jurisdiction_readiness.md",
         "rulepack_readiness.md",
         "data_lineage",

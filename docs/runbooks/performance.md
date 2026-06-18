@@ -106,6 +106,9 @@ load-test artifacts exist, then run both local live scenarios by default: the 20
 sequential baseline and the concurrent expected-workload scenario documented in
 `docs/runbooks/load_testing.md`. The default target is `http://127.0.0.1:8000`; override
 it with `-BaseUrl` or `LOAD_TEST_BASE_URL` when the local server uses another port.
+`config/performance_baseline.yaml` is the canonical local performance baseline
+contract. Live result artifacts written for a release candidate use the
+`load_test_result_v1` JSON schema.
 Run the live scenarios before any change that touches report generation, connector
 execution, or DB query paths:
 
@@ -113,10 +116,24 @@ execution, or DB query paths:
 .\scripts\run_load_test.ps1
 ```
 
+For release-candidate local evidence, write live results under a candidate-specific
+local artifact directory:
+
+```powershell
+.\scripts\run_load_test.ps1 -ResultDir .\local_artifacts\performance-baseline\<release-id>
+```
+
+POSIX operators can use the matching result-directory flag:
+
+```bash
+bash scripts/run_load_test.sh --result-dir ./local_artifacts/performance-baseline/<release-id>
+```
+
 Use `.\scripts\run_load_test.ps1 -ValidateOnly` when you only need the fail-closed
-artifact check and do not want to send HTTP traffic. Release-readiness/CI validation
-checks the load-test artifacts, but live load scenarios remain local/manual unless an
-operator explicitly runs the wrapper against a running server.
+artifact check and do not want to send HTTP traffic or create measured result artifacts.
+Release-readiness/CI validation composes the performance baseline checker as
+validate-only proof of the contract and docs, but live load scenarios remain
+local/manual unless an operator explicitly runs the wrapper against a running server.
 
 ### Spatial query plan review
 
@@ -141,12 +158,12 @@ There is no automated plan-regression gate; validation is manual at this stage.
 - **No shared-memory rate limiter.** `ENABLE_RATE_LIMIT` uses an in-process counter. A
   Redis-backed limiter is needed before horizontal scaling is safe.
 - **No automated live load-test regression gate in CI.** Release readiness validates
-  the load-test scripts and runbook only. The `run_load_test` wrappers can run live
-  sequential and concurrent scenarios locally, but CI does not start a server or fail
-  builds on latency thresholds yet.
+  the baseline contract, checker, scripts, and runbooks as validate-only proof. The
+  `run_load_test` wrappers can run live sequential and concurrent scenarios locally,
+  but CI does not start a server or fail builds on latency thresholds.
 - **DB pool settings not yet tuned for production.** `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`,
   `DB_POOL_TIMEOUT`, and `DB_POOL_RECYCLE` use SQLAlchemy defaults in local mode. Set
   explicit values in production `.env`.
 - **p99 latency target is informal.** The 5-second-per-request target from the load test
-  baseline is a development heuristic, not a contractual SLO. Define a formal SLO before
-  production launch.
+  baseline is a development heuristic, not a contractual SLO or hosted production
+  readiness claim. Define a formal SLO before production launch.

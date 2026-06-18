@@ -1,0 +1,71 @@
+schema_version: performance_baseline_v1
+scope: selected_county_private_mvp_local
+status: release_candidate_local_only
+runner: scripts/load_test_runner.py
+wrappers:
+  windows: scripts/run_load_test.ps1
+  posix: scripts/run_load_test.sh
+evidence:
+  result_schema_version: load_test_result_v1
+  result_directory_example: local_artifacts/performance-baseline/<release-id>/
+  required_fields:
+    - schema_version
+    - scenario
+    - base_url
+    - thresholds
+    - total_requests
+    - ok
+    - failures
+    - requests
+    - summary
+scenarios:
+  - id: sequential
+    request_count: 20
+    request_mix:
+      - method: GET
+        path: /health
+        count: 4
+      - method: GET
+        path: /version
+        count: 4
+      - method: GET
+        path: /metrics
+        count: 4
+      - method: POST
+        path: /areas
+        count: 4
+      - method: POST
+        path: /report-runs
+        count: 4
+    thresholds:
+      max_request_seconds: 5.0
+  - id: concurrent
+    workers: 8
+    request_count: 40
+    request_mix:
+      - method: GET
+        path: /health
+        count_per_worker: 1
+      - method: GET
+        path: /version
+        count_per_worker: 1
+      - method: GET
+        path: /metrics
+        count_per_worker: 1
+      - method: POST
+        path: /areas
+        count_per_worker: 1
+      - method: POST
+        path: /report-runs
+        count_per_worker: 1
+    thresholds:
+      p95_seconds: 3.0
+      max_error_rate: 0.1
+limits:
+  hosted_production_claim: false
+  ci_live_load_gate: false
+  committed_measured_results: false
+  notes:
+    - Local release-candidate evidence only; not a hosted production SLO.
+    - Operators may write JSON results under local_artifacts during a release-candidate run.
+    - Validate-only checks must not send HTTP requests or create measured result artifacts.

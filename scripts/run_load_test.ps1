@@ -1,7 +1,8 @@
 param(
     [switch]$ValidateOnly,
     [string]$Scenario = "",
-    [string]$BaseUrl = ""
+    [string]$BaseUrl = "",
+    [string]$ResultDir = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,6 +15,7 @@ $requiredFiles = @(
     'scripts\run_load_test.ps1',
     'scripts\run_load_test.sh',
     'scripts\load_test_runner.py',
+    'config\performance_baseline.yaml',
     'docs\runbooks\load_testing.md'
 )
 
@@ -55,7 +57,13 @@ $scenarios = if ($Scenario -ne "") {
 $failed = $false
 foreach ($s in $scenarios) {
     Write-Host "load test: running scenario=$s base_url=$env:LOAD_TEST_BASE_URL"
-    py -3.12 $runnerScript --scenario $s --base-url $env:LOAD_TEST_BASE_URL
+    $runnerArgs = @($runnerScript, '--scenario', $s, '--base-url', $env:LOAD_TEST_BASE_URL)
+    if ($ResultDir -ne "") {
+        New-Item -ItemType Directory -Force -Path $ResultDir | Out-Null
+        $outputPath = Join-Path $ResultDir "load-test-$s.json"
+        $runnerArgs += @('--json-output', $outputPath)
+    }
+    py -3.12 @runnerArgs
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "load test scenario '$s' failed with exit code $LASTEXITCODE"
         $failed = $true
