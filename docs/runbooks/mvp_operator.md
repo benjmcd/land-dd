@@ -728,9 +728,9 @@ Run deployment smoke after Compose/runtime changes and before claiming deploy re
 
 The smoke check uses an isolated Compose project named `land-diligence-smoke` by default,
 builds the backend image, starts DB-backed Compose services, applies migrations/seeds,
-checks `/health`, `/version`, `/metrics`, and `/operations/queue-health`, then creates an
-area and report run through the deployed HTTP API. It stops the Compose services on exit
-unless `DEPLOYMENT_SMOKE_KEEP_SERVICES=1`.
+checks `/health`, `/version`, `/metrics`, `/operations/queue-health`, and
+`/operations/recovery-preview`, then creates an area and report run through the deployed
+HTTP API. It stops the Compose services on exit unless `DEPLOYMENT_SMOKE_KEEP_SERVICES=1`.
 
 Optional environment variables:
 

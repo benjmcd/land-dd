@@ -19,7 +19,7 @@ investment conclusions.
 | Runtime metrics | `/metrics` | In-memory `runtime_metrics_v1` request counters and durations |
 | Queue health | `/operations/queue-health` | Reviewer-authenticated report/live connector queue counts, queued age, running age, and stale-running count |
 | Recovery preview | `/operations/recovery-preview` | Reviewer-authenticated read-only failed/stale-running recovery candidates with detail links |
-| Deployment smoke | `scripts/run_deployment_smoke.ps1` | Compose-backed health, metrics, queue health, and report workflow |
+| Deployment smoke | `scripts/run_deployment_smoke.ps1` | Compose-backed health, metrics, queue health, recovery preview, and report workflow |
 | DB smoke | `scripts/verify.ps1`, `scripts/db_smoke_check.py` | Migrations, seeds, and DB schema proof when `RUN_DB_SMOKE=1` |
 | Backup/restore | `scripts/run_backup_restore_check.ps1` | Dump, restore, DB smoke, and restore DB cleanup proof |
 | Source readiness | `scripts/source_readiness.py --priority Must --json` | Reviewed source-rights readiness for Must sources |

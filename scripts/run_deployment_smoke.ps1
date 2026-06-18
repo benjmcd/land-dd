@@ -228,6 +228,28 @@ try {
             throw "queue health $queueName stale threshold mismatch"
         }
     }
+    $recoveryPreview = Invoke-RestMethod -Uri "$baseUrl/operations/recovery-preview" -Headers $headers -TimeoutSec 10
+    if ($recoveryPreview.schema_version -ne 'operations_recovery_preview_v1') {
+        throw 'recovery preview endpoint did not return operations_recovery_preview_v1'
+    }
+    if ($recoveryPreview.stale_running_threshold_seconds -ne 900) {
+        throw 'recovery preview stale threshold mismatch'
+    }
+    foreach ($queueName in @('report_jobs', 'live_connector_jobs')) {
+        $queue = $recoveryPreview.$queueName
+        foreach ($fieldName in @(
+            'failed_count',
+            'stale_running_count',
+            'queued_count',
+            'failed_candidates_truncated',
+            'stale_running_candidates_truncated',
+            'candidates'
+        )) {
+            if ($queue.PSObject.Properties.Name -notcontains $fieldName) {
+                throw "recovery preview $queueName missing $fieldName"
+            }
+        }
+    }
 
     $areaBody = @'
 {

@@ -1,5 +1,21 @@
 # Project State
 
+## Current checkpoint (2026-06-17 deployment recovery smoke)
+
+Deployment smoke now exercises the read-only recovery-preview operations surface in
+addition to health, version, metrics, queue health, and report workflow checks.
+
+- **Recovery-preview smoke coverage**: `scripts/run_deployment_smoke.ps1` and
+  `scripts/run_deployment_smoke.sh` call reviewer-authenticated
+  `/operations/recovery-preview`, require `operations_recovery_preview_v1`, check the
+  900-second stale-running threshold, and verify report/live-connector queue recovery
+  counters and candidate metadata fields.
+- **Static proof alignment**: `backend/tests/test_deployment_smoke_scripts.py` records
+  the recovery-preview smoke contract for both Windows and POSIX wrappers.
+- **Limit preserved**: this is still a local Compose deployment smoke contract. It does
+  not retry jobs, requeue live connectors, call live sources, or create hosted
+  infrastructure.
+
 ## Current checkpoint (2026-06-17 hosted runtime secret contract)
 
 Hosted deployment readiness now mirrors the current non-local auth requirements without
