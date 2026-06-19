@@ -18,6 +18,7 @@ from app.api.ui_shared import (
     ui_reviewer_principal_from_cookie,
 )
 from app.connectors.live_jobs import LiveConnectorJobRecord
+from app.core.error_safety import safe_error_message, safe_payload_summary, safe_url_summary
 from app.domain.enums import JobStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 
@@ -250,10 +251,10 @@ def _detail_meta(job: LiveConnectorJobRecord) -> str:
         ("Attempts", f"{job.attempts}/{job.max_attempts}"),
         ("Locked By", job.locked_by or "n/a"),
         ("Locked At", _format_dt(job.locked_at)),
-        ("Last Error", job.last_error or "n/a"),
+        ("Last Error", safe_error_message(job.last_error) or "n/a"),
         ("Ingest Run", str(job.connector_ingest_run_id or "n/a")),
         ("Review Status", job.connector_review_status or "n/a"),
-        ("Request URL", job.request_url or "n/a"),
+        ("Request URL", safe_url_summary(job.request_url) or "n/a"),
     ]
     rows = "".join(
         f"<dt>{_html.escape(label)}</dt><dd>{_html.escape(value)}</dd>" for label, value in values
@@ -335,7 +336,26 @@ def _format_dt(value: datetime | None) -> str:
 
 
 def _payload_json(job: LiveConnectorJobRecord) -> str:
-    return _html.escape(json.dumps(job.payload, indent=2, sort_keys=True))
+    payload = safe_payload_summary(
+        job.payload,
+        allowed_keys=(
+            "kind",
+            "source_registry_id",
+            "connector_name",
+            "area_id",
+            "workspace_id",
+            "requested_by",
+            "max_features",
+            "max_rows",
+            "max_sample_points",
+            "connector_ingest_run_id",
+            "connector_review_status",
+        ),
+    )
+    safe_request_url = safe_url_summary(job.request_url)
+    if safe_request_url is not None:
+        payload["request_url"] = safe_request_url
+    return _html.escape(json.dumps(payload, indent=2, sort_keys=True))
 
 
 __all__ = ["router"]

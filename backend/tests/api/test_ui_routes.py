@@ -991,6 +991,32 @@ def test_ui_report_run_running_page_has_same_auto_refresh_controls() -> None:
     assert "Pause auto-refresh" in response.text
 
 
+def test_ui_report_run_failed_detail_redacts_error_without_mutating_job() -> None:
+    app, tc, report_run_id = _make_app_client_with_report()
+    services = cast(ApiServices, app.state.services)
+    raw_error = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\secret_app\\worker.py", line 7, in run\n'
+        "RuntimeError: Authorization: Bearer raw-token {\"raw_payload\": true}"
+    )
+    report_uuid = UUID(report_run_id)
+    services.async_report_jobs.mark_failed(report_uuid, error_msg=raw_error)
+
+    response = tc.get(f"/ui/report-runs/{report_run_id}")
+
+    assert response.status_code == 200
+    assert "Report Generation Failed" in response.text
+    assert "Failure details withheld" in response.text
+    assert "Traceback" not in response.text
+    assert "Authorization" not in response.text
+    assert "raw-token" not in response.text
+    assert "raw_payload" not in response.text
+    assert "C:\\Users" not in response.text
+    stored_job = services.async_report_jobs.get(report_uuid)
+    assert stored_job is not None
+    assert stored_job.error_msg == raw_error
+
+
 def test_ui_report_run_shows_dossier_after_approval() -> None:
     app, tc, report_run_id = _make_app_client_with_report()
     services = cast(ApiServices, app.state.services)

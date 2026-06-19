@@ -443,6 +443,38 @@ def test_ui_review_detail_decision_context_does_not_dump_secret_payload_keys() -
     assert "nested-secret-value" not in response.text
 
 
+def test_ui_review_detail_redacts_last_error_without_hiding_failure_counts() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    services = cast(ApiServices, app.state.services)
+    raw_reason = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\review\\queue.py", line 5, in run\n'
+        "RuntimeError: secret=raw-secret {\"raw_payload\": true}"
+    )
+    failed = services.connector_review_queue.request_fixture_fix(
+        item.job_id,
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+        reason=raw_reason,
+    )
+
+    response = tc.get(f"/ui/connector-review-queue/{failed.ingest_run_id}")
+
+    assert response.status_code == 200
+    assert "Failure details withheld" in response.text
+    assert "Traceback" not in response.text
+    assert "raw-secret" not in response.text
+    assert "raw_payload" not in response.text
+    assert "C:\\Users" not in response.text
+    assert "Errors" in response.text
+    assert "Source Failures" in response.text
+    assert "1 created, 0 skipped" in response.text
+    stored_item = services.connector_review_queue.get_by_ingest_run_id(item.ingest_run_id)
+    assert stored_item is not None
+    assert stored_item.last_error == raw_reason
+
+
 def test_ui_review_detail_has_action_forms() -> None:
     app = create_app()
     tc = TestClient(app)

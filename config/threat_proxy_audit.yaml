@@ -63,9 +63,23 @@ risk_register:
     status: partial_repo_local
     risk: User-facing errors or logs could expose internals before hosted error/log review.
     controls:
+      - backend/app/core/error_safety.py
+      - backend/app/api/reports.py
+      - backend/app/api/connectors.py
+      - backend/app/api/ui.py
       - backend/app/api/ui_shared.py
+      - backend/app/api/ui_live_connector_jobs.py
+      - backend/app/api/ui_review.py
+      - backend/app/operations/recovery_preview.py
+      - backend/tests/api/test_report_run_list.py
       - backend/tests/api/test_ui_shared.py
       - backend/tests/api/test_ui_routes.py
+      - backend/tests/api/test_usgs_tnm_connector_api.py
+      - backend/tests/api/test_ui_live_connector_jobs.py
+      - backend/tests/api/test_connector_review_queue_api.py
+      - backend/tests/api/test_ui_review_routes.py
+      - backend/tests/api/test_operations.py
+      - backend/tests/api/test_ui_operations_routes.py
       - docs/runbooks/incident_response.md
 
 external_blockers:

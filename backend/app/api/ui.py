@@ -48,6 +48,7 @@ from app.api.ui_shared import (
     reviewer_credential_fields,
 )
 from app.core.config import Settings
+from app.core.error_safety import safe_error_message
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
@@ -889,7 +890,7 @@ def ui_report_run(
             ),
         )
     if job is not None and job.status == JobStatus.FAILED:
-        error_msg = _html.escape(job.error_msg or "Unknown error")
+        error_msg = _html.escape(safe_error_message(job.error_msg) or "Unknown error")
         job_id_esc = _html.escape(str(report_run_id))
         reviewer_fields = reviewer_credential_fields(
             request,

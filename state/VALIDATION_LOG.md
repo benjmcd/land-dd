@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-19 Error-State/No-Leak Hardening
+
+**Scope:** Harden repo-local user-facing error serialization and rendering without
+claiming hosted error/log review, hosted log-retention/SIEM, alerting, external
+security review, IdP/RBAC, DS-017 entitlement, or production authority.
+
+**Commands run:**
+
+```powershell
+python .\scripts\threat_proxy_audit_check.py
+.\scripts\run_threat_proxy_audit_check.ps1
+Push-Location .\backend
+python -m pytest -q .\tests\api\test_report_run_list.py::test_failed_report_api_list_and_detail_redact_error_without_mutating_job .\tests\api\test_ui_routes.py::test_ui_report_run_failed_detail_redacts_error_without_mutating_job .\tests\api\test_usgs_tnm_connector_api.py::test_live_connector_job_api_sanitizes_error_and_payload_without_mutating_job .\tests\api\test_ui_live_connector_jobs.py::test_ui_live_connector_job_detail_sanitizes_error_url_and_payload .\tests\api\test_connector_review_queue_api.py::test_connector_review_queue_api_redacts_last_error_without_payload_loss .\tests\api\test_ui_review_routes.py::test_ui_review_detail_redacts_last_error_without_hiding_failure_counts .\tests\api\test_operations.py::test_recovery_preview_redacts_sensitive_error_details_without_mutating_jobs .\tests\api\test_ui_operations_routes.py::test_ui_operations_recovery_preview_redacts_sensitive_error_details
+python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\api\test_report_run_list.py .\tests\api\test_ui_routes.py .\tests\api\test_usgs_tnm_connector_api.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_connector_review_queue_api.py .\tests\api\test_ui_review_routes.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py
+python -m ruff check .\app\core\error_safety.py .\app\operations\recovery_preview.py .\app\api\reports.py .\app\api\connectors.py .\app\api\ui.py .\app\api\ui_live_connector_jobs.py .\app\api\ui_review.py .\tests\api\test_report_run_list.py .\tests\api\test_ui_routes.py .\tests\api\test_usgs_tnm_connector_api.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_connector_review_queue_api.py .\tests\api\test_ui_review_routes.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py .\tests\test_threat_proxy_audit_artifacts.py ..\scripts\threat_proxy_audit_check.py
+python -m mypy .\app\core\error_safety.py .\app\operations\recovery_preview.py .\app\api\reports.py .\app\api\connectors.py .\app\api\ui.py .\app\api\ui_live_connector_jobs.py .\app\api\ui_review.py .\tests\api\test_report_run_list.py .\tests\api\test_ui_routes.py .\tests\api\test_usgs_tnm_connector_api.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_connector_review_queue_api.py .\tests\api\test_ui_review_routes.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py .\tests\test_threat_proxy_audit_artifacts.py ..\scripts\threat_proxy_audit_check.py
+Pop-Location
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Threat/proxy audit checker and PowerShell wrapper passed.
+- Focused R-022 regressions passed (`8 passed`), covering failed report API/UI,
+  live-connector job API/UI, connector-review queue API/UI last-error, and recovery
+  preview API/UI redaction while preserving raw stored job/queue evidence.
+- Full affected API/UI/threat-proxy artifact pytest set passed with one existing skip.
+- Focused ruff passed after mechanical import sorting in `backend/app/api/connectors.py`.
+- Focused mypy passed on `17` source files.
+- Release-readiness and readiness-matrix validators passed.
+- `git diff --check` passed and no deleted files were reported.
+- Full `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `325` source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This remains repo-local API/UI serialization proof. It does not inspect hosted logs,
+  production middleware logs, SIEM/export pipelines, alert routing, or external security
+  review evidence.
+- Raw stored job/queue failure details remain intentionally available in internal
+  stores for operator inspection and source-failure auditability; the hardening is at
+  response/render boundaries.
+
 ## 2026-06-18 Audit-Retention Proof Hardening
 
 **Scope:** Harden repo-local audit-event retention purge proof without provisioning

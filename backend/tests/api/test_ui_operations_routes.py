@@ -14,6 +14,7 @@ from app.core.config import Settings
 from app.domain.enums import IntentCode, JobStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.main import create_app
+from app.operations.recovery_preview import RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE
 
 _FIXTURE_REVIEWER_ID = "fixture-reviewer"
 _FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
@@ -306,6 +307,45 @@ def test_ui_operations_recovery_preview_with_session_renders_candidates() -> Non
     stored_live_job = services.live_connector_jobs.get(live_job_id)
     assert stored_live_job is not None
     assert stored_live_job.status == JobStatus.RUNNING
+
+
+def test_ui_operations_recovery_preview_redacts_sensitive_error_details() -> None:
+    app = create_app()
+    tc = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    raw_report_error = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\repo\\worker.py", line 1, in <module>\n'
+        "RuntimeError: API_KEY=super-secret-token"
+    )
+    report_job = services.async_report_jobs.create(
+        area_id=area_id,
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    services.async_report_jobs.mark_failed(
+        report_job.report_run_id,
+        error_msg=raw_report_error,
+    )
+    reviewer_login = tc.post(
+        "/ui/auth/reviewer",
+        data={
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+    assert reviewer_login.status_code == 303
+
+    resp = tc.get("/ui/operations/recovery-preview")
+
+    assert resp.status_code == 200
+    assert RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE in resp.text
+    for leaked in ("Traceback", "C:\\Users", "API_KEY", "super-secret-token"):
+        assert leaked not in resp.text
+    stored_report = services.async_report_jobs.get(report_job.report_run_id)
+    assert stored_report is not None
+    assert stored_report.error_msg == raw_report_error
 
 
 def test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf() -> None:

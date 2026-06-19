@@ -36,6 +36,10 @@ The check is validate-only and static. It verifies that:
   IdP/RBAC blockers;
 - user-facing UI error pages escape content and production error/log review remains
   externally blocked;
+- failed-report, live-connector job, connector-review last-error, and operations
+  recovery preview surfaces redact stack traces, local paths, secret-like values,
+  request query secrets, and raw payload-shaped error text while preserving underlying
+  job/source-failure evidence for inspection;
 - external security review, legal fair-housing review, hosted IdP/RBAC, production
   error/log review, DS-017 entitlement, and hosted alerting remain blocked.
 

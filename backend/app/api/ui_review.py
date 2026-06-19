@@ -26,6 +26,7 @@ from app.api.ui_shared import (
     require_ui_reviewer,
     reviewer_credential_fields,
 )
+from app.core.error_safety import safe_error_message
 from app.domain.enums import IntentCode, JobStatus
 
 router = APIRouter(prefix="/ui/connector-review-queue", tags=["ui"])
@@ -526,7 +527,7 @@ def ui_connector_review_detail(
     locked_at = _html.escape(str(item.locked_at or ""))
     started_at = _html.escape(str(item.started_at or ""))
     finished_at = _html.escape(str(item.finished_at or ""))
-    last_error = _html.escape(str(item.last_error or ""))
+    last_error = _html.escape(str(safe_error_message(item.last_error) or ""))
 
     signals_str = _html.escape(", ".join(str(s) for s in signal_codes))
 

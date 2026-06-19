@@ -197,6 +197,21 @@ def test_threat_proxy_validator_tracks_current_guard_surfaces() -> None:
         "FORBIDDEN_PHRASES",
         "identity_rbac_contract",
         "test_error_page_escapes_content_and_includes_viewport_meta",
+        "safe_recovery_error_message",
+        "RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE",
+        "test_recovery_preview_redacts_sensitive_error_details_without_mutating_jobs",
+        "test_ui_operations_recovery_preview_redacts_sensitive_error_details",
+        "REDACTED_ERROR_MESSAGE",
+        "safe_error_message",
+        "safe_url_summary",
+        "safe_payload_copy",
+        "safe_payload_summary",
+        "test_failed_report_api_list_and_detail_redact_error_without_mutating_job",
+        "test_ui_report_run_failed_detail_redacts_error_without_mutating_job",
+        "test_live_connector_job_api_sanitizes_error_and_payload_without_mutating_job",
+        "test_ui_live_connector_job_detail_sanitizes_error_url_and_payload",
+        "test_connector_review_queue_api_redacts_last_error_without_payload_loss",
+        "test_ui_review_detail_redacts_last_error_without_hiding_failure_counts",
     ):
         assert phrase in validator
 

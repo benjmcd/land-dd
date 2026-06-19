@@ -1,13 +1,15 @@
 version: 2
 active_plan: plans/2026-06-18-error-state-no-leak-hardening.md
 routing_note: >
-  Active lane: error-state/no-leak hardening
-  (plans/2026-06-18-error-state-no-leak-hardening.md). Goal: strengthen repo-local
-  proof that current API/UI error and recovery surfaces do not leak stack traces,
-  secrets, raw connector payloads, local paths, or internal implementation details
-  while preserving first-class source-failure evidence and without claiming hosted
-  error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC, DS-017
-  entitlement, or production authority.
+  Latest completed lane: error-state/no-leak hardening
+  (plans/2026-06-18-error-state-no-leak-hardening.md). R-022 strengthened
+  repo-local proof that current API/UI error and recovery surfaces do not leak stack
+  traces, secrets, raw connector payloads, local paths, or internal implementation
+  details while preserving first-class source-failure evidence and without claiming
+  hosted error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC, DS-017
+  entitlement, or production authority. Next lane is not selected in this queue; it
+  should be external-authority follow-up or an audit-only hosted-readiness checklist
+  rehearsal unless new authority unblocks hosted/source/identity work.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -604,7 +606,7 @@ tasks:
 
   - id: R-022
     title: Error-state/no-leak hardening
-    status: active
+    status: done
     depends_on: [R-021]
     lane: coordinator
     spec: plans/2026-06-18-error-state-no-leak-hardening.md
@@ -618,7 +620,7 @@ tasks:
       - .\scripts\run_threat_proxy_audit_check.ps1
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
-      - cd backend; python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_operations.py .\tests\api\test_report_run_list.py .\tests\api\test_connector_ingest_api.py
+      - cd backend; python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\api\test_report_run_list.py .\tests\api\test_ui_routes.py .\tests\api\test_usgs_tnm_connector_api.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_connector_review_queue_api.py .\tests\api\test_ui_review_routes.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
