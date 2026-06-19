@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-18 Audit-Retention Proof Hardening
+
+**Scope:** Harden repo-local audit-event retention purge proof without provisioning
+hosted scheduler, hosted log-retention/export/SIEM, user-bound identity audit,
+OAuth/OIDC, full RBAC, DS-017 entitlement, or hosted production workload authority.
+
+**Commands run:**
+
+```powershell
+python .\scripts\data_retention_check.py
+.\scripts\run_data_retention_check.ps1
+Push-Location .\backend
+python -m pytest -q .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+python -m ruff check ..\scripts\data_retention_check.py ..\scripts\purge_audit_events.py .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+python -m mypy ..\scripts\data_retention_check.py ..\scripts\purge_audit_events.py .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+Pop-Location
+$env:COMPOSE_PROJECT_NAME='landddr021proof'; $env:DB_PORT='55462'; docker compose up -d db
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55462/land_diligence'; .\scripts\run_purge_audit_events.ps1
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55462/land_diligence'; $env:RUN_DB_SMOKE='1'; $env:AUDIT_PURGE_TEST_DB_ISOLATED='1'; Push-Location .\backend; python -m pytest -q .\tests\scripts\test_purge_audit_events.py; Pop-Location
+$env:COMPOSE_PROJECT_NAME='landddr021proof'; $env:DB_PORT='55462'; docker compose stop db
+python .\scripts\release_readiness_check.py
+python .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Data-retention checker and Windows wrapper passed.
+- Focused retention artifact and purge tests passed without DB smoke; apply-mode DB
+  tests correctly skipped outside an explicitly marked isolated DB.
+- Focused ruff and mypy passed on touched checker, purge script, and test files.
+- Isolated local PostGIS DB proof passed on port `55462`: the dry-run purge wrapper
+  reported no deletes, and DB-gated purge tests passed with `RUN_DB_SMOKE=1`,
+  `AUDIT_PURGE_TEST_DB_ISOLATED=1`, and `DATABASE_URL_SYNC` pointed at the disposable
+  DB.
+- Release-readiness and readiness-matrix validators passed.
+- Read-only security and test reviews completed. Findings on unisolated apply-mode DB
+  proof, `--retention-days` catalog bypass, validation-list composition, CLI-through-DB
+  coverage, and cleanup idempotence were fixed and revalidated.
+- `git diff --check` passed.
+- No deleted files were reported.
+- Full `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy. DB smoke was skipped by default in this command; the isolated purge DB
+  proof above covered R-021 apply behavior.
+
+**Residual risk:**
+
+- This remains repo-local retention proof. It does not prove hosted scheduler,
+  hosted log-retention/SIEM export, user-bound identity audit, hosted production data
+  stores, or production retention automation.
+- The apply-mode test isolation guard is an operator assertion plus a preflight check
+  for zero eligible old in-scope audit rows. It cannot prove isolation against an
+  arbitrary external DB or prevent concurrent inserts between preflight and purge.
+
 ## 2026-06-18 Route-Scope/RBAC Handoff Coverage
 
 **Scope:** Add repo-local route-scope/RBAC handoff coverage for current protected

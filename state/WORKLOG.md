@@ -2,6 +2,37 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-18 (Audit-retention proof hardening)
+
+- Completed `R-021` from
+  `plans/2026-06-18-audit-retention-proof-hardening.md` without provisioning hosted
+  scheduler, hosted log-retention/export/SIEM, user-bound identity audit, OAuth/OIDC,
+  full RBAC, DS-017 entitlement, or hosted production workload authority.
+- Hardened `scripts/purge_audit_events.py` so every purge validates
+  `config/data_retention.yaml` before dry-run or apply. The default retention window is
+  parsed from cataloged `*_days_target` retention classes, and unreadable, malformed,
+  missing, mismatched, or unsupported audit-retention catalog state fails closed.
+- Preserved `--retention-days` as an explicit numeric operator override only after the
+  retention catalog validates; it no longer bypasses catalog authority.
+- Strengthened `scripts/data_retention_check.py` from static artifact checks into a
+  runtime contract check that imports the purge script, compares default retention days
+  to the catalog, verifies the purge event allowlist matches the automation plan, and
+  proves missing-catalog behavior fails closed even with `--retention-days`.
+- Expanded purge tests with non-DB catalog-fail-closed coverage, direct
+  data-retention-checker fallback rejection, DB-gated CLI dry-run/apply coverage through
+  catalog defaults, and an apply-mode safety guard requiring
+  `AUDIT_PURGE_TEST_DB_ISOLATED=1` plus zero pre-existing eligible in-scope audit rows.
+- Updated CI `db-verify` to set `AUDIT_PURGE_TEST_DB_ISOLATED=1` for its disposable
+  PostGIS service DB, and updated the R-021 plan/task validation list with the explicit
+  isolated DB purge-test command.
+- Updated `docs/runbooks/data_retention.md` so the runbook states that every purge
+  validates the catalog, fails closed when the catalog is unreadable or invalid, and
+  treats `--retention-days` as a reviewed one-off window override after catalog
+  validation.
+- Routed the next active repo-local lane to `R-022` error-state/no-leak hardening,
+  preserving hosted error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC,
+  DS-017 entitlement, and production authority blockers.
+
 ## 2026-06-18 (Route-scope/RBAC handoff coverage)
 
 - Completed `R-020` from `plans/2026-06-18-route-scope-rbac-handoff.md` without

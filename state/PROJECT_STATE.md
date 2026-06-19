@@ -1,49 +1,55 @@
 # Project State
 
-## Current checkpoint (2026-06-18 audit-retention proof hardening)
+## Current checkpoint (2026-06-18 error-state/no-leak hardening)
 
-Route-scope/RBAC handoff coverage is complete. The active implementation authority now
-points at audit-retention proof hardening: prove that repo-local audit-event retention
-tooling can be exercised safely in dry-run and explicit-apply modes against isolated
-database state without provisioning hosted scheduler, hosted log-retention/export/SIEM,
-user-bound identity audit, OAuth/OIDC, full RBAC, DS-017 entitlement, or hosted
-production workload authority.
+Audit-retention proof hardening is complete. The active implementation authority now
+points at error-state/no-leak hardening: strengthen repo-local proof that current
+API/UI error and recovery surfaces do not leak stack traces, secrets, raw connector
+payloads, local paths, or internal implementation details while preserving first-class
+source-failure evidence and without claiming hosted error/log review.
 
-- **Active plan**: `plans/2026-06-18-audit-retention-proof-hardening.md`.
-- **Purpose**: harden the next repo-local security/audit proof after route-scope
-  handoff while preserving the Level 9/10 distinction between local evidence and
-  hosted production authority.
-- **Completed immediately prior**: `R-020` added explicit
-  `identity_rbac_contract.route_scope_mappings` rows to `config/access_control.yaml`
-  for API and UI reviewer-scoped surfaces, added
-  `identity_rbac_contract.identity_boundary_mappings` for protected
-  workspace-identity-only connector review reads, made `scripts/access_control_check.py`
-  validate mapping ids, scopes/boundaries, modules, route functions, route patterns,
-  enforcement modes, and coverage test nodes, and updated access-control artifact tests
-  and runbook text. The pass also closed a proven runtime gap by requiring
-  `connector:run` reviewer scope on `POST /connector-runs`, matching the existing
-  connector invocation/scheduling boundary.
-- **R-020 validation so far**: `python .\scripts\access_control_check.py`,
-  `.\scripts\run_access_control_check.ps1`,
-  `python .\scripts\release_readiness_check.py`,
-  `python .\scripts\readiness_matrix_check.py`, focused API/UI/access-control pytest,
-  focused ruff, and focused mypy passed. Final full verification is recorded in
-  `state/VALIDATION_LOG.md`.
+- **Active plan**: `plans/2026-06-18-error-state-no-leak-hardening.md`.
+- **Purpose**: harden the next repo-local security/error-boundary proof after
+  audit-retention proof while preserving the Level 9/10 distinction between local
+  evidence and hosted production authority.
+- **Completed immediately prior**: `R-021` removed the silent hard-coded retention
+  fallback from `scripts/purge_audit_events.py`, made every purge validate
+  `config/data_retention.yaml` before dry-run or apply, kept `--retention-days` as a
+  numeric operator override only after catalog validation, added runtime data-retention
+  checker proof for catalog defaults and event allowlist parity, and hardened DB-gated
+  apply tests so they require `AUDIT_PURGE_TEST_DB_ISOLATED=1` plus zero pre-existing
+  eligible in-scope audit rows before deletion proof can run.
+- **R-021 validation**: data-retention checker and wrapper passed; purge dry-run
+  wrapper passed against an isolated local DB; focused retention tests, ruff, and mypy
+  passed; isolated DB-gated purge tests passed with `RUN_DB_SMOKE=1`,
+  `AUDIT_PURGE_TEST_DB_ISOLATED=1`, and `DATABASE_URL_SYNC` pointed at the disposable
+  DB; release-readiness and readiness-matrix validators passed; `git diff --check`
+  passed; no deleted files were reported; and full `.\scripts\verify.ps1` passed.
 - **Current authority surfaces**: `state/PRODUCTION_AUTHORITY_PACKET.md`,
   `state/POST_RC_AUTHORITY_SPLIT.md`, `state/LEVEL_9_10_GATE_MATRIX.md`,
-  `plans/2026-06-18-audit-retention-proof-hardening.md`,
-  `plans/2026-06-18-route-scope-rbac-handoff.md`, `plans/README.md`,
-  `tasks/task_queue.yaml`, `config/data_retention.yaml`,
-  `docs/runbooks/data_retention.md`, `scripts/data_retention_check.py`,
-  `scripts/purge_audit_events.py`, `config/access_control.yaml`,
-  `docs/runbooks/access_control.md`, and `scripts/access_control_check.py`.
+  `plans/2026-06-18-error-state-no-leak-hardening.md`,
+  `plans/2026-06-18-audit-retention-proof-hardening.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `config/threat_proxy_audit.yaml`,
+  `docs/runbooks/threat_proxy_audit.md`, `scripts/threat_proxy_audit_check.py`,
+  `backend/app/api/ui*.py`, `backend/app/api/reports.py`,
+  `backend/app/api/connectors.py`, `backend/app/api/operations.py`,
+  `backend/app/operations/recovery_preview.py`, and existing UI/API/threat-proxy
+  tests.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity
   or RBAC, no OAuth/OIDC, no hosted scheduler, no hosted log-retention/export/SIEM, no
-  recommendation/ranking semantics, no demographic/protected-class scoring, no
-  legal/security review claim, no secret writes, no committed measured runtime
-  artifacts, and no Level 10 completion claim.
+  hosted error/log review, no recommendation/ranking semantics, no
+  demographic/protected-class scoring, no legal/security review claim, no secret
+  writes, no committed measured runtime artifacts, and no Level 10 completion claim.
+
+## Previous checkpoint (2026-06-18 audit-retention proof hardening)
+
+`R-021` completed audit-retention proof hardening after `R-020` route-scope/RBAC
+handoff coverage. It strengthened repo-local audit purge safety and proof without
+provisioning hosted scheduler, hosted log-retention/export/SIEM, user-bound identity
+audit, OAuth/OIDC, full RBAC, DS-017 entitlement, or hosted production workload
+authority.
 
 ## Previous checkpoint (2026-06-18 jurisdiction/rulepack checklist dry run)
 
