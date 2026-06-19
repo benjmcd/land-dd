@@ -1,12 +1,13 @@
 version: 2
-active_plan: plans/2026-06-18-audit-retention-proof-hardening.md
+active_plan: plans/2026-06-18-error-state-no-leak-hardening.md
 routing_note: >
-  Active lane: audit-retention proof hardening
-  (plans/2026-06-18-audit-retention-proof-hardening.md). Goal: prove repo-local
-  audit-event retention tooling can be exercised safely in dry-run and explicit-apply
-  modes against isolated database state without provisioning hosted scheduler,
-  hosted log-retention/export/SIEM, user-bound identity audit, OAuth/OIDC, full RBAC,
-  DS-017 entitlement, or hosted production workload authority.
+  Active lane: error-state/no-leak hardening
+  (plans/2026-06-18-error-state-no-leak-hardening.md). Goal: strengthen repo-local
+  proof that current API/UI error and recovery surfaces do not leak stack traces,
+  secrets, raw connector payloads, local paths, or internal implementation details
+  while preserving first-class source-failure evidence and without claiming hosted
+  error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC, DS-017
+  entitlement, or production authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -576,7 +577,7 @@ tasks:
 
   - id: R-021
     title: Audit-retention proof hardening
-    status: active
+    status: done
     depends_on: [R-020]
     lane: coordinator
     spec: plans/2026-06-18-audit-retention-proof-hardening.md
@@ -591,6 +592,7 @@ tasks:
       - python .\scripts\release_readiness_check.py
       - python .\scripts\readiness_matrix_check.py
       - cd backend; python -m pytest -q .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+      - $env:RUN_DB_SMOKE='1'; $env:AUDIT_PURGE_TEST_DB_ISOLATED='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:<isolated-port>/land_diligence'; cd backend; python -m pytest -q .\tests\scripts\test_purge_audit_events.py
       - git diff --check
       - git diff --name-only --diff-filter=D
       - .\scripts\verify.ps1
@@ -599,6 +601,32 @@ tasks:
       - Explicit apply proof uses only isolated runtime state
       - In-scope and out-of-scope audit event types are fail-closed in tests or validators
       - Hosted scheduler, hosted log retention, SIEM export, and user-bound audit remain external-authority blockers
+
+  - id: R-022
+    title: Error-state/no-leak hardening
+    status: active
+    depends_on: [R-021]
+    lane: coordinator
+    spec: plans/2026-06-18-error-state-no-leak-hardening.md
+    notes: >
+      Strengthen repo-local proof that current API/UI error and recovery surfaces do
+      not leak stack traces, secrets, raw connector payloads, local paths, or internal
+      implementation details while preserving first-class source-failure evidence and
+      hosted error/log review blockers.
+    validation:
+      - python .\scripts\threat_proxy_audit_check.py
+      - .\scripts\run_threat_proxy_audit_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - python .\scripts\readiness_matrix_check.py
+      - cd backend; python -m pytest -q .\tests\test_threat_proxy_audit_artifacts.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_operations.py .\tests\api\test_report_run_list.py .\tests\api\test_connector_ingest_api.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Existing error-safety controls and tests are audited before checker/runtime changes
+      - Confirmed user-facing leak paths are covered by targeted regressions or validators
+      - Source failures remain explicit evidence and are not suppressed as successful results
+      - Hosted error/log review, SIEM/log retention, alerting, IdP/RBAC, DS-017 entitlement, and production authority remain external blockers
 
   # --- Completed ---
   - id: T000

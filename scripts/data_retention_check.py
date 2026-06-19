@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import contextlib
+import importlib.util
+import io
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
 
 import yaml
@@ -40,7 +45,30 @@ REQUIRED_RUNBOOK_PHRASES = (
     "repo-local audit retention schedule contract",
     "hosted scheduler is not provisioned",
     "manual operator action",
+    "The default retention window is",
+    "read from that catalog",
+    "fails closed",
+    "`--retention-days`",
+    "operator override",
+    "Every purge validates `config/data_retention.yaml`",
+    "after the catalog has validated",
 )
+DISALLOWED_RUNBOOK_PHRASES = (
+    "falls back to 90 days if the YAML is unreadable",
+    "fallback if YAML is absent or unparseable",
+)
+DISALLOWED_PURGE_SCRIPT_FALLBACK_SNIPPETS = (
+    "_DEFAULT_RETENTION_DAYS = 90  # fallback",
+    "pass  # keep the hard-coded default",
+    "fallback if YAML is absent or unparseable",
+)
+REQUIRED_PURGE_SCRIPT_FAIL_CLOSED_SNIPPETS = (
+    "_resolve_default_retention_days",
+    "RetentionCatalogError",
+    "default=None",
+    "fails closed if invalid",
+)
+RETENTION_PERIOD_SUFFIX = "_days_target"
 
 
 def require(condition: bool, message: str) -> None:
@@ -72,6 +100,156 @@ def validate_runbook() -> None:
         )
     for phrase in REQUIRED_RUNBOOK_PHRASES:
         require(phrase in runbook, f"data retention runbook missing phrase: {phrase}")
+    for phrase in DISALLOWED_RUNBOOK_PHRASES:
+        require(
+            phrase not in runbook,
+            f"data retention runbook preserves obsolete fallback claim: {phrase}",
+        )
+
+
+def validate_purge_default_retention_semantics() -> None:
+    purge_script = read_text("scripts/purge_audit_events.py")
+    for snippet in DISALLOWED_PURGE_SCRIPT_FALLBACK_SNIPPETS:
+        require(
+            snippet not in purge_script,
+            "purge script must fail closed when catalog retention cannot be read; "
+            f"remove obsolete fallback snippet: {snippet}",
+        )
+    require(
+        "--retention-days" in purge_script,
+        "purge script must preserve explicit --retention-days override",
+    )
+    require(
+        "config/data_retention.yaml" in purge_script,
+        "purge script default retention must be catalog-derived",
+    )
+    for snippet in REQUIRED_PURGE_SCRIPT_FAIL_CLOSED_SNIPPETS:
+        require(
+            snippet in purge_script,
+            f"purge script missing fail-closed catalog-default marker: {snippet}",
+        )
+
+
+def load_purge_module() -> ModuleType:
+    script_path = ROOT / "scripts" / "purge_audit_events.py"
+    spec = importlib.util.spec_from_file_location("purge_audit_events_check", script_path)
+    if spec is None or spec.loader is None:
+        raise SystemExit("unable to load purge script")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def parse_days_target(class_id: str, retention_period: Any) -> int:
+    require(
+        isinstance(retention_period, str)
+        and retention_period.endswith(RETENTION_PERIOD_SUFFIX),
+        f"{class_id} retention_period must end with {RETENTION_PERIOD_SUFFIX}",
+    )
+    days_text = retention_period[: -len(RETENTION_PERIOD_SUFFIX)]
+    require(days_text.isdigit() and int(days_text) > 0, f"{class_id} days target invalid")
+    return int(days_text)
+
+
+def expected_audit_retention_days(catalog: dict[str, Any]) -> int:
+    classes = catalog.get("retention_classes")
+    if not isinstance(classes, list):
+        raise SystemExit("retention_classes must be a list")
+    classes_by_id: dict[str, dict[str, Any]] = {}
+    for cls in classes:
+        if not isinstance(cls, dict):
+            continue
+        cls = cast(dict[str, Any], cls)
+        class_id = cls.get("id")
+        if isinstance(class_id, str):
+            classes_by_id[class_id] = cls
+    missing_classes = REQUIRED_AUTOMATION_TARGET_CLASSES - set(classes_by_id)
+    require(
+        not missing_classes,
+        f"retention_classes missing audit purge targets: {sorted(missing_classes)}",
+    )
+    resolved_days = {
+        parse_days_target(class_id, classes_by_id[class_id].get("retention_period"))
+        for class_id in REQUIRED_AUTOMATION_TARGET_CLASSES
+    }
+    require(
+        len(resolved_days) == 1,
+        "audit retention classes must share one positive days_target retention_period",
+    )
+    return resolved_days.pop()
+
+
+def validate_purge_runtime_contract(catalog: dict[str, Any]) -> None:
+    module = load_purge_module()
+    resolver_attr = getattr(module, "_resolve_default_retention_days", None)
+    require(callable(resolver_attr), "purge script must expose default retention resolver")
+    default_resolver = cast(Callable[..., int], resolver_attr)
+    require(
+        default_resolver() == expected_audit_retention_days(catalog),
+        "purge script default retention days must match the retention catalog",
+    )
+
+    in_scope_event_types = getattr(module, "IN_SCOPE_EVENT_TYPES", None)
+    require(
+        set(in_scope_event_types or []) == REQUIRED_AUTOMATION_EVENT_TYPES,
+        "purge script event allowlist must match automation target event types",
+    )
+
+    missing_catalog = ROOT / "config" / "__missing_data_retention.yaml"
+    require(
+        not missing_catalog.exists(),
+        "unexpected missing-catalog sentinel exists in config/",
+    )
+    try:
+        default_resolver(missing_catalog)
+    except Exception as exc:  # noqa: BLE001 - validator checks fail-closed exception shape.
+        require(
+            exc.__class__.__name__ == "RetentionCatalogError",
+            "missing retention catalog must raise RetentionCatalogError",
+        )
+        require(
+            "unable to read" in str(exc),
+            "missing retention catalog error must explain read failure",
+        )
+    else:
+        raise SystemExit("missing retention catalog must fail closed")
+
+    original_config_path = getattr(module, "_CONFIG_PATH", None)
+    original_run_purge = getattr(module, "run_purge", None)
+
+    def forbidden_run_purge(**_: Any) -> None:
+        raise AssertionError("run_purge executed despite missing catalog")
+
+    try:
+        module.__dict__["_CONFIG_PATH"] = missing_catalog
+        module.__dict__["run_purge"] = forbidden_run_purge
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                module.main(
+                    [
+                        "--retention-days",
+                        "30",
+                        "--apply",
+                        "--db-url",
+                        "postgresql://example/db",
+                    ]
+                )
+        except SystemExit as exc:
+            require(
+                exc.code == 1,
+                "explicit --retention-days with missing catalog must exit 1",
+            )
+        except AssertionError as exc:
+            raise SystemExit(
+                "explicit --retention-days must not bypass retention catalog validation"
+            ) from exc
+        else:
+            raise SystemExit(
+                "explicit --retention-days must fail closed when catalog is missing"
+            )
+    finally:
+        module.__dict__["_CONFIG_PATH"] = original_config_path
+        module.__dict__["run_purge"] = original_run_purge
 
 
 def validate_catalog(catalog: dict[str, Any]) -> None:
@@ -179,6 +357,8 @@ def main() -> int:
     print("config/data_retention.yaml: parseable")
     print("docs/runbooks/data_retention.md: exists")
     validate_runbook()
+    validate_purge_default_retention_semantics()
+    validate_purge_runtime_contract(catalog)
     print("audit purge tooling: exists and documented")
     validate_catalog(catalog)
     print("retention catalog validation: ok")

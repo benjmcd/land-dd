@@ -89,6 +89,23 @@ def test_data_retention_runbook_exists_and_mentions_90_days() -> None:
     assert "hosted scheduler is not provisioned" in content
 
 
+def test_data_retention_runbook_documents_fail_closed_catalog_default() -> None:
+    content = (REPO_ROOT / "docs" / "runbooks" / "data_retention.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "The default retention window is" in content
+    assert "read from that catalog" in content
+    assert "fails closed" in content
+    assert "unreadable or invalid" in content
+    assert "`--retention-days`" in content
+    assert "operator override" in content
+    assert "Every purge validates `config/data_retention.yaml`" in content
+    assert "after the catalog has validated" in content
+    assert "falls back to 90 days if the YAML is unreadable" not in content
+    assert "fallback if YAML is absent or unparseable" not in content
+
+
 def test_data_retention_validation_and_purge_scripts_exist() -> None:
     assert (REPO_ROOT / "scripts" / "data_retention_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "run_data_retention_check.ps1").is_file()
@@ -109,6 +126,31 @@ def test_data_retention_validator_validates_purge_tooling() -> None:
     assert "validate_automation_plan" in script
     assert "dry_run_by_default" in script
     assert "automation must not delete by default" in script
+
+
+def test_data_retention_validator_guards_fail_closed_catalog_default() -> None:
+    script = (REPO_ROOT / "scripts" / "data_retention_check.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "validate_purge_default_retention_semantics" in script
+    assert "validate_purge_runtime_contract" in script
+    assert "expected_audit_retention_days" in script
+    assert "retention_classes missing audit purge targets" in script
+    assert "purge script event allowlist must match automation target event types" in script
+    assert "explicit --retention-days must not bypass retention catalog validation" in script
+    assert "explicit --retention-days with missing catalog must exit 1" in script
+    assert "REQUIRED_PURGE_SCRIPT_FAIL_CLOSED_SNIPPETS" in script
+    assert "DISALLOWED_PURGE_SCRIPT_FALLBACK_SNIPPETS" in script
+    assert "_resolve_default_retention_days" in script
+    assert "RetentionCatalogError" in script
+    assert "default=None" in script
+    assert "fails closed if invalid" in script
+    assert "_DEFAULT_RETENTION_DAYS = 90  # fallback" in script
+    assert "pass  # keep the hard-coded default" in script
+    assert "purge script must fail closed when catalog retention cannot be read" in script
+    assert "explicit --retention-days override" in script
+    assert "validate_purge_default_retention_semantics()" in script
 
 
 def test_data_retention_wrappers_delegate_to_shared_validator() -> None:

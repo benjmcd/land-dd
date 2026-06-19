@@ -112,7 +112,7 @@ Before applying:
 py -3.12 scripts/purge_audit_events.py --apply
 ```
 
-Custom retention window (override the 90-day default):
+Custom retention window (explicit operator override):
 
 ```powershell
 py -3.12 scripts/purge_audit_events.py --apply --retention-days 90
@@ -126,8 +126,12 @@ The script prints the number of rows actually deleted and exits 0 on success.
   an operator until the hosted scheduler is provisioned and wired to the same gates.
 - Pass `--db-url` to target a non-default database, or set the `DATABASE_URL_SYNC`
   environment variable.
-- The script reads the default retention window from `config/data_retention.yaml`
-  and falls back to 90 days if the YAML is unreadable.
+- Every purge validates `config/data_retention.yaml`. The default retention window is
+  read from that catalog, and the purge path fails closed when the catalog is
+  unreadable or invalid instead of using a silent hard-coded fallback.
+- `--retention-days` is an explicit operator override for a reviewed one-off purge
+  window after the catalog has validated; it does not replace the catalog as the
+  retention authority.
 
 ---
 

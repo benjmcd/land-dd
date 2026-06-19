@@ -45,6 +45,7 @@ jobs:
       - name: Verify workspace, tests, migrations, and DB smoke
         env:
           RUN_DB_SMOKE: '1'
+          AUDIT_PURGE_TEST_DB_ISOLATED: '1'
           DATABASE_URL_SYNC: postgresql://land:land@localhost:5432/land_diligence
           DATABASE_URL: postgresql+psycopg://land:land@localhost:5432/land_diligence
         run: ./scripts/verify.sh

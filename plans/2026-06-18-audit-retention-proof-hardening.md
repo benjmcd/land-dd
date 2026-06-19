@@ -89,13 +89,15 @@ python .\scripts\data_retention_check.py
 python .\scripts\release_readiness_check.py
 python .\scripts\readiness_matrix_check.py
 cd backend; python -m pytest -q .\tests\test_data_retention_artifacts.py .\tests\scripts\test_purge_audit_events.py
+$env:RUN_DB_SMOKE='1'; $env:AUDIT_PURGE_TEST_DB_ISOLATED='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:<isolated-port>/land_diligence'; cd backend; python -m pytest -q .\tests\scripts\test_purge_audit_events.py
 git diff --check
 git diff --name-only --diff-filter=D
 .\scripts\verify.ps1
 ```
 
-DB-gated purge tests should remain skipped unless the caller explicitly provides the
-required DB smoke environment.
+DB-gated apply-mode purge tests must remain skipped unless the caller explicitly
+provides both the DB smoke environment and `AUDIT_PURGE_TEST_DB_ISOLATED=1` against a
+fresh disposable database.
 
 ## Risks and blockers
 
@@ -115,3 +117,11 @@ required DB smoke environment.
 ## Progress log
 
 - 2026-06-18: Plan opened as the next active repo-local lane after R-020.
+- 2026-06-18: Completed R-021. Purge defaults now validate the retention catalog
+  before dry-run or apply, `--retention-days` overrides only the numeric window after
+  catalog validation, data-retention checker imports the purge module for runtime
+  contract checks, DB-gated apply tests require an isolated DB marker and zero
+  pre-existing eligible in-scope rows, CI marks its disposable DB as isolated for DB
+  verification, and isolated DB purge proof passed. Hosted scheduler, hosted
+  log-retention/export/SIEM, user-bound audit, and production retention automation
+  remain external blockers.
