@@ -21,7 +21,14 @@ REQUIRED_FILES = (
     "docs/runbooks/incident_response.md",
     "backend/app/connectors/census_tiger.py",
     "backend/app/source_registry/usage_rights.py",
+    "backend/app/core/error_safety.py",
+    "backend/app/api/reports.py",
+    "backend/app/api/connectors.py",
+    "backend/app/api/ui.py",
     "backend/app/api/ui_shared.py",
+    "backend/app/api/ui_live_connector_jobs.py",
+    "backend/app/api/ui_review.py",
+    "backend/app/operations/recovery_preview.py",
     "backend/tests/connectors/test_census_tiger_connector.py",
     "backend/tests/api/test_census_tiger_connector_api.py",
     "backend/tests/reports/test_report_overclaim.py",
@@ -32,7 +39,15 @@ REQUIRED_FILES = (
     "backend/tests/api/test_api_key_auth.py",
     "backend/tests/api/test_reviewer_auth.py",
     "backend/tests/api/test_report_auth.py",
+    "backend/tests/api/test_report_run_list.py",
     "backend/tests/api/test_ui_shared.py",
+    "backend/tests/api/test_ui_routes.py",
+    "backend/tests/api/test_usgs_tnm_connector_api.py",
+    "backend/tests/api/test_ui_live_connector_jobs.py",
+    "backend/tests/api/test_connector_review_queue_api.py",
+    "backend/tests/api/test_ui_review_routes.py",
+    "backend/tests/api/test_operations.py",
+    "backend/tests/api/test_ui_operations_routes.py",
     "scripts/ui_runtime_smoke.py",
     "scripts/access_control_check.py",
     "scripts/source_readiness.py",
@@ -309,6 +324,35 @@ def validate_compare_access_and_error_guards() -> None:
     access_validator = read_text("scripts/access_control_check.py")
     ui_shared = read_text("backend/app/api/ui_shared.py")
     ui_shared_tests = read_text("backend/tests/api/test_ui_shared.py")
+    error_safety = read_text("backend/app/core/error_safety.py")
+    reports_api = read_text("backend/app/api/reports.py")
+    connectors_api = read_text("backend/app/api/connectors.py")
+    ui_error_surfaces = (
+        read_text("backend/app/api/ui.py")
+        + "\n"
+        + read_text("backend/app/api/ui_live_connector_jobs.py")
+        + "\n"
+        + read_text("backend/app/api/ui_review.py")
+    )
+    error_surface_tests = (
+        read_text("backend/tests/api/test_report_run_list.py")
+        + "\n"
+        + read_text("backend/tests/api/test_ui_routes.py")
+        + "\n"
+        + read_text("backend/tests/api/test_usgs_tnm_connector_api.py")
+        + "\n"
+        + read_text("backend/tests/api/test_ui_live_connector_jobs.py")
+        + "\n"
+        + read_text("backend/tests/api/test_connector_review_queue_api.py")
+        + "\n"
+        + read_text("backend/tests/api/test_ui_review_routes.py")
+    )
+    recovery_preview = read_text("backend/app/operations/recovery_preview.py")
+    operations_tests = (
+        read_text("backend/tests/api/test_operations.py")
+        + "\n"
+        + read_text("backend/tests/api/test_ui_operations_routes.py")
+    )
     matrix = read_text("state/LEVEL_9_10_GATE_MATRIX.md")
 
     require_phrases(
@@ -341,6 +385,47 @@ def validate_compare_access_and_error_guards() -> None:
             '"<script>" not in body',
         ),
         "UI error safety",
+    )
+    require_phrases(
+        recovery_preview + "\n" + operations_tests,
+        (
+            "safe_recovery_error_message",
+            "RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE",
+            "test_recovery_preview_redacts_sensitive_error_details_without_mutating_jobs",
+            "test_ui_operations_recovery_preview_redacts_sensitive_error_details",
+            "Traceback",
+            "API_KEY",
+            "raw_payload",
+            "stored_report.error_msg == raw_report_error",
+        ),
+        "operations recovery error safety",
+    )
+    require_phrases(
+        (
+            error_safety
+            + "\n"
+            + reports_api
+            + "\n"
+            + connectors_api
+            + "\n"
+            + ui_error_surfaces
+            + "\n"
+            + error_surface_tests
+        ),
+        (
+            "REDACTED_ERROR_MESSAGE",
+            "safe_error_message",
+            "safe_url_summary",
+            "safe_payload_copy",
+            "safe_payload_summary",
+            "test_failed_report_api_list_and_detail_redact_error_without_mutating_job",
+            "test_ui_report_run_failed_detail_redacts_error_without_mutating_job",
+            "test_live_connector_job_api_sanitizes_error_and_payload_without_mutating_job",
+            "test_ui_live_connector_job_detail_sanitizes_error_url_and_payload",
+            "test_connector_review_queue_api_redacts_last_error_without_payload_loss",
+            "test_ui_review_detail_redacts_last_error_without_hiding_failure_counts",
+        ),
+        "user-facing error serialization safety",
     )
     require_phrases(
         matrix,

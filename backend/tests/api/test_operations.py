@@ -13,6 +13,7 @@ from app.core.config import Settings
 from app.domain.enums import IntentCode, JobStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.main import create_app
+from app.operations.recovery_preview import RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE
 
 VALID_REVIEWER_HEADERS = {
     "X-Reviewer-Id": "fixture-reviewer",
@@ -329,3 +330,79 @@ def test_recovery_preview_reports_candidate_truncation_metadata() -> None:
     assert body["report_jobs"]["failed_candidates_truncated"] is True
     assert body["report_jobs"]["stale_running_candidates_truncated"] is False
     assert len(body["report_jobs"]["candidates"]) == 25
+
+
+def test_recovery_preview_redacts_sensitive_error_details_without_mutating_jobs() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    raw_report_error = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\repo\\worker.py", line 1, in <module>\n'
+        "RuntimeError: API_KEY=super-secret-token"
+    )
+    raw_connector_error = (
+        '{"Authorization":"Bearer secret-token","raw_payload":{"path":"/app/source.json"}}'
+    )
+
+    failed_report = services.async_report_jobs.create(
+        area_id=area_id,
+        intent_code=IntentCode.RURAL_LAND_PURCHASE,
+    )
+    services.async_report_jobs.mark_failed(
+        failed_report.report_run_id,
+        error_msg=raw_report_error,
+    )
+
+    failed_live_job = services.live_connector_jobs.enqueue_nwi(
+        area_id=area_id,
+        max_features=1,
+    )
+    leased_failed_live_job = services.live_connector_jobs.lease_next(
+        worker_id="ops-preview-sensitive",
+    )
+    assert leased_failed_live_job is not None
+    services.live_connector_jobs.mark_failed(
+        failed_live_job.job_id,
+        error_msg=raw_connector_error,
+    )
+
+    response = client.get(
+        "/operations/recovery-preview",
+        headers=VALID_REVIEWER_HEADERS,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    report_candidate = next(
+        candidate
+        for candidate in body["report_jobs"]["candidates"]
+        if candidate["job_id"] == str(failed_report.report_run_id)
+    )
+    connector_candidate = next(
+        candidate
+        for candidate in body["live_connector_jobs"]["candidates"]
+        if candidate["job_id"] == str(failed_live_job.job_id)
+    )
+    assert report_candidate["error_message"] == RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE
+    assert connector_candidate["error_message"] == RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE
+    serialized = response.text
+    for leaked in (
+        "Traceback",
+        "C:\\Users",
+        "API_KEY",
+        "super-secret-token",
+        "Authorization",
+        "Bearer",
+        "raw_payload",
+        "/app/source.json",
+    ):
+        assert leaked not in serialized
+
+    stored_report = services.async_report_jobs.get(failed_report.report_run_id)
+    stored_live_job = services.live_connector_jobs.get(failed_live_job.job_id)
+    assert stored_report is not None
+    assert stored_report.error_msg == raw_report_error
+    assert stored_live_job is not None
+    assert stored_live_job.last_error == raw_connector_error

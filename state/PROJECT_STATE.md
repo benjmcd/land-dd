@@ -12,6 +12,20 @@ source-failure evidence and without claiming hosted error/log review.
 - **Purpose**: harden the next repo-local security/error-boundary proof after
   audit-retention proof while preserving the Level 9/10 distinction between local
   evidence and hosted production authority.
+- **R-022 implemented proof**: shared user-facing error safety now lives in
+  `backend/app/core/error_safety.py`; failed-report API/list/detail and failed-report
+  UI detail render safe summaries instead of raw stored `error_msg`; live-connector
+  job API/UI responses return safe error, URL, and allowlisted payload summaries instead
+  of raw `last_error`, query-bearing request URLs, or arbitrary job payload dumps;
+  connector-review queue API/UI last-error surfaces use safe summaries; operations
+  recovery preview delegates to the same shared helper; and raw stored job/queue
+  failure evidence remains available internally for inspection.
+- **R-022 validation**: threat/proxy audit checker and wrapper passed;
+  release-readiness and readiness-matrix validators passed; focused no-leak
+  regressions passed; full affected API/UI/threat-proxy artifact pytest set passed
+  with one existing skip; focused ruff and mypy passed; `git diff --check` passed; no
+  deleted files were reported; and full `.\scripts\verify.ps1` passed with backend
+  tests, ruff, and mypy over `325` source files. DB smoke was skipped by default.
 - **Completed immediately prior**: `R-021` removed the silent hard-coded retention
   fallback from `scripts/purge_audit_events.py`, made every purge validate
   `config/data_retention.yaml` before dry-run or apply, kept `--retention-days` as a
@@ -33,8 +47,9 @@ source-failure evidence and without claiming hosted error/log review.
   `docs/runbooks/threat_proxy_audit.md`, `scripts/threat_proxy_audit_check.py`,
   `backend/app/api/ui*.py`, `backend/app/api/reports.py`,
   `backend/app/api/connectors.py`, `backend/app/api/operations.py`,
-  `backend/app/operations/recovery_preview.py`, and existing UI/API/threat-proxy
-  tests.
+  `backend/app/api/ui_live_connector_jobs.py`, `backend/app/api/ui_review.py`,
+  `backend/app/core/error_safety.py`, `backend/app/operations/recovery_preview.py`,
+  and existing UI/API/threat-proxy tests.
 - **Known boundaries preserved**: no DS-017 vendor/license/cost decision, no DS-017
   connector, no hosted deployment or hosted alert route, no registry image push, no
   production SLO/capacity claim, no new county/source/rulepack, no full user identity

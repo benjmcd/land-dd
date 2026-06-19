@@ -109,6 +109,37 @@ def test_list_report_runs_review_status_null_for_non_succeeded() -> None:
     assert item["review_status"] is None
 
 
+def test_failed_report_api_list_and_detail_redact_error_without_mutating_job() -> None:
+    app, tc, run_ids = _make_client_with_reports(1)
+    services = cast(ApiServices, app.state.services)
+    raw_error = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\secret_app\\worker.py", line 4, in run\n'
+        "RuntimeError: API_KEY=raw-token {\"raw_payload\": true}"
+    )
+    report_run_id = UUID(run_ids[0])
+    services.async_report_jobs.mark_failed(report_run_id, error_msg=raw_error)
+
+    list_resp = tc.get("/report-runs?status=failed")
+    detail_resp = tc.get(f"/report-runs/{report_run_id}")
+
+    assert list_resp.status_code == 200
+    item = next(i for i in list_resp.json() if i["report_run_id"] == str(report_run_id))
+    assert item["error_msg"] is not None
+    assert "Failure details withheld" in item["error_msg"]
+    assert "Traceback" not in item["error_msg"]
+    assert "API_KEY" not in item["error_msg"]
+    assert "raw_payload" not in item["error_msg"]
+    assert "C:\\Users" not in item["error_msg"]
+    assert detail_resp.status_code == 200
+    caveats = detail_resp.json()["caveats"]
+    assert caveats == [item["error_msg"]]
+    assert raw_error not in detail_resp.text
+    stored_job = services.async_report_jobs.get(report_run_id)
+    assert stored_job is not None
+    assert stored_job.error_msg == raw_error
+
+
 def test_list_report_runs_includes_running_age_and_stale_flag() -> None:
     app, tc, run_ids = _make_client_with_reports(1)
     services = cast(ApiServices, app.state.services)

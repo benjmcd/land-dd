@@ -9,6 +9,7 @@ from app.connectors.live_jobs import (
     LiveConnectorJobRecord,
     LiveConnectorJobStoreProtocol,
 )
+from app.core.error_safety import REDACTED_ERROR_MESSAGE, safe_error_message
 from app.domain.enums import JobStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.reports.job_store import (
@@ -18,6 +19,7 @@ from app.reports.job_store import (
 )
 
 RECOVERY_PREVIEW_SCHEMA_VERSION = "operations_recovery_preview_v1"
+RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE = REDACTED_ERROR_MESSAGE
 
 
 @dataclass(frozen=True)
@@ -126,7 +128,7 @@ def _report_item(job: ReportJobRecord) -> JobRecoveryPreviewItem:
         finished_at=None,
         age_seconds=_age_seconds(job.started_at or job.created_at),
         stale_running=stale_running,
-        error_message=job.error_msg,
+        error_message=safe_recovery_error_message(job.error_msg),
         recommended_action=recommended_action,
         reason=reason,
         detail_ui_path=f"/ui/report-runs/{job.report_run_id}",
@@ -157,7 +159,7 @@ def _live_connector_item(job: LiveConnectorJobRecord) -> JobRecoveryPreviewItem:
         finished_at=job.finished_at,
         age_seconds=_age_seconds(job.started_at or job.created_at),
         stale_running=stale_running,
-        error_message=job.last_error,
+        error_message=safe_recovery_error_message(job.last_error),
         recommended_action=recommended_action,
         reason=reason,
         detail_ui_path=f"/ui/live-connector-jobs/{job.job_id}",
@@ -184,9 +186,16 @@ def _age_seconds(started_or_created_at: datetime | None) -> float | None:
     return max(0.0, (datetime.now(UTC) - started_or_created_at).total_seconds())
 
 
+def safe_recovery_error_message(message: str | None) -> str | None:
+    """Return an operator-safe error summary for recovery preview surfaces."""
+    return safe_error_message(message)
+
+
 __all__ = [
     "JobRecoveryPreviewItem",
     "OperationsRecoveryPreview",
     "RECOVERY_PREVIEW_SCHEMA_VERSION",
+    "RECOVERY_PREVIEW_REDACTED_ERROR_MESSAGE",
     "build_recovery_preview",
+    "safe_recovery_error_message",
 ]

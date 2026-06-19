@@ -35,6 +35,7 @@ from app.api.reviewer_auth import (
     require_reviewer_scope,
 )
 from app.core.config import Settings
+from app.core.error_safety import safe_error_message
 from app.db.engine import get_session_factory
 from app.domain.claim_contracts import ClaimContract
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus, SeverityBand
@@ -802,7 +803,7 @@ def list_report_runs(
                 running_age_seconds=running_age_seconds,
                 is_stale_running=_is_stale_running_age(running_age_seconds),
                 retry_of_report_run_id=job.retry_of_report_run_id,
-                error_msg=job.error_msg,
+                error_msg=safe_error_message(job.error_msg),
                 review_status=review_status,
             )
         )
@@ -891,7 +892,7 @@ def get_report_run(
                 area_id=job.area_id,
                 intent_code=job.intent_code,
                 status=JobStatus.FAILED,
-                caveats=[job.error_msg or "Report generation failed"],
+                caveats=[safe_error_message(job.error_msg) or "Report generation failed"],
             )
         # SUCCEEDED — fall through to fetch full report from repo
 

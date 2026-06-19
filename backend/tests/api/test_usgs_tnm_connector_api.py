@@ -545,6 +545,69 @@ def test_live_connector_job_list_and_detail_hide_other_workspace_jobs() -> None:
     assert fetched.status_code == 404
 
 
+def test_live_connector_job_api_sanitizes_error_and_payload_without_mutating_job() -> None:
+    app = create_app()
+    client = TestClient(app)
+    services = cast(ApiServices, app.state.services)
+    area_id = uuid4()
+    raw_error = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\connector\\worker.py", line 5, in run\n'
+        "RuntimeError: x-api-key=raw-key {\"raw_payload\": true}"
+    )
+    job = services.live_connector_jobs.enqueue_nwi(
+        area_id=area_id,
+        workspace_id=_WORKSPACE_ID,
+        requested_by=_USER_ID,
+        max_features=1,
+    )
+    leased = services.live_connector_jobs.lease_next(worker_id="api-live-worker")
+    assert leased is not None
+    failed = services.live_connector_jobs.mark_failed(job.job_id, error_msg=raw_error)
+    store = services.live_connector_jobs
+    assert isinstance(store, InMemoryLiveConnectorJobStore)
+    with store._lock:
+        store._jobs[job.job_id] = replace(
+            failed,
+            request_url="https://example.test/live?api_key=raw-key&token=raw-token",
+            payload={
+                **failed.payload,
+                "api_key": "raw-key",
+                "local_path": r"C:\Users\benny\secret.json",
+                "raw_payload": {"Authorization": "Bearer raw-token"},
+            },
+        )
+
+    list_resp = client.get("/connector-runs/live-jobs?status=failed", headers=_LIVE_HEADERS)
+    detail_resp = client.get(f"/connector-runs/live-jobs/{job.job_id}", headers=_LIVE_HEADERS)
+
+    assert list_resp.status_code == 200
+    assert detail_resp.status_code == 200
+    for body in (list_resp.json()[0], detail_resp.json()):
+        assert body["job_id"] == str(job.job_id)
+        assert body["source_registry_id"] == "DS-004"
+        assert body["connector_name"] == "nwi_live"
+        assert body["status"] == "failed"
+        assert "Failure details withheld" in body["last_error"]
+        assert "Traceback" not in body["last_error"]
+        assert "raw-key" not in body["last_error"]
+        assert body["request_url"] == "https://example.test/live"
+        payload = body["payload"]
+        assert payload["source_registry_id"] == "DS-004"
+        assert payload["connector_name"] == "nwi_live"
+        assert payload["area_id"] == str(area_id)
+        assert payload["workspace_id"] == str(_WORKSPACE_ID)
+        assert payload["requested_by"] == str(_USER_ID)
+        assert "api_key" not in payload
+        assert "local_path" not in payload
+        assert "raw_payload" not in payload
+    stored_job = services.live_connector_jobs.get(job.job_id)
+    assert stored_job is not None
+    assert stored_job.last_error == raw_error
+    assert stored_job.payload["api_key"] == "raw-key"
+    assert stored_job.payload["local_path"] == r"C:\Users\benny\secret.json"
+
+
 def test_live_connector_worker_fails_closed_for_cross_workspace_area() -> None:
     app = create_app()
     services = cast(ApiServices, app.state.services)

@@ -418,6 +418,41 @@ def test_reject_connector_review_queue_item_records_reviewer_action() -> None:
     assert action["reason"] == "source packet rejected"
 
 
+def test_connector_review_queue_api_redacts_last_error_without_payload_loss() -> None:
+    app = create_app()
+    client = _client(app)
+    services = cast(ApiServices, app.state.services)
+    item = _enqueue_review_item(app, "flood_failure.json")
+    raw_reason = (
+        'Traceback (most recent call last):\n'
+        '  File "C:\\Users\\benny\\review\\queue.py", line 5, in run\n'
+        "RuntimeError: token=raw-token {\"raw_payload\": true}"
+    )
+
+    rejected = client.post(
+        f"/connector-review-queue/{item.ingest_run_id}/reject",
+        json={"reviewer_id": _REVIEWER_ID, "reason": raw_reason},
+        headers=_reviewer_headers(),
+    )
+    fetched = client.get(f"/connector-review-queue/{item.ingest_run_id}")
+
+    assert rejected.status_code == 200
+    assert fetched.status_code == 200
+    for body in (rejected.json(), fetched.json()):
+        assert "Failure details withheld" in body["last_error"]
+        assert "Traceback" not in body["last_error"]
+        assert "raw-token" not in body["last_error"]
+        assert body["payload"]["source_failure_created_count"] == 1
+        assert body["payload"]["source_failure_skipped_count"] == 0
+        assert body["payload"]["error_count"] == 1
+        assert body["payload"]["review_required"] is True
+    stored_item = services.connector_review_queue.get_by_ingest_run_id(
+        item.ingest_run_id,
+    )
+    assert stored_item is not None
+    assert stored_item.last_error == raw_reason
+
+
 def test_requeue_connector_review_queue_item_appends_second_reviewer_action() -> None:
     app = create_app()
     client = _client(app)

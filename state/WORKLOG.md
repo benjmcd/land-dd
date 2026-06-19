@@ -2,6 +2,37 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-19 (Error-state/no-leak hardening)
+
+- Implemented `R-022` from `plans/2026-06-18-error-state-no-leak-hardening.md`
+  without claiming hosted error/log review, hosted log-retention/SIEM, alerting,
+  external security review, IdP/RBAC, DS-017 entitlement, or production authority.
+- Added `backend/app/core/error_safety.py` with shared deterministic helpers for safe
+  user-facing error messages, URL summaries, payload copies, and allowlisted payload
+  summaries.
+- Hardened failed-report API/UI surfaces so stored `job.error_msg` remains raw
+  internally, while list/detail/caveat/UI responses redact stack traces, local paths,
+  secret-like values, and raw-payload-shaped exception text.
+- Hardened live-connector job API/UI surfaces so stored `last_error`, `request_url`,
+  and job payload remain available internally, while responses render safe error
+  summaries, query-stripped URL summaries, and allowlisted payload summaries instead of
+  arbitrary raw payload dumps.
+- Hardened connector-review queue API/UI last-error surfaces with the same safe
+  summaries and safe payload copying, preserving source-failure counts, review status,
+  action history shape, and explicit failure evidence without echoing unsafe free-text.
+- Refactored operations recovery preview to delegate to the shared helper and expanded
+  no-leak regressions across failed report, live connector job, connector review, and
+  recovery-preview API/UI surfaces.
+- Expanded threat/proxy audit catalog, checker, artifact tests, and runbook wording so
+  `production_error_leakage` now tracks the broader user-facing error serialization
+  proof while keeping production error/log review externally blocked.
+- Validation: threat/proxy Python checker and PowerShell wrapper passed;
+  release-readiness and readiness-matrix validators passed; focused R-022 regressions
+  passed (`8 passed`); full affected API/UI/threat-proxy pytest set passed with one
+  existing skip; focused ruff and mypy passed; `git diff --check` passed; no deleted
+  files were reported; and full `.\scripts\verify.ps1` passed with backend tests,
+  ruff, and mypy over `325` source files. DB smoke was skipped by default.
+
 ## 2026-06-18 (Audit-retention proof hardening)
 
 - Completed `R-021` from

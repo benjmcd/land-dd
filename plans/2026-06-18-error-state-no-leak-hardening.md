@@ -116,3 +116,13 @@ git diff --name-only --diff-filter=D
 ## Progress log
 
 - 2026-06-18: Plan opened as the next active repo-local lane after R-021.
+- 2026-06-19: Audited failed-report, live-connector job, connector-review, and
+  operations recovery-preview surfaces. Confirmed raw stored job/queue errors could
+  reach API/UI response boundaries. Added shared user-facing error safety helpers,
+  redacted failed-report API/UI errors, replaced live-connector job raw payload dumps
+  with allowlisted summaries, sanitized request URL query exposure, sanitized
+  connector-review last-error response/rendering, and kept raw stored job/queue
+  evidence available for internal inspection.
+- 2026-06-19: Expanded threat/proxy audit artifacts so `production_error_leakage`
+  tracks the shared helper, report/connector/UI surfaces, recovery preview, and the
+  focused no-leak regressions without claiming hosted error/log review.

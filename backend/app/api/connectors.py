@@ -121,6 +121,12 @@ from app.connectors.usgs_mrds import (
 from app.connectors.usgs_tnm import USGS_TNM_MAX_SAMPLE_POINTS, UsgsTnmBbox
 from app.connectors.usgs_water_monitoring import UsgsWaterConnectorError
 from app.core.config import Settings, get_settings
+from app.core.error_safety import (
+    safe_error_message,
+    safe_payload_copy,
+    safe_payload_summary,
+    safe_url_summary,
+)
 from app.domain.connector_contracts import (
     ConnectorReviewQueueItemContract,
     ConnectorRunResultContract,
@@ -943,7 +949,7 @@ def _connector_review_queue_item_contract(
         job_type=item.job_type,
         status=item.status,
         priority=item.priority,
-        payload=dict(item.payload),
+        payload=safe_payload_copy(item.payload),
         created_at=item.created_at,
         not_before=item.not_before,
         attempts=item.attempts,
@@ -952,7 +958,7 @@ def _connector_review_queue_item_contract(
         locked_at=item.locked_at,
         started_at=item.started_at,
         finished_at=item.finished_at,
-        last_error=item.last_error,
+        last_error=safe_error_message(item.last_error),
     )
 
 
@@ -2914,7 +2920,7 @@ def _queue_item_response(queue_item: ConnectorReviewQueueItem) -> dict[str, obje
         "status": queue_item.status.value,
         "priority": queue_item.priority,
         "idempotency_key": queue_item.idempotency_key,
-        "payload": queue_item.payload,
+        "payload": safe_payload_copy(queue_item.payload),
         "created_at": queue_item.created_at,
         "attempts": queue_item.attempts,
         "max_attempts": queue_item.max_attempts,
@@ -2922,7 +2928,7 @@ def _queue_item_response(queue_item: ConnectorReviewQueueItem) -> dict[str, obje
         "locked_at": queue_item.locked_at,
         "started_at": queue_item.started_at,
         "finished_at": queue_item.finished_at,
-        "last_error": queue_item.last_error,
+        "last_error": safe_error_message(queue_item.last_error),
     }
 
 
@@ -2941,7 +2947,7 @@ def _live_connector_job_response(
         "priority": job.priority,
         "idempotency_key": job.idempotency_key,
         "max_features": job.max_features,
-        "payload": job.payload,
+        "payload": _live_connector_job_payload_summary(job),
         "created_at": job.created_at,
         "not_before": job.not_before,
         "attempts": job.attempts,
@@ -2950,7 +2956,7 @@ def _live_connector_job_response(
         "locked_at": job.locked_at,
         "started_at": job.started_at,
         "finished_at": job.finished_at,
-        "last_error": job.last_error,
+        "last_error": safe_error_message(job.last_error),
         "running_age_seconds": running_age_seconds,
         "is_stale_running": (
             running_age_seconds is not None
@@ -2958,8 +2964,38 @@ def _live_connector_job_response(
         ),
         "connector_ingest_run_id": job.connector_ingest_run_id,
         "connector_review_status": job.connector_review_status,
-        "request_url": job.request_url,
+        "request_url": safe_url_summary(job.request_url),
     }
+
+
+def _live_connector_job_payload_summary(job: LiveConnectorJobRecord) -> dict[str, object]:
+    summary = safe_payload_summary(
+        job.payload,
+        allowed_keys=(
+            "kind",
+            "source_registry_id",
+            "connector_name",
+            "area_id",
+            "workspace_id",
+            "requested_by",
+            "max_features",
+            "max_rows",
+            "max_sample_points",
+            "connector_ingest_run_id",
+            "connector_review_status",
+        ),
+    )
+    if job.bbox is not None:
+        summary["bbox"] = {
+            "xmin": job.bbox.xmin,
+            "ymin": job.bbox.ymin,
+            "xmax": job.bbox.xmax,
+            "ymax": job.bbox.ymax,
+        }
+    safe_request_url = safe_url_summary(job.request_url)
+    if safe_request_url is not None:
+        summary["request_url"] = safe_request_url
+    return summary
 
 
 def _raise_live_connector_queue_backpressure_if_needed(
