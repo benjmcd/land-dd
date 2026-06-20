@@ -49,6 +49,9 @@ required_checks:
   - id: source_readiness
     proof: scripts/source_readiness.py
     ci_job: null
+  - id: source_entitlement
+    proof: scripts/run_source_entitlement_check.ps1
+    ci_job: null
   - id: security_scan
     proof: scripts/run_security_scan.ps1
     ci_job: security-scan

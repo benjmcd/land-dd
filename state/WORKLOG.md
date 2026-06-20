@@ -4186,3 +4186,28 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   OpenAPI parity, ruff, mypy, performance-baseline, spatial query-plan,
   release-readiness, readiness-matrix, load-test validate-only, workspace validation,
   and full verification passed. DB smoke was skipped by default.
+
+## 2026-06-20 Source entitlement decision packet SE-001
+
+- Continued from live `origin/main` in clean `worktrees/ds017-ent` on
+  `codex/ds017-ent` after confirming PR #105 had landed at
+  `cbde4572c1aa99cf4f5ba69b258db815612b700c` and preserving the dirty root as
+  candidate evidence only.
+- Audited current source-readiness authority and confirmed Must-source readiness remains
+  `sources=8 ready=7 blocked=1`, with DS-017 as the only blocked Must source.
+- Added `plans/2026-06-20-source-entitlement-decision-packet.md` to keep this pass
+  scoped to decision-readiness rather than DS-017 approval or connector work.
+- Added `config/source_entitlements.yaml`, `docs/runbooks/source_entitlements.md`,
+  `scripts/source_entitlement_check.py`, and Windows/POSIX wrappers. The checker
+  validates DS-017 required vendor, license, entitlement, field, cost, and connector
+  decisions against current source-readiness truth and the production authority packet.
+- Wired the source-entitlement checker into release readiness as a validate-only proof
+  and added focused artifact tests.
+- Focused source-entitlement and release-readiness artifact tests, focused ruff/mypy,
+  source-entitlement validator and wrapper, Must-source readiness, release-readiness,
+  readiness-matrix, diff/no-deletion checks, workspace validation, and default
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- Preserved the boundaries: no DS-017 approval, vendor selection, connector, registry
+  promotion, source-readiness count change, owner/value/title/raw vendor exposure,
+  paid-source metering proof, hosted authority, Bologna pilot, new geography/rulepack,
+  or Level 10 completion claim.

@@ -29,6 +29,7 @@ REQUIRED_CHECKS = {
     "image_publication",
     "hosted_deployment",
     "source_readiness",
+    "source_entitlement",
     "security_scan",
     "data_retention",
     "jurisdiction_readiness",
@@ -70,6 +71,7 @@ COMPOSED_VALIDATORS = (
     "scripts/observability_readiness_check.py",
     "scripts/threat_proxy_audit_check.py",
     "scripts/checklist_dry_run_check.py",
+    "scripts/source_entitlement_check.py",
 )
 
 
@@ -275,6 +277,8 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "run_threat_proxy_audit_check.ps1",
         "checklist_dry_run.yaml",
         "run_checklist_dry_run_check.ps1",
+        "source_entitlements.yaml",
+        "run_source_entitlement_check.ps1",
         "spatial_query_plan.yaml",
         "run_spatial_query_plan_check.ps1",
         "spatial_query_plan_check.py",
@@ -294,6 +298,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "No container image is pushed",
         "does not run `EXPLAIN ANALYZE` against a live or hosted database by default",
         "published registry-image attestation",
+        "source-entitlement check",
     ):
         assert phrase in runbook
 
@@ -370,12 +375,15 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"data_lineage"' in script
     assert '"threat_proxy_audit"' in script
     assert '"checklist_dry_run"' in script
+    assert '"source_entitlement"' in script
     assert '"config/performance_baseline.yaml"' in script
     assert '"config/threat_proxy_audit.yaml"' in script
     assert '"config/checklist_dry_run.yaml"' in script
+    assert '"config/source_entitlements.yaml"' in script
     assert '"scripts/performance_baseline_check.py"' in script
     assert '"scripts/threat_proxy_audit_check.py"' in script
     assert '"scripts/checklist_dry_run_check.py"' in script
+    assert '"scripts/source_entitlement_check.py"' in script
     assert '"config/spatial_query_plan.yaml"' in script
     assert '"scripts/spatial_query_plan_check.py"' in script
     assert '{"DS-017"}' in script

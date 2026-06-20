@@ -2,17 +2,17 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-generic-aoi-evidence-closure.md`.
+Latest completed plan: `2026-06-20-supported-aoi-ui-runtime.md`.
 
-Active plan: `2026-06-20-supported-aoi-ui-runtime.md`.
+Active plan: `2026-06-20-source-entitlement-decision-packet.md`.
 
-The active slice is `G9c` supported-AOI UI runtime proof. `G9b` proved the
-non-packaged supported-AOI API/service/DB path below packaged case IDs. The next
-unblocked engineering path is to prove that same supported `area_id` workflow through
-the no-JavaScript operator UI and runtime smoke while preserving the fixture-profile
-boundary. It must not select a new jurisdiction, add new source authority, approve
-DS-017, start Bologna, create hosted deployment/identity/observability authority, or
-claim Level 10 production proof.
+The active slice is `SE-001` source-entitlement decision packet. `G9c` proved the
+supported-AOI `area_id` workflow through the no-JavaScript operator UI and runtime
+smoke. The next unblocked engineering path is to make the remaining DS-017 Must-source
+blocker decision-ready with a validate-only, machine-readable packet and checker while
+keeping DS-017 blocked. It must not select a vendor, approve DS-017, add a connector,
+start Bologna, create hosted deployment/identity/observability authority, or claim
+Level 10 production proof.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

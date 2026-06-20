@@ -1,6 +1,39 @@
 # Project State
 
-## Current checkpoint (2026-06-20 supported-AOI UI runtime proof G9c)
+## Current checkpoint (2026-06-20 source entitlement decision packet SE-001)
+
+The active implementation authority is now `SE-001` from
+`plans/2026-06-20-source-entitlement-decision-packet.md`. This follows merged PR #105
+at `cbde4572c1aa99cf4f5ba69b258db815612b700c`, which completed the G9c
+supported-AOI UI/runtime proof. The dirty root checkout remains preserved candidate
+evidence only; continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-source-entitlement-decision-packet.md`.
+- **Purpose**: make DS-017 decision-ready by adding a validate-only,
+  machine-readable source-entitlement packet and checker that cross-check current
+  source-readiness truth, release readiness, and the production authority packet.
+- **Current implementation slice**: clean worktree `worktrees/ds017-ent` adds
+  `config/source_entitlements.yaml`, `docs/runbooks/source_entitlements.md`,
+  `scripts/source_entitlement_check.py`, Windows/POSIX wrappers, focused artifact
+  tests, and release-readiness composition. Focused tests, source-entitlement wrapper,
+  source-readiness, release readiness, readiness matrix, diff/no-deletion checks,
+  workspace validation, and default `.\scripts\verify.ps1` passed. DS-017 remains
+  blocked and unselected.
+- **Next required step**: publish/merge SE-001 and clean the worktree. Follow-on work
+  should wait for external DS-017 vendor/license/cost/entitlement authority, an
+  explicit product decision to defer or remove DS-017 from Must scope, a substitute
+  public/official source decision, or hosted authority if those external prerequisites
+  arrive first.
+- **Known boundaries to preserve**: no DS-017 approval, vendor selection, connector,
+  source-readiness promotion, owner/value/title/raw vendor exposure, paid-source
+  metering proof, hosted deployment, hosted identity/RBAC, hosted observability/log
+  retention/alerting, hosted object-store proof, Bologna pilot, new county,
+  jurisdiction, rulepack, production traffic proof, ranking/recommendation semantics,
+  report semantic overclaim, DB schema change without plan, or Level 10 completion
+  claim.
+
+## Previous checkpoint (2026-06-20 supported-AOI UI runtime proof G9c)
 
 The active implementation authority is now `G9c` from
 `plans/2026-06-20-supported-aoi-ui-runtime.md`. This follows merged PR #104 at

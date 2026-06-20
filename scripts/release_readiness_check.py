@@ -20,12 +20,14 @@ REQUIRED_FILES = (
     "config/observability_readiness.yaml",
     "config/threat_proxy_audit.yaml",
     "config/checklist_dry_run.yaml",
+    "config/source_entitlements.yaml",
     "docs/runbooks/release_readiness.md",
     "docs/runbooks/release_package.md",
     "docs/runbooks/image_publication.md",
     "docs/runbooks/hosted_deployment.md",
     "docs/runbooks/threat_proxy_audit.md",
     "docs/runbooks/checklist_dry_run.md",
+    "docs/runbooks/source_entitlements.md",
     "docs/runbooks/security_scan.md",
     "docs/runbooks/data_retention.md",
     "docs/runbooks/load_testing.md",
@@ -68,6 +70,9 @@ REQUIRED_FILES = (
     "scripts/run_observability_readiness_check.ps1",
     "scripts/run_observability_readiness_check.sh",
     "scripts/checklist_dry_run_check.py",
+    "scripts/source_entitlement_check.py",
+    "scripts/run_source_entitlement_check.ps1",
+    "scripts/run_source_entitlement_check.sh",
     "scripts/source_readiness.py",
     "scripts/release_readiness_check.py",
 )
@@ -88,6 +93,7 @@ REQUIRED_CHECKS = {
     "image_publication",
     "hosted_deployment",
     "source_readiness",
+    "source_entitlement",
     "security_scan",
     "data_retention",
     "jurisdiction_readiness",
@@ -142,6 +148,7 @@ COMPOSED_VALIDATORS = (
     "scripts/observability_readiness_check.py",
     "scripts/threat_proxy_audit_check.py",
     "scripts/checklist_dry_run_check.py",
+    "scripts/source_entitlement_check.py",
 )
 
 
@@ -497,6 +504,8 @@ def validate_runbook() -> None:
         "run_threat_proxy_audit_check.ps1",
         "checklist_dry_run.yaml",
         "run_checklist_dry_run_check.ps1",
+        "source_entitlements.yaml",
+        "run_source_entitlement_check.ps1",
         "spatial_query_plan.yaml",
         "run_spatial_query_plan_check.ps1",
         "spatial_query_plan_check.py",
@@ -516,6 +525,7 @@ def validate_runbook() -> None:
         "No container image is pushed",
         "does not run `EXPLAIN ANALYZE` against a live or hosted database by default",
         "published registry-image attestation",
+        "source-entitlement check",
     ):
         require(phrase in runbook, f"release readiness runbook missing phrase: {phrase}")
 
