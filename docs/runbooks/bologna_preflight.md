@@ -13,6 +13,11 @@ candidate-only source inventory attached to this preflight. It narrows source-ri
 follow-up work, but it does not approve any source for recorded fixtures, runtime use,
 or reports.
 
+`config/bologna_source_rights.yaml` (`bologna_source_rights_v1`) is the fail-closed
+rights matrix attached to this preflight. It keeps every candidate source pending until
+terms, license, cache, export, AI-use, raw-data, attribution, source version,
+retrieval, caveat, CRS, fixture, and report-use decisions are reviewed.
+
 This proof does not select Bologna, does not approve Italy sources, does not approve an
 EU/Italy rulepack, does not unblock DS-017, does not create runtime artifacts, and does
 not claim hosted production readiness.
@@ -39,6 +44,7 @@ The check is validate-only. It verifies that:
 - every preflight gate is classified exactly once with an allowed fail-closed status;
 - every `repo_confirmed` gate has evidence assertions that still match cited files;
 - the Bologna source-candidates packet remains candidate-only and unapproved;
+- the Bologna source-rights matrix remains validate-only and unapproved;
 - every non-`repo_confirmed` gate has a `next_action` and blocker authority;
 - `blocked_external_authority` gates point to existing authority files;
 - the runbook and production authority packet preserve the boundary that this does not

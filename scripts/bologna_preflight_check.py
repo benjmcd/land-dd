@@ -56,10 +56,15 @@ REQUIRED_FILES = (
     CONFIG_PATH,
     RUNBOOK_PATH,
     "config/bologna_source_candidates.yaml",
+    "config/bologna_source_rights.yaml",
     "docs/source-reviews/bologna-source-candidates.md",
+    "docs/source-reviews/bologna-source-rights.md",
     "scripts/bologna_source_candidates_check.py",
+    "scripts/bologna_source_rights_check.py",
     "scripts/run_bologna_source_candidates_check.ps1",
     "scripts/run_bologna_source_candidates_check.sh",
+    "scripts/run_bologna_source_rights_check.ps1",
+    "scripts/run_bologna_source_rights_check.sh",
     "scripts/run_bologna_preflight_check.ps1",
     "scripts/run_bologna_preflight_check.sh",
     "state/LEVEL_9_10_GATE_MATRIX.md",
@@ -72,6 +77,7 @@ RUNBOOK_PHRASES = (
     "bologna_preflight_v1",
     "validate-only",
     "bologna_source_candidates_v1",
+    "bologna_source_rights_v1",
     "not_started_external_authority_required",
     "does not select Bologna",
     "does not approve Italy sources",
@@ -277,10 +283,55 @@ def validate_source_candidates() -> None:
         )
 
 
+def validate_source_rights() -> None:
+    payload = require_mapping(
+        yaml.safe_load(read_text("config/bologna_source_rights.yaml")),
+        "Bologna source-rights catalog must be a mapping",
+    )
+    require(
+        payload.get("schema_version") == "bologna_source_rights_v1",
+        "Bologna source-rights schema mismatch",
+    )
+    require(
+        payload.get("status") == "repo_local_validate_only",
+        "Bologna source-rights catalog must remain validate-only",
+    )
+    approvals = require_mapping(payload.get("approvals"), "Bologna source-rights approvals missing")
+    require(
+        all(value is False for value in approvals.values()),
+        "Bologna source-rights approvals must remain false",
+    )
+    reviews = require_non_empty_list(
+        payload.get("candidate_rights_reviews"),
+        "Bologna source-rights reviews missing",
+    )
+    for review in reviews:
+        review = require_mapping(review, "each Bologna source-rights review must be a mapping")
+        candidate_id = require_text(
+            review.get("candidate_id"),
+            "source-rights candidate id missing",
+        )
+        require(
+            review.get("decision_state") == "pending_external_review",
+            f"{candidate_id} source-rights decision state promoted",
+        )
+        rights = require_mapping(review.get("rights_decisions"), f"{candidate_id} rights missing")
+        require(
+            all(value == "pending_review" for value in rights.values()),
+            f"{candidate_id} source-rights decisions must remain pending",
+        )
+        promotion = require_mapping(review.get("promotion"), f"{candidate_id} promotion missing")
+        require(
+            all(value is False for value in promotion.values()),
+            f"{candidate_id} source-rights promotion changed",
+        )
+
+
 def main() -> int:
     validate_required_files()
     validate_catalog()
     validate_source_candidates()
+    validate_source_rights()
     validate_runbook()
     validate_production_packet()
     print("Bologna preflight check: ok")

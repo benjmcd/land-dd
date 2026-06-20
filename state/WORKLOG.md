@@ -4269,3 +4269,36 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   promotion, recorded fixture, connector, DB seed, report/API/UI/schema change, DS-017
   approval, hosted authority, rulepack approval, multi-geography framework
   implementation, or Level 10 completion claim.
+
+## 2026-06-20 Bologna source-rights matrix BSR-001
+
+- Continued from live `origin/main` in clean `worktrees/bol-rights` on
+  `codex/bol-rights` after confirming PR #108 had landed at
+  `ec6d3e2e7fb0fbfb88c20d5424437d2ebfbb19d9` and preserving the dirty root as
+  candidate evidence only.
+- Audited the merged Bologna candidate packet and confirmed every candidate remained
+  pending/not approved and that `italy_source_rights_review` remained externally
+  blocked.
+- Added `plans/2026-06-20-bologna-source-rights-matrix.md` to keep this pass scoped to
+  source-rights decision readiness rather than source approval or fixture work.
+- Added `config/bologna_source_rights.yaml`,
+  `docs/runbooks/bologna_source_rights.md`,
+  `docs/source-reviews/bologna-source-rights.md`,
+  `scripts/bologna_source_rights_check.py`, and Windows/POSIX wrappers. The checker
+  validates candidate-id alignment with `config/bologna_source_candidates.yaml`,
+  required `SourceContract` fields from `schemas/source_schema.json`, pending rights
+  decisions, false promotion flags, and the cadastral direct-review gap.
+- Composed the rights matrix into `config/bologna_preflight.yaml` and
+  `scripts/bologna_preflight_check.py` so the preflight references concrete
+  source-rights evidence while keeping `italy_source_rights_review` blocked.
+- Updated manifest, plan routing, task queue, Level 9/10 matrix text, project state,
+  and the production authority packet so `BSR-001` is the active route and `BSC-001` is
+  completed.
+- Focused rights/candidate/preflight artifact tests, validators, wrapper, focused
+  ruff/mypy, Must-source readiness, release-readiness, readiness-matrix,
+  diff/no-deletion checks, workspace validation, and default `.\scripts\verify.ps1`
+  passed. DB smoke was skipped by default.
+- Preserved the boundaries: no Bologna AOI selection, source approval, source registry
+  promotion, recorded fixture, connector, DB seed, report/API/UI/schema change, DS-017
+  approval, hosted authority, rulepack approval, multi-geography framework
+  implementation, or Level 10 completion claim.

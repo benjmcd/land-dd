@@ -1,0 +1,334 @@
+schema_version: bologna_source_rights_v1
+operator_runbook: docs/runbooks/bologna_source_rights.md
+source_review: docs/source-reviews/bologna-source-rights.md
+candidate_catalog: config/bologna_source_candidates.yaml
+status: repo_local_validate_only
+validation: scripts/run_bologna_source_rights_check.ps1
+
+authority:
+  - config/bologna_preflight.yaml
+  - config/bologna_source_candidates.yaml
+  - docs/DATA_SOURCE_STRATEGY.md
+  - schemas/source_schema.json
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+
+approvals:
+  source_rights_review_complete: false
+  any_source_approved: false
+  source_registry_promoted: false
+  recorded_source_corpus_allowed: false
+  runtime_use_allowed: false
+  report_use_allowed: false
+  raw_data_export_allowed: false
+  cadastral_use_approved: false
+
+limits:
+  validate_only_matrix: true
+  approves_sources: false
+  changes_source_readiness: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  claims_legal_review: false
+  claims_cadastral_authority: false
+  claims_report_use_allowed: false
+  claims_hosted_production_ready: false
+
+source_contract_required_fields:
+  - source_id
+  - name
+  - organization
+  - homepage_url
+  - source_type
+  - authority_level
+  - domain
+  - geographic_scope
+  - update_cadence
+  - license_status
+  - commercial_use_status
+  - redistribution_status
+  - license_summary
+  - attribution_required
+  - cache_allowed
+  - export_allowed
+  - ai_use_allowed
+  - raw_data_allowed
+  - freshness_class
+  - last_checked_at
+  - review_owner
+  - review_status
+  - notes
+  - metadata
+
+required_rights_decisions:
+  - terms_reference
+  - terms_effective_date
+  - source_version_or_publication_date
+  - update_cadence
+  - license_status
+  - commercial_use_status
+  - redistribution_status
+  - cache_allowed
+  - export_allowed
+  - raw_data_allowed
+  - ai_use_allowed
+  - attribution_required
+  - retrieval_metadata_policy
+  - source_failure_policy
+  - no_data_policy
+  - caveat_policy
+  - crs_precision_policy
+  - field_allowlist
+  - field_denylist
+  - fixture_capture_policy
+  - report_use_policy
+
+candidate_rights_reviews:
+  - candidate_id: comune_bologna_pug_webgis
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - effective_pug_document_or_webgis_version
+      - terms_or_reuse_reference
+      - allowed_cache_export_ai_raw_data_decisions
+      - attribution_text
+      - planning_context_caveats
+
+  - candidate_id: comune_bologna_open_data_pug_constraints
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - exact_dataset_identifier
+      - dataset_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - attribution_text
+      - environmental_or_constraint_screening_caveats
+
+  - candidate_id: rer_geoportale_dbtr_altimetry
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - exact_layer_metadata
+      - license_and_attribution_mapping
+      - source_version_or_update_timestamp
+      - crs_and_precision_decision
+      - terrain_context_caveats
+
+  - candidate_id: rer_geoportale_catalog_services
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - exact_layer_selection
+      - per_layer_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - service_or_download_retrieval_policy
+      - layer_specific_caveats
+
+  - candidate_id: rer_crs_reference
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - official_crs_reference
+      - transformation_policy
+      - geometry_precision_policy
+      - fixture_crs_metadata_policy
+      - reference_not_report_claim_caveat
+
+  - candidate_id: arpae_cartographic_portal
+    decision_state: pending_external_review
+    rights_decisions:
+      terms_reference: pending_review
+      terms_effective_date: pending_review
+      source_version_or_publication_date: pending_review
+      update_cadence: pending_review
+      license_status: pending_review
+      commercial_use_status: pending_review
+      redistribution_status: pending_review
+      cache_allowed: pending_review
+      export_allowed: pending_review
+      raw_data_allowed: pending_review
+      ai_use_allowed: pending_review
+      attribution_required: pending_review
+      retrieval_metadata_policy: pending_review
+      source_failure_policy: pending_review
+      no_data_policy: pending_review
+      caveat_policy: pending_review
+      crs_precision_policy: pending_review
+      field_allowlist: pending_review
+      field_denylist: pending_review
+      fixture_capture_policy: pending_review
+      report_use_policy: pending_review
+    promotion:
+      source_registry_row_allowed: false
+      fixture_capture_allowed: false
+      runtime_use_allowed: false
+      report_use_allowed: false
+      raw_export_allowed: false
+    required_evidence:
+      - exact_environmental_layer_selection
+      - layer_metadata_and_terms_reference
+      - source_version_or_update_timestamp
+      - environmental_screening_caveats
+      - no_jurisdiction_or_liability_claim_policy
+
+cadastral_gap:
+  status: direct_source_review_required
+  approval:
+    cadastral_geometry_allowed: false
+    owner_title_access_allowed: false
+    fixture_capture_allowed: false
+    report_use_allowed: false
+  required_evidence:
+    - official_terms_reference
+    - allowed_access_method
+    - cache_export_ai_raw_data_decisions
+    - cadastral_geometry_precision_and_caveats
+    - explicit_no_owner_title_access_buildability_authority
+
+promotion_blockers:
+  - authorized_one_aoi_scope
+  - exact_source_selection
+  - completed_per_source_rights_review
+  - source_contract_fields_complete
+  - source_registry_row_review
+  - recorded_fixture_scope
+  - crs_precision_policy
+  - rulepack_or_evidence_only_scope
+  - no_overclaim_review

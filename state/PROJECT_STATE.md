@@ -1,5 +1,51 @@
 # Project State
 
+## Current checkpoint (2026-06-20 Bologna source-rights matrix BSR-001)
+
+The active implementation authority is now `BSR-001` from
+`plans/2026-06-20-bologna-source-rights-matrix.md`. This follows merged PR #108 at
+`ec6d3e2e7fb0fbfb88c20d5424437d2ebfbb19d9`, which completed `BSC-001` Bologna
+source-candidate discovery. The dirty root checkout remains preserved candidate
+evidence only; continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-bologna-source-rights-matrix.md`.
+- **Purpose**: convert Bologna source-candidate discovery into a validate-only
+  source-rights decision matrix. Every candidate source is mapped to source-schema,
+  terms, license, cache, export, AI-use, raw-data, attribution, retrieval, failure,
+  caveat, CRS, fixture, and report-use decisions that must be reviewed before any
+  source can be promoted.
+- **Current implementation slice**: clean worktree `worktrees/bol-rights` adds
+  `config/bologna_source_rights.yaml`, `docs/runbooks/bologna_source_rights.md`,
+  `docs/source-reviews/bologna-source-rights.md`,
+  `scripts/bologna_source_rights_check.py`, Windows/POSIX wrappers, focused artifact
+  tests, and preflight composition. The matrix cross-checks the candidate ids from
+  `config/bologna_source_candidates.yaml` and the required `SourceContract` fields from
+  `schemas/source_schema.json`. Every rights decision remains `pending_review`, every
+  promotion flag remains false, and cadastral cartography remains a direct review gap.
+- **Next required step**: complete focused and canonical validation, then publish/merge
+  `BSR-001` and remove the worktree if checks and CI pass.
+- **Goal sequence**: immediate work is source-rights matrix validation and merge. The
+  next repo-local pass after that should either fill the matrix from actual
+  product/AOI/source-review authority or, if authority is still absent, record the
+  blocker and avoid fixture capture. Mid-term work is an authorized one-AOI Bologna
+  recorded-source corpus with reviewed source rights, source versions, retrieval
+  metadata, CRS policy, attribution, source-failure fixtures, and evidence-only or
+  rulepack scope; then one DB-backed report proof with evidence, unknowns/claims,
+  caveats, artifacts, and lineage. Parallel external blockers remain DS-017 treatment,
+  hosted platform/database/DNS/TLS, identity/RBAC, object-store, observability,
+  alerting, billing, secret-manager, image-publication, and production workload
+  authority. Long-term work is a repeatable multi-geography source/rulepack framework
+  only after the Bologna pilot exposes real shared contracts and country-specific
+  boundaries.
+- **Known boundaries to preserve**: no Bologna AOI selection, source approval, source
+  registry promotion, recorded fixture, connector, DB seed, report/API/UI/schema
+  change, DS-017 approval, vendor selection, hosted deployment, hosted identity/RBAC,
+  hosted observability/log retention/alerting, hosted object-store proof, new
+  jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation
+  semantics, multi-geography framework implementation, report semantic overclaim, or
+  Level 10 completion claim.
+
 ## Current checkpoint (2026-06-20 Bologna source-candidate discovery BSC-001)
 
 The active implementation authority is now `BSC-001` from
