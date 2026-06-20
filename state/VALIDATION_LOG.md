@@ -2,6 +2,68 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Custom AOI UI Runtime Smoke G9a
+
+**Scope:** Add custom AOI UI runtime smoke proof over the existing `/ui/intake`, async
+report status, reviewer approval, artifact, and lineage paths without adding sources,
+connectors, geographies, rulepacks, DS-017 authority, Bologna, hosted deployment,
+hosted identity/RBAC, hosted observability, production traffic proof, or Level 10
+authority.
+
+**Commands run so far:**
+
+```powershell
+py -3.12 -m pytest backend\tests\test_ui_runtime_smoke_script.py::test_ui_runtime_smoke_custom_aoi_fixture_posts_and_checks_report_page -q
+py -3.12 -m pytest backend\tests\test_ui_runtime_smoke_script.py::test_ui_runtime_smoke_custom_aoi_waits_for_report_delivery_page -q
+py -3.12 -m pytest backend\tests\test_ui_runtime_smoke_script.py::test_ui_runtime_smoke_custom_aoi_approves_pending_report_with_reviewer_session -q
+py -3.12 -m pytest backend\tests\test_ui_runtime_smoke_script.py -q
+cd backend
+ruff check ..\scripts\ui_runtime_smoke.py tests\test_ui_runtime_smoke_script.py
+cd ..
+py -3.12 -m mypy scripts\ui_runtime_smoke.py
+py -3.12 -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('tasks/task_queue.yaml').read_text(encoding='utf-8')); print(data['active_plan']); print([t['id'] for t in data['tasks'] if t.get('status') == 'active'])"
+py -3.12 .\scripts\private_mvp_readiness_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+.\scripts\run_readiness_matrix_check.ps1
+py -3.12 -m pytest backend\tests\test_readiness_matrix_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Intentional red focused pytest failed because `scripts/ui_runtime_smoke.py` did not
+  recognize `--custom-aoi-fixture`.
+- Intentional red focused pytest then failed because the custom AOI report page could
+  be pending/generating without approved delivery links.
+- Intentional red focused pytest then failed because a pending-review custom report was
+  not approved through the reviewer UI path.
+- Full focused runtime-smoke script tests passed after implementation (`19 passed`).
+- Focused ruff passed for the changed smoke script and tests.
+- Focused mypy passed for `scripts/ui_runtime_smoke.py`.
+- YAML parsing confirmed active plan
+  `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md` with only active task `G9a`.
+- Private-MVP and release-readiness validators passed.
+- Readiness-matrix validator initially failed because the active follow-on plan did not
+  cite `state/LEVEL_9_10_GATE_MATRIX.md` and preserve `Level 9/10` authority context;
+  the plan was updated and the validator passed. The readiness-matrix wrapper and
+  artifact tests passed (`4 passed`).
+- `git diff --check`, no-deletion check, and `.\scripts\validate_workspace.ps1` passed.
+- First full `.\scripts\verify.ps1` run passed workspace validation, backend tests, and
+  ruff, then failed backend mypy because the widened fake runtime route map type was not
+  reflected in `_required_routes()`. The helper return type was widened; focused mypy
+  over the changed test and smoke script passed.
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341`
+  source files. DB smoke was skipped by default.
+
+**Residual risk:** Docker-backed deployment smoke has not been run in this slice yet;
+the wrappers were updated, but that runtime gate remains opt-in. This remains repo-local
+custom AOI workflow proof, not hosted deployment, hosted identity/RBAC, hosted
+observability, new source/geography authority, DS-017 approval, or Level 10 proof.
+
 ## 2026-06-20 Observability Readiness UI G8
 
 **Scope:** Add a local read-only `/ui/observability-readiness` page and validate-only

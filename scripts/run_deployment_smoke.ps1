@@ -286,6 +286,8 @@ try {
             --reviewer-token fixture-token-123 `
             --operator-case-id BUN-slope `
             --compare-same-area `
+            --custom-aoi-fixture .\tests\fixtures\geometries\valid_polygon.geojson `
+            --report-wait-seconds 90 `
             --expect-artifact-persistence postgres+object_store
     }
 

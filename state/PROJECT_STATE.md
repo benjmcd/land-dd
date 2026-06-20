@@ -1,15 +1,57 @@
 # Project State
 
-## Current checkpoint (2026-06-20 observability readiness UI G8)
+## Current checkpoint (2026-06-20 custom AOI UI runtime smoke G9a)
 
-The active implementation authority is now the narrow `G8` observability readiness
-slice from `plans/2026-06-20-observability-readiness-ui-g8.md`. This follows the merged
+The active implementation authority is now the narrow `G9a` custom AOI UI runtime
+smoke slice from `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md`. This follows the
+merged `G8` observability readiness UI slice from PR #100 at
+`2522b734578ad498910f10598aa5404fb6601129`. The dirty root checkout remains preserved
+candidate evidence only; continued work should happen from fresh or already-clean
+worktrees under `worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md`.
+- **Purpose**: prove that the existing custom GeoJSON UI intake path can complete the
+  repo-local runtime workflow under reviewer control: submit a fixture AOI through
+  `/ui/intake`, wait for async report generation, approve pending reports through the
+  existing reviewer UI route, then verify approved delivery, artifact persistence, and
+  evidence lineage.
+- **Implemented scope so far**: `scripts/ui_runtime_smoke.py` now accepts
+  `--custom-aoi-fixture`, posts the fixture GeoJSON to `/ui/intake`, waits for report
+  delivery or pending approval, uses existing reviewer session or fallback reviewer
+  fields for approval when needed, verifies custom AOI delivery links with
+  `custom-aoi-report`, checks artifact persistence when requested, and follows
+  custom lineage with `custom-aoi-lineage`. The PowerShell and POSIX deployment smoke
+  wrappers now include this custom AOI UI proof in the existing DB-backed reviewer
+  smoke run.
+- **Current local validation**: focused runtime-smoke tests first failed on the missing
+  `--custom-aoi-fixture` option and then on the missing pending-approval approval path;
+  after implementation, `py -3.12 -m pytest backend\tests\test_ui_runtime_smoke_script.py
+  -q` passed (`19 passed`). Focused `ruff check` passed for the changed smoke script and
+  tests, and focused mypy passed for the changed smoke script and tests after widening
+  the fake route map helper type. Private-MVP, release-readiness, and readiness-matrix
+  validators passed; the readiness-matrix wrapper and artifact tests passed; `git diff
+  --check`, no-deletion, and workspace validation passed. Final `.\scripts\verify.ps1`
+  passed with backend tests, ruff, and mypy over `341` source files. DB smoke was skipped
+  by default.
+- **Known boundaries to preserve**: no new source, connector, county, jurisdiction,
+  rulepack, DS-017 approval, Bologna pilot, hosted deployment, hosted identity/RBAC,
+  hosted observability/log retention/alerting, hosted object-store proof, production
+  traffic proof, ranking/recommendation semantics, public API contract change, DB schema
+  change, report semantics change, or Level 10 completion claim.
+- **Next required step**: publish the focused `codex/aoi-smoke` PR, wait for CI, merge
+  only if local and CI proof agree, remove `worktrees/aoi-smoke`, then re-check live
+  `origin/main` before selecting the next retained slice.
+
+## Previous checkpoint (2026-06-20 observability readiness UI G8)
+
+The implementation authority for `G8` was the narrow observability readiness slice from
+`plans/2026-06-20-observability-readiness-ui-g8.md`. This followed the merged
 `G6c` performance guardrails UI slice from PR #99 at
 `3ea51589fd2a69e52b474c8a38baf8047a5d7744`. The dirty root checkout remains preserved
 candidate evidence only; continued work should happen from fresh or already-clean
 worktrees under `worktrees/<short-name>`.
 
-- **Active plan**: `plans/2026-06-20-observability-readiness-ui-g8.md`.
+- **Plan**: `plans/2026-06-20-observability-readiness-ui-g8.md`.
 - **Purpose**: reconstruct the retained local-only observability readiness surface from
   live `origin/main`, focused on existing repo-owned metrics, queue/recovery,
   connector observability, source-failure evidence, alert-rule, deployment-smoke
@@ -48,9 +90,10 @@ worktrees under `worktrees/<short-name>`.
   change, hosted deployment, hosted source authority, hosted identity/RBAC, hosted SLO
   or capacity proof, production traffic observability proof, or Level 10 completion
   claim.
-- **Next required step**: publish the focused `codex/obs-ready` PR, wait for CI, merge
-  only if local and CI proof agree, then re-check live `origin/main` before selecting
-  the next retained post-reconciliation slice.
+- **Post-merge status**: PR #100 is merged on `origin/main` at
+  `2522b734578ad498910f10598aa5404fb6601129`; `worktrees/obs-ready` was removed after
+  post-merge proof. The next retained slice is the narrow `G9a` custom AOI UI runtime
+  smoke proof.
 
 ## Previous checkpoint (2026-06-20 performance guardrails UI G6c)
 

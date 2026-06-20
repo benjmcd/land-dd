@@ -3,9 +3,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from http.cookiejar import CookieJar
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin, urlparse
@@ -200,6 +202,14 @@ OPERATOR_CASE_REPORT_CHECK = RouteCheck(
         "View evidence lineage",
     ),
 )
+CUSTOM_AOI_REPORT_CHECK = RouteCheck(
+    "custom-aoi-report",
+    "/ui/intake",
+    OPERATOR_CASE_REPORT_CHECK.required,
+    forbidden=OPERATOR_CASE_REPORT_CHECK.forbidden,
+    expect_html=OPERATOR_CASE_REPORT_CHECK.expect_html,
+    expect_viewport=OPERATOR_CASE_REPORT_CHECK.expect_viewport,
+)
 OPERATOR_CASE_LINEAGE_REQUIRED = (
     "Evidence Lineage",
     "Sources:",
@@ -216,6 +226,10 @@ OPERATOR_CASE_LINEAGE_FORBIDDEN = (
     "No source entries.",
     "No evidence records.",
     "No claims.",
+)
+CUSTOM_AOI_PENDING_APPROVAL_MARKERS = (
+    "Report Pending Approval",
+    "Approve Report",
 )
 
 
@@ -245,10 +259,16 @@ def fetch_csrf_token(opener: Any, base_url: str, timeout: float) -> str | None:
     return extract_csrf_token(body)
 
 
-def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -> RouteResult:
+def fetch_route_with_body(
+    opener: Any,
+    base_url: str,
+    check: RouteCheck,
+    timeout: float,
+) -> tuple[RouteResult, str]:
     url = urljoin(base_url.rstrip("/") + "/", check.path.lstrip("/"))
     failures: list[str] = []
     status: int | None = None
+    body = ""
     try:
         with opener.open(url, timeout=timeout) as response:
             status = int(response.status)
@@ -261,12 +281,15 @@ def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -
         if status != check.expected_status:
             failures.append(f"HTTP {status}")
     except URLError as exc:
-        return RouteResult(
-            check.label,
-            check.path,
-            None,
-            False,
-            [f"runtime unavailable: {exc.reason}"],
+        return (
+            RouteResult(
+                check.label,
+                check.path,
+                None,
+                False,
+                [f"runtime unavailable: {exc.reason}"],
+            ),
+            body,
         )
 
     if status != check.expected_status:
@@ -284,7 +307,49 @@ def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -
         if text in body:
             failures.append(f"found forbidden text: {text}")
 
-    return RouteResult(check.label, check.path, status, not failures, failures)
+    return RouteResult(check.label, check.path, status, not failures, failures), body
+
+
+def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -> RouteResult:
+    result, _body = fetch_route_with_body(opener, base_url, check, timeout)
+    return result
+
+
+def wait_for_route_ok(
+    opener: Any,
+    base_url: str,
+    check: RouteCheck,
+    timeout: float,
+    wait_seconds: float,
+) -> RouteResult:
+    deadline = time.monotonic() + max(0.0, wait_seconds)
+    result = fetch_route(opener, base_url, check, timeout)
+    while not result.ok and time.monotonic() < deadline:
+        remaining = deadline - time.monotonic()
+        time.sleep(min(0.25, max(0.0, remaining)))
+        result = fetch_route(opener, base_url, check, timeout)
+    return result
+
+
+def wait_for_custom_report_gate(
+    opener: Any,
+    base_url: str,
+    check: RouteCheck,
+    timeout: float,
+    wait_seconds: float,
+) -> tuple[RouteResult, bool]:
+    deadline = time.monotonic() + max(0.0, wait_seconds)
+    result, body = fetch_route_with_body(opener, base_url, check, timeout)
+    while True:
+        if result.ok:
+            return result, False
+        if all(marker in body for marker in CUSTOM_AOI_PENDING_APPROVAL_MARKERS):
+            return result, True
+        if time.monotonic() >= deadline:
+            return result, False
+        remaining = deadline - time.monotonic()
+        time.sleep(min(0.25, max(0.0, remaining)))
+        result, body = fetch_route_with_body(opener, base_url, check, timeout)
 
 
 def result_path_from_url(url: str) -> str:
@@ -330,11 +395,13 @@ def check_report_lineage(
     base_url: str,
     report_ui_path: str,
     timeout: float,
+    *,
+    label: str = "operator-case-lineage",
 ) -> RouteResult:
     lineage_path = lineage_path_for_ui_report(report_ui_path)
     if lineage_path is None:
         return RouteResult(
-            "operator-case-lineage",
+            label,
             report_ui_path,
             None,
             False,
@@ -344,7 +411,7 @@ def check_report_lineage(
         opener,
         base_url,
         RouteCheck(
-            "operator-case-lineage",
+            label,
             lineage_path,
             OPERATOR_CASE_LINEAGE_REQUIRED,
             forbidden=OPERATOR_CASE_LINEAGE_FORBIDDEN,
@@ -398,6 +465,65 @@ def check_artifact_persistence(
             f"expected {expected_persistence!r}, got {actual!r}"
         )
     return failures
+
+
+def approve_report_from_ui(
+    opener: Any,
+    base_url: str,
+    report_ui_path: str,
+    timeout: float,
+    *,
+    include_csrf: bool,
+    reviewer_id: str = "",
+    reviewer_token: str = "",
+) -> list[str]:
+    report_run_id = report_run_id_from_ui_report(report_ui_path)
+    if report_run_id is None:
+        return [f"could not derive report_run_id from final path: {report_ui_path}"]
+    fields: dict[str, str] = {}
+    if reviewer_id and reviewer_token:
+        fields["reviewer_id"] = reviewer_id
+        fields["reviewer_token"] = reviewer_token
+    failures: list[str] = []
+    if include_csrf:
+        form_check = RouteCheck(
+            "custom-aoi-approval-form",
+            report_ui_path,
+            CUSTOM_AOI_PENDING_APPROVAL_MARKERS,
+        )
+        form_result, form_body = fetch_route_with_body(opener, base_url, form_check, timeout)
+        if not form_result.ok:
+            failures.extend(form_result.failures)
+        csrf_token = extract_csrf_token(form_body)
+        if csrf_token:
+            fields["csrf_token"] = csrf_token
+        else:
+            failures.append(f"missing csrf token on {report_ui_path}")
+    if failures:
+        return failures
+
+    url = urljoin(
+        base_url.rstrip("/") + "/",
+        f"ui/report-runs/{report_run_id}/approve",
+    )
+    try:
+        request = Request(
+            url,
+            data=urlencode(fields).encode("utf-8"),
+            headers={"content-type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with opener.open(request, timeout=timeout) as response:
+            status = int(response.status)
+            response.read()
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        return [f"approval returned HTTP {int(exc.code)}: {body[:200]}"]
+    except URLError as exc:
+        return [f"approval failed: {exc.reason}"]
+    if status != 200:
+        return [f"approval expected HTTP 200 after redirect, got {status}"]
+    return []
 
 
 def fetch_json_payload(
@@ -731,6 +857,146 @@ def post_operator_case_report(
     return RouteResult(check.label, final_path, status, not failures, failures)
 
 
+def post_custom_aoi_report(
+    opener: Any,
+    base_url: str,
+    fixture_path: Path,
+    timeout: float,
+    *,
+    include_csrf: bool,
+    expected_artifact_persistence: str,
+    report_wait_seconds: float,
+    reviewer_id: str = "",
+    reviewer_token: str = "",
+) -> RouteResult:
+    check = CUSTOM_AOI_REPORT_CHECK
+    url = urljoin(base_url.rstrip("/") + "/", "ui/intake")
+    failures: list[str] = []
+    status: int | None = None
+    final_path = check.path
+    try:
+        area_geojson = fixture_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return RouteResult(
+            check.label,
+            str(fixture_path),
+            None,
+            False,
+            [f"could not read custom AOI fixture: {exc}"],
+        )
+    fields = {"area_geojson": area_geojson, "intent": "rural_land_purchase"}
+
+    if include_csrf:
+        try:
+            csrf_token = fetch_csrf_token(opener, base_url, timeout)
+        except HTTPError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch returned HTTP {int(exc.code)}")
+        except URLError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch failed: {exc.reason}")
+        if csrf_token:
+            fields["csrf_token"] = csrf_token
+        else:
+            failures.append("missing csrf token on /ui/")
+
+    try:
+        body_bytes = urlencode(fields).encode("utf-8")
+        request = Request(
+            url,
+            data=body_bytes,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with opener.open(request, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+            final_path = result_path_from_url(response.geturl())
+    except HTTPError as exc:
+        status = int(exc.code)
+        body = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("content-type", "")
+        final_path = result_path_from_url(exc.geturl())
+        failures.append(f"HTTP {status}")
+    except URLError as exc:
+        return RouteResult(
+            check.label,
+            final_path,
+            None,
+            False,
+            [f"runtime unavailable: {exc.reason}"],
+        )
+
+    if status != 200:
+        failures.append(f"expected HTTP 200, got {status}")
+    else:
+        report_check = RouteCheck(
+            check.label,
+            final_path,
+            check.required,
+            forbidden=check.forbidden,
+            expect_html=check.expect_html,
+            expect_viewport=check.expect_viewport,
+        )
+        report_result, needs_approval = wait_for_custom_report_gate(
+            opener,
+            base_url,
+            report_check,
+            timeout,
+            report_wait_seconds,
+        )
+        if needs_approval:
+            approval_failures = approve_report_from_ui(
+                opener,
+                base_url,
+                final_path,
+                timeout,
+                include_csrf=include_csrf,
+                reviewer_id=reviewer_id,
+                reviewer_token=reviewer_token,
+            )
+            failures.extend(approval_failures)
+            if not approval_failures:
+                report_result = wait_for_route_ok(
+                    opener,
+                    base_url,
+                    report_check,
+                    timeout,
+                    report_wait_seconds,
+                )
+        status = report_result.status
+        final_path = report_result.path
+        failures.extend(report_result.failures)
+    if status != 200:
+        if not body.strip():
+            failures.append("empty body")
+        if check.expect_html and "text/html" not in content_type.lower():
+            failures.append(
+                f"expected text/html content-type, got {content_type or '<missing>'}"
+            )
+        if check.expect_viewport and 'name="viewport"' not in body:
+            failures.append("missing viewport meta")
+        for text in check.required:
+            if text not in body:
+                failures.append(f"missing required text: {text}")
+        for text in check.forbidden:
+            if text in body:
+                failures.append(f"found forbidden text: {text}")
+    if expected_artifact_persistence:
+        failures.extend(
+            check_artifact_persistence(
+                opener,
+                base_url,
+                final_path,
+                expected_artifact_persistence,
+                timeout,
+            )
+        )
+
+    return RouteResult(check.label, final_path, status, not failures, failures)
+
+
 def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
     cookie_jar = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookie_jar))
@@ -762,8 +1028,13 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                 raise
             reviewer_form_id = args.reviewer_id
             reviewer_form_token = args.reviewer_token
-    if args.expect_artifact_persistence and not args.operator_case_id:
-        raise RuntimeError("--expect-artifact-persistence requires --operator-case-id")
+    if args.expect_artifact_persistence and not (
+        args.operator_case_id or args.custom_aoi_fixture
+    ):
+        raise RuntimeError(
+            "--expect-artifact-persistence requires --operator-case-id "
+            "or --custom-aoi-fixture"
+        )
     if args.compare_same_area and not args.operator_case_id:
         raise RuntimeError("--compare-same-area requires --operator-case-id")
 
@@ -870,6 +1141,29 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                             args.timeout,
                         )
                     )
+    if args.custom_aoi_fixture:
+        custom_result = post_custom_aoi_report(
+            opener,
+            base_url,
+            Path(args.custom_aoi_fixture),
+            args.timeout,
+            include_csrf=bool(args.api_key) or reviewer_session,
+            expected_artifact_persistence=args.expect_artifact_persistence,
+            report_wait_seconds=args.report_wait_seconds,
+            reviewer_id=reviewer_form_id,
+            reviewer_token=reviewer_form_token,
+        )
+        results.append(custom_result)
+        if custom_result.ok:
+            results.append(
+                check_report_lineage(
+                    opener,
+                    base_url,
+                    custom_result.path,
+                    args.timeout,
+                    label="custom-aoi-lineage",
+                )
+            )
     return results
 
 
@@ -883,14 +1177,28 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reviewer-token", default="")
     parser.add_argument("--timeout", type=float, default=5.0)
     parser.add_argument(
+        "--report-wait-seconds",
+        type=float,
+        default=30.0,
+        help="maximum time to wait for custom AOI report delivery links",
+    )
+    parser.add_argument(
         "--operator-case-id",
         default="",
         help="opt in to creating and checking one selected-county UI report",
     )
     parser.add_argument(
+        "--custom-aoi-fixture",
+        default="",
+        help="opt in to creating and checking one custom AOI UI report from GeoJSON",
+    )
+    parser.add_argument(
         "--expect-artifact-persistence",
         default="",
-        help="with --operator-case-id, assert final report artifact persistence value",
+        help=(
+            "with --operator-case-id or --custom-aoi-fixture, assert created report "
+            "artifact persistence value"
+        ),
     )
     parser.add_argument(
         "--compare-same-area",
