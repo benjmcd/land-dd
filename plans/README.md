@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-production-authority-intake-guard.md`.
+Latest completed plan: `2026-06-20-selected-county-runtime-provenance-regression.md`.
 
-Current routing plan: `2026-06-20-post-bsr-roadmap.md`.
+Current routing plan: `2026-06-20-selected-county-runtime-provenance-regression.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -16,6 +16,11 @@ product/AOI/source-review authority exists. `BSA-001` remains blocked. Do not pr
 to fixture capture, runtime integration, source registry promotion, rulepack
 implementation, hosted authority, DS-017 approval, or a multi-geography framework from
 repo-local inference alone.
+
+`SRP-001` reworks the retained dirty-root runtime-provenance regression into a
+current-main selected-county fixture review-bundle/idempotency test. It is test-only
+and does not change source/report behavior, source readiness, hosted authority, Bologna
+authority, or Level 10 status.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

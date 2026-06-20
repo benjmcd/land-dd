@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Selected-county runtime provenance regression SRP-001
+
+- Started clean worktree `worktrees/runtime-prov` on `codex/runtime-prov` from live
+  `origin/main` at `b62bc488fcf78b2bba2e4beb4ebca2dbdfb9a1b9`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited `state/residual-reconciliation.md` and confirmed the retained
+  `backend/tests/api/test_operator_cases_runtime_provenance.py` candidate was useful
+  but stale: it expected per-DS helper internals that no longer exist on current main.
+- Added a current-main test-only regression proving selected-county fixture package
+  source manifests, source-provenance review bundle counts, case-specific connector
+  retrieval scopes, repeated-run idempotency, and unsupported screening source no-run
+  boundaries.
+- Updated plan routing, task queue, project state, and residual reconciliation so the
+  runtime-provenance candidate is no longer counted as an unlanded `STILL_DIVERGENT`
+  path.
+- Focused tests, ruff, mypy, source-readiness, release-readiness, production-authority,
+  readiness-matrix, diff/no-deletion checks, workspace validation, and default
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- Boundaries remain: no source/report behavior change, no source-readiness change, no
+  DS-017 approval, no hosted authority, no Bologna authority, no fixture capture beyond
+  existing selected-county package behavior, and no Level 10 claim.
+
 ## 2026-06-20 Production authority intake guard PAI-001
 
 - Started clean worktree `worktrees/auth-intake` on `codex/auth-intake` from live

@@ -18,20 +18,24 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 |---|---:|---|
 | `ALREADY_LANDED` | 8 | Dirty-root bytes match current main; no further carry-forward needed. |
 | `LANDED_DIFFERENTLY` | 64 | Current main has the path, but the dirty-root content differs; treat current main as authority and do not copy the dirty file wholesale. |
-| `STILL_DIVERGENT` | 3 | The candidate path is absent on current main and was not previously deferred/reference-only; it needs focused review before any implementation. |
+| `REWORKED_IN_SLICE` | 1 | The dirty-root candidate concept has been reconstructed against current main in a focused slice instead of copied wholesale. |
+| `STILL_DIVERGENT` | 2 | The candidate path is absent on current main and was not previously deferred/reference-only; it needs focused review before any implementation. |
 | `DEFER_STILL_BLOCKED` | 17 | The candidate remains outside the current unblocked path, usually due to hosted/source/geography/report-semantics prerequisites. |
 | `OBSOLETE` | 34 | Historical/reference/generated candidate material; do not promote as live state. |
 | `COORDINATION_OR_GENERATED` | 2 | Agent coordination or generated/runtime state; not product work. |
 
 ## Focused Review Results
 
-The only paths classified as `STILL_DIVERGENT` are:
+After `SRP-001`, the only paths still classified as `STILL_DIVERGENT` are:
 
 | Path | Prior slice | Current determination |
 |---|---|---|
 | `backend/app/project_readiness.py` | `G3` | Read-only orientation/control-plane parser candidate. It should not be next unless a later control-plane consolidation slice is explicitly selected. |
 | `backend/app/release_readiness.py` | `G3/G7` | Read-only release-readiness parser candidate. Existing `scripts/release_readiness_check.py` and release catalog remain authority; defer until real control-plane consolidation is needed. |
-| `backend/tests/api/test_operator_cases_runtime_provenance.py` | `G5` | Useful G5 regression candidate for selected-county runtime provenance review-bundle/idempotency behavior; focused and unblocked, but narrower than the generic-AOI objective. |
+
+`backend/tests/api/test_operator_cases_runtime_provenance.py` is reworked by
+`plans/2026-06-20-selected-county-runtime-provenance-regression.md` as a current-main
+test-only regression for selected-county fixture review-bundle/idempotency behavior.
 
 ## Next-Slice Determination
 
@@ -170,7 +174,7 @@ The selected-county runtime-provenance regression candidate remains retained as 
 | `OBSOLETE` | `??` | no | `plans/2026-06-19-observability-readiness-ui.md` | `ARCHIVE_REFERENCE` | `G8` | Historical/reference/generated candidate; do not publish as live state. |
 | `STILL_DIVERGENT` | `??` | no | `backend/app/project_readiness.py` | `REWORK_NARROWLY` | `G3` | Unlanded candidate concept needs focused review before any implementation. |
 | `STILL_DIVERGENT` | `??` | no | `backend/app/release_readiness.py` | `REWORK_NARROWLY` | `G3/G7` | Unlanded candidate concept needs focused review before any implementation. |
-| `STILL_DIVERGENT` | `??` | no | `backend/tests/api/test_operator_cases_runtime_provenance.py` | `REWORK_NARROWLY` | `G5` | Unlanded candidate concept needs focused review before any implementation. |
+| `REWORKED_IN_SLICE` | `??` | yes | `backend/tests/api/test_operator_cases_runtime_provenance.py` | `REWORK_NARROWLY` | `G5` | Reworked as `SRP-001`; current-main test targets selected-county fixture package review bundles and repeated-run idempotency instead of stale dirty-root per-DS helper assumptions. |
 
 ## Validation Plan
 
