@@ -2,15 +2,15 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-source-readiness-module.md`.
+Latest completed plan: `2026-06-20-account-free-local-auth.md`.
 
-Active plan: `2026-06-20-account-free-local-auth.md`.
+Active plan: `2026-06-20-raw-data-inventory.md`.
 
-The active slice is `G1a`, the next retained product/control slice after the
-package-manifest CI gate and source-readiness module extraction. It makes default local
-browser operation account-free by omitting `/ui/auth*` login/session routes from local
-no-auth runtime and default OpenAPI output while preserving explicit protected-mode
-auth behavior.
+The active slice is `G1b`, the next retained product/control slice after `G1a`
+account-free local auth posture merged. It reconstructs a local read-only raw-data
+inventory route from live `origin/main`, links it from `/ui/`, and keeps `GET
+/ui/raw-data` free of hidden seeding, connector execution, report creation, source
+approval, hosted deployment, or identity/RBAC claims.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

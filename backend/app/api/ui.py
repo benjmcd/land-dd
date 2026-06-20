@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html as _html
 import json
+from collections.abc import Callable, Sequence, Sized
 from datetime import UTC, datetime
 from json import JSONDecodeError
 from typing import Annotated, cast
@@ -56,6 +57,7 @@ from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
 
 _UI_PAGE_SIZE = 30
+_RAW_INVENTORY_LIMIT = 50
 _REPORT_REFRESH_SECONDS_DEFAULT = 3
 _REPORT_REFRESH_SECONDS_OPTIONS = (3, 10, 30, 60)
 
@@ -84,7 +86,7 @@ nav.console-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: cent
 nav.console-nav a { border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.55rem; text-decoration: none; background: #ffffff; font-size: 0.88rem; }
 nav.console-nav a:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #7dd3fc; outline-offset: 2px; }
 .shell { max-width: 1360px; margin: 0 auto; padding: 1rem; }
-.status-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+.status-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
 .status-item { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; min-width: 0; padding: 0.7rem 0.8rem; }
 .status-item strong { display: block; font-size: 0.92rem; margin-bottom: 0.2rem; }
 h1 { font-size: 1.45rem; margin: 0 0 0.25rem; }
@@ -372,6 +374,328 @@ def _format_dt(value: datetime | None) -> str:
     return "n/a" if value is None else value.isoformat()
 
 
+def _raw_collect(
+    collector: Callable[[], Sequence[object]],
+) -> tuple[list[object], str | None]:
+    try:
+        return list(collector()), None
+    except Exception as exc:  # noqa: BLE001 - inventory must fail closed per section
+        return [], safe_error_message(str(exc)) or "not available from current service"
+
+
+def _raw_count(collector: Callable[[], Sized]) -> str:
+    try:
+        return str(len(collector()))
+    except Exception:  # noqa: BLE001 - home summary must remain available
+        return "n/a"
+
+
+def _raw_inventory_summary(services: ApiServices) -> str:
+    values = (
+        ("sources", _raw_count(lambda: services.source_service.list_all())),
+        ("areas", _raw_count(lambda: services.area_service.list_all())),
+        ("evidence", _raw_count(lambda: services.evidence_service.list_all())),
+        ("claims", _raw_count(lambda: services.claim_service.list_all())),
+        (
+            "report runs",
+            _raw_count(
+                lambda: services.report_service.list_recent_report_runs(
+                    limit=_RAW_INVENTORY_LIMIT
+                )
+            ),
+        ),
+        (
+            "report jobs",
+            _raw_count(
+                lambda: services.async_report_jobs.list_recent(
+                    limit=_RAW_INVENTORY_LIMIT
+                )
+            ),
+        ),
+        (
+            "review items",
+            _raw_count(
+                lambda: services.connector_review_queue.list_connector_runs(
+                    limit=_RAW_INVENTORY_LIMIT
+                )
+            ),
+        ),
+        (
+            "live jobs",
+            _raw_count(
+                lambda: services.live_connector_jobs.list_recent(
+                    limit=_RAW_INVENTORY_LIMIT
+                )
+            ),
+        ),
+    )
+    return " | ".join(f"{label}: {value}" for label, value in values)
+
+
+def _raw_inventory_table(headers: tuple[str, ...], rows: str) -> str:
+    header_html = "".join(f"<th scope='col'>{_html.escape(header)}</th>" for header in headers)
+    return (
+        "<table class='case-table raw-table'>"
+        f"<thead><tr>{header_html}</tr></thead>"
+        f"<tbody>{rows}</tbody>"
+        "</table>"
+    )
+
+
+def _empty_raw_row(colspan: int, message: str) -> str:
+    return f'<tr><td colspan="{colspan}">{_html.escape(message)}</td></tr>'
+
+
+def _unavailable_raw_row(colspan: int, message: str) -> str:
+    return (
+        f'<tr><td colspan="{colspan}">'
+        f"Unavailable: {_html.escape(message)}"
+        "</td></tr>"
+    )
+
+
+def _short_id(value: object) -> str:
+    raw = str(value)
+    return f"{raw[:8]}..." if len(raw) > 8 else raw
+
+
+def _enum_value(value: object) -> str:
+    raw = getattr(value, "value", value)
+    return str(raw)
+
+
+def _source_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Name", "Domain", "Review", "Rights")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for source in records:
+        source_id = _html.escape(_short_id(getattr(source, "source_id", "n/a")))
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{source_id}</td>"
+            f"<td>{_html.escape(str(getattr(source, 'name', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(source, 'domain', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(source, 'review_status', 'n/a')))}</td>"
+            "<td>"
+            f"raw={_html.escape(str(getattr(source, 'raw_data_allowed', 'n/a')))}; "
+            f"export={_html.escape(str(getattr(source, 'export_allowed', 'n/a')))}"
+            "</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(headers, rows or _empty_raw_row(len(headers), "No sources."))
+
+
+def _area_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Label", "Type", "Geometry Source", "Validated")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for area in records:
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(_short_id(getattr(area, 'area_id', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(area, 'label', None) or 'n/a'))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(area, 'area_type', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(area, 'geom_source', None) or 'n/a'))}</td>"
+            f"<td>{_html.escape(str(getattr(area, 'geom_validated', 'n/a')))}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(headers, rows or _empty_raw_row(len(headers), "No areas."))
+
+
+def _evidence_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Area", "Source", "Domain", "Type", "Observation")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for evidence in records:
+        evidence_id = _html.escape(_short_id(getattr(evidence, "evidence_id", "n/a")))
+        area_id = _html.escape(_short_id(getattr(evidence, "area_id", "n/a")))
+        source_id = _html.escape(_short_id(getattr(evidence, "source_id", "n/a")))
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{evidence_id}</td>"
+            f"<td class='case-id'>{area_id}</td>"
+            f"<td class='case-id'>{source_id}</td>"
+            f"<td>{_html.escape(str(getattr(evidence, 'domain', 'n/a')))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(evidence, 'evidence_type', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(evidence, 'observation', 'n/a')))}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(headers, rows or _empty_raw_row(len(headers), "No evidence."))
+
+
+def _claim_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Area", "Code", "Domain", "Severity", "Evidence IDs", "Verification Task")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for claim in records:
+        evidence_ids = getattr(claim, "evidence_ids", [])
+        evidence_html = "<br>".join(
+            f"<span class='case-id'>{_html.escape(_short_id(evidence_id))}</span>"
+            for evidence_id in evidence_ids
+        )
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(_short_id(getattr(claim, 'claim_id', 'n/a')))}</td>"
+            f"<td class='case-id'>{_html.escape(_short_id(getattr(claim, 'area_id', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(claim, 'claim_code', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(claim, 'domain', 'n/a')))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(claim, 'severity', 'n/a')))}</td>"
+            f"<td>{evidence_html or 'none'}</td>"
+            f"<td>{_html.escape(str(getattr(claim, 'verification_task', None) or 'n/a'))}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(headers, rows or _empty_raw_row(len(headers), "No claims."))
+
+
+def _report_run_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Intent", "Status", "Review", "Evidence", "Claims", "Links")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for report in records:
+        if not isinstance(report, ReportRunContract):
+            continue
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(str(report.report_run_id))}</td>"
+            f"<td>{_html.escape(report.intent_code.value)}</td>"
+            f"<td>{_html.escape(report.status.value)}</td>"
+            f"<td>{_html.escape(report.review_status.value)}</td>"
+            f"<td>{_html.escape(str(len(report.evidence)))}</td>"
+            f"<td>{_html.escape(str(_report_claim_total(report)))}</td>"
+            f"<td>{_report_contract_links(report)}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(
+        headers,
+        rows or _empty_raw_row(len(headers), "No report run contracts."),
+    )
+
+
+def _report_claim_total(report: ReportRunContract) -> int:
+    return (
+        len(report.claims)
+        + len(report.unknowns)
+        + len(report.red_flags)
+        + len(report.advisory_claims)
+    )
+
+
+def _report_contract_links(report: ReportRunContract) -> str:
+    report_run_id = report.report_run_id
+    return _report_list_action_links(
+        [
+            (f"/ui/report-runs/{report_run_id}", "detail"),
+            (f"/report-runs/{report_run_id}/dossier?download=1", "dossier"),
+            (f"/report-runs/{report_run_id}/artifact", "json"),
+            (f"/ui/report-runs/{report_run_id}/lineage", "lineage"),
+        ]
+    )
+
+
+def _report_job_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Status", "Intent", "Area", "Created", "Links")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for job in records:
+        report_run_id = getattr(job, "report_run_id", "n/a")
+        job_links = _report_list_action_links([(f"/ui/report-runs/{report_run_id}", "detail")])
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(str(report_run_id))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(job, 'status', 'n/a')))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(job, 'intent_code', 'n/a')))}</td>"
+            f"<td class='case-id'>{_html.escape(_short_id(getattr(job, 'area_id', 'n/a')))}</td>"
+            f"<td>{_html.escape(_format_dt(getattr(job, 'created_at', None)))}</td>"
+            f"<td>{job_links}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(headers, rows or _empty_raw_row(len(headers), "No report jobs."))
+
+
+def _review_item_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("Ingest Run", "Status", "Connector", "Priority", "Created", "Link")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for item in records:
+        ingest_run_id = getattr(item, "ingest_run_id", None)
+        payload = getattr(item, "payload", {})
+        connector = payload.get("connector_name", "n/a") if isinstance(payload, dict) else "n/a"
+        link = "n/a"
+        if isinstance(ingest_run_id, UUID):
+            link = _report_list_action_links(
+                [(f"/ui/connector-review-queue/{ingest_run_id}", "review")]
+            )
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(_short_id(ingest_run_id or 'n/a'))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(item, 'status', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(connector))}</td>"
+            f"<td>{_html.escape(str(getattr(item, 'priority', 'n/a')))}</td>"
+            f"<td>{_html.escape(_format_dt(getattr(item, 'created_at', None)))}</td>"
+            f"<td>{link}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(
+        headers,
+        rows or _empty_raw_row(len(headers), "No connector review items."),
+    )
+
+
+def _live_job_rows(records: list[object], unavailable: str | None) -> str:
+    headers = ("ID", "Status", "Connector", "Source", "Area", "Link")
+    if unavailable is not None:
+        return _raw_inventory_table(headers, _unavailable_raw_row(len(headers), unavailable))
+    rows = ""
+    for job in records:
+        job_id = getattr(job, "job_id", None)
+        link = "n/a"
+        if isinstance(job_id, UUID):
+            link = _report_list_action_links([(f"/ui/live-connector-jobs/{job_id}", "status")])
+        rows += (
+            "<tr>"
+            f"<td class='case-id'>{_html.escape(_short_id(job_id or 'n/a'))}</td>"
+            f"<td>{_html.escape(_enum_value(getattr(job, 'status', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(job, 'connector_name', 'n/a')))}</td>"
+            f"<td>{_html.escape(str(getattr(job, 'source_registry_id', 'n/a')))}</td>"
+            f"<td class='case-id'>{_html.escape(_short_id(getattr(job, 'area_id', 'n/a')))}</td>"
+            f"<td>{link}</td>"
+            "</tr>"
+        )
+    return _raw_inventory_table(
+        headers,
+        rows or _empty_raw_row(len(headers), "No live connector jobs."),
+    )
+
+
+def _raw_inventory_section(
+    title: str,
+    description: str,
+    records: list[object],
+    unavailable: str | None,
+    table_html: str,
+) -> str:
+    count_label = "n/a" if unavailable is not None else f"{len(records)} records"
+    section_id = title.lower().replace(" ", "-")
+    return (
+        f'<section class="panel" aria-labelledby="{_html.escape(section_id)}">'
+        '<div class="panel-header"><div>'
+        f'<h2 id="{_html.escape(section_id)}">{_html.escape(title)}</h2>'
+        f"<p>{_html.escape(description)}</p>"
+        "</div>"
+        f'<span class="badge">{_html.escape(count_label)}</span>'
+        "</div>"
+        f'<div class="table-wrap">{table_html}</div>'
+        "</section>"
+    )
+
+
 @router.get("/", response_class=HTMLResponse)
 def ui_index(request: Request, services: ServicesDep) -> str:
     intent_options = "\n".join(
@@ -383,6 +707,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
         services,
         csrf_field,
     )
+    raw_inventory_summary = _html.escape(_raw_inventory_summary(services))
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -401,6 +726,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
       <span>Selected-county fixtures and custom AOI intake</span>
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -421,6 +747,10 @@ def ui_index(request: Request, services: ServicesDep) -> str:
     <div class="status-item">
       <strong>Custom AOI</strong>
       <span>Polygon or MultiPolygon GeoJSON</span>
+    </div>
+    <div class="status-item">
+      <strong><a href="/ui/raw-data">Runtime inventory</a></strong>
+      <span>{raw_inventory_summary}</span>
     </div>
   </div>
   <main class="console-grid">
@@ -499,6 +829,148 @@ document.getElementById('report-form').addEventListener('submit', function(event
   }}
 }});
 </script>
+</body>
+</html>"""
+
+
+@router.get("/raw-data", response_class=HTMLResponse)
+def ui_raw_data_inventory(services: ServicesDep) -> str:
+    sources, sources_unavailable = _raw_collect(lambda: services.source_service.list_all())
+    areas, areas_unavailable = _raw_collect(lambda: services.area_service.list_all())
+    evidence, evidence_unavailable = _raw_collect(lambda: services.evidence_service.list_all())
+    claims, claims_unavailable = _raw_collect(lambda: services.claim_service.list_all())
+    report_runs, report_runs_unavailable = _raw_collect(
+        lambda: services.report_service.list_recent_report_runs(limit=_RAW_INVENTORY_LIMIT)
+    )
+    report_jobs, report_jobs_unavailable = _raw_collect(
+        lambda: services.async_report_jobs.list_recent(limit=_RAW_INVENTORY_LIMIT)
+    )
+    review_items, review_items_unavailable = _raw_collect(
+        lambda: services.connector_review_queue.list_connector_runs(
+            limit=_RAW_INVENTORY_LIMIT
+        )
+    )
+    live_jobs, live_jobs_unavailable = _raw_collect(
+        lambda: services.live_connector_jobs.list_recent(limit=_RAW_INVENTORY_LIMIT)
+    )
+    summary = _html.escape(_raw_inventory_summary(services))
+    sections = "".join(
+        [
+            _raw_inventory_section(
+                "Sources",
+                "Source registry records currently loaded in this runtime.",
+                sources,
+                sources_unavailable,
+                _source_rows(sources, sources_unavailable),
+            ),
+            _raw_inventory_section(
+                "Areas",
+                "Stored AOI geometry records available to the current services.",
+                areas,
+                areas_unavailable,
+                _area_rows(areas, areas_unavailable),
+            ),
+            _raw_inventory_section(
+                "Evidence",
+                "Stored source-failure, source-observation, and manual evidence records.",
+                evidence,
+                evidence_unavailable,
+                _evidence_rows(evidence, evidence_unavailable),
+            ),
+            _raw_inventory_section(
+                "Claims",
+                "Interpreted claims currently stored by the claim service.",
+                claims,
+                claims_unavailable,
+                _claim_rows(claims, claims_unavailable),
+            ),
+            _raw_inventory_section(
+                "Report Run Contracts",
+                "Bounded recent report-run contracts, independent of job queue state.",
+                report_runs,
+                report_runs_unavailable,
+                _report_run_rows(report_runs, report_runs_unavailable),
+            ),
+            _raw_inventory_section(
+                "Report Jobs",
+                "Bounded recent async report job records.",
+                report_jobs,
+                report_jobs_unavailable,
+                _report_job_rows(report_jobs, report_jobs_unavailable),
+            ),
+            _raw_inventory_section(
+                "Connector Review Items",
+                "Connector handoff jobs awaiting or recording fixture QA review.",
+                review_items,
+                review_items_unavailable,
+                _review_item_rows(review_items, review_items_unavailable),
+            ),
+            _raw_inventory_section(
+                "Live Connector Jobs",
+                "Bounded recent live connector queue records.",
+                live_jobs,
+                live_jobs_unavailable,
+                _live_job_rows(live_jobs, live_jobs_unavailable),
+            ),
+        ]
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Raw Data Inventory</title>
+<style>
+{_INDEX_CSS}
+.raw-shell .console-grid {{ grid-template-columns: 1fr; }}
+.raw-table {{ min-width: 920px; }}
+.raw-boundary {{ margin-top: 1rem; }}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Raw Data Inventory</h1>
+      <span>Current runtime records only</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/ui/connector-review-queue">Connector review queue</a>
+    </nav>
+  </div>
+</header>
+<div class="shell raw-shell">
+  <div class="status-strip" aria-label="Raw inventory summary">
+    <div class="status-item">
+      <strong>Runtime inventory</strong>
+      <span>{summary}</span>
+    </div>
+    <div class="status-item">
+      <strong>Read behavior</strong>
+      <span>GET-only inventory display</span>
+    </div>
+    <div class="status-item">
+      <strong>Authority boundary</strong>
+      <span>No source-readiness, hosted, legal, or DS-017 claim</span>
+    </div>
+    <div class="status-item">
+      <strong>Record limit</strong>
+      <span>Recent {str(_RAW_INVENTORY_LIMIT)} where stores are ordered</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    {sections}
+  </main>
+  <div class="note raw-boundary">
+    <strong>Local raw-data inventory view only.</strong> This page reads existing
+    runtime service state; it does not seed fixtures, does not create reports,
+    does not run connectors, does not create accounts, does not approve DS-017,
+    and does not prove hosted deployment or source-readiness authority.
+  </div>
+</div>
 </body>
 </html>"""
 

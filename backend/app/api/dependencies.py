@@ -76,6 +76,7 @@ class ApiServices:
     source_service: SourceService
     area_service: AreaService
     evidence_service: EvidenceService
+    claim_service: ClaimService
     report_service: ReportRunService
     connector_review_statuses: dict[UUID, ConnectorRunReviewStatus]
     connector_review_queue: ConnectorReviewQueueRepository
@@ -142,6 +143,7 @@ def create_api_services(settings: Settings | None = None) -> ApiServices:
         source_service=source_service,
         area_service=area_service,
         evidence_service=evidence_service,
+        claim_service=claim_service,
         report_service=report_service,
         connector_review_statuses={},
         connector_review_queue=connector_review_queue,
@@ -189,6 +191,7 @@ def create_db_api_services(
         source_service=source_service,
         area_service=area_service,
         evidence_service=evidence_service,
+        claim_service=claim_service,
         report_service=report_service,
         connector_review_statuses={},
         connector_review_queue=connector_review_queue,
