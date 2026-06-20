@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-18-error-state-no-leak-hardening.md
+active_plan: plans/2026-06-20-lane1-reconciliation.md
 routing_note: >
   Latest completed lane: error-state/no-leak hardening
   (plans/2026-06-18-error-state-no-leak-hardening.md). R-022 strengthened
@@ -7,9 +7,10 @@ routing_note: >
   traces, secrets, raw connector payloads, local paths, or internal implementation
   details while preserving first-class source-failure evidence and without claiming
   hosted error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC, DS-017
-  entitlement, or production authority. Next lane is not selected in this queue; it
-  should be external-authority follow-up or an audit-only hosted-readiness checklist
-  rehearsal unless new authority unblocks hosted/source/identity work.
+  entitlement, or production authority. Active lane: REC-001 repository-state
+  reconciliation and selective landing. Recoverable dirty-root candidate work exists
+  beyond live main, but it is not merged authority until classified, decomposed,
+  revalidated from current origin/main, and landed in narrow slices.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -629,6 +630,37 @@ tasks:
       - Confirmed user-facing leak paths are covered by targeted regressions or validators
       - Source failures remain explicit evidence and are not suppressed as successful results
       - Hosted error/log review, SIEM/log retention, alerting, IdP/RBAC, DS-017 entitlement, and production authority remain external blockers
+
+  - id: REC-001
+    title: Repository-state reconciliation and selective landing
+    status: in_progress
+    depends_on: [R-022]
+    lane: coordinator
+    spec: plans/2026-06-20-lane1-reconciliation.md
+    notes: >
+      Reconcile the split between live origin/main at R-022 and recoverable dirty-root
+      candidate work that locally advances through later readiness/UI slices. This
+      task preserves live main as authority, keeps the dirty root as candidate
+      evidence, classifies and dispositions product-relevant files, excludes
+      coordination-only inbox material, and only later lands coherent slices from
+      clean worktrees.
+    validation:
+      - git fetch --prune origin
+      - git worktree list
+      - git status --short --branch
+      - gh pr list --repo benjmcd/land-dd --state open --json number,title,headRefName,baseRefName,headRefOid,updatedAt,url
+      - git diff --name-status origin/main --
+      - git ls-files --others --exclude-standard
+      - git diff --name-only --diff-filter=D origin/main --
+      - inventory/disposition row-count comparison against dirty-root git output
+      - git diff --check
+      - .\scripts\validate_workspace.ps1
+    acceptance:
+      - Live origin/main, local main, current branch, merge base, open PRs, and dirty-root candidate counts are recorded
+      - Local candidate state is separated from merged authority and coordination-only files
+      - Every dirty-root candidate file has an initial retain/rework/defer/archive/discard disposition and a slice/proof boundary
+      - No product behavior, schema, public API, source registry, auth boundary, report semantics, or hosted/source claims are changed by the planning/control-plane slice
+      - The first retained implementation slice is opened only after this control-plane slice is validated and any product worktree is freshly created from live origin/main
 
   # --- Completed ---
   - id: T000
