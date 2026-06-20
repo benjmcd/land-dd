@@ -1,5 +1,36 @@
 # Project State
 
+## Current checkpoint (2026-06-20 supported-AOI UI runtime proof G9c)
+
+The active implementation authority is now `G9c` from
+`plans/2026-06-20-supported-aoi-ui-runtime.md`. This follows merged PR #104 at
+`a7c4ceca2ca02afa19c656d853c4e3720ee8b92b`, which completed the G9b API/service/DB
+supported-AOI `area_id` path. The dirty root checkout remains preserved candidate
+evidence only; continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-supported-aoi-ui-runtime.md`.
+- **Purpose**: prove the supported-AOI `area_id` path through the browser/operator
+  workflow by adding a no-JavaScript UI launcher and runtime smoke support that posts
+  an existing stored AOI to the same reviewed fixture-backed report path.
+- **Current implementation slice**: clean worktree `worktrees/next-route` adds a
+  supported-AOI panel on `/ui/`, a
+  `/ui/operator-cases/supported-aoi/report` POST handler, focused UI tests, runtime
+  smoke support for `--supported-aoi-area-id`, regenerated OpenAPI stubs, and the
+  routing/state updates needed after G9b merged. The handler reuses reviewer
+  `report:run` scope and workspace identity handling, then delegates to the existing
+  supported-AOI API helper.
+- **Next required step**: complete focused and canonical validation, then publish/merge
+  G9c and clean the worktree. Follow-on work should reassess whether the next unblocked
+  pass is deeper supported-AOI runtime ergonomics, source-entitlement/DS-017 decision
+  support, or hosted authority collection if external prerequisites exist.
+- **Known boundaries to preserve**: no arbitrary in-county coverage, no new source
+  authority, new county, jurisdiction, rulepack, DS-017 approval, Bologna pilot, hosted
+  deployment, hosted identity/RBAC, hosted observability/log retention/alerting, hosted
+  object-store proof, production traffic proof, ranking/recommendation semantics, public
+  API contract overclaim, DB schema change without plan, report semantic overclaim, or
+  Level 10 completion claim.
+
 ## Current checkpoint (2026-06-20 generic supported-AOI evidence-rich workflow G9b)
 
 The active implementation authority is now `G9b` from

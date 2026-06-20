@@ -88,6 +88,7 @@ from app.source_provenance import (
 
 _UI_PAGE_SIZE = 30
 _RAW_INVENTORY_LIMIT = 50
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 _REPORT_REFRESH_SECONDS_DEFAULT = 3
 _REPORT_REFRESH_SECONDS_OPTIONS = (3, 10, 30, 60)
 _SOURCE_PROVENANCE_BOUNDARY = (
@@ -1883,6 +1884,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
         services,
         csrf_field,
     )
+    supported_aoi_markup = _supported_aoi_fixture_markup(request, services, csrf_field)
     raw_inventory_summary = _html.escape(_raw_inventory_summary(services))
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -1937,6 +1939,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
   </div>
   <main class="console-grid">
     {selected_county_markup}
+    {supported_aoi_markup}
     <section class="panel" id="custom-report-panel" aria-labelledby="custom-report-title">
       <div class="panel-header">
         <div>
@@ -2013,6 +2016,57 @@ document.getElementById('report-form').addEventListener('submit', function(event
 </script>
 </body>
 </html>"""
+
+
+def _supported_aoi_fixture_markup(
+    request: Request,
+    services: ApiServices,
+    csrf_field: str = "",
+) -> str:
+    settings = cast(Settings, request.app.state.settings)
+    reviewer_fields = reviewer_credential_fields(
+        request,
+        services,
+        required_scope=REVIEWER_SCOPE_REPORT_RUN,
+    )
+    identity_fields = report_identity_fields(request, settings)
+    intent_options = "\n".join(
+        f'<option value="{val}">{label}</option>' for val, label in _INTENT_OPTIONS
+    )
+    return f"""<section class="panel" id="supported-aoi-panel"
+  aria-labelledby="supported-aoi-title">
+  <div class="panel-header">
+    <div>
+      <h2 id="supported-aoi-title">Supported AOI Fixture Report</h2>
+      <p id="supported-aoi-help">
+        Existing area-ID launcher for recorded selected-county AOI fixture profiles.
+      </p>
+    </div>
+    <span class="badge">Area ID</span>
+  </div>
+  <form id="supported-aoi-form" class="intake-form" method="POST"
+    action="/ui/operator-cases/supported-aoi/report">
+    {csrf_field}
+    <div class="field">
+      <label for="supported_area_id">Area ID</label>
+      <input id="supported_area_id" name="area_id" type="text"
+        inputmode="text" autocomplete="off" required
+        aria-describedby="supported-aoi-help">
+    </div>
+    <div class="field">
+      <label for="supported_intent">Intent</label>
+      <select id="supported_intent" name="intent">{intent_options}</select>
+    </div>
+    <div data-required-scope="report:run">{reviewer_fields}</div>
+    <div>{identity_fields}</div>
+    <button class="primary-button" type="submit">
+      Create supported AOI report
+    </button>
+  </form>
+  <div class="note">
+    Fixture-profile scoped only; not arbitrary county coverage or live source authority.
+  </div>
+</section>"""
 
 
 @router.get(
@@ -2591,6 +2645,121 @@ def ui_create_selected_county_report(
                 "<a href='/ui/'>Back to Home</a></body></html>"
             ),
             status_code=exc.status_code,
+        )
+    response = RedirectResponse(
+        url=created.links.ui,
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    attach_ui_reviewer_session_cookie(response, request, services, auth_result)
+    attach_ui_report_identity_session_cookie(response, request, identity_result)
+    return response
+
+
+@router.post("/operator-cases/supported-aoi/report", response_model=None)
+def ui_create_supported_aoi_report(
+    request: Request,
+    services: ServicesDep,
+    area_id: Annotated[str, Form()],
+    intent: Annotated[str, Form()],
+    reviewer_id: Annotated[str | None, Form()] = None,
+    reviewer_token: Annotated[str | None, Form()] = None,
+    report_identity_token: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+) -> RedirectResponse | HTMLResponse:
+    csrf_error = require_ui_csrf(request, csrf_token, back_url="/ui/")
+    if csrf_error is not None:
+        return csrf_error
+    try:
+        auth_result = require_ui_reviewer(
+            request,
+            services,
+            reviewer_id=reviewer_id,
+            reviewer_token=reviewer_token,
+            required_scope=REVIEWER_SCOPE_REPORT_RUN,
+        )
+    except HTTPException as exc:
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>Authentication Error</title></head>"
+                "<body><h1>Authentication Error</h1>"
+                "<p>Reviewer credentials are missing, invalid, or lack the required scope.</p>"
+                "<a href='/ui/'>Back to Home</a></body></html>"
+            ),
+            status_code=exc.status_code,
+        )
+    principal = auth_result.principal
+    settings = cast(Settings, request.app.state.settings)
+    try:
+        identity_result = require_ui_report_identity(
+            request,
+            settings,
+            report_identity_token=report_identity_token,
+        )
+    except HTTPException as exc:
+        return error_page(
+            "Workspace Identity Required",
+            str(exc.detail),
+            "/ui/",
+            exc.status_code,
+            css=_INDEX_CSS,
+        )
+    if identity_result is None and not settings.is_local_app_env():
+        return error_page(
+            "Workspace Identity Required",
+            (
+                "UI workspace identity is not configured for supported-AOI report "
+                "creation outside local/dev/test environments."
+            ),
+            "/ui/",
+            status.HTTP_403_FORBIDDEN,
+            css=_INDEX_CSS,
+        )
+    try:
+        parsed_area_id = UUID(area_id)
+    except ValueError:
+        return error_page(
+            "Supported AOI Report Error",
+            "Area ID must be a valid UUID.",
+            "/ui/",
+            _HTTP_422_UNPROCESSABLE,
+            css=_INDEX_CSS,
+        )
+    try:
+        intent_code = IntentCode(intent)
+    except ValueError:
+        return error_page(
+            "Supported AOI Report Error",
+            "Invalid report intent.",
+            "/ui/",
+            _HTTP_422_UNPROCESSABLE,
+            css=_INDEX_CSS,
+        )
+    workspace_id = (
+        identity_result.auth.workspace_id
+        if identity_result is not None
+        else _LOCAL_UI_WORKSPACE_ID
+    )
+    requested_by = (
+        identity_result.auth.user_id
+        if identity_result is not None
+        else _LOCAL_UI_USER_ID
+    )
+    try:
+        created = operator_cases_api.create_supported_aoi_fixture_report_response(
+            services=services,
+            area_id=parsed_area_id,
+            intent_code=intent_code,
+            reviewer_id=principal.reviewer_id,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+        )
+    except HTTPException as exc:
+        return error_page(
+            "Supported AOI Report Error",
+            str(exc.detail),
+            "/ui/",
+            exc.status_code,
+            css=_INDEX_CSS,
         )
     response = RedirectResponse(
         url=created.links.ui,

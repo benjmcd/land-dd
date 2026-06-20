@@ -202,6 +202,14 @@ OPERATOR_CASE_REPORT_CHECK = RouteCheck(
         "View evidence lineage",
     ),
 )
+SUPPORTED_AOI_REPORT_CHECK = RouteCheck(
+    "supported-aoi-report",
+    "/ui/operator-cases/supported-aoi/report",
+    OPERATOR_CASE_REPORT_CHECK.required,
+    forbidden=OPERATOR_CASE_REPORT_CHECK.forbidden,
+    expect_html=OPERATOR_CASE_REPORT_CHECK.expect_html,
+    expect_viewport=OPERATOR_CASE_REPORT_CHECK.expect_viewport,
+)
 CUSTOM_AOI_REPORT_CHECK = RouteCheck(
     "custom-aoi-report",
     "/ui/intake",
@@ -857,6 +865,97 @@ def post_operator_case_report(
     return RouteResult(check.label, final_path, status, not failures, failures)
 
 
+def post_supported_aoi_report(
+    opener: Any,
+    base_url: str,
+    area_id: str,
+    timeout: float,
+    *,
+    include_csrf: bool,
+    expected_artifact_persistence: str,
+    reviewer_id: str = "",
+    reviewer_token: str = "",
+) -> RouteResult:
+    check = SUPPORTED_AOI_REPORT_CHECK
+    url = urljoin(base_url.rstrip("/") + "/", "ui/operator-cases/supported-aoi/report")
+    fields = {"area_id": area_id, "intent": "rural_land_purchase"}
+    if reviewer_id and reviewer_token:
+        fields["reviewer_id"] = reviewer_id
+        fields["reviewer_token"] = reviewer_token
+    failures: list[str] = []
+    status: int | None = None
+    final_path = check.path
+
+    if include_csrf:
+        try:
+            csrf_token = fetch_csrf_token(opener, base_url, timeout)
+        except HTTPError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch returned HTTP {int(exc.code)}")
+        except URLError as exc:
+            csrf_token = None
+            failures.append(f"csrf token fetch failed: {exc.reason}")
+        if csrf_token:
+            fields["csrf_token"] = csrf_token
+        else:
+            failures.append("missing csrf token on /ui/")
+
+    try:
+        body_bytes = urlencode(fields).encode("utf-8")
+        request = Request(
+            url,
+            data=body_bytes,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with opener.open(request, timeout=timeout) as response:
+            status = int(response.status)
+            content_type = response.headers.get("content-type", "")
+            body = response.read().decode("utf-8", errors="replace")
+            final_path = result_path_from_url(response.geturl())
+    except HTTPError as exc:
+        status = int(exc.code)
+        body = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("content-type", "")
+        final_path = result_path_from_url(exc.geturl())
+        failures.append(f"HTTP {status}")
+    except URLError as exc:
+        return RouteResult(
+            check.label,
+            final_path,
+            None,
+            False,
+            [f"runtime unavailable: {exc.reason}"],
+        )
+
+    if status != 200:
+        failures.append(f"expected HTTP 200, got {status}")
+    if not body.strip():
+        failures.append("empty body")
+    if check.expect_html and "text/html" not in content_type.lower():
+        failures.append(f"expected text/html content-type, got {content_type or '<missing>'}")
+    if check.expect_viewport and 'name="viewport"' not in body:
+        failures.append("missing viewport meta")
+    for text in check.required:
+        if text not in body:
+            failures.append(f"missing required text: {text}")
+    for text in check.forbidden:
+        if text in body:
+            failures.append(f"found forbidden text: {text}")
+    if expected_artifact_persistence:
+        failures.extend(
+            check_artifact_persistence(
+                opener,
+                base_url,
+                final_path,
+                expected_artifact_persistence,
+                timeout,
+            )
+        )
+
+    return RouteResult(check.label, final_path, status, not failures, failures)
+
+
 def post_custom_aoi_report(
     opener: Any,
     base_url: str,
@@ -1029,11 +1128,11 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
             reviewer_form_id = args.reviewer_id
             reviewer_form_token = args.reviewer_token
     if args.expect_artifact_persistence and not (
-        args.operator_case_id or args.custom_aoi_fixture
+        args.operator_case_id or args.supported_aoi_area_id or args.custom_aoi_fixture
     ):
         raise RuntimeError(
             "--expect-artifact-persistence requires --operator-case-id "
-            "or --custom-aoi-fixture"
+            "or --supported-aoi-area-id or --custom-aoi-fixture"
         )
     if args.compare_same_area and not args.operator_case_id:
         raise RuntimeError("--compare-same-area requires --operator-case-id")
@@ -1141,6 +1240,28 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                             args.timeout,
                         )
                     )
+    if args.supported_aoi_area_id:
+        supported_result = post_supported_aoi_report(
+            opener,
+            base_url,
+            args.supported_aoi_area_id,
+            args.timeout,
+            include_csrf=bool(args.api_key) or reviewer_session,
+            expected_artifact_persistence=args.expect_artifact_persistence,
+            reviewer_id=reviewer_form_id,
+            reviewer_token=reviewer_form_token,
+        )
+        results.append(supported_result)
+        if supported_result.ok:
+            results.append(
+                check_report_lineage(
+                    opener,
+                    base_url,
+                    supported_result.path,
+                    args.timeout,
+                    label="supported-aoi-lineage",
+                )
+            )
     if args.custom_aoi_fixture:
         custom_result = post_custom_aoi_report(
             opener,
@@ -1188,6 +1309,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="opt in to creating and checking one selected-county UI report",
     )
     parser.add_argument(
+        "--supported-aoi-area-id",
+        default="",
+        help="opt in to creating and checking one supported AOI UI report by area_id",
+    )
+    parser.add_argument(
         "--custom-aoi-fixture",
         default="",
         help="opt in to creating and checking one custom AOI UI report from GeoJSON",
@@ -1196,8 +1322,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--expect-artifact-persistence",
         default="",
         help=(
-            "with --operator-case-id or --custom-aoi-fixture, assert created report "
-            "artifact persistence value"
+            "with --operator-case-id, --supported-aoi-area-id, or "
+            "--custom-aoi-fixture, assert created report artifact persistence value"
         ),
     )
     parser.add_argument(

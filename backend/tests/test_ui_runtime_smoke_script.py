@@ -30,6 +30,7 @@ class _SmokeHandler(BaseHTTPRequestHandler):
     route_get_counts: ClassVar[dict[str, int]] = {}
     post_bodies: ClassVar[list[tuple[str, dict[str, list[str]]]]] = []
     operator_report_ids: ClassVar[list[str]] = ["operator-smoke"]
+    supported_aoi_report_ids: ClassVar[list[str]] = ["supported-aoi-smoke"]
     custom_report_ids: ClassVar[list[str]] = ["custom-smoke"]
 
     def do_GET(self) -> None:  # noqa: N802
@@ -65,7 +66,11 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         is_approval_path = self.path.startswith("/ui/report-runs/") and self.path.endswith(
             "/approve"
         )
-        report_paths = {"/ui/operator-cases/report", "/ui/intake"}
+        report_paths = {
+            "/ui/operator-cases/report",
+            "/ui/operator-cases/supported-aoi/report",
+            "/ui/intake",
+        }
         if (
             not is_approval_path
             and self.path not in report_paths
@@ -87,6 +92,11 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         elif self.path == "/ui/operator-cases/report":
             report_id = self.operator_report_ids[
                 min(report_index, len(self.operator_report_ids) - 1)
+            ]
+            location = f"/ui/report-runs/{report_id}"
+        elif self.path == "/ui/operator-cases/supported-aoi/report":
+            report_id = self.supported_aoi_report_ids[
+                min(report_index, len(self.supported_aoi_report_ids) - 1)
             ]
             location = f"/ui/report-runs/{report_id}"
         elif self.path == "/ui/intake":
@@ -263,6 +273,50 @@ def test_ui_runtime_smoke_operator_case_flag_posts_and_checks_report_page() -> N
     assert (
         "/ui/operator-cases/report",
         {"selected_county_case_id": ["BUN-slope"]},
+    ) in handler.post_bodies
+
+
+def test_ui_runtime_smoke_supported_aoi_flag_posts_and_checks_report_page() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/supported-aoi-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/supported-aoi-smoke/lineage"] = _operator_lineage_html()
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--supported-aoi-area-id",
+            "33333333-3333-4333-8333-333333333333",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    supported_result = payload["routes"][-2]
+    assert supported_result == {
+        "label": "supported-aoi-report",
+        "path": "/ui/report-runs/supported-aoi-smoke",
+        "status": 200,
+        "ok": True,
+        "failures": [],
+    }
+    lineage_result = payload["routes"][-1]
+    assert lineage_result == {
+        "label": "supported-aoi-lineage",
+        "path": "/ui/report-runs/supported-aoi-smoke/lineage",
+        "status": 200,
+        "ok": True,
+        "failures": [],
+    }
+    assert (
+        "/ui/operator-cases/supported-aoi/report",
+        {
+            "area_id": ["33333333-3333-4333-8333-333333333333"],
+            "intent": ["rural_land_purchase"],
+        },
     ) in handler.post_bodies
 
 

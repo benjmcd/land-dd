@@ -412,6 +412,114 @@ def test_db_ui_operator_case_report_persists_selected_county_fixture(
         _cleanup_selected_county_snapshot(engine, before, area_id)
 
 
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_ui_supported_aoi_report_persists_existing_area_fixture(
+    tmp_path: Path,
+) -> None:
+    area_id = uuid4()
+    engine = build_engine()
+    object_store_root = (tmp_path / "object-store").resolve()
+    with Session(engine) as session:
+        before = _capture_selected_county_snapshot(session, area_id)
+
+    app = create_app(
+        settings=Settings(OBJECT_STORE_ROOT=str(object_store_root)),
+        use_db_services=True,
+    )
+    client = TestClient(app)
+
+    try:
+        area_response = client.post(
+            "/areas",
+            headers=_auth_headers(),
+            json={
+                "area_id": str(area_id),
+                "label": "operator-upload-buncombe-supported-ui",
+                "geom_geojson": _golden_geometry("bun_slope.geojson"),
+                "geom_source": "operator-upload://bun_slope.geojson",
+            },
+        )
+        assert area_response.status_code == 201
+
+        create_response = client.post(
+            "/ui/operator-cases/supported-aoi/report",
+            data={
+                "area_id": str(area_id),
+                "intent": "rural_land_purchase",
+                "reviewer_id": _REVIEWER_ID,
+                "reviewer_token": _REVIEWER_TOKEN,
+            },
+            follow_redirects=False,
+        )
+
+        assert create_response.status_code == 303
+        location = create_response.headers["location"]
+        assert location.startswith("/ui/report-runs/")
+        report_run_id = UUID(location.rsplit("/", 1)[-1])
+
+        report_page = client.get(location)
+
+        assert report_page.status_code == 200
+        assert "Executive Summary" in report_page.text
+        assert "Download dossier (.md)" in report_page.text
+        assert "Download report (.json)" in report_page.text
+        assert "View evidence lineage" in report_page.text
+
+        artifact_response = client.get(f"/report-runs/{report_run_id}/artifact")
+
+        assert artifact_response.status_code == 200
+        artifact_report = artifact_response.json()
+        assert artifact_report["report_run_id"] == str(report_run_id)
+        assert artifact_report["area_id"] == str(area_id)
+        assert artifact_report["review_status"] == "approved"
+        assert artifact_report["workspace_id"] == str(_DEMO_WORKSPACE_ID)
+        assert artifact_report["requested_by"] == str(_DEMO_USER_ID)
+        assert artifact_report["reviewed_by"] == _REVIEWER_ID
+        assert artifact_report["artifact_metadata"]["persistence"] == "postgres+object_store"
+        assert _SOURCE_NAME in artifact_report["source_manifest"]["source_names"]
+        assert (
+            str(selected_county_cases._SOURCE_ID)
+            in artifact_report["source_manifest"]["source_ids"]
+        )
+
+        artifact_path = Path(
+            artifact_report["artifact_metadata"]["machine_json_uri"],
+        ).resolve()
+        assert artifact_path.exists()
+        assert artifact_path.is_relative_to(object_store_root)
+        stored_artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        assert stored_artifact == artifact_report
+
+        with Session(engine) as session:
+            after = _capture_selected_county_snapshot(session, area_id)
+            report_row = session.execute(
+                text(
+                    """
+                    SELECT area_id, workspace_id, requested_by, status, output_uri, machine_json_uri
+                    FROM reports.report_runs
+                    WHERE report_run_id = :report_run_id
+                    """
+                ),
+                {"report_run_id": report_run_id},
+            ).mappings().one_or_none()
+            assert report_row is not None
+            assert UUID(str(report_row["area_id"])) == area_id
+            assert UUID(str(report_row["workspace_id"])) == _DEMO_WORKSPACE_ID
+            assert UUID(str(report_row["requested_by"])) == _DEMO_USER_ID
+            assert report_row["status"] == "succeeded"
+            assert report_row["output_uri"] == artifact_report["output_uri"]
+            assert (
+                report_row["machine_json_uri"]
+                == artifact_report["artifact_metadata"]["machine_json_uri"]
+            )
+
+            assert after.evidence_ids - before.evidence_ids
+            assert after.ingest_run_ids - before.ingest_run_ids
+            assert after.connector_review_keys - before.connector_review_keys
+    finally:
+        _cleanup_selected_county_snapshot(engine, before, area_id)
+
+
 def _capture_selected_county_snapshot(
     session: Session,
     area_id: UUID,
