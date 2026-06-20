@@ -12709,3 +12709,75 @@ git diff --name-only --diff-filter=D
   DS-017 entitlement, hosted deployment, or Level 10 security completion.
 - G6 operations/performance guardrail surfaces and G8 observability readiness remain
   future retained slices.
+
+---
+
+## 2026-06-20 - Operations Guardrails UI G6b
+
+**Scope:** Implement the second isolated G6 guardrail surface: a read-only
+`/ui/operations-guardrails` page over existing alerting, incident/rollback,
+backup/restore, data-retention, queue/recovery, and cost-monitoring authority files.
+The slice does not execute operational scripts, mutate queues, retry reports, run live
+connectors, purge audit events, run backup/restore, dispatch alerts, run runtime
+validators from the UI helper, approve DS-017, change source/report/API semantics,
+deploy hosted infrastructure, prove hosted observability/alerting, or claim Level 10
+completion.
+
+**Commands/checks run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_operations_guardrails.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_operations_guardrails.py .\tests\test_alerting_artifacts.py .\tests\test_incident_rollback_artifacts.py .\tests\test_data_retention_artifacts.py .\tests\test_cost_monitoring_artifacts.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+cd backend; ruff check .\app\operations_guardrails.py .\app\api\ui.py .\tests\api\test_ui_operations_guardrails.py
+cd backend; py -3.12 -m mypy .\app\operations_guardrails.py .\app\api\ui.py .\tests\api\test_ui_operations_guardrails.py
+py -3.12 .\scripts\alert_rules_check.py
+py -3.12 .\scripts\incident_rollback_check.py
+py -3.12 .\scripts\data_retention_check.py
+py -3.12 .\scripts\cost_monitoring_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused pytest failed during collection with
+  `ModuleNotFoundError: No module named 'app.operations_guardrails'`, confirming the
+  expected red state before implementation.
+- Focused G6b route/parser tests passed after implementation (`8 passed`).
+- Focused G6b plus alerting, incident/rollback, data-retention, cost-monitoring,
+  operations API, and operations UI route tests passed (`75 passed`).
+- OpenAPI runtime/planning-pack parity tests passed (`2 passed`) after regenerating
+  `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml`.
+- Focused ruff passed after line-length cleanup.
+- Focused mypy passed for the new helper, UI route, and focused test.
+- Alert-rules, incident/rollback, data-retention, cost-monitoring, release-readiness,
+  and readiness-matrix validators passed.
+- `tasks/task_queue.yaml` initially failed YAML parsing on older unquoted scalar lines
+  containing backticks or colons. Those parse-blocking lines were converted to quoted or
+  folded scalars, and the queue then parsed successfully.
+- `git diff --check` passed with only existing OpenAPI CRLF normalization warnings.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- The first full `.\scripts\verify.ps1` run failed in
+  `test_readiness_matrix_validator_passes_current_artifacts` because the active G6b plan
+  did not cite `state/LEVEL_9_10_GATE_MATRIX.md`. The plan was fixed to preserve the
+  Level 9/10 authority context, `py -3.12 .\scripts\readiness_matrix_check.py` passed,
+  and the focused readiness-matrix test passed (`1 passed`).
+- Final full `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `336` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- This is local read-only guardrail visibility, not hosted alerting, pager/on-call,
+  hosted dashboards, hosted scheduler, hosted billing, hosted backup policy, hosted
+  observability, DS-017 entitlement, hosted deployment, or Level 10 operations
+  completion.
+- G6 performance guardrails and G8 local observability readiness remain future retained
+  slices.

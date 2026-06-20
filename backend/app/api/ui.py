@@ -58,6 +58,11 @@ from app.deployment_readiness import (
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
+from app.operations_guardrails import (
+    OperationsGuardrailsError,
+    OperationsGuardrailsReadiness,
+    load_operations_guardrails,
+)
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
 from app.security_guardrails import (
@@ -85,6 +90,11 @@ _SECURITY_GUARDRAILS_BOUNDARY = (
     "does not add OAuth/OIDC, does not create user accounts, does not claim hosted "
     "identity/RBAC, does not approve DS-017, does not write secrets, and does not "
     "provision a hosted secret manager."
+)
+_OPERATIONS_GUARDRAILS_BOUNDARY = (
+    "does not execute recovery, does not dispatch alerts, does not run backup/restore, "
+    "does not purge audit events, does not mutate queues, does not call live connectors, "
+    "does not claim hosted alerting, and does not claim Level 10 operations authority."
 )
 
 router = APIRouter(prefix="/ui", tags=["ui"])
@@ -885,6 +895,7 @@ def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1026,6 +1037,7 @@ def _security_guardrails_page(readiness: SecurityGuardrailsReadiness) -> str:
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1104,6 +1116,217 @@ def _security_guardrails_page(readiness: SecurityGuardrailsReadiness) -> str:
 </html>"""
 
 
+def _operations_alert_rules_table(readiness: OperationsGuardrailsReadiness) -> str:
+    rows = []
+    for rule in readiness.alert_rules:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(rule.rule_id)}</code></td>"
+            f"<td>{_html.escape(rule.severity)}</td>"
+            f"<td>{_html.escape(rule.signal_kind)}<br><code>{_html.escape(rule.signal_target)}</code></td>"
+            f"<td><code>{_html.escape(rule.proof)}</code></td>"
+            f"<td><code>{_html.escape(rule.runbook)}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="operations-guardrails-table">
+      <thead>
+        <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Signal</th>
+          <th>Proof</th>
+          <th>Runbook</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _operations_retention_table(readiness: OperationsGuardrailsReadiness) -> str:
+    rows = []
+    for retention_class in readiness.retention_classes:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(retention_class.class_id)}</code></td>"
+            f"<td>{_html.escape(retention_class.retention_period)}</td>"
+            f"<td>{_html.escape(retention_class.deletion_approach)}</td>"
+            f"<td>{_html.escape(retention_class.blocker)}</td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="operations-guardrails-table">
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Retention</th>
+          <th>Deletion approach</th>
+          <th>Blocker</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _operations_cost_table(readiness: OperationsGuardrailsReadiness) -> str:
+    rows = []
+    for category in readiness.cost_categories:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(category.category_id)}</code></td>"
+            f"<td>{_html.escape(category.status)}</td>"
+            f"<td>{_html.escape(category.meter)}</td>"
+            f"<td><code>{_html.escape(category.validation)}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="operations-guardrails-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Meter</th>
+          <th>Validation</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _operations_guardrails_page(readiness: OperationsGuardrailsReadiness) -> str:
+    severity_summary = ", ".join(
+        f"{severity}: {count}"
+        for severity, count in readiness.alert_severity_counts.items()
+        if count
+    )
+    retention_summary = (
+        f"{readiness.retention_schema_version}; "
+        f"hosted scheduler: {readiness.hosted_scheduler_status}"
+    )
+    recovery_note = (
+        "Runbook authority remains local and read-only unless an operator explicitly "
+        "runs the documented checks."
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Operations Guardrails</title>
+<style>
+{_INDEX_CSS}
+.operations-guardrails-shell .console-grid {{ grid-template-columns: 1fr; }}
+.operations-guardrails-card {{ display: grid; gap: 0.75rem; }}
+.operations-guardrails-card h2 {{ margin-bottom: 0.25rem; }}
+.operations-guardrails-table {{ border-collapse: collapse; min-width: 860px; width: 100%; }}
+.operations-guardrails-table th, .operations-guardrails-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.operations-guardrails-table th {{ background: var(--soft); }}
+.operations-guardrails-boundary {{ margin-top: 1rem; }}
+@media (max-width: 640px) {{
+  .operations-guardrails-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Operations Guardrails</h1>
+      <span>Local alerting, recovery, retention, and cost boundary view</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell operations-guardrails-shell">
+  <div class="status-strip" aria-label="Operations guardrails summary">
+    <div class="status-item">
+      <strong>Alert catalog</strong>
+      <span>{_html.escape(readiness.alert_schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Alert severities</strong>
+      <span>{_html.escape(severity_summary)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Retention catalog</strong>
+      <span>{_html.escape(retention_summary)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Cost catalog</strong>
+      <span>{_html.escape(readiness.cost_schema_version)}</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel operations-guardrails-card" aria-labelledby="ops-alerts-title">
+      <div>
+        <h2 id="ops-alerts-title">Alert and Signal Rules</h2>
+        <p>Repo-local alert signals and validation proof references from the alert-rule catalog.</p>
+      </div>
+      <div class="table-wrap">{_operations_alert_rules_table(readiness)}</div>
+    </section>
+    <section class="panel operations-guardrails-card" aria-labelledby="ops-recovery-title">
+      <div>
+        <h2 id="ops-recovery-title">Incident, Queue, and Recovery Boundaries</h2>
+        <p>{_html.escape(recovery_note)}</p>
+      </div>
+      <p>Incident runbook: <code>{_html.escape(readiness.incident_runbook)}</code></p>
+      <p>Backup/restore runbook: <code>{_html.escape(readiness.backup_restore_runbook)}</code></p>
+      <p>Recovery preview path: <code>{_html.escape(readiness.recovery_preview_path)}</code></p>
+      <h2>Queue signal targets</h2>
+      {_deployment_list(readiness.queue_signal_targets)}
+      <h2>Validation commands</h2>
+      {_deployment_list(readiness.validation_commands)}
+    </section>
+    <section class="panel operations-guardrails-card" aria-labelledby="ops-retention-title">
+      <div>
+        <h2 id="ops-retention-title">Retention and Purge Guardrails</h2>
+        <p>Status: <code>{_html.escape(readiness.retention_automation_status)}</code>;
+        mode: <code>{_html.escape(readiness.retention_automation_mode)}</code>;
+        hosted scheduler: <code>{_html.escape(readiness.hosted_scheduler_status)}</code>.</p>
+      </div>
+      <div class="table-wrap">{_operations_retention_table(readiness)}</div>
+      <h2>Retention limits</h2>
+      <div class="table-wrap">{_deployment_limits_table(readiness.retention_limits)}</div>
+      <h2>Retention blockers</h2>
+      {_deployment_list(readiness.retention_blocker_ids)}
+    </section>
+    <section class="panel operations-guardrails-card" aria-labelledby="ops-cost-title">
+      <div>
+        <h2 id="ops-cost-title">Cost Monitoring Guardrails</h2>
+        <p>Report cost metrics authority:
+        <code>{_html.escape(readiness.report_cost_metrics_authority)}</code>; planning inputs:
+        <code>{_html.escape(readiness.planning_cost_inputs)}</code>.</p>
+      </div>
+      <div class="table-wrap">{_operations_cost_table(readiness)}</div>
+      <h2>Blocked or disabled cost categories</h2>
+      {_deployment_list(readiness.cost_blocked_or_disabled_ids)}
+    </section>
+  </main>
+  <div class="note operations-guardrails-boundary">
+    <strong>Operations guardrails boundary.</strong> This page is read-only local
+    visibility over repo-owned operations catalogs and runbooks. It
+    {_html.escape(_OPERATIONS_GUARDRAILS_BOUNDARY)}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     package = readiness.package
     image = readiness.image
@@ -1146,6 +1369,7 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1261,6 +1485,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -1406,6 +1631,25 @@ def ui_security_guardrails() -> str | HTMLResponse:
 
 
 @router.get(
+    "/operations-guardrails",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_operations_guardrails() -> str | HTMLResponse:
+    try:
+        readiness = load_operations_guardrails()
+    except OperationsGuardrailsError as exc:
+        return error_page(
+            "Operations Guardrails Unavailable",
+            f"Operations guardrails unavailable from repo-owned artifacts: {exc}",
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _operations_guardrails_page(readiness)
+
+
+@router.get(
     "/deployment-readiness",
     response_class=HTMLResponse,
     response_model=None,
@@ -1536,6 +1780,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>

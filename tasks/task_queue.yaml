@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-security-guardrails-ui-g6a.md
+active_plan: plans/2026-06-20-operations-guardrails-ui-g6b.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -8,12 +8,14 @@ routing_note: >
   posture merged through PR #90. G1b raw-data inventory UI merged through PR #91, G3b
   selected-county source-provenance catalog merged through PR #92, and G2
   runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
-  through PR #94, and G5 source-provenance UI merged through PR #96. Active lane:
-  narrow G6a security/access-control guardrails over existing repo-local authority
-  files. This slice must not change auth semantics, run connectors, seed runtime
-  provenance, relabel fixture evidence as live data, approve DS-017, expand selected
-  geography/source coverage, start Bologna, or add hosted source/identity/RBAC
-  authority.
+  through PR #94, G5 source-provenance UI merged through PR #96, and G6a
+  security/access-control guardrails merged through PR #97. Active lane: narrow G6b
+  operations guardrails over existing repo-local alerting, incident, backup/restore,
+  retention, queue/recovery, and cost-monitoring authority files. This slice must not
+  execute operational actions, run connectors, seed runtime provenance, relabel fixture
+  evidence as live data, approve DS-017, expand selected geography/source coverage,
+  start Bologna, add hosted alerting/pager/scheduler/billing/source/identity/RBAC
+  authority, or claim Level 10 operations.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -722,7 +724,7 @@ tasks:
       - .\scripts\verify.ps1
     acceptance:
       - Source-readiness business logic is importable from `backend/app/source_registry/readiness.py`
-      - `scripts/source_readiness.py` delegates to the packaged module and keeps CLI JSON shape/counts stable
+      - '`scripts/source_readiness.py` delegates to the packaged module and keeps CLI JSON shape/counts stable'
       - Direct module tests and CLI subprocess tests cover Must-source freshness and blocked-source behavior
       - DS-017 remains blocked and no source-rights, connector, UI, API, DB schema, hosted, or package-publishing claims change
 
@@ -778,8 +780,8 @@ tasks:
       - .\scripts\validate_workspace.ps1
       - .\scripts\verify.ps1
     acceptance:
-      - `/ui/raw-data` renders current runtime inventory sections and links without mutating state
-      - `/ui/` links to raw-data inventory and shows a fail-closed inventory summary
+      - '`/ui/raw-data` renders current runtime inventory sections and links without mutating state'
+      - '`/ui/` links to raw-data inventory and shows a fail-closed inventory summary'
       - Evidence, claim, and report-run read APIs expose existing stores without schema or report-semantics changes
       - No hidden fixture seeding, connector execution, report creation, source-rights decision, DS-017 approval, hosted deployment, or identity/RBAC claim is introduced
 
@@ -845,7 +847,7 @@ tasks:
       - Default no-auth smoke expects `/ui/auth*`, `/ui/login`, `/ui/account`, `/login`, and `/account` to be disabled/404
       - API-key and reviewer-session auth surfaces remain opt-in smoke checks
       - Deployment smoke runs DB-backed UI runtime smoke with `BUN-slope`, same-area compare, and `postgres+object_store` artifact persistence
-      - `/ui/raw-data` does not create page-level horizontal overflow on mobile browser smoke
+      - '`/ui/raw-data` does not create page-level horizontal overflow on mobile browser smoke'
       - Browser smoke remains an explicit operator gate, not a default verification side effect
       - No later readiness/provenance/guardrail/deployment/production-authority/dossier UI, source expansion, DS-017 approval, hosted identity/RBAC, or Level 10 claim is introduced
 
@@ -870,7 +872,7 @@ tasks:
       - py -3.12 .\scripts\hosted_deployment_check.py
       - .\scripts\verify.ps1
     acceptance:
-      - `/ui/deployment-readiness` renders package, image, hosted-runtime, blocker, and validate-only limit data from checked catalogs
+      - '`/ui/deployment-readiness` renders package, image, hosted-runtime, blocker, and validate-only limit data from checked catalogs'
       - Catalog drift fails closed with 503 instead of unchecked readiness rendering
       - G3 does not create package/image/hosted side effects or source/vendor authority claims
 
@@ -898,14 +900,14 @@ tasks:
       - .\scripts\validate_workspace.ps1
       - .\scripts\verify.ps1
     acceptance:
-      - `/ui/source-provenance` renders selected-county DS-010/DS-011/DS-023 dataset, version, retrieval, connector, and out-of-scope expectations from checked artifacts
+      - '`/ui/source-provenance` renders selected-county DS-010/DS-011/DS-023 dataset, version, retrieval, connector, and out-of-scope expectations from checked artifacts'
       - DS-017 remains visible as the only blocked Must source and remains outside private-MVP proof
       - Catalog drift fails closed with 503 instead of unchecked source authority rendering
       - No connector execution, runtime provenance seeding, fixture relabeling, source expansion, Bologna work, hosted source authority, or Level 10 claim is introduced
 
   - id: G6a
     title: Security/access-control guardrails UI
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5]
     lane: coordinator
     spec: plans/2026-06-20-security-guardrails-ui-g6a.md
@@ -926,11 +928,47 @@ tasks:
       - .\scripts\validate_workspace.ps1
       - .\scripts\verify.ps1
     acceptance:
-      - `/ui/security-guardrails` renders checked local access-control and security posture evidence without mutating state
+      - '`/ui/security-guardrails` renders checked local access-control and security posture evidence without mutating state'
       - Hosted identity/RBAC, tenant entitlement, key rotation, secret-manager, hosted log retention, and SIEM blockers remain explicit
       - Artifact/config drift fails closed instead of unchecked security authority rendering
       - Default local no-auth and protected-route mounting behavior from G1a/G2 does not regress
       - No OAuth/OIDC, user accounts, DB schema, source registry, connector, report, DS-017, hosted deployment, or Level 10 behavior changes
+
+  - id: G6b
+    title: Operations guardrails UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5, G6a]
+    lane: coordinator
+    spec: plans/2026-06-20-operations-guardrails-ui-g6b.md
+    notes: >
+      Add the second isolated G6 guardrail surface over existing repo-local alerting,
+      incident/rollback, backup/restore, data-retention, queue/recovery, and
+      cost-monitoring artifacts. This is a read-only local operator visibility slice,
+      not hosted alerting, pager/on-call, scheduler, billing, backup-policy,
+      observability, DS-017, connector, source-entitlement, or production-authority
+      work.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_operations_guardrails.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_operations_guardrails.py .\tests\test_alerting_artifacts.py .\tests\test_incident_rollback_artifacts.py .\tests\test_data_retention_artifacts.py .\tests\test_cost_monitoring_artifacts.py .\tests\api\test_operations.py .\tests\api\test_ui_operations_routes.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+      - cd backend; ruff check .\app\operations_guardrails.py .\app\api\ui.py .\tests\api\test_ui_operations_guardrails.py
+      - cd backend; py -3.12 -m mypy .\app\operations_guardrails.py .\app\api\ui.py .\tests\api\test_ui_operations_guardrails.py
+      - py -3.12 .\scripts\alert_rules_check.py
+      - py -3.12 .\scripts\incident_rollback_check.py
+      - py -3.12 .\scripts\data_retention_check.py
+      - py -3.12 .\scripts\cost_monitoring_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - '`/ui/operations-guardrails` renders checked local operations guardrail evidence without mutating state'
+      - Alerting, incident/rollback, backup/restore, retention, queue/recovery, and cost-monitoring blockers remain explicit
+      - Artifact/config drift fails closed instead of unchecked operations authority rendering
+      - Existing protected `/ui/operations` and `/operations/*` reviewer-scope behavior does not regress
+      - No operational scripts execute from the UI helper; no recovery, queue mutation, alert dispatch, purge, backup/restore, connector, source, DS-017, hosted observability, hosted alerting, or Level 10 behavior changes
 
   # --- Completed ---
   - id: T000
@@ -1163,7 +1201,13 @@ tasks:
     status: done
     depends_on: [CON-001]
     lane: connector-integration
-    notes: Handoff boundary recorded. The next ingestion adapter belongs in the connector zone and must use injected public Lane C EvidenceService methods: create_observation for non-failure EvidenceContract inputs, create_source_failure for failure inputs, and public existence/list methods for idempotency. Direct Lane C repository/private-helper access is rejected; durable ingest_run linkage and exact source-failure field preservation are recorded as future Lane C/schema coordination gaps.
+    notes: >
+      Handoff boundary recorded. The next ingestion adapter belongs in the connector zone
+      and must use injected public Lane C EvidenceService methods: create_observation for
+      non-failure EvidenceContract inputs, create_source_failure for failure inputs, and
+      public existence/list methods for idempotency. Direct Lane C repository/private-helper
+      access is rejected; durable ingest_run linkage and exact source-failure field
+      preservation are recorded as future Lane C/schema coordination gaps.
     spec: plans/connector-2026-06-04-fixture-flood.md
     files:
       - plans/connector-*.md
@@ -1410,7 +1454,14 @@ tasks:
     status: done
     depends_on: [CON-013]
     lane: connector-integration
-    notes: Added connector-owned durable queue persistence for connector review status records using existing jobs.job_queue. Queue rows use job_type connector_review_status, idempotency key connector_review_status:<ingest_run_id>, status needs_review or queued, and payload references to source.ingest_runs.ingest_run_id. No worker, queue dashboard, API DB queue retrieval, schema migration, live IO, reports, claims, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    notes: >
+      Added connector-owned durable queue persistence for connector review status records
+      using existing jobs.job_queue. Queue rows use job_type connector_review_status,
+      idempotency key connector_review_status:<ingest_run_id>, status needs_review or
+      queued, and payload references to source.ingest_runs.ingest_run_id. No worker,
+      queue dashboard, API DB queue retrieval, schema migration, live IO, reports,
+      claims, durable evidence-row ingest_run linkage, or exact source-failure
+      preservation was added.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-014-durable-connector-review-queue
     files:
       - backend/app/connectors/review_queue.py
@@ -1480,7 +1531,13 @@ tasks:
     status: done
     depends_on: [CON-016]
     lane: connector-integration
-    notes: Extended the existing read-only connector review queue API response with worker-state metadata already carried by ConnectorReviewQueueItem and jobs.job_queue: attempts, max_attempts, locked_by, locked_at, started_at, finished_at, and last_error. No API-side job mutation, worker execution, scheduler, retry/requeue/cancel policy, live IO, reports, claims, schema migration, durable evidence-row ingest_run linkage, or exact source-failure preservation was added.
+    notes: >
+      Extended the existing read-only connector review queue API response with worker-state
+      metadata already carried by ConnectorReviewQueueItem and jobs.job_queue: attempts,
+      max_attempts, locked_by, locked_at, started_at, finished_at, and last_error. No
+      API-side job mutation, worker execution, scheduler, retry/requeue/cancel policy,
+      live IO, reports, claims, schema migration, durable evidence-row ingest_run linkage,
+      or exact source-failure preservation was added.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-017-connector-queue-worker-read-model
     files:
       - backend/app/api/connectors.py
@@ -1862,7 +1919,13 @@ tasks:
     status: done
     depends_on: [CON-023, CON-027]
     lane: connector-integration
-    notes: Tightened connector-local fixture quality so source-failure observed_value fields are type-checked after required keys are present: failure_reason and error_message must be non-empty text, and retryable must be boolean. No API route, OpenAPI change, DB schema change, queue behavior, connector runtime, live IO, hook config, POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module change outside connector quality was introduced.
+    notes: >
+      Tightened connector-local fixture quality so source-failure observed_value fields
+      are type-checked after required keys are present: failure_reason and error_message
+      must be non-empty text, and retryable must be boolean. No API route, OpenAPI
+      change, DB schema change, queue behavior, connector runtime, live IO, hook config,
+      POSIX script, durable ingest_run_id evidence-row linkage, or Lane A/B/C/D module
+      change outside connector quality was introduced.
     spec: plans/connector-2026-06-04-fixture-flood.md#con-028-connector-source-failure-payload-type-quality
     files:
       - backend/app/connectors/fixture_quality.py
