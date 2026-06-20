@@ -4,7 +4,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -25,6 +25,7 @@ from app.main import create_app
 _ALL_SELECTED_COUNTY_CASE_IDS = tuple(
     case.case_id for case in selected_county_cases.list_selected_county_cases()
 )
+_GOLDEN_AOI_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "golden_aois"
 _SOURCE_NAME = "Selected County Private MVP Fixtures"
 _DEMO_WORKSPACE_ID = UUID("11111111-1111-4111-8111-111111111111")
 _DEMO_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
@@ -64,6 +65,16 @@ def _auth_headers() -> dict[str, str]:
         "X-Reviewer-Id": _REVIEWER_ID,
         "X-Reviewer-Token": _REVIEWER_TOKEN,
     }
+
+
+def _golden_geometry(filename: str) -> dict[str, object]:
+    data = json.loads((_GOLDEN_AOI_DIR / filename).read_text(encoding="utf-8"))
+    assert isinstance(data, dict)
+    if data.get("type") == "Feature":
+        geometry = data["geometry"]
+        assert isinstance(geometry, dict)
+        return geometry
+    return data
 
 
 @pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
@@ -210,6 +221,97 @@ def test_db_operator_case_report_persists_selected_county_fixture(
                 {"area_id": area_id},
             ).scalar_one()
             assert evidence_count >= created["evidence_count"] > 0
+    finally:
+        _cleanup_selected_county_snapshot(engine, before, area_id)
+
+
+@pytest.mark.skipif(os.getenv("RUN_DB_SMOKE") != "1", reason="DB smoke not enabled")
+def test_db_supported_aoi_report_persists_existing_area_fixture(
+    tmp_path: Path,
+) -> None:
+    area_id = uuid4()
+    engine = build_engine()
+    object_store_root = (tmp_path / "object-store").resolve()
+    with Session(engine) as session:
+        before = _capture_selected_county_snapshot(session, area_id)
+
+    app = create_app(
+        settings=Settings(OBJECT_STORE_ROOT=str(object_store_root)),
+        use_db_services=True,
+    )
+    client = TestClient(app)
+
+    try:
+        area_response = client.post(
+            "/areas",
+            headers=_auth_headers(),
+            json={
+                "area_id": str(area_id),
+                "label": "operator-upload-buncombe-generic",
+                "geom_geojson": _golden_geometry("bun_slope.geojson"),
+                "geom_source": "operator-upload://bun_slope.geojson",
+            },
+        )
+        assert area_response.status_code == 201
+
+        create_response = client.post(
+            "/operator-cases/supported-aoi/report",
+            headers=_auth_headers(),
+            json={
+                "area_id": str(area_id),
+                "intent_code": "rural_land_purchase",
+            },
+        )
+
+        assert create_response.status_code == 201
+        created = create_response.json()
+        report_run_id = UUID(created["report_run_id"])
+        assert created["area_id"] == str(area_id)
+        assert created["county"] == "buncombe"
+        assert created["review_status"] == "approved"
+        assert created["status"] == "succeeded"
+        assert created["evidence_count"] > 0
+        assert created["connector_count"] == 5
+        assert "case_id" not in created
+
+        artifact_response = client.get(created["links"]["artifact"])
+        assert artifact_response.status_code == 200
+        artifact_report = artifact_response.json()
+        assert artifact_report["report_run_id"] == str(report_run_id)
+        assert artifact_report["area_id"] == str(area_id)
+        assert artifact_report["review_status"] == "approved"
+        assert artifact_report["workspace_id"] == str(_DEMO_WORKSPACE_ID)
+        assert artifact_report["requested_by"] == str(_DEMO_USER_ID)
+        assert artifact_report["reviewed_by"] == _REVIEWER_ID
+        assert artifact_report["artifact_metadata"]["persistence"] == "postgres+object_store"
+
+        get_response = client.get(f"/report-runs/{report_run_id}")
+        assert get_response.status_code == 200
+        report = get_response.json()
+        assert report["area_id"] == str(area_id)
+        assert report["artifact_metadata"]["persistence"] == "postgres+object_store"
+        assert _SOURCE_NAME in report["source_manifest"]["source_names"]
+        assert {
+            record["domain"] for record in report["evidence"] if not record["is_source_failure"]
+        } >= {"access", "buildability", "flood", "parcels", "terrain"}
+
+        artifact_path = Path(report["artifact_metadata"]["machine_json_uri"]).resolve()
+        assert artifact_path.exists()
+        assert artifact_path.is_relative_to(object_store_root)
+        stored_artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        assert stored_artifact == artifact_report
+
+        with Session(engine) as session:
+            after = _capture_selected_county_snapshot(session, area_id)
+            assert after.report_run_ids - before.report_run_ids == {report_run_id}
+            new_evidence_ids = after.evidence_ids - before.evidence_ids
+            new_ingest_run_ids = after.ingest_run_ids - before.ingest_run_ids
+            new_connector_review_keys = (
+                after.connector_review_keys - before.connector_review_keys
+            )
+            assert new_evidence_ids
+            assert len(new_ingest_run_ids) == created["connector_count"]
+            assert len(new_connector_review_keys) == len(new_ingest_run_ids)
     finally:
         _cleanup_selected_county_snapshot(engine, before, area_id)
 

@@ -3580,6 +3580,72 @@ paths:
                   $ref: '#/components/schemas/OperatorCaseSummary'
                 type: array
                 title: Response List Operator Cases Operator Cases Get
+  /operator-cases/supported-aoi/report:
+    post:
+      tags:
+      - operator-cases-private-mvp
+      summary: Create Supported Aoi Report
+      operationId: create_supported_aoi_report_operator_cases_supported_aoi_report_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Workspace-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Workspace-Id
+      - name: X-User-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-User-Id
+      - name: X-Reviewer-Id
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Id
+      - name: X-Reviewer-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Reviewer-Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportedAoiReportCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportedAoiReportResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /operator-cases/{case_id}/report:
     post:
       tags:
@@ -8183,6 +8249,79 @@ components:
       - source_registry_id
       - request_url
       title: SsurgoQueryResponse
+    SupportedAoiReportCreateRequest:
+      properties:
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        intent_code:
+          $ref: '#/components/schemas/IntentCode'
+          default: rural_land_purchase
+      additionalProperties: false
+      type: object
+      required:
+      - area_id
+      title: SupportedAoiReportCreateRequest
+    SupportedAoiReportResponse:
+      properties:
+        area_id:
+          type: string
+          format: uuid
+          title: Area Id
+        county:
+          type: string
+          title: County
+        report_run_id:
+          type: string
+          format: uuid
+          title: Report Run Id
+        review_status:
+          type: string
+          title: Review Status
+        status:
+          type: string
+          title: Status
+        fixture_only:
+          type: boolean
+          title: Fixture Only
+          default: true
+        message:
+          type: string
+          title: Message
+          default: Private-MVP selected-county fixture-only coverage created. This
+            does not use live-source production coverage.
+        evidence_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Evidence Count
+        connector_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Connector Count
+        links:
+          $ref: '#/components/schemas/OperatorCaseReportLinks'
+      type: object
+      required:
+      - area_id
+      - county
+      - report_run_id
+      - review_status
+      - status
+      - links
+      title: SupportedAoiReportResponse
     UsgsMrdsBboxRequest:
       properties:
         xmin:

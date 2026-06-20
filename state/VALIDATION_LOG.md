@@ -2,6 +2,48 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Generic Supported-AOI Evidence-Rich Workflow G9b
+
+**Scope:** Implement and validate the first generic supported-AOI private-MVP path:
+operator-created areas inside the selected North Carolina counties can use an existing
+`area_id` to produce reviewed, evidence-rich reports when the AOI matches a recorded
+fixture profile. This does not add arbitrary county coverage, live source authority,
+DS-017, hosted production proof, Bologna, or Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git worktree list
+git status --short --branch
+py -3.12 -m pytest tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py -q
+.\scripts\validate_workspace.ps1; .\scripts\verify.ps1
+ruff check backend\tests\private_mvp\test_generic_supported_aoi.py
+.\scripts\verify.ps1
+docker compose -p land-dd-g9b ps
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55470/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55470/land_diligence'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Live worktree reconciliation confirmed the implementation worktree at
+  `worktrees/g9b-aoi` on `codex/g9b-aoi`; the root checkout remains the dirty
+  preserved-candidate branch and was not edited.
+- Focused OpenAPI/planning-pack contract tests passed after regenerating
+  `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml`.
+- The first full verify run reached lint and failed only on one overlong coordinate
+  literal in the new generic-AOI test. The literal was reformatted and reread.
+- Narrow `ruff check backend\tests\private_mvp\test_generic_supported_aoi.py` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation, full backend test suite,
+  ruff, and mypy over `342` source files. DB smoke was skipped by default.
+- DB-enabled `.\scripts\verify.ps1` passed against isolated PostGIS project
+  `land-dd-g9b` on port `55470`: migrations/seeds, full backend test suite, ruff, mypy,
+  and `db_smoke_check.py` all passed.
+
+**Residual risk:** The route is intentionally fixture-profile scoped. It proves
+non-packaged, selected-county supported AOIs below case IDs, but it is not arbitrary
+in-county coverage, not live vendor sourcing, not hosted production readiness, not
+Bologna, and not multi-geography rulepack authority.
+
 ## 2026-06-20 Residual Reconciliation REC-002 and G9b Routing
 
 **Scope:** Complete the residual dirty-root reconciliation required by `REC-002`, record

@@ -20,12 +20,20 @@ continued work should happen from fresh or already-clean worktrees under
   divergent, `17` deferred/still blocked, `34` obsolete reference artifacts, and `2`
   coordination/generated artifacts. No dirty-root implementation slice should be copied
   forward wholesale.
-- **Next required step**: open a clean `G9b` implementation worktree from live
-  `origin/main`, audit the current generic AOI report path against the selected-county
-  source/provenance/report boundaries, add failing tests for one non-packaged AOI per
-  selected county or record precise blockers, then implement the smallest evidence-rich
-  generic AOI slice that preserves review, artifact, lineage, caveat, unknown, and
-  unsupported-area behavior.
+- **Current implementation slice**: clean worktree `worktrees/g9b-aoi` now proves the
+  first generic supported-AOI path below packaged case IDs. The new
+  `/operator-cases/supported-aoi/report` route takes an existing `area_id`, classifies
+  selected-county scope from stored geometry, requires a recorded generic AOI fixture
+  profile match, ingests selected-county fixture connector evidence against that same
+  `area_id`, approves connector-QA handoffs plus the final report, and returns the
+  approved UI/dossier/artifact links. Bare generic `POST /report-runs` remains
+  evidence-consumer-only by default. Local validation includes focused OpenAPI contract
+  tests, default `.\scripts\verify.ps1`, and DB-enabled `.\scripts\verify.ps1` against
+  isolated PostGIS on port `55470`.
+- **Next required step**: publish/merge the G9b branch and remove the completed
+  worktree after merge. Follow-on work should decide whether to extend UI ergonomics for
+  the supported-AOI area-ID route or move to the next source-entitlement/hosted-authority
+  blocker, without broadening source or geography authority.
 - **Known boundaries to preserve**: no new source authority, new county, new
   jurisdiction, rulepack, DS-017 approval, Bologna pilot, hosted deployment, hosted
   identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,

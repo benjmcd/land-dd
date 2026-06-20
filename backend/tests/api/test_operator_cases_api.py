@@ -17,6 +17,7 @@ from app.main import create_app
 
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_PATH = ROOT / "tests" / "fixtures" / "golden_aois" / "manifest.yaml"
+GOLDEN_AOI_DIR = ROOT / "tests" / "fixtures" / "golden_aois"
 GEOMETRY_FIXTURE_PATH = ROOT / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"
 _WORKSPACE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 _USER_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
@@ -61,6 +62,16 @@ def _selected_county_cases() -> list[dict[str, Any]]:
 def _valid_geojson() -> dict[str, object]:
     data = json.loads(GEOMETRY_FIXTURE_PATH.read_text(encoding="utf-8"))
     assert isinstance(data, dict)
+    return data
+
+
+def _golden_geometry(filename: str) -> dict[str, object]:
+    data = json.loads((GOLDEN_AOI_DIR / filename).read_text(encoding="utf-8"))
+    assert isinstance(data, dict)
+    if data.get("type") == "Feature":
+        geometry = data["geometry"]
+        assert isinstance(geometry, dict)
+        return geometry
     return data
 
 
@@ -331,6 +342,90 @@ def test_operator_case_report_create_uses_packaged_case_service() -> None:
     assert first_artifact.json()["workspace_id"] == str(_WORKSPACE_ID)
     assert first_artifact.json()["requested_by"] == str(_USER_ID)
     assert first_artifact.json()["reviewed_by"] == _REVIEWER_ID
+
+
+def test_supported_aoi_report_create_uses_existing_area_without_case_id() -> None:
+    client = TestClient(create_app())
+    area_response = client.post(
+        "/areas",
+        headers=_auth_headers(),
+        json={
+            "label": "operator-upload-buncombe-generic",
+            "geom_geojson": _golden_geometry("bun_slope.geojson"),
+            "geom_source": "operator-upload://bun_slope.geojson",
+        },
+    )
+    assert area_response.status_code == 201
+    area_id = area_response.json()["area_id"]
+
+    response = client.post(
+        "/operator-cases/supported-aoi/report",
+        headers=_auth_headers(),
+        json={"area_id": area_id, "intent_code": "rural_land_purchase"},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["area_id"] == area_id
+    assert body["county"] == "buncombe"
+    assert "case_id" not in body
+    assert body["review_status"] == "approved"
+    assert body["status"] == "succeeded"
+    assert body["evidence_count"] >= 5
+    assert body["connector_count"] == 5
+
+    report_response = client.get(f"/report-runs/{body['report_run_id']}")
+    assert report_response.status_code == 200
+    report = report_response.json()
+    assert report["area_id"] == area_id
+    assert report["workspace_id"] == str(_WORKSPACE_ID)
+    assert report["requested_by"] == str(_USER_ID)
+    assert report["reviewed_by"] == _REVIEWER_ID
+    assert "Selected County Private MVP Fixtures" in report["source_manifest"]["source_names"]
+    assert {
+        record["domain"] for record in report["evidence"] if not record["is_source_failure"]
+    } >= {"access", "buildability", "flood", "parcels", "terrain"}
+
+    artifact_response = client.get(body["links"]["artifact"])
+    assert artifact_response.status_code == 200
+    assert artifact_response.json()["area_id"] == area_id
+
+
+def test_supported_aoi_report_create_fails_closed_for_unprofiled_area() -> None:
+    client = TestClient(create_app())
+    area_response = client.post(
+        "/areas",
+        headers=_auth_headers(),
+        json={
+            "label": "operator-upload-unprofiled-buncombe",
+            "geom_geojson": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-82.6, 35.45],
+                        [-82.59, 35.45],
+                        [-82.59, 35.46],
+                        [-82.6, 35.46],
+                        [-82.6, 35.45],
+                    ]
+                ],
+            },
+            "geom_source": "operator-upload://unprofiled-buncombe.geojson",
+        },
+    )
+    assert area_response.status_code == 201
+
+    response = client.post(
+        "/operator-cases/supported-aoi/report",
+        headers=_auth_headers(),
+        json={
+            "area_id": area_response.json()["area_id"],
+            "intent_code": "rural_land_purchase",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "does not match a recorded generic AOI fixture profile" in response.text
 
 
 def test_operator_case_report_rejects_blank_reviewer_id() -> None:
