@@ -45,6 +45,9 @@ REQUIRED_FILES = (
     "scripts/run_supply_chain_check.ps1",
     "scripts/run_container_scan_check.ps1",
     "scripts/run_release_package_check.ps1",
+    "scripts/package_manifest_check.py",
+    "scripts/run_package_manifest_check.ps1",
+    "scripts/run_package_manifest_check.sh",
     "scripts/run_image_publication_check.ps1",
     "scripts/run_hosted_deployment_check.ps1",
     "scripts/run_threat_proxy_audit_check.ps1",
@@ -97,6 +100,7 @@ REQUIRED_CI_JOBS = {
     "dependency-attestations",
     "container-image-scan",
     "access-control",
+    "release-package-manifest",
     "image-publication",
     "hosted-deployment",
     "release-readiness",
@@ -119,6 +123,7 @@ EXPECTED_CI_PROOFS = {
     "dependency-attestations": "./scripts/run_provenance_check.sh",
     "container-image-scan": "./scripts/run_container_scan_check.sh",
     "access-control": "./scripts/run_access_control_check.sh",
+    "release-package-manifest": "./scripts/run_release_package_check.sh",
     "image-publication": "./scripts/run_image_publication_check.sh",
     "hosted-deployment": "./scripts/run_hosted_deployment_check.sh",
     "release-readiness": "./scripts/run_release_readiness_check.sh",
@@ -324,6 +329,44 @@ def validate_ci() -> None:
         "release-readiness job must run POSIX release proof",
     )
 
+    package_job = require_mapping(
+        jobs.get("release-package-manifest"),
+        "release-package-manifest job missing",
+    )
+    package_permissions = require_mapping(
+        package_job.get("permissions"),
+        "release-package-manifest permissions missing",
+    )
+    require(
+        package_permissions.get("contents") == "read",
+        "release-package-manifest must use read-only contents permission",
+    )
+    package_text = step_text(package_job, "release-package-manifest")
+    require(
+        "actions/checkout@v6" in package_text,
+        "release-package-manifest job must checkout repo",
+    )
+    require(
+        "actions/setup-python@v6" in package_text,
+        "release-package-manifest job must setup Python",
+    )
+    require(
+        "python -m pip install PyYAML" in package_text,
+        "release-package-manifest job must install PyYAML",
+    )
+    require(
+        "./scripts/run_release_package_check.sh" in package_text,
+        "release-package-manifest job must validate the package boundary",
+    )
+    require(
+        "./scripts/build_release_package.sh" in package_text,
+        "release-package-manifest job must build the local package",
+    )
+    require(
+        "./scripts/run_package_manifest_check.sh" in package_text,
+        "release-package-manifest job must validate the generated package manifest",
+    )
+
     image_job = require_mapping(jobs.get("image-publication"), "image-publication job missing")
     image_permissions = require_mapping(
         image_job.get("permissions"),
@@ -430,6 +473,7 @@ def validate_runbook() -> None:
         "dependency-attestations",
         "container-image-scan",
         "access-control",
+        "release-package-manifest",
         "threat-proxy-audit",
         "release-package",
         "image-publication",
@@ -459,6 +503,7 @@ def validate_runbook() -> None:
         "DATABASE_URL",
         "sources=8 ready=7 blocked=1",
         "build_release_package.ps1",
+        "run_package_manifest_check.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
         "executes the image-publication and hosted-deployment validators",

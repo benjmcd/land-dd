@@ -262,6 +262,34 @@ def test_release_package_builder_wrappers_delegate_to_shared_builder() -> None:
         assert "build_release_package.py" in script
 
 
+def test_release_package_manifest_checker_guards_built_artifacts() -> None:
+    script = (REPO_ROOT / "scripts" / "package_manifest_check.py").read_text(
+        encoding="utf-8",
+    )
+
+    for phrase in (
+        "release_package_manifest_v1",
+        "zip_sha256",
+        "embedded manifest",
+        "undeclared entries",
+        "pushes_registry_image",
+        "creates_hosted_deployment",
+        "includes_secrets",
+        "boundary_includes_path",
+    ):
+        assert phrase in script
+    assert "rmtree" not in script
+    assert "unlink(" not in script
+    assert "remove(" not in script
+
+
+def test_release_package_manifest_checker_wrappers_delegate_to_shared_checker() -> None:
+    for script_name in ("run_package_manifest_check.ps1", "run_package_manifest_check.sh"):
+        script = (REPO_ROOT / "scripts" / script_name).read_text(encoding="utf-8")
+
+        assert "package_manifest_check.py" in script
+
+
 def test_release_package_runbook_records_validation_workflow_and_limits() -> None:
     runbook = (REPO_ROOT / "docs" / "runbooks" / "release_package.md").read_text(
         encoding="utf-8",
@@ -271,8 +299,10 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
         "run_release_package_check.ps1",
         "scripts/release_package_check.py",
         "scripts/build_release_package.py",
+        "scripts/package_manifest_check.py",
         "validate-only",
         "build_release_package.ps1",
+        "run_package_manifest_check.ps1",
         "local_artifacts/releases",
         "fails if either output already exists",
         "does not delete, overwrite, push, deploy, or publish",
@@ -287,6 +317,7 @@ def test_release_package_runbook_records_validation_workflow_and_limits() -> Non
         "excludes state/agent-inbox",
         "local agent state",
         "includes docs/planning_pack",
+        "post-build manifest verification",
     ):
         assert phrase in runbook
 
@@ -295,7 +326,10 @@ def test_release_package_scripts_exist_for_windows_and_posix() -> None:
     assert (REPO_ROOT / "scripts" / "build_release_package.py").is_file()
     assert (REPO_ROOT / "scripts" / "build_release_package.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "build_release_package.sh").is_file()
+    assert (REPO_ROOT / "scripts" / "package_manifest_check.py").is_file()
     assert (REPO_ROOT / "scripts" / "release_package_check.py").is_file()
+    assert (REPO_ROOT / "scripts" / "run_package_manifest_check.ps1").is_file()
+    assert (REPO_ROOT / "scripts" / "run_package_manifest_check.sh").is_file()
     assert (REPO_ROOT / "scripts" / "run_release_package_check.ps1").is_file()
     assert (REPO_ROOT / "scripts" / "run_release_package_check.sh").is_file()
 

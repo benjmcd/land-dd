@@ -1,6 +1,47 @@
 # Project State
 
-## Current checkpoint (2026-06-20 repository-state reconciliation)
+## Current checkpoint (2026-06-20 package-manifest CI gate)
+
+The active implementation authority is `G7a` package-manifest CI gate from
+`plans/2026-06-20-package-manifest-ci.md`. This is the first retained product/control
+slice after `REC-001` repository-state reconciliation. Live `origin/main` was refreshed
+at `52b167a96643befa863f9501d1171385c4a25383` before `worktrees/pkg-manifest` was
+created on `codex/pkg-manifest`; no open GitHub PRs were present at slice start. The
+dirty root checkout remains preserved candidate evidence only.
+
+- **Active plan**: `plans/2026-06-20-package-manifest-ci.md`.
+- **Purpose**: add post-build verification for generated local release-package manifests
+  and an additive read-only CI job that validates the package boundary, builds an
+  ignored local package, and checks the generated manifest against the ZIP.
+- **Implemented scope**: `scripts/package_manifest_check.py` validates external manifest
+  schema/source/package id, local-only limit flags, ZIP SHA-256, embedded manifest
+  parity, declared ZIP entries, file sizes, file hashes, duplicate paths, undeclared
+  entries, and `config/release_package.yaml` include/exclude boundaries. Windows/POSIX
+  wrappers require an existing manifest path. `scripts/release_package_check.py` now
+  fails closed if the checker, wrappers, or runbook coverage drift.
+- **Release-readiness and CI authority**: `config/release_readiness.yaml` maps the
+  existing `release_package` check to `release-package-manifest`; the CI job uses
+  read-only repository permissions, runs the release-package boundary validator, builds
+  a local package under `local_artifacts/releases`, and runs the package-manifest
+  checker against the generated sibling manifest.
+- **Current local validation**: focused package/release-readiness tests passed
+  (`32 passed`) after an intentional red run failed for the expected missing checker,
+  wrappers, docs, CI job, and release-readiness mapping. Focused ruff passed; focused
+  mypy passed over the touched package/readiness scripts and tests; release-package and
+  release-readiness validators passed through direct, Windows, and POSIX paths; local
+  generated-package manifest checks passed for both PowerShell and POSIX package proof
+  paths; Python compile, PowerShell parser, `git diff --check`, no-deletion audit,
+  `.\scripts\validate_workspace.ps1`, and final `.\scripts\verify.ps1` passed. DB smoke
+  was skipped by default.
+- **Known boundaries to preserve**: this does not publish, push, sign, attest, deploy,
+  approve DS-017, change source-rights policy, change public APIs, change DB schema,
+  change report semantics, or claim hosted release authority. Generated package
+  artifacts remain ignored under `local_artifacts/releases`.
+- **Next required step**: publish the `codex/pkg-manifest` branch, open the PR, wait for
+  CI, and merge only if local and CI proof agree; then re-check live `origin/main` and
+  re-rank the next retained slice.
+
+## Previous checkpoint (2026-06-20 repository-state reconciliation)
 
 The active implementation authority is Lane 1 repository-state reconciliation and
 selective landing. Live `origin/main` remains the only default product authority; the

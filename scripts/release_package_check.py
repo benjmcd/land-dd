@@ -15,7 +15,10 @@ REQUIRED_FILES = (
     "scripts/build_release_package.py",
     "scripts/build_release_package.ps1",
     "scripts/build_release_package.sh",
+    "scripts/package_manifest_check.py",
     "scripts/release_package_check.py",
+    "scripts/run_package_manifest_check.ps1",
+    "scripts/run_package_manifest_check.sh",
     "scripts/run_release_package_check.ps1",
     "scripts/run_release_package_check.sh",
 )
@@ -311,14 +314,41 @@ def validate_builders() -> None:
         )
 
 
+def validate_manifest_checker() -> None:
+    checker = read_text("scripts/package_manifest_check.py")
+    for phrase in (
+        "release_package_manifest_v1",
+        "zip_sha256",
+        "embedded manifest",
+        "undeclared entries",
+        "pushes_registry_image",
+        "creates_hosted_deployment",
+        "includes_secrets",
+        "boundary_includes_path",
+    ):
+        require(phrase in checker, f"package_manifest_check.py missing phrase: {phrase}")
+    require("rmtree" not in checker, "package_manifest_check.py must not delete trees")
+    require("unlink(" not in checker, "package_manifest_check.py must not delete files")
+    require("remove(" not in checker, "package_manifest_check.py must not remove files")
+
+    for script_name in ("run_package_manifest_check.ps1", "run_package_manifest_check.sh"):
+        text = read_text(f"scripts/{script_name}")
+        require(
+            "package_manifest_check.py" in text,
+            f"{script_name} must delegate to package_manifest_check.py",
+        )
+
+
 def validate_runbook() -> None:
     runbook = read_text("docs/runbooks/release_package.md")
     for phrase in (
         "run_release_package_check.ps1",
         "scripts/release_package_check.py",
         "scripts/build_release_package.py",
+        "scripts/package_manifest_check.py",
         "validate-only",
         "build_release_package.ps1",
+        "run_package_manifest_check.ps1",
         "local_artifacts/releases",
         "fails if either output already exists",
         "does not delete, overwrite, push, deploy, or publish",
@@ -333,6 +363,7 @@ def validate_runbook() -> None:
         "excludes state/agent-inbox",
         "local agent state",
         "includes docs/planning_pack",
+        "post-build manifest verification",
     ):
         require(phrase in runbook, f"release package runbook missing phrase: {phrase}")
 
@@ -341,6 +372,7 @@ def main() -> int:
     validate_required_files()
     validate_catalog()
     validate_builders()
+    validate_manifest_checker()
     validate_runbook()
     return 0
 

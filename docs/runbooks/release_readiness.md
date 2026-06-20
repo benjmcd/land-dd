@@ -31,8 +31,9 @@ The check is validate-only. It verifies that:
   threat-proxy-audit, source-readiness, security-scan, data-retention, load-testing,
   performance, checklist, and data-lineage artifacts exist;
 - CI contains `verify`, `db-verify`, `supply-chain`, `dependency-attestations`,
-  `container-image-scan`, `access-control`, `image-publication`, `hosted-deployment`, and
-  `security-scan`, and `release-readiness` jobs;
+  `container-image-scan`, `access-control`, `release-package-manifest`,
+  `image-publication`, `hosted-deployment`, and `security-scan`, and
+  `release-readiness` jobs;
 - `db-verify` explicitly passes both `DATABASE_URL_SYNC` and `DATABASE_URL` when
   `RUN_DB_SMOKE='1'` is enabled;
 - the `release-readiness` CI job runs the POSIX readiness proof;
@@ -43,6 +44,9 @@ The check is validate-only. It verifies that:
   terms/source-page triggers remain separate prose;
 - the local release package boundary and builders are validated by
   `scripts/run_release_package_check.ps1`;
+- the `release-package-manifest` CI job runs the release-package boundary proof, builds a
+  local package, and validates the generated manifest with
+  `scripts/run_package_manifest_check.ps1`;
 - the image publication boundary is validated by `scripts/run_image_publication_check.ps1`;
 - the hosted deployment boundary, including the non-local hosted runtime secret input
   contract, is validated by `scripts/run_hosted_deployment_check.ps1`;
@@ -92,6 +96,8 @@ The check is validate-only. It verifies that:
    risk-accepted in the appropriate runbook.
 5. To create a local package, run `.\scripts\build_release_package.ps1 -Version <version>`
    after all release gates pass.
+   Then run `.\scripts\run_package_manifest_check.ps1 -Manifest <manifest-path>` against
+   the generated sibling manifest before sharing the package.
 6. Do not publish a release package or registry image until hosted deployment authority,
    registry-image attestation, and billing/source blockers are resolved.
 

@@ -2,6 +2,72 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Package-Manifest CI Gate
+
+**Scope:** Add post-build local release-package manifest verification and an additive
+`release-package-manifest` CI job without publishing, pushing, signing, deploying,
+approving DS-017, or claiming hosted release authority.
+
+**Commands run:**
+
+```powershell
+cd backend
+python -m pytest -q .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py
+py -3.12 -m pytest -q .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py
+python -m ruff check .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\package_manifest_check.py ..\scripts\release_package_check.py ..\scripts\release_readiness_check.py
+py -3.12 -m mypy .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\package_manifest_check.py ..\scripts\release_package_check.py ..\scripts\release_readiness_check.py
+cd ..
+py -3.12 .\scripts\release_package_check.py
+.\scripts\run_release_package_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_package_check.sh
+py -3.12 .\scripts\release_readiness_check.py
+.\scripts\run_release_readiness_check.ps1
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_release_readiness_check.sh
+.\scripts\build_release_package.ps1 -Version ''
+.\scripts\run_package_manifest_check.ps1 -Manifest .\local_artifacts\releases\land-diligence-20260620T095946Z-release-manifest.json
+py -3.12 .\scripts\package_manifest_check.py .\local_artifacts\releases\land-diligence-20260620T095946Z-release-manifest.json
+& 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_package_manifest_check.sh local_artifacts/releases/land-diligence-20260620T095946Z-release-manifest.json
+$version = 'ci-local-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ'); & 'C:\Program Files\Git\bin\bash.exe' ./scripts/build_release_package.sh $version; & 'C:\Program Files\Git\bin\bash.exe' ./scripts/run_package_manifest_check.sh "local_artifacts/releases/land-diligence-$version-release-manifest.json"
+py -3.12 -m py_compile .\scripts\package_manifest_check.py .\scripts\release_package_check.py .\scripts\release_readiness_check.py
+$errors=$null; [System.Management.Automation.PSParser]::Tokenize((Get-Content .\scripts\run_package_manifest_check.ps1 -Raw), [ref]$errors) | Out-Null; if ($errors) { exit 1 }; 'psparser ok'
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+py -3.12 .\scripts\readiness_matrix_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Intentional red focused pytest run failed for the expected missing checker, wrappers,
+  docs, CI job, and release-readiness mapping before implementation.
+- Focused package/release-readiness tests passed (`32 passed`) under Python 3.12.
+- Focused ruff passed. Focused mypy passed over the touched package/readiness scripts
+  and tests.
+- Direct, Windows, and POSIX release-package and release-readiness validators passed.
+- PowerShell package build wrote ignored proof artifacts
+  `land-diligence-20260620T095946Z.zip` and
+  `land-diligence-20260620T095946Z-release-manifest.json` with `807` files; direct,
+  Windows, and POSIX manifest checks passed against the generated manifest.
+- POSIX build/check proof wrote ignored proof artifacts for
+  `land-diligence-ci-local-20260620T100033Z` and passed the package-manifest check.
+- Python compile, PowerShell parser validation, `git diff --check`, no-deletion audit,
+  and workspace validation passed.
+- The first full `.\scripts\verify.ps1` run failed because the active follow-on plan did
+  not cite `state/LEVEL_9_10_GATE_MATRIX.md`. The plan was fixed to preserve Level 9/10
+  authority context; `scripts/readiness_matrix_check.py` then passed.
+- Final `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `326` source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This proves local package manifest integrity only. It does not publish, push, sign,
+  attest, deploy, approve DS-017, authorize source rights, or prove hosted release
+  readiness.
+- Generated proof ZIP/manifests are ignored local artifacts under `local_artifacts/` and
+  are not committed.
+- DB smoke was not run in the final default verify because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-19 Error-State/No-Leak Hardening
 
 **Scope:** Harden repo-local user-facing error serialization and rendering without
