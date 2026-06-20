@@ -2,17 +2,17 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-bologna-source-candidate-discovery.md`.
+Latest completed plan: `2026-06-20-bologna-source-rights-matrix.md`.
 
-Active plan: `2026-06-20-bologna-source-rights-matrix.md`.
+Current routing plan: `2026-06-20-post-bsr-roadmap.md`.
 
-The active slice is `BSR-001` Bologna source-rights matrix. `BSC-001` added a
-candidate-only source inventory for official Bologna/Emilia-Romagna discovery surfaces.
-The next unblocked repo-local path is to map every candidate to the exact
-source-schema, license, cache, export, AI-use, raw-data, attribution, fixture, CRS, and
-report-use decisions required before promotion, without selecting Bologna, approving
-Italy/EU sources, promoting registry rows, committing fixtures, approving a rulepack,
-unblocking DS-017, creating hosted authority, or claiming Level 10 production proof.
+`BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
+There is no unblocked Bologna implementation lane until product/AOI/source-review
+authority exists. The next Bologna task is `BSA-001`, currently blocked, to fill the
+rights matrix from actual reviewed authority or record that source review remains
+unavailable. Do not proceed to fixture capture, runtime integration, source registry
+promotion, rulepack implementation, hosted authority, DS-017 approval, or a
+multi-geography framework from repo-local inference alone.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
