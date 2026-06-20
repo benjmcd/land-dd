@@ -39,10 +39,24 @@ def test_deployment_smoke_scripts_cover_runtime_contract() -> None:
         assert "candidates" in script
         assert "/areas" in script
         assert "/report-runs" in script
+        assert "ui_runtime_smoke.py" in script
+        assert "--operator-case-id" in script
+        assert "BUN-slope" in script
+        assert "--reviewer-id" in script
+        assert "fixture-reviewer" in script
+        assert "--reviewer-token" in script
+        assert "fixture-token-123" in script
+        assert "--compare-same-area" in script
+        assert "--expect-artifact-persistence" in script
+        assert "postgres+object_store" in script
         assert "deployment smoke: ok" in script
+        assert script.index("ui_runtime_smoke.py") < script.index("deployment smoke: ok")
 
     assert "recoveryPreview.stale_running_threshold_seconds" in powershell
+    assert "APP_ENV = $env:APP_ENV" in powershell
+    assert "$env:APP_ENV = 'local'" in powershell
     assert 'json_field "$recovery_preview" stale_running_threshold_seconds' in posix
+    assert "export APP_ENV=local" in posix
 
 
 def test_deployment_smoke_scripts_feed_sql_through_stable_psql_file_modes() -> None:

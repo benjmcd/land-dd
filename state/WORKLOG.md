@@ -3848,3 +3848,27 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   future source/provenance work to the catalog without claiming runtime provenance
   hydration, DS-017 approval, source/vendor expansion, hosted deployment, or
   identity/RBAC completion.
+
+## 2026-06-20 Runtime/browser smoke reconstruction
+
+- Started `G2` from clean `worktrees/g2-smoke` on `codex/g2-smoke`, created from live
+  `origin/main` after PR #92 merged selected-county source-provenance catalog at
+  `cc272d0de492c424ff1b3ad715f25b25587c9e53`.
+- Rebuilt `scripts/ui_runtime_smoke.py` and `scripts/ui_browser_smoke.mjs` around the
+  accepted G1 UI surface: `/ui/`, `/ui/raw-data`, report-runs, connector-review,
+  operations, and explicit default-disabled auth route checks. Protected API-key and
+  reviewer-session route checks remain opt-in.
+- Updated deployment smoke wrappers so DB-backed Compose/Postgres smoke also runs the
+  UI runtime smoke with `BUN-slope`, same-area compare, and
+  `postgres+object_store` artifact persistence.
+- Real deployment smoke exposed two script contract bugs: missing direct reviewer
+  credentials for default-local operator-case POST, and missing CSRF for the second
+  compare POST after a reviewer cookie is issued. Fixed both in the runtime smoke and
+  covered the direct reviewer/compare path with focused tests.
+- Real headed/headless browser smoke exposed `/ui/raw-data` mobile page overflow. Fixed
+  the raw-data table wrapper so dense raw tables scroll inside their container on
+  mobile without widening the page.
+- Updated `plans/README.md`, `tasks/task_queue.yaml`, `state/PROJECT_STATE.md`,
+  `state/VALIDATION_LOG.md`, `docs/runbooks/mvp_operator.md`, and this worklog to route
+  G2 without adding later readiness/provenance/guardrail/hosted/identity or Level 10
+  claims.

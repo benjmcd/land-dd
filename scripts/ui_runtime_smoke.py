@@ -20,6 +20,7 @@ class RouteCheck:
     forbidden: tuple[str, ...] = ("Traceback", "Internal Server Error")
     expect_html: bool = True
     expect_viewport: bool = True
+    expected_status: int = 200
 
 
 @dataclass
@@ -64,6 +65,18 @@ def build_route_checks(*, reviewer_session: bool) -> list[RouteCheck]:
     return [
         RouteCheck("home", "/ui/", ("Land Diligence",)),
         RouteCheck(
+            "raw-data",
+            "/ui/raw-data",
+            (
+                "Raw Data Inventory",
+                "Local raw-data inventory view only",
+                "does not seed fixtures",
+                "does not run connectors",
+                "does not create reports",
+                "does not approve DS-017",
+            ),
+        ),
+        RouteCheck(
             "report-runs",
             "/ui/report-runs",
             ("Report Runs", '<form method="GET" action="/ui/compare"'),
@@ -80,13 +93,101 @@ def build_route_checks(*, reviewer_session: bool) -> list[RouteCheck]:
             operations_required,
             forbidden=("Traceback", "Internal Server Error", *operations_forbidden),
         ),
-        RouteCheck("api-key-auth", "/ui/auth", ('name="api_key"',)),
-        RouteCheck(
-            "reviewer-auth",
-            "/ui/auth/reviewer",
-            ('name="reviewer_id"', 'name="reviewer_token"'),
-        ),
     ]
+
+
+DEFAULT_DISABLED_AUTH_ROUTE_CHECKS = (
+    RouteCheck(
+        "auth-disabled-api-key",
+        "/ui/auth",
+        (),
+        forbidden=("Traceback", "Internal Server Error", 'name="api_key"'),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-api-key-logout",
+        "/ui/auth/logout",
+        (),
+        forbidden=("Traceback", "Internal Server Error"),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-reviewer",
+        "/ui/auth/reviewer",
+        (),
+        forbidden=("Traceback", "Internal Server Error", 'name="reviewer_token"'),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-reviewer-logout",
+        "/ui/auth/reviewer/logout",
+        (),
+        forbidden=("Traceback", "Internal Server Error"),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-identity",
+        "/ui/auth/identity",
+        (),
+        forbidden=("Traceback", "Internal Server Error", 'name="report_identity_token"'),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-identity-logout",
+        "/ui/auth/identity/logout",
+        (),
+        forbidden=("Traceback", "Internal Server Error"),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-ui-login",
+        "/ui/login",
+        (),
+        forbidden=("Traceback", "Internal Server Error", 'name="api_key"'),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-ui-account",
+        "/ui/account",
+        (),
+        forbidden=("Traceback", "Internal Server Error"),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-login",
+        "/login",
+        (),
+        forbidden=("Traceback", "Internal Server Error", 'name="api_key"'),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+    RouteCheck(
+        "auth-disabled-account",
+        "/account",
+        (),
+        forbidden=("Traceback", "Internal Server Error"),
+        expect_html=False,
+        expect_viewport=False,
+        expected_status=404,
+    ),
+)
 
 
 OPERATOR_CASE_REPORT_CHECK = RouteCheck(
@@ -157,7 +258,8 @@ def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -
         status = int(exc.code)
         body = exc.read().decode("utf-8", errors="replace")
         content_type = exc.headers.get("content-type", "")
-        failures.append(f"HTTP {status}")
+        if status != check.expected_status:
+            failures.append(f"HTTP {status}")
     except URLError as exc:
         return RouteResult(
             check.label,
@@ -167,8 +269,8 @@ def fetch_route(opener: Any, base_url: str, check: RouteCheck, timeout: float) -
             [f"runtime unavailable: {exc.reason}"],
         )
 
-    if status != 200:
-        failures.append(f"expected HTTP 200, got {status}")
+    if status != check.expected_status:
+        failures.append(f"expected HTTP {check.expected_status}, got {status}")
     if not body.strip():
         failures.append("empty body")
     if check.expect_html and "text/html" not in content_type.lower():
@@ -538,6 +640,8 @@ def post_operator_case_report(
     *,
     include_csrf: bool,
     expected_artifact_persistence: str,
+    reviewer_id: str = "",
+    reviewer_token: str = "",
     label: str = "operator-case-report",
 ) -> RouteResult:
     check = RouteCheck(
@@ -550,6 +654,9 @@ def post_operator_case_report(
     )
     url = urljoin(base_url.rstrip("/") + "/", "ui/operator-cases/report")
     fields = {"selected_county_case_id": case_id}
+    if reviewer_id and reviewer_token:
+        fields["reviewer_id"] = reviewer_id
+        fields["reviewer_token"] = reviewer_token
     failures: list[str] = []
     status: int | None = None
     final_path = check.path
@@ -632,28 +739,45 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
     if args.api_key:
         request_form(opener, f"{base_url}/ui/auth", {"api_key": args.api_key}, args.timeout)
 
-    reviewer_session = bool(args.reviewer_id or args.reviewer_token)
-    if reviewer_session:
+    reviewer_credentials = bool(args.reviewer_id or args.reviewer_token)
+    reviewer_session = False
+    reviewer_form_id = ""
+    reviewer_form_token = ""
+    if reviewer_credentials:
         if not args.reviewer_id or not args.reviewer_token:
             raise RuntimeError("--reviewer-id and --reviewer-token must be provided together")
-        request_form(
-            opener,
-            f"{base_url}/ui/auth/reviewer",
-            {
-                "reviewer_id": args.reviewer_id,
-                "reviewer_token": args.reviewer_token,
-            },
-            args.timeout,
-        )
+        try:
+            request_form(
+                opener,
+                f"{base_url}/ui/auth/reviewer",
+                {
+                    "reviewer_id": args.reviewer_id,
+                    "reviewer_token": args.reviewer_token,
+                },
+                args.timeout,
+            )
+            reviewer_session = True
+        except HTTPError as exc:
+            if int(exc.code) != 404:
+                raise
+            reviewer_form_id = args.reviewer_id
+            reviewer_form_token = args.reviewer_token
     if args.expect_artifact_persistence and not args.operator_case_id:
         raise RuntimeError("--expect-artifact-persistence requires --operator-case-id")
     if args.compare_same_area and not args.operator_case_id:
         raise RuntimeError("--compare-same-area requires --operator-case-id")
 
-    results = [
-        fetch_route(opener, base_url, check, args.timeout)
-        for check in build_route_checks(reviewer_session=reviewer_session)
-    ]
+    route_checks = build_route_checks(reviewer_session=reviewer_session)
+    if args.api_key:
+        route_checks.append(RouteCheck("api-key-auth", "/ui/auth", ('name="api_key"',)))
+    if reviewer_session:
+        route_checks.append(
+            RouteCheck("reviewer-auth", "/ui/auth/reviewer", ("Reviewer session",))
+        )
+    if not args.api_key and not reviewer_session:
+        route_checks.extend(DEFAULT_DISABLED_AUTH_ROUTE_CHECKS)
+
+    results = [fetch_route(opener, base_url, check, args.timeout) for check in route_checks]
     if args.operator_case_id:
         operator_result = post_operator_case_report(
             opener,
@@ -662,6 +786,8 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
             args.timeout,
             include_csrf=bool(args.api_key) or reviewer_session,
             expected_artifact_persistence=args.expect_artifact_persistence,
+            reviewer_id=reviewer_form_id,
+            reviewer_token=reviewer_form_token,
         )
         results.append(operator_result)
         if operator_result.ok:
@@ -694,8 +820,10 @@ def run_smoke(args: argparse.Namespace) -> list[RouteResult]:
                 base_url,
                 args.operator_case_id,
                 args.timeout,
-                include_csrf=bool(args.api_key) or reviewer_session,
+                include_csrf=bool(args.api_key) or reviewer_session or bool(reviewer_form_id),
                 expected_artifact_persistence="",
+                reviewer_id=reviewer_form_id,
+                reviewer_token=reviewer_form_token,
                 label="operator-case-report-compare",
             )
             results.append(compare_report_result)

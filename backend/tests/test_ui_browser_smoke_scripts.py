@@ -42,10 +42,19 @@ def test_ui_browser_smoke_checks_core_routes_and_viewports() -> None:
 
     for path in (
         "/ui/",
+        "/ui/raw-data",
         "/ui/report-runs",
         "/ui/connector-review-queue",
         "/ui/auth",
+        "/ui/auth/logout",
         "/ui/auth/reviewer",
+        "/ui/auth/reviewer/logout",
+        "/ui/auth/identity",
+        "/ui/auth/identity/logout",
+        "/ui/login",
+        "/ui/account",
+        "/login",
+        "/account",
         "/ui/operations",
         "/ui/operations/recovery-preview",
         "/ui/live-connector-jobs",
@@ -56,6 +65,22 @@ def test_ui_browser_smoke_checks_core_routes_and_viewports() -> None:
     assert "{ name: \"mobile\", width: 390, height: 844, mobile: true }" in script
     assert "headless" in script
     assert "headed" in script
+    assert "expectedStatus: 404" in script
+    assert "auth-disabled-api-key" in script
+    assert "auth-disabled-api-key-logout" in script
+    assert "auth-disabled-reviewer" in script
+    assert "auth-disabled-reviewer-logout" in script
+    assert "auth-disabled-identity" in script
+    assert "auth-disabled-identity-logout" in script
+    assert "auth-disabled-ui-login" in script
+    assert "auth-disabled-ui-account" in script
+    assert "auth-disabled-login" in script
+    assert "auth-disabled-account" in script
+    assert "Raw Data Inventory" in script
+    assert "Local raw-data inventory view only" in script
+    assert "does not seed fixtures" in script
+    assert "does not run connectors" in script
+    assert "does not approve DS-017" in script
     assert "Selected-County Private MVP Fixture Cases" in script
     assert "Create approved fixture reports for the selected-county operator path." in script
     assert "BUN-slope" in script
@@ -64,8 +89,11 @@ def test_ui_browser_smoke_checks_core_routes_and_viewports() -> None:
     assert "page-level horizontal overflow" in script
     assert "missing viewport meta" in script
     assert "found forbidden text" in script
+    assert "expected HTTP status" in script
     assert "Using reviewer session" in script
     assert "name=\"reviewer_token\"" in script
+    assert "api-key-auth" in script
+    assert "reviewer-auth" in script
 
 
 def test_ui_browser_smoke_wrappers_keep_check_explicit() -> None:

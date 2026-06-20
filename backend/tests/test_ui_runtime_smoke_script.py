@@ -11,6 +11,18 @@ from urllib.parse import parse_qs
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "ui_runtime_smoke.py"
+EXPECTED_DISABLED_AUTH_LABELS = [
+    "auth-disabled-api-key",
+    "auth-disabled-api-key-logout",
+    "auth-disabled-reviewer",
+    "auth-disabled-reviewer-logout",
+    "auth-disabled-identity",
+    "auth-disabled-identity-logout",
+    "auth-disabled-ui-login",
+    "auth-disabled-ui-account",
+    "auth-disabled-login",
+    "auth-disabled-account",
+]
 
 
 class _SmokeHandler(BaseHTTPRequestHandler):
@@ -19,7 +31,14 @@ class _SmokeHandler(BaseHTTPRequestHandler):
     operator_report_ids: ClassVar[list[str]] = ["operator-smoke"]
 
     def do_GET(self) -> None:  # noqa: N802
-        body = self.route_bodies.get(self.path, "")
+        if self.path not in self.route_bodies:
+            self.send_response(404)
+            self.send_header("content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"detail":"Not Found"}')
+            return
+
+        body = self.route_bodies[self.path]
         self.send_response(200)
         content_type = (
             "application/json"
@@ -35,6 +54,12 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         self.wfile.write(body.encode("utf-8"))
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path != "/ui/operator-cases/report" and self.path not in self.route_bodies:
+            self.send_response(404)
+            self.send_header("content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"detail":"Not Found"}')
+            return
         length = int(self.headers.get("content-length", "0"))
         raw_body = self.rfile.read(length).decode("utf-8") if length else ""
         self.post_bodies.append((self.path, parse_qs(raw_body)))
@@ -71,6 +96,14 @@ def _required_routes(*, reviewer_session: bool = False) -> dict[str, str]:
         operations.append('name="reviewer_token"')
     return {
         "/ui/": _html("Land Diligence"),
+        "/ui/raw-data": _html(
+            "Raw Data Inventory",
+            "Local raw-data inventory view only",
+            "does not seed fixtures",
+            "does not run connectors",
+            "does not create reports",
+            "does not approve DS-017",
+        ),
         "/ui/report-runs": _html(
             "Report Runs",
             '<form method="GET" action="/ui/compare"></form>',
@@ -80,8 +113,6 @@ def _required_routes(*, reviewer_session: bool = False) -> dict[str, str]:
             "<select name='status'></select>",
         ),
         "/ui/operations": _html(*operations),
-        "/ui/auth": _html('name="api_key"'),
-        "/ui/auth/reviewer": _html('name="reviewer_id"', 'name="reviewer_token"'),
     }
 
 
@@ -151,12 +182,15 @@ def test_ui_runtime_smoke_script_passes_against_core_ui_routes() -> None:
     labels = [route["label"] for route in payload["routes"]]
     assert labels == [
         "home",
+        "raw-data",
         "report-runs",
         "connector-review-queue",
         "operations",
-        "api-key-auth",
-        "reviewer-auth",
+        *EXPECTED_DISABLED_AUTH_LABELS,
     ]
+    for route in payload["routes"]:
+        if route["label"].startswith("auth-disabled"):
+            assert route["status"] == 404
     assert "operator-case-report" not in labels
 
 
@@ -202,6 +236,7 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_api_key_cookie() -> None:
         "Land Diligence",
         '<input name="csrf_token" type="hidden" value="csrf-fixture">',
     )
+    routes["/ui/auth"] = _html('name="api_key"')
     routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
     routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     server, base_url = _run_server(routes)
@@ -235,6 +270,7 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_reviewer_session() -> Non
         "Land Diligence",
         '<input name="csrf_token" type="hidden" value="csrf-fixture">',
     )
+    routes["/ui/auth/reviewer"] = _html("Reviewer session")
     routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
     routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
     server, base_url = _run_server(routes)
@@ -262,6 +298,45 @@ def test_ui_runtime_smoke_operator_case_uses_csrf_with_reviewer_session() -> Non
             "csrf_token": ["csrf-fixture"],
         },
     ) in handler.post_bodies
+
+
+def test_ui_runtime_smoke_operator_case_uses_direct_reviewer_fields() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/operator-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/operator-smoke/lineage"] = _operator_lineage_html()
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--reviewer-id",
+            "fixture-reviewer",
+            "--reviewer-token",
+            "fixture-token-123",
+            "--operator-case-id",
+            "BUN-slope",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert (
+        "/ui/operator-cases/report",
+        {
+            "selected_county_case_id": ["BUN-slope"],
+            "reviewer_id": ["fixture-reviewer"],
+            "reviewer_token": ["fixture-token-123"],
+        },
+    ) in handler.post_bodies
+    payload = json.loads(result.stdout)
+    reviewer_disabled = next(
+        route for route in payload["routes"] if route["label"] == "auth-disabled-reviewer"
+    )
+    assert reviewer_disabled["path"] == "/ui/auth/reviewer"
+    assert reviewer_disabled["status"] == 404
+    assert reviewer_disabled["ok"] is True
 
 
 def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> None:
@@ -292,6 +367,10 @@ def test_ui_runtime_smoke_operator_case_can_assert_artifact_persistence() -> Non
 
 def test_ui_runtime_smoke_operator_case_can_follow_compare_and_diff() -> None:
     routes = _required_routes()
+    routes["/ui/"] = _html(
+        "Land Diligence",
+        '<input name="csrf_token" type="hidden" value="csrf-fixture">',
+    )
     routes["/ui/report-runs/operator-smoke-a"] = _operator_report_html()
     routes["/ui/report-runs/operator-smoke-a/lineage"] = _operator_lineage_html()
     routes["/ui/report-runs/operator-smoke-b"] = _operator_report_html()
@@ -358,6 +437,10 @@ def test_ui_runtime_smoke_operator_case_can_follow_compare_and_diff() -> None:
     try:
         result = _run_smoke(
             base_url,
+            "--reviewer-id",
+            "fixture-reviewer",
+            "--reviewer-token",
+            "fixture-token-123",
             "--operator-case-id",
             "BUN-slope",
             "--compare-same-area",
@@ -380,14 +463,23 @@ def test_ui_runtime_smoke_operator_case_can_follow_compare_and_diff() -> None:
     ]
     assert (
         "/ui/operator-cases/report",
-        {"selected_county_case_id": ["BUN-slope"]},
+        {
+            "selected_county_case_id": ["BUN-slope"],
+            "reviewer_id": ["fixture-reviewer"],
+            "reviewer_token": ["fixture-token-123"],
+        },
     ) in handler.post_bodies
-    assert handler.post_bodies.count(
+    assert (
+        "/ui/operator-cases/report",
         (
-            "/ui/operator-cases/report",
-            {"selected_county_case_id": ["BUN-slope"]},
-        )
-    ) == 2
+            {
+                "selected_county_case_id": ["BUN-slope"],
+                "reviewer_id": ["fixture-reviewer"],
+                "reviewer_token": ["fixture-token-123"],
+                "csrf_token": ["csrf-fixture"],
+            }
+        ),
+    ) in handler.post_bodies
 
 
 def test_ui_runtime_smoke_compare_same_area_requires_operator_case() -> None:
@@ -578,7 +670,10 @@ def test_ui_runtime_smoke_operator_case_fails_when_lineage_records_missing() -> 
 
 
 def test_ui_runtime_smoke_script_supports_reviewer_session_expectations() -> None:
-    server, base_url = _run_server(_required_routes(reviewer_session=True))
+    routes = _required_routes(reviewer_session=True)
+    routes["/ui/auth/reviewer"] = _html("Reviewer session")
+    routes["/ui/auth"] = _html('name="api_key"')
+    server, base_url = _run_server(routes)
     try:
         result = _run_smoke(
             base_url,
@@ -593,6 +688,21 @@ def test_ui_runtime_smoke_script_supports_reviewer_session_expectations() -> Non
 
     assert result.returncode == 0, result.stderr + result.stdout
     assert "ok: operations /ui/operations status=200" in result.stdout
+    assert "ok: reviewer-auth /ui/auth/reviewer status=200" in result.stdout
+
+
+def test_ui_runtime_smoke_script_supports_api_key_auth_when_requested() -> None:
+    routes = _required_routes()
+    routes["/ui/auth"] = _html('name="api_key"')
+    server, base_url = _run_server(routes)
+    try:
+        result = _run_smoke(base_url, "--api-key", "fixture-key")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "ok: api-key-auth /ui/auth status=200" in result.stdout
 
 
 def test_ui_runtime_smoke_script_fails_closed_on_empty_page() -> None:

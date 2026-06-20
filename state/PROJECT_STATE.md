@@ -1,12 +1,55 @@
 # Project State
 
-## Current checkpoint (2026-06-20 selected-county source-provenance catalog)
+## Current checkpoint (2026-06-20 runtime/browser smoke reconstruction)
 
-The active implementation authority is `G3b` selected-county source-provenance catalog
-from `plans/2026-06-20-selected-county-source-provenance-catalog.md`. This is the next
-retained product/control slice after `G1b` raw-data inventory UI merged through PR #91
-at `5440934218182b309b784bfde29a5bc7d34d870e`. The dirty root checkout remains
-preserved candidate evidence only; this slice was opened from live `origin/main` in
+The active implementation authority is `G2` runtime/browser smoke reconstruction from
+`plans/2026-06-20-runtime-browser-smoke-g2.md`. This is the next retained
+product/control slice after `G3b` selected-county source-provenance catalog merged
+through PR #92 at `cc272d0de492c424ff1b3ad715f25b25587c9e53`. The dirty root checkout
+remains preserved candidate evidence only; this slice was opened from live
+`origin/main` in `worktrees/g2-smoke`.
+
+- **Active plan**: `plans/2026-06-20-runtime-browser-smoke-g2.md`.
+- **Purpose**: rebuild local runtime and browser smoke around the accepted G1 UI
+  surface: account-free default local operation, read-only `/ui/raw-data`, explicit
+  default-disabled `/ui/auth*` checks, opt-in protected auth checks, and DB-backed
+  deployment smoke composition.
+- **Implemented scope so far**: focused tests now cover default runtime smoke labels,
+  default-disabled auth route 404s, opt-in API-key and reviewer auth checks, browser
+  smoke route contract updates, and deployment-smoke composition. `scripts/ui_runtime_smoke.py`
+  and `scripts/ui_browser_smoke.mjs` now include `/ui/raw-data`, keep protected auth
+  checks opt-in, and make default-disabled auth route expectations explicit.
+  `scripts/run_deployment_smoke.ps1` and `.sh` now run DB-backed UI runtime smoke with
+  `BUN-slope`, same-area compare, and `postgres+object_store` artifact persistence.
+  A live browser smoke failure also exposed `/ui/raw-data` mobile page overflow; the
+  raw-data page now keeps dense raw tables inside a scrollable wrapper on mobile.
+- **Current local validation**: intentional red focused pytest failed on the stale G2
+  contract (`10 failed, 16 passed`). Final focused raw-data/smoke/deployment tests
+  passed (`31 passed`), `node --check .\scripts\ui_browser_smoke.mjs` passed, release
+  readiness and readiness-matrix validators passed, focused ruff and mypy passed,
+  `.\scripts\run_deployment_smoke.ps1` passed against DB-backed Compose/Postgres, and
+  `.\scripts\run_ui_browser_smoke.ps1 -BaseUrl http://127.0.0.1:18081 -Mode both`
+  passed in headed and headless Chrome after starting a temporary local Uvicorn server.
+  `git diff --check`, no-deletion check, workspace validation, and final
+  `.\scripts\verify.ps1` passed. Full verify ran backend tests, ruff, and mypy over
+  `328` source files; DB smoke was skipped by default in the full verify gate, while
+  deployment smoke supplied the DB-backed runtime proof for this slice.
+- **Known boundaries to preserve**: no new readiness/provenance/guardrail/deployment/
+  production-authority/dossier UI pages, no fixture seeding from default smoke routes,
+  no live connectors, no source/vendor expansion, no DS-017 approval, no DB schema
+  change, no public JSON API contract change, no report-semantics change, no hosted
+  deployment claim, no hosted identity/RBAC claim, and no Level 10 completion claim.
+- **Next required step**: publish the focused `codex/g2-smoke` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` and re-rank the
+  next retained slice.
+
+## Previous checkpoint (2026-06-20 selected-county source-provenance catalog)
+
+The implementation authority for `G3b` selected-county source-provenance catalog was
+`plans/2026-06-20-selected-county-source-provenance-catalog.md`. That retained
+product/control slice followed `G1b` raw-data inventory UI and merged through PR #92 at
+`cc272d0de492c424ff1b3ad715f25b25587c9e53`. The dirty root checkout remains preserved
+candidate evidence only; the slice was opened from live `origin/main` in
 `worktrees/prov-cat`.
 
 - **Active plan**: `plans/2026-06-20-selected-county-source-provenance-catalog.md`.
@@ -36,9 +79,8 @@ preserved candidate evidence only; this slice was opened from live `origin/main`
   expansion, no public API/UI/runtime semantics change, no report semantics change, no
   auth/security boundary change, no hosted deployment, no full identity/RBAC, and no
   Level 10 completion claim.
-- **Next required step**: finish focused and full verification, publish the focused
-  `codex/prov-cat` PR, wait for CI, merge only if local and CI proof agree, then
-  re-check live `origin/main` and re-rank the next retained slice.
+- **Post-merge status**: PR #92 is merged; `G2` runtime/browser smoke reconstruction is
+  now the active retained slice.
 
 ## Previous checkpoint (2026-06-20 raw-data inventory UI)
 

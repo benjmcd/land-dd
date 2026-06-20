@@ -783,7 +783,7 @@ tasks:
 
   - id: G3b
     title: Selected-county source-provenance catalog
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b]
     lane: coordinator
     spec: plans/2026-06-20-selected-county-source-provenance-catalog.md
@@ -810,6 +810,42 @@ tasks:
       - DS-017 remains excluded/blocked and Buncombe DS-023 remains explicitly out of scope
       - Default validation remains file-backed, validate-only, DB-free, connector-free, and artifact-free
       - No source/vendor expansion, runtime provenance seeding, report/API semantics change, hosted deployment proof, or identity/RBAC claim is introduced
+
+  - id: G2
+    title: Runtime and browser smoke reconstruction
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b]
+    lane: coordinator
+    spec: plans/2026-06-20-runtime-browser-smoke-g2.md
+    notes: >
+      Rebuild runtime and browser smoke gates around the accepted G1 UI surface.
+      Default local smoke covers `/ui/`, `/ui/raw-data`, report-run, connector-review,
+      and operations surfaces; it expects default `/ui/auth*` routes to remain disabled.
+      Protected API-key and reviewer-session auth checks remain opt-in, and deployment
+      smoke composes the UI runtime smoke against DB-backed Compose/Postgres with
+      selected-county operator-case compare and artifact-persistence assertions.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py
+      - node --check .\scripts\ui_browser_smoke.mjs
+      - py -3.12 .\scripts\ui_runtime_smoke.py --help
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - cd backend; ruff check .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py ..\scripts\ui_runtime_smoke.py
+      - cd backend; py -3.12 -m mypy .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py ..\scripts\ui_runtime_smoke.py
+      - .\scripts\run_deployment_smoke.ps1
+      - .\scripts\run_ui_browser_smoke.ps1 -BaseUrl http://127.0.0.1:18081 -Mode both
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Default runtime and browser smoke cover `/ui/raw-data` and fail closed on missing accepted G1 UI text
+      - Default no-auth smoke expects `/ui/auth*`, `/ui/login`, `/ui/account`, `/login`, and `/account` to be disabled/404
+      - API-key and reviewer-session auth surfaces remain opt-in smoke checks
+      - Deployment smoke runs DB-backed UI runtime smoke with `BUN-slope`, same-area compare, and `postgres+object_store` artifact persistence
+      - `/ui/raw-data` does not create page-level horizontal overflow on mobile browser smoke
+      - Browser smoke remains an explicit operator gate, not a default verification side effect
+      - No later readiness/provenance/guardrail/deployment/production-authority/dossier UI, source expansion, DS-017 approval, hosted identity/RBAC, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000
