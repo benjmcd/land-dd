@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Raw-Data Inventory UI
+
+**Scope:** Add a local read-only `/ui/raw-data` runtime inventory route and `/ui/`
+summary link/counts without seeding fixtures, running connectors, creating reports,
+changing source rights, approving DS-017, or claiming hosted/source-readiness authority.
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_ui_raw_data_inventory.py
+ruff check .\app\api\dependencies.py .\app\evidence_ledger\service.py .\app\reports\report_repo.py .\app\reports\service.py .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py
+py -3.12 -m mypy .\app\api\dependencies.py .\app\evidence_ledger\service.py .\app\reports\report_repo.py .\app\reports\service.py .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py
+cd ..
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+py -3.12 -m pytest -q .\tests\api\test_ui_raw_data_inventory.py
+cd ..
+.\scripts\verify.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- Intentional red focused pytest failed because `/ui/raw-data` returned `404`, `/ui/`
+  did not link to raw inventory, and `EvidenceService` lacked a list-all read method.
+- Focused raw-data inventory tests passed after implementation (`4 passed`).
+- Focused ruff and focused mypy passed over the touched service/UI/test files.
+- Release-readiness and readiness-matrix validators passed.
+- `git diff --check`, no-deletion audit, and `.\scripts\validate_workspace.ps1`
+  passed before full verification.
+- The first full `.\scripts\verify.ps1` failed only because runtime OpenAPI included
+  `/ui/raw-data` while tracked OpenAPI stubs did not.
+- `scripts/export_openapi_stub.py` regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml`; OpenAPI parity tests passed (`2 passed`).
+- Final `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `328` source files.
+- Final `git diff --check` and no-deletion audit passed with CRLF/LF normalization
+  warnings only for regenerated OpenAPI stubs.
+
+**Residual risk:**
+
+- This route displays bounded current runtime state only. It does not run DB smoke by
+  default, seed selected-county data, run live connectors, create reports, decide source
+  entitlements, approve DS-017, add hosted deployment, add identity/RBAC, or claim
+  Level 10 completion.
+- DB smoke was not run because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-20 Account-Free Local Auth Posture
 
 **Scope:** Make default local/dev/development/test browser operation account-free by

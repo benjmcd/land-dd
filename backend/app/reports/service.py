@@ -148,6 +148,9 @@ class ReportRunService:
     def get_report_run(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._report_repo.get(report_run_id)
 
+    def list_recent_report_runs(self, *, limit: int = 50) -> list[ReportRunContract]:
+        return self._report_repo.list_recent(limit=limit)
+
     def get_report_run_for_workspace(
         self,
         report_run_id: UUID,

@@ -1,6 +1,43 @@
 # Project State
 
-## Current checkpoint (2026-06-20 account-free local auth posture)
+## Current checkpoint (2026-06-20 raw-data inventory UI)
+
+The active implementation authority is `G1b` raw-data inventory UI from
+`plans/2026-06-20-raw-data-inventory.md`. This is the next retained
+product/control slice after `G1a` account-free local auth posture merged through
+PR #90 at `6d8b9d66019453e99628e21d595a7a97b149d41c`. The dirty root checkout remains
+preserved candidate evidence only; this slice was opened from live `origin/main` in
+`worktrees/raw-inv`.
+
+- **Active plan**: `plans/2026-06-20-raw-data-inventory.md`.
+- **Purpose**: add a local read-only `/ui/raw-data` route and `/ui/` runtime inventory
+  summary over current source, area, evidence, claim, report-run, report-job,
+  connector-review, and live-connector records.
+- **Implemented scope so far**: focused tests cover populated raw inventory rendering,
+  empty-runtime read-only GET behavior, home link/count summary, and fail-closed home
+  summary behavior when a collector raises. `EvidenceService.list_all`, `ApiServices`
+  claim-service exposure, and bounded report-run contract listing were added as
+  read-only service seams. The UI route renders unavailable rows per failed collector
+  and records that it does not seed fixtures, create reports, run connectors, create
+  accounts, approve DS-017, or prove hosted/source-readiness authority.
+- **Current local validation**: intentional red focused pytest failed for missing
+  `/ui/raw-data`, missing home link/summary, and absent evidence list-all service read;
+  focused raw-data inventory tests passed (`4 passed`); focused ruff and focused mypy
+  over the touched service/UI/test files passed; release-readiness and readiness-matrix
+  validators passed; the first full `.\scripts\verify.ps1` failed only because
+  generated OpenAPI stubs had not yet been refreshed for `/ui/raw-data`; after
+  `scripts/export_openapi_stub.py`, OpenAPI parity tests passed (`2 passed`) and final
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `328` source
+  files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no hidden seeding, no connector execution, no report
+  creation from GET, no source-rights or DS-017 decision, no DB schema change, no public
+  JSON API contract change, no report-semantics change, no hosted deployment, no
+  OAuth/OIDC, no user accounts, no full RBAC, and no Level 10 completion claim.
+- **Next required step**: publish the focused `codex/raw-inv` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` and re-rank the
+  next retained slice.
+
+## Previous checkpoint (2026-06-20 account-free local auth posture)
 
 The active implementation authority is `G1a` account-free local auth posture from
 `plans/2026-06-20-account-free-local-auth.md`. This is the next retained

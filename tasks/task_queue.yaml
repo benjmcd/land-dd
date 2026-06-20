@@ -1,13 +1,14 @@
 version: 2
-active_plan: plans/2026-06-20-account-free-local-auth.md
+active_plan: plans/2026-06-20-raw-data-inventory.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
   preserved evidence only. G7a package-manifest CI gate merged through PR #88, and G3a
-  source-readiness module extraction merged through PR #89. Active lane: G1a
-  account-free local auth posture, opened from live origin/main after G3a. This slice
-  changes default local `/ui/auth*` route/OpenAPI exposure only; it does not add hosted
-  identity/RBAC, source, schema, report, or DS-017 authority.
+  source-readiness module extraction merged through PR #89. G1a account-free local auth
+  posture merged through PR #90. Active lane: G1b raw-data inventory UI, opened from
+  live origin/main after G1a. This slice adds a read-only local runtime inventory route
+  only; it does not seed fixtures, run connectors, create reports, change source
+  rights, approve DS-017, or add hosted identity/RBAC/deployment authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -722,7 +723,7 @@ tasks:
 
   - id: G1a
     title: Account-free local auth posture
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a]
     lane: coordinator
     spec: plans/2026-06-20-account-free-local-auth.md
@@ -749,6 +750,33 @@ tasks:
       - Access-control catalog, checker, runbooks, env example, and design docs record the same boundary
       - Generated OpenAPI stubs match default runtime route exposure
       - No OAuth/OIDC, user accounts, full RBAC, hosted identity, DB schema, source, connector, claim, report, release-package, or DS-017 behavior changes
+
+  - id: G1b
+    title: Raw-data inventory UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a]
+    lane: coordinator
+    spec: plans/2026-06-20-raw-data-inventory.md
+    notes: >
+      Reconstruct the local raw-data inventory route from live origin/main. The UI
+      exposes current runtime source, area, evidence, claim, report-run, report-job,
+      connector-review, and live-connector records through GET-only server-rendered
+      HTML. Empty runtime state is displayed as empty state, not seeded or generated.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_raw_data_inventory.py
+      - cd backend; ruff check .\app\api\dependencies.py .\app\evidence_ledger\service.py .\app\reports\report_repo.py .\app\reports\service.py .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py
+      - cd backend; py -3.12 -m mypy .\app\api\dependencies.py .\app\evidence_ledger\service.py .\app\reports\report_repo.py .\app\reports\service.py .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - `/ui/raw-data` renders current runtime inventory sections and links without mutating state
+      - `/ui/` links to raw-data inventory and shows a fail-closed inventory summary
+      - Evidence, claim, and report-run read APIs expose existing stores without schema or report-semantics changes
+      - No hidden fixture seeding, connector execution, report creation, source-rights decision, DS-017 approval, hosted deployment, or identity/RBAC claim is introduced
 
   # --- Completed ---
   - id: T000

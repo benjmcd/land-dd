@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Raw-data inventory UI
+
+- Started `G1b` from `plans/2026-06-20-raw-data-inventory.md` in clean worktree
+  `worktrees/raw-inv` after confirming live `origin/main` at
+  `6d8b9d66019453e99628e21d595a7a97b149d41c` and no active `agent-inbox` ownership
+  collision.
+- Audited dirty-root raw-data candidate tests/plans as evidence only. The retained
+  scope is `/ui/raw-data` plus a `/ui/` runtime inventory summary; source-readiness,
+  source/evidence provenance, selected-county report-path, release/deployment,
+  guardrail, and observability surfaces remain later slices.
+- Added focused tests for populated raw inventory rendering, empty-runtime read-only
+  GET behavior, home summary counts/linking, and fail-closed summary behavior.
+- Added read-only service seams for all-evidence listing, claim-service access through
+  `ApiServices`, and bounded recent report-run contract listing. Added the
+  server-rendered raw-data route and home summary link without seeding fixtures,
+  running connectors, creating reports, changing source rights, approving DS-017, or
+  claiming hosted/source-readiness authority.
+- Verification so far: intentional red focused pytest failed for missing raw-data
+  route/home summary and absent evidence list-all read; focused raw-data tests passed
+  (`4 passed`); focused ruff passed; focused mypy passed.
+- Final verification: release-readiness and readiness-matrix validators passed; the
+  first full `.\scripts\verify.ps1` failed only on generated OpenAPI stub drift for
+  `/ui/raw-data`; regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml` with `scripts/export_openapi_stub.py`;
+  OpenAPI parity tests passed (`2 passed`); diff/no-deletion checks and workspace
+  validation passed; final `.\scripts\verify.ps1` passed with backend tests, ruff, and
+  mypy over `328` source files. DB smoke was skipped by default.
+
 ## 2026-06-20 Account-free local auth posture
 
 - Started `G1a` from `plans/2026-06-20-account-free-local-auth.md` in clean worktree

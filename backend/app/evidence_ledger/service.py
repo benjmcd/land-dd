@@ -150,6 +150,9 @@ class EvidenceService:
     def list_by_type(self, evidence_type: EvidenceType) -> list[EvidenceContract]:
         return self._repo.list_by_type(evidence_type)
 
+    def list_all(self) -> list[EvidenceContract]:
+        return self._repo.list_all()
+
     def evidence_exists(self, evidence_id: UUID) -> bool:
         return self._repo.exists(evidence_id)
 

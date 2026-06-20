@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,8 @@ class ReportRunRepository(Protocol):
     def add(self, report_run: ReportRunContract) -> ReportRunContract: ...
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None: ...
+
+    def list_recent(self, *, limit: int = 50) -> list[ReportRunContract]: ...
 
     def get_for_workspace(
         self,
@@ -58,6 +61,13 @@ class InMemoryReportRunRepository:
 
     def get(self, report_run_id: UUID) -> ReportRunContract | None:
         return self._store.get(report_run_id)
+
+    def list_recent(self, *, limit: int = 50) -> list[ReportRunContract]:
+        return sorted(
+            self._store.values(),
+            key=lambda report: report.finished_at or datetime.min.replace(tzinfo=UTC),
+            reverse=True,
+        )[:limit]
 
     def get_for_workspace(
         self,
@@ -122,6 +132,14 @@ class SqlAlchemyReportRunRepository:
         if model is None:
             return None
         return self._report_from_model(model)
+
+    def list_recent(self, *, limit: int = 50) -> list[ReportRunContract]:
+        stmt = (
+            select(ReportRunModel)
+            .order_by(ReportRunModel.started_at.desc(), ReportRunModel.report_run_id.desc())
+            .limit(limit)
+        )
+        return [self._report_from_model(model) for model in self._session.scalars(stmt)]
 
     def get_for_workspace(
         self,
