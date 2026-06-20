@@ -2,6 +2,74 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Source-Readiness Module Extraction
+
+**Scope:** Extract source-readiness record construction into
+`backend/app/source_registry/readiness.py` while preserving the existing
+`scripts/source_readiness.py` CLI contract, source-readiness counts, DS-017 blocker
+status, and source-policy boundaries.
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q .\tests\source_registry\test_source_readiness.py
+cd ..
+py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --json
+py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --require-ready
+cd backend
+ruff check .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py
+py -3.12 -m mypy .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py
+cd ..
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+cd backend
+py -3.12 -m pytest -q .\tests\test_alerting_artifacts.py::test_stale_source_review_horizon_matches_readiness_guard .\tests\source_registry\test_source_readiness.py
+ruff check .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py .\tests\test_alerting_artifacts.py
+py -3.12 -m mypy .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py
+cd ..
+.\scripts\verify.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --require-ready
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+```
+
+**Results:**
+
+- Intentional red focused pytest run failed for the expected missing packaged module
+  `app.source_registry.readiness`; the remaining source-readiness tests passed.
+- Focused source-readiness tests passed after extraction (`17 passed`).
+- Must source-readiness CLI JSON and `--require-ready` passed with
+  `sources=8 ready=7 blocked=1`; DS-017 remained the only blocked Must source.
+- Focused ruff passed using the local `ruff` executable. Focused mypy passed over the
+  touched module, script, and tests.
+- `release_readiness_check.py` passed.
+- `readiness_matrix_check.py` initially failed because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, and the matrix check
+  passed.
+- `git diff --check`, no-deletion audit, and `.\scripts\validate_workspace.ps1` passed.
+- The first full `.\scripts\verify.ps1` run failed because
+  `tests/test_alerting_artifacts.py::test_stale_source_review_horizon_matches_readiness_guard`
+  dynamically loads `scripts/source_readiness.py` and expected `STALE_AFTER_DAYS`. The
+  wrapper now explicitly re-exports the package constant through `__all__`.
+- Focused alerting/source-readiness compatibility tests passed (`18 passed`) after the
+  wrapper re-export fix; focused ruff and mypy passed again.
+- Final `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `327` source files. DB smoke was skipped by default.
+- Final Must source-readiness `--require-ready`, release-readiness, and
+  readiness-matrix checks passed after the full verification run.
+
+**Residual risk:**
+
+- This is an extraction/refactor slice only. It does not approve DS-017, change
+  source-rights policy, change connector behavior, add UI/API/schema behavior, publish
+  artifacts, or prove hosted authority.
+- DB smoke was not run because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-20 Package-Manifest CI Gate
 
 **Scope:** Add post-build local release-package manifest verification and an additive

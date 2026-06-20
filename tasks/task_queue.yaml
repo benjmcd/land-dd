@@ -1,12 +1,13 @@
 version: 2
-active_plan: plans/2026-06-20-package-manifest-ci.md
+active_plan: plans/2026-06-20-source-readiness-module.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
-  preserved evidence only. Active lane: G7a package-manifest CI gate, opened from live
-  origin/main after REC-001. This slice adds post-build local release-package manifest
-  verification and an additive CI gate without publishing, deploying, signing,
-  approving DS-017, or claiming hosted release authority.
+  preserved evidence only. G7a package-manifest CI gate merged through PR #88. Active
+  lane: G3a source-readiness module extraction, opened from live origin/main after G7a.
+  This slice makes the packaged backend module the source-readiness record authority
+  without changing source policy, readiness counts, DS-017 status, UI routes, or hosted
+  authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -660,7 +661,7 @@ tasks:
 
   - id: G7a
     title: Package-manifest CI gate
-    status: active
+    status: done
     depends_on: [REC-001]
     lane: coordinator
     spec: plans/2026-06-20-package-manifest-ci.md
@@ -690,6 +691,34 @@ tasks:
       - Release readiness maps the existing release-package gate to read-only `release-package-manifest` CI
       - Generated package artifacts stay under ignored `local_artifacts/releases` and are not committed
       - Hosted deployment, registry publication, signing/attestation, DS-017/source approval, and hosted release authority remain blocked
+
+  - id: G3a
+    title: Source-readiness packaged module
+    status: active
+    depends_on: [REC-001, G7a]
+    lane: coordinator
+    spec: plans/2026-06-20-source-readiness-module.md
+    notes: >
+      Extract source-readiness record construction and freshness fail-closed logic into
+      `backend/app/source_registry/readiness.py`; keep `scripts/source_readiness.py` as
+      the CLI wrapper and preserve the existing JSON/readiness contract.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\source_registry\test_source_readiness.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --json
+      - py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --require-ready
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - cd backend; ruff check .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py
+      - cd backend; py -3.12 -m mypy .\app\source_registry\readiness.py ..\scripts\source_readiness.py .\tests\source_registry\test_source_readiness.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Source-readiness business logic is importable from `backend/app/source_registry/readiness.py`
+      - `scripts/source_readiness.py` delegates to the packaged module and keeps CLI JSON shape/counts stable
+      - Direct module tests and CLI subprocess tests cover Must-source freshness and blocked-source behavior
+      - DS-017 remains blocked and no source-rights, connector, UI, API, DB schema, hosted, or package-publishing claims change
 
   # --- Completed ---
   - id: T000
