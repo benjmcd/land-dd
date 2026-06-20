@@ -120,6 +120,106 @@ selected_county_manifest_scope:
           - DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only
           - It is not live PDF ingestion, autonomous amendment tracking, final legal zoning interpretation, or raw PDF redistribution
 
+selected_county_source_provenance_scope:
+  expectation_enums:
+    dataset:
+      - county_source_dataset
+      - not_evaluated_sentinel
+      - recorded_fixture_dataset
+      - not_required_out_of_scope
+    version:
+      - source_version_or_access_date
+      - static_sentinel_version
+      - recorded_fixture_version
+      - not_required_out_of_scope
+    retrieval:
+      - connector_retrieval_metadata
+      - source_failure_metadata
+      - fixture_retrieval_metadata
+      - not_required_out_of_scope
+
+  counties:
+    buncombe_nc:
+      sources:
+        DS-010:
+          source_registry_id: DS-010
+          connector_names:
+            - buncombe_parcels_live
+          dataset_expectation: county_source_dataset
+          version_expectation: source_version_or_access_date
+          retrieval_expectation: connector_retrieval_metadata
+          out_of_scope: false
+        DS-011:
+          source_registry_id: DS-011
+          connector_names:
+            - county_assessor_not_evaluated
+          dataset_expectation: not_evaluated_sentinel
+          version_expectation: static_sentinel_version
+          retrieval_expectation: source_failure_metadata
+          out_of_scope: false
+        DS-023:
+          source_registry_id: DS-023
+          connector_names: []
+          dataset_expectation: not_required_out_of_scope
+          version_expectation: not_required_out_of_scope
+          retrieval_expectation: not_required_out_of_scope
+          out_of_scope: true
+          out_of_scope_reason: Buncombe zoning is explicitly outside selected-county DS-023 scope
+
+    chatham_nc:
+      sources:
+        DS-010:
+          source_registry_id: DS-010
+          connector_names:
+            - chatham_parcels_live
+          dataset_expectation: county_source_dataset
+          version_expectation: source_version_or_access_date
+          retrieval_expectation: connector_retrieval_metadata
+          out_of_scope: false
+        DS-011:
+          source_registry_id: DS-011
+          connector_names:
+            - county_assessor_not_evaluated
+          dataset_expectation: not_evaluated_sentinel
+          version_expectation: static_sentinel_version
+          retrieval_expectation: source_failure_metadata
+          out_of_scope: false
+        DS-023:
+          source_registry_id: DS-023
+          connector_names:
+            - chatham_zoning_udo_recorded
+          dataset_expectation: recorded_fixture_dataset
+          version_expectation: recorded_fixture_version
+          retrieval_expectation: fixture_retrieval_metadata
+          out_of_scope: false
+
+    brunswick_nc:
+      sources:
+        DS-010:
+          source_registry_id: DS-010
+          connector_names:
+            - brunswick_parcels_live
+          dataset_expectation: county_source_dataset
+          version_expectation: source_version_or_access_date
+          retrieval_expectation: connector_retrieval_metadata
+          out_of_scope: false
+        DS-011:
+          source_registry_id: DS-011
+          connector_names:
+            - county_assessor_not_evaluated
+          dataset_expectation: not_evaluated_sentinel
+          version_expectation: static_sentinel_version
+          retrieval_expectation: source_failure_metadata
+          out_of_scope: false
+        DS-023:
+          source_registry_id: DS-023
+          connector_names:
+            - brunswick_zoning_udo_recorded
+          dataset_expectation: recorded_fixture_dataset
+          version_expectation: recorded_fixture_version
+          retrieval_expectation: fixture_retrieval_metadata
+          out_of_scope: false
+
 private_mvp_beta:
 
   geography_selected:

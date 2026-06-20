@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import subprocess
 import sys
@@ -134,6 +135,145 @@ def test_selected_county_manifest_scope_is_structured(readiness: dict[str, Any])
         "DS-023 is connector-ready for Brunswick County recorded-fixture UDO district lookup only"
         in counties["brunswick_nc"]["source_fragments"]["DS-023"]
     )
+
+
+def test_selected_county_source_provenance_scope_is_structured(
+    readiness: dict[str, Any],
+) -> None:
+    scope = readiness["selected_county_source_provenance_scope"]
+    assert scope["expectation_enums"] == {
+        "dataset": [
+            "county_source_dataset",
+            "not_evaluated_sentinel",
+            "recorded_fixture_dataset",
+            "not_required_out_of_scope",
+        ],
+        "version": [
+            "source_version_or_access_date",
+            "static_sentinel_version",
+            "recorded_fixture_version",
+            "not_required_out_of_scope",
+        ],
+        "retrieval": [
+            "connector_retrieval_metadata",
+            "source_failure_metadata",
+            "fixture_retrieval_metadata",
+            "not_required_out_of_scope",
+        ],
+    }
+
+    counties = scope["counties"]
+    assert set(counties) == set(MANIFEST_PATHS_BY_KEY)
+    assert set(counties["buncombe_nc"]["sources"]) == {"DS-010", "DS-011", "DS-023"}
+    assert counties["buncombe_nc"]["sources"]["DS-010"] == {
+        "source_registry_id": "DS-010",
+        "connector_names": ["buncombe_parcels_live"],
+        "dataset_expectation": "county_source_dataset",
+        "version_expectation": "source_version_or_access_date",
+        "retrieval_expectation": "connector_retrieval_metadata",
+        "out_of_scope": False,
+    }
+    assert counties["chatham_nc"]["sources"]["DS-023"]["connector_names"] == [
+        "chatham_zoning_udo_recorded",
+    ]
+    assert counties["brunswick_nc"]["sources"]["DS-023"]["connector_names"] == [
+        "brunswick_zoning_udo_recorded",
+    ]
+
+
+def test_private_mvp_validator_rejects_missing_source_provenance_scope() -> None:
+    validator = _load_validator_module()
+    catalog = copy.deepcopy(validator.load_catalog())
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        catalog,
+    )
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(catalog)
+    del catalog["selected_county_source_provenance_scope"]
+
+    assert hasattr(validator, "validate_selected_county_source_provenance_scope_catalog")
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_provenance_scope_catalog(
+            catalog,
+            selected_county_scope,
+            manifest_scope,
+        )
+
+    assert "selected_county_source_provenance_scope section missing" in str(
+        exc_info.value,
+    )
+
+
+def test_private_mvp_validator_rejects_unknown_source_provenance_scope() -> None:
+    validator = _load_validator_module()
+    catalog = copy.deepcopy(validator.load_catalog())
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        catalog,
+    )
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(catalog)
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-017"] = {
+        "source_registry_id": "DS-017",
+        "connector_names": ["commercial_parcel_vendor"],
+        "dataset_expectation": "county_source_dataset",
+        "version_expectation": "source_version_or_access_date",
+        "retrieval_expectation": "connector_retrieval_metadata",
+        "out_of_scope": False,
+    }
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_provenance_scope_catalog(
+            catalog,
+            selected_county_scope,
+            manifest_scope,
+        )
+
+    assert "selected_county_source_provenance_scope.counties.chatham_nc" in str(
+        exc_info.value,
+    )
+    assert "DS-017" in str(exc_info.value)
+
+
+def test_private_mvp_validator_rejects_source_provenance_connector_mismatch() -> None:
+    validator = _load_validator_module()
+    catalog = copy.deepcopy(validator.load_catalog())
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        catalog,
+    )
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(catalog)
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-010"]["connector_names"] = ["buncombe_parcels_live"]
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_provenance_scope_catalog(
+            catalog,
+            selected_county_scope,
+            manifest_scope,
+        )
+
+    assert "DS-010 connector_names mismatch" in str(exc_info.value)
+    assert "chatham_parcels_live" in str(exc_info.value)
+
+
+def test_buncombe_ds023_source_provenance_remains_out_of_scope(
+    readiness: dict[str, Any],
+) -> None:
+    buncombe_ds023 = readiness["selected_county_source_provenance_scope"]["counties"][
+        "buncombe_nc"
+    ]["sources"]["DS-023"]
+
+    assert buncombe_ds023 == {
+        "source_registry_id": "DS-023",
+        "connector_names": [],
+        "dataset_expectation": "not_required_out_of_scope",
+        "version_expectation": "not_required_out_of_scope",
+        "retrieval_expectation": "not_required_out_of_scope",
+        "out_of_scope": True,
+        "out_of_scope_reason": (
+            "Buncombe zoning is explicitly outside selected-county DS-023 scope"
+        ),
+    }
 
 
 def test_private_mvp_beta_section_exists(readiness: dict[str, Any]) -> None:

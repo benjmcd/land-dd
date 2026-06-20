@@ -3824,3 +3824,27 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   candidates are package-manifest/CI, source-readiness extraction, local auth posture,
   and raw-data inventory; the exact product order must still be rechecked from live
   `origin/main` before implementation.
+
+## 2026-06-20 Selected-county source-provenance catalog
+
+- Started `G3b` from clean `worktrees/prov-cat` on `codex/prov-cat`, created from live
+  `origin/main` after PR #91 merged raw-data inventory UI at
+  `5440934218182b309b784bfde29a5bc7d34d870e`.
+- Reconfirmed no active Codex/Claude inbox collision in the clean worktree. The dirty
+  root remains preserved candidate evidence only.
+- Added `selected_county_source_provenance_scope` to
+  `config/private_mvp_beta_readiness.yaml` for DS-010, DS-011, and DS-023 across
+  Buncombe, Chatham, and Brunswick. The catalog records dataset/version/retrieval
+  expectations, connector names, and Buncombe DS-023 out-of-scope status.
+- Extended `scripts/private_mvp_readiness_check.py` so the validate-only private-MVP
+  checker now fails closed when the provenance catalog is missing, has unexpected source
+  IDs such as DS-017, drifts from selected source connector scope, or treats
+  out-of-scope rows as in-scope provenance.
+- Added focused tests in `backend/tests/test_private_mvp_readiness.py` for catalog
+  shape, rejection behavior, connector cross-checks, and Buncombe DS-023.
+- Updated `plans/2026-06-20-selected-county-source-provenance-catalog.md`,
+  `plans/README.md`, `tasks/task_queue.yaml`, `state/PROJECT_STATE.md`, `MANIFEST.md`,
+  `docs/IMPLEMENTATION_READINESS.md`, and `docs/runbooks/mvp_operator.md` to route
+  future source/provenance work to the catalog without claiming runtime provenance
+  hydration, DS-017 approval, source/vendor expansion, hosted deployment, or
+  identity/RBAC completion.

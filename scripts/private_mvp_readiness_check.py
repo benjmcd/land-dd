@@ -103,6 +103,27 @@ REQUIRED_SELECTED_COUNTY_MANIFEST_KEYS = {
     "chatham_nc",
     "brunswick_nc",
 }
+EXPECTED_SOURCE_PROVENANCE_ENUMS = {
+    "dataset": (
+        "county_source_dataset",
+        "not_evaluated_sentinel",
+        "recorded_fixture_dataset",
+        "not_required_out_of_scope",
+    ),
+    "version": (
+        "source_version_or_access_date",
+        "static_sentinel_version",
+        "recorded_fixture_version",
+        "not_required_out_of_scope",
+    ),
+    "retrieval": (
+        "connector_retrieval_metadata",
+        "source_failure_metadata",
+        "fixture_retrieval_metadata",
+        "not_required_out_of_scope",
+    ),
+}
+OUT_OF_SCOPE_PROVENANCE_EXPECTATION = "not_required_out_of_scope"
 
 
 def require(condition: bool, message: str) -> None:
@@ -379,6 +400,298 @@ def validate_selected_county_manifest_scope_catalog(
     }
 
 
+def validate_selected_county_source_provenance_scope_catalog(
+    catalog: dict[str, Any],
+    selected_county_scope: dict[str, dict[str, tuple[str, ...]]],
+    manifest_scope: dict[str, Any],
+) -> dict[str, Any]:
+    raw_scope = require_mapping(
+        catalog.get("selected_county_source_provenance_scope"),
+        "selected_county_source_provenance_scope section missing",
+    )
+    raw_enums = require_mapping(
+        raw_scope.get("expectation_enums"),
+        "selected_county_source_provenance_scope.expectation_enums missing",
+    )
+    missing_enum_keys = set(EXPECTED_SOURCE_PROVENANCE_ENUMS) - set(raw_enums)
+    unexpected_enum_keys = set(raw_enums) - set(EXPECTED_SOURCE_PROVENANCE_ENUMS)
+    require(
+        not missing_enum_keys and not unexpected_enum_keys,
+        (
+            "selected_county_source_provenance_scope.expectation_enums keys mismatch; "
+            f"missing={sorted(missing_enum_keys)}, "
+            f"unexpected={sorted(unexpected_enum_keys)}"
+        ),
+    )
+    for expectation_name, expected_values in EXPECTED_SOURCE_PROVENANCE_ENUMS.items():
+        values = require_text_list(
+            raw_enums.get(expectation_name),
+            (
+                "selected_county_source_provenance_scope.expectation_enums."
+                f"{expectation_name} missing"
+            ),
+        )
+        require(
+            values == expected_values,
+            (
+                "selected_county_source_provenance_scope.expectation_enums."
+                f"{expectation_name} must be {list(expected_values)}, got {list(values)}"
+            ),
+        )
+
+    raw_counties = require_mapping(
+        raw_scope.get("counties"),
+        "selected_county_source_provenance_scope.counties missing",
+    )
+    manifest_counties = require_mapping(
+        manifest_scope.get("counties"),
+        "selected_county_manifest_scope.counties missing",
+    )
+    missing_counties = set(manifest_counties) - set(raw_counties)
+    unexpected_counties = set(raw_counties) - set(manifest_counties)
+    require(
+        not missing_counties and not unexpected_counties,
+        (
+            "selected_county_source_provenance_scope county keys mismatch; "
+            f"missing={sorted(missing_counties)}, "
+            f"unexpected={sorted(unexpected_counties)}"
+        ),
+    )
+
+    connector_names_by_source: dict[str, list[str]] = {
+        source_id: [] for source_id in selected_county_scope
+    }
+    counties: dict[str, dict[str, Any]] = {}
+    for county_key in sorted(manifest_counties):
+        raw_county = require_mapping(
+            raw_counties.get(county_key),
+            (
+                "selected_county_source_provenance_scope.counties."
+                f"{county_key} must be a mapping"
+            ),
+        )
+        raw_sources = require_mapping(
+            raw_county.get("sources"),
+            (
+                "selected_county_source_provenance_scope.counties."
+                f"{county_key}.sources missing"
+            ),
+        )
+        manifest_county = require_mapping(
+            manifest_counties.get(county_key),
+            f"selected_county_manifest_scope.counties.{county_key} invalid",
+        )
+        manifest_sources = require_mapping(
+            manifest_county.get("source_fragments"),
+            (
+                "selected_county_manifest_scope.counties."
+                f"{county_key}.source_fragments missing"
+            ),
+        )
+        missing_sources = set(manifest_sources) - set(raw_sources)
+        unexpected_sources = set(raw_sources) - set(manifest_sources)
+        require(
+            not missing_sources and not unexpected_sources,
+            (
+                "selected_county_source_provenance_scope.counties."
+                f"{county_key}.sources source IDs mismatch; "
+                f"missing={sorted(missing_sources)}, "
+                f"unexpected={sorted(unexpected_sources)}"
+            ),
+        )
+
+        sources: dict[str, dict[str, Any]] = {}
+        for source_id in sorted(manifest_sources):
+            raw_entry = require_mapping(
+                raw_sources.get(source_id),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id} must be a mapping"
+                ),
+            )
+            require(
+                raw_entry.get("source_registry_id") == source_id,
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.source_registry_id mismatch"
+                ),
+            )
+            connector_names = require_text_list(
+                raw_entry.get("connector_names"),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.connector_names missing"
+                ),
+            )
+            duplicates = _duplicates(connector_names)
+            require(
+                not duplicates,
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.connector_names "
+                    f"must not contain duplicates: {duplicates}"
+                ),
+            )
+            allowed_connector_names = set(
+                selected_county_scope[source_id]["connector_names"],
+            )
+            unexpected_connector_names = sorted(
+                set(connector_names) - allowed_connector_names,
+            )
+            require(
+                not unexpected_connector_names,
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.connector_names "
+                    f"not declared in selected_county_source_scope: "
+                    f"{unexpected_connector_names}"
+                ),
+            )
+
+            dataset_expectation = require_text(
+                raw_entry.get("dataset_expectation"),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.dataset_expectation missing"
+                ),
+            )
+            version_expectation = require_text(
+                raw_entry.get("version_expectation"),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.version_expectation missing"
+                ),
+            )
+            retrieval_expectation = require_text(
+                raw_entry.get("retrieval_expectation"),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.retrieval_expectation missing"
+                ),
+            )
+            for field_name, expectation, allowed_values in (
+                (
+                    "dataset_expectation",
+                    dataset_expectation,
+                    EXPECTED_SOURCE_PROVENANCE_ENUMS["dataset"],
+                ),
+                (
+                    "version_expectation",
+                    version_expectation,
+                    EXPECTED_SOURCE_PROVENANCE_ENUMS["version"],
+                ),
+                (
+                    "retrieval_expectation",
+                    retrieval_expectation,
+                    EXPECTED_SOURCE_PROVENANCE_ENUMS["retrieval"],
+                ),
+            ):
+                require(
+                    expectation in allowed_values,
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id}.{field_name} invalid: "
+                        f"{expectation!r}"
+                    ),
+                )
+
+            out_of_scope_value = raw_entry.get("out_of_scope")
+            require(
+                isinstance(out_of_scope_value, bool),
+                (
+                    "selected_county_source_provenance_scope.counties."
+                    f"{county_key}.sources.{source_id}.out_of_scope must be boolean"
+                ),
+            )
+            out_of_scope = bool(out_of_scope_value)
+            if out_of_scope:
+                require(
+                    not connector_names,
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id}.connector_names must be "
+                        "empty when out_of_scope=true"
+                    ),
+                )
+                require(
+                    dataset_expectation == OUT_OF_SCOPE_PROVENANCE_EXPECTATION
+                    and version_expectation == OUT_OF_SCOPE_PROVENANCE_EXPECTATION
+                    and retrieval_expectation == OUT_OF_SCOPE_PROVENANCE_EXPECTATION,
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id} out-of-scope entries "
+                        "must use not_required_out_of_scope expectations"
+                    ),
+                )
+                require_text(
+                    raw_entry.get("out_of_scope_reason"),
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id}.out_of_scope_reason missing"
+                    ),
+                )
+            else:
+                require(
+                    bool(connector_names),
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id}.connector_names missing "
+                        "for in-scope source"
+                    ),
+                )
+                require(
+                    OUT_OF_SCOPE_PROVENANCE_EXPECTATION
+                    not in {
+                        dataset_expectation,
+                        version_expectation,
+                        retrieval_expectation,
+                    },
+                    (
+                        "selected_county_source_provenance_scope.counties."
+                        f"{county_key}.sources.{source_id} in-scope entries "
+                        "must not use not_required_out_of_scope expectations"
+                    ),
+                )
+
+            if county_key == "buncombe_nc" and source_id == "DS-023":
+                reason = str(raw_entry.get("out_of_scope_reason", ""))
+                require(
+                    out_of_scope and "Buncombe" in reason,
+                    "Buncombe DS-023 provenance scope must remain explicitly out of scope",
+                )
+
+            connector_names_by_source[source_id].extend(connector_names)
+            sources[source_id] = {
+                "source_registry_id": source_id,
+                "connector_names": connector_names,
+                "dataset_expectation": dataset_expectation,
+                "version_expectation": version_expectation,
+                "retrieval_expectation": retrieval_expectation,
+                "out_of_scope": out_of_scope,
+            }
+
+        counties[county_key] = {"sources": sources}
+
+    for source_id, expected in selected_county_scope.items():
+        actual_names = set(connector_names_by_source[source_id])
+        expected_names = set(expected["connector_names"])
+        missing_names = sorted(expected_names - actual_names)
+        unexpected_names = sorted(actual_names - expected_names)
+        require(
+            not missing_names and not unexpected_names,
+            (
+                "selected_county_source_provenance_scope "
+                f"{source_id} connector_names mismatch; "
+                f"missing={missing_names}, unexpected={unexpected_names}"
+            ),
+        )
+
+    return {
+        "expectation_enums": EXPECTED_SOURCE_PROVENANCE_ENUMS,
+        "counties": counties,
+    }
+
+
 def validate_private_mvp_gates(catalog: dict[str, Any]) -> None:
     private_gates = require_mapping(
         catalog.get("private_mvp_beta"),
@@ -619,6 +932,11 @@ def main() -> int:
     validate_catalog_metadata(catalog)
     selected_county_scope = validate_selected_county_source_scope_catalog(catalog)
     manifest_scope = validate_selected_county_manifest_scope_catalog(catalog)
+    validate_selected_county_source_provenance_scope_catalog(
+        catalog,
+        selected_county_scope,
+        manifest_scope,
+    )
     validate_private_mvp_gates(catalog)
     validate_hosted_production_scope(catalog)
     validate_ds017_boundary(catalog)

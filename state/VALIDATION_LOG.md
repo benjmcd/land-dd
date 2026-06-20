@@ -12361,3 +12361,65 @@ git diff --name-status
   `.\scripts\verify.ps1` remain future per-slice obligations.
 - Dirty-root state/task/worklog validation claims remain candidate evidence only until
   rerun against the relevant retained slice.
+
+---
+
+## 2026-06-20 - Selected-County Source-Provenance Catalog
+
+**Scope:** Add a validate-only selected-county source-provenance expectation catalog for
+DS-010, DS-011, and DS-023 across Buncombe, Chatham, and Brunswick. This is static
+private-MVP authority only; it does not seed runtime provenance, run connectors, approve
+DS-017, expand county/vendor coverage, change report/API/UI semantics, or claim hosted
+deployment/identity authority.
+
+**Commands/checks run so far:**
+
+```powershell
+git fetch --prune origin
+git worktree list
+gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt,url
+focused origin/main and dirty-root candidate audit for G3b scope
+git worktree add .\worktrees\prov-cat -b codex/prov-cat origin/main
+py -3.12 -m pytest -q .\backend\tests\test_private_mvp_readiness.py
+py -3.12 .\scripts\private_mvp_readiness_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --as-of 2026-06-18 --json
+cd backend; ruff check .\tests\test_private_mvp_readiness.py ..\scripts\private_mvp_readiness_check.py
+cd backend; py -3.12 -m mypy .\tests\test_private_mvp_readiness.py ..\scripts\private_mvp_readiness_check.py
+.\scripts\run_private_mvp_readiness_check.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- GitHub reported no open PRs before the slice started.
+- Created `worktrees/prov-cat` from live `origin/main` at
+  `5440934218182b309b784bfde29a5bc7d34d870e`.
+- Focused intentional red pytest failed on the missing
+  `selected_county_source_provenance_scope` section (`5 failed`, existing tests passed).
+- After adding the catalog and validator composition, focused private-MVP readiness
+  tests passed (`31 passed`).
+- `py -3.12 .\scripts\private_mvp_readiness_check.py` passed.
+- Release-readiness and readiness-matrix validators passed.
+- Must-source readiness JSON preserved `8` Must sources, `7` ready, and `1` blocked
+  source, with DS-017 remaining the blocked source.
+- Focused ruff passed.
+- Focused mypy passed for `backend/tests/test_private_mvp_readiness.py` and
+  `scripts/private_mvp_readiness_check.py`.
+- `.\scripts\run_private_mvp_readiness_check.ps1` passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `328` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- This catalog does not hydrate runtime source-provenance bundles; later runtime/UI
+  slices must still distinguish missing, present, incomplete, and out-of-scope records.
+- DB smoke was not run for this static validate-only catalog slice.

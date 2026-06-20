@@ -2,15 +2,15 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-account-free-local-auth.md`.
+Latest completed plan: `2026-06-20-raw-data-inventory.md`.
 
-Active plan: `2026-06-20-raw-data-inventory.md`.
+Active plan: `2026-06-20-selected-county-source-provenance-catalog.md`.
 
-The active slice is `G1b`, the next retained product/control slice after `G1a`
-account-free local auth posture merged. It reconstructs a local read-only raw-data
-inventory route from live `origin/main`, links it from `/ui/`, and keeps `GET
-/ui/raw-data` free of hidden seeding, connector execution, report creation, source
-approval, hosted deployment, or identity/RBAC claims.
+The active slice is `G3b`, the next retained product/control slice after `G1b`
+raw-data inventory UI merged. It adds a validate-only selected-county
+source-provenance expectation catalog for DS-010, DS-011, and DS-023 across Buncombe,
+Chatham, and Brunswick, keeping fixture/non-live labels, DS-017 exclusion, hosted
+deployment, and identity/RBAC limits explicit.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

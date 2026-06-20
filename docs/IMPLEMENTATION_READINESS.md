@@ -19,7 +19,9 @@ start without re-litigating basic authority.
 - DS-002 FEMA NFHL has a reviewed federal source row. DS-010 selected-county
   parcel connectors and DS-023 Chatham/Brunswick recorded-fixture zoning are
   scoped for private MVP; DS-011 assessor remains an explicit NOT_EVALUATED
-  sentinel.
+  sentinel. Selected-county source-provenance expectations for DS-010,
+  DS-011, and DS-023 are governed by
+  `config/private_mvp_beta_readiness.yaml`.
 - FastAPI's generated OpenAPI schema is the runtime API authority;
   `api/openapi_stub.yaml` is a curated companion checked for path/method drift.
 - Report runs return a machine-readable JSON contract; approved report runs can
@@ -84,6 +86,9 @@ hosted-production blockers after private MVP utility.
    - Keep selected-county scope aligned with
      `config/private_mvp_beta_readiness.yaml`, the county manifests, and the
      operator-case bridge in `docs/runbooks/mvp_operator.md`.
+   - Keep raw-data/source-provenance UI assumptions aligned with the
+     `selected_county_source_provenance_scope` catalog before expanding
+     selected-county source coverage.
    - Decide whether source-management routes are admin-only or workspace-scoped
      before exposing live source governance or live ingestion beyond
      fixture/operator use.
