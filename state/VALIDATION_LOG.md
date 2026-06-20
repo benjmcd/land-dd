@@ -2,6 +2,73 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Supported-AOI UI Runtime Proof G9c
+
+**Scope:** Add and validate a browser/operator workflow for the G9b supported-AOI
+`area_id` path. This slice adds a no-JavaScript UI launcher and runtime-smoke support;
+it does not add arbitrary county coverage, live source authority, DS-017, hosted
+production proof, Bologna, or Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git status --short --branch
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\private_mvp_readiness_check.py
+py -3.12 .\scripts\hosted_deployment_check.py
+py -3.12 -m pytest tests\api\test_ui_routes.py::test_ui_supported_aoi_fixture_post_redirects_to_report_run tests\api\test_ui_routes.py::test_ui_supported_aoi_fixture_post_requires_report_run_reviewer tests\test_ui_runtime_smoke_script.py::test_ui_runtime_smoke_supported_aoi_flag_posts_and_checks_report_page -q
+py -3.12 -m pytest tests\api\test_ui_routes.py tests\test_ui_runtime_smoke_script.py -q
+py -3.12 .\scripts\export_openapi_stub.py
+py -3.12 -m pytest tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py -q
+py -3.12 -m pytest tests\api\test_ui_routes.py tests\test_ui_runtime_smoke_script.py tests\api\test_openapi_contract.py tests\test_planning_pack_schema_copies.py -q
+py -3.12 .\scripts\private_mvp_readiness_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1; .\scripts\verify.ps1
+py -3.12 -m pytest tests\test_ui_browser_smoke_scripts.py::test_mvp_operator_runbook_documents_ui_browser_smoke -q
+.\scripts\verify.ps1
+$env:DB_PORT='55471'; docker compose -p land-dd-g9c up -d db
+$env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55471/land_diligence'; .\scripts\db_apply_migrations.ps1
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55471/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55471/land_diligence'; py -3.12 -m pytest tests\api\test_operator_cases_db.py::test_db_ui_supported_aoi_report_persists_existing_area_fixture -q
+$env:RUN_DB_SMOKE='1'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:55471/land_diligence'; $env:DATABASE_URL='postgresql+psycopg://land:land@localhost:55471/land_diligence'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- Live `origin/main` was confirmed at merged PR #104
+  `a7c4ceca2ca02afa19c656d853c4e3720ee8b92b`; the root checkout remains the dirty
+  preserved-candidate branch.
+- Clean worktree `worktrees/next-route` was created on `codex/next-route` from live
+  `origin/main`.
+- Source readiness reported Must `sources=8 ready=7 blocked=1`, with DS-017 still the
+  sole Must blocker; hosted deployment check remained repo-local validation only.
+- Red tests first failed because `/ui/operator-cases/supported-aoi/report` was missing
+  and `--supported-aoi-area-id` was not recognized by `ui_runtime_smoke.py`.
+- Focused UI/smoke tests passed after implementation. Focused OpenAPI contract tests
+  passed after regenerating `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml`.
+- Private-MVP, release-readiness, and readiness-matrix checks passed after restoring
+  required runbook phrasing and updating `plans/README.md`.
+- `git diff --check` and no-deletion audit passed; only generated OpenAPI line-ending
+  warnings appeared.
+- Final `.\scripts\verify.ps1` passed with workspace validation, full backend tests,
+  ruff, and mypy over `342` source files. DB smoke was skipped by default.
+- The new DB-gated supported-AOI UI persistence test passed against isolated PostGIS
+  project `land-dd-g9c` on port `55471`, proving the UI route redirects to an approved
+  report page and serves a persisted `postgres+object_store` artifact for an existing
+  supported AOI `area_id`.
+- DB-enabled `.\scripts\verify.ps1` also passed against the same isolated PostGIS
+  runtime: migrations/seeds, full backend tests, ruff, mypy, and `db_smoke_check.py`.
+
+**Residual risk:** G9c proves the UI/runtime surface for an existing supported
+`area_id`, not arbitrary in-county coverage, hosted deployment, hosted identity,
+hosted observability, hosted object-store authority, DS-017, Bologna, or multi-geography
+rulepack authority.
+
 ## 2026-06-20 Generic Supported-AOI Evidence-Rich Workflow G9b
 
 **Scope:** Implement and validate the first generic supported-AOI private-MVP path:

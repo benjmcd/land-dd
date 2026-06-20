@@ -3872,6 +3872,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /ui/operator-cases/supported-aoi/report:
+    post:
+      tags:
+      - ui
+      summary: Ui Create Supported Aoi Report
+      operationId: ui_create_supported_aoi_report_ui_operator_cases_supported_aoi_report_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_ui_create_supported_aoi_report_ui_operator_cases_supported_aoi_report_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ui/report-runs/{report_run_id}:
     get:
       tags:
@@ -4899,6 +4923,39 @@ components:
       required:
       - selected_county_case_id
       title: Body_ui_create_selected_county_report_ui_operator_cases_report_post
+    Body_ui_create_supported_aoi_report_ui_operator_cases_supported_aoi_report_post:
+      properties:
+        area_id:
+          type: string
+          title: Area Id
+        intent:
+          type: string
+          title: Intent
+        reviewer_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Id
+        reviewer_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reviewer Token
+        report_identity_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Report Identity Token
+        csrf_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Csrf Token
+      type: object
+      required:
+      - area_id
+      - intent
+      title: Body_ui_create_supported_aoi_report_ui_operator_cases_supported_aoi_report_post
     Body_ui_custom_geojson_intake_ui_intake_post:
       properties:
         area_geojson:

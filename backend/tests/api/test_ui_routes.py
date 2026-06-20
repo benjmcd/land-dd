@@ -225,6 +225,44 @@ class _FakeOperatorCasesContract:
             },
         }
 
+    def create_supported_aoi_report(
+        self,
+        services: ApiServices,
+        *,
+        area_id: UUID,
+        intent_code: IntentCode,
+        reviewer_id: str = "fixture-reviewer",
+        reason: str = "private_mvp_fixture_only",
+        workspace_id: UUID | None = None,
+        requested_by: UUID | None = None,
+    ) -> dict[str, object]:
+        area = services.area_service.get(area_id)
+        assert area is not None
+        report = services.report_service.create_report_run(
+            area_id=area.area_id,
+            intent_code=intent_code,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+        )
+        approved = services.report_service.approve_report_run(
+            report.report_run_id,
+            reviewer_id=reviewer_id,
+            reason=reason,
+        )
+        assert approved is not None
+        return {
+            "area_id": area.area_id,
+            "support_profile": {"county": "Buncombe"},
+            "report_run_id": str(approved.report_run_id),
+            "review_status": approved.review_status.value,
+            "status": approved.status.value,
+            "fixture_only": True,
+            "connector_count": 5,
+            "links": {
+                "ui": f"/ui/report-runs/{approved.report_run_id}",
+            },
+        }
+
 
 def _make_app_client_with_report(
     settings: Settings | None = None,
@@ -418,6 +456,19 @@ def test_ui_custom_geojson_intake_form_posts_without_javascript() -> None:
     assert "submitReport()" in response.text
 
 
+def test_ui_supported_aoi_fixture_form_posts_without_javascript() -> None:
+    response = client.get("/ui/")
+
+    assert response.status_code == 200
+    assert 'id="supported-aoi-panel"' in response.text
+    assert 'id="supported-aoi-form"' in response.text
+    assert 'method="POST"' in response.text
+    assert 'action="/ui/operator-cases/supported-aoi/report"' in response.text
+    assert 'name="area_id"' in response.text
+    assert 'name="intent"' in response.text
+    assert "Fixture-profile scoped only" in response.text
+
+
 def test_ui_custom_geojson_intake_valid_submission_redirects_to_report_page() -> None:
     tc = TestClient(create_app())
 
@@ -560,6 +611,90 @@ def test_ui_selected_county_fixture_post_requires_report_run_reviewer(
 
     assert response.status_code == 401
     assert "Authentication Error" in response.text
+
+
+def test_ui_supported_aoi_fixture_post_redirects_to_report_run(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    tc = TestClient(create_app())
+    area_resp = tc.post(
+        "/areas",
+        json={"geom_geojson": _valid_geojson(), "geom_source": "operator-upload"},
+    )
+    assert area_resp.status_code == 201
+
+    response = tc.post(
+        "/ui/operator-cases/supported-aoi/report",
+        data={
+            "area_id": area_resp.json()["area_id"],
+            "intent": "rural_land_purchase",
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "land_dd_ui_reviewer" in response.headers.get("set-cookie", "")
+    location = response.headers["location"]
+    assert location.startswith("/ui/report-runs/")
+
+    report_response = tc.get(location)
+
+    assert report_response.status_code == 200
+    assert "Executive Summary" in report_response.text
+
+
+def test_ui_supported_aoi_fixture_post_requires_report_run_reviewer(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    tc = TestClient(create_app())
+
+    response = tc.post(
+        "/ui/operator-cases/supported-aoi/report",
+        data={"area_id": str(uuid4()), "intent": "rural_land_purchase"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 401
+    assert "Authentication Error" in response.text
+
+
+def test_ui_supported_aoi_fixture_post_rejects_invalid_area_id_safely(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(
+        operator_cases_api,
+        "resolve_operator_cases_contract",
+        lambda: _FakeOperatorCasesContract(),
+    )
+    tc = TestClient(create_app())
+
+    response = tc.post(
+        "/ui/operator-cases/supported-aoi/report",
+        data={
+            "area_id": "<script>alert(1)</script>",
+            "intent": "rural_land_purchase",
+            "reviewer_id": _FIXTURE_REVIEWER_ID,
+            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 422
+    assert "Supported AOI Report Error" in response.text
+    assert "Area ID must be a valid UUID." in response.text
+    assert "<script>alert(1)</script>" not in response.text
 
 
 def test_ui_selected_county_fixture_post_fails_closed_outside_local_env(

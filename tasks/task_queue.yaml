@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-generic-aoi-evidence-closure.md
+active_plan: plans/2026-06-20-supported-aoi-ui-runtime.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -12,8 +12,9 @@ routing_note: >
   security/access-control guardrails merged through PR #97, G6b operations guardrails
   merged through PR #98, G6c performance guardrails merged through PR #99, G8
   observability readiness merged through PR #100, G9a custom AOI UI runtime smoke
-  merged through PR #101, and REC-002 post-G9a routing merged through PR #102. Active
-  lane: G9b generic supported-AOI evidence-rich workflow closure. This slice must not
+  merged through PR #101, REC-002 post-G9a routing merged through PR #102, and G9b
+  generic supported-AOI evidence closure merged through PR #104. Active lane: G9c
+  supported-AOI UI/runtime proof. This slice must not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
   production traffic proof, ranking/recommendation semantics, or Level 10 authority.
@@ -1099,7 +1100,7 @@ tasks:
 
   - id: G9b
     title: Generic supported-AOI evidence-rich workflow closure
-    status: active
+    status: done
     depends_on: [REC-002]
     lane: coordinator
     spec: plans/2026-06-20-generic-aoi-evidence-closure.md
@@ -1124,6 +1125,33 @@ tasks:
       - Generic supported AOI evidence does not depend on packaged operator-case IDs
       - Reports preserve source inventory, caveats, unknowns, review approval, artifact, and lineage boundaries
       - Unsupported/off-scope AOI behavior does not silently receive selected-county assumptions
+      - No hosted, DS-017, new geography, Bologna, ranking/recommendation, or Level 10 claim is introduced
+
+  - id: G9c
+    title: Supported-AOI UI runtime proof
+    status: active
+    depends_on: [G9b]
+    lane: coordinator
+    spec: plans/2026-06-20-supported-aoi-ui-runtime.md
+    notes: >
+      Add and validate the no-JavaScript operator UI path for creating a supported-AOI
+      fixture-backed report from an existing area_id, then extend runtime smoke so the
+      browser/operator workflow can prove the report page, artifact, and lineage
+      surfaces without broadening source, hosted, DS-017, Bologna, or geography authority.
+    validation:
+      - py -3.12 -m pytest backend\tests\api\test_ui_routes.py backend\tests\test_ui_runtime_smoke_script.py -q
+      - py -3.12 .\scripts\private_mvp_readiness_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - The operator UI exposes a no-JavaScript supported-AOI area-ID report form
+      - The UI route reuses reviewer and workspace identity boundaries
+      - Runtime smoke can post the supported-AOI UI route and follow report lineage
+      - Generic POST /report-runs remains evidence-consumer-only by default
       - No hosted, DS-017, new geography, Bologna, ranking/recommendation, or Level 10 claim is introduced
 
   # --- Completed ---

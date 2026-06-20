@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Supported-AOI UI runtime proof G9c
+
+- Started clean worktree `worktrees/next-route` on `codex/next-route` from live
+  `origin/main` at `a7c4ceca2ca02afa19c656d853c4e3720ee8b92b` after confirming the
+  root checkout remains the dirty preserved-candidate branch and `worktrees/` is the
+  required ignored worktree location.
+- Rechecked routing and blockers after G9b merged. `tasks/task_queue.yaml` still marked
+  G9b active, while source readiness reported Must `sources=8 ready=7 blocked=1` with
+  DS-017 still blocked; hosted and private-MVP validators passed as repo-local checks
+  only. Coherent next unblocked slice is therefore supported-AOI UI/runtime proof, not
+  DS-017, hosted production, or Bologna.
+- Added `/ui/` supported-AOI area-ID form and
+  `/ui/operator-cases/supported-aoi/report`, reusing reviewer `report:run` and workspace
+  identity boundaries before delegating to the existing supported-AOI API helper.
+- Extended `scripts/ui_runtime_smoke.py` with `--supported-aoi-area-id` so runtime smoke
+  can post the no-JavaScript UI form, follow the approved report page, and verify
+  evidence lineage. Added focused UI and smoke-script tests, then regenerated OpenAPI
+  stubs.
+
 ## 2026-06-20 Generic supported-AOI evidence-rich workflow G9b
 
 - Started clean worktree `worktrees/g9b-aoi` on `codex/g9b-aoi` from live

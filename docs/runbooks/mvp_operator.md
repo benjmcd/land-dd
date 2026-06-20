@@ -386,6 +386,7 @@ Use this matrix to pick the right path and avoid treating one proof as another.
 | `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged selected-county corpus, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
 | `POST /operator-cases/supported-aoi/report` | Existing `area_id` matched to a recorded generic AOI fixture profile | Non-packaged AOI submission path, selected-county fixture evidence against the existing area, connector-QA approval handoff, approved report download/artifact links | Arbitrary in-county AOIs, live county coverage, default `/report-runs` fixture ingestion |
 | `/ui/` selected-county launcher | Browser operator flow for packaged cases | No-JavaScript UI launch into the same `/operator-cases` path and existing approved report pages | Full dashboard polish, user accounts/RBAC, live-source production operation |
+| `/ui/` supported-AOI launcher | Browser operator flow for existing `area_id` values that match recorded generic AOI fixture profiles | No-JavaScript UI launch into `/ui/operator-cases/supported-aoi/report`, reviewer-scoped approval handoff, approved report page, artifact, and lineage links | Arbitrary in-county AOIs, live county coverage, default `/report-runs` fixture ingestion |
 | Generic `POST /report-runs` | Custom AOI report run from an existing `area_id` plus already-ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
 | DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior for the generic full reviewed dossier path, all nine packaged selected-county operator cases, and the selected-county UI launcher | No-server CLI behavior, hosted deployment, live-source production coverage, external identity/secrets |
 | Live connector queue paths | Reviewed live-source screening workflows | Bounded source-specific fetch/schedule/review behavior for implemented connectors | Recorded fixture parity, paid vendor coverage, legal/buildability/title/value conclusions |
@@ -394,9 +395,9 @@ DB-backed verification includes the generic full reviewed dossier path in
 `backend/tests/api/test_report_runs_db.py` plus all nine packaged selected-county operator DB smoke cases
 in `backend/tests/api/test_operator_cases_db.py`. The same DB smoke file also covers
 the `/operator-cases/supported-aoi/report` area-ID route for one recorded generic AOI
-fixture profile and the `/ui/operator-cases/report` launcher for one representative
-selected-county case, including redirect to the approved report page, approved UI delivery links,
-and persisted JSON artifact delivery.
+fixture profile, the `/ui/operator-cases/report` launcher for one representative
+selected-county case, and the `/ui/operator-cases/supported-aoi/report` launcher for
+one supported existing AOI, including redirect to the approved report page, approved UI delivery links, and persisted JSON artifact delivery.
 It does not prove full hosted production, live-source production coverage, or counties
 outside the selected private-MVP set.
 
@@ -408,8 +409,9 @@ outside the selected private-MVP set.
 | `POST /operator-cases/{case_id}/report` | High selected-county fixture evidence through the app-owned packaged corpus | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-only packaged cases, not live county fetches |
 | `POST /operator-cases/supported-aoi/report` | High selected-county fixture evidence for a stored AOI that matches a recorded generic AOI fixture profile | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-profile scoped existing AOIs only; not arbitrary in-county live coverage |
 | `/ui/` selected-county launcher | High selected-county fixture evidence plus no-JavaScript operator UX | Yes; same approved-report and dossier gates as `/operator-cases` | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | UI usability for packaged cases only; not full accounts/RBAC |
+| `/ui/` supported-AOI launcher | High selected-county fixture evidence for an existing supported `area_id` plus no-JavaScript operator UX | Yes; same approved-report and dossier gates as `/operator-cases/supported-aoi/report` | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | UI usability for fixture-profile scoped existing AOIs only; not arbitrary in-county live coverage |
 | Generic `POST /report-runs` | Low by default; strongest as a code-level integration pattern over an existing `{area_id}` plus whatever evidence is already ingested/reviewed | Yes | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | Only when you intentionally enable live connector ingestion; otherwise no | This is not the packaged selected-county corpus path and does not auto-load selected-county fixtures in default mode |
-| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path, one supported-AOI area-ID route, all nine packaged selected-county operator DB smoke cases, and one selected-county UI launcher DB smoke |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path, one supported-AOI area-ID route, all nine packaged selected-county operator DB smoke cases, one selected-county UI launcher DB smoke, and one supported-AOI UI launcher DB smoke |
 | Live connector queue paths | Connector-dependent live evidence | Connector review queue applies where implemented | Optional, depending on runtime | Yes | Only implemented live connectors; no packaged selected-county parity |
 
 ---
@@ -824,13 +826,13 @@ python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL
 
 The browser smoke launches Chrome with temporary profiles, checks the core `/ui/*`
 surfaces at desktop (`1366x900`) and mobile (`390x844`) viewports, including the
-selected-county launcher table and form contract on `/ui/` and the read-only
-`/ui/raw-data` inventory, fails closed on missing DOM contracts or page-level horizontal
-overflow, and removes its temporary Chrome profiles. In default local no-auth mode it
-expects `/ui/auth*`, `/ui/login`, `/ui/account`, `/login`, and `/account` to remain
-disabled/404; use API-key or reviewer-session options only when intentionally checking
-protected auth surfaces. It does not create areas, report runs, connector-review items,
-review actions, screenshots, or JSON output by default.
+selected-county launcher table and form contract on `/ui/`, the supported-AOI area-ID
+form contract on `/ui/`, and the read-only `/ui/raw-data` inventory, fails closed on
+missing DOM contracts or page-level horizontal overflow, and removes its temporary
+Chrome profiles. In default local
+no-auth mode it expects `/ui/auth*`, `/ui/login`, `/ui/account`, `/login`, and
+`/account` to remain disabled/404; use API-key or reviewer-session options only when
+intentionally checking protected auth surfaces. It does not create areas, report runs, connector-review items, review actions, screenshots, or JSON output by default.
 
 To opt in to an operator-case runtime delivery check after the default route checks,
 pass a selected-county case id to the urllib-based runtime smoke:
@@ -846,6 +848,20 @@ It then follows the approved report lineage route and requires source, evidence,
 claim lineage content to be present, not only the delivery link.
 It creates an in-memory approved report in the target runtime when that runtime uses
 the default in-memory services; use it only when mutating fixture state is intentional.
+
+To opt in to a supported-AOI runtime delivery check after an area has already been
+created, pass the existing `area_id` to the urllib-based runtime smoke:
+
+```powershell
+python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL --reviewer-id fixture-reviewer --reviewer-token fixture-token-123 --supported-aoi-area-id "{area_id}"
+```
+
+This posts the existing UI form field to
+`/ui/operator-cases/supported-aoi/report`, follows the redirect to the approved report
+UI page, and checks the final page plus approved-report lineage. It uses the same
+fixture-profile scoped supported-AOI behavior as `/operator-cases/supported-aoi/report`;
+it is not arbitrary in-county coverage and does not cause generic `POST /report-runs`
+to ingest selected-county fixtures by default.
 
 To also prove the compare and same-area diff workflow, add `--compare-same-area`:
 
