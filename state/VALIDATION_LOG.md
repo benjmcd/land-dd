@@ -2,6 +2,75 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Post-BSR Roadmap And Source-Authority Blocker
+
+**Scope:** Close merged `BSR-001` routing and record the next Bologna task as blocked
+on explicit product/AOI/source-review authority. This does not approve sources, capture
+fixtures, promote source registry rows, run connectors, change source readiness, create
+hosted authority, unblock DS-017, implement a rulepack, implement a multi-geography
+framework, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+gh pr checks 109
+gh pr view 109 --json state,mergeStateStatus,isDraft,reviewDecision,headRefName,baseRefName,commits,url
+gh pr merge 109 --merge --delete-branch
+git rev-parse HEAD
+git rev-parse origin/main
+gh pr view 109 --json state,mergedAt,mergeCommit,url
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+.\scripts\verify.ps1
+git worktree remove .\worktrees\bol-rights
+git worktree prune
+git worktree list
+@'
+from pathlib import Path
+import yaml
+queue = yaml.safe_load(Path('tasks/task_queue.yaml').read_text())
+print(queue['active_plan'])
+for task in queue['tasks']:
+    if task.get('id') in {'BSR-001', 'BSA-001'}:
+        print(task['id'], task['status'], task.get('spec'))
+'@ | py -3.12 -
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- PR #109 checks passed, PR state was merge-clean, and the PR merged at
+  `4decd1bb3135a060c75c3534d5223da79f7618a7`.
+- Post-merge `HEAD` matched `origin/main` at
+  `4decd1bb3135a060c75c3534d5223da79f7618a7`.
+- Bologna source-rights and preflight checkers passed on the merged commit.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`; DS-017 remains the
+  only blocked Must source.
+- Readiness-matrix validation passed.
+- Default `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `346` source files. DB smoke was skipped by default.
+- `worktrees/bol-rights` was removed after merge.
+- Post-BSR routing now parses with active plan
+  `plans/2026-06-20-post-bsr-roadmap.md`; `BSR-001` is `done` and `BSA-001` is
+  `blocked`.
+- Focused Bologna rights/preflight/readiness checks, diff/no-deletion checks, workspace
+  validation, and default `.\scripts\verify.ps1` passed after the routing correction.
+
+**Residual risk:** `BSA-001` remains blocked because no explicit product/AOI/source-review
+authority has approved any Bologna candidate source for fixture, runtime, report, raw
+export, cache, or AI use. Bologna source approvals, one-AOI recorded-source corpus,
+DB-backed pilot report proof, DS-017 treatment, hosted authority, and multi-geography
+framework design remain future work.
+
 ## 2026-06-20 Post-SE001 Routing And Bologna Preflight BP-001
 
 **Scope:** Restore live routing after merged SE-001 and add a validate-only Bologna

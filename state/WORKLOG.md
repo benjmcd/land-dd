@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Post-BSR roadmap and source-authority blocker
+
+- Re-audited live `origin/main` after PR #109 merged `BSR-001` at
+  `4decd1bb3135a060c75c3534d5223da79f7618a7`. Post-merge Bologna rights/preflight,
+  Must-source readiness, readiness-matrix, and default `.\scripts\verify.ps1` passed;
+  `worktrees/bol-rights` was removed.
+- Found and corrected a routing closeout gap: `tasks/task_queue.yaml`,
+  `plans/README.md`, and `state/PROJECT_STATE.md` still described BSR as active even
+  though the lane was merged and verified.
+- Added `plans/2026-06-20-post-bsr-roadmap.md`, marked `BSR-001` done, and added
+  blocked `BSA-001` source-authority intake. The next Bologna step must cite real
+  product/AOI/source-review authority before any source-rights decision changes from
+  pending.
+- Boundaries remain: no source approval, no fixture capture, no source registry
+  promotion, no connector/runtime/report implementation, no DS-017 unblock, no hosted
+  authority, no rulepack implementation, no multi-geography framework, and no Level 10
+  claim.
+
 ## 2026-06-20 Post-SE001 routing and Bologna preflight BP-001
 
 - Started clean worktree `worktrees/authority-next` on `codex/authority-next` from live
