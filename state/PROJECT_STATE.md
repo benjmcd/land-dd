@@ -1,13 +1,56 @@
 # Project State
 
-## Current checkpoint (2026-06-20 runtime/browser smoke reconstruction)
+## Current checkpoint (2026-06-20 deployment-readiness UI G3)
 
-The active implementation authority is `G2` runtime/browser smoke reconstruction from
-`plans/2026-06-20-runtime-browser-smoke-g2.md`. This is the next retained
-product/control slice after `G3b` selected-county source-provenance catalog merged
-through PR #92 at `cc272d0de492c424ff1b3ad715f25b25587c9e53`. The dirty root checkout
-remains preserved candidate evidence only; this slice was opened from live
-`origin/main` in `worktrees/g2-smoke`.
+The active implementation authority is the narrow `G3` deployment-readiness UI slice
+from `plans/2026-06-20-deployment-readiness-ui-g3.md`. This is the next retained
+product/control slice after `G2` runtime/browser smoke reconstruction merged through
+PR #93 at `beedde0990e598beaa3ccefd99392fe5d9856e1f`. The dirty root checkout remains
+preserved candidate evidence only; this slice was opened from live `origin/main` in
+`worktrees/g3-deploy`.
+
+- **Active plan**: `plans/2026-06-20-deployment-readiness-ui-g3.md`.
+- **Purpose**: expose the existing release-package, image-publication, and
+  hosted-deployment catalogs through a local read-only `/ui/deployment-readiness` page
+  that fails closed on catalog drift and keeps package/image/hosted blockers explicit.
+- **Implemented scope so far**: focused parser and route tests now cover catalog
+  composition, schema drift, runtime-input drift, blocker drift, limit drift, safe
+  repo-relative read-error text, 503 fail-closed behavior, page rendering, and live
+  home/raw-data navigation links.
+  `backend/app/deployment_readiness.py` reads the repo-owned deployment-path catalogs
+  and validates request-critical invariants. `/ui/deployment-readiness` renders package,
+  image, hosted runtime input/evidence, blocker, and validate-only limit sections.
+  `DESIGN.md`, `docs/runbooks/mvp_operator.md`, `plans/README.md`, and
+  `tasks/task_queue.yaml` route to the same boundary.
+- **Current local validation**: intentional red focused pytest failed for the missing
+  `app.deployment_readiness` module. Focused deployment-readiness tests passed
+  (`9 passed`). Focused mypy passed over the new module, UI route, and test. Focused
+  ruff passed using the local `ruff` executable. OpenAPI stubs were regenerated for
+  the new FastAPI UI route, and OpenAPI parity tests passed (`2 passed`).
+  Release-package, image-publication, hosted-deployment, release-readiness,
+  readiness-matrix, private-MVP, and access-control validators passed. `git diff --check`
+  and no-deletion audit passed with only OpenAPI line-ending normalization warnings.
+  `.\scripts\validate_workspace.ps1` passed. Final `.\scripts\verify.ps1` passed with
+  backend tests, ruff, and mypy over `330` source files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no package build or publication, no registry image
+  push, no image signing or attestation publication, no hosted deployment or
+  infrastructure mutation, no secret write, no public endpoint, no DS-017 approval, no
+  source/vendor expansion, no selected-geography coverage/expansion/production-authority
+  UI, no broad readiness overview, no default smoke expansion, no DB schema change, no
+  public JSON API behavior change, no report-semantics change, no hosted identity/RBAC
+  claim, and no Level 10 completion claim.
+- **Next required step**: publish the focused `codex/g3-deploy-readiness` PR, wait for
+  CI, merge only if local and CI proof agree, re-check live `origin/main`, and remove
+  `worktrees/g3-deploy`.
+
+## Previous checkpoint (2026-06-20 runtime/browser smoke reconstruction)
+
+The implementation authority for `G2` runtime/browser smoke reconstruction was
+`plans/2026-06-20-runtime-browser-smoke-g2.md`. This retained product/control slice
+followed `G3b` selected-county source-provenance catalog, which merged through PR #92
+at `cc272d0de492c424ff1b3ad715f25b25587c9e53`. The dirty root checkout remains
+preserved candidate evidence only; the slice was opened from live `origin/main` in
+`worktrees/g2-smoke`.
 
 - **Active plan**: `plans/2026-06-20-runtime-browser-smoke-g2.md`.
 - **Purpose**: rebuild local runtime and browser smoke around the accepted G1 UI
@@ -39,9 +82,9 @@ remains preserved candidate evidence only; this slice was opened from live
   no live connectors, no source/vendor expansion, no DS-017 approval, no DB schema
   change, no public JSON API contract change, no report-semantics change, no hosted
   deployment claim, no hosted identity/RBAC claim, and no Level 10 completion claim.
-- **Next required step**: publish the focused `codex/g2-smoke` PR, wait for CI, merge
-  only if local and CI proof agree, then re-check live `origin/main` and re-rank the
-  next retained slice.
+- **Post-merge status**: PR #93 merged at
+  `beedde0990e598beaa3ccefd99392fe5d9856e1f`; the next retained slice is the narrow
+  `G3` deployment-readiness UI surface.
 
 ## Previous checkpoint (2026-06-20 selected-county source-provenance catalog)
 

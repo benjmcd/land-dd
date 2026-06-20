@@ -646,6 +646,20 @@ area associated with the approved connector run and redirects to the report page
 Terminal queue items with no valid mutation action render an explicit no-actions message
 instead of invalid action forms.
 
+### Deployment readiness (`/ui/deployment-readiness`)
+
+Navigate to `/ui/deployment-readiness` from the operator console or raw-data inventory.
+The page is a read-only local catalog view over `config/release_package.yaml`,
+`config/image_publication.yaml`, and `config/hosted_deployment.yaml`. It shows the
+release-package boundary, image publication blockers, hosted runtime inputs, hosted
+runtime evidence requirements, and validate-only limits.
+
+This page does not build or publish a release package, push a registry image, create a
+hosted deployment, write secrets, open public endpoints, approve DS-017, add OAuth/OIDC,
+or provide full identity/RBAC. If a deployment-path catalog drifts or references missing
+repo artifacts, the page fails closed with a 503 instead of rendering unchecked YAML as
+readiness.
+
 ### Operations dashboard (`/ui/operations`)
 
 Navigate to `/ui/operations`. When the current reviewer session has `operations:read`

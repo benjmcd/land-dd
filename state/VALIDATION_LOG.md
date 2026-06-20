@@ -2,6 +2,64 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Deployment-Readiness UI G3
+
+**Scope:** Add a local read-only `/ui/deployment-readiness` page over existing
+release-package, image-publication, and hosted-deployment catalogs without building,
+publishing, pushing, signing, deploying, writing secrets, opening public endpoints,
+approving DS-017, changing source coverage, adding identity/RBAC, or claiming Level 10
+production authority.
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_ui_deployment_readiness.py
+py -3.12 -m mypy .\app\deployment_readiness.py .\app\api\ui.py .\tests\api\test_ui_deployment_readiness.py
+ruff check .\app\deployment_readiness.py .\app\api\ui.py .\tests\api\test_ui_deployment_readiness.py
+cd ..
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+cd ..
+py -3.12 .\scripts\release_package_check.py
+py -3.12 .\scripts\image_publication_check.py
+py -3.12 .\scripts\hosted_deployment_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+py -3.12 .\scripts\private_mvp_readiness_check.py
+py -3.12 .\scripts\access_control_check.py
+```
+
+**Results:**
+
+- Intentional red focused pytest failed because `app.deployment_readiness` did not
+  exist.
+- Focused deployment-readiness tests passed after implementation (`9 passed`).
+- Focused mypy passed over the new module, UI route, and tests.
+- `py -3.12 -m ruff` was unavailable in this local environment; `ruff check` passed
+  over the same touched files.
+- `scripts/export_openapi_stub.py` regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml`; OpenAPI parity tests passed (`2 passed`).
+- Release-package, image-publication, hosted-deployment, release-readiness,
+  readiness-matrix, private-MVP, and access-control validators passed.
+- `git diff --check` and the no-deletion audit passed with only OpenAPI line-ending
+  normalization warnings.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `330`
+  source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This page is catalog visibility only. It does not create or prove package artifacts,
+  registry images, hosted deployment, public endpoints, DS-017 authority, hosted
+  identity/RBAC, source expansion, selected-geography coverage, or Level 10 completion.
+- DB smoke has not been run in this slice.
+
 ## 2026-06-20 Raw-Data Inventory UI
 
 **Scope:** Add a local read-only `/ui/raw-data` runtime inventory route and `/ui/`
