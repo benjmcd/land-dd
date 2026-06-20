@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Post-SRP residual routing closeout RSR-001
+
+- Started clean worktree `worktrees/post-srp` on `codex/post-srp` from live
+  `origin/main` at `b144544d6224381875e92eb6d27206171799de9d`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited post-SRP routing and found the active plan still pointed at the completed
+  selected-county runtime-provenance regression plan.
+- Added `plans/2026-06-20-post-srp-roadmap.md`, routed `tasks/task_queue.yaml` to it,
+  and recorded `RSR-001` as a routing/state closeout.
+- Updated `state/residual-reconciliation.md` so current live main is
+  `b144544d6224381875e92eb6d27206171799de9d`, SRP is merged through PR #113, generic
+  supported-AOI proof is no longer described as the next residual step, and only
+  `backend/app/project_readiness.py` plus `backend/app/release_readiness.py` remain
+  `STILL_DIVERGENT`.
+- Preserved boundaries: no source/report behavior change, no parser implementation, no
+  source-readiness change, no DS-017 approval, no hosted authority, no Bologna
+  authority, and no Level 10 claim.
+
 ## 2026-06-20 Selected-county runtime provenance regression SRP-001
 
 - Started clean worktree `worktrees/runtime-prov` on `codex/runtime-prov` from live
