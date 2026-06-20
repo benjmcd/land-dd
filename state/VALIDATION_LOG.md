@@ -2,6 +2,71 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Bologna Source-Authority Intake Guard BSG-001
+
+**Scope:** Add a validate-only Bologna source-authority intake packet and checker. This
+does not approve sources, select a Bologna AOI, promote source registry rows, capture
+fixtures, run connectors, change source readiness, create hosted authority, unblock
+DS-017, implement a rulepack, implement a multi-geography framework, or claim Level 10
+authority.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git rev-parse origin/main
+git worktree list
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\bologna_source_authority_intake_check.py
+.\scripts\run_bologna_source_authority_intake_check.ps1
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 -m pytest backend\tests\test_bologna_source_authority_intake_artifacts.py -q
+py -3.12 -m pytest backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_preflight_artifacts.py -q
+cd backend
+ruff check ..\scripts\bologna_source_authority_intake_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_authority_intake_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+py -3.12 -m mypy ..\scripts\bologna_source_authority_intake_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_authority_intake_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+cd ..
+@'
+from pathlib import Path
+import yaml
+queue = yaml.safe_load(Path('tasks/task_queue.yaml').read_text())
+print(queue['active_plan'])
+for task in queue['tasks']:
+    if task.get('id') in {'BSG-001', 'BSA-001'}:
+        print(task['id'], task['status'], task.get('spec'), task.get('depends_on'))
+'@ | py -3.12 -
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline Bologna rights/preflight/readiness checks passed before edits.
+- New Bologna source-authority intake checker passed.
+- Focused source-authority intake artifact tests passed (`9 passed`).
+- Combined Bologna authority/right/preflight artifact tests passed (`29 passed`).
+- Focused ruff and mypy passed for the new checker, preflight checker, and focused
+  Bologna tests.
+- Task routing parses with active plan `plans/2026-06-20-post-bsr-roadmap.md`;
+  `BSG-001` is `done` and `BSA-001` is `blocked`.
+- Must-source readiness remains `sources=8 ready=7 blocked=1`; DS-017 remains the only
+  blocked Must source.
+- Release-readiness, readiness-matrix, diff/no-deletion checks, workspace validation,
+  and default `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+**Residual risk:** `BSA-001` remains blocked. No source/AOI authority has approved any
+Bologna candidate source or cadastral source for fixture, runtime, report, raw export,
+cache, or AI use.
+
 ## 2026-06-20 Post-BSR Roadmap And Source-Authority Blocker
 
 **Scope:** Close merged `BSR-001` routing and record the next Bologna task as blocked

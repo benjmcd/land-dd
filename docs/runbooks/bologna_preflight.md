@@ -18,6 +18,11 @@ rights matrix attached to this preflight. It keeps every candidate source pendin
 terms, license, cache, export, AI-use, raw-data, attribution, source version,
 retrieval, caveat, CRS, fixture, and report-use decisions are reviewed.
 
+`config/bologna_source_authority_intake.yaml`
+(`bologna_source_authority_intake_v1`) is the blocked source-authority intake guard. It
+must cite real product/AOI/source-review authority before any pending source-rights
+matrix decision is changed.
+
 This proof does not select Bologna, does not approve Italy sources, does not approve an
 EU/Italy rulepack, does not unblock DS-017, does not create runtime artifacts, and does
 not claim hosted production readiness.
@@ -45,6 +50,7 @@ The check is validate-only. It verifies that:
 - every `repo_confirmed` gate has evidence assertions that still match cited files;
 - the Bologna source-candidates packet remains candidate-only and unapproved;
 - the Bologna source-rights matrix remains validate-only and unapproved;
+- the Bologna source-authority intake remains blocked and uncited;
 - every non-`repo_confirmed` gate has a `next_action` and blocker authority;
 - `blocked_external_authority` gates point to existing authority files;
 - the runbook and production authority packet preserve the boundary that this does not

@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Bologna source-authority intake guard BSG-001
+
+- Started clean worktree `worktrees/bsa-intake` on `codex/bsa-intake` from live
+  `origin/main` at `4901b8303d30ef240eef1e89403c9a55501f718f`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current routing after BSR/post-BSR closeout. `BSA-001` is correctly
+  blocked on product/AOI/source-review authority. The coherent repo-local next move is
+  a validate-only intake guard, not source approval or fixture capture.
+- Added `config/bologna_source_authority_intake.yaml`,
+  `docs/runbooks/bologna_source_authority_intake.md`,
+  `scripts/bologna_source_authority_intake_check.py`, Windows/POSIX wrappers, focused
+  artifact tests, and Bologna preflight composition. The checker cross-checks candidate
+  evidence slots, cadastral evidence slots, and promotion blockers against
+  `config/bologna_source_rights.yaml`.
+- Boundaries remain: no source approval, no Bologna AOI selection, no source registry
+  promotion, no fixture capture, no connector/runtime/report implementation, no
+  rulepack approval, no DS-017 unblock, no hosted authority, no multi-geography
+  framework, and no Level 10 claim.
+
 ## 2026-06-20 Post-BSR roadmap and source-authority blocker
 
 - Re-audited live `origin/main` after PR #109 merged `BSR-001` at
