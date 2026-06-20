@@ -1,5 +1,44 @@
 # Project State
 
+## Current checkpoint (2026-06-20 repository-state reconciliation)
+
+The active implementation authority is Lane 1 repository-state reconciliation and
+selective landing. Live `origin/main` remains the only default product authority; the
+dirty root checkout contains recoverable local candidate work that must be classified
+and selectively revalidated before any slice is treated as merged functionality.
+
+- **Active plan**: `plans/2026-06-20-lane1-reconciliation.md`.
+- **Purpose**: reconcile live `R-022` authority with material local uncommitted
+  readiness/UI/control-plane candidate work without landing the dirty workspace as a
+  single broad change or promoting local state prose to repo truth.
+- **Live authority envelope**: refreshed `origin/main`, local `main`, and dirty-root
+  `codex/r026-raw-readiness-ui` all point at
+  `c3364ea01605cef09e03da6da8551fa4d1a155e8`; ahead/behind is `0/0`; no open GitHub
+  PRs were found for `benjmcd/land-dd`.
+- **Candidate envelope**: dirty root has `53` tracked modified files, `75` untracked
+  files, and `0` tracked deletions relative to `origin/main`. The local candidate stack
+  includes later `R-023` through `R-056` readiness/UI claims, but those remain
+  `LOCAL_UNCOMMITTED` candidate evidence until decomposed and re-landed from clean
+  worktrees.
+- **Current authority surfaces**:
+  `plans/2026-06-20-lane1-reconciliation.md`, `plans/README.md`,
+  `tasks/task_queue.yaml`, `state/reconciliation-inventory.md`,
+  `state/reconciliation-slices.md`, `state/r023-review.md`,
+  `state/reconciliation-dispositions.md`, `state/PROJECT_STATE.md`,
+  `state/WORKLOG.md`, and `state/VALIDATION_LOG.md`.
+- **Known boundaries to preserve**: do not reset, clean, delete, rebase, overwrite, or
+  destructively partition the dirty root candidate stack; do not publish
+  coordination-only `state/agent-inbox/*`; do not change product behavior, DB schema,
+  source registry decisions, public APIs, auth/security boundaries, report semantics,
+  claim/rule behavior, hosted/source/identity authority, DS-017 status, or Level 10
+  claims during the control-plane slice.
+- **Next required step**: validate and merge the `REC-001` control-plane artifacts
+  before product landing work. The first retained product slices should be opened in
+  separate clean worktrees from live `origin/main`; current disposition review ranks
+  package-manifest/CI, source-readiness extraction, local account-free/auth posture,
+  and raw-data inventory as the earliest coherent candidates. Do not copy dirty-root
+  `backend/app/api/ui.py`, smoke scripts, OpenAPI mirrors, or state prose wholesale.
+
 ## Current checkpoint (2026-06-18 error-state/no-leak hardening)
 
 Audit-retention proof hardening is complete. The active implementation authority now

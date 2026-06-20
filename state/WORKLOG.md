@@ -3667,3 +3667,41 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Marked `R-016` done and routed the active plan to
   `plans/2026-06-18-compare-diff-workflow-smoke.md`; the next lane is compare/diff
   workflow smoke, not hosted deployment, DS-017 approval, or production SLO proof.
+
+## 2026-06-20 Repository-state reconciliation start
+
+- Started Lane 1 reconciliation from a clean worktree at `worktrees/l1-recon` on
+  `codex/l1-recon`, created from refreshed `origin/main`.
+- Confirmed live `origin/main`, local `main`, and dirty-root
+  `codex/r026-raw-readiness-ui` all point at
+  `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
+- Confirmed no open GitHub PRs for `benjmcd/land-dd`.
+- Inventoried the dirty root as recoverable candidate evidence: `53` tracked modified
+  files, `75` untracked files, and `0` tracked deletions relative to `origin/main`.
+- Added `state/reconciliation-inventory.md` with initial file-level classification:
+  `126` product/state candidate files as `LOCAL_UNCOMMITTED`, `2` inbox files as
+  `COORDINATION_ONLY`, and ignored cache/artifact directories kept out of product
+  authority.
+- Added `state/reconciliation-slices.md` with provisional groups `G1` through `G8`.
+  The first content-review target is `R-023` because it depends only on live `R-022`;
+  this is not yet a decision to land that slice.
+- Added `state/r023-review.md` after checking the R-023 candidate plan and actual diff
+  surface. The dirty-root `ui.py` and smoke scripts are already contaminated with later
+  routes, so R-023 must be reconstructed narrowly from live `origin/main`.
+- Added `plans/2026-06-20-lane1-reconciliation.md` and routed state/task planning to
+  `REC-001` without changing product code, schema, source registry decisions, public
+  APIs, auth/security boundaries, report semantics, or hosted/source claims.
+- Added `state/reconciliation-dispositions.md` as the next Lane 1 classification
+  layer. Every dirty-root candidate path now has an initial disposition:
+  `RETAIN_AS_SLICE`, `REWORK_NARROWLY`, `DEFER`, `ARCHIVE_REFERENCE`,
+  `COORDINATION_ONLY`, or `DISCARD_GENERATED`.
+- Integrated three read-only classification passes over UI/auth/browser,
+  source/report/provenance, and packaging/CI/readiness surfaces. The reviews converged
+  on the same core decision: preserve the dirty root as candidate evidence, do not copy
+  broad `backend/app/api/ui.py`, smoke scripts, generated OpenAPI mirrors, or dirty
+  state prose wholesale, and replay retained work from clean current-main worktrees.
+- Updated project state and task acceptance so REC-001 must validate the disposition
+  matrix before any product landing slice starts. The earliest coherent retained
+  candidates are package-manifest/CI, source-readiness extraction, local auth posture,
+  and raw-data inventory; the exact product order must still be rechecked from live
+  `origin/main` before implementation.

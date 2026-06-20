@@ -11968,3 +11968,133 @@ python .\scripts\performance_baseline_check.py
   authority blockers.
 - Default non-DB verify was not run separately after the DB-enabled pass because the
   DB-enabled full gate ran the same backend suite plus DB-gated tests and DB smoke.
+
+---
+
+## 2026-06-20 - Repository-State Reconciliation Start
+
+**Scope:** Open Lane 1 reconciliation from live `origin/main`, preserve the dirty root
+as candidate evidence, and route the active control-plane state without modifying
+product behavior.
+
+**Commands run:**
+
+```powershell
+git fetch --prune origin
+git worktree list
+git status --short --branch
+gh pr list --repo benjmcd/land-dd --state open --json number,title,headRefName,baseRefName,headRefOid,updatedAt,url
+git rev-parse HEAD
+git rev-parse origin/main
+git rev-parse main
+git merge-base HEAD origin/main
+git rev-list --left-right --count origin/main...HEAD
+git -C ..\.. diff --name-status origin/main --
+git -C ..\.. ls-files --others --exclude-standard
+git -C ..\.. diff --name-only --diff-filter=D origin/main --
+.\scripts\validate_workspace.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+inventory row-count comparison against dirty-root git output
+```
+
+**Results:**
+
+- `origin/main`, local `main`, and dirty-root `codex/r026-raw-readiness-ui` were all
+  `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
+- Ahead/behind between dirty-root `HEAD` and `origin/main` was `0/0`.
+- GitHub reported no open PRs.
+- Dirty-root candidate inventory found `53` tracked modified files, `75` untracked
+  files, and `0` tracked deletions.
+- Initial file-level classification was recorded in `state/reconciliation-inventory.md`.
+- Inventory row-count check matched dirty-root git output: `128` inventory rows,
+  `126` `LOCAL_UNCOMMITTED`, `2` `COORDINATION_ONLY`, and `128` tracked-plus-untracked
+  candidate paths from Git.
+- Provisional slice grouping was recorded in `state/reconciliation-slices.md`; `R-023`
+  is the first content-review target, not an approved landing slice.
+- R-023 content review was recorded in `state/r023-review.md`; the actual dirty-root
+  target-file diff is broad (`13` files, `7182` insertions, `648` deletions), with
+  `backend/app/api/ui.py` and `scripts/ui_runtime_smoke.py` already containing later
+  route/readiness/observability work.
+- Created `worktrees/l1-recon` on `codex/l1-recon` from `origin/main`.
+- Workspace validator passed: agent context check, JSON check, source registry check,
+  structural invariants, and workspace validation were all `ok`.
+- `git diff --check` passed, and no tracked deletions were reported in the clean
+  reconciliation worktree.
+- After adding the slice map and R-023 review artifact, `.\scripts\validate_workspace.ps1`
+  passed again; `git diff --check` passed; and no tracked deletions were reported.
+
+**Residual risk:**
+
+- This is planning/control-plane proof only. Product-focused tests and full
+  `.\scripts\verify.ps1` still need to run for any material product slice.
+- Dirty-root candidate files are classified only at initial file-level authority
+  status; retain/rework/defer decisions still require content and dependency review.
+- Minimal R-023 reconstruction remains unimplemented in this branch.
+- `tasks/task_queue.yaml` is not currently parse-clean under ad hoc PyYAML parsing
+  because of an older unquoted `CON-002` notes line on `origin/main`; this patch did
+  not introduce that condition.
+- No product behavior, hosted proof, DB smoke, browser smoke, source decision, or Level
+  10 completion is claimed.
+
+---
+
+## 2026-06-20 - Repository-State Reconciliation Disposition Pass
+
+**Scope:** Complete the next Lane 1 control-plane layer by assigning initial
+retain/rework/defer/archive/discard decisions to every dirty-root candidate path.
+This remained documentation/state-only in the clean reconciliation worktree.
+
+**Commands/checks run:**
+
+```powershell
+read-only delegated review of UI/auth/browser candidate surface
+read-only delegated review of source/report/provenance candidate surface
+read-only delegated review of packaging/CI/readiness candidate surface
+inventory/disposition row-count comparison against dirty-root git output
+git diff --check
+git diff --name-status --diff-filter=D
+.\scripts\validate_workspace.ps1
+git status --short --branch
+git diff --name-status
+```
+
+**Results:**
+
+- Added `state/reconciliation-dispositions.md` with initial dispositions for every
+  dirty-root candidate path.
+- Disposition coverage check passed: `128` inventory candidate paths, `128` candidate
+  disposition rows, `5` ignored/runtime disposition rows, `0` missing candidate paths,
+  and `0` extra tracked/untracked paths.
+- Independent read-only reviews agreed on the main risk: dirty-root `backend/app/api/ui.py`
+  and smoke scripts mix many later readiness/provenance/guardrail/release/observability
+  surfaces and must not be copied wholesale.
+- Retain-as-slice candidates now include package-manifest/CI, source-readiness
+  extraction, selected-county source-provenance catalog, focused raw-data inventory
+  test coverage, package manifest wrappers, and selected read-only guardrail/readiness
+  parsers. Mixed auth/UI/report/runtime-smoke work remains `REWORK_NARROWLY`; generated
+  OpenAPI mirrors and ignored local artifacts remain non-authority.
+- `git diff --check` passed.
+- No tracked deletions were reported in the clean reconciliation worktree.
+- `.\scripts\validate_workspace.ps1` passed: agent context check, JSON check, source
+  registry check, structural invariants, and workspace validation were all `ok`.
+- First broad `.\scripts\verify.ps1` run failed in
+  `tests/test_readiness_matrix_artifacts.py::test_readiness_matrix_validator_passes_current_artifacts`
+  because the new active follow-on plan did not cite the Level 9/10 gate matrix.
+  Narrow reproduction with `python .\scripts\readiness_matrix_check.py` returned
+  `active follow-on plan must cite the Level 9/10 gate matrix`.
+- Added an explicit `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 authority note to
+  `plans/2026-06-20-lane1-reconciliation.md`; the narrow readiness matrix checker then
+  passed.
+- Re-run `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed on `325` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- Lane 1 is still not complete: retained implementation has not yet been replayed from
+  clean worktrees, validated, merged, archived, or deferred in-place.
+- Product-focused tests, browser proof, DB smoke, OpenAPI regeneration, CI, and full
+  `.\scripts\verify.ps1` remain future per-slice obligations.
+- Dirty-root state/task/worklog validation claims remain candidate evidence only until
+  rerun against the relevant retained slice.
