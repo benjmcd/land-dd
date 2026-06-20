@@ -137,3 +137,14 @@ lower service/API behavior is proven.
 
 - 2026-06-20: Opened plan from clean worktree `worktrees/res-rec` after generating
   `state/residual-reconciliation.md` against current live main.
+- 2026-06-20: Implemented the first generic supported-AOI slice in clean worktree
+  `worktrees/g9b-aoi`: non-packaged operator areas that match recorded selected-county
+  generic AOI fixture profiles can now use `/operator-cases/supported-aoi/report` to
+  ingest selected-county fixture connector evidence against the existing `area_id`,
+  approve connector-QA handoffs and the final report, and return approved UI/dossier/
+  artifact links. Bare generic `POST /report-runs` remains evidence-consumer-only by
+  default, and arbitrary in-county AOIs still fail closed unless they match a recorded
+  fixture profile.
+- 2026-06-20: Validated the slice with focused OpenAPI/planning-pack contract tests,
+  default `.\scripts\verify.ps1`, and DB-enabled `.\scripts\verify.ps1` against an
+  isolated PostGIS runtime on port `55470`.

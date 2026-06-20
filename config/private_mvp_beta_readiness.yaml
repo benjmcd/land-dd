@@ -285,14 +285,19 @@ private_mvp_beta:
       BRU-jurisdiction; proves /operator-cases/{case_id}/report
       persists approved report/artifact state, selected-county evidence, and
       connector-review handoff rows through SqlAlchemy + real Postgres;
+      test_db_supported_aoi_report_persists_existing_area_fixture proves
+      /operator-cases/supported-aoi/report persists an approved fixture-profile
+      selected-county report/artifact against an existing operator-supplied
+      area_id without accepting a packaged case_id;
       test_db_ui_operator_case_report_persists_selected_county_fixture proves
       the /ui/operator-cases/report launcher redirects to the approved report UI
       and serves the persisted postgres+object_store artifact)
     note: >
       Full AOI-to-approved-dossier DB-backed path proven, plus all nine packaged
       selected-county operator cases proven through the DB-backed
-      /operator-cases/{case_id}/report path and one DB-backed UI launcher proof
-      for /ui/operator-cases/report. The tests exercise SqlAlchemy persistence,
+      /operator-cases/{case_id}/report path, one DB-backed supported-AOI area-ID
+      route proof for /operator-cases/supported-aoi/report, and one DB-backed UI
+      launcher proof for /ui/operator-cases/report. The tests exercise SqlAlchemy persistence,
       the approval gate (pre-approval 409, post-approval 200 for the generic
       dossier path), selected-county persisted evidence/artifacts, approved UI
       delivery links, and DB reload behavior. This does not prove full hosted

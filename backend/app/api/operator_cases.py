@@ -21,11 +21,13 @@ from app.api.reviewer_auth import (
     ReviewerPrincipal,
     require_reviewer_scope,
 )
+from app.domain.enums import IntentCode
 
 router = APIRouter(prefix="/operator-cases", tags=["operator-cases-private-mvp"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
 AuthDep = Annotated[RequestAuthContext, Depends(get_request_auth_context)]
 
+_HTTP_422_UNPROCESSABLE: int = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 _MISSING = object()
 _DEFAULT_REASON = "private_mvp_fixture_only"
 _DEFAULT_FIXTURE_SCOPE = "private_mvp_fixture"
@@ -75,8 +77,26 @@ class OperatorCaseReportCreateRequest(BaseModel):
         return cleaned
 
 
+class SupportedAoiReportCreateRequest(OperatorCaseReportCreateRequest):
+    area_id: UUID
+    intent_code: IntentCode = IntentCode.RURAL_LAND_PURCHASE
+
+
 class OperatorCaseReportResponse(BaseModel):
     case_id: str
+    report_run_id: UUID
+    review_status: str
+    status: str
+    fixture_only: bool = True
+    message: str = _PRIVATE_MVP_MESSAGE
+    evidence_count: int | None = None
+    connector_count: int | None = None
+    links: OperatorCaseReportLinks
+
+
+class SupportedAoiReportResponse(BaseModel):
+    area_id: UUID
+    county: str
     report_run_id: UUID
     review_status: str
     status: str
@@ -92,6 +112,7 @@ class OperatorCasesContract:
     list_selected_county_cases: Callable[[], Sequence[object]]
     get_selected_county_case: Callable[[str], object | None]
     create_selected_county_report: Callable[..., object]
+    create_supported_aoi_report: Callable[..., object]
 
 
 def get_reviewer_principal(
@@ -126,6 +147,10 @@ def resolve_operator_cases_contract() -> OperatorCasesContract:
         create_selected_county_report=_require_callable(
             module,
             "create_selected_county_report",
+        ),
+        create_supported_aoi_report=_require_callable(
+            module,
+            "create_supported_aoi_report",
         ),
     )
 
@@ -184,9 +209,84 @@ def create_selected_county_fixture_report_response(
     )
 
 
+def create_supported_aoi_fixture_report_response(
+    *,
+    services: ApiServices,
+    area_id: UUID,
+    intent_code: IntentCode,
+    reviewer_id: str,
+    reason: str | None = None,
+    workspace_id: UUID | None = None,
+    requested_by: UUID | None = None,
+) -> SupportedAoiReportResponse:
+    contract = resolve_operator_cases_contract()
+    try:
+        created = contract.create_supported_aoi_report(
+            services,
+            area_id=area_id,
+            intent_code=intent_code,
+            reviewer_id=reviewer_id,
+            reason=reason or _DEFAULT_REASON,
+            workspace_id=workspace_id,
+            requested_by=requested_by,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=_HTTP_422_UNPROCESSABLE,
+            detail=str(exc),
+        ) from exc
+
+    report_run_id = _coerce_uuid(
+        _first_present(created, ("report_run_id",)),
+        "report_run_id",
+    )
+    return SupportedAoiReportResponse(
+        area_id=area_id,
+        county=_extract_supported_aoi_county(created),
+        report_run_id=report_run_id,
+        review_status=_stringify(
+            _first_present(created, ("review_status",), default="approved")
+        ),
+        status=_stringify(
+            _first_present(created, ("status",), default="succeeded")
+        ),
+        evidence_count=_extract_evidence_count(created),
+        connector_count=_extract_connector_count(created),
+        links=OperatorCaseReportLinks(
+            ui=f"/ui/report-runs/{report_run_id}",
+            dossier_download=f"/report-runs/{report_run_id}/dossier?download=1",
+            artifact=f"/report-runs/{report_run_id}/artifact",
+        ),
+    )
+
+
 @router.get("", response_model=list[OperatorCaseSummary])
 def list_operator_cases() -> list[OperatorCaseSummary]:
     return list_selected_county_case_summaries()
+
+
+@router.post(
+    "/supported-aoi/report",
+    response_model=SupportedAoiReportResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_supported_aoi_report(
+    body: SupportedAoiReportCreateRequest,
+    services: ServicesDep,
+    auth: AuthDep,
+    principal: Annotated[ReviewerPrincipal, Depends(get_reviewer_principal)],
+) -> SupportedAoiReportResponse:
+    require_reviewer_scope(principal, REVIEWER_SCOPE_REPORT_RUN)
+    reviewer_id = _authenticated_reviewer_id(principal, body)
+    return create_supported_aoi_fixture_report_response(
+        services=services,
+        area_id=body.area_id,
+        intent_code=body.intent_code,
+        reviewer_id=reviewer_id,
+        reason=body.reason,
+        workspace_id=auth.workspace_id,
+        requested_by=auth.user_id,
+    )
 
 
 @router.post(
@@ -299,6 +399,23 @@ def _extract_evidence_count(created: object) -> int | None:
                 "artifact_metadata.cost_metrics.evidence_count",
             )
     return None
+
+
+def _extract_connector_count(created: object) -> int | None:
+    explicit = _field_value(created, "connector_count")
+    if explicit is not _MISSING:
+        return _coerce_optional_int(explicit, "connector_count")
+    return None
+
+
+def _extract_supported_aoi_county(created: object) -> str:
+    profile = _field_value(created, "support_profile")
+    if profile is _MISSING:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="generic AOI report returned no support profile",
+        )
+    return _require_string(_first_present(profile, ("county",)), "county")
 
 
 def _require_callable(module: object, name: str) -> Callable[..., object]:

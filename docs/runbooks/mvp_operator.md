@@ -146,14 +146,16 @@ Use these placeholders consistently in curl examples:
 
 | Placeholder | Meaning | Where it comes from |
 |---|---|---|
-| `{area_id}` | Area of interest ID | Returned by `POST /areas` or `POST /intake`; pass this to generic `POST /report-runs` |
-| `{report_run_id}` | Report/job ID | Returned by `POST /report-runs`, `POST /intake`, or `/operator-cases/{case_id}/report`; use it for poll/approve/dossier/artifact routes |
+| `{area_id}` | Area of interest ID | Returned by `POST /areas` or `POST /intake`; pass this to generic `POST /report-runs` or the fixture-profile scoped `/operator-cases/supported-aoi/report` route |
+| `{report_run_id}` | Report/job ID | Returned by `POST /report-runs`, `POST /intake`, `/operator-cases/{case_id}/report`, or `/operator-cases/supported-aoi/report`; use it for poll/approve/dossier/artifact routes |
 | `{case_id}` | Packaged selected-county fixture case slug (not an AOI UUID) | Returned by `GET /operator-cases`; only `/operator-cases/{case_id}/report` accepts it |
 | `{ingest_run_id}` | Connector evidence/review run ID | Returned by connector-run routes and connector review queue payloads; use it for evidence lineage and review, not dossier delivery |
 
 Mnemonic: `{case_id}` selects the packaged selected-county corpus, `{area_id}`
 identifies the stored AOI record, `{report_run_id}` identifies the report job created
-from either input, and `{ingest_run_id}` identifies connector evidence.
+from either input, and `{ingest_run_id}` identifies connector evidence. The
+`/operator-cases/supported-aoi/report` route uses `{area_id}` and fixture-profile
+matching; it does not accept a packaged `{case_id}`.
 
 ### Approve a report run
 
@@ -315,6 +317,27 @@ The response includes:
 - `links.dossier_download`: approved Markdown dossier download
 - `links.artifact`: approved machine-readable report JSON
 
+For an existing operator-supplied AOI that matches one of the recorded selected-county
+generic AOI fixture profiles, use the area-ID route instead of a packaged case slug:
+
+```bash
+curl -s -X POST http://localhost:8000/operator-cases/supported-aoi/report \
+  -H 'Content-Type: application/json' \
+  -H 'X-Workspace-Id: {workspace_id}' \
+  -H 'X-User-Id: {user_id}' \
+  -H 'X-Reviewer-Id: {reviewer_id}' \
+  -H 'X-Reviewer-Token: {reviewer_token}' \
+  -d '{"area_id": "{area_id}", "intent_code": "rural_land_purchase"}'
+```
+
+This route classifies selected-county scope from the stored AOI geometry, requires a
+recorded fixture-profile geometry match, ingests the matching selected-county fixture
+connectors against the existing `area_id`, approves eligible connector-QA handoffs, and
+returns an approved report plus the same UI/dossier/artifact links. It fails closed for
+AOIs outside Buncombe/Chatham/Brunswick and for in-county geometries that do not match a
+recorded generic AOI fixture profile. It is not live county coverage and is not a
+general arbitrary-AOI source run.
+
 In the web UI, open `http://localhost:8000/ui/` and use the
 **Selected-County Private MVP Fixture Cases** table. The selected-county forms require a
 reviewer session or submitted reviewer credentials with `report:run`. They also accept
@@ -348,9 +371,10 @@ investment conclusions.
 
 Do not confuse this route with the generic `POST /report-runs` path. In default fixture
 mode, generic report creation does not load the packaged selected-county connector
-fixtures; use `/operator-cases/{case_id}/report` for the packaged selected-county
-HTTP/UI path, or use `scripts/generate_dossier.py --connector all --approve` when no
-server is running.
+fixtures; use `/operator-cases/{case_id}/report` for packaged selected-county cases,
+`/operator-cases/supported-aoi/report` for an existing area that matches a recorded
+generic AOI fixture profile, or use `scripts/generate_dossier.py --connector all
+--approve` when no server is running.
 
 ## Operator Path Proof Matrix
 
@@ -360,6 +384,7 @@ Use this matrix to pick the right path and avoid treating one proof as another.
 |---|---|---|---|
 | `scripts/generate_dossier.py --connector all --approve --artifact` | Fast no-server selected-county dossier and JSON artifact | County golden fixture evidence, approved-report state, source/caveat/unknown rendering, API-compatible in-memory artifact contract shape | HTTP routing, DB persistence, UI usability, live-source coverage |
 | `POST /operator-cases/{case_id}/report` | Server/API selected-county fixture dossier | App-owned packaged selected-county corpus, local fixture ingestion, connector-QA approval handoff, approved report download/artifact links | Live county coverage, DS-017 readiness, generic `/report-runs` fixture ingestion |
+| `POST /operator-cases/supported-aoi/report` | Existing `area_id` matched to a recorded generic AOI fixture profile | Non-packaged AOI submission path, selected-county fixture evidence against the existing area, connector-QA approval handoff, approved report download/artifact links | Arbitrary in-county AOIs, live county coverage, default `/report-runs` fixture ingestion |
 | `/ui/` selected-county launcher | Browser operator flow for packaged cases | No-JavaScript UI launch into the same `/operator-cases` path and existing approved report pages | Full dashboard polish, user accounts/RBAC, live-source production operation |
 | Generic `POST /report-runs` | Custom AOI report run from an existing `area_id` plus already-ingested state | Report job lifecycle, approval gate, artifact/dossier route contracts | Selected-county fixture ingestion in default mode; use `/operator-cases` for packaged cases |
 | DB-backed verification with `RUN_DB_SMOKE=1` | Persistence proof | Migrations/seeds, DB service wiring, persisted report/artifact behavior for the generic full reviewed dossier path, all nine packaged selected-county operator cases, and the selected-county UI launcher | No-server CLI behavior, hosted deployment, live-source production coverage, external identity/secrets |
@@ -368,9 +393,10 @@ Use this matrix to pick the right path and avoid treating one proof as another.
 DB-backed verification includes the generic full reviewed dossier path in
 `backend/tests/api/test_report_runs_db.py` plus all nine packaged selected-county operator DB smoke cases
 in `backend/tests/api/test_operator_cases_db.py`. The same DB smoke file also covers
-the `/ui/operator-cases/report` launcher for one representative selected-county case,
-including redirect to the approved report page, approved UI delivery links, and persisted
-JSON artifact delivery.
+the `/operator-cases/supported-aoi/report` area-ID route for one recorded generic AOI
+fixture profile and the `/ui/operator-cases/report` launcher for one representative
+selected-county case, including redirect to the approved report page, approved UI delivery links,
+and persisted JSON artifact delivery.
 It does not prove full hosted production, live-source production coverage, or counties
 outside the selected private-MVP set.
 
@@ -380,9 +406,10 @@ outside the selected private-MVP set.
 |---|---|---|---|---|---|
 | `scripts/generate_dossier.py --connector all --approve --artifact` | High selected-county fixture evidence plus final dossier/artifact shape | `--approve` calls the same approval service method as the HTTP path; no reviewer HTTP hop | No | No | No HTTP routing, UI, or DB persistence proof |
 | `POST /operator-cases/{case_id}/report` | High selected-county fixture evidence through the app-owned packaged corpus | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-only packaged cases, not live county fetches |
+| `POST /operator-cases/supported-aoi/report` | High selected-county fixture evidence for a stored AOI that matches a recorded generic AOI fixture profile | Yes; use returned dossier/artifact links as the routed app proof | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | Fixture-profile scoped existing AOIs only; not arbitrary in-county live coverage |
 | `/ui/` selected-county launcher | High selected-county fixture evidence plus no-JavaScript operator UX | Yes; same approved-report and dossier gates as `/operator-cases` | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | No | UI usability for packaged cases only; not full accounts/RBAC |
 | Generic `POST /report-runs` | Low by default; strongest as a code-level integration pattern over an existing `{area_id}` plus whatever evidence is already ingested/reviewed | Yes | No for default local/in-memory smoke; add `RUN_DB_SMOKE=1` separately for persistence proof | Only when you intentionally enable live connector ingestion; otherwise no | This is not the packaged selected-county corpus path and does not auto-load selected-county fixtures in default mode |
-| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path, all nine packaged selected-county operator DB smoke cases, and one selected-county UI launcher DB smoke |
+| DB-backed verification with `RUN_DB_SMOKE=1` | Same evidence as the exercised path plus persisted artifact metadata | Same as the exercised path | Yes | No by itself | Persistence proof only for the exercised generic dossier path, one supported-AOI area-ID route, all nine packaged selected-county operator DB smoke cases, and one selected-county UI launcher DB smoke |
 | Live connector queue paths | Connector-dependent live evidence | Connector review queue applies where implemented | Optional, depending on runtime | Yes | Only implemented live connectors; no packaged selected-county parity |
 
 ---

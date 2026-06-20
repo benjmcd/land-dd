@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Generic supported-AOI evidence-rich workflow G9b
+
+- Started clean worktree `worktrees/g9b-aoi` on `codex/g9b-aoi` from live
+  `origin/main` at `a1eb7df00ca6d05b6f6c47a88ff65b653d4f19db`; confirmed the root
+  checkout remains the dirty preserved-candidate branch and no local/remote branch,
+  worktree, or open PR collision existed.
+- Audited `/intake`, `/report-runs`, report service evidence filtering, selected-county
+  operator-case fixture orchestration, live connector county classification, artifact,
+  and lineage boundaries. Repo-confirmed gap: bare generic report creation consumes
+  already-ingested evidence and does not auto-load selected-county fixtures in default
+  mode.
+- Added red/green service tests for one non-packaged stored AOI per selected county,
+  then factored `app.operator_cases` so generic supported AOIs can ingest selected-county
+  fixture connector evidence against an existing `area_id` without accepting a packaged
+  `case_id`. Unsupported outside-scope and unprofiled in-county AOIs fail closed.
+- Added `/operator-cases/supported-aoi/report` for reviewer-authorized private-MVP
+  operator use. The route preserves workspace/user/reviewer provenance, connector-QA
+  approval, report approval, artifact, and lineage compatibility while leaving bare
+  `POST /report-runs` evidence-consumer-only by default.
+- Updated the operator runbook, private-MVP readiness catalog, Level 9 gate matrix, and
+  active plan/state to document the new fixture-profile scoped supported-AOI proof and
+  its limits. Boundaries remain: no arbitrary live county coverage, no new sources,
+  no DS-017, no hosted production proof, no Bologna, and no Level 10 completion claim.
+- Regenerated OpenAPI stubs and validated the slice with focused OpenAPI contract tests,
+  default `.\scripts\verify.ps1`, and DB-enabled `.\scripts\verify.ps1` against isolated
+  PostGIS on port `55470`.
+
 ## 2026-06-20 Residual reconciliation REC-002 and G9b routing
 
 - Started clean worktree `worktrees/res-rec` on `codex/res-rec` from live
