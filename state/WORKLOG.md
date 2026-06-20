@@ -2,6 +2,36 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Source-provenance UI G5
+
+- Started narrow `G5` from `plans/2026-06-20-source-provenance-ui-g5.md` in clean
+  worktree `worktrees/prov-next` after confirming live `origin/main` at
+  `28a4d811355bb54727e6db944ddb913af56dfde1`, no active agent-inbox ownership
+  collision, and the root checkout was a dirty preserved-candidate branch rather than
+  live implementation authority.
+- Audited reconciliation dispositions, selected-county provenance catalog,
+  Must-source readiness, private-MVP readiness, county source manifests, and the
+  deployment-readiness UI pattern. The retained scope is one read-only
+  `/ui/source-provenance` route over checked source-provenance/source-readiness
+  artifacts; runtime provenance seeding, connector execution, source expansion, DS-017
+  approval, Bologna, hosted source authority, and Level 10 claims remain out of scope.
+- Added an intentional red focused test proving `app.source_provenance` was absent,
+  then added a packaged parser that validates request-critical catalog/registry
+  invariants and fails closed on DS-017 catalog drift, selected-county source key drift,
+  expectation enum drift, manifest path drift, connector mismatch, out-of-scope drift,
+  source-readiness blocker drift, and read-error path leakage.
+- Added the GET-only source-provenance page with home/raw-data/deployment-readiness
+  navigation links and explicit copy that it does not run connectors, seed runtime
+  provenance, relabel fixture evidence as live data, approve DS-017, expand county
+  coverage, start Bologna, or prove hosted source authority.
+- Final verification: baseline workspace, Must-source readiness, and private-MVP
+  readiness checks passed; focused source-provenance tests passed (`6 passed`);
+  focused ruff and mypy passed; OpenAPI stubs were regenerated and OpenAPI parity tests
+  passed (`2 passed`); source-readiness, private-MVP, release-readiness, and
+  readiness-matrix validators passed; diff/no-deletion and workspace checks passed;
+  final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `332`
+  source files. DB smoke was skipped by default.
+
 ## 2026-06-20 Deployment-readiness UI G3
 
 - Started narrow `G3` from `plans/2026-06-20-deployment-readiness-ui-g3.md` in clean
