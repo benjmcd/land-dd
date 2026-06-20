@@ -1,15 +1,62 @@
 # Project State
 
-## Current checkpoint (2026-06-20 source-provenance UI G5)
+## Current checkpoint (2026-06-20 security guardrails UI G6a)
 
-The active implementation authority is the narrow `G5` source-provenance UI slice from
-`plans/2026-06-20-source-provenance-ui-g5.md`. This follows the merged `G3`
+The active implementation authority is now the narrow `G6a` security/access-control
+guardrails slice from `plans/2026-06-20-security-guardrails-ui-g6a.md`. This follows
+the merged `G5` source-provenance UI slice from PR #96 at
+`e27dc88e470d8fa861af8194bf330d98e9f164c1`. The dirty root checkout remains preserved
+candidate evidence only; continued work should happen from fresh or already-clean
+worktrees under `worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-security-guardrails-ui-g6a.md`.
+- **Purpose**: reconstruct the first retained `G6` local guardrail/auth-hardening
+  surface from live `origin/main`, focused on existing access-control and security
+  posture authority, before operations/performance guardrails or `G8` local
+  observability readiness.
+- **Implemented scope so far**: `backend/app/security_guardrails.py` now parses the
+  repo-owned access-control catalog, validates current-control, production-blocker,
+  secret-management, identity/RBAC, route-scope, authority-path, and validate-only
+  limit invariants, and fails closed on drift. `/ui/security-guardrails` renders a
+  GET-only local operator view over those checked artifacts and links from the current
+  local UI authority pages. OpenAPI stubs were regenerated for the new FastAPI UI route.
+- **Current local validation**: live `origin/main` was fetched and the clean
+  `codex/guard-next` worktree was confirmed at
+  `e27dc88e470d8fa861af8194bf330d98e9f164c1`, matching `origin/main`. Before edits,
+  `py -3.12 .\scripts\source_readiness.py --priority Must --json` preserved
+  `8` Must sources, `7` ready, and `1` blocked source, with DS-017 as the blocked
+  source. `py -3.12 .\scripts\hosted_deployment_check.py`,
+  `py -3.12 .\scripts\access_control_check.py`,
+  `py -3.12 .\scripts\readiness_matrix_check.py`, and
+  `py -3.12 .\scripts\private_mvp_readiness_check.py` passed before this routing
+  update. Focused G6a tests first failed on the missing `app.security_guardrails`
+  module, then passed after implementation (`7 passed`). Focused security/access-control
+  tests passed (`20 passed`), OpenAPI parity passed (`2 passed`), focused ruff and mypy
+  passed, access-control, release-readiness, readiness-matrix, and Must-source readiness
+  validators passed, diff/no-deletion checks passed with only existing OpenAPI
+  line-ending normalization warnings, `.\scripts\validate_workspace.ps1` passed, and
+  final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `334`
+  source files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no OAuth/OIDC, user accounts, org/user RBAC,
+  tenant provisioning, entitlement enforcement, secret-manager integration, automatic
+  key rotation, hosted log retention, SIEM integration, connector execution, runtime
+  provenance creation, evidence row creation, report creation, source registry
+  mutation, DS-017 approval, paid/vendor source decision, source or county expansion,
+  generic AOI proof, Bologna pilot, jurisdiction/rulepack approval, DB schema change,
+  public JSON API behavior change, report-semantics change, hosted deployment, hosted
+  source authority, hosted observability, or Level 10 completion claim.
+- **Next required step**: publish the focused `codex/guard-next` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` before selecting
+  the next retained G6 operations/performance guardrail or G8 local observability slice.
+
+## Previous checkpoint (2026-06-20 source-provenance UI G5)
+
+The implementation authority for `G5` source-provenance UI was
+`plans/2026-06-20-source-provenance-ui-g5.md`. It followed the merged `G3`
 deployment-readiness UI slice from PR #94 at
-`28a4d811355bb54727e6db944ddb913af56dfde1`. The dirty root checkout remains preserved
-candidate evidence only; this slice was opened from live `origin/main` in
-`worktrees/prov-next`.
+`28a4d811355bb54727e6db944ddb913af56dfde1` and merged through PR #96 at
+`e27dc88e470d8fa861af8194bf330d98e9f164c1`.
 
-- **Active plan**: `plans/2026-06-20-source-provenance-ui-g5.md`.
 - **Purpose**: expose the selected-county source-provenance catalog and current
   Must-source readiness records through a local read-only `/ui/source-provenance` page
   that fails closed on catalog/registry drift and keeps DS-017/source authority blockers
@@ -41,9 +88,10 @@ candidate evidence only; this slice was opened from live `origin/main` in
   change, no public JSON API behavior change, no report-semantics change, no auth/RBAC
   change, no hosted deployment, no hosted source authority, and no Level 10 completion
   claim.
-- **Next required step**: publish the focused `codex/prov-next` PR, wait for CI, merge
-  only if local and CI proof agree, then re-check live `origin/main` and remove
-  `worktrees/prov-next`.
+- **Post-merge status**: PR #96 is merged on `origin/main` at
+  `e27dc88e470d8fa861af8194bf330d98e9f164c1`; `worktrees/prov-next` was already
+  removed after post-merge proof. The next retained slice is the narrow `G6a`
+  security/access-control guardrails surface.
 
 ## Previous checkpoint (2026-06-20 deployment-readiness UI G3)
 

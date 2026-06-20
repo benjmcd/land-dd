@@ -3930,3 +3930,51 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   `state/VALIDATION_LOG.md`, `docs/runbooks/mvp_operator.md`, and this worklog to route
   G2 without adding later readiness/provenance/guardrail/hosted/identity or Level 10
   claims.
+
+## 2026-06-20 Post-G5 security guardrails routing
+
+- Continued from clean `worktrees/guard-next` on `codex/guard-next` after fetching live
+  `origin/main`; local `HEAD` and `origin/main` both pointed at
+  `e27dc88e470d8fa861af8194bf330d98e9f164c1`, the PR #96 merge commit for the
+  source-provenance UI slice.
+- Confirmed the root checkout remains preserved candidate evidence only and that
+  `worktrees/prov-next` is no longer present.
+- Corrected post-G5 state routing: `plans/README.md` and `tasks/task_queue.yaml` now
+  mark `plans/2026-06-20-source-provenance-ui-g5.md` as the latest completed plan and
+  route the active plan to `plans/2026-06-20-security-guardrails-ui-g6a.md`.
+- Added the executable `G6a` plan for the first isolated security/access-control
+  guardrails surface. The plan explicitly keeps OAuth/OIDC, user accounts, full RBAC,
+  tenant entitlement, secret-manager integration, hosted log retention, DS-017, hosted
+  deployment, hosted observability, generic AOI, Bologna, and Level 10 completion out
+  of scope.
+- Updated `state/PROJECT_STATE.md` so the current checkpoint no longer treats G5 as
+  unpublished active work and instead records G6a as a routing-only next slice.
+- Revalidated the state-only routing change with readiness, release, access-control,
+  source-readiness, workspace, and full verification gates. No product code, schema,
+  API behavior, auth semantics, source registry rows, report semantics, or generated
+  OpenAPI files changed.
+
+## 2026-06-20 Security/access-control guardrails UI G6a
+
+- Continued from the post-G5 routing update in clean `worktrees/guard-next` and kept
+  the dirty root as candidate evidence only.
+- Added focused tests for `app.security_guardrails` and `/ui/security-guardrails`.
+  The first run failed as expected because `app.security_guardrails` did not exist.
+- Implemented `backend/app/security_guardrails.py` as a read-only parser over
+  `config/access_control.yaml`. The parser validates the catalog schema, required
+  local controls, hosted production blockers, secret-management contract, identity/RBAC
+  contract, route scopes, authority paths, and false validate-only limits before the UI
+  can render.
+- Added the GET-only `/ui/security-guardrails` local operator page and current UI
+  navigation links from home, raw-data inventory, deployment readiness, and source
+  provenance pages.
+- Regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml` for the new route and updated `MANIFEST.md`
+  to route access-control work to the new helper.
+- Preserved the existing boundaries: no auth semantic changes, no default local
+  no-auth regression, no OAuth/OIDC, no user accounts, no full RBAC, no hosted identity,
+  no secret writes, no hosted secret-manager provisioning, no DS-017 approval, no source
+  expansion, no hosted deployment, and no Level 10 production claim.
+- Focused G6a tests, OpenAPI parity, ruff, mypy, access-control, release-readiness,
+  readiness-matrix, Must-source readiness, workspace validation, and full verification
+  passed. DB smoke was skipped by default.
