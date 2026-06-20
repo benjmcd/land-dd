@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-source-provenance-ui-g5.md
+active_plan: plans/2026-06-20-security-guardrails-ui-g6a.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -8,11 +8,12 @@ routing_note: >
   posture merged through PR #90. G1b raw-data inventory UI merged through PR #91, G3b
   selected-county source-provenance catalog merged through PR #92, and G2
   runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
-  through PR #94. Active lane: narrow G5 source-provenance UI over the selected-county
-  provenance catalog and Must-source readiness records. This slice does not run
-  connectors, seed runtime provenance, relabel fixture evidence as live data, approve
-  DS-017, expand selected geography/source coverage, start Bologna, or add hosted
-  source/identity/RBAC authority.
+  through PR #94, and G5 source-provenance UI merged through PR #96. Active lane:
+  narrow G6a security/access-control guardrails over existing repo-local authority
+  files. This slice must not change auth semantics, run connectors, seed runtime
+  provenance, relabel fixture evidence as live data, approve DS-017, expand selected
+  geography/source coverage, start Bologna, or add hosted source/identity/RBAC
+  authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -875,7 +876,7 @@ tasks:
 
   - id: G5
     title: Source-provenance UI
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3]
     lane: coordinator
     spec: plans/2026-06-20-source-provenance-ui-g5.md
@@ -901,6 +902,35 @@ tasks:
       - DS-017 remains visible as the only blocked Must source and remains outside private-MVP proof
       - Catalog drift fails closed with 503 instead of unchecked source authority rendering
       - No connector execution, runtime provenance seeding, fixture relabeling, source expansion, Bologna work, hosted source authority, or Level 10 claim is introduced
+
+  - id: G6a
+    title: Security/access-control guardrails UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5]
+    lane: coordinator
+    spec: plans/2026-06-20-security-guardrails-ui-g6a.md
+    notes: >
+      Add the first isolated G6 guardrail surface over existing repo-local
+      access-control and security posture artifacts. This is a read-only local
+      operator visibility slice, not hosted identity/RBAC, tenant safety, source
+      entitlement, DS-017, hosted observability, or production authority work.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_security_guardrails.py .\tests\test_access_control_artifacts.py
+      - cd backend; ruff check .\app\security_guardrails.py .\app\api\ui.py .\tests\api\test_ui_security_guardrails.py ..\scripts\access_control_check.py
+      - cd backend; py -3.12 -m mypy .\app\security_guardrails.py .\app\api\ui.py .\tests\api\test_ui_security_guardrails.py ..\scripts\access_control_check.py
+      - py -3.12 .\scripts\access_control_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - `/ui/security-guardrails` renders checked local access-control and security posture evidence without mutating state
+      - Hosted identity/RBAC, tenant entitlement, key rotation, secret-manager, hosted log retention, and SIEM blockers remain explicit
+      - Artifact/config drift fails closed instead of unchecked security authority rendering
+      - Default local no-auth and protected-route mounting behavior from G1a/G2 does not regress
+      - No OAuth/OIDC, user accounts, DB schema, source registry, connector, report, DS-017, hosted deployment, or Level 10 behavior changes
 
   # --- Completed ---
   - id: T000

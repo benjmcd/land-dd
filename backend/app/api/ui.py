@@ -60,6 +60,11 @@ from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
+from app.security_guardrails import (
+    SecurityGuardrailsError,
+    SecurityGuardrailsReadiness,
+    load_security_guardrails,
+)
 from app.source_provenance import (
     SourceProvenanceError,
     SourceProvenanceReadiness,
@@ -75,6 +80,11 @@ _SOURCE_PROVENANCE_BOUNDARY = (
     "does not relabel fixture evidence as live data, does not approve DS-017, "
     "does not expand county coverage, does not start Bologna, and does not prove "
     "hosted source authority."
+)
+_SECURITY_GUARDRAILS_BOUNDARY = (
+    "does not add OAuth/OIDC, does not create user accounts, does not claim hosted "
+    "identity/RBAC, does not approve DS-017, does not write secrets, and does not "
+    "provision a hosted secret manager."
 )
 
 router = APIRouter(prefix="/ui", tags=["ui"])
@@ -874,6 +884,7 @@ def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
       <a href="/ui/">Home</a>
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -926,6 +937,173 @@ def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
 </html>"""
 
 
+def _security_controls_table(readiness: SecurityGuardrailsReadiness) -> str:
+    rows = []
+    for control in readiness.controls:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(control.control_id)}</code></td>"
+            f"<td>{_html.escape(control.status)}</td>"
+            f"<td><code>{_html.escape(control.validation)}</code></td>"
+            f"<td>{_provenance_inline_list(control.authority)}</td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="security-table">
+      <thead>
+        <tr>
+          <th>Control</th>
+          <th>Status</th>
+          <th>Validation</th>
+          <th>Authority</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _security_blocker_table(readiness: SecurityGuardrailsReadiness) -> str:
+    rows = []
+    for blocker in readiness.production_blockers:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(blocker.blocker_id)}</code></td>"
+            f"<td>{_html.escape(blocker.status)}</td>"
+            f"<td><code>{_html.escape(blocker.authority)}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="security-table">
+      <thead>
+        <tr>
+          <th>Blocker</th>
+          <th>Status</th>
+          <th>Authority</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _security_guardrails_page(readiness: SecurityGuardrailsReadiness) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Security Guardrails</title>
+<style>
+{_INDEX_CSS}
+.security-shell .console-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+.security-card {{ display: grid; gap: 0.75rem; }}
+.security-card h2 {{ margin-bottom: 0.25rem; }}
+.security-table {{ border-collapse: collapse; min-width: 720px; width: 100%; }}
+.security-table th, .security-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.security-table th {{ background: var(--soft); }}
+.security-boundary {{ margin-top: 1rem; }}
+@media (max-width: 1080px) {{
+  .security-shell .console-grid {{ grid-template-columns: 1fr; }}
+}}
+@media (max-width: 640px) {{
+  .security-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Security Guardrails</h1>
+      <span>Local access-control and hosted-identity boundary view</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell security-shell">
+  <div class="status-strip" aria-label="Security guardrails summary">
+    <div class="status-item">
+      <strong>Access-control catalog</strong>
+      <span>{_html.escape(readiness.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Current controls</strong>
+      <span>{len(readiness.controls)} checked controls</span>
+    </div>
+    <div class="status-item">
+      <strong>Production blockers</strong>
+      <span>{len(readiness.production_blockers)} blockers remain active</span>
+    </div>
+    <div class="status-item">
+      <strong>Identity/RBAC status</strong>
+      <span>{_html.escape(readiness.hosted_identity_provider_status)}</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel security-card" aria-labelledby="security-controls-title">
+      <div>
+        <h2 id="security-controls-title">Current Local Controls</h2>
+        <p>Repo-local controls and validation authority from the access-control catalog.</p>
+      </div>
+      <div class="table-wrap">{_security_controls_table(readiness)}</div>
+    </section>
+    <section class="panel security-card" aria-labelledby="security-blockers-title">
+      <div>
+        <h2 id="security-blockers-title">Hosted Production Blockers</h2>
+        <p>Blocked authority that must stay separate from local API-key/reviewer proof.</p>
+      </div>
+      <div class="table-wrap">{_security_blocker_table(readiness)}</div>
+    </section>
+    <section class="panel security-card" aria-labelledby="secret-contract-title">
+      <div>
+        <h2 id="secret-contract-title">Secret Management Contract</h2>
+        <p>Status: <code>{_html.escape(readiness.secret_management_status)}</code>;
+        hosted secret manager:
+        <code>{_html.escape(readiness.hosted_secret_manager_status)}</code>.</p>
+      </div>
+      <h2>Required runtime refs</h2>
+      {_deployment_list(readiness.secret_runtime_refs)}
+      <h2>Handoff requirements</h2>
+      {_deployment_list(readiness.secret_handoff_requirements)}
+      <div class="table-wrap">{_deployment_limits_table(readiness.secret_limits)}</div>
+    </section>
+    <section class="panel security-card" aria-labelledby="identity-contract-title">
+      <div>
+        <h2 id="identity-contract-title">Identity/RBAC Handoff Contract</h2>
+        <p>Status: <code>{_html.escape(readiness.identity_contract_status)}</code>;
+        hosted IdP: <code>{_html.escape(readiness.hosted_identity_provider_status)}</code>;
+        user persistence: <code>{_html.escape(readiness.user_account_persistence_status)}</code>;
+        role policy: <code>{_html.escape(readiness.full_role_policy_status)}</code>.</p>
+      </div>
+      <h2>Role mappings</h2>
+      {_deployment_list(readiness.identity_role_ids)}
+      <h2>Route scopes</h2>
+      {_deployment_list(readiness.route_scopes)}
+      <div class="table-wrap">{_deployment_limits_table(readiness.identity_limits)}</div>
+    </section>
+  </main>
+  <div class="note security-boundary">
+    <strong>Security guardrails boundary.</strong> This page is read-only local
+    visibility over repo-owned access-control artifacts. It
+    {_html.escape(_SECURITY_GUARDRAILS_BOUNDARY)}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     package = readiness.package
     image = readiness.image
@@ -967,6 +1145,7 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
       <a href="/ui/">Home</a>
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1081,6 +1260,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
       <a href="/ui/raw-data">Raw data inventory</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -1204,6 +1384,25 @@ def ui_source_provenance() -> str | HTMLResponse:
             css=_INDEX_CSS,
         )
     return _source_provenance_page(readiness)
+
+
+@router.get(
+    "/security-guardrails",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_security_guardrails() -> str | HTMLResponse:
+    try:
+        readiness = load_security_guardrails()
+    except SecurityGuardrailsError as exc:
+        return error_page(
+            "Security Guardrails Unavailable",
+            f"Security guardrails unavailable from repo-owned artifacts: {exc}",
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _security_guardrails_page(readiness)
 
 
 @router.get(
@@ -1336,6 +1535,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
       <a href="/ui/">Home</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>

@@ -12598,3 +12598,114 @@ git diff --name-only --diff-filter=D
 - This slice proves local and DB-backed selected-county smoke paths, not hosted SLOs,
   hosted identity/RBAC, source-rights approval, DS-017 approval, or arbitrary-geography
   readiness.
+
+---
+
+## 2026-06-20 - Post-G5 Security Guardrails Routing
+
+**Scope:** Correct live authority routing after PR #96 merged G5 source-provenance UI,
+open the next narrow `G6a` security/access-control guardrails plan, and keep this pass
+state-only. No product code, generated OpenAPI, DB schema, auth semantics, source
+registry, connector, report, DS-017, hosted identity/RBAC, hosted deployment, hosted
+observability, generic AOI, Bologna, or Level 10 behavior changed.
+
+**Commands/checks run:**
+
+```powershell
+git fetch origin main
+git status --short --branch
+git rev-parse HEAD
+git rev-parse origin/main
+git -C .. worktree list
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\access_control_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Clean `worktrees/guard-next` was on `codex/guard-next`; local `HEAD` and
+  `origin/main` both resolved to `e27dc88e470d8fa861af8194bf330d98e9f164c1`.
+- Readiness-matrix, release-readiness, and access-control validators passed.
+- Must-source readiness preserved `8` Must sources, `7` ready, and `1` blocked source;
+  DS-017 remained the blocked Must source.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed: agent context check, JSON check, source
+  registry check, structural invariants, and workspace validation were all `ok`.
+- Full `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `332` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- G6a is only planned and routed. The security guardrails helper, route, OpenAPI update,
+  and focused tests still need to be implemented test-first.
+- This pass does not prove hosted identity/RBAC, tenant safety, DS-017 entitlement,
+  hosted deployment, hosted observability, generic supported-AOI behavior, Bologna, or
+  multi-geography framework readiness.
+
+---
+
+## 2026-06-20 - Security/Access-Control Guardrails UI G6a
+
+**Scope:** Implement the first isolated G6 guardrail surface: a read-only
+`/ui/security-guardrails` page over existing access-control/security authority files.
+The slice does not change auth semantics, mount protected routes differently, write
+secrets, provision hosted secret-manager state, add OAuth/OIDC, add user accounts, add
+full RBAC, approve DS-017, change source/report/API semantics, deploy hosted
+infrastructure, prove hosted observability, or claim Level 10 completion.
+
+**Commands/checks run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_security_guardrails.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_security_guardrails.py .\tests\test_access_control_artifacts.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+cd backend; ruff check .\app\security_guardrails.py .\app\api\ui.py .\tests\api\test_ui_security_guardrails.py ..\scripts\access_control_check.py
+cd backend; py -3.12 -m mypy .\app\security_guardrails.py .\app\api\ui.py .\tests\api\test_ui_security_guardrails.py ..\scripts\access_control_check.py
+py -3.12 .\scripts\access_control_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused pytest failed during collection with
+  `ModuleNotFoundError: No module named 'app.security_guardrails'`, confirming the
+  expected red state before implementation.
+- Focused G6a route/parser tests passed after implementation (`7 passed`).
+- Focused G6a plus access-control artifact tests passed (`20 passed`).
+- OpenAPI runtime/planning-pack parity tests passed (`2 passed`) after regenerating
+  `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml`.
+- Focused ruff passed after fixing one long HTML source line.
+- Focused mypy passed for the new helper, UI route, focused test, and access-control
+  checker.
+- Access-control, release-readiness, and readiness-matrix validators passed.
+- Must-source readiness preserved `8` Must sources, `7` ready, and `1` blocked source;
+  DS-017 remained the blocked Must source.
+- `git diff --check` passed with only existing OpenAPI CRLF normalization warnings.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `334` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- This is local read-only guardrail visibility, not hosted identity/RBAC, tenant
+  entitlement enforcement, secret-manager integration, hosted log retention, SIEM,
+  DS-017 entitlement, hosted deployment, or Level 10 security completion.
+- G6 operations/performance guardrail surfaces and G8 observability readiness remain
+  future retained slices.
