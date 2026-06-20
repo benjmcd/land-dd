@@ -58,6 +58,56 @@ def _csrf_token_from(html: str) -> str:
     return match.group(1)
 
 
+@pytest.mark.parametrize("app_env", ["local", "dev", "development", "test"])
+def test_local_no_auth_ui_auth_routes_are_not_mounted(app_env: str) -> None:
+    app = create_app(Settings(APP_ENV=app_env, REQUIRE_API_KEY=False))
+    client = TestClient(app)
+    paths = (
+        "/ui/auth",
+        "/ui/auth/logout",
+        "/ui/auth/reviewer",
+        "/ui/auth/identity",
+    )
+
+    for path in paths:
+        response = client.get(path)
+        assert response.status_code == 404, path
+        assert 'name="api_key"' not in response.text
+        assert 'name="reviewer_id"' not in response.text
+        assert 'name="reviewer_token"' not in response.text
+        assert 'name="report_identity_token"' not in response.text
+
+    openapi_paths = app.openapi()["paths"]
+    for path in paths:
+        assert path not in openapi_paths
+
+
+def test_local_protected_mode_still_mounts_ui_auth_route() -> None:
+    app = create_app(Settings(REQUIRE_API_KEY=True, API_KEYS="production-key"))
+    client = TestClient(app)
+
+    response = client.get("/ui/auth")
+
+    assert response.status_code == 200
+    assert 'name="api_key"' in response.text
+    assert "/ui/auth" in app.openapi()["paths"]
+
+
+def test_local_no_auth_ui_pages_do_not_link_unmounted_auth_routes() -> None:
+    app = create_app(Settings(REQUIRE_API_KEY=False))
+    client = TestClient(app)
+
+    home = client.get("/ui/")
+    operations = client.get("/ui/operations")
+
+    assert home.status_code == 200
+    assert operations.status_code == 200
+    for response in (home, operations):
+        assert "/ui/auth" not in response.text
+        assert "Sign in reviewer session" not in response.text
+        assert "Start workspace identity session" not in response.text
+
+
 def test_ui_auth_form_is_public_and_does_not_expose_configured_secret() -> None:
     client = _client()
 
@@ -164,17 +214,26 @@ def test_ui_auth_cookie_enables_ui_when_api_key_required() -> None:
 def test_ui_reviewer_auth_sets_bound_session_cookie_without_exposing_token() -> None:
     app = create_app(
         Settings(
-            REQUIRE_API_KEY=False,
+            REQUIRE_API_KEY=True,
+            API_KEYS="production-key",
             UI_AUTH_COOKIE_SECRET="stable-ui-cookie-secret",
         )
     )
     client = TestClient(app)
+    assert client.post(
+        "/ui/auth",
+        data={"api_key": "production-key"},
+        follow_redirects=False,
+    ).status_code == 303
+    reviewer_form = client.get("/ui/auth/reviewer")
+    assert reviewer_form.status_code == 200
 
     login = client.post(
         "/ui/auth/reviewer",
         data={
             "reviewer_id": _FIXTURE_REVIEWER_ID,
             "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
+            CSRF_FIELD: _csrf_token_from(reviewer_form.text),
         },
         follow_redirects=False,
     )
@@ -306,18 +365,23 @@ def test_ui_report_identity_cookie_rejects_tampering_and_expiry() -> None:
 
 
 def test_api_routes_do_not_accept_ui_reviewer_session_cookie_for_header_auth() -> None:
-    client = TestClient(create_app(Settings(REQUIRE_API_KEY=False)))
-    login = client.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
+    app = create_app(Settings(REQUIRE_API_KEY=False))
+    services = cast(ApiServices, app.state.services)
+    principal = services.reviewer_auth(
+        reviewer_id=_FIXTURE_REVIEWER_ID,
+        reviewer_token=_FIXTURE_REVIEWER_TOKEN,
     )
-    assert login.status_code == 303
+    token = create_ui_reviewer_cookie_token(
+        principal,
+        services,
+        app.state.api_key_auth_config,
+    )
+    client = TestClient(app)
 
-    response = client.get("/operations/queue-health")
+    response = client.get(
+        "/operations/queue-health",
+        headers={"Cookie": f"{UI_REVIEWER_COOKIE}={token}"},
+    )
 
     assert response.status_code == 401
     assert response.json()["detail"] == "connector reviewer credentials are required"

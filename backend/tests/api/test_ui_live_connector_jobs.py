@@ -4,14 +4,36 @@ from dataclasses import replace
 from typing import cast
 from uuid import uuid4
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
+from app.api.ui_shared import UI_REVIEWER_COOKIE, create_ui_reviewer_cookie_token
 from app.connectors.live_jobs import InMemoryLiveConnectorJobStore
 from app.main import create_app
 
 _FIXTURE_REVIEWER_ID = "fixture-reviewer"
 _FIXTURE_REVIEWER_TOKEN = "fixture-token-123"
+
+
+def _set_reviewer_session(
+    tc: TestClient,
+    app: FastAPI,
+    *,
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> None:
+    services = cast(ApiServices, app.state.services)
+    principal = services.reviewer_auth(
+        reviewer_id=reviewer_id,
+        reviewer_token=reviewer_token,
+    )
+    token = create_ui_reviewer_cookie_token(
+        principal,
+        services,
+        app.state.api_key_auth_config,
+    )
+    tc.cookies.set(UI_REVIEWER_COOKIE, token)
 
 
 def test_ui_live_connector_jobs_requires_operations_session() -> None:
@@ -35,15 +57,7 @@ def test_ui_live_connector_jobs_lists_and_opens_running_job() -> None:
     leased = services.live_connector_jobs.lease_next(worker_id="ui-live-worker")
     assert leased is not None
     assert leased.job_id == job.job_id
-    login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     list_resp = tc.get("/ui/live-connector-jobs?status=running")
     detail_resp = tc.get(f"/ui/live-connector-jobs/{job.job_id}")
@@ -88,15 +102,7 @@ def test_ui_live_connector_job_detail_sanitizes_error_url_and_payload() -> None:
                 "raw_payload": {"cookie": "session=raw"},
             },
         )
-    login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     response = tc.get(f"/ui/live-connector-jobs/{job.job_id}")
 

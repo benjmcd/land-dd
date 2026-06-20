@@ -2,6 +2,39 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Account-free local auth posture
+
+- Started `G1a` from `plans/2026-06-20-account-free-local-auth.md` in clean worktree
+  `worktrees/auth-posture` after confirming live `origin/main` at
+  `7204d9fbba182eb21fb32176449be3d0d174de71`, no open GitHub PRs, and no active
+  `agent-inbox` ownership collision.
+- Audited dirty-root account-free/runtime candidate plans as evidence only. The retained
+  scope is default local `/ui/auth*` route/OpenAPI omission plus matching
+  access-control docs/checker/catalog proof; broader raw-data UI, deployment smoke, and
+  runtime-hardening work remain later slices.
+- Added an intentional red test proving default local `/ui/auth*` paths were still
+  mounted and advertised. Added conditional `ui_auth_router` mounting so
+  local/dev/development/test with `REQUIRE_API_KEY=false` returns 404 and omits those
+  paths from default OpenAPI while protected local mode still exposes `/ui/auth`.
+- Updated access-control catalog, checker, artifact tests, runbooks, `DESIGN.md`,
+  `.env.example`, generated OpenAPI stubs, and active routing/state files to record the
+  same default-local versus protected-mode boundary.
+- Verification so far: intentional red focused pytest failed for default local
+  `/ui/auth`; focused UI auth tests passed (`37 passed`); focused UI auth plus
+  access-control artifact tests passed (`50 passed`); generated OpenAPI parity tests
+  passed (`2 passed`); and `scripts/access_control_check.py` passed.
+- Full verification initially failed because broader UI route tests still created
+  reviewer sessions through `/ui/auth/reviewer` in default local no-auth mode. Updated
+  those route tests to create signed reviewer-session cookies directly, preserving
+  auth-route coverage in `test_ui_api_key_auth.py`.
+- Found and fixed a second-order UI consistency gap: default local pages no longer link
+  to `/ui/auth*` auth setup routes when those routes are not mounted.
+- Final verification: focused expanded UI route/auth/access-control/OpenAPI tests
+  passed; focused ruff and mypy passed; access-control, release-readiness, and
+  readiness-matrix validators passed; diff/no-deletion and workspace validation passed;
+  final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `327`
+  source files. DB smoke was skipped by default.
+
 ## 2026-06-20 Source-readiness module extraction
 
 - Started `G3a` from `plans/2026-06-20-source-readiness-module.md` in clean worktree

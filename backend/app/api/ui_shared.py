@@ -232,6 +232,18 @@ def _auth_config(request: Request) -> ApiKeyAuthConfig:
     return cast(ApiKeyAuthConfig, request.app.state.api_key_auth_config)
 
 
+def ui_auth_routes_enabled(request: Request) -> bool:
+    return bool(getattr(request.app.state, "ui_auth_routes_enabled", True))
+
+
+def _ui_auth_link(request: Request, href: str, label: str) -> str:
+    if not ui_auth_routes_enabled(request):
+        return ""
+    href_esc = _html.escape(href, quote=True)
+    label_esc = _html.escape(label)
+    return f"<a class='reviewer-session-link' href='{href_esc}'>{label_esc}</a>"
+
+
 # ---------------------------------------------------------------------------
 # Report identity session and form fields
 # ---------------------------------------------------------------------------
@@ -386,21 +398,33 @@ def report_identity_fields(
             "<div class='reviewer-session'><span>Using workspace identity session: "
             f"<strong>{workspace_id}</strong></span> "
             f"<span>User: <code>{user_id}</code>.</span> "
-            "<a class='reviewer-session-link' href='/ui/auth/identity'>"
-            "Manage identity session</a></div>"
+            f"{_ui_auth_link(request, '/ui/auth/identity', 'Manage identity session')}"
+            "</div>"
         )
     if settings.is_local_app_env():
+        if not ui_auth_routes_enabled(request):
+            return (
+                "<div class='reviewer-session'>"
+                "<span>Use local fallback or enter token.</span>"
+                "</div>"
+                f"{_report_identity_token_input(required=False)}"
+            )
         return (
             "<div class='reviewer-session'>"
-            "<a class='reviewer-session-link' href='/ui/auth/identity'>"
-            "Start workspace identity session</a><span>or use local fallback.</span>"
+            f"{_ui_auth_link(request, '/ui/auth/identity', 'Start workspace identity session')}"
+            "<span>or use local fallback.</span>"
             "</div>"
+            f"{_report_identity_token_input(required=False)}"
+        )
+    if not ui_auth_routes_enabled(request):
+        return (
+            "<div class='reviewer-session'><span>Enter token.</span></div>"
             f"{_report_identity_token_input(required=False)}"
         )
     return (
         "<div class='reviewer-session'>"
-        "<a class='reviewer-session-link' href='/ui/auth/identity'>"
-        "Start workspace identity session</a><span>or enter token.</span>"
+        f"{_ui_auth_link(request, '/ui/auth/identity', 'Start workspace identity session')}"
+        "<span>or enter token.</span>"
         "</div>"
         f"{_report_identity_token_input(required=False)}"
     )
@@ -645,8 +669,8 @@ def reviewer_credential_fields(
             return (
                 "<div class='reviewer-session'><span>Using reviewer session: "
                 f"<strong>{reviewer_id}</strong>.</span> "
-                "<a class='reviewer-session-link' href='/ui/auth/reviewer'>"
-                "Manage reviewer session</a></div>"
+                f"{_ui_auth_link(request, '/ui/auth/reviewer', 'Manage reviewer session')}"
+                "</div>"
             )
         if principal is not None and required_scope is not None:
             reviewer_id = _html.escape(principal.reviewer_id)
@@ -657,10 +681,19 @@ def reviewer_credential_fields(
                 "enter reviewer credentials for this action.</p>"
                 f"{_reviewer_credential_inputs()}"
             )
+    link = (
+        f"{_ui_auth_link(request, '/ui/auth/reviewer', 'Sign in reviewer session')}"
+        if request is not None
+        else ""
+    )
+    helper_text = (
+        f"{link}<span>or enter credentials.</span>"
+        if link
+        else "<span>Enter reviewer credentials.</span>"
+    )
     return (
         "<div class='reviewer-session'>"
-        "<a class='reviewer-session-link' href='/ui/auth/reviewer'>"
-        "Sign in reviewer session</a><span>or enter credentials.</span>"
+        f"{helper_text}"
         "</div>"
         f"{_reviewer_credential_inputs()}"
     )

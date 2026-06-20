@@ -473,7 +473,10 @@ server environment (default is `trusted_headers` for local development).
 When `REQUIRE_API_KEY=true` is set, JSON/API routes require `X-API-Key`. The
 operator web UI supports a private-beta browser bridge: `/ui/auth` is public,
 accepts the same configured API key, and sets a signed expiring HttpOnly SameSite
-cookie scoped to `/ui` without storing the submitted API key. Set
+cookie scoped to `/ui` without storing the submitted API key.
+In default local no-auth mode, browser operators start from `/ui/`; `/ui/auth*`
+browser auth/session setup pages are not mounted or advertised in default OpenAPI
+output, and default local pages do not link to those auth setup routes. Set
 `UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments. With
 `REQUIRE_API_KEY=true`, non-local `APP_ENV` values fail startup if it is blank and also
 reject `API_KEYS` plus raw `API_KEY_SPECS` secrets. Only local/dev/development/test
@@ -895,7 +898,8 @@ Validate it with:
 ```
 
 The access-control proof is validate-only and static. It checks the current default-off
-API-key middleware, private-beta UI API-key cookie bridge, local scoped reviewer
+API-key middleware, default local no-auth omission of `/ui/auth*` browser auth/session
+setup pages, private-beta UI API-key cookie bridge, local scoped reviewer
 service-account auth, reviewer-authenticated and scoped operator routes, intentionally
 public `/health` and `/version` routes, CI proof wiring, configured static API-key
 lifecycle support, structured API-key auth runtime logs/audit rows including
@@ -1006,7 +1010,7 @@ future work items.
 | County/vendor coverage is intentionally scoped | DS-010 parcel connectors are limited to Buncombe/Chatham/Brunswick selected-county operator flows; DS-011 assessor remains explicit NOT_EVALUATED evidence, not live assessor data; DS-017 commercial parcel vendor remains blocked; DS-023 covers Chatham/Brunswick recorded-fixture zoning only. Buncombe zoning and all other counties remain NOT_EVALUATED. |
 | Single-process local default | In-memory stores are not shared across multiple workers or processes; non-local runtime must use DB-backed services |
 | No full user auth/RBAC | API-key and scoped reviewer service-account gates exist, `API_KEY_SPECS` supports configured active/retired static key lifecycle entries, and API-key decisions emit structured runtime logs plus DB-backed `audit.events` rows in DB-service mode. The repo-local `identity_rbac_contract` maps future roles to current route scopes for design handoff only; there are no user accounts, OAuth/OIDC, full user RBAC, hosted identity provider, automatic key rotation, hosted log retention, or user-bound audit semantics |
-| Private-beta UI API-key bridge only | When `REQUIRE_API_KEY=true` is set, `/ui/auth` can set a signed expiring HttpOnly SameSite cookie scoped to `/ui` after the submitted API key passes the same verifier as `X-API-Key`; the cookie does not store the submitted API key, is signed with `UI_AUTH_COOKIE_SECRET`, and fails startup outside local/dev/development/test app envs when that setting is blank. Local/dev/development/test app envs may use a per-process fallback. The cookie is `Secure` automatically outside local app envs. Cookie-authenticated UI mutation forms require signed CSRF tokens and sign-out uses POST. JSON/API paths still require `X-API-Key`; this is not full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation, or hosted secret management. |
+| Private-beta UI API-key bridge only | In default local no-auth mode, `/ui/auth*` browser auth/session setup pages are not mounted or advertised in default OpenAPI output. When `REQUIRE_API_KEY=true` is set, `/ui/auth` can set a signed expiring HttpOnly SameSite cookie scoped to `/ui` after the submitted API key passes the same verifier as `X-API-Key`; the cookie does not store the submitted API key, is signed with `UI_AUTH_COOKIE_SECRET`, and fails startup outside local/dev/development/test app envs when that setting is blank. Local/dev/development/test app envs may use a per-process fallback. The cookie is `Secure` automatically outside local app envs. Cookie-authenticated UI mutation forms require signed CSRF tokens and sign-out uses POST. JSON/API paths still require `X-API-Key`; this is not full user auth/RBAC, OAuth/OIDC, user-account persistence, automatic key rotation, or hosted secret management. |
 | UI reviewer auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly reviewer session at `/ui/auth/reviewer` or by submitting reviewer credentials on the first UI action. The cookie is scoped to `/ui`, stores reviewer id/scopes/expiry plus a non-secret HMAC binding to the configured token spec, is invalidated by reviewer-token rotation or scope removal, and never authenticates JSON/API routes. UI mutations authorized by this cookie require signed CSRF tokens. API clients must still send `X-Reviewer-Id` and `X-Reviewer-Token`. This is not full user auth/RBAC. |
 | UI report identity auth is private-beta session auth | Browser operators can start a signed expiring HttpOnly workspace/user identity session at `/ui/auth/identity` or by submitting `report_identity_token` on selected-county UI report creation. The cookie is scoped to `/ui`, stores workspace id, user id, and expiry only, is signed with UI-cookie signing material, and expires no later than the submitted report identity token. UI mutations authorized by this cookie require signed CSRF tokens. The raw report identity token is not stored or rendered back. This is not full user auth/RBAC. |
 | Local fixture mode has no persistence | In-memory repositories reset on restart; production-like runtime must set `USE_DB_SERVICES=true` with `DATABASE_URL` |
@@ -1046,6 +1050,8 @@ future work items.
 **UI returns 401/403 on every page (locked out)**
 - `REQUIRE_API_KEY=true` is set and the browser has no valid `/ui` auth cookie.
   Visit `/ui/auth`, submit the configured API key, and retry the UI route.
+- In default local no-auth mode, visit `/ui/` directly; `/ui/auth*` browser
+  auth/session setup pages are not mounted.
 - JSON/API callers must continue sending `X-API-Key`; the `/ui/auth` cookie is
   a signed expiring token and is not accepted outside `/ui/*`.
 - If the app restarted in local/dev/development/test with `UI_AUTH_COOKIE_SECRET`

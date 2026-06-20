@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import ApiServices
+from app.api.ui_shared import UI_REVIEWER_COOKIE, create_ui_reviewer_cookie_token
 from app.connectors import (
     ConnectorEvidenceIngestionAdapter,
     ConnectorRetrievalProvenanceAdapter,
@@ -41,6 +42,26 @@ def _csrf_token_from(html: str) -> str:
     match = re.search(r'name="csrf_token" type="hidden" value="([^"]+)"', html)
     assert match is not None
     return match.group(1)
+
+
+def _set_reviewer_session(
+    tc: TestClient,
+    app: FastAPI,
+    *,
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> None:
+    services = cast(ApiServices, app.state.services)
+    principal = services.reviewer_auth(
+        reviewer_id=reviewer_id,
+        reviewer_token=reviewer_token,
+    )
+    token = create_ui_reviewer_cookie_token(
+        principal,
+        services,
+        app.state.api_key_auth_config,
+    )
+    tc.cookies.set(UI_REVIEWER_COOKIE, token)
 
 
 class _RetrievalProvenancePort:
@@ -680,15 +701,7 @@ def test_ui_review_approve_accepts_reviewer_session_without_form_credentials() -
     app = create_app()
     tc = TestClient(app)
     item = _enqueue_review_item(app, "flood_failure.json")
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     assert "Using reviewer session" in detail.text
@@ -730,15 +743,7 @@ def test_ui_review_mutation_reviewer_session_requires_csrf(
             item.job_id,
             reviewer_id=_FIXTURE_REVIEWER_ID,
         )
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     response = tc.post(
         f"/ui/connector-review-queue/{item.ingest_run_id}/{route_suffix}",
@@ -754,15 +759,7 @@ def test_ui_review_reject_reviewer_session_accepts_valid_csrf() -> None:
     app = create_app()
     tc = TestClient(app)
     item = _enqueue_review_item(app, "flood_failure.json")
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     response = tc.post(
@@ -791,15 +788,7 @@ def test_ui_review_requeue_reviewer_session_accepts_valid_csrf() -> None:
         reviewer_id=_FIXTURE_REVIEWER_ID,
         reason="Initial rejection",
     )
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     response = tc.post(
@@ -821,15 +810,7 @@ def test_ui_review_cancel_reviewer_session_accepts_valid_csrf() -> None:
     app = create_app()
     tc = TestClient(app)
     item = _enqueue_review_item(app, "flood_failure.json")
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     response = tc.post(
@@ -851,15 +832,7 @@ def test_ui_review_cancel_reviewer_session_accepts_valid_csrf() -> None:
 def test_ui_review_resume_report_reviewer_session_accepts_valid_csrf() -> None:
     app = create_app()
     tc, item, _area_id = _register_area_and_enqueue_succeeded(app)
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     detail = tc.get(f"/ui/connector-review-queue/{item.ingest_run_id}")
     response = tc.post(

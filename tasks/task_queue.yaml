@@ -1,13 +1,13 @@
 version: 2
-active_plan: plans/2026-06-20-source-readiness-module.md
+active_plan: plans/2026-06-20-account-free-local-auth.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
-  preserved evidence only. G7a package-manifest CI gate merged through PR #88. Active
-  lane: G3a source-readiness module extraction, opened from live origin/main after G7a.
-  This slice makes the packaged backend module the source-readiness record authority
-  without changing source policy, readiness counts, DS-017 status, UI routes, or hosted
-  authority.
+  preserved evidence only. G7a package-manifest CI gate merged through PR #88, and G3a
+  source-readiness module extraction merged through PR #89. Active lane: G1a
+  account-free local auth posture, opened from live origin/main after G3a. This slice
+  changes default local `/ui/auth*` route/OpenAPI exposure only; it does not add hosted
+  identity/RBAC, source, schema, report, or DS-017 authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -694,7 +694,7 @@ tasks:
 
   - id: G3a
     title: Source-readiness packaged module
-    status: active
+    status: done
     depends_on: [REC-001, G7a]
     lane: coordinator
     spec: plans/2026-06-20-source-readiness-module.md
@@ -719,6 +719,36 @@ tasks:
       - `scripts/source_readiness.py` delegates to the packaged module and keeps CLI JSON shape/counts stable
       - Direct module tests and CLI subprocess tests cover Must-source freshness and blocked-source behavior
       - DS-017 remains blocked and no source-rights, connector, UI, API, DB schema, hosted, or package-publishing claims change
+
+  - id: G1a
+    title: Account-free local auth posture
+    status: active
+    depends_on: [REC-001, G7a, G3a]
+    lane: coordinator
+    spec: plans/2026-06-20-account-free-local-auth.md
+    notes: >
+      Reconstruct the local account-free/auth posture from live origin/main. Default
+      local/dev/development/test runtime with REQUIRE_API_KEY=false does not mount or
+      advertise `/ui/auth*` login/session routes; explicit protected local mode and
+      non-local/private-beta auth behavior remain available.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_api_key_auth.py .\tests\test_access_control_artifacts.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+      - cd backend; ruff check .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\test_access_control_artifacts.py ..\scripts\access_control_check.py
+      - cd backend; py -3.12 -m mypy .\app\main.py .\tests\api\test_ui_api_key_auth.py .\tests\test_access_control_artifacts.py ..\scripts\access_control_check.py
+      - py -3.12 .\scripts\access_control_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Default local/dev/development/test no-auth runtime returns 404 for `/ui/auth*` and omits those paths from default OpenAPI output
+      - Protected local mode still exposes `/ui/auth` for the private-beta API-key browser bridge
+      - Access-control catalog, checker, runbooks, env example, and design docs record the same boundary
+      - Generated OpenAPI stubs match default runtime route exposure
+      - No OAuth/OIDC, user accounts, full RBAC, hosted identity, DB schema, source, connector, claim, report, release-package, or DS-017 behavior changes
 
   # --- Completed ---
   - id: T000

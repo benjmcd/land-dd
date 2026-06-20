@@ -1,6 +1,44 @@
 # Project State
 
-## Current checkpoint (2026-06-20 source-readiness module extraction)
+## Current checkpoint (2026-06-20 account-free local auth posture)
+
+The active implementation authority is `G1a` account-free local auth posture from
+`plans/2026-06-20-account-free-local-auth.md`. This is the next retained
+product/control slice after `G7a` package-manifest CI gate merged through PR #88 and
+`G3a` source-readiness module extraction merged through PR #89. The dirty root checkout
+remains preserved candidate evidence only; this slice was opened from live
+`origin/main` at `7204d9fbba182eb21fb32176449be3d0d174de71`.
+
+- **Active plan**: `plans/2026-06-20-account-free-local-auth.md`.
+- **Purpose**: make default local/dev/development/test browser operation account-free
+  by not mounting `/ui/auth*` login/session setup routes when `REQUIRE_API_KEY=false`,
+  and by keeping those paths absent from default OpenAPI output.
+- **Implemented scope so far**: focused tests prove default local `/ui/auth*` paths
+  return 404 and are absent from default OpenAPI while protected local mode still
+  exposes `/ui/auth`; `backend/app/main.py` conditionally mounts `ui_auth_router`;
+  shared UI helpers avoid linking default local pages to unmounted auth setup routes;
+  access-control catalog/checker/tests, `DESIGN.md`, `.env.example`, and operator
+  runbooks record the same default-local versus protected-mode boundary; default
+  OpenAPI stubs were regenerated to remove `/ui/auth*`.
+- **Current local validation**: intentional red auth-route pytest failed for the
+  expected default local `/ui/auth` 200 before implementation; focused UI auth tests
+  passed (`37 passed`); focused UI auth plus access-control artifact tests passed
+  (`50 passed`); generated OpenAPI parity tests passed (`2 passed`);
+  `scripts/access_control_check.py`, release-readiness, readiness-matrix, focused
+  ruff/mypy, diff/no-deletion, and workspace validation passed; the first full verify
+  exposed default-local UI route tests still using `/ui/auth/reviewer`; after replacing
+  those tests with direct reviewer-session cookies and hiding dead auth links, final
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `327` source
+  files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no auth module deletion, no JSON/API API-key
+  weakening, no reviewer-scope or CSRF weakening, no OAuth/OIDC, no user accounts, no
+  full RBAC, no hosted identity, no hosted deployment, no source/connector/evidence/
+  claim/report/release-package behavior, no DB schema change, and no DS-017 authority.
+- **Next required step**: publish the focused `codex/auth-posture` PR, wait for CI,
+  merge only if local and CI proof agree, then re-check live `origin/main` and re-rank
+  the next retained slice.
+
+## Previous checkpoint (2026-06-20 source-readiness module extraction)
 
 The active implementation authority is `G3a` source-readiness packaged-module
 extraction from `plans/2026-06-20-source-readiness-module.md`. This is the next
@@ -31,9 +69,10 @@ was opened from live `origin/main` at
   approval, no source-rights policy change, no connector behavior change, no UI/public
   API change, no DB schema change, no release-package/publishing behavior change, and
   no hosted/source/tenant authority claim.
-- **Next required step**: publish the focused `codex/src-ready` PR, wait for CI, merge
-  only if local and CI proof agree, then re-check live `origin/main` and re-rank the
-  next retained slice.
+- **Merge status**: PR #89 merged at
+  `7204d9fbba182eb21fb32176449be3d0d174de71`; detached post-merge source-readiness,
+  release-readiness, readiness-matrix, workspace, and full verification proof passed
+  before selecting `G1a`.
 
 ## Previous checkpoint (2026-06-20 package-manifest CI gate)
 

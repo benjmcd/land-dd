@@ -53,6 +53,8 @@ def create_app(
     app.state.object_store_root = resolved.object_store_root
     app.state.use_db_services = resolved_use_db_services
     app.state.metrics = RuntimeMetrics() if resolved.enable_metrics else None
+    ui_auth_routes_enabled = _include_ui_auth_router(resolved)
+    app.state.ui_auth_routes_enabled = ui_auth_routes_enabled
     api_key_auth_config = ApiKeyAuthConfig(
         required=resolved.require_api_key,
         api_keys=resolved.parsed_api_keys() if resolved.require_api_key else frozenset(),
@@ -111,7 +113,8 @@ def create_app(
     app.include_router(operations_router)
     app.include_router(metrics_router)
     app.include_router(operator_cases_router)
-    app.include_router(ui_auth_router)
+    if ui_auth_routes_enabled:
+        app.include_router(ui_auth_router)
     app.include_router(ui_router)
     app.include_router(ui_lineage_router)
     app.include_router(ui_live_connector_jobs_router)
@@ -124,6 +127,10 @@ def _ui_auth_cookie_secure(settings: Settings) -> bool:
     if settings.ui_auth_cookie_secure:
         return True
     return not _is_local_app_env(settings)
+
+
+def _include_ui_auth_router(settings: Settings) -> bool:
+    return settings.require_api_key or not _is_local_app_env(settings)
 
 
 def _validate_runtime_state_config(

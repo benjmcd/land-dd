@@ -6,9 +6,12 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 from uuid import UUID, uuid4
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.api.api_key_auth import create_ui_csrf_token
 from app.api.dependencies import ApiServices
+from app.api.ui_shared import UI_REVIEWER_COOKIE, create_ui_reviewer_cookie_token
 from app.connectors.live_jobs import InMemoryLiveConnectorJobStore
 from app.core.config import Settings
 from app.domain.enums import IntentCode, JobStatus
@@ -29,6 +32,27 @@ def _csrf_token_from(html: str) -> str:
 
 def _client() -> TestClient:
     return TestClient(create_app())
+
+
+def _set_reviewer_session(
+    tc: TestClient,
+    app: FastAPI,
+    *,
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> str:
+    services = cast(ApiServices, app.state.services)
+    principal = services.reviewer_auth(
+        reviewer_id=reviewer_id,
+        reviewer_token=reviewer_token,
+    )
+    token = create_ui_reviewer_cookie_token(
+        principal,
+        services,
+        app.state.api_key_auth_config,
+    )
+    tc.cookies.set(UI_REVIEWER_COOKIE, token)
+    return token
 
 
 def _seed_recovery_candidates(services: ApiServices) -> tuple[UUID, UUID]:
@@ -162,16 +186,9 @@ def test_ui_operations_tables_have_responsive_scroll_wrapper() -> None:
 
 
 def test_ui_operations_post_reviewer_session_requires_csrf() -> None:
-    tc = _client()
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    app = create_app()
+    tc = TestClient(app)
+    _set_reviewer_session(tc, app)
 
     missing_csrf = tc.post("/ui/operations", data={})
     dashboard = tc.get("/ui/operations")
@@ -186,16 +203,9 @@ def test_ui_operations_post_reviewer_session_requires_csrf() -> None:
 
 
 def test_ui_operations_get_with_reviewer_session_renders_dashboard() -> None:
-    tc = _client()
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    app = create_app()
+    tc = TestClient(app)
+    _set_reviewer_session(tc, app)
 
     resp = tc.get("/ui/operations")
 
@@ -214,16 +224,14 @@ def test_ui_operations_get_under_scoped_session_shows_credential_fallback() -> N
         REVIEWER_ACCOUNTS="ops-reviewer:ops-token",
         REVIEWER_ACCOUNT_SCOPES="ops-reviewer:report:approve",
     )
-    tc = TestClient(create_app(settings))
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": "ops-reviewer",
-            "reviewer_token": "ops-token",
-        },
-        follow_redirects=False,
+    app = create_app(settings)
+    tc = TestClient(app)
+    _set_reviewer_session(
+        tc,
+        app,
+        reviewer_id="ops-reviewer",
+        reviewer_token="ops-token",
     )
-    assert reviewer_login.status_code == 303
 
     resp = tc.get("/ui/operations")
 
@@ -277,15 +285,7 @@ def test_ui_operations_recovery_preview_with_session_renders_candidates() -> Non
     tc = TestClient(app)
     services = cast(ApiServices, app.state.services)
     report_run_id, live_job_id = _seed_recovery_candidates(services)
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     resp = tc.get("/ui/operations/recovery-preview")
 
@@ -327,15 +327,7 @@ def test_ui_operations_recovery_preview_redacts_sensitive_error_details() -> Non
         report_job.report_run_id,
         error_msg=raw_report_error,
     )
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     resp = tc.get("/ui/operations/recovery-preview")
 
@@ -351,15 +343,7 @@ def test_ui_operations_recovery_preview_redacts_sensitive_error_details() -> Non
 def test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf() -> None:
     app = create_app()
     tc = TestClient(app)
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     response = tc.post(
         "/ui/operations/recovery-preview",
@@ -373,20 +357,16 @@ def test_ui_operations_recovery_preview_post_reviewer_session_requires_csrf() ->
 def test_ui_operations_recovery_preview_post_reviewer_session_accepts_valid_csrf() -> None:
     app = create_app()
     tc = TestClient(app)
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    reviewer_cookie = _set_reviewer_session(tc, app)
 
-    session_page = tc.get("/ui/auth/reviewer")
     response = tc.post(
         "/ui/operations/recovery-preview",
-        data={_CSRF_FIELD: _csrf_token_from(session_page.text)},
+        data={
+            _CSRF_FIELD: create_ui_csrf_token(
+                reviewer_cookie,
+                app.state.api_key_auth_config,
+            ),
+        },
     )
 
     assert response.status_code == 200
