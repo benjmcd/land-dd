@@ -172,23 +172,25 @@ this matrix.
 
 1. `REC-001`: Merge the reconciliation control plane after validation. No product
    behavior changes.
-2. `G1a`: Reconstruct local account-free/auth posture from live `origin/main`.
+2. `G7a`: Land package-manifest validator, release-package manifest verification, and
+   the additive CI gate. This is the cleanest early retained slice because it is
+   validate-only, package-boundary scoped, and does not depend on broad UI routes.
+3. `G3a`: Extract source-readiness logic into the packaged module and keep CLI/tests
+   focused on source-rights/freshness fail-closed behavior.
+4. `G1a`: Reconstruct local account-free/auth posture from live `origin/main`.
    Start with auth/reviewer UI tests, access-control catalog/checker/docs, and
    explicit `APP_ENV` versus `REQUIRE_API_KEY` protected-mode behavior.
-3. `G1b`: Reconstruct the raw-data inventory route from live `origin/main`.
+5. `G1b`: Reconstruct the raw-data inventory route from live `origin/main`.
    Use the focused raw-data test and keep GET behavior read-only with no hidden seeding.
-4. `G3a`: Extract source-readiness logic into the packaged module and keep CLI/tests
-   focused on source-rights/freshness fail-closed behavior.
-5. `G3b`: Land the selected-county source-provenance catalog and validate-only checker
+6. `G3b`: Land the selected-county source-provenance catalog and validate-only checker
    with explicit fixture/non-live labels.
-6. `G2`: Rebuild runtime/browser smoke around the accepted G1 UI only, then add
+7. `G2`: Rebuild runtime/browser smoke around the accepted G1 UI only, then add
    DB-backed/local deployment smoke if still required.
-7. `G3`: Add readiness/source/selected-geography views only after route ownership and
+8. `G3`: Add readiness/source/selected-geography views only after route ownership and
    OpenAPI/update scope are clear.
-8. `G5`: Add report/source/evidence provenance surfaces only with report contract,
+9. `G5`: Add report/source/evidence provenance surfaces only with report contract,
    source-rights, source-failure, non-live labeling, and workspace-scope proof.
-9. `G6`: Add local guardrail/auth-hardening surfaces separately from readiness pages.
-10. `G7`: Land package manifest/release package/CI gate work as a packaging slice.
+10. `G6`: Add local guardrail/auth-hardening surfaces separately from readiness pages.
 11. `G8`: Revisit observability readiness after local deployment/release boundaries are
    merged and external hosted-observability blockers remain explicit.
 
@@ -197,5 +199,6 @@ this matrix.
 Every candidate path observed in the dirty root now has an initial disposition, but
 Lane 1 is not complete. The candidate workspace still contains implementation that has
 not been merged, archived, deferred in-place, or discarded. The next safe action is to
-validate and merge the `REC-001` control-plane artifacts, then create the first focused
-product worktree for `G1`.
+validate and merge the `REC-001` control-plane artifacts, then re-check live `origin/main`
+and create the first focused product worktree for the package-manifest/CI slice unless
+that fresh check reveals a stronger dependency reason to start elsewhere.
