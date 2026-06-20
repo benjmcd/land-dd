@@ -12781,3 +12781,75 @@ git diff --name-only --diff-filter=D
   completion.
 - G6 performance guardrails and G8 local observability readiness remain future retained
   slices.
+
+---
+
+## 2026-06-20 - Performance Guardrails UI G6c
+
+**Scope:** Implement the third isolated G6 guardrail surface: a read-only
+`/ui/performance-guardrails` page over existing performance-baseline, spatial
+query-plan, and queue-backpressure authority files. The slice does not run live load
+tests, open DB connections, run runtime `EXPLAIN`, write performance artifacts, mutate
+queues, run connectors, approve DS-017, change source/report/API semantics, deploy
+hosted infrastructure, prove hosted SLO/capacity/observability, or claim Level 10
+completion.
+
+**Commands/checks run:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_performance_guardrails.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_performance_guardrails.py .\tests\test_performance_artifacts.py .\tests\test_load_test_artifacts.py .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py .\tests\api\test_backpressure.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+cd backend; ruff check .\app\performance_guardrails.py .\app\api\ui.py .\tests\api\test_ui_performance_guardrails.py
+cd backend; py -3.12 -m mypy .\app\performance_guardrails.py .\app\api\ui.py .\tests\api\test_ui_performance_guardrails.py
+py -3.12 .\scripts\performance_baseline_check.py
+py -3.12 .\scripts\spatial_query_plan_check.py
+.\scripts\run_load_test.ps1 -ValidateOnly
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+@'
+from pathlib import Path
+import yaml
+payload = yaml.safe_load(Path("tasks/task_queue.yaml").read_text(encoding="utf-8"))
+print(payload["active_plan"])
+print(next(item["id"] for item in payload["tasks"] if item.get("status") == "active"))
+'@ | py -3.12 -
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused pytest failed during collection with
+  `ModuleNotFoundError: No module named 'app.performance_guardrails'`, confirming the
+  expected red state before implementation.
+- Focused G6c route/parser tests passed after implementation (`8 passed`).
+- Focused G6c plus performance artifact, load-test artifact, spatial query-plan,
+  spatial runtime query-plan, and backpressure tests passed (`63 passed`).
+- OpenAPI runtime/planning-pack parity tests passed (`2 passed`) after regenerating
+  `api/openapi_stub.yaml` and `docs/planning_pack/api/openapi_stub.yaml`.
+- Focused ruff passed.
+- Focused mypy passed for the new helper, UI route, and focused test.
+- Performance-baseline, spatial query-plan, release-readiness, and readiness-matrix
+  validators passed.
+- `.\scripts\run_load_test.ps1 -ValidateOnly` passed and explicitly skipped live HTTP
+  requests.
+- `tasks/task_queue.yaml` parsed successfully with active plan
+  `plans/2026-06-20-performance-guardrails-ui-g6c.md` and active task `G6c`.
+- `git diff --check` passed with only existing OpenAPI CRLF normalization warnings.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final full `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `338` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- This is local read-only guardrail visibility, not hosted SLO/capacity proof, hosted
+  dashboard/observability, hosted alert routing, production load evidence, DS-017
+  entitlement, hosted deployment, or Level 10 performance completion.
+- Runtime spatial `EXPLAIN` and live load-test result artifacts remain explicit,
+  operator-triggered release-candidate evidence paths outside default validation.

@@ -4011,3 +4011,36 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   failed because the new active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`; the
   plan was corrected, readiness-matrix checks passed, and final `.\scripts\verify.ps1`
   passed. DB smoke was skipped by default.
+
+## 2026-06-20 Performance guardrails UI G6c
+
+- Continued from live `origin/main` in clean `worktrees/perf-guard` on
+  `codex/perf-guard` after confirming `HEAD` at
+  `51f347d9940016ef428ea3837cbc4888f6ac81c1` and preserving the dirty root as
+  candidate evidence only.
+- Added the executable `G6c` plan for the third isolated G6 guardrail surface. The plan
+  keeps live load-test execution, runtime `EXPLAIN`, generated performance evidence,
+  hosted SLO/capacity, hosted observability, DS-017, connector/source entitlement, and
+  Level 10 production performance out of scope.
+- Added focused tests for `app.performance_guardrails` and
+  `/ui/performance-guardrails`. The first run failed as expected because
+  `app.performance_guardrails` did not exist.
+- Implemented `backend/app/performance_guardrails.py` as a read-only parser over
+  existing performance baseline, spatial query-plan, and queue-backpressure artifacts.
+  The parser validates required load-test scenarios, result schema fields, false hosted
+  and measured-result limits, required spatial indexes/reviews, opt-in runtime review
+  posture, runbook phrases, backpressure settings, and repo-relative authority paths.
+- Added the GET-only `/ui/performance-guardrails` local operator page and navigation
+  links from home, raw-data inventory, source provenance, deployment readiness,
+  security guardrails, and operations guardrails pages.
+- Regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml` for the new route and updated `MANIFEST.md`
+  to route performance guardrail work to the new helper.
+- Preserved the existing performance boundaries: no live load-test traffic, runtime DB
+  connection, runtime `EXPLAIN`, performance artifact write, queue mutation, connector
+  execution, source expansion, DS-017 approval, hosted SLO/capacity/observability, or
+  Level 10 claim.
+- Focused G6c tests, adjacent performance/spatial/load-test/backpressure tests,
+  OpenAPI parity, ruff, mypy, performance-baseline, spatial query-plan,
+  release-readiness, readiness-matrix, load-test validate-only, workspace validation,
+  and full verification passed. DB smoke was skipped by default.

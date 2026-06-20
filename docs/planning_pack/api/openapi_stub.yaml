@@ -3706,6 +3706,19 @@ paths:
             text/html:
               schema:
                 type: string
+  /ui/performance-guardrails:
+    get:
+      tags:
+      - ui
+      summary: Ui Performance Guardrails
+      operationId: ui_performance_guardrails_ui_performance_guardrails_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
   /ui/deployment-readiness:
     get:
       tags:
