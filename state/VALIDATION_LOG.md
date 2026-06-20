@@ -58,6 +58,10 @@ py -3.12 .\scripts\readiness_matrix_check.py
   authority context; `scripts/readiness_matrix_check.py` then passed.
 - Final `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
   and mypy over `326` source files. DB smoke was skipped by default.
+- Initial PR CI failed `release-package-manifest` with `Permission denied` when running
+  `./scripts/run_package_manifest_check.sh`; the wrapper had been added with file mode
+  `100644`. The index mode was corrected to `100755`, and Git Bash direct execution of
+  `./scripts/run_package_manifest_check.sh` against a generated proof manifest passed.
 
 **Residual risk:**
 

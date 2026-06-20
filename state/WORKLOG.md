@@ -29,6 +29,11 @@ Append concise entries. Do not rely on chat history.
   PowerShell and POSIX build/check paths; Python compile, PowerShell parser,
   `git diff --check`, no-deletion audit, workspace validation, and final
   `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- Initial PR CI found `release-package-manifest` could not execute
+  `scripts/run_package_manifest_check.sh` because the new POSIX wrapper was committed
+  with mode `100644`. Updated the index mode to `100755`, matching existing POSIX
+  wrappers, and confirmed Git Bash can run `./scripts/run_package_manifest_check.sh`
+  directly against a generated proof manifest.
 
 ## 2026-06-19 (Error-state/no-leak hardening)
 
