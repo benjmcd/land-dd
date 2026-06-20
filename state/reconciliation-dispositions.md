@@ -201,9 +201,9 @@ candidate stack was first classified relative to `c3364ea...`. It is no longer a
 next-slice queue: `REC-001` and retained G-slices through `G9a` have now landed on live
 `origin/main`, with PR #101 merged at `b525439e6bcddefba81c7d6bf12290b3f8551b55`.
 
-Lane 1 is still not complete. The preserved dirty-root candidate workspace must now be
-reconciled against the current live baseline and each path/concept should be marked as
-already landed, landed differently, still divergent, still blocked/deferred, obsolete,
-or coordination/generated. The next safe action is `REC-002`: regenerate that residual
-inventory from current `origin/main`, then choose the next retained engineering slice
-from fresh evidence.
+Lane 1 residual classification is now recorded in
+`state/residual-reconciliation.md` against live main
+`47913930ea6b5fc0af71e463d998f57535b7cad4`. The preserved dirty-root candidate
+workspace still remains candidate evidence only, but no dirty-root implementation slice
+should be copied forward wholesale. The next active engineering plan is `G9b` generic
+supported-AOI evidence-rich workflow closure.
