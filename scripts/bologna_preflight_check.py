@@ -55,6 +55,11 @@ EXPECTED_GATE_STATUSES = {
 REQUIRED_FILES = (
     CONFIG_PATH,
     RUNBOOK_PATH,
+    "config/bologna_source_candidates.yaml",
+    "docs/source-reviews/bologna-source-candidates.md",
+    "scripts/bologna_source_candidates_check.py",
+    "scripts/run_bologna_source_candidates_check.ps1",
+    "scripts/run_bologna_source_candidates_check.sh",
     "scripts/run_bologna_preflight_check.ps1",
     "scripts/run_bologna_preflight_check.sh",
     "state/LEVEL_9_10_GATE_MATRIX.md",
@@ -66,6 +71,7 @@ REQUIRED_FILES = (
 RUNBOOK_PHRASES = (
     "bologna_preflight_v1",
     "validate-only",
+    "bologna_source_candidates_v1",
     "not_started_external_authority_required",
     "does not select Bologna",
     "does not approve Italy sources",
@@ -180,7 +186,10 @@ def validate_gates(payload: dict[str, Any]) -> None:
         status = require_text(gate.get("status"), f"{gate_id} status missing")
         require(status in ALLOWED_STATUSES, f"{gate_id} unsupported status: {status}")
         require(status == expected_status, f"{gate_id} must remain {expected_status}")
-        for evidence_path in require_non_empty_list(gate.get("evidence"), f"{gate_id} evidence missing"):
+        for evidence_path in require_non_empty_list(
+            gate.get("evidence"),
+            f"{gate_id} evidence missing",
+        ):
             require(isinstance(evidence_path, str), f"{gate_id} evidence must be strings")
             require_existing(evidence_path)
         if status == "repo_confirmed":
@@ -226,9 +235,52 @@ def validate_production_packet() -> None:
         require(phrase in packet, f"production authority packet missing phrase: {phrase}")
 
 
+def validate_source_candidates() -> None:
+    payload = require_mapping(
+        yaml.safe_load(read_text("config/bologna_source_candidates.yaml")),
+        "Bologna source-candidates catalog must be a mapping",
+    )
+    require(
+        payload.get("schema_version") == "bologna_source_candidates_v1",
+        "Bologna source-candidates schema mismatch",
+    )
+    require(
+        payload.get("status") == "repo_local_candidate_inventory",
+        "Bologna source-candidates catalog must remain candidate inventory",
+    )
+    approvals = require_mapping(
+        payload.get("approvals"),
+        "Bologna source-candidates approvals missing",
+    )
+    require(
+        all(value is False for value in approvals.values()),
+        "Bologna source-candidates approvals must remain false",
+    )
+    candidates = require_non_empty_list(
+        payload.get("candidate_sources"),
+        "Bologna source candidates missing",
+    )
+    for candidate in candidates:
+        candidate = require_mapping(candidate, "each Bologna source candidate must be a mapping")
+        candidate_id = require_text(candidate.get("candidate_id"), "candidate id missing")
+        require(
+            candidate.get("approval_status") == "not_approved",
+            f"{candidate_id} source approved",
+        )
+        require(
+            candidate.get("allowed_for_runtime") is False,
+            f"{candidate_id} runtime use allowed",
+        )
+        require(
+            candidate.get("allowed_for_fixture_corpus") is False,
+            f"{candidate_id} fixture corpus use allowed",
+        )
+
+
 def main() -> int:
     validate_required_files()
     validate_catalog()
+    validate_source_candidates()
     validate_runbook()
     validate_production_packet()
     print("Bologna preflight check: ok")

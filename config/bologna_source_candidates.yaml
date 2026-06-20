@@ -1,0 +1,241 @@
+schema_version: bologna_source_candidates_v1
+operator_runbook: docs/runbooks/bologna_source_candidates.md
+source_review: docs/source-reviews/bologna-source-candidates.md
+status: repo_local_candidate_inventory
+validation: scripts/run_bologna_source_candidates_check.ps1
+
+authority:
+  - config/bologna_preflight.yaml
+  - docs/DATA_SOURCE_STRATEGY.md
+  - schemas/source_schema.json
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+
+approvals:
+  product_selected_sources: false
+  source_rights_review_complete: false
+  source_registry_promoted: false
+  recorded_source_corpus_committed: false
+  bologna_aoi_authorized: false
+  eu_italy_rulepack_approved: false
+  runtime_use_allowed: false
+
+limits:
+  candidate_only: true
+  approves_sources: false
+  changes_source_readiness: false
+  promotes_source_registry: false
+  runs_live_connectors: false
+  creates_recorded_fixtures: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  claims_legal_review: false
+  claims_report_use_allowed: false
+  claims_cadastral_authority: false
+  claims_hosted_production_ready: false
+
+required_before_any_use:
+  - authorized_one_aoi_scope
+  - per_source_license_terms_review
+  - cache_redistribution_export_ai_raw_data_decisions
+  - source_owner_and_version_date
+  - retrieval_metadata_and_attribution_policy
+  - crs_geometry_precision_policy
+  - caveats_and_no_overclaim_language
+  - source_failure_and_no_data_fixture_policy
+  - rulepack_or_evidence_only_scope_decision
+
+candidate_sources:
+  - candidate_id: comune_bologna_pug_webgis
+    domain: municipal_planning
+    source_name: Piano Urbanistico Generale and webGIS
+    organization: Comune di Bologna
+    source_url: https://www.comune.bologna.it/amministrazione/documenti-e-dati/documento-tecnico-supporto/piano-urbanistico-generale-pug
+    evidence_urls:
+      - https://www.comune.bologna.it/amministrazione/documenti-e-dati/documento-tecnico-supporto/piano-urbanistico-generale-pug
+      - https://dru.iperbole.bologna.it/piano-urbanistico-generale
+      - https://sitmappe.comune.bologna.it/pugviewer/
+    authority_level: local_official_candidate
+    candidate_use: Municipal planning and PUG/webGIS context candidate for a future recorded-source pilot.
+    retrieval_model: webgis_or_document_review_pending
+    observed_evidence:
+      - Official municipal pages identify the PUG and webGIS as consultation surfaces.
+      - Current PUG variant status and effective documents must be verified before fixture capture.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - reviewed_effective_pug_version
+      - dataset_or_document_terms_reference
+      - attribution_and_export_policy
+      - legal_planning_caveats
+      - recorded_fixture_scope
+    caveats:
+      - Candidate planning context only; not a zoning, title, legal access, or buildability conclusion.
+
+  - candidate_id: comune_bologna_open_data_pug_constraints
+    domain: municipal_open_data
+    source_name: PUG open-data constraint datasets
+    organization: Comune di Bologna
+    source_url: https://opendata.comune.bologna.it/explore/dataset/pug-scheda-dei-vincoli-infrastrutture-suolo-servitu-siti-oggetto-di-procedimento/
+    evidence_urls:
+      - https://opendata.comune.bologna.it/explore/
+      - https://opendata.comune.bologna.it/terms/terms-and-conditions/
+      - https://opendata.comune.bologna.it/explore/dataset/pug-scheda-dei-vincoli-infrastrutture-suolo-servitu-siti-oggetto-di-procedimento/
+    authority_level: local_official_candidate
+    candidate_use: Candidate municipal open-data layer for PUG-derived constraints or environmental flags.
+    retrieval_model: opendata_dataset_api_pending
+    observed_evidence:
+      - The portal states dataset use must follow each dataset's license terms.
+      - The sampled PUG dataset is derived from a PUG constraint layer and has its own dataset identity.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - exact_dataset_selection
+      - per_dataset_license_review
+      - source_version_and_processing_date
+      - attribution_and_export_policy
+      - environmental_liability_caveats
+    caveats:
+      - Candidate data may be partial or thematic; it is not a final environmental or planning finding.
+
+  - candidate_id: rer_geoportale_dbtr_altimetry
+    domain: regional_topographic
+    source_name: Database Topografico Regionale altimetry layer
+    organization: Regione Emilia-Romagna
+    source_url: https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/orografia/altimetria/layer
+    evidence_urls:
+      - https://geoportale.regione.emilia-romagna.it/
+      - https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/orografia/altimetria/layer
+    authority_level: regional_official_candidate
+    candidate_use: Regional topographic/elevation context candidate.
+    retrieval_model: wms_download_or_geopackage_review_pending
+    observed_evidence:
+      - The layer page lists DBTR contour metadata, formats, WMS, download, scale, and CC BY 4.0 license metadata.
+      - Layer-level metadata still needs source-version, retrieval, attribution, and precision review.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - layer_metadata_review
+      - license_attribution_mapping
+      - crs_and_precision_policy
+      - retrieval_date_and_checksum_policy
+      - terrain_context_caveats
+    caveats:
+      - Candidate terrain context only; not survey-grade and not legal boundary evidence.
+
+  - candidate_id: rer_geoportale_catalog_services
+    domain: regional_geodata_catalog
+    source_name: Regione Emilia-Romagna Geoportale catalog and services
+    organization: Regione Emilia-Romagna
+    source_url: https://geoportale.regione.emilia-romagna.it/
+    evidence_urls:
+      - https://geoportale.regione.emilia-romagna.it/
+      - https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici
+    authority_level: regional_official_candidate
+    candidate_use: Discovery root for official regional WMS/WFS/WMTS/download datasets.
+    retrieval_model: catalog_discovery_pending
+    observed_evidence:
+      - The Geoportale exposes geographic data download, WMS/WCS/WFS/WMTS services, and a geographic data catalog.
+      - Individual layers must be reviewed before any layer becomes a recorded source.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - exact_layer_selection
+      - layer_terms_and_license_review
+      - source_version_date
+      - retrieval_metadata
+      - layer_specific_caveats
+    caveats:
+      - Catalog availability is not source approval; every layer needs its own review.
+
+  - candidate_id: rer_crs_reference
+    domain: coordinate_reference
+    source_name: Regione Emilia-Romagna geographic reference systems
+    organization: Regione Emilia-Romagna
+    source_url: https://geoportale.regione.emilia-romagna.it/approfondimenti/sistemi-di-riferimento-geografici
+    evidence_urls:
+      - https://geoportale.regione.emilia-romagna.it/approfondimenti/sistemi-di-riferimento-geografici
+    authority_level: regional_official_reference
+    candidate_use: CRS and coordinate transformation policy reference for future Bologna geometry handling.
+    retrieval_model: reference_document_review_pending
+    observed_evidence:
+      - The page describes RDN2008, RDN2008 UTM Zone 32N EPSG:7791, and service publication reference systems.
+      - CRS policy must be mapped before recorded fixtures are compared with repo geometry.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - crs_policy_decision
+      - transformation_tool_review
+      - geometry_precision_policy
+      - fixture_crs_metadata
+    caveats:
+      - Reference policy only; not an evidence layer or report claim source by itself.
+
+  - candidate_id: arpae_cartographic_portal
+    domain: environmental_context
+    source_name: ARPAE cartographic portal
+    organization: ARPAE Emilia-Romagna
+    source_url: https://www.arpae.it/it/dati-e-report/dati-ambientali/il-portale-cartografico-di-arpae
+    evidence_urls:
+      - https://www.arpae.it/it/dati-e-report/dati-ambientali/il-portale-cartografico-di-arpae
+    authority_level: regional_environmental_candidate
+    candidate_use: Discovery root for environmental map and metadata candidates.
+    retrieval_model: metadata_portal_layer_review_pending
+    observed_evidence:
+      - ARPAE describes the portal as its institutional infrastructure for online geographic data and thematic maps.
+      - Each layer has metadata and must be reviewed before source use.
+    source_version_status: pending_review
+    rights_review_status: pending_review
+    approval_status: not_approved
+    source_registry_promoted: false
+    allowed_for_runtime: false
+    allowed_for_fixture_corpus: false
+    required_before_use:
+      - exact_environmental_layer_selection
+      - layer_metadata_and_terms_review
+      - caveat_language_for_screening_only
+      - source_failure_no_data_mapping
+    caveats:
+      - Candidate environmental context only; not wetland jurisdiction, contamination liability, or legal compliance proof.
+
+known_gaps:
+  - gap_id: authorized_bologna_aoi
+    status: missing_external_decision
+    next_action: Name one Bologna AOI, intended use, stop conditions, and exclusions.
+  - gap_id: per_source_rights_reviews
+    status: missing_external_decision
+    next_action: Review license, cache, redistribution, export, AI use, raw-data handling, attribution, source version, and caveats for each selected source.
+  - gap_id: italian_cadastral_cartography
+    status: direct_source_review_required
+    candidate_reference:
+      name: Agenzia delle Entrate cartografia catastale services
+      urls:
+        - https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia
+        - https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/geoportale-cartografico-catastale
+        - https://www.agenziaentrate.gov.it/portale/download-massivo-cartografia-catastale
+    next_action: Review official cadastral map service terms directly before treating any cadastral geometry as a candidate source; do not infer owner, title, legal access, or buildability authority.
+  - gap_id: recorded_fixture_corpus
+    status: missing_repo_evidence
+    next_action: Commit recorded fixtures only after selected source rights, source versions, retrieval metadata, CRS, and caveats are approved.
+  - gap_id: eu_italy_rulepack_scope
+    status: missing_external_decision
+    next_action: Decide evidence-only, constrained locality dossier, or new rulepack before any report semantics are implemented.

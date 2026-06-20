@@ -2,18 +2,18 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-source-entitlement-decision-packet.md`.
+Latest completed plan: `2026-06-20-post-se001-bologna-preflight.md`.
 
-Active plan: `2026-06-20-post-se001-bologna-preflight.md`.
+Active plan: `2026-06-20-bologna-source-candidate-discovery.md`.
 
-The active slice is `BP-001` post-SE001 routing and Bologna preflight. `SE-001` made
-the remaining DS-017 Must-source blocker decision-ready with a validate-only,
-machine-readable packet and checker while keeping DS-017 blocked. The next unblocked
-repo-local path is to restore live routing after SE-001 and add a validate-only Bologna
-recorded-source pilot preflight so the long-term milestone is explicit without
-selecting Bologna, approving Italy/EU sources, approving a rulepack, unblocking DS-017,
-creating hosted deployment/identity/observability authority, or claiming Level 10
-production proof.
+The active slice is `BSC-001` Bologna source-candidate discovery. `BP-001` restored
+post-SE001 routing and added the validate-only Bologna preflight while keeping all
+Bologna approval flags false. The next unblocked repo-local path is to add a
+candidate-only source inventory for official Bologna/Emilia-Romagna discovery surfaces
+so the source-rights review pass has concrete candidates without selecting Bologna,
+approving Italy/EU sources, promoting registry rows, committing fixtures, approving a
+rulepack, unblocking DS-017, creating hosted authority, or claiming Level 10 production
+proof.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

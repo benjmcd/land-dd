@@ -60,12 +60,20 @@ def test_bologna_preflight_gate_set_and_statuses_are_pinned() -> None:
         else:
             assert gates[gate_id]["next_action"]
             assert gates[gate_id]["blocker_authority"]
+    assert "config/bologna_source_candidates.yaml" in gates["italy_source_inventory"]["evidence"]
+    assert gates["italy_source_inventory"]["status"] == "missing_candidate_decision"
 
 
 def test_bologna_preflight_validator_passes_current_artifacts() -> None:
     validator = cast(Any, _load_validator())
 
     assert validator.main() == 0
+
+
+def test_bologna_preflight_composes_source_candidate_inventory() -> None:
+    validator = cast(Any, _load_validator())
+
+    validator.validate_source_candidates()
 
 
 def test_bologna_preflight_validator_fails_if_approval_flips(
