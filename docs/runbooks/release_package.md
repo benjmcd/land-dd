@@ -73,6 +73,26 @@ The builder writes:
 
 The builder fails if either output already exists. It does not delete, overwrite, push, deploy, or publish anything.
 
+## Verify A Built Package
+
+Run post-build manifest verification against the generated sibling manifest:
+
+```powershell
+.\scripts\run_package_manifest_check.ps1 -Manifest .\local_artifacts\releases\land-diligence-2026-06-05-rc1-release-manifest.json
+```
+
+The wrapper delegates to `scripts/package_manifest_check.py`. The check verifies that
+the external manifest has schema `release_package_manifest_v1`, the ZIP SHA-256 matches
+`zip_sha256`, the embedded `release-manifest.json` matches the external manifest except
+for the external-only ZIP hash, every declared ZIP entry has the recorded size and
+SHA-256, no undeclared ZIP entries are present, packaged paths obey
+`config/release_package.yaml`, and manifest limits still record no registry image push,
+no hosted deployment, and no included secrets.
+
+This is post-build manifest verification for a local source/runtime/operator package.
+It is not image signing, registry publication, SLSA provenance, hosted deployment
+attestation, or DS-017/source-rights approval.
+
 ## Known Limits
 
 - The package is a local source/runtime/operator artifact bundle, not a hosted release.

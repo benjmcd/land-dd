@@ -222,6 +222,24 @@ jobs:
       - name: Validate release readiness catalog
         run: ./scripts/run_release_readiness_check.sh
 
+  release-package-manifest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install static catalog parser
+        run: python -m pip install PyYAML
+      - name: Validate release package boundary
+        run: ./scripts/run_release_package_check.sh
+      - name: Build local release package
+        run: ./scripts/build_release_package.sh "ci-${{ github.sha }}"
+      - name: Validate generated package manifest
+        run: ./scripts/run_package_manifest_check.sh "local_artifacts/releases/land-diligence-ci-${{ github.sha }}-release-manifest.json"
+
   security-scan:
     runs-on: ubuntu-latest
     permissions:

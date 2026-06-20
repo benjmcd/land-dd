@@ -55,6 +55,7 @@ EXPECTED_CI_PROOFS = {
     "dependency-attestations": "./scripts/run_provenance_check.sh",
     "container-image-scan": "./scripts/run_container_scan_check.sh",
     "access-control": "./scripts/run_access_control_check.sh",
+    "release-package-manifest": "./scripts/run_release_package_check.sh",
     "image-publication": "./scripts/run_image_publication_check.sh",
     "hosted-deployment": "./scripts/run_hosted_deployment_check.sh",
     "release-readiness": "./scripts/run_release_readiness_check.sh",
@@ -101,6 +102,8 @@ def test_release_readiness_catalog_covers_required_checks_and_blockers() -> None
     assert catalog["operator_runbook"] == "docs/runbooks/release_readiness.md"
     check_ids = {check["id"] for check in catalog["required_checks"]}
     assert check_ids == REQUIRED_CHECKS
+    checks = {check["id"]: check for check in catalog["required_checks"]}
+    assert checks["release_package"]["ci_job"] == "release-package-manifest"
     for check in catalog["required_checks"]:
         assert (REPO_ROOT / check["proof"]).exists()
 
@@ -133,6 +136,24 @@ def test_ci_has_release_readiness_job() -> None:
     assert "python -m pip install PyYAML" in steps_text
     assert 'python -m pip install -e "backend[dev]"' in steps_text
     assert "./scripts/run_release_readiness_check.sh" in steps_text
+
+
+def test_ci_has_release_package_manifest_job() -> None:
+    ci_text = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
+        encoding="utf-8",
+    )
+    ci = yaml.safe_load(ci_text)
+    job = ci["jobs"]["release-package-manifest"]
+    job_steps_text = steps_text(job)
+
+    assert job["permissions"]["contents"] == "read"
+    assert "actions/checkout@v6" in job_steps_text
+    assert "actions/setup-python@v6" in job_steps_text
+    assert "python-version: '3.12'" in ci_text
+    assert "python -m pip install PyYAML" in job_steps_text
+    assert "./scripts/run_release_package_check.sh" in job_steps_text
+    assert "./scripts/build_release_package.sh" in job_steps_text
+    assert "./scripts/run_package_manifest_check.sh" in job_steps_text
 
 
 def test_catalog_ci_jobs_exist_in_workflow() -> None:
@@ -234,6 +255,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "dependency-attestations",
         "container-image-scan",
         "access-control",
+        "release-package-manifest",
         "threat-proxy-audit",
         "release-package",
         "image-publication",
@@ -263,6 +285,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "DATABASE_URL",
         "sources=8 ready=7 blocked=1",
         "build_release_package.ps1",
+        "run_package_manifest_check.ps1",
         "run_image_publication_check.ps1",
         "run_hosted_deployment_check.ps1",
         "executes the image-publication and hosted-deployment validators",

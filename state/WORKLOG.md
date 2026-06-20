@@ -2,6 +2,39 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Package-manifest CI gate
+
+- Started `G7a` from `plans/2026-06-20-package-manifest-ci.md` in clean worktree
+  `worktrees/pkg-manifest` after refreshing live `origin/main` at
+  `52b167a96643befa863f9501d1171385c4a25383` and confirming no open GitHub PRs.
+- Audited live release-package/readiness surfaces and dirty-root G7a candidates. The
+  retained scope is package-manifest verification and CI gate only; unrelated
+  dirty-root readiness/UI candidates remain preserved evidence for later slices.
+- Added focused tests for a standalone generated release-package manifest checker,
+  release-package artifact guardrails, and release-readiness CI mapping. The intentional
+  red run failed only for the expected missing checker, wrappers, docs, CI job, and
+  release-readiness mapping.
+- Added `scripts/package_manifest_check.py` plus Windows/POSIX wrappers. The checker is
+  read-only over an existing external manifest and validates ZIP hash, embedded manifest
+  parity, declared entries, sizes, SHA-256 hashes, package-boundary membership, and
+  local-only limit flags.
+- Updated release-package and release-readiness validators, docs, manifest routing,
+  CI, plan routing, and task routing. `release_package` now maps to
+  `release-package-manifest`, whose CI job validates the package boundary, builds an
+  ignored local package, and validates the generated manifest without publishing,
+  deploying, signing, approving DS-017, or claiming hosted release authority.
+- Verification: focused package/release-readiness tests passed (`32 passed`); focused
+  ruff and mypy passed; release-package and release-readiness validators passed through
+  direct, Windows, and POSIX paths; generated-package manifest checks passed for
+  PowerShell and POSIX build/check paths; Python compile, PowerShell parser,
+  `git diff --check`, no-deletion audit, workspace validation, and final
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- Initial PR CI found `release-package-manifest` could not execute
+  `scripts/run_package_manifest_check.sh` because the new POSIX wrapper was committed
+  with mode `100644`. Updated the index mode to `100755`, matching existing POSIX
+  wrappers, and confirmed Git Bash can run `./scripts/run_package_manifest_check.sh`
+  directly against a generated proof manifest.
+
 ## 2026-06-19 (Error-state/no-leak hardening)
 
 - Implemented `R-022` from `plans/2026-06-18-error-state-no-leak-hardening.md`

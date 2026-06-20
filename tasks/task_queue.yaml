@@ -1,16 +1,12 @@
 version: 2
-active_plan: plans/2026-06-20-lane1-reconciliation.md
+active_plan: plans/2026-06-20-package-manifest-ci.md
 routing_note: >
-  Latest completed lane: error-state/no-leak hardening
-  (plans/2026-06-18-error-state-no-leak-hardening.md). R-022 strengthened
-  repo-local proof that current API/UI error and recovery surfaces do not leak stack
-  traces, secrets, raw connector payloads, local paths, or internal implementation
-  details while preserving first-class source-failure evidence and without claiming
-  hosted error/log review, hosted log-retention/SIEM, alerting, IdP/RBAC, DS-017
-  entitlement, or production authority. Active lane: REC-001 repository-state
-  reconciliation and selective landing. Recoverable dirty-root candidate work exists
-  beyond live main, but it is not merged authority until classified, decomposed,
-  revalidated from current origin/main, and landed in narrow slices.
+  Latest completed lane: REC-001 repository-state reconciliation and selective landing
+  (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
+  preserved evidence only. Active lane: G7a package-manifest CI gate, opened from live
+  origin/main after REC-001. This slice adds post-build local release-package manifest
+  verification and an additive CI gate without publishing, deploying, signing,
+  approving DS-017, or claiming hosted release authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -633,7 +629,7 @@ tasks:
 
   - id: REC-001
     title: Repository-state reconciliation and selective landing
-    status: in_progress
+    status: done
     depends_on: [R-022]
     lane: coordinator
     spec: plans/2026-06-20-lane1-reconciliation.md
@@ -661,6 +657,39 @@ tasks:
       - Every dirty-root candidate file has an initial retain/rework/defer/archive/discard disposition and a slice/proof boundary
       - No product behavior, schema, public API, source registry, auth boundary, report semantics, or hosted/source claims are changed by the planning/control-plane slice
       - The first retained implementation slice is opened only after this control-plane slice is validated and any product worktree is freshly created from live origin/main
+
+  - id: G7a
+    title: Package-manifest CI gate
+    status: active
+    depends_on: [REC-001]
+    lane: coordinator
+    spec: plans/2026-06-20-package-manifest-ci.md
+    notes: >
+      Land the first retained post-reconciliation product/control slice: standalone
+      generated release-package manifest verification plus an additive CI job that
+      validates the package boundary, builds an ignored local package, and checks the
+      generated manifest against the ZIP contents. This remains local package proof
+      only, not registry publication, signing, hosted deployment, DS-017 approval, or
+      hosted release authority.
+    validation:
+      - cd backend; python -m pytest -q .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py
+      - cd backend; python -m ruff check .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\package_manifest_check.py ..\scripts\release_package_check.py ..\scripts\release_readiness_check.py
+      - cd backend; python -m mypy .\tests\test_package_manifest_check.py .\tests\test_release_package_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\package_manifest_check.py ..\scripts\release_package_check.py ..\scripts\release_readiness_check.py
+      - python .\scripts\release_package_check.py
+      - .\scripts\run_release_package_check.ps1
+      - python .\scripts\release_readiness_check.py
+      - .\scripts\build_release_package.ps1 -Version <proof-version>
+      - .\scripts\run_package_manifest_check.ps1 -Manifest .\local_artifacts\releases\land-diligence-<proof-version>-release-manifest.json
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Built release-package manifests are checked against ZIP hash, embedded manifest, declared entries, file sizes, file hashes, package include/exclude boundaries, and local-only limit flags
+      - Windows and POSIX package-manifest wrappers delegate to the shared checker and require an existing manifest path
+      - Release-package validation fails closed if checker artifacts or docs drift
+      - Release readiness maps the existing release-package gate to read-only `release-package-manifest` CI
+      - Generated package artifacts stay under ignored `local_artifacts/releases` and are not committed
+      - Hosted deployment, registry publication, signing/attestation, DS-017/source approval, and hosted release authority remain blocked
 
   # --- Completed ---
   - id: T000
