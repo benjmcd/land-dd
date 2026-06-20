@@ -272,11 +272,18 @@ Source of current truth: `config/performance_baseline.yaml`,
 ## Bologna Recorded-Source Pilot Authority
 
 Source of current truth: `config/bologna_preflight.yaml`,
-`docs/runbooks/bologna_preflight.md`, `docs/checklists/jurisdiction_readiness.md`,
-`docs/checklists/rulepack_readiness.md`, `state/LEVEL_9_10_GATE_MATRIX.md`.
+`config/bologna_source_candidates.yaml`, `docs/runbooks/bologna_preflight.md`,
+`docs/runbooks/bologna_source_candidates.md`,
+`docs/source-reviews/bologna-source-candidates.md`,
+`docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`,
+`state/LEVEL_9_10_GATE_MATRIX.md`.
 
 This packet does not approve or start Bologna. It records the authority and evidence
 required before a future one-AOI recorded-source pilot can begin.
+
+The Bologna source-candidates packet is candidate-only. It does not approve municipal,
+regional, environmental, cadastral, or open-data sources, and it does not promote any
+source into `registers/data_source_registry.csv`.
 
 - External decisions required:
   - Product decision that authorizes a Bologna recorded-source pilot and names the
@@ -284,6 +291,9 @@ required before a future one-AOI recorded-source pilot can begin.
   - Italy/EU/local source review for each recorded source, including source owner,
     source version/date, retrieval metadata, license/terms reference, redistribution,
     cache, export, AI-use, attribution, raw-data handling, and caveats.
+  - Candidate-source promotion decision that selects exact PUG, open-data, regional
+    topographic, environmental, CRS/reference, and any cadastral source surfaces from
+    `config/bologna_source_candidates.yaml` only after per-source rights review.
   - Jurisdiction and locality boundary model for the pilot, including country,
     regional, municipal, cadastral, CRS/geometry, local professional-review, and
     legal-interpretation boundaries.
@@ -295,11 +305,17 @@ required before a future one-AOI recorded-source pilot can begin.
   - Authorized AOI, recorded-source manifest, source-rights decisions, source versions,
     retrieval metadata, CRS and geometry precision, fixture corpus, source-failure
     fixtures, rulepack or evidence-only scope, caveat language, and no-overclaim review.
+  - Candidate-source review evidence showing why each promoted source is allowed for
+    cache, redistribution, export, AI use, raw retention, attribution, fixture capture,
+    and report use.
   - DB-backed report proof only after the recorded-source corpus is approved: evidence,
     claims or unknowns, caveats, artifact persistence, and lineage.
 - Acceptable unblock criteria:
   - All candidate, source, jurisdiction, rulepack, DS-017-treatment, and fixture-corpus
     prerequisites are explicit and reviewed.
+  - Every candidate source promoted out of `config/bologna_source_candidates.yaml` has
+    a completed source review and source registry row; no pending-review candidate may
+    enter runtime or reports.
   - Source failures, no-data, stale data, ambiguity, license blocks, CRS ambiguity, and
     partial records become first-class evidence or unknowns, not clean findings.
   - The pilot remains recorded-source and local unless hosted platform, identity/RBAC,
@@ -328,8 +344,9 @@ required before a future one-AOI recorded-source pilot can begin.
 ## Open Blockers
 
 - DS-017 has no vendor, license, cost, entitlement, or connector authority.
-- Bologna has no selected AOI, Italy/EU/local source-rights authority, pilot rulepack
-  scope, recorded-source fixture corpus, or DB-backed pilot proof.
+- Bologna has no selected AOI, promoted source inventory, Italy/EU/local source-rights
+  authority, cadastral source review, pilot rulepack scope, recorded-source fixture
+  corpus, or DB-backed pilot proof.
 - Hosted platform, database, DNS/TLS, registry, public URL, and production smoke
   authority are not available.
 - External secret manager, IdP/OAuth/OIDC, full user RBAC, billing reconciliation,

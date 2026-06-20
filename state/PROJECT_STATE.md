@@ -1,5 +1,50 @@
 # Project State
 
+## Current checkpoint (2026-06-20 Bologna source-candidate discovery BSC-001)
+
+The active implementation authority is now `BSC-001` from
+`plans/2026-06-20-bologna-source-candidate-discovery.md`. This follows merged PR #107
+at `295c96a4308b39e77fee7935d3b5e465755ad6bf`, which completed `BP-001` post-SE001
+Bologna preflight. The dirty root checkout remains preserved candidate evidence only;
+continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-bologna-source-candidate-discovery.md`.
+- **Purpose**: turn the Bologna preflight's `italy_source_inventory` gap into a
+  validate-only, candidate-only source inventory so the next source-rights review has
+  concrete official candidate surfaces without approving sources or starting Bologna.
+- **Current implementation slice**: clean worktree `worktrees/bol-src` adds
+  `config/bologna_source_candidates.yaml`, `docs/runbooks/bologna_source_candidates.md`,
+  `docs/source-reviews/bologna-source-candidates.md`,
+  `scripts/bologna_source_candidates_check.py`, Windows/POSIX wrappers, focused
+  artifact tests, and preflight composition. Candidate domains cover municipal
+  planning, municipal open data, regional topographic data, regional catalog services,
+  CRS/reference systems, and environmental map discovery. Every candidate remains
+  `not_approved`, not source-registry-promoted, disallowed for runtime use, and
+  disallowed for fixture-corpus use.
+- **Next required step**: complete focused and canonical validation, then publish/merge
+  `BSC-001` and remove the worktree if checks and CI pass.
+- **Goal sequence**: immediate work is candidate-source packet validation and merge.
+  The next repo-local pass after that should be a source-rights review plan for exact
+  Bologna layers/documents/datasets only if product/AOI authority is available; absent
+  that, record the blocker and do not fabricate a fixture corpus. Mid-term work is an
+  authorized one-AOI Bologna recorded-source corpus with source versions, retrieval
+  metadata, CRS policy, attribution, source-failure fixtures, and evidence-only or
+  rulepack scope; then one DB-backed report proof with evidence, unknowns/claims,
+  caveats, artifacts, and lineage. Parallel external blockers remain DS-017 treatment,
+  hosted platform/database/DNS/TLS, identity/RBAC, object-store, observability,
+  alerting, billing, secret-manager, image-publication, and production workload
+  authority. Long-term work is a repeatable multi-geography source/rulepack framework
+  only after the Bologna pilot exposes real shared contracts and country-specific
+  boundaries.
+- **Known boundaries to preserve**: no Bologna AOI selection, source approval, source
+  registry promotion, recorded fixture, connector, DB seed, report/API/UI/schema
+  change, DS-017 approval, vendor selection, hosted deployment, hosted identity/RBAC,
+  hosted observability/log retention/alerting, hosted object-store proof, new
+  jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation
+  semantics, multi-geography framework implementation, report semantic overclaim, or
+  Level 10 completion claim.
+
 ## Current checkpoint (2026-06-20 post-SE001 Bologna preflight BP-001)
 
 The active implementation authority is now `BP-001` from

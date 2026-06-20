@@ -82,15 +82,19 @@ preflight_gates:
   - id: italy_source_inventory
     status: missing_candidate_decision
     evidence:
+      - config/bologna_source_candidates.yaml
+      - docs/source-reviews/bologna-source-candidates.md
       - registers/data_source_registry.csv
       - docs/DATA_SOURCE_STRATEGY.md
     blocker_authority:
+      - config/bologna_source_candidates.yaml
       - registers/data_source_registry.csv
       - schemas/source_schema.json
     next_action: >
-      Name the recorded-source corpus candidates, source owners, source versions,
-      retrieval metadata, terms references, and caveats before any Bologna fixture is
-      committed.
+      Promote candidate surfaces into selected recorded-source corpus candidates only
+      after product/AOI authority and per-source rights review name source owners,
+      source versions, retrieval metadata, terms references, attribution, and caveats.
+      Do not treat the candidate packet as source approval.
 
   - id: italy_source_rights_review
     status: blocked_external_authority

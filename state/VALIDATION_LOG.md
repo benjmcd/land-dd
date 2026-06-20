@@ -13299,3 +13299,67 @@ git diff --name-only --diff-filter=D
 - DS-017 remains externally blocked on vendor/license/cost/entitlement authority or an
   explicit product decision to defer, remove, or replace it.
 - DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.
+
+---
+
+## 2026-06-20 - Bologna Source-Candidate Discovery BSC-001
+
+**Scope:** Add a validate-only, candidate-only Bologna source inventory and checker.
+This is source-rights preparation only; it does not approve sources, select a Bologna
+AOI, promote source registry rows, commit fixtures, run connectors, change source
+readiness, approve a rulepack, unblock DS-017, create hosted authority, or claim Level
+10 completion.
+
+**Commands/checks run:**
+
+```powershell
+py -3.12 .\scripts\bologna_source_candidates_check.py
+py -3.12 -m pytest backend\tests\test_bologna_source_candidates_artifacts.py -q
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 -m pytest backend\tests\test_bologna_source_candidates_artifacts.py backend\tests\test_bologna_preflight_artifacts.py -q
+cd backend; ruff check ..\scripts\bologna_source_candidates_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_candidates_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\bologna_source_candidates_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_candidates_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+.\scripts\run_bologna_source_candidates_check.ps1
+.\scripts\run_bologna_preflight_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial source-candidate checker/test runs failed on missing exact runbook phrases;
+  the runbook was corrected to name `bologna_source_candidates_v1` and state that it
+  does not approve sources.
+- Focused candidate tests passed (`8 passed`), then combined candidate/preflight tests
+  passed (`17 passed`).
+- Candidate and preflight validators passed, including PowerShell wrappers.
+- Focused ruff passed after line-length cleanup.
+- Focused mypy passed for the new/touched checker and tests.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with DS-017 as the
+  only blocked Must source.
+- Release-readiness and readiness-matrix validators passed. The matrix initially failed
+  because the active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was
+  corrected and the matrix passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final default `.\scripts\verify.ps1` passed: workspace validation passed, backend
+  tests passed, ruff passed, mypy passed over `345` source files, DB smoke was skipped
+  by default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- Bologna remains externally blocked on a selected one-AOI scope, source-rights review,
+  cadastral source review, fixture corpus, rulepack/evidence-only decision, and
+  DB-backed pilot proof.
+- DS-017 remains externally blocked or awaiting explicit defer/remove/substitute
+  authority.
+- Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
+  image-publication, alerting, production workload, and Level 10 authority remain
+  unavailable.
+- DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.

@@ -8,6 +8,11 @@ state while making its prerequisites explicit: candidate authority, Italy/EU/loc
 source rights, DS-017 treatment, rulepack scope, recorded fixtures, DB-backed report
 proof, hosted authority, and the later multi-geography framework boundary.
 
+`config/bologna_source_candidates.yaml` (`bologna_source_candidates_v1`) is the
+candidate-only source inventory attached to this preflight. It narrows source-rights
+follow-up work, but it does not approve any source for recorded fixtures, runtime use,
+or reports.
+
 This proof does not select Bologna, does not approve Italy sources, does not approve an
 EU/Italy rulepack, does not unblock DS-017, does not create runtime artifacts, and does
 not claim hosted production readiness.
@@ -33,6 +38,7 @@ The check is validate-only. It verifies that:
 - limits preserve static, DB-free, artifact-free validation;
 - every preflight gate is classified exactly once with an allowed fail-closed status;
 - every `repo_confirmed` gate has evidence assertions that still match cited files;
+- the Bologna source-candidates packet remains candidate-only and unapproved;
 - every non-`repo_confirmed` gate has a `next_action` and blocker authority;
 - `blocked_external_authority` gates point to existing authority files;
 - the runbook and production authority packet preserve the boundary that this does not
