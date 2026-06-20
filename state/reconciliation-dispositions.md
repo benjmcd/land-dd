@@ -196,9 +196,14 @@ this matrix.
 
 ## Current Lane 1 Status
 
-Every candidate path observed in the dirty root now has an initial disposition, but
-Lane 1 is not complete. The candidate workspace still contains implementation that has
-not been merged, archived, deferred in-place, or discarded. The next safe action is to
-validate and merge the `REC-001` control-plane artifacts, then re-check live `origin/main`
-and create the first focused product worktree for the package-manifest/CI slice unless
-that fresh check reveals a stronger dependency reason to start elsewhere.
+The initial disposition table remains historical authority for how the dirty-root
+candidate stack was first classified relative to `c3364ea...`. It is no longer a fresh
+next-slice queue: `REC-001` and retained G-slices through `G9a` have now landed on live
+`origin/main`, with PR #101 merged at `b525439e6bcddefba81c7d6bf12290b3f8551b55`.
+
+Lane 1 is still not complete. The preserved dirty-root candidate workspace must now be
+reconciled against the current live baseline and each path/concept should be marked as
+already landed, landed differently, still divergent, still blocked/deferred, obsolete,
+or coordination/generated. The next safe action is `REC-002`: regenerate that residual
+inventory from current `origin/main`, then choose the next retained engineering slice
+from fresh evidence.

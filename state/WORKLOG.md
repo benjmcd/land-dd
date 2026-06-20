@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Post-G9a roadmap and reconciliation routing REC-002
+
+- Reconciled live `origin/main` after PR #101 and confirmed the current live commit is
+  `b525439e6bcddefba81c7d6bf12290b3f8551b55`, while the root checkout remains the dirty
+  preserved-candidate branch rather than implementation authority.
+- The exact handoff path
+  `C:\Users\benny\Downloads\land_dd_lane_reference_handoff_v4(1).md` was not present.
+  Read `C:\Users\benny\Downloads\land_dd_lane_reference_handoff_current.md` as
+  non-authoritative lane-reference context and reconciled it against live repo state;
+  its baseline was older than current `origin/main`.
+- Created clean worktree `worktrees/lane-route` on `codex/lane-route` from live
+  `origin/main` and corrected routing/state to treat `G9a` as merged, with `REC-002`
+  active for a residual Lane 1 reconciliation pass.
+- Coherence check: hosted staging/identity/observability/artifact work remains blocked
+  by external authority; DS-017 remains an external product/legal/cost decision; Bologna
+  remains premature until source-rights, CRS, and generic AOI/report prerequisites are
+  ready. The next safe immediate pass is residual dirty-root classification against
+  `b525439...`.
+
 ## 2026-06-20 Custom AOI UI runtime smoke G9a
 
 - Started narrow `G9a` from `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md` in

@@ -1,6 +1,41 @@
 # Project State
 
-## Current checkpoint (2026-06-20 custom AOI UI runtime smoke G9a)
+## Current checkpoint (2026-06-20 post-G9a roadmap and reconciliation routing)
+
+The active implementation authority is now the metadata-only `REC-002` routing pass
+from `plans/2026-06-20-post-g9a-roadmap-reconciliation.md`. This follows merged PR
+#101 at `b525439e6bcddefba81c7d6bf12290b3f8551b55`, which completed `G9a` custom AOI
+UI runtime smoke. The dirty root checkout remains preserved candidate evidence only;
+continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-post-g9a-roadmap-reconciliation.md`.
+- **Purpose**: restore live routing after G9a, preserve the lane-reference handoff as
+  non-authoritative context, and define the next immediate, mid-term, and long-term
+  sequence without claiming hosted, source, DS-017, Bologna, or Level 10 authority.
+- **Current live authority**: `origin/main` is
+  `b525439e6bcddefba81c7d6bf12290b3f8551b55` (`Merge pull request #101 from
+  benjmcd/codex/aoi-smoke`). The exact named handoff file
+  `C:\Users\benny\Downloads\land_dd_lane_reference_handoff_v4(1).md` was absent; the
+  nearest `land_dd_lane_reference_handoff_current.md` was read only as planning context
+  and names the older `c3364ea` baseline.
+- **Next required step**: run a residual Lane 1 reconciliation pass from current live
+  `origin/main`, comparing the preserved dirty-root candidate stack against `b525439...`
+  to mark candidate concepts as already landed, still divergent, deferred, obsolete, or
+  coordination/generated. Select the next retained engineering slice only after that
+  residual inventory.
+- **Goal sequence**: immediate work is residual reconciliation and next-slice selection;
+  mid-term work is generic supported-AOI evidence-rich closure, repo-local
+  source-entitlement guardrails/DS-017 decision support, and hosted authority only when
+  external prerequisites exist; long-term work is a Bologna recorded-source pilot and
+  then a repeatable multi-geography source/rulepack framework.
+- **Known boundaries to preserve**: no product behavior, source, connector, county,
+  jurisdiction, rulepack, DS-017 approval, Bologna pilot, hosted deployment, hosted
+  identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
+  production traffic proof, ranking/recommendation semantics, public API contract
+  change, DB schema change, report semantics change, or Level 10 completion claim.
+
+## Previous checkpoint (2026-06-20 custom AOI UI runtime smoke G9a)
 
 The active implementation authority is now the narrow `G9a` custom AOI UI runtime
 smoke slice from `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md`. This follows the
@@ -38,9 +73,10 @@ worktrees under `worktrees/<short-name>`.
   hosted observability/log retention/alerting, hosted object-store proof, production
   traffic proof, ranking/recommendation semantics, public API contract change, DB schema
   change, report semantics change, or Level 10 completion claim.
-- **Next required step**: publish the focused `codex/aoi-smoke` PR, wait for CI, merge
-  only if local and CI proof agree, remove `worktrees/aoi-smoke`, then re-check live
-  `origin/main` before selecting the next retained slice.
+- **Post-merge status**: PR #101 is merged on `origin/main` at
+  `b525439e6bcddefba81c7d6bf12290b3f8551b55`; `worktrees/aoi-smoke` was removed after
+  post-merge proof. The next active pass is the metadata-only `REC-002` residual Lane 1
+  reconciliation and roadmap routing update.
 
 ## Previous checkpoint (2026-06-20 observability readiness UI G8)
 

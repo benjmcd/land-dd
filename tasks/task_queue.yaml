@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-custom-aoi-ui-runtime-smoke.md
+active_plan: plans/2026-06-20-post-g9a-roadmap-reconciliation.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -10,10 +10,10 @@ routing_note: >
   runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
   through PR #94, G5 source-provenance UI merged through PR #96, G6a
   security/access-control guardrails merged through PR #97, G6b operations guardrails
-  merged through PR #98, G6c performance guardrails merged through PR #99, and G8
-  observability readiness merged through PR #100. Active lane: narrow G9a custom AOI UI
-  runtime smoke proof over the existing `/ui/intake`, report status, reviewer approval,
-  artifact, and lineage paths. This slice must not create hosted deployment,
+  merged through PR #98, G6c performance guardrails merged through PR #99, G8
+  observability readiness merged through PR #100, and G9a custom AOI UI runtime smoke
+  merged through PR #101. Active lane: REC-002 post-G9a roadmap and residual Lane 1
+  reconciliation routing. This metadata-only pass must not create hosted deployment,
   hosted identity/RBAC, hosted observability, source/vendor authority, connector
   execution, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
   production traffic proof, ranking/recommendation semantics, or Level 10 authority.
@@ -1043,7 +1043,7 @@ tasks:
 
   - id: G9a
     title: Custom AOI UI runtime smoke
-    status: active
+    status: done
     depends_on: [G8]
     lane: coordinator
     spec: plans/2026-06-20-custom-aoi-ui-runtime-smoke.md
@@ -1072,6 +1072,30 @@ tasks:
       - DB-backed deployment smoke scripts exercise selected-county compare and custom AOI UI runtime smoke in one reviewer-scoped run
       - Artifact persistence and evidence lineage are verified only after approved delivery is available
       - No hosted deployment, hosted identity/RBAC, source/vendor expansion, connector execution, DS-017 approval, Bologna, ranking/recommendation semantics, or Level 10 claim
+
+  - id: REC-002
+    title: Post-G9a roadmap and residual reconciliation routing
+    status: active
+    depends_on: [G9a]
+    lane: coordinator
+    spec: plans/2026-06-20-post-g9a-roadmap-reconciliation.md
+    notes: >
+      Correct live routing after PR #101 by treating G9a as merged, preserving the dirty
+      root as candidate evidence only, and selecting the next immediate pass as a
+      residual Lane 1 reconciliation against current `origin/main`. This pass defines
+      the immediate, mid-term, and long-term sequence without claiming hosted, DS-017,
+      Bologna, or Level 10 authority.
+    validation:
+      - py -3.12 -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('tasks/task_queue.yaml').read_text(encoding='utf-8')); print(data['active_plan']); print([t['id'] for t in data['tasks'] if t.get('status') == 'active'])"
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - G9a is recorded as completed after PR #101 merged at `b525439e6bcddefba81c7d6bf12290b3f8551b55`
+      - Active routing points at the residual Lane 1 reconciliation pass, not the completed G9a implementation plan
+      - The next pass requires a fresh residual dirty-root inventory against live `origin/main`
+      - Hosted, identity/RBAC, source-entitlement, DS-017, Bologna, and multi-geography claims remain explicitly gated by prerequisites
 
   # --- Completed ---
   - id: T000

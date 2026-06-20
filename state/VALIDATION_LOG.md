@@ -2,6 +2,48 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Post-G9a Roadmap and Reconciliation Routing REC-002
+
+**Scope:** Metadata-only routing correction after PR #101. Marks G9a as completed,
+sets `REC-002` as the active residual Lane 1 reconciliation pass, and records the
+immediate/mid-term/long-term roadmap without changing product behavior or claiming
+hosted, DS-017, Bologna, source, identity/RBAC, artifact, or Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('tasks/task_queue.yaml').read_text(encoding='utf-8')); print(data['active_plan']); print([t['id'] for t in data['tasks'] if t.get('status') == 'active'])"
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 -m pytest backend\tests\test_readiness_matrix_artifacts.py -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- YAML parsing reported active plan
+  `plans/2026-06-20-post-g9a-roadmap-reconciliation.md` and only active task
+  `REC-002`.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- First `.\scripts\verify.ps1` passed workspace validation and most backend tests, then
+  failed the readiness-matrix artifact test because the new active follow-on plan did
+  not cite `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Added the required Level 9/10 gate-matrix citation to the active plan.
+- `py -3.12 .\scripts\readiness_matrix_check.py` passed.
+- Focused readiness-matrix artifact tests passed (`4 passed`).
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341`
+  source files. DB smoke was skipped by default.
+
+**Residual risk:** This is state/routing work only. It does not perform the residual
+dirty-root inventory itself and does not resolve hosted platform, identity/RBAC,
+artifact, billing, alerting, DS-017/source-entitlement, Bologna, or multi-geography
+prerequisites.
+
 ## 2026-06-20 Custom AOI UI Runtime Smoke G9a
 
 **Scope:** Add custom AOI UI runtime smoke proof over the existing `/ui/intake`, async
