@@ -6,12 +6,37 @@ Provisional dependency grouping for dirty-root candidate work after the initial
 file-level inventory. This map is based on recoverable candidate plan files and the
 dirty-root task sequence. It is not a retain/merge decision.
 
-Live authority remains `origin/main` at
-`c3364ea01605cef09e03da6da8551fa4d1a155e8`.
+The original REC-001 baseline was `origin/main` at
+`c3364ea01605cef09e03da6da8551fa4d1a155e8`. Current live authority is recorded in the
+update note below.
 
 Initial per-file disposition decisions are recorded in
 `state/reconciliation-dispositions.md`. This slice map explains grouping; the
 disposition matrix controls retain/rework/defer/archive/discard decisions.
+
+## 2026-06-20 Live Update After G9a
+
+Live `origin/main` has advanced to
+`b525439e6bcddefba81c7d6bf12290b3f8551b55` after PR #101 merged the `G9a` custom AOI
+UI runtime smoke slice. The original slice map remains the historical grouping for the
+dirty-root candidate stack, but its first-content-review sequence is stale: multiple
+retained G-slices have now been reconstructed from clean worktrees and merged.
+
+The next Lane 1 pass should not restart from the original `c3364ea` inventory or copy
+dirty-root files wholesale. It should regenerate a residual comparison against current
+live `origin/main` and classify each remaining dirty-root candidate path as:
+
+| Residual class | Meaning |
+|---|---|
+| `ALREADY_LANDED` | The retained concept is present on live `origin/main`; no new slice needed. |
+| `LANDED_DIFFERENTLY` | Live `origin/main` solved the concept by a narrower or safer implementation; treat dirty-root content as historical evidence only. |
+| `STILL_DIVERGENT` | Candidate behavior still differs materially and may need a focused plan. |
+| `DEFER_STILL_BLOCKED` | Candidate remains blocked by hosted, source, DS-017, identity, artifact, or geography prerequisites. |
+| `OBSOLETE` | Candidate no longer fits the product/architecture after landed slices. |
+| `COORDINATION_OR_GENERATED` | Agent coordination, cache, generated, or local runtime state; do not promote as product work. |
+
+Only after this residual classification should the next implementation worktree be
+selected.
 
 ## Slice Groups
 
