@@ -2,6 +2,27 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Residual reconciliation REC-002 and G9b routing
+
+- Started clean worktree `worktrees/res-rec` on `codex/res-rec` from live
+  `origin/main` at `47913930ea6b5fc0af71e463d998f57535b7cad4`; confirmed the root
+  checkout remains the dirty preserved-candidate branch and is used only as comparison
+  evidence.
+- Generated `state/residual-reconciliation.md` from dirty-root
+  `git status --porcelain=v1 -uall` plus content comparison against current main. The
+  residual inventory covers `128` candidate paths: `8` already landed exactly, `64`
+  landed differently, `3` still divergent, `17` deferred/still blocked, `34` obsolete,
+  and `2` coordination/generated.
+- Focused review of the `STILL_DIVERGENT` paths found two read-only
+  orientation/control-plane parser candidates (`project_readiness.py`,
+  `release_readiness.py`) and one useful but narrow selected-county runtime-provenance
+  regression candidate. None should become the next broad product slice by being copied
+  from the dirty root.
+- Routed the next active plan to `G9b` generic supported-AOI evidence-rich workflow
+  closure. Hosted platform/identity/observability/artifact work, DS-017 connector work,
+  and Bologna remain gated; generic supported-AOI evidence proof is the highest-leverage
+  unblocked step toward the overarching compiler objective.
+
 ## 2026-06-20 Post-G9a roadmap and reconciliation routing REC-002
 
 - Reconciled live `origin/main` after PR #101 and confirmed the current live commit is

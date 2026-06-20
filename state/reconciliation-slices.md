@@ -35,8 +35,11 @@ live `origin/main` and classify each remaining dirty-root candidate path as:
 | `OBSOLETE` | Candidate no longer fits the product/architecture after landed slices. |
 | `COORDINATION_OR_GENERATED` | Agent coordination, cache, generated, or local runtime state; do not promote as product work. |
 
-Only after this residual classification should the next implementation worktree be
-selected.
+That residual classification is now recorded in `state/residual-reconciliation.md`.
+It selects `G9b` generic supported-AOI evidence-rich workflow closure as the next
+active engineering plan while retaining the selected-county runtime-provenance
+regression candidate as later focused G5 test-hardening if the generic-AOI audit shows
+the same gap matters.
 
 ## Slice Groups
 

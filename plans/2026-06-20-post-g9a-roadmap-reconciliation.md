@@ -145,3 +145,8 @@ passes. DB smoke remains default-off unless explicitly requested.
   `origin/main`, confirmed the exact named handoff file was absent, read the nearest
   current lane-reference handoff as non-authoritative context, and prepared this
   metadata-only routing plan.
+- 2026-06-20: Continued in clean worktree `worktrees/res-rec` on `codex/res-rec` from
+  live `origin/main` at `47913930ea6b5fc0af71e463d998f57535b7cad4`, generated
+  `state/residual-reconciliation.md` from the preserved dirty-root candidate checkout,
+  and routed the next active plan to `G9b` generic supported-AOI evidence-rich workflow
+  closure.

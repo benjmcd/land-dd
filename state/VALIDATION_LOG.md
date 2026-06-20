@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Residual Reconciliation REC-002 and G9b Routing
+
+**Scope:** Complete the residual dirty-root reconciliation required by `REC-002`, record
+`state/residual-reconciliation.md`, and route the next active work to `G9b` generic
+supported-AOI evidence-rich workflow closure. This is metadata/state work only; it does
+not implement generic AOI behavior, hosted deployment, DS-017, Bologna, source expansion,
+identity/RBAC, artifact-store authority, or Level 10 production proof.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git status --short --branch
+git log -1 --oneline origin/main
+git rev-parse --git-dir; git rev-parse --git-common-dir; git rev-parse --show-superproject-working-tree; git branch --show-current
+git check-ignore -q worktrees
+git branch --list 'codex/res-rec'; git ls-remote --heads origin 'codex/res-rec'
+git worktree add .\worktrees\res-rec -b codex/res-rec origin/main
+py -3.12 -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('tasks/task_queue.yaml').read_text(encoding='utf-8')); print(data['active_plan']); print([t['id'] for t in data['tasks'] if t.get('status') == 'active'])"
+git diff --check
+git diff --name-only --diff-filter=D
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 -m pytest backend\tests\test_readiness_matrix_artifacts.py -q
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Live `origin/main` was fetched and confirmed at
+  `47913930ea6b5fc0af71e463d998f57535b7cad4`.
+- Root checkout was confirmed as dirty preserved-candidate branch
+  `codex/r026-raw-readiness-ui`; `worktrees/` is ignored; no local or remote
+  `codex/res-rec` collision existed.
+- Clean worktree `worktrees/res-rec` was created from live `origin/main`.
+- Residual comparison generated `state/residual-reconciliation.md` with `128` candidate
+  paths: `8` already landed exactly, `64` landed differently, `3` still divergent, `17`
+  deferred/still blocked, `34` obsolete, and `2` coordination/generated.
+- YAML parsing reported active plan
+  `plans/2026-06-20-generic-aoi-evidence-closure.md` and only active task `G9b`.
+- `git diff --check`, no-deletion audit, readiness-matrix validator, focused
+  readiness-matrix artifact tests (`4 passed`), and workspace validation passed.
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341`
+  source files. DB smoke was skipped by default.
+
+**Residual risk:** `G9b` is a plan/routing target, not implemented behavior yet. Generic
+AOI evidence-rich workflow proof, source-entitlement/DS-017 decisions, hosted authority,
+Bologna recorded-source pilot, and multi-geography framework work remain incomplete.
+
 ## 2026-06-20 Post-G9a Roadmap and Reconciliation Routing REC-002
 
 **Scope:** Metadata-only routing correction after PR #101. Marks G9a as completed,

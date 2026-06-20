@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-post-g9a-roadmap-reconciliation.md
+active_plan: plans/2026-06-20-generic-aoi-evidence-closure.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -11,11 +11,11 @@ routing_note: >
   through PR #94, G5 source-provenance UI merged through PR #96, G6a
   security/access-control guardrails merged through PR #97, G6b operations guardrails
   merged through PR #98, G6c performance guardrails merged through PR #99, G8
-  observability readiness merged through PR #100, and G9a custom AOI UI runtime smoke
-  merged through PR #101. Active lane: REC-002 post-G9a roadmap and residual Lane 1
-  reconciliation routing. This metadata-only pass must not create hosted deployment,
-  hosted identity/RBAC, hosted observability, source/vendor authority, connector
-  execution, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
+  observability readiness merged through PR #100, G9a custom AOI UI runtime smoke
+  merged through PR #101, and REC-002 post-G9a routing merged through PR #102. Active
+  lane: G9b generic supported-AOI evidence-rich workflow closure. This slice must not
+  create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
+  authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
   production traffic proof, ranking/recommendation semantics, or Level 10 authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
@@ -1075,7 +1075,7 @@ tasks:
 
   - id: REC-002
     title: Post-G9a roadmap and residual reconciliation routing
-    status: active
+    status: done
     depends_on: [G9a]
     lane: coordinator
     spec: plans/2026-06-20-post-g9a-roadmap-reconciliation.md
@@ -1096,6 +1096,35 @@ tasks:
       - Active routing points at the residual Lane 1 reconciliation pass, not the completed G9a implementation plan
       - The next pass requires a fresh residual dirty-root inventory against live `origin/main`
       - Hosted, identity/RBAC, source-entitlement, DS-017, Bologna, and multi-geography claims remain explicitly gated by prerequisites
+
+  - id: G9b
+    title: Generic supported-AOI evidence-rich workflow closure
+    status: active
+    depends_on: [REC-002]
+    lane: coordinator
+    spec: plans/2026-06-20-generic-aoi-evidence-closure.md
+    notes: >
+      Audit and then prove that non-packaged operator-supplied AOIs inside the selected
+      North Carolina counties can produce evidence-rich, reviewed, DB-backed reports
+      with source inventory, caveats, unknowns, artifact retrieval, and evidence
+      lineage. This must not use packaged case IDs as a hidden fallback and must keep
+      DS-017, hosted, Bologna, and multi-geography authority out of scope.
+    validation:
+      - py -3.12 -m pytest backend\tests\private_mvp -q
+      - py -3.12 -m pytest backend\tests\api\test_operator_cases_api.py backend\tests\api\test_ui_routes.py -q
+      - py -3.12 .\scripts\private_mvp_readiness_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - At least one non-packaged AOI per selected county is covered by tests or a recorded blocker before implementation proceeds
+      - Generic supported AOI evidence does not depend on packaged operator-case IDs
+      - Reports preserve source inventory, caveats, unknowns, review approval, artifact, and lineage boundaries
+      - Unsupported/off-scope AOI behavior does not silently receive selected-county assumptions
+      - No hosted, DS-017, new geography, Bologna, ranking/recommendation, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000

@@ -1,6 +1,39 @@
 # Project State
 
-## Current checkpoint (2026-06-20 post-G9a roadmap and reconciliation routing)
+## Current checkpoint (2026-06-20 generic supported-AOI evidence-rich workflow G9b)
+
+The active implementation authority is now `G9b` from
+`plans/2026-06-20-generic-aoi-evidence-closure.md`. This follows merged PR #102 at
+`47913930ea6b5fc0af71e463d998f57535b7cad4` and the completed `REC-002` residual
+reconciliation pass. The dirty root checkout remains preserved candidate evidence only;
+continued work should happen from fresh or already-clean worktrees under
+`worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-generic-aoi-evidence-closure.md`.
+- **Purpose**: audit and then prove that non-packaged operator-supplied AOIs inside the
+  selected North Carolina counties can produce evidence-rich, reviewed, DB-backed
+  reports with source inventory, caveats, unknowns, artifact retrieval, and evidence
+  lineage, without using packaged operator-case IDs as a hidden fallback.
+- **Current reconciliation evidence**: `state/residual-reconciliation.md` compares the
+  preserved dirty-root candidate stack against current live main and classifies `128`
+  candidate paths: `8` already landed exactly, `64` landed differently, `3` still
+  divergent, `17` deferred/still blocked, `34` obsolete reference artifacts, and `2`
+  coordination/generated artifacts. No dirty-root implementation slice should be copied
+  forward wholesale.
+- **Next required step**: open a clean `G9b` implementation worktree from live
+  `origin/main`, audit the current generic AOI report path against the selected-county
+  source/provenance/report boundaries, add failing tests for one non-packaged AOI per
+  selected county or record precise blockers, then implement the smallest evidence-rich
+  generic AOI slice that preserves review, artifact, lineage, caveat, unknown, and
+  unsupported-area behavior.
+- **Known boundaries to preserve**: no new source authority, new county, new
+  jurisdiction, rulepack, DS-017 approval, Bologna pilot, hosted deployment, hosted
+  identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
+  production traffic proof, ranking/recommendation semantics, public API contract
+  overclaim, DB schema change without plan, report semantic overclaim, or Level 10
+  completion claim.
+
+## Previous checkpoint (2026-06-20 post-G9a roadmap and reconciliation routing)
 
 The active implementation authority is now the metadata-only `REC-002` routing pass
 from `plans/2026-06-20-post-g9a-roadmap-reconciliation.md`. This follows merged PR
@@ -34,6 +67,10 @@ continued work should happen from fresh or already-clean worktrees under
   identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
   production traffic proof, ranking/recommendation semantics, public API contract
   change, DB schema change, report semantics change, or Level 10 completion claim.
+- **Post-REC-002 status**: residual classification is recorded in
+  `state/residual-reconciliation.md`. `REC-002` found no dirty-root implementation slice
+  to copy forward wholesale; the next active plan is `G9b` generic supported-AOI
+  evidence-rich workflow closure.
 
 ## Previous checkpoint (2026-06-20 custom AOI UI runtime smoke G9a)
 
