@@ -2,6 +2,64 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Post-SE001 Routing And Bologna Preflight BP-001
+
+**Scope:** Restore live routing after merged SE-001 and add a validate-only Bologna
+recorded-source preflight. This does not select Bologna, approve Italy/EU/local
+sources, approve a rulepack, unblock DS-017, create hosted authority, seed data, change
+runtime behavior, implement a multi-geography framework, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git rev-parse origin/main
+git worktree list
+git status --short --branch
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\source_entitlement_check.py
+py -3.12 .\scripts\checklist_dry_run_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 -m pytest backend\tests\test_bologna_preflight_artifacts.py -q
+py -3.12 .\scripts\bologna_preflight_check.py
+.\scripts\run_bologna_preflight_check.ps1
+cd backend; py -3.12 -m mypy ..\scripts\bologna_preflight_check.py .\tests\test_bologna_preflight_artifacts.py
+ruff check scripts\bologna_preflight_check.py backend\tests\test_bologna_preflight_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Live `origin/main` was confirmed at
+  `a508cd207c95fb79736340295c7eaaee908cc2bf`; the root checkout remains the dirty
+  preserved-candidate branch.
+- Baseline source readiness reported Must `sources=8 ready=7 blocked=1`; DS-017 remains
+  the sole blocked Must source.
+- Source-entitlement, checklist dry-run, release-readiness, and readiness-matrix
+  validators passed before and after the preflight routing changes.
+- The first focused Bologna preflight test/checker run failed because exact guarded
+  runbook phrases were missing or split across line breaks. The runbook was tightened
+  so `does not approve an EU/Italy rulepack` and `does not claim hosted production
+  readiness` are grep-stable guard phrases.
+- Focused Bologna preflight artifact tests then passed (`8 passed`), the direct checker
+  passed, and the Windows wrapper passed.
+- Focused mypy passed for the new checker/test. `py -3.12 -m ruff` was unavailable on
+  the selected Python, so native `ruff check` was run and passed for the new
+  checker/test.
+- `git diff --check`, no-deletion audit, and workspace validation passed.
+- Final default `.\scripts\verify.ps1` passed: workspace validation, full backend tests,
+  native ruff, and mypy over `344` source files. DB smoke was skipped by default.
+
+**Residual risk:** BP-001 is a preflight/routing slice only. Bologna candidate
+authorization, Italy/EU/local source-rights review, pilot rulepack/evidence-only scope,
+recorded-source fixture corpus, DB-backed pilot report proof, DS-017 decision path,
+hosted identity/artifact/observability authority, and multi-geography framework design
+remain future work.
+
 ## 2026-06-20 Supported-AOI UI Runtime Proof G9c
 
 **Scope:** Add and validate a browser/operator workflow for the G9b supported-AOI

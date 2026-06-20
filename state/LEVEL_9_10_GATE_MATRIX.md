@@ -137,19 +137,19 @@ secret-manager, billing, alerting, image publication, or production workload wor
 
 The lowest-dependency next pass is not hosted deployment. Hosted production remains
 blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
-source/vendor authority. `R-010` completed the post-RC authority split, `R-011`
-completed the production authority packet, `R-012` added repo-local source-rights
-report exposure guarding, `R-013` added repo-local source freshness review-drift
-readiness guarding, `R-014` added source-review cadence consistency guarding, `R-015`
-proved the local source/runtime/operator package boundary, `R-016` completed
-representative local performance rehearsal while preserving hosted SLO/capacity
-blockers, and `R-017` included compare/diff in local release-candidate workflow smoke
-without ranking/recommendation semantics. `R-018` added repo-local threat/proxy audit
-guarding, report source-rights manifest propagation, and matrix pins without replacing
-external security/legal/hosted authority. `R-019` now rehearses the existing expansion
-checklists with a validate-only dry-run catalog/checker without selecting or approving
-a new geography, rulepack, source, connector, DS-017 path, or hosted production proof.
+source/vendor authority. `R-019` rehearsed the existing US expansion checklists with a
+validate-only dry-run catalog/checker without selecting or approving a new geography,
+rulepack, source, connector, DS-017 path, or hosted production proof. `SE-001` then made
+the DS-017 commercial source blocker decision-ready with a validate-only source
+entitlement packet while keeping DS-017 blocked. The active `BP-001` pass restores
+post-SE001 routing and adds a validate-only Bologna recorded-source preflight so the
+future Bologna and multi-geography path is explicit without selecting Bologna,
+approving Italy/EU/local sources, approving a rulepack, unblocking DS-017, starting
+Bologna implementation, or claiming Level 10 authority.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
-source/vendor blockers have named authorities and evidence.
+source/vendor blockers have named authorities and evidence. Do not start Bologna
+implementation until `config/bologna_preflight.yaml` has been replaced or superseded by
+an approved pilot plan with recorded-source, jurisdiction, rulepack, DS-017-treatment,
+fixture-corpus, and runtime-proof authority.

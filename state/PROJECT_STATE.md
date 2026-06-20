@@ -1,6 +1,46 @@
 # Project State
 
-## Current checkpoint (2026-06-20 source entitlement decision packet SE-001)
+## Current checkpoint (2026-06-20 post-SE001 Bologna preflight BP-001)
+
+The active implementation authority is now `BP-001` from
+`plans/2026-06-20-post-se001-bologna-preflight.md`. This follows merged PR #106 at
+`a508cd207c95fb79736340295c7eaaee908cc2bf`, which completed the `SE-001`
+source-entitlement decision packet. The dirty root checkout remains preserved
+candidate evidence only; continued work should happen from fresh or already-clean
+worktrees under `worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-post-se001-bologna-preflight.md`.
+- **Purpose**: restore live routing after SE-001 and add a validate-only Bologna
+  recorded-source pilot preflight that makes the long-term Bologna and multi-geography
+  path explicit without selecting Bologna, approving Italy/EU/local sources, approving
+  a rulepack, unblocking DS-017, creating hosted authority, seeding data, or changing
+  runtime behavior.
+- **Current implementation slice**: clean worktree `worktrees/authority-next` adds
+  `config/bologna_preflight.yaml`, `docs/runbooks/bologna_preflight.md`,
+  `scripts/bologna_preflight_check.py`, Windows/POSIX wrappers, focused artifact tests,
+  a Bologna section in `state/PRODUCTION_AUTHORITY_PACKET.md`, and routing/state
+  updates. Baseline source-readiness, source-entitlement, checklist dry-run,
+  release-readiness, and readiness-matrix validators passed before edits. DS-017 remains
+  blocked and Bologna remains not started.
+- **Next required step**: validate BP-001 with the focused preflight tests/checker,
+  source/readiness validators, workspace validation, diff/no-deletion checks, and
+  default `.\scripts\verify.ps1`; then publish/merge and clean the worktree if checks
+  pass.
+- **Goal sequence**: immediate work is BP-001 routing/preflight validation and merge;
+  mid-term work is external DS-017 decision resolution or explicit deferral/removal,
+  hosted platform/identity/observability/artifact authority if granted, and then a
+  separately authorized Bologna recorded-source implementation plan; long-term work is
+  a repeatable multi-geography source/rulepack framework designed only after the
+  Bologna pilot exposes real shared contracts and country-specific boundaries.
+- **Known boundaries to preserve**: no Bologna implementation, recorded-source corpus,
+  source registry promotion, connector, DB seed, report/API/UI/schema change, DS-017
+  approval, vendor selection, owner/value/title/raw vendor exposure, paid-source
+  metering proof, hosted deployment, hosted identity/RBAC, hosted observability/log
+  retention/alerting, hosted object-store proof, new jurisdiction, rulepack,
+  production traffic proof, ranking/recommendation semantics, multi-geography framework
+  implementation, report semantic overclaim, or Level 10 completion claim.
+
+## Previous checkpoint (2026-06-20 source entitlement decision packet SE-001)
 
 The active implementation authority is now `SE-001` from
 `plans/2026-06-20-source-entitlement-decision-packet.md`. This follows merged PR #105
@@ -20,9 +60,9 @@ evidence only; continued work should happen from fresh or already-clean worktree
   source-readiness, release readiness, readiness matrix, diff/no-deletion checks,
   workspace validation, and default `.\scripts\verify.ps1` passed. DS-017 remains
   blocked and unselected.
-- **Next required step**: publish/merge SE-001 and clean the worktree. Follow-on work
-  should wait for external DS-017 vendor/license/cost/entitlement authority, an
-  explicit product decision to defer or remove DS-017 from Must scope, a substitute
+- **Completion status**: SE-001 was published and merged through PR #106. Follow-on
+  work should still wait for external DS-017 vendor/license/cost/entitlement authority,
+  an explicit product decision to defer or remove DS-017 from Must scope, a substitute
   public/official source decision, or hosted authority if those external prerequisites
   arrive first.
 - **Known boundaries to preserve**: no DS-017 approval, vendor selection, connector,
