@@ -16,6 +16,9 @@ secrets, or create generated evidence.
 - `state/POST_RC_AUTHORITY_SPLIT.md` and `state/LEVEL_9_10_GATE_MATRIX.md` classify
   hosted deployment, full identity/RBAC, secret-manager, billing, alerting, image
   publication, production workload, and DS-017 work as blocked on external authority.
+- `config/production_authority_intake.yaml` is the machine-readable validate-only
+  intake map for those external authority streams. It keeps every stream blocked,
+  uncited, and disallowed for decision updates until matching external evidence exists.
 - The catalogs under `config/` are validate-only handoff contracts unless the missing
   external authority and evidence fields below are supplied.
 

@@ -7,8 +7,8 @@ catalog. It gathers the existing verification, DB, deployment smoke, supply-chai
 security-scan, image scan, backup/restore, incident, alerting, cost, access-control,
 threat-proxy-audit, release-package, image-publication, hosted-deployment,
 source-readiness, data-retention, load-test, performance, data-lineage,
-jurisdiction-readiness, rulepack-readiness, checklist-dry-run, and source-entitlement
-proofs into one release boundary.
+jurisdiction-readiness, rulepack-readiness, checklist-dry-run, source-entitlement, and
+production-authority intake proofs into one release boundary.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -42,6 +42,13 @@ The check is validate-only. It verifies that:
   release proof composes `scripts/run_source_entitlement_check.ps1` /
   `scripts/source_entitlement_check.py` as a validate-only source-entitlement check for
   DS-017 decision requirements;
+- the local production-authority intake packet is
+  `config/production_authority_intake.yaml`, and the release proof composes
+  `scripts/run_production_authority_intake_check.ps1` /
+  `scripts/production_authority_intake_check.py` as a validate-only
+  production-authority intake check across DS-017, hosted platform, secrets, identity,
+  image publication, billing, hosted observability, and Bologna recorded-source
+  blockers;
 - Must current-effective source reviews keep `Last Checked At` within the 90-day
   repo-local freshness horizon enforced by `scripts/source_readiness.py` and
   `scripts/alert_rules_check.py`, while source-specific upstream/update cadence and
@@ -132,6 +139,11 @@ The check is validate-only. It verifies that:
 - Hosted deployment readiness is cataloged in `config/hosted_deployment.yaml`, but
   hosted infrastructure mutation, public endpoint creation, and hosted secret-manager
   authority remain blocked.
+- Production-authority intake is cataloged in `config/production_authority_intake.yaml`,
+  but it is only a validate-only map of missing external authority. It does not approve
+  DS-017, select vendors, provision hosted infrastructure, publish images, write
+  secrets, create billing integration, create hosted observability, select a Bologna
+  AOI, promote source decisions, or claim Level 10 authority.
 - No hosted deployment, domain, TLS endpoint, hosted alerting, or pager routing is
   created by this proof.
 - No published registry-image attestation, signed image SBOM, or SLSA provenance

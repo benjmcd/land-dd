@@ -12,6 +12,7 @@ Canonical inputs used here:
 - `MILESTONE_MAP.md`
 - `config/private_mvp_beta_readiness.yaml`
 - `config/release_readiness.yaml`
+- `config/production_authority_intake.yaml`
 - `config/hosted_deployment.yaml`
 - `config/access_control.yaml`
 - `registers/data_source_registry.csv`
@@ -130,8 +131,11 @@ candidates. The split preserves the conclusion that local selected-county
 release-candidate proof is not hosted production proof.
 
 `state/PRODUCTION_AUTHORITY_PACKET.md` now turns the external blockers into decision
-and evidence requests. It does not approve DS-017, hosted deployment, full IdP/RBAC,
-secret-manager, billing, alerting, image publication, or production workload work.
+and evidence requests. `config/production_authority_intake.yaml` makes those streams
+machine-readable and keeps them blocked, uncited, and decision-update-disallowed until
+matching external evidence exists. It does not approve DS-017, hosted deployment, full
+IdP/RBAC, secret-manager, billing, alerting, image publication, Bologna recorded-source
+work, or production workload work.
 
 ## Next Unblocked Pass
 
@@ -142,13 +146,14 @@ validate-only dry-run catalog/checker without selecting or approving a new geogr
 rulepack, source, connector, DS-017 path, or hosted production proof. `SE-001` then made
 the DS-017 commercial source blocker decision-ready with a validate-only source
 entitlement packet while keeping DS-017 blocked. `BP-001` restored post-SE001 routing
-and added a validate-only Bologna recorded-source preflight. `BSC-001` then added a
-candidate-only Bologna source inventory so source-rights follow-up has concrete
-official candidate surfaces. The active `BSR-001` pass adds a fail-closed Bologna
-source-rights matrix so every candidate has explicit source-schema and rights decisions
-before promotion, without selecting Bologna, approving Italy/EU/local sources,
-promoting source registry rows, approving a rulepack, unblocking DS-017, starting
-Bologna implementation, or claiming Level 10 authority.
+and added a validate-only Bologna recorded-source preflight. `BSC-001` added a
+candidate-only Bologna source inventory, `BSR-001` added a fail-closed Bologna
+source-rights matrix, and `BSG-001` added a Bologna source-authority intake guard. The
+current `PAI-001` pass adds a production-wide validate-only intake guard across DS-017,
+hosted platform, secrets, identity/RBAC, image publication, billing, hosted
+observability, and Bologna recorded-source blockers, without approving sources,
+selecting vendors, provisioning hosted services, starting Bologna implementation, or
+claiming Level 10 authority.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

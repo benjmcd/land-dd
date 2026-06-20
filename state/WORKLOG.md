@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Production authority intake guard PAI-001
+
+- Started clean worktree `worktrees/auth-intake` on `codex/auth-intake` from live
+  `origin/main` at `53aaa96eaa5cb1b451b5f503a5e6be45240b1ecd`; root remains the
+  dirty preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current routing after PR #110 and PR #111. `BSA-001` remains blocked on
+  product/AOI/source-review authority, while DS-017, hosted platform, identity/RBAC,
+  hosted observability, billing, secret-manager, image-publication, production
+  workload, and Level 10 authority remain external gates.
+- Added `config/production_authority_intake.yaml`,
+  `docs/runbooks/production_authority_intake.md`,
+  `scripts/production_authority_intake_check.py`, Windows/POSIX wrappers, and focused
+  artifact tests. The checker cross-checks DS-017, hosted platform, secrets,
+  identity/RBAC, image publication, billing, hosted observability, and Bologna
+  recorded-source authority streams against their lower-level catalogs.
+- Composed the production-authority intake checker into release readiness and updated
+  the manifest, production authority packet, Level 9/10 matrix, project state, plan
+  routing, and task queue.
+- Focused tests, focused ruff/mypy, lower-level authority validators, source-readiness,
+  release-readiness, readiness-matrix, diff/no-deletion checks, workspace validation,
+  and default `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- Boundaries remain: no DS-017 approval, no vendor selection, no hosted provisioning,
+  no secret writing, no image publication, no billing integration, no hosted
+  observability, no Bologna AOI/source approval, no fixture capture, no runtime/report
+  implementation, no multi-geography framework, and no Level 10 claim.
+
 ## 2026-06-20 Bologna source-authority intake guard BSG-001
 
 - Started clean worktree `worktrees/bsa-intake` on `codex/bsa-intake` from live
