@@ -30,6 +30,7 @@ git diff --check
 git diff --name-only --diff-filter=D
 .\scripts\validate_workspace.ps1
 .\scripts\verify.ps1
+.\scripts\verify.ps1
 ```
 
 **Results:**
@@ -247,6 +248,9 @@ py -3.12 -m pytest backend\tests\test_readiness_matrix_artifacts.py -q
 - `git diff --check` passed.
 - `git diff --name-only --diff-filter=D` reported no tracked deletions.
 - `.\scripts\validate_workspace.ps1` passed.
+- Final default `.\scripts\verify.ps1` passed: workspace validation passed, backend
+  tests passed, ruff passed, mypy passed over `346` source files, DB smoke was skipped
+  by default, and the gate ended with `verify: ok`.
 - First `.\scripts\verify.ps1` passed workspace validation and most backend tests, then
   failed the readiness-matrix artifact test because the new active follow-on plan did
   not cite `state/LEVEL_9_10_GATE_MATRIX.md`.
@@ -13362,4 +13366,63 @@ git diff --name-only --diff-filter=D
 - Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
   image-publication, alerting, production workload, and Level 10 authority remain
   unavailable.
+- DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
 - DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.
+
+---
+
+## 2026-06-20 - Bologna Source-Rights Matrix BSR-001
+
+**Scope:** Add a validate-only Bologna source-rights matrix and checker. This is
+decision-readiness proof only; it does not approve sources, select a Bologna AOI,
+promote source registry rows, commit fixtures, run connectors, change source readiness,
+approve a rulepack, unblock DS-017, create hosted authority, or claim Level 10
+completion.
+
+**Commands/checks run:**
+
+```powershell
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 -m pytest backend\tests\test_bologna_source_rights_artifacts.py -q
+py -3.12 -m pytest backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_source_candidates_artifacts.py backend\tests\test_bologna_preflight_artifacts.py -q
+.\scripts\run_bologna_source_rights_check.ps1
+py -3.12 .\scripts\bologna_source_candidates_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+cd backend; ruff check ..\scripts\bologna_source_rights_check.py ..\scripts\bologna_source_candidates_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_rights_artifacts.py .\tests\test_bologna_source_candidates_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\bologna_source_rights_check.py ..\scripts\bologna_source_candidates_check.py ..\scripts\bologna_preflight_check.py .\tests\test_bologna_source_rights_artifacts.py .\tests\test_bologna_source_candidates_artifacts.py .\tests\test_bologna_preflight_artifacts.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+```
+
+**Results:**
+
+- Standalone source-rights checker passed.
+- Focused rights tests passed (`9 passed`), then combined rights/candidates/preflight
+  tests passed (`27 passed`).
+- Source-rights wrapper, candidate checker, and Bologna preflight checker passed.
+- Focused ruff initially found line-length issues, and focused mypy caught truthy-string
+  arguments to the checker helper. Both were corrected; focused ruff and mypy then
+  passed.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with DS-017 as the
+  only blocked Must source.
+- Release-readiness and readiness-matrix validators passed.
+- Task routing parsed with active plan
+  `plans/2026-06-20-bologna-source-rights-matrix.md` and active task `BSR-001`.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+
+**Residual risk:**
+
+- Bologna remains externally blocked on selected AOI authority, actual source-rights
+  decisions, cadastral review, fixture corpus, rulepack/evidence-only scope, and
+  DB-backed pilot proof.
+- DS-017 remains externally blocked or awaiting explicit defer/remove/substitute
+  authority.
+- Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
+  image-publication, alerting, production workload, and Level 10 authority remain
+  unavailable.

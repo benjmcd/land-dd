@@ -142,16 +142,19 @@ validate-only dry-run catalog/checker without selecting or approving a new geogr
 rulepack, source, connector, DS-017 path, or hosted production proof. `SE-001` then made
 the DS-017 commercial source blocker decision-ready with a validate-only source
 entitlement packet while keeping DS-017 blocked. `BP-001` restored post-SE001 routing
-and added a validate-only Bologna recorded-source preflight. The active `BSC-001` pass
-adds a candidate-only Bologna source inventory so source-rights follow-up has concrete
-official candidate surfaces without selecting Bologna, approving Italy/EU/local
-sources, promoting source registry rows, approving a rulepack, unblocking DS-017,
-starting Bologna implementation, or claiming Level 10 authority.
+and added a validate-only Bologna recorded-source preflight. `BSC-001` then added a
+candidate-only Bologna source inventory so source-rights follow-up has concrete
+official candidate surfaces. The active `BSR-001` pass adds a fail-closed Bologna
+source-rights matrix so every candidate has explicit source-schema and rights decisions
+before promotion, without selecting Bologna, approving Italy/EU/local sources,
+promoting source registry rows, approving a rulepack, unblocking DS-017, starting
+Bologna implementation, or claiming Level 10 authority.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
 source/vendor blockers have named authorities and evidence. Do not start Bologna
-implementation until `config/bologna_preflight.yaml` and
-`config/bologna_source_candidates.yaml` have been replaced or superseded by an approved
-pilot plan with source-rights, recorded-source, jurisdiction, rulepack,
-DS-017-treatment, fixture-corpus, and runtime-proof authority.
+implementation until `config/bologna_preflight.yaml`,
+`config/bologna_source_candidates.yaml`, and `config/bologna_source_rights.yaml` have
+been replaced or superseded by an approved pilot plan with source-rights,
+recorded-source, jurisdiction, rulepack, DS-017-treatment, fixture-corpus, and
+runtime-proof authority.
