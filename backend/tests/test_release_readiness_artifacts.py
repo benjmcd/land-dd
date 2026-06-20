@@ -37,6 +37,7 @@ REQUIRED_CHECKS = {
     "load_test",
     "performance",
     "data_lineage",
+    "observability_readiness",
 }
 REQUIRED_BLOCKERS = {
     "hosted_deployment_attestation",
@@ -66,6 +67,7 @@ COMPOSED_VALIDATORS = (
     "scripts/hosted_deployment_check.py",
     "scripts/performance_baseline_check.py",
     "scripts/spatial_query_plan_check.py",
+    "scripts/observability_readiness_check.py",
     "scripts/threat_proxy_audit_check.py",
     "scripts/checklist_dry_run_check.py",
 )

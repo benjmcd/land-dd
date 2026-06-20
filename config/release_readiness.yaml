@@ -73,6 +73,9 @@ required_checks:
   - id: data_lineage
     proof: backend/app/api/reports.py
     ci_job: null
+  - id: observability_readiness
+    proof: scripts/run_observability_readiness_check.ps1
+    ci_job: null
 release_blockers:
   - id: hosted_deployment_attestation
     status: blocked
