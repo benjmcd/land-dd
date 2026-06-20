@@ -1,0 +1,171 @@
+schema_version: bologna_source_authority_intake_v1
+operator_runbook: docs/runbooks/bologna_source_authority_intake.md
+source_rights_matrix: config/bologna_source_rights.yaml
+preflight_catalog: config/bologna_preflight.yaml
+status: blocked_no_authority
+validation: scripts/run_bologna_source_authority_intake_check.ps1
+
+authority:
+  - plans/2026-06-20-post-bsr-roadmap.md
+  - config/bologna_source_rights.yaml
+  - config/bologna_preflight.yaml
+  - state/LEVEL_9_10_GATE_MATRIX.md
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+
+approvals:
+  authority_intake_complete: false
+  authorized_one_aoi_scope: false
+  exact_source_selection_complete: false
+  per_source_rights_review_complete: false
+  source_registry_promotion_allowed: false
+  fixture_capture_allowed: false
+  runtime_use_allowed: false
+  report_use_allowed: false
+  rulepack_or_evidence_scope_approved: false
+
+limits:
+  validate_only_intake: true
+  approves_sources: false
+  selects_bologna_aoi: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  changes_source_readiness: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+
+required_authority_decisions:
+  - product_authorizes_bologna_pilot
+  - one_aoi_scope
+  - exact_candidate_source_selection
+  - per_source_terms_reference
+  - per_source_terms_effective_date
+  - per_source_version_or_publication_date
+  - per_source_cache_export_ai_raw_data_decisions
+  - per_source_attribution_text
+  - per_source_retrieval_metadata_policy
+  - per_source_source_failure_policy
+  - per_source_caveat_policy
+  - per_source_crs_precision_policy
+  - per_source_field_allowlist
+  - per_source_field_denylist
+  - fixture_capture_policy
+  - report_use_policy
+  - rulepack_or_evidence_only_scope
+  - no_overclaim_review
+  - review_owner
+
+candidate_authority_reviews:
+  - candidate_id: comune_bologna_pug_webgis
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - effective_pug_document_or_webgis_version
+      - terms_or_reuse_reference
+      - allowed_cache_export_ai_raw_data_decisions
+      - attribution_text
+      - planning_context_caveats
+    authority_references: []
+    decision_updates_allowed: false
+
+  - candidate_id: comune_bologna_open_data_pug_constraints
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - exact_dataset_identifier
+      - dataset_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - attribution_text
+      - environmental_or_constraint_screening_caveats
+    authority_references: []
+    decision_updates_allowed: false
+
+  - candidate_id: rer_geoportale_dbtr_altimetry
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - exact_layer_metadata
+      - license_and_attribution_mapping
+      - source_version_or_update_timestamp
+      - crs_and_precision_decision
+      - terrain_context_caveats
+    authority_references: []
+    decision_updates_allowed: false
+
+  - candidate_id: rer_geoportale_catalog_services
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - exact_layer_selection
+      - per_layer_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - service_or_download_retrieval_policy
+      - layer_specific_caveats
+    authority_references: []
+    decision_updates_allowed: false
+
+  - candidate_id: rer_crs_reference
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - official_crs_reference
+      - transformation_policy
+      - geometry_precision_policy
+      - fixture_crs_metadata_policy
+      - reference_not_report_claim_caveat
+    authority_references: []
+    decision_updates_allowed: false
+
+  - candidate_id: arpae_cartographic_portal
+    authority_state: missing_authority
+    rights_matrix_state: pending_external_review
+    evidence_status: missing
+    evidence_slots:
+      - exact_environmental_layer_selection
+      - layer_metadata_and_terms_reference
+      - source_version_or_update_timestamp
+      - environmental_screening_caveats
+      - no_jurisdiction_or_liability_claim_policy
+    authority_references: []
+    decision_updates_allowed: false
+
+cadastral_authority_review:
+  authority_state: missing_authority
+  rights_matrix_state: direct_source_review_required
+  evidence_status: missing
+  evidence_slots:
+    - official_terms_reference
+    - allowed_access_method
+    - cache_export_ai_raw_data_decisions
+    - cadastral_geometry_precision_and_caveats
+    - explicit_no_owner_title_access_buildability_authority
+  authority_references: []
+  decision_updates_allowed: false
+
+promotion_blockers:
+  - authorized_one_aoi_scope
+  - exact_source_selection
+  - completed_per_source_rights_review
+  - source_contract_fields_complete
+  - source_registry_row_review
+  - recorded_fixture_scope
+  - crs_precision_policy
+  - rulepack_or_evidence_only_scope
+  - no_overclaim_review
+
+unlock_conditions:
+  - Product authority names the one Bologna AOI and evidence-only or rulepack scope.
+  - Each selected source cites exact source-owner, terms, license, version/date, and attribution evidence.
+  - Cache, export, raw-data, AI-use, fixture, runtime, and report-use decisions are reviewed per source.
+  - CRS, geometry precision, caveat, no-data, and source-failure policies are explicit.
+  - Cadastral use stays blocked unless direct official cadastral authority is reviewed.
+  - The rights matrix remains pending until all cited authority references are present.

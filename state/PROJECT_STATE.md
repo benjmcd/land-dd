@@ -1,6 +1,6 @@
 # Project State
 
-## Current checkpoint (2026-06-20 post-BSR roadmap and source-authority blocker)
+## Current checkpoint (2026-06-20 Bologna source-authority intake guard)
 
 `BSR-001` Bologna source-rights matrix is complete and merged through PR #109 at
 `4decd1bb3135a060c75c3534d5223da79f7618a7`. The matrix exists as validate-only
@@ -10,9 +10,17 @@ and raw export. Post-merge validation passed on `origin/main`, and
 `worktrees/bol-rights` was removed.
 
 - **Current routing plan**: `plans/2026-06-20-post-bsr-roadmap.md`.
-- **Current task state**: `BSR-001` is done. `BSA-001` Bologna source-authority intake
-  is blocked until explicit product/AOI/source-review authority exists for exact
-  candidate sources.
+- **Latest completed repo-local guard**:
+  `plans/2026-06-20-bologna-source-authority-intake-guard.md` adds
+  `config/bologna_source_authority_intake.yaml`,
+  `docs/runbooks/bologna_source_authority_intake.md`,
+  `scripts/bologna_source_authority_intake_check.py`, wrappers, focused tests, and
+  Bologna preflight composition. It makes future authority evidence checkable against
+  the source-rights matrix while keeping all authority references empty and all
+  decision updates disallowed.
+- **Current task state**: `BSR-001` and `BSG-001` are done. `BSA-001` Bologna
+  source-authority intake is blocked until explicit product/AOI/source-review authority
+  exists for exact candidate sources.
 - **Immediate next step**: if authority exists, fill the rights matrix from cited
   review evidence. If authority is absent, keep `BSA-001` blocked and do not capture
   fixtures, promote source rows, run connectors, approve a Bologna rulepack, or create

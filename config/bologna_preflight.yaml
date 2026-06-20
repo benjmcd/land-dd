@@ -100,19 +100,23 @@ preflight_gates:
     status: blocked_external_authority
     evidence:
       - config/bologna_source_rights.yaml
+      - config/bologna_source_authority_intake.yaml
       - docs/source-reviews/bologna-source-rights.md
       - schemas/source_schema.json
       - docs/runbooks/source_entitlements.md
       - config/source_entitlements.yaml
     blocker_authority:
       - config/bologna_source_rights.yaml
+      - config/bologna_source_authority_intake.yaml
       - schemas/source_schema.json
       - state/PRODUCTION_AUTHORITY_PACKET.md
     next_action: >
       Complete every pending rights decision in the Bologna source-rights matrix,
       including license, redistribution, cache, export, AI-use, attribution, raw-data,
       retrieval metadata, source-failure, caveat, CRS, fixture, and report-use policy
-      before any Italy/EU/local recorded source is promoted.
+      before any Italy/EU/local recorded source is promoted. Use the source-authority
+      intake packet to cite real product/AOI/source-review authority before changing
+      any pending matrix decision.
 
   - id: ds017_treatment
     status: blocked_external_authority

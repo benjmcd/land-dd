@@ -17,11 +17,12 @@ routing_note: >
   supported-AOI UI/runtime proof merged through PR #105, SE-001 source-entitlement
   decision packet merged through PR #106, BP-001 post-SE001 Bologna preflight merged
   through PR #107, BSC-001 Bologna source-candidate discovery merged through PR #108,
-  and BSR-001 Bologna source-rights matrix merged through PR #109. Current lane:
-  BSA-001 Bologna source-authority intake is blocked until product/AOI/source-review
-  authority exists. Do not create hosted deployment, hosted identity/RBAC, hosted
-  observability, source/vendor authority, new jurisdiction/rulepack/source coverage,
-  DS-017 approval, Bologna implementation, fixture capture, production traffic proof,
+  and BSR-001 Bologna source-rights matrix merged through PR #109. BSG-001 adds a
+  validate-only Bologna source-authority intake guard. Current lane: BSA-001 Bologna
+  source-authority intake remains blocked until product/AOI/source-review authority
+  exists. Do not create hosted deployment, hosted identity/RBAC, hosted observability,
+  source/vendor authority, new jurisdiction/rulepack/source coverage, DS-017 approval,
+  Bologna implementation, fixture capture, production traffic proof,
   ranking/recommendation semantics, multi-geography framework implementation, or Level
   10 authority from repo-local inference alone.
 lane_plans:
@@ -1287,7 +1288,7 @@ tasks:
   - id: BSA-001
     title: Bologna source-authority intake
     status: blocked
-    depends_on: [BSR-001]
+    depends_on: [BSG-001]
     lane: coordinator
     spec: plans/2026-06-20-post-bsr-roadmap.md
     notes: >
@@ -1307,6 +1308,36 @@ tasks:
       - Rights decisions cover exact terms, source version/date, cache/export/AI/raw-data permissions, attribution, CRS, caveats, fixture use, runtime use, and report use
       - If authority is absent, the task remains blocked and no fixture, source registry, runtime, rulepack, or report promotion occurs
       - DS-017, hosted deployment, hosted identity/RBAC, hosted observability, production workload, and Level 10 claims remain separate blockers
+
+  - id: BSG-001
+    title: Bologna source-authority intake guard
+    status: done
+    depends_on: [BSR-001]
+    lane: coordinator
+    spec: plans/2026-06-20-bologna-source-authority-intake-guard.md
+    notes: >
+      Add a validate-only source-authority intake packet and checker so future Bologna
+      source/AOI authority evidence must match the source-rights matrix before pending
+      decisions can change. This keeps BSA-001 blocked and does not approve sources,
+      select an AOI, promote source rows, capture fixtures, run connectors, implement a
+      rulepack, or generalize multi-geography contracts.
+    validation:
+      - py -3.12 .\scripts\bologna_source_authority_intake_check.py
+      - py -3.12 .\scripts\bologna_source_rights_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 -m pytest backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_preflight_artifacts.py -q
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Authority-intake candidate rows match source-rights matrix candidates
+      - Evidence slots match source-rights required evidence for every candidate and the cadastral gap
+      - All approvals remain false, authority references remain empty, and decision updates remain disallowed
+      - Bologna preflight references the authority-intake packet while keeping source rights blocked
+      - No source approval, AOI selection, source registry promotion, fixture capture, runtime/report use, DS-017 approval, hosted authority, multi-geography implementation, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000

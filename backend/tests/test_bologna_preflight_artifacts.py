@@ -63,6 +63,10 @@ def test_bologna_preflight_gate_set_and_statuses_are_pinned() -> None:
     assert "config/bologna_source_candidates.yaml" in gates["italy_source_inventory"]["evidence"]
     assert gates["italy_source_inventory"]["status"] == "missing_candidate_decision"
     assert "config/bologna_source_rights.yaml" in gates["italy_source_rights_review"]["evidence"]
+    assert (
+        "config/bologna_source_authority_intake.yaml"
+        in gates["italy_source_rights_review"]["evidence"]
+    )
     assert gates["italy_source_rights_review"]["status"] == "blocked_external_authority"
 
 
@@ -82,6 +86,12 @@ def test_bologna_preflight_composes_source_rights_matrix() -> None:
     validator = cast(Any, _load_validator())
 
     validator.validate_source_rights()
+
+
+def test_bologna_preflight_composes_source_authority_intake() -> None:
+    validator = cast(Any, _load_validator())
+
+    validator.validate_source_authority_intake()
 
 
 def test_bologna_preflight_validator_fails_if_approval_flips(

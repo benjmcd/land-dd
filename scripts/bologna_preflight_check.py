@@ -57,14 +57,18 @@ REQUIRED_FILES = (
     RUNBOOK_PATH,
     "config/bologna_source_candidates.yaml",
     "config/bologna_source_rights.yaml",
+    "config/bologna_source_authority_intake.yaml",
     "docs/source-reviews/bologna-source-candidates.md",
     "docs/source-reviews/bologna-source-rights.md",
     "scripts/bologna_source_candidates_check.py",
     "scripts/bologna_source_rights_check.py",
+    "scripts/bologna_source_authority_intake_check.py",
     "scripts/run_bologna_source_candidates_check.ps1",
     "scripts/run_bologna_source_candidates_check.sh",
     "scripts/run_bologna_source_rights_check.ps1",
     "scripts/run_bologna_source_rights_check.sh",
+    "scripts/run_bologna_source_authority_intake_check.ps1",
+    "scripts/run_bologna_source_authority_intake_check.sh",
     "scripts/run_bologna_preflight_check.ps1",
     "scripts/run_bologna_preflight_check.sh",
     "state/LEVEL_9_10_GATE_MATRIX.md",
@@ -78,6 +82,7 @@ RUNBOOK_PHRASES = (
     "validate-only",
     "bologna_source_candidates_v1",
     "bologna_source_rights_v1",
+    "bologna_source_authority_intake_v1",
     "not_started_external_authority_required",
     "does not select Bologna",
     "does not approve Italy sources",
@@ -327,11 +332,57 @@ def validate_source_rights() -> None:
         )
 
 
+def validate_source_authority_intake() -> None:
+    payload = require_mapping(
+        yaml.safe_load(read_text("config/bologna_source_authority_intake.yaml")),
+        "Bologna source-authority intake catalog must be a mapping",
+    )
+    require(
+        payload.get("schema_version") == "bologna_source_authority_intake_v1",
+        "Bologna source-authority intake schema mismatch",
+    )
+    require(
+        payload.get("status") == "blocked_no_authority",
+        "Bologna source-authority intake must remain blocked",
+    )
+    approvals = require_mapping(
+        payload.get("approvals"),
+        "Bologna source-authority approvals missing",
+    )
+    require(
+        all(value is False for value in approvals.values()),
+        "Bologna source-authority approvals must remain false",
+    )
+    reviews = require_non_empty_list(
+        payload.get("candidate_authority_reviews"),
+        "Bologna source-authority reviews missing",
+    )
+    for review in reviews:
+        review = require_mapping(review, "each source-authority review must be a mapping")
+        candidate_id = require_text(
+            review.get("candidate_id"),
+            "source-authority candidate id missing",
+        )
+        require(
+            review.get("authority_state") == "missing_authority",
+            f"{candidate_id} source-authority state promoted",
+        )
+        require(
+            review.get("authority_references") == [],
+            f"{candidate_id} source-authority references must remain empty",
+        )
+        require(
+            review.get("decision_updates_allowed") is False,
+            f"{candidate_id} source-authority updates unexpectedly allowed",
+        )
+
+
 def main() -> int:
     validate_required_files()
     validate_catalog()
     validate_source_candidates()
     validate_source_rights()
+    validate_source_authority_intake()
     validate_runbook()
     validate_production_packet()
     print("Bologna preflight check: ok")

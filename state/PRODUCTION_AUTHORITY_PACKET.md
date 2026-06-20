@@ -273,8 +273,10 @@ Source of current truth: `config/performance_baseline.yaml`,
 
 Source of current truth: `config/bologna_preflight.yaml`,
 `config/bologna_source_candidates.yaml`, `config/bologna_source_rights.yaml`,
+`config/bologna_source_authority_intake.yaml`,
 `docs/runbooks/bologna_preflight.md`, `docs/runbooks/bologna_source_candidates.md`,
 `docs/runbooks/bologna_source_rights.md`,
+`docs/runbooks/bologna_source_authority_intake.md`,
 `docs/source-reviews/bologna-source-candidates.md`,
 `docs/source-reviews/bologna-source-rights.md`,
 `docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`,
@@ -291,6 +293,10 @@ The Bologna source-rights matrix is validate-only. It records the exact source-s
 license, cache, export, AI-use, raw-data, attribution, retrieval, caveat, CRS, fixture,
 and report-use decisions required before any candidate can be promoted.
 
+The Bologna source-authority intake guard is validate-only and blocked. It records the
+exact authority evidence slots that must be cited before any pending source-rights
+decision can change.
+
 - External decisions required:
   - Product decision that authorizes a Bologna recorded-source pilot and names the
     exact one-AOI scope, intended operator, non-goals, and stop conditions.
@@ -300,8 +306,9 @@ and report-use decisions required before any candidate can be promoted.
   - Candidate-source promotion decision that selects exact PUG, open-data, regional
     topographic, environmental, CRS/reference, and any cadastral source surfaces from
     `config/bologna_source_candidates.yaml` only after per-source rights review.
-  - Completion of `config/bologna_source_rights.yaml` for every promoted candidate,
-    including all pending rights decisions and required evidence fields.
+  - Completion of `config/bologna_source_authority_intake.yaml` and then
+    `config/bologna_source_rights.yaml` for every promoted candidate, including all
+    pending authority evidence, rights decisions, and required evidence fields.
   - Jurisdiction and locality boundary model for the pilot, including country,
     regional, municipal, cadastral, CRS/geometry, local professional-review, and
     legal-interpretation boundaries.
@@ -326,8 +333,9 @@ and report-use decisions required before any candidate can be promoted.
   - Every candidate source promoted out of `config/bologna_source_candidates.yaml` has
     a completed source review and source registry row; no pending-review candidate may
     enter runtime or reports.
-  - Every promoted source has completed `config/bologna_source_rights.yaml` decisions;
-    pending rights rows cannot unlock fixtures, runtime use, reports, or raw export.
+  - Every promoted source has completed `config/bologna_source_authority_intake.yaml`
+    authority references and `config/bologna_source_rights.yaml` decisions; pending
+    intake or rights rows cannot unlock fixtures, runtime use, reports, or raw export.
   - Source failures, no-data, stale data, ambiguity, license blocks, CRS ambiguity, and
     partial records become first-class evidence or unknowns, not clean findings.
   - The pilot remains recorded-source and local unless hosted platform, identity/RBAC,
@@ -351,7 +359,7 @@ and report-use decisions required before any candidate can be promoted.
 | Billing/cost authority | Hosted billing reconciliation, paid-source cost attribution, spend alerts, batch/concurrency guardrails. |
 | Alerting/on-call authority | Hosted alert routes, dashboards, queue/source freshness monitors, incident validation. |
 | Production workload/retention authority | Hosted load proof, SLO threshold checks, retention scheduler, log retention, object-store capacity proof. |
-| Bologna recorded-source pilot authority | Complete source-rights matrix, recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan. |
+| Bologna recorded-source pilot authority | Complete source-authority intake, source-rights matrix, recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan. |
 
 ## Open Blockers
 
