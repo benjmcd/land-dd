@@ -734,6 +734,14 @@ builds the backend image, starts DB-backed Compose services, applies migrations/
 checks `/health`, `/version`, `/metrics`, `/operations/queue-health`, and
 `/operations/recovery-preview`, then creates an area and report run through the deployed
 HTTP API. It stops the Compose services on exit unless `DEPLOYMENT_SMOKE_KEEP_SERVICES=1`.
+It also runs `ui_runtime_smoke.py` against the same DB-backed backend with
+`--reviewer-id fixture-reviewer`, `--reviewer-token fixture-token-123`,
+`--operator-case-id BUN-slope`, `--compare-same-area`, and
+`--expect-artifact-persistence postgres+object_store`; that step proves the selected
+local operator path and artifact-persistence contract for the deployed candidate while
+still using explicit reviewer authority for the mutating report action. It does not
+claim hosted SLOs, hosted identity/RBAC, live source rights, DS-017 approval, or
+arbitrary-geography readiness.
 
 Optional environment variables:
 
@@ -759,10 +767,13 @@ python .\scripts\ui_runtime_smoke.py --base-url $env:LAND_DD_UI_SMOKE_BASE_URL
 
 The browser smoke launches Chrome with temporary profiles, checks the core `/ui/*`
 surfaces at desktop (`1366x900`) and mobile (`390x844`) viewports, including the
-selected-county launcher table and form contract on `/ui/`, fails closed on missing DOM
-contracts or page-level horizontal overflow, and removes its temporary Chrome profiles.
-It does not create areas, report runs, connector-review items, review actions,
-screenshots, or JSON output by default.
+selected-county launcher table and form contract on `/ui/` and the read-only
+`/ui/raw-data` inventory, fails closed on missing DOM contracts or page-level horizontal
+overflow, and removes its temporary Chrome profiles. In default local no-auth mode it
+expects `/ui/auth*`, `/ui/login`, `/ui/account`, `/login`, and `/account` to remain
+disabled/404; use API-key or reviewer-session options only when intentionally checking
+protected auth surfaces. It does not create areas, report runs, connector-review items,
+review actions, screenshots, or JSON output by default.
 
 To opt in to an operator-case runtime delivery check after the default route checks,
 pass a selected-county case id to the urllib-based runtime smoke:

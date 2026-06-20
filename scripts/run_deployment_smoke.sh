@@ -180,6 +180,7 @@ export ENABLE_LIVE_CONNECTORS=false
 export ENABLE_METRICS=true
 export REQUIRE_API_KEY=false
 export ENABLE_RATE_LIMIT=false
+export APP_ENV=local
 
 echo "deployment smoke: project=$PROJECT_NAME backend=$BASE_URL db-port=$DB_PORT_VALUE"
 compose build backend
@@ -228,5 +229,13 @@ report_run_id="$(json_field "$report_job" report_run_id)"
 report="$(wait_for_report "$report_run_id")"
 [[ -n "$(json_field "$report" status)" ]]
 [[ "$(json_field "$report" status)" == "succeeded" ]]
+
+python ./scripts/ui_runtime_smoke.py \
+  --base-url "$BASE_URL" \
+  --reviewer-id fixture-reviewer \
+  --reviewer-token fixture-token-123 \
+  --operator-case-id BUN-slope \
+  --compare-same-area \
+  --expect-artifact-persistence postgres+object_store
 
 echo "deployment smoke: ok"

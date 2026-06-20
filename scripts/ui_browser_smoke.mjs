@@ -143,7 +143,7 @@ function spawnChrome({ mode, port, profileDir, viewport }) {
 }
 
 function buildRoutes({ apiKey, reviewerSession }) {
-  return [
+  const routes = [
     {
       label: "home",
       path: "/ui/",
@@ -158,6 +158,18 @@ function buildRoutes({ apiKey, reviewerSession }) {
       ],
     },
     {
+      label: "raw-data",
+      path: "/ui/raw-data",
+      required: [
+        "Raw Data Inventory",
+        "Local raw-data inventory view only",
+        "does not seed fixtures",
+        "does not run connectors",
+        "does not create reports",
+        "does not approve DS-017",
+      ],
+    },
+    {
       label: "report-runs",
       path: "/ui/report-runs",
       required: ["Report Runs", "Compare Selected"],
@@ -167,18 +179,6 @@ function buildRoutes({ apiKey, reviewerSession }) {
       label: "connector-review-queue",
       path: "/ui/connector-review-queue",
       required: ["Connector Review Queue"],
-    },
-    {
-      label: "api-key-auth",
-      path: "/ui/auth",
-      required: ['name="api_key"'],
-    },
-    {
-      label: "reviewer-auth",
-      path: "/ui/auth/reviewer",
-      required: reviewerSession
-        ? ["Reviewer session"]
-        : ['name="reviewer_id"', 'name="reviewer_token"'],
     },
     {
       label: "operations",
@@ -202,9 +202,49 @@ function buildRoutes({ apiKey, reviewerSession }) {
       required: reviewerSession ? ["Live Connector Jobs"] : ["Authentication Required"],
     },
   ];
+  if (apiKey) {
+    routes.push({
+      label: "api-key-auth",
+      path: "/ui/auth",
+      required: ['name="api_key"'],
+    });
+  }
+  if (reviewerSession) {
+    routes.push({
+      label: "reviewer-auth",
+      path: "/ui/auth/reviewer",
+      required: ["Reviewer session"],
+    });
+  }
+  if (!apiKey && !reviewerSession) {
+    routes.push(
+      ...[
+        ["auth-disabled-api-key", "/ui/auth", ['name="api_key"']],
+        ["auth-disabled-api-key-logout", "/ui/auth/logout", []],
+        ["auth-disabled-reviewer", "/ui/auth/reviewer", ['name="reviewer_token"']],
+        ["auth-disabled-reviewer-logout", "/ui/auth/reviewer/logout", []],
+        ["auth-disabled-identity", "/ui/auth/identity", ['name="report_identity_token"']],
+        ["auth-disabled-identity-logout", "/ui/auth/identity/logout", []],
+        ["auth-disabled-ui-login", "/ui/login", ['name="api_key"']],
+        ["auth-disabled-ui-account", "/ui/account", []],
+        ["auth-disabled-login", "/login", ['name="api_key"']],
+        ["auth-disabled-account", "/account", []],
+      ].map(([label, path, forbidden]) => ({
+        label,
+        path,
+        expectedStatus: 404,
+        required: [],
+        forbidden,
+      })),
+    );
+  }
+  return routes;
 }
 
 async function checkPage(cdp, route, mode, viewport) {
+  if (route.expectedStatus && route.expectedStatus !== 200) {
+    return await checkHttpStatusOnly(route, mode, viewport);
+  }
   const failures = [];
   const path = route.path;
   await navigate(cdp, `${baseUrl}${path}`);
@@ -256,6 +296,32 @@ async function checkPage(cdp, route, mode, viewport) {
     clientWidth: value.clientWidth,
     scrollWidth: value.scrollWidth,
     screenshot: screenshotFile,
+    failures,
+  };
+}
+
+async function checkHttpStatusOnly(route, mode, viewport) {
+  void mode;
+  void viewport;
+  const failures = [];
+  const response = await httpText(`${baseUrl}${route.path}`);
+  if (response.status !== route.expectedStatus) {
+    failures.push(`expected HTTP status ${route.expectedStatus}, got ${response.status}`);
+  }
+  for (const text of [...DEFAULT_FORBIDDEN, ...(route.forbidden ?? [])]) {
+    if (response.body.includes(text)) {
+      failures.push(`found forbidden text: ${text}`);
+    }
+  }
+  return {
+    label: route.label,
+    path: route.path,
+    ok: failures.length === 0,
+    title: "",
+    clientWidth: null,
+    scrollWidth: null,
+    screenshot: null,
+    status: response.status,
     failures,
   };
 }
@@ -408,6 +474,28 @@ function httpJson(url, method = "GET") {
           return;
         }
         resolve(JSON.parse(body));
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function httpText(url) {
+  const client = url.startsWith("https:") ? httpsRequest : httpRequest;
+  return new Promise((resolve, reject) => {
+    const req = client(url, { method: "GET" }, (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => {
+        body += chunk;
+      });
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode || 0,
+          headers: res.headers,
+          body,
+        });
       });
     });
     req.on("error", reject);

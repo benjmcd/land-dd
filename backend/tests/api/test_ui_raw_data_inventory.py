@@ -133,6 +133,8 @@ def test_ui_raw_data_inventory_plain_get_is_read_only_on_empty_runtime() -> None
     assert "does not seed fixtures" in response.text
     assert "does not run connectors" in response.text
     assert "does not create reports" in response.text
+    assert "@media (max-width: 640px)" in response.text
+    assert ".raw-shell .table-wrap { overflow-x: auto; max-width: 100%; }" in response.text
 
 
 def test_ui_home_links_to_raw_data_inventory_with_summary_counts() -> None:

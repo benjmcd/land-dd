@@ -12423,3 +12423,59 @@ git diff --name-only --diff-filter=D
 - This catalog does not hydrate runtime source-provenance bundles; later runtime/UI
   slices must still distinguish missing, present, incomplete, and out-of-scope records.
 - DB smoke was not run for this static validate-only catalog slice.
+
+---
+
+## 2026-06-20 - Runtime/Browser Smoke Reconstruction
+
+**Scope:** Rebuild G2 smoke proof around accepted G1 UI surfaces. Default local smoke
+checks `/ui/`, `/ui/raw-data`, report-runs, connector-review, operations, and disabled
+auth routes; protected auth checks remain opt-in; deployment smoke composes DB-backed UI
+runtime proof for `BUN-slope` compare and artifact persistence. The slice does not add
+later readiness/provenance/guardrail/hosted/identity UI or Level 10 authority.
+
+**Commands/checks run:**
+
+```powershell
+py -3.12 -m pytest -q .\backend\tests\test_ui_runtime_smoke_script.py .\backend\tests\test_ui_browser_smoke_scripts.py .\backend\tests\test_deployment_smoke_scripts.py
+cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py
+node --check .\scripts\ui_browser_smoke.mjs
+py -3.12 .\scripts\ui_runtime_smoke.py --help
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+cd backend; ruff check .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py ..\scripts\ui_runtime_smoke.py
+cd backend; py -3.12 -m mypy .\app\api\ui.py .\tests\api\test_ui_raw_data_inventory.py .\tests\test_ui_runtime_smoke_script.py .\tests\test_ui_browser_smoke_scripts.py .\tests\test_deployment_smoke_scripts.py ..\scripts\ui_runtime_smoke.py
+.\scripts\run_deployment_smoke.ps1
+.\scripts\run_ui_browser_smoke.ps1 -BaseUrl http://127.0.0.1:18081 -Mode both
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Intentional red focused pytest failed on the stale G2 smoke contract (`10 failed`,
+  `16 passed`).
+- Focused raw-data/smoke/deployment tests passed after implementation (`31 passed`).
+- `node --check` and `ui_runtime_smoke.py --help` passed.
+- Release-readiness and readiness-matrix validators passed.
+- Focused ruff and focused mypy passed.
+- First real deployment smoke failed because DB-backed default local operator-case POST
+  needs reviewer credentials and `/ui/raw-data` expected text was stale; after fixing
+  those, the second real deployment smoke failed because the compare POST needed CSRF
+  after a reviewer cookie was issued. Final `.\scripts\run_deployment_smoke.ps1` passed.
+- First headed/headless browser smoke failed only on `/ui/raw-data` mobile page-level
+  horizontal overflow (`951 > 390`). After the raw-data wrapper fix, headed and headless
+  desktop/mobile browser smoke passed.
+- `git diff --check`, no-deletion check, workspace validation, and full
+  `.\scripts\verify.ps1` passed. Full verify ran backend tests, ruff, and mypy over
+  `328` source files; DB smoke was skipped by default in verify.
+
+**Residual risk:**
+
+- Browser smoke remains an explicit operator gate and is not part of default
+  `verify.ps1`.
+- This slice proves local and DB-backed selected-county smoke paths, not hosted SLOs,
+  hosted identity/RBAC, source-rights approval, DS-017 approval, or arbitrary-geography
+  readiness.

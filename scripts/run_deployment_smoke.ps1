@@ -169,6 +169,7 @@ $savedEnv = @{
     ENABLE_METRICS = $env:ENABLE_METRICS
     REQUIRE_API_KEY = $env:REQUIRE_API_KEY
     ENABLE_RATE_LIMIT = $env:ENABLE_RATE_LIMIT
+    APP_ENV = $env:APP_ENV
 }
 
 $env:DB_PORT = $dbPort
@@ -178,6 +179,7 @@ $env:ENABLE_LIVE_CONNECTORS = 'false'
 $env:ENABLE_METRICS = 'true'
 $env:REQUIRE_API_KEY = 'false'
 $env:ENABLE_RATE_LIMIT = 'false'
+$env:APP_ENV = 'local'
 
 try {
     Write-Host "deployment smoke: project=$projectName backend=$baseUrl db-port=$dbPort"
@@ -275,6 +277,16 @@ try {
     $report = Wait-ForReport -ReportRunId $reportJob.report_run_id
     if (-not $report.claims -or -not $report.evidence) {
         throw 'report response did not include claims and evidence'
+    }
+
+    Invoke-NativeCommand -Label 'DB-backed UI runtime smoke' -Command {
+        & py -3.12 .\scripts\ui_runtime_smoke.py `
+            --base-url $baseUrl `
+            --reviewer-id fixture-reviewer `
+            --reviewer-token fixture-token-123 `
+            --operator-case-id BUN-slope `
+            --compare-same-area `
+            --expect-artifact-persistence postgres+object_store
     }
 
     Write-Host 'deployment smoke: ok'

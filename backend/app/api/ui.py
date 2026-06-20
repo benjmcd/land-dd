@@ -925,6 +925,9 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
 .raw-shell .console-grid {{ grid-template-columns: 1fr; }}
 .raw-table {{ min-width: 920px; }}
 .raw-boundary {{ margin-top: 1rem; }}
+@media (max-width: 640px) {{
+  .raw-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
 </style>
 </head>
 <body>
