@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-production-authority-intake-guard.md
+active_plan: plans/2026-06-20-selected-county-runtime-provenance-regression.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -21,11 +21,12 @@ routing_note: >
   through PR #110, and BSG-001 Bologna source-authority intake guard merged through PR
   #111. Current lane: PAI-001 production-authority intake guard. BSA-001 Bologna
   source-authority intake remains blocked until product/AOI/source-review authority
-  exists. Do not create hosted deployment, hosted identity/RBAC, hosted observability,
-  source/vendor authority, new jurisdiction/rulepack/source coverage, DS-017 approval,
-  Bologna implementation, fixture capture, production traffic proof,
-  ranking/recommendation semantics, multi-geography framework implementation, or Level
-  10 authority from repo-local inference alone.
+  exists. SRP-001 reworks the retained selected-county runtime-provenance regression as
+  a test-only residual closeout. Do not create hosted deployment, hosted identity/RBAC,
+  hosted observability, source/vendor authority, new jurisdiction/rulepack/source
+  coverage, DS-017 approval, Bologna implementation, fixture capture, production
+  traffic proof, ranking/recommendation semantics, multi-geography framework
+  implementation, or Level 10 authority from repo-local inference alone.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -1372,6 +1373,36 @@ tasks:
       - All streams remain blocked, evidence-missing, uncited, and decision-update-disallowed
       - Release readiness composes the production-authority intake checker
       - DS-017, hosted platform, identity/RBAC, observability, billing, image-publication, Bologna, and Level 10 authority remain externally blocked
+
+  - id: SRP-001
+    title: Selected-county runtime provenance regression
+    status: done
+    depends_on: [PAI-001]
+    lane: coordinator
+    spec: plans/2026-06-20-selected-county-runtime-provenance-regression.md
+    notes: >
+      Rework the retained dirty-root runtime-provenance test candidate into a
+      current-main selected-county fixture review-bundle/idempotency regression. This is
+      test-only and does not change source/report behavior, source readiness, hosted
+      authority, Bologna authority, DS-017 status, or Level 10 status.
+    validation:
+      - cd backend; py -3.12 -m pytest tests\api\test_operator_cases_runtime_provenance.py -q
+      - cd backend; py -3.12 -m pytest tests\api\test_operator_cases_runtime_provenance.py tests\api\test_operator_cases_api.py tests\api\test_ui_source_provenance.py tests\test_private_mvp_readiness.py -q
+      - cd backend; ruff check .\tests\api\test_operator_cases_runtime_provenance.py
+      - cd backend; py -3.12 -m mypy .\tests\api\test_operator_cases_runtime_provenance.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Selected-county fixture package source appears in report source manifests
+      - Fixture review bundles expose only the current case connector retrieval runs
+      - Repeated selected-county report creation does not duplicate fixture provenance runs
+      - Unsupported screening source remains retrieval-run empty
+      - The dirty-root runtime-provenance candidate is no longer an unlanded residual path
 
   # --- Completed ---
   - id: T000

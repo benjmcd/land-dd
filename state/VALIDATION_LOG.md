@@ -2,6 +2,59 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Selected-county Runtime Provenance Regression SRP-001
+
+**Scope:** Add a current-main selected-county runtime provenance regression. This is
+test-only and does not change source/report behavior, source readiness, hosted
+authority, Bologna authority, DS-017 status, or Level 10 status.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+git status --short --branch
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+cd backend; py -3.12 -m pytest tests\api\test_operator_cases_api.py tests\api\test_ui_source_provenance.py tests\test_private_mvp_readiness.py -q
+cd backend; py -3.12 -m pytest tests\api\test_operator_cases_runtime_provenance.py -q
+cd backend; py -3.12 -m pytest tests\api\test_operator_cases_runtime_provenance.py tests\api\test_operator_cases_api.py tests\api\test_ui_source_provenance.py tests\test_private_mvp_readiness.py -q
+cd backend; ruff check .\tests\api\test_operator_cases_runtime_provenance.py
+cd backend; py -3.12 -m mypy .\tests\api\test_operator_cases_runtime_provenance.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\production_authority_intake_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline operator-case/source-provenance/private-MVP focused tests passed (`51`
+  passed).
+- New selected-county runtime-provenance test passed (`4` passed).
+- Combined focused regression suite passed (`55` passed).
+- Ruff passed for the new test file.
+- Mypy passed for the new test file with no issues.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
+- Release-readiness, production-authority intake, and readiness-matrix validators
+  passed.
+- `git diff --check` passed, and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `349` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:** This proves in-memory selected-county runtime provenance only. DB
+smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set; CI
+`db-verify` should cover the DB-enabled suite after publication. DS-017, hosted,
+Bologna, and Level 10 authority remain externally blocked.
+
 ## 2026-06-20 Production Authority Intake Guard PAI-001
 
 **Scope:** Add a validate-only production-authority intake packet and checker. This
