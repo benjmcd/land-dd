@@ -1,22 +1,27 @@
 # Project State
 
-## Current checkpoint (2026-06-20 selected-county runtime provenance regression)
+## Current checkpoint (2026-06-20 post-SRP residual routing closeout)
 
-Live `origin/main` contains `PAI-001` through PR #112 at
-`b62bc488fcf78b2bba2e4beb4ebca2dbdfb9a1b9`. `BSA-001` Bologna source-authority
+Live `origin/main` contains `SRP-001` through PR #113 at
+`b144544d6224381875e92eb6d27206171799de9d`. `BSA-001` Bologna source-authority
 intake remains blocked until explicit product/AOI/source-review authority exists for
 exact candidate sources.
 
 - **Current implementation plan**:
-  `plans/2026-06-20-selected-county-runtime-provenance-regression.md`.
+  `plans/2026-06-20-post-srp-roadmap.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
   review bundles, case-specific connector retrieval scopes, repeated-run idempotency,
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`, and
-  `SRP-001` are done. `BSA-001` remains blocked. Must-source readiness remains
-  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
+  `SRP-001` are done. `RSR-001` records the post-SRP routing closeout. `BSA-001`
+  remains blocked. Must-source readiness remains `sources=8 ready=7 blocked=1`, with
+  `DS-017` as the only blocked Must source.
+- **Candidate reconciliation state**: the runtime-provenance residual is reworked and
+  merged. The only remaining `STILL_DIVERGENT` dirty-root candidate paths are
+  `backend/app/project_readiness.py` and `backend/app/release_readiness.py`; both stay
+  deferred until a real control-plane consolidation slice is selected.
 - **Immediate next step if external authority exists**: cite exact authority in the
   matching lower-level catalog before any stream can move from blocked. For Bologna,
   that means filling the source-rights matrix from cited product/AOI/source-review

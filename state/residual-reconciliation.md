@@ -6,7 +6,7 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 
 ## Authority
 
-- **Current live main**: `47913930ea6b5fc0af71e463d998f57535b7cad4`.
+- **Current live main**: `b144544d6224381875e92eb6d27206171799de9d`.
 - **Dirty-root candidate branch**: `codex/r026-raw-readiness-ui` at `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
 - **Comparison source**: `git status --porcelain=v1 -uall` from the dirty root plus content comparison against the clean `res-rec` worktree at current main.
 - **Prior disposition source**: `state/reconciliation-dispositions.md`.
@@ -35,13 +35,20 @@ After `SRP-001`, the only paths still classified as `STILL_DIVERGENT` are:
 
 `backend/tests/api/test_operator_cases_runtime_provenance.py` is reworked by
 `plans/2026-06-20-selected-county-runtime-provenance-regression.md` as a current-main
-test-only regression for selected-county fixture review-bundle/idempotency behavior.
+test-only regression for selected-county fixture review-bundle/idempotency behavior
+and merged through PR #113.
 
 ## Next-Slice Determination
 
-REC-002 does not find a dirty-root implementation slice that should be copied forward wholesale. The highest-leverage unblocked engineering path is not hosted deployment, DS-017 connector work, or Bologna. Those remain gated by external authority or prerequisites. The next active slice should be a generic supported-AOI evidence-rich workflow plan that audits and then proves arbitrary AOIs inside the selected counties through DB-backed report, approval, artifact, lineage, caveat, unknown, and unsupported-area behavior.
+REC-002 and the later SRP closeout do not find a dirty-root implementation slice that
+should be copied forward wholesale. Generic supported-AOI workflow proof has already
+landed through the G9b/G9c lanes, and the selected-county runtime-provenance regression
+candidate has now been reworked and merged as `SRP-001`.
 
-The selected-county runtime-provenance regression candidate remains retained as a later focused G5 test-hardening slice if generic AOI audit shows the same provenance gap matters for the generic path. The project/release readiness orientation modules remain deferred until repeated merged control-plane patterns justify consolidation.
+The remaining project/release readiness orientation modules stay deferred until
+repeated merged control-plane patterns justify consolidation. Hosted deployment,
+DS-017 connector work, and Bologna implementation remain gated by external authority
+or prerequisites.
 
 ## Residual Path Table
 

@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Post-SRP Residual Routing Closeout RSR-001
+
+**Scope:** Close routing after merged `SRP-001`. This is state/routing only and does
+not change source/report behavior, source readiness, hosted authority, Bologna
+authority, DS-017 status, or Level 10 status.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\production_authority_intake_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline readiness-matrix, source-readiness, release-readiness, and
+  production-authority intake validators passed.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and mypy
+  succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Remaining dirty-root parser candidates are deferred, not
+implemented. DS-017, hosted, Bologna, and Level 10 authority remain externally blocked.
+
 ## 2026-06-20 Selected-county Runtime Provenance Regression SRP-001
 
 **Scope:** Add a current-main selected-county runtime provenance regression. This is
