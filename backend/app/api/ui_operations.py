@@ -18,6 +18,7 @@ from app.api.ui_shared import (
     require_ui_csrf,
     require_ui_reviewer,
     reviewer_credential_fields,
+    ui_auth_routes_enabled,
     ui_reviewer_principal_from_cookie,
 )
 from app.operations.recovery_preview import (
@@ -75,6 +76,7 @@ def _reviewer_has_operations_scope(request: Request, services: ApiServices) -> s
 
 def _dashboard_response(
     *,
+    request: Request,
     reviewer_id: str,
     services: ApiServices,
 ) -> HTMLResponse:
@@ -101,8 +103,7 @@ def _dashboard_response(
         f"<p>Authenticated as: <strong>{principal_esc}</strong></p>"
         "<p class='reviewer-session'>Using reviewer session: "
         f"<strong>{principal_esc}</strong> "
-        "<a class='reviewer-session-link' href='/ui/auth/reviewer'>"
-        "Manage reviewer session</a></p>"
+        f"{_reviewer_session_link(request)}</p>"
         f"{report_table}"
         f"{connector_table}"
         "</body></html>"
@@ -176,6 +177,7 @@ def _stale_running_link(base_href: str, stale_count: int) -> str:
 
 def _recovery_preview_response(
     *,
+    request: Request,
     reviewer_id: str,
     services: ApiServices,
 ) -> HTMLResponse:
@@ -212,8 +214,7 @@ def _recovery_preview_response(
         f"<p>Authenticated as: <strong>{principal_esc}</strong></p>"
         "<p class='reviewer-session'>Using reviewer session: "
         f"<strong>{principal_esc}</strong> "
-        "<a class='reviewer-session-link' href='/ui/auth/reviewer'>"
-        "Manage reviewer session</a></p>"
+        f"{_reviewer_session_link(request)}</p>"
         f"<p>Generated at: <strong>{_html.escape(str(preview.generated_at))}</strong></p>"
         "<p>Stale running threshold: "
         f"<strong>{preview.stale_running_threshold_seconds}s</strong></p>"
@@ -222,6 +223,15 @@ def _recovery_preview_response(
         "</body></html>"
     )
     return HTMLResponse(content=body, status_code=200)
+
+
+def _reviewer_session_link(request: Request) -> str:
+    if not ui_auth_routes_enabled(request):
+        return ""
+    return (
+        "<a class='reviewer-session-link' href='/ui/auth/reviewer'>"
+        "Manage reviewer session</a>"
+    )
 
 
 def _render_recovery_section(
@@ -336,7 +346,11 @@ def _truncation_note(
 def ui_operations_get(request: Request, services: ServicesDep) -> HTMLResponse:
     reviewer_id = _reviewer_has_operations_scope(request, services)
     if reviewer_id is not None:
-        return _dashboard_response(reviewer_id=reviewer_id, services=services)
+        return _dashboard_response(
+            request=request,
+            reviewer_id=reviewer_id,
+            services=services,
+        )
 
     csrf_field = csrf_form_field(request)
     body = (
@@ -363,7 +377,11 @@ def ui_operations_recovery_preview_get(
 ) -> HTMLResponse:
     reviewer_id = _reviewer_has_operations_scope(request, services)
     if reviewer_id is not None:
-        return _recovery_preview_response(reviewer_id=reviewer_id, services=services)
+        return _recovery_preview_response(
+            request=request,
+            reviewer_id=reviewer_id,
+            services=services,
+        )
 
     csrf_field = csrf_form_field(request)
     credential_form = _credential_form(
@@ -424,6 +442,7 @@ def ui_operations_post(
         )
     principal = auth_result.principal
     response = _dashboard_response(
+        request=request,
         reviewer_id=principal.reviewer_id,
         services=services,
     )
@@ -465,6 +484,7 @@ def ui_operations_recovery_preview_post(
         )
     principal = auth_result.principal
     response = _recovery_preview_response(
+        request=request,
         reviewer_id=principal.reviewer_id,
         services=services,
     )

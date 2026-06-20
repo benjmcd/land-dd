@@ -26,7 +26,7 @@ current_controls:
       - docs/runbooks/access_control.md
     validation: scripts/run_access_control_check.ps1
   - id: ui_api_key_cookie_bridge
-    status: implemented_private_beta_browser_bridge
+    status: implemented_private_beta_browser_bridge_default_local_unmounted
     authority:
       - backend/app/api/api_key_auth.py
       - backend/app/api/ui.py

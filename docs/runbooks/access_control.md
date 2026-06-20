@@ -22,7 +22,7 @@ validate-only identity/RBAC design handoff, not production identity or RBAC.
 | API-key middleware | Implemented, default off | `ApiKeyAuthMiddleware` protects non-public paths when `REQUIRE_API_KEY=true`, uses `X-API-Key`, supports raw or `sha256:<64-hex>` configured secrets for local/dev/development/test, requires hashed `API_KEY_SPECS` outside those app environments, fails closed when required but unconfigured, and leaves `/health` and `/version` public |
 | API-key static lifecycle | Implemented configured rotation substrate | `API_KEY_SPECS` accepts comma-separated `id|status|secret` entries, where `status` is `active` or `retired`; active specs authenticate, retired specs do not, malformed, duplicate-id, or duplicate-secret specs fail closed, and non-local `APP_ENV` values require `sha256:<64-hex>` secrets |
 | API-key audit logging | Implemented structured runtime logs plus DB events | Protected-path API-key decisions and `/ui/auth` login attempts emit `event_type=api_key_auth`, outcome, status code, method, path, auth source, and configured `api_key_id` for accepted `API_KEY_SPECS` keys without logging the provided key, configured secret, or query string. When API-key auth and DB services are both enabled, decisions are also written to `audit.events` |
-| UI API-key cookie bridge | Implemented private-beta browser bridge | When `REQUIRE_API_KEY=true`, `/ui/auth` is public and accepts the same configured API keys as `X-API-Key`. Successful form login sets a signed expiring HttpOnly SameSite cookie scoped to `/ui` without storing the submitted API key and may redirect back to a safe `/ui/*` return path; only `/ui/*` routes accept that cookie as an alternative to the header. Cookie-authenticated UI mutation forms require a signed CSRF token derived from the HttpOnly UI cookie, and logout uses a CSRF-protected POST. The token is signed with `UI_AUTH_COOKIE_SECRET`; non-local API-key-locked app environments fail fast when that setting is blank, while local/dev/development/test environments may use a per-process generated fallback. Non-local `APP_ENV` values set the cookie `Secure` flag automatically. JSON/API routes such as `/areas` still require `X-API-Key` |
+| UI API-key cookie bridge | Implemented private-beta browser bridge; default local unmounted | In default local no-auth mode, `/ui/auth*` browser login/session setup routes are not mounted and are absent from default OpenAPI output. When `REQUIRE_API_KEY=true`, `/ui/auth` is public and accepts the same configured API keys as `X-API-Key`. Successful form login sets a signed expiring HttpOnly SameSite cookie scoped to `/ui` without storing the submitted API key and may redirect back to a safe `/ui/*` return path; only `/ui/*` routes accept that cookie as an alternative to the header. Cookie-authenticated UI mutation forms require a signed CSRF token derived from the HttpOnly UI cookie, and logout uses a CSRF-protected POST. The token is signed with `UI_AUTH_COOKIE_SECRET`; non-local API-key-locked app environments fail fast when that setting is blank, while local/dev/development/test environments may use a per-process generated fallback. Non-local `APP_ENV` values set the cookie `Secure` flag automatically. JSON/API routes such as `/areas` still require `X-API-Key` |
 | Reviewer service account | Implemented local scoped substrate | `LocalServiceAccountReviewerAuth` requires `X-Reviewer-Id` plus `X-Reviewer-Token`, supports raw local or `sha256:<64-hex>` configured tokens, requires explicit `REVIEWER_ACCOUNT_SCOPES`, rejects the fixture account and raw token specs outside local/dev/development/test `APP_ENV` values, and fails closed when unconfigured |
 | UI reviewer session bridge | Implemented private-beta browser bridge | `/ui/auth/reviewer` and first submitted UI action credentials can set a signed expiring HttpOnly SameSite reviewer cookie scoped to `/ui`. The cookie stores reviewer id, scopes, expiry, and a non-secret HMAC binding to the configured reviewer token spec; raw reviewer tokens are not stored, reviewer-token rotation invalidates existing reviewer sessions, per-action scopes are still enforced, and JSON/API routes still require `X-Reviewer-Id` plus `X-Reviewer-Token` headers |
 | UI report identity session bridge | Implemented private-beta browser bridge | `/ui/auth/identity` and selected-county UI report forms accept a signed report identity token verified with `REPORT_IDENTITY_TOKEN_SECRET`. The browser cookie stores only workspace id, user id, and expiry in a signed HttpOnly SameSite cookie scoped to `/ui`; it never stores or renders the submitted report identity token, and its max age is bounded by the verified token expiration. Selected-county UI report creation outside local/dev/development/test requires this identity session or a submitted token, plus reviewer `report:run` authority |
@@ -116,6 +116,9 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 - API-key auth emits structured runtime audit logs and, in DB-service mode, durable
   `audit.events` rows for accepted, missing, invalid, and unconfigured decisions,
   including `/ui/auth` login attempts, without logging or persisting secret material;
+- default local no-auth mode does not mount `/ui/auth*` browser login/session setup
+  routes, leaves those routes absent from default OpenAPI output, and keeps default
+  local pages from linking to those auth setup routes;
 - `/ui/auth` serves a public HTML form without exposing configured secrets, sets
   a signed expiring path-scoped HttpOnly SameSite cookie only after the same
   API-key verifier accepts the submitted key, requires `UI_AUTH_COOKIE_SECRET`
@@ -151,16 +154,19 @@ Run the pytest targets named below for behavioral proof. The check verifies that
 
 1. For local fixture mode, leave `REQUIRE_API_KEY=false` unless testing production
    request gating.
-2. For deployment smoke or any shared environment, set `REQUIRE_API_KEY=true` and provide
+2. In default local no-auth mode, operators start from `/ui/`; `/ui/auth*` browser
+   login/session setup routes are not mounted and are absent from default OpenAPI
+   output.
+3. For deployment smoke or any shared environment, set `REQUIRE_API_KEY=true` and provide
    `API_KEY_SPECS` through the environment, never through committed files. Non-local
    `APP_ENV` values reject `API_KEYS` and raw `API_KEY_SPECS` secrets.
-3. For planned static key rotation, use `API_KEY_SPECS` instead of bare `API_KEYS`:
+4. For planned static key rotation, use `API_KEY_SPECS` instead of bare `API_KEYS`:
    add the new key as `new-id|active|sha256:<64-hex>`, deploy, move callers to the
    new key, then mark the old entry `old-id|retired|sha256:<64-hex>` or remove it.
    Retired entries are kept only as explicit fail-closed configuration evidence; they
    do not authenticate.
-4. For private-beta browser access with `REQUIRE_API_KEY=true`, operators can visit
-    `/ui/auth`, submit the configured API key, and receive a session cookie scoped to
+5. For private-beta browser access with `REQUIRE_API_KEY=true`, operators can visit
+   `/ui/auth`, submit the configured API key, and receive a session cookie scoped to
    `/ui`. The cookie contains a signed expiring token carrying the key digest and
    expiry, not the submitted API key. Set `UI_AUTH_COOKIE_SECRET` to a high-entropy
    value in shared environments so cookies remain valid across restarts and replicas.
@@ -173,24 +179,24 @@ Run the pytest targets named below for behavioral proof. The check verifies that
    retrying a stale form. Sign-out is a CSRF-protected POST from `/ui/auth/logout`.
    The cookie is not accepted by JSON/API routes; scripts and API clients must still
    send `X-API-Key`.
-5. Override the fixture `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` values before
+6. Override the fixture `REVIEWER_ACCOUNTS` and `REVIEWER_ACCOUNT_SCOPES` values before
    any shared or production-like reviewer/operator workflow. Non-local `APP_ENV` values
    reject the fixture reviewer defaults and raw reviewer token specs; every account must
    use `id:sha256:<64-hex>` and have explicit scopes.
-6. Browser operators can use `/ui/auth/reviewer` to start a reviewer session once,
+7. Browser operators can use `/ui/auth/reviewer` to start a reviewer session once,
    or submit reviewer credentials on a UI action to set the same session. API clients
    must still use `X-Reviewer-Id` and `X-Reviewer-Token`. UI mutations authorized
    by the reviewer session cookie require the page's signed CSRF token.
-7. Browser operators can use `/ui/auth/identity` to start a workspace/user identity
+8. Browser operators can use `/ui/auth/identity` to start a workspace/user identity
    session from a signed report identity token, or paste the token into a
    selected-county UI report form for one action. The raw token is not stored in the
    UI cookie or rendered back to the page. The resulting cookie expires no later than
    the submitted token. Non-local selected-county UI report creation requires this
    identity plus reviewer `report:run` authority. UI mutations authorized by the
    identity session cookie require the page's signed CSRF token.
-8. Treat a failed access-control proof as a release blocker until the current controls,
+9. Treat a failed access-control proof as a release blocker until the current controls,
    tests, catalog, and runbook are reconciled.
-9. Treat the repo-local identity/RBAC contract as a design handoff only. Do not
+10. Treat the repo-local identity/RBAC contract as a design handoff only. Do not
    claim full user auth/RBAC until user accounts, identity-provider integration,
    full role policy, automatic key rotation, hosted retention, and audit semantics are designed,
    implemented, and verified.
@@ -206,10 +212,11 @@ Run the pytest targets named below for behavioral proof. The check verifies that
   non-local API-key-locked environments require `API_KEY_SPECS` with `sha256:<64-hex>`
   secrets.
 - The `/ui/auth` cookie bridge is a private-beta browser convenience, not full user
-  auth/RBAC. It stores a signed expiring token in an HttpOnly cookie scoped to `/ui`,
-  not the submitted API key. It uses separate UI-cookie signing material instead of
-  API-key specs/hashes, but does not add users, roles, OAuth/OIDC, account
-  persistence, or user-bound audit semantics.
+  auth/RBAC. In default local no-auth mode it is not mounted or advertised in default
+  OpenAPI output. It stores a signed expiring token in an HttpOnly cookie scoped to
+  `/ui`, not the submitted API key. It uses separate UI-cookie signing material
+  instead of API-key specs/hashes, but does not add users, roles, OAuth/OIDC,
+  account persistence, or user-bound audit semantics.
 - UI report identity auth is private-beta session auth. It stores workspace id, user
   id, and expiry in a signed HttpOnly cookie scoped to `/ui`, not the submitted
   report identity token. It uses existing report identity tokens as authority and

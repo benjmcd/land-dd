@@ -94,6 +94,9 @@ def test_access_control_catalog_covers_current_controls_and_blockers() -> None:
     assert catalog["operator_runbook"] == "docs/runbooks/access_control.md"
     controls = {control["id"]: control for control in catalog["current_controls"]}
     assert REQUIRED_CONTROLS.issubset(set(controls))
+    assert controls["ui_api_key_cookie_bridge"]["status"] == (
+        "implemented_private_beta_browser_bridge_default_local_unmounted"
+    )
     for control in controls.values():
         assert control["validation"] == "scripts/run_access_control_check.ps1"
         for authority in control["authority"]:
@@ -258,6 +261,9 @@ def test_access_control_runbook_records_validation_and_limits() -> None:
         "event_type=api_key_auth",
         "audit.events",
         "DB-service mode",
+        "default local no-auth mode does not mount `/ui/auth*`",
+        "absent from default OpenAPI output",
+        "keeps default\n  local pages from linking to those auth setup routes",
         "hosted log-retention/export/SIEM",
         "durable per-key usage audit ledger",
         "configured static key lifecycle exists",
@@ -368,6 +374,32 @@ def test_access_control_validator_tracks_current_ui_reviewer_session_design() ->
         "API reviewer tokens remain header-only and separate from API keys",
         "browser reviewer actions can use `/ui/auth/reviewer`",
         "signed, expiring, HttpOnly reviewer session cookie scoped to `/ui`",
+    ):
+        assert phrase in validator
+        assert phrase in design
+
+
+def test_access_control_validator_tracks_default_local_ui_auth_omission() -> None:
+    validator = (REPO_ROOT / "scripts" / "access_control_check.py").read_text(
+        encoding="utf-8",
+    )
+    design = (REPO_ROOT / "DESIGN.md").read_text(encoding="utf-8")
+    ui_tests = (
+        REPO_ROOT / "backend" / "tests" / "api" / "test_ui_api_key_auth.py"
+    ).read_text(encoding="utf-8")
+
+    for phrase in (
+        "test_local_no_auth_ui_auth_routes_are_not_mounted",
+        "test_local_protected_mode_still_mounts_ui_auth_route",
+        "test_local_no_auth_ui_pages_do_not_link_unmounted_auth_routes",
+        "path not in openapi_paths",
+    ):
+        assert phrase in validator
+        assert phrase in ui_tests
+
+    for phrase in (
+        "In default local no-auth mode",
+        "local browser login/account/session setup pages are not mounted or advertised",
     ):
         assert phrase in validator
         assert phrase in design

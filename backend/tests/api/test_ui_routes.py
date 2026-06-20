@@ -22,7 +22,11 @@ from app.api.reports import (
 from app.api.reports import (
     _build_comparison_summary as _reports_build_comparison_summary,
 )
-from app.api.ui_shared import UI_REPORT_IDENTITY_COOKIE
+from app.api.ui_shared import (
+    UI_REPORT_IDENTITY_COOKIE,
+    UI_REVIEWER_COOKIE,
+    create_ui_reviewer_cookie_token,
+)
 from app.core.config import Settings
 from app.domain.enums import IntentCode
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
@@ -55,6 +59,26 @@ def _csrf_token_from(html: str) -> str:
     match = re.search(r'name="csrf_token" type="hidden" value="([^"]+)"', html)
     assert match is not None
     return match.group(1)
+
+
+def _set_reviewer_session(
+    tc: TestClient,
+    app: FastAPI,
+    *,
+    reviewer_id: str = _FIXTURE_REVIEWER_ID,
+    reviewer_token: str = _FIXTURE_REVIEWER_TOKEN,
+) -> None:
+    services = cast(ApiServices, app.state.services)
+    principal = services.reviewer_auth(
+        reviewer_id=reviewer_id,
+        reviewer_token=reviewer_token,
+    )
+    token = create_ui_reviewer_cookie_token(
+        principal,
+        services,
+        app.state.api_key_auth_config,
+    )
+    tc.cookies.set(UI_REVIEWER_COOKIE, token)
 
 
 def _selected_county_cases() -> list[dict[str, object]]:
@@ -849,16 +873,9 @@ def test_ui_selected_county_cookie_sessions_require_csrf_without_api_key_auth(
 
 
 def test_ui_intake_reviewer_session_requires_csrf() -> None:
-    tc = TestClient(create_app())
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    app = create_app()
+    tc = TestClient(app)
+    _set_reviewer_session(tc, app)
 
     missing_csrf = tc.post(
         "/ui/intake",
@@ -1151,15 +1168,7 @@ def test_ui_approve_report_run_redirects_on_success() -> None:
 
 def test_ui_approve_report_run_accepts_reviewer_session_without_form_credentials() -> None:
     app, tc, report_run_id = _make_app_client_with_report()
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     page = tc.get(f"/ui/report-runs/{report_run_id}")
     assert "Using reviewer session" in page.text
@@ -1432,15 +1441,7 @@ def _make_app_client_with_failed_report() -> tuple[FastAPI, TestClient, str]:
 
 def test_ui_retry_report_run_reviewer_session_requires_csrf() -> None:
     app, tc, report_run_id = _make_app_client_with_failed_report()
-    reviewer_login = tc.post(
-        "/ui/auth/reviewer",
-        data={
-            "reviewer_id": _FIXTURE_REVIEWER_ID,
-            "reviewer_token": _FIXTURE_REVIEWER_TOKEN,
-        },
-        follow_redirects=False,
-    )
-    assert reviewer_login.status_code == 303
+    _set_reviewer_session(tc, app)
 
     missing_csrf = tc.post(
         f"/ui/report-runs/{report_run_id}/retry",

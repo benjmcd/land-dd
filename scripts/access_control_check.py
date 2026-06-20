@@ -217,7 +217,10 @@ REQUIRED_ROUTE_SCOPE_MAPPINGS: dict[str, dict[str, Any]] = {
         "route_scope": "operations:read",
         "route_module": "backend/app/api/connectors.py",
         "route_functions": ("list_live_connector_jobs", "get_live_connector_job"),
-        "route_patterns": ("GET /connector-runs/live-jobs", "GET /connector-runs/live-jobs/{job_id}"),
+        "route_patterns": (
+            "GET /connector-runs/live-jobs",
+            "GET /connector-runs/live-jobs/{job_id}",
+        ),
         "enforcement": "api_reviewer_scope",
         "covered_by_tests": (
             "backend/tests/api/test_usgs_tnm_connector_api.py::"
@@ -230,7 +233,10 @@ REQUIRED_ROUTE_SCOPE_MAPPINGS: dict[str, dict[str, Any]] = {
         "route_functions": ("approve_report_run",),
         "route_patterns": ("POST /report-runs/{report_run_id}/approve",),
         "enforcement": "api_reviewer_scope",
-        "covered_by_tests": ("backend/tests/api/test_approved_path_http.py::test_http_approve_requires_credential",),
+        "covered_by_tests": (
+            "backend/tests/api/test_approved_path_http.py::"
+            "test_http_approve_requires_credential",
+        ),
     },
     "report_retry": {
         "route_scope": "report:retry",
@@ -365,7 +371,10 @@ REQUIRED_IDENTITY_BOUNDARY_MAPPINGS: dict[str, dict[str, Any]] = {
             "GET /connector-runs/{ingest_run_id}/review-queue",
         ),
         "enforcement": "workspace_identity_only",
-        "scope_note": "No reviewer route scope is currently enforced; workspace identity must hide cross-workspace rows.",
+        "scope_note": (
+            "No reviewer route scope is currently enforced; workspace identity must "
+            "hide cross-workspace rows."
+        ),
         "covered_by_tests": (
             "backend/tests/api/test_connector_review_status.py::"
             "test_connector_review_status_endpoint_requires_identity",
@@ -804,7 +813,10 @@ def validate_route_scope_mappings(contract: dict[str, Any]) -> None:
         route_patterns_list = cast(list[Any], route_patterns_raw)
         route_patterns = tuple(str(pattern) for pattern in route_patterns_list)
         expected_patterns = cast(tuple[str, ...], expected["route_patterns"])
-        require(set(route_patterns) == set(expected_patterns), f"{mapping_id} route patterns mismatch")
+        require(
+            set(route_patterns) == set(expected_patterns),
+            f"{mapping_id} route patterns mismatch",
+        )
 
         tests_raw = mapping.get("covered_by_tests")
         require(isinstance(tests_raw, list) and bool(tests_raw), f"{mapping_id} tests missing")
@@ -895,7 +907,10 @@ def validate_identity_boundary_mappings(contract: dict[str, Any]) -> None:
         route_patterns_list = cast(list[Any], route_patterns_raw)
         route_patterns = tuple(str(pattern) for pattern in route_patterns_list)
         expected_patterns = cast(tuple[str, ...], expected["route_patterns"])
-        require(set(route_patterns) == set(expected_patterns), f"{mapping_id} route patterns mismatch")
+        require(
+            set(route_patterns) == set(expected_patterns),
+            f"{mapping_id} route patterns mismatch",
+        )
 
         tests_raw = mapping.get("covered_by_tests")
         require(isinstance(tests_raw, list) and bool(tests_raw), f"{mapping_id} tests missing")
@@ -1126,6 +1141,10 @@ def validate_ui_api_key_bridge() -> None:
         ui_shared,
         (
             "def csrf_form_field",
+            "def ui_auth_routes_enabled",
+            "def _ui_auth_link",
+            "Enter reviewer credentials.",
+            "Use local fallback or enter token.",
             "def require_ui_csrf",
             "def ui_csrf_required",
             "verify_ui_csrf_token",
@@ -1209,6 +1228,11 @@ def validate_ui_api_key_bridge() -> None:
             "settings.is_local_app_env()",
             "ui_cookie_signing_secret=_ui_cookie_signing_secret(resolved)",
             "ui_cookie_secure=_ui_auth_cookie_secure(resolved)",
+            "_include_ui_auth_router",
+            "ui_auth_routes_enabled = _include_ui_auth_router(resolved)",
+            "app.include_router(ui_auth_router)",
+            "app.state.ui_auth_routes_enabled = ui_auth_routes_enabled",
+            "return settings.require_api_key or not _is_local_app_env(settings)",
             "UI_AUTH_COOKIE_SECRET is required when REQUIRE_API_KEY is true",
             "outside local/dev/development/test APP_ENV values",
             "secrets.token_urlsafe(48)",
@@ -1232,6 +1256,8 @@ def validate_ui_api_key_bridge() -> None:
         (
             "Canonical planning/design ownership: this repo-root `DESIGN.md`",
             "server-rendered private operator UI under `/ui/*`",
+            "In default local no-auth mode",
+            "local browser login/account/session setup pages are not mounted or advertised",
             "When `REQUIRE_API_KEY=true`, JSON/API routes still require `X-API-Key`",
             "/ui/auth",
             "signed, expiring, HttpOnly cookie scoped to `/ui`",
@@ -1260,6 +1286,10 @@ def validate_ui_api_key_bridge() -> None:
     require_phrases(
         ui_tests,
         (
+            "test_local_no_auth_ui_auth_routes_are_not_mounted",
+            "test_local_protected_mode_still_mounts_ui_auth_route",
+            "test_local_no_auth_ui_pages_do_not_link_unmounted_auth_routes",
+            "path not in openapi_paths",
             "test_ui_auth_form_is_public_and_does_not_expose_configured_secret",
             "test_ui_auth_cookie_enables_ui_when_api_key_required",
             "test_tampered_ui_auth_cookie_redirects_to_login",
@@ -1348,6 +1378,9 @@ def validate_ui_api_key_bridge() -> None:
         runbook,
         (
             "UI API-key cookie bridge",
+            "browser login/session setup routes are not mounted",
+            "absent from default OpenAPI output",
+            "keeps default\n  local pages from linking to those auth setup routes",
             "/ui/auth",
             "signed expiring path-scoped HttpOnly SameSite cookie",
             "UI_AUTH_COOKIE_SECRET",
@@ -1377,6 +1410,9 @@ def validate_ui_api_key_bridge() -> None:
         mvp_operator,
         (
             "When `REQUIRE_API_KEY=true` is set, JSON/API routes require `X-API-Key`",
+            "default local no-auth mode",
+            "browser auth/session setup pages are not mounted",
+            "default local pages do not link to those auth setup routes",
             "`/ui/auth` is public",
             "signed expiring HttpOnly SameSite cookie scoped to `/ui`",
             "`UI_AUTH_COOKIE_SECRET` to a high-entropy value in shared environments",
@@ -1400,6 +1436,7 @@ def validate_ui_api_key_bridge() -> None:
             "UI_AUTH_COOKIE_SECRET=",
             "Blank is local/dev/development/test only",
             "UI_AUTH_COOKIE_SECURE=false",
+            "/ui/auth* browser login/session routes are not mounted",
         ),
         "ui api key bridge environment example",
     )

@@ -2,6 +2,75 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Account-Free Local Auth Posture
+
+**Scope:** Make default local/dev/development/test browser operation account-free by
+not mounting `/ui/auth*` login/session setup routes when `REQUIRE_API_KEY=false`, while
+preserving explicit protected-mode UI auth behavior and existing API-key/reviewer/CSRF
+boundaries.
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_ui_api_key_auth.py::test_local_no_auth_ui_auth_routes_are_not_mounted .\tests\api\test_ui_api_key_auth.py::test_local_protected_mode_still_mounts_ui_auth_route
+py -3.12 -m pytest -q .\tests\api\test_ui_api_key_auth.py
+py -3.12 -m pytest -q .\tests\api\test_ui_api_key_auth.py .\tests\test_access_control_artifacts.py
+cd ..
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+cd ..
+py -3.12 .\scripts\access_control_check.py
+.\scripts\verify.ps1
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_routes.py .\tests\api\test_ui_api_key_auth.py .\tests\test_access_control_artifacts.py .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+ruff check .\app\main.py .\app\api\ui_shared.py .\app\api\ui_operations.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_routes.py .\tests\test_access_control_artifacts.py ..\scripts\access_control_check.py
+py -3.12 -m mypy .\app\main.py .\app\api\ui_shared.py .\app\api\ui_operations.py .\tests\api\test_ui_api_key_auth.py .\tests\api\test_ui_live_connector_jobs.py .\tests\api\test_ui_operations_routes.py .\tests\api\test_ui_review_routes.py .\tests\api\test_ui_routes.py .\tests\test_access_control_artifacts.py ..\scripts\access_control_check.py
+cd ..
+py -3.12 .\scripts\access_control_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Intentional red focused pytest failed because default local `/ui/auth` still returned
+  200 before implementation; the protected local route check passed.
+- Focused UI auth tests passed after conditional router mounting (`37 passed`).
+- Focused UI auth plus access-control artifact tests passed (`50 passed`).
+- OpenAPI stub export removed `/ui/auth*` from the default `api/openapi_stub.yaml` and
+  planning-pack mirror; generated OpenAPI parity tests passed (`2 passed`).
+- `scripts/access_control_check.py` passed after docs/catalog/checker updates.
+- The first full `.\scripts\verify.ps1` run failed because broader UI route tests still
+  created reviewer sessions through `/ui/auth/reviewer` in default local no-auth mode.
+  Those route tests now create signed reviewer-session cookies directly, while
+  auth-route behavior remains covered in `test_ui_api_key_auth.py`.
+- A re-audit found default local pages could still link to unmounted `/ui/auth*` setup
+  routes; `ui_shared.py` and `ui_operations.py` now hide those links when
+  `app.state.ui_auth_routes_enabled` is false, and a regression covers `/ui/` plus
+  `/ui/operations`.
+- Expanded focused UI route/auth/access-control/OpenAPI tests passed.
+- Focused ruff passed after import ordering in `ui_operations.py`; focused mypy passed
+  over the expanded touched set.
+- Access-control, release-readiness, and readiness-matrix validators passed.
+- `git diff --check` and no-deletion audit passed with CRLF/LF normalization warnings
+  only for regenerated OpenAPI stubs.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final `.\scripts\verify.ps1` passed with workspace validation, backend tests, ruff,
+  and mypy over `327` source files.
+
+**Residual risk:**
+
+- This does not add user accounts, OAuth/OIDC, full RBAC, hosted identity, hosted
+  deployment, source/connector changes, report-semantics changes, DB schema changes,
+  release-package behavior, or DS-017 authority.
+- DB smoke was not run because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-20 Source-Readiness Module Extraction
 
 **Scope:** Extract source-readiness record construction into
