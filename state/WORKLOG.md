@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Observability readiness UI G8
+
+- Started narrow `G8` from `plans/2026-06-20-observability-readiness-ui-g8.md` in
+  clean worktree `worktrees/obs-ready` after confirming live `origin/main` at
+  `3ea51589fd2a69e52b474c8a38baf8047a5d7744`, no `codex/obs-ready` branch/worktree
+  collision, no matching open PR, and the root checkout remained a dirty
+  preserved-candidate branch rather than live implementation authority.
+- Audited reconciliation dispositions and current metrics, operations queue/recovery,
+  connector observability, source-failure, alert-rule, hosted-deployment, data-retention,
+  deployment-smoke, release-readiness, and UI patterns. The retained scope is a
+  local-only `/ui/observability-readiness` route and validate-only checker over existing
+  repo-owned artifacts; hosted dashboards, alert routing, pager/on-call, hosted log
+  retention, production traffic observability, DS-017, source expansion, Bologna, and
+  Level 10 claims remain out of scope.
+- Added intentional red focused tests proving `app.observability_readiness` was absent,
+  then added a catalog, validate-only checker and wrappers, packaged parser, release
+  readiness composition, and GET-only UI page with fail-closed drift behavior.
+- Verification so far: focused observability readiness tests passed (`14 passed`) after
+  review hardening added schema-ref drift coverage; adjacent
+  metrics/operations/connector/alerting/deployment-smoke/release-readiness tests passed
+  after updating the release-readiness allowlists; focused ruff and mypy passed;
+  observability-readiness, release-readiness, and readiness-matrix validators passed;
+  OpenAPI stubs were regenerated and OpenAPI parity tests passed (`3 passed`);
+  diff/no-deletion checks passed with only existing OpenAPI line-ending normalization
+  warnings; workspace validation passed; final `.\scripts\verify.ps1` passed with
+  backend tests, ruff, and mypy over `341` source files. DB smoke was skipped by
+  default.
+
 ## 2026-06-20 Source-provenance UI G5
 
 - Started narrow `G5` from `plans/2026-06-20-source-provenance-ui-g5.md` in clean

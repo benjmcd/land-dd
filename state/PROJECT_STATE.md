@@ -1,52 +1,98 @@
 # Project State
 
-## Current checkpoint (2026-06-20 performance guardrails UI G6c)
+## Current checkpoint (2026-06-20 observability readiness UI G8)
 
-The active implementation authority is now the narrow `G6c` performance guardrails
-slice from `plans/2026-06-20-performance-guardrails-ui-g6c.md`. This follows the merged
-`G6b` operations guardrails UI slice from PR #98 at
-`51f347d9940016ef428ea3837cbc4888f6ac81c1`. The dirty root checkout remains preserved
+The active implementation authority is now the narrow `G8` observability readiness
+slice from `plans/2026-06-20-observability-readiness-ui-g8.md`. This follows the merged
+`G6c` performance guardrails UI slice from PR #99 at
+`3ea51589fd2a69e52b474c8a38baf8047a5d7744`. The dirty root checkout remains preserved
 candidate evidence only; continued work should happen from fresh or already-clean
 worktrees under `worktrees/<short-name>`.
 
-- **Active plan**: `plans/2026-06-20-performance-guardrails-ui-g6c.md`.
+- **Active plan**: `plans/2026-06-20-observability-readiness-ui-g8.md`.
+- **Purpose**: reconstruct the retained local-only observability readiness surface from
+  live `origin/main`, focused on existing repo-owned metrics, queue/recovery,
+  connector observability, source-failure evidence, alert-rule, deployment-smoke
+  reference, and hosted-observability blocker authority, before hosted dashboard,
+  alert-routing, pager, hosted log-retention, or production traffic observability work.
+- **Implemented scope so far**: `config/observability_readiness.yaml` catalogs the local
+  observability signals, alert-rule coverage, hosted blockers, validation commands, and
+  false hosted/provisioning/runtime limits. `scripts/observability_readiness_check.py`
+  and wrappers validate the catalog against existing metrics, operations, connector,
+  alerting, hosted-deployment, and retention authority without running runtime smoke or
+  provisioning hosted services. `backend/app/observability_readiness.py` fails closed on
+  catalog/path/blocker/limit drift, and `/ui/observability-readiness` renders a GET-only
+  local operator view linked from the current UI authority pages. Release-readiness
+  composition and OpenAPI stubs were updated for the new route.
+- **Current local validation**: live `origin/main` was fetched and the clean
+  `codex/obs-ready` worktree was confirmed at
+  `3ea51589fd2a69e52b474c8a38baf8047a5d7744`, matching `origin/main`. Focused G8 tests
+  first failed on the missing `app.observability_readiness` module, then passed after
+  implementation and review hardening (`14 passed`). Adjacent observability,
+  operations, alerting, deployment-smoke, and release-readiness tests passed after
+  adding the new release-readiness allowlist entries. OpenAPI stubs were regenerated
+  and OpenAPI parity passed (`3 passed`). Focused ruff and mypy passed. The
+  observability readiness validator, wrapper, release-readiness validator, and
+  readiness-matrix validator passed. `tasks/task_queue.yaml` parses with active plan
+  `plans/2026-06-20-observability-readiness-ui-g8.md` and active task `G8`.
+  `git diff --check` passed with only existing OpenAPI line-ending normalization
+  warnings, no tracked deletions were reported, workspace validation passed, and final
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341` source
+  files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no hosted dashboard creation, alert dispatch, pager
+  or on-call provisioning, hosted log-retention provisioning, hosted infrastructure
+  mutation, secret writing, public endpoint opening, deployment-smoke execution from
+  the UI helper, connector execution, runtime provenance seeding, source-failure
+  evidence mutation, DS-017 approval, source/vendor expansion, generic AOI proof,
+  Bologna pilot, public JSON API behavior change, DB schema change, report-semantics
+  change, hosted deployment, hosted source authority, hosted identity/RBAC, hosted SLO
+  or capacity proof, production traffic observability proof, or Level 10 completion
+  claim.
+- **Next required step**: publish the focused `codex/obs-ready` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` before selecting
+  the next retained post-reconciliation slice.
+
+## Previous checkpoint (2026-06-20 performance guardrails UI G6c)
+
+The implementation authority for `G6c` was
+`plans/2026-06-20-performance-guardrails-ui-g6c.md`. It followed the merged `G6b`
+operations guardrails UI slice from PR #98 at
+`51f347d9940016ef428ea3837cbc4888f6ac81c1` and merged through PR #99 at
+`3ea51589fd2a69e52b474c8a38baf8047a5d7744`.
+
 - **Purpose**: reconstruct the third retained `G6` local guardrail surface from live
   `origin/main`, focused on existing repo-owned performance baseline, spatial
   query-plan, and queue-backpressure authority, before `G8` local observability
   readiness or any hosted performance/SLO work.
-- **Implemented scope so far**: `backend/app/performance_guardrails.py` now parses the
-  repo-owned performance baseline and spatial query-plan catalogs, validates required
-  load-test scenarios, result schema fields, false hosted/CI/measured-result limits,
-  required GIST indexes, opt-in manual runtime `EXPLAIN` posture, false spatial
-  runtime/default limits, queue-backpressure settings from `Settings`, runbook phrases,
-  and repo-relative authority paths. `/ui/performance-guardrails` renders a GET-only
-  local operator view over those checked artifacts and links from the current local UI
-  authority pages. OpenAPI stubs were regenerated for the new FastAPI UI route.
-- **Current local validation**: live `origin/main` was fetched and the clean
-  `codex/perf-guard` worktree was confirmed at
-  `51f347d9940016ef428ea3837cbc4888f6ac81c1`, matching `origin/main`. Focused G6c tests
-  first failed on the missing `app.performance_guardrails` module, then passed after
-  implementation (`8 passed`). Focused performance guardrails plus performance artifact,
-  load-test artifact, spatial query-plan, spatial runtime query-plan, and backpressure
-  tests passed (`63 passed`). OpenAPI parity passed (`2 passed`). Focused ruff and mypy
-  passed. Performance-baseline, spatial query-plan, release-readiness, and
-  readiness-matrix validators passed. `.\scripts\run_load_test.ps1 -ValidateOnly`
-  passed without live HTTP requests or measured artifacts. `tasks/task_queue.yaml`
-  parses with active plan `plans/2026-06-20-performance-guardrails-ui-g6c.md` and active
-  task `G6c`. `git diff --check` passed with only existing OpenAPI line-ending
-  normalization warnings, no tracked deletions were reported, workspace validation
-  passed, and final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy
-  over `338` source files. DB smoke was skipped by default.
+- **Implemented scope**: `backend/app/performance_guardrails.py` parses the repo-owned
+  performance baseline and spatial query-plan catalogs, validates required load-test
+  scenarios, result schema fields, false hosted/CI/measured-result limits, required GIST
+  indexes, opt-in manual runtime `EXPLAIN` posture, false spatial runtime/default
+  limits, queue-backpressure settings from `Settings`, runbook phrases, and
+  repo-relative authority paths. `/ui/performance-guardrails` renders a GET-only local
+  operator view over those checked artifacts and links from the current local UI
+  authority pages. OpenAPI stubs were regenerated for the FastAPI UI route.
+- **Validation**: focused G6c tests first failed on the missing
+  `app.performance_guardrails` module, then passed after implementation (`8 passed`).
+  Focused performance guardrails plus performance artifact, load-test artifact, spatial
+  query-plan, spatial runtime query-plan, and backpressure tests passed (`63 passed`).
+  OpenAPI parity passed (`2 passed`). Focused ruff and mypy passed.
+  Performance-baseline, spatial query-plan, release-readiness, and readiness-matrix
+  validators passed. `.\scripts\run_load_test.ps1 -ValidateOnly` passed without live
+  HTTP requests or measured artifacts. `git diff --check` passed with only existing
+  OpenAPI line-ending normalization warnings, no tracked deletions were reported,
+  workspace validation passed, and final `.\scripts\verify.ps1` passed with backend
+  tests, ruff, and mypy over `338` source files. DB smoke was skipped by default.
 - **Known boundaries to preserve**: no live load-test execution, runtime `EXPLAIN`, DB
   connection, queue mutation, generated performance artifact, Docker invocation, hosted
   dashboard, alert routing, production capacity claim, SLO claim, DS-017 approval,
   source/vendor expansion, generic AOI proof, Bologna pilot, public JSON API behavior
   change, DB schema change, report-semantics change, hosted deployment, hosted source
   authority, hosted identity/RBAC, hosted observability, or Level 10 completion claim.
-- **Next required step**: run final workspace/full verification, publish the focused
-  `codex/perf-guard` PR if verification stays green, wait for CI, merge only if local
-  and CI proof agree, then re-check live `origin/main` before selecting `G8` local
-  observability readiness or another retained post-reconciliation slice.
+- **Post-merge status**: PR #99 is merged on `origin/main` at
+  `3ea51589fd2a69e52b474c8a38baf8047a5d7744`; `worktrees/perf-guard` was removed after
+  post-merge proof. The next retained slice is the narrow `G8` observability readiness
+  surface.
 
 ## Previous checkpoint (2026-06-20 operations guardrails UI G6b)
 

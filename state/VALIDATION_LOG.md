@@ -2,6 +2,71 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Observability Readiness UI G8
+
+**Scope:** Add a local read-only `/ui/observability-readiness` page and validate-only
+catalog checker over existing metrics, queue/recovery, connector observability,
+source-failure evidence, alert-rule, deployment-smoke reference, and hosted-observability
+blocker artifacts without provisioning hosted dashboards, dispatching alerts, setting up
+pager/on-call, provisioning hosted log retention, running deployment smoke from the UI
+helper, approving DS-017, expanding sources/geography, proving production traffic
+observability, or claiming Level 10 production authority.
+
+**Commands run:**
+
+```powershell
+cd backend
+py -3.12 -m pytest -q .\tests\test_observability_readiness_artifacts.py .\tests\api\test_ui_observability_readiness.py
+py -3.12 -m pytest -q .\tests\test_observability_readiness_artifacts.py .\tests\api\test_ui_observability_readiness.py .\tests\api\test_metrics.py .\tests\api\test_operations.py .\tests\connectors\test_connector_observability.py .\tests\test_alerting_artifacts.py .\tests\test_deployment_smoke_scripts.py .\tests\test_release_readiness_artifacts.py
+ruff check .\app\observability_readiness.py .\app\api\ui.py .\tests\api\test_ui_observability_readiness.py .\tests\test_observability_readiness_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\observability_readiness_check.py ..\scripts\release_readiness_check.py
+py -3.12 -m mypy app\observability_readiness.py app\api\ui.py tests\api\test_ui_observability_readiness.py tests\test_observability_readiness_artifacts.py tests\test_release_readiness_artifacts.py ..\scripts\observability_readiness_check.py ..\scripts\release_readiness_check.py
+cd ..
+py -3.12 .\scripts\observability_readiness_check.py
+.\scripts\run_observability_readiness_check.ps1
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\export_openapi_stub.py
+cd backend
+py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py .\tests\test_planning_pack_schema_copies.py
+cd ..
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Intentional red focused pytest failed because `app.observability_readiness` did not
+  exist.
+- Focused observability readiness tests passed after implementation and review
+  hardening (`14 passed`).
+- Adjacent metrics, operations, connector observability, alerting, deployment-smoke, and
+  release-readiness tests passed after adding `observability_readiness` to the
+  release-readiness artifact allowlists.
+- Focused ruff passed over the new helper, UI route, tests, observability checker, and
+  release-readiness checker.
+- Focused mypy passed over 7 source/test/script files after tightening checker type
+  narrowing and adding schema-ref drift coverage.
+- Observability-readiness checker, its PowerShell wrapper, release-readiness validator,
+  and readiness-matrix validator passed.
+- `scripts/export_openapi_stub.py` regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml`; OpenAPI parity tests passed (`3 passed`).
+- `git diff --check` passed with only existing OpenAPI line-ending normalization
+  warnings for the regenerated OpenAPI stubs.
+- No tracked deletions were reported.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341`
+  source files. DB smoke was skipped by default.
+
+**Residual risk:**
+
+- This page is catalog visibility only. It does not create runtime observability
+  evidence, run deployment smoke, dispatch alerts, create dashboards, provision pager or
+  hosted log retention, execute connectors, approve DS-017, expand source/geography
+  coverage, prove production traffic observability, or complete Level 10.
+- DB smoke has not been run in this slice.
+
 ## 2026-06-20 Source-Provenance UI G5
 
 **Scope:** Add a local read-only `/ui/source-provenance` page over the selected-county

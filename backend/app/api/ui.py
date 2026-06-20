@@ -58,6 +58,11 @@ from app.deployment_readiness import (
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
+from app.observability_readiness import (
+    ObservabilityReadiness,
+    ObservabilityReadinessError,
+    load_observability_readiness,
+)
 from app.operations_guardrails import (
     OperationsGuardrailsError,
     OperationsGuardrailsReadiness,
@@ -106,6 +111,12 @@ _PERFORMANCE_GUARDRAILS_BOUNDARY = (
     "performance artifacts, does not mutate queues, does not open database connections, "
     "does not claim hosted SLO, does not claim hosted performance, and does not claim "
     "Level 10 performance authority."
+)
+_OBSERVABILITY_READINESS_BOUNDARY = (
+    "does not create hosted dashboards, does not dispatch alerts, does not provision "
+    "pager, does not provision hosted log retention, does not mutate hosted "
+    "infrastructure, does not write secrets, does not open public endpoints, does not "
+    "run deployment smoke, and does not claim Level 10 observability authority."
 )
 
 router = APIRouter(prefix="/ui", tags=["ui"])
@@ -908,6 +919,7 @@ def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1051,6 +1063,7 @@ def _security_guardrails_page(readiness: SecurityGuardrailsReadiness) -> str:
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1260,6 +1273,7 @@ def _operations_guardrails_page(readiness: OperationsGuardrailsReadiness) -> str
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1490,6 +1504,7 @@ def _performance_guardrails_page(readiness: PerformanceGuardrailsReadiness) -> s
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1569,6 +1584,168 @@ def _performance_guardrails_page(readiness: PerformanceGuardrailsReadiness) -> s
 </html>"""
 
 
+def _observability_signals_table(readiness: ObservabilityReadiness) -> str:
+    rows = []
+    for signal in readiness.signals:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(signal.signal_id)}</code></td>"
+            f"<td>{_html.escape(signal.label)}</td>"
+            f"<td><code>{_html.escape(signal.surface)}</code></td>"
+            f"<td><code>{_html.escape(signal.schema_ref)}</code></td>"
+            f"<td><code>{_html.escape(', '.join(signal.validation))}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="observability-readiness-table">
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Label</th>
+          <th>Surface</th>
+          <th>Schema</th>
+          <th>Validation</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _observability_blockers_table(readiness: ObservabilityReadiness) -> str:
+    rows = []
+    for blocker in readiness.hosted_blockers:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(blocker.blocker_id)}</code></td>"
+            f"<td>{_html.escape(blocker.status)}</td>"
+            f"<td><code>{_html.escape(blocker.authority)}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="observability-readiness-table">
+      <thead>
+        <tr>
+          <th>Blocker</th>
+          <th>Status</th>
+          <th>Authority</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _observability_readiness_page(readiness: ObservabilityReadiness) -> str:
+    signal_summary = ", ".join(readiness.signal_ids)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Observability Readiness</title>
+<style>
+{_INDEX_CSS}
+.observability-readiness-shell .console-grid {{ grid-template-columns: 1fr; }}
+.observability-readiness-card {{ display: grid; gap: 0.75rem; }}
+.observability-readiness-card h2 {{ margin-bottom: 0.25rem; }}
+.observability-readiness-table {{ border-collapse: collapse; min-width: 860px; width: 100%; }}
+.observability-readiness-table th, .observability-readiness-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.observability-readiness-table th {{ background: var(--soft); }}
+.observability-readiness-boundary {{ margin-top: 1rem; }}
+@media (max-width: 640px) {{
+  .observability-readiness-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Observability Readiness</h1>
+      <span>Local metrics, queue, alert, smoke, and hosted-blocker view</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell observability-readiness-shell">
+  <div class="status-strip" aria-label="Observability readiness summary">
+    <div class="status-item">
+      <strong>Catalog</strong>
+      <span>{_html.escape(readiness.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Scope</strong>
+      <span>{_html.escape(readiness.scope)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Status</strong>
+      <span>{_html.escape(readiness.status)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Signals</strong>
+      <span>{_html.escape(signal_summary)}</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel observability-readiness-card" aria-labelledby="obs-signals-title">
+      <div>
+        <h2 id="obs-signals-title">Local Observability Signals</h2>
+        <p>Repo-owned local diagnostics and validation evidence for operator visibility.</p>
+      </div>
+      <div class="table-wrap">{_observability_signals_table(readiness)}</div>
+    </section>
+    <section class="panel observability-readiness-card" aria-labelledby="obs-alerts-title">
+      <div>
+        <h2 id="obs-alerts-title">Alert-Rule Coverage</h2>
+        <p>Repo-local alert rules that reference metrics, queue health, and stale-running
+        signals.</p>
+      </div>
+      {_deployment_list(readiness.alert_rule_ids)}
+    </section>
+    <section class="panel observability-readiness-card" aria-labelledby="obs-blockers-title">
+      <div>
+        <h2 id="obs-blockers-title">Hosted Observability Blockers</h2>
+        <p>Blocked authority that must not be promoted by this local readiness page.</p>
+      </div>
+      <div class="table-wrap">{_observability_blockers_table(readiness)}</div>
+    </section>
+    <section class="panel observability-readiness-card" aria-labelledby="obs-validation-title">
+      <div>
+        <h2 id="obs-validation-title">Validation References</h2>
+        <p>These repo-owned checks are referenced by the observability catalog. This
+        page does not execute them or provision hosted services.</p>
+      </div>
+      {_deployment_list(readiness.validation_commands)}
+      <h2>Limits</h2>
+      <div class="table-wrap">{_deployment_limits_table(readiness.limits)}</div>
+    </section>
+  </main>
+  <div class="note observability-readiness-boundary">
+    <strong>Observability readiness boundary.</strong> This page is read-only local
+    visibility over repo-owned observability catalogs and proof files. It
+    {_html.escape(_OBSERVABILITY_READINESS_BOUNDARY)}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     package = readiness.package
     image = readiness.image
@@ -1613,6 +1790,7 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1730,6 +1908,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -1913,6 +2092,25 @@ def ui_performance_guardrails() -> str | HTMLResponse:
 
 
 @router.get(
+    "/observability-readiness",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_observability_readiness() -> str | HTMLResponse:
+    try:
+        readiness = load_observability_readiness()
+    except ObservabilityReadinessError as exc:
+        return error_page(
+            "Observability Readiness Unavailable",
+            f"Observability readiness unavailable from repo-owned artifacts: {exc}",
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _observability_readiness_page(readiness)
+
+
+@router.get(
     "/deployment-readiness",
     response_class=HTMLResponse,
     response_model=None,
@@ -2045,6 +2243,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
       <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>

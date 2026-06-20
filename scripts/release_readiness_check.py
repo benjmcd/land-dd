@@ -17,6 +17,7 @@ REQUIRED_FILES = (
     "config/hosted_deployment.yaml",
     "config/performance_baseline.yaml",
     "config/spatial_query_plan.yaml",
+    "config/observability_readiness.yaml",
     "config/threat_proxy_audit.yaml",
     "config/checklist_dry_run.yaml",
     "docs/runbooks/release_readiness.md",
@@ -63,6 +64,9 @@ REQUIRED_FILES = (
     "scripts/spatial_query_plan_check.py",
     "scripts/run_spatial_query_plan_check.ps1",
     "scripts/run_spatial_query_plan_check.sh",
+    "scripts/observability_readiness_check.py",
+    "scripts/run_observability_readiness_check.ps1",
+    "scripts/run_observability_readiness_check.sh",
     "scripts/checklist_dry_run_check.py",
     "scripts/source_readiness.py",
     "scripts/release_readiness_check.py",
@@ -92,6 +96,7 @@ REQUIRED_CHECKS = {
     "load_test",
     "performance",
     "data_lineage",
+    "observability_readiness",
 }
 REQUIRED_CI_JOBS = {
     "verify",
@@ -134,6 +139,7 @@ COMPOSED_VALIDATORS = (
     "scripts/hosted_deployment_check.py",
     "scripts/performance_baseline_check.py",
     "scripts/spatial_query_plan_check.py",
+    "scripts/observability_readiness_check.py",
     "scripts/threat_proxy_audit_check.py",
     "scripts/checklist_dry_run_check.py",
 )

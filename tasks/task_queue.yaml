@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-performance-guardrails-ui-g6c.md
+active_plan: plans/2026-06-20-observability-readiness-ui-g8.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -9,14 +9,16 @@ routing_note: >
   selected-county source-provenance catalog merged through PR #92, and G2
   runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
   through PR #94, G5 source-provenance UI merged through PR #96, G6a
-  security/access-control guardrails merged through PR #97, and G6b operations
-  guardrails merged through PR #98. Active lane: narrow G6c performance guardrails over
-  existing repo-local performance baseline, spatial query-plan, and queue-backpressure
-  authority files. This slice must not run live load tests, open runtime DB EXPLAIN,
-  write performance artifacts, run connectors, seed runtime provenance, relabel fixture
-  evidence as live data, approve DS-017, expand selected geography/source coverage,
-  start Bologna, add hosted SLO/capacity/observability/source/identity/RBAC authority,
-  or claim Level 10 performance.
+  security/access-control guardrails merged through PR #97, G6b operations guardrails
+  merged through PR #98, and G6c performance guardrails merged through PR #99. Active
+  lane: narrow G8 observability readiness over existing repo-local metrics,
+  queue/recovery, connector observability, source-failure evidence, alert-rule,
+  deployment-smoke reference, and hosted-blocker authority files. This slice must not
+  create hosted dashboards, dispatch alerts, provision pager/on-call or hosted log
+  retention, run deployment smoke from the UI helper, run connectors, seed runtime
+  provenance, relabel fixture evidence as live data, approve DS-017, expand selected
+  geography/source coverage, start Bologna, add hosted observability/source/identity/RBAC
+  authority, prove production traffic observability, or claim Level 10 observability.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -973,7 +975,7 @@ tasks:
 
   - id: G6c
     title: Performance guardrails UI
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5, G6a, G6b]
     lane: coordinator
     spec: plans/2026-06-20-performance-guardrails-ui-g6c.md
@@ -1005,6 +1007,41 @@ tasks:
       - Artifact/config drift fails closed instead of unchecked performance authority rendering
       - Existing backpressure runtime behavior and protected operations behavior do not regress
       - No load-test traffic, runtime DB connection, performance artifact write, connector, source, DS-017, hosted observability, hosted SLO/capacity, or Level 10 behavior changes
+
+  - id: G8
+    title: Observability readiness UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5, G6a, G6b, G6c]
+    lane: coordinator
+    spec: plans/2026-06-20-observability-readiness-ui-g8.md
+    notes: >
+      Add the retained local-only observability readiness surface over existing
+      repo-local metrics, queue/recovery, connector observability, source-failure
+      evidence, alert-rule, deployment-smoke reference, and hosted-observability
+      blocker artifacts. This is a read-only local operator visibility slice, not
+      hosted dashboards, alert routing, pager/on-call, hosted log retention, production
+      traffic observability, DS-017, connector, source-entitlement, or
+      production-authority work.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\test_observability_readiness_artifacts.py .\tests\api\test_ui_observability_readiness.py
+      - cd backend; py -3.12 -m pytest -q .\tests\test_observability_readiness_artifacts.py .\tests\api\test_ui_observability_readiness.py .\tests\api\test_metrics.py .\tests\api\test_operations.py .\tests\connectors\test_connector_observability.py .\tests\test_alerting_artifacts.py .\tests\test_deployment_smoke_scripts.py .\tests\test_release_readiness_artifacts.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py .\tests\test_planning_pack_schema_copies.py
+      - cd backend; ruff check .\app\observability_readiness.py .\app\api\ui.py .\tests\api\test_ui_observability_readiness.py .\tests\test_observability_readiness_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\observability_readiness_check.py ..\scripts\release_readiness_check.py
+      - cd backend; py -3.12 -m mypy .\app\observability_readiness.py .\app\api\ui.py .\tests\api\test_ui_observability_readiness.py .\tests\test_observability_readiness_artifacts.py .\tests\test_release_readiness_artifacts.py ..\scripts\observability_readiness_check.py ..\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\observability_readiness_check.py
+      - .\scripts\run_observability_readiness_check.ps1
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - '`/ui/observability-readiness` renders checked local observability readiness evidence without mutating state'
+      - Runtime metrics, queue/recovery, connector observability, source-failure evidence, alert rules, deployment smoke references, and hosted-observability blockers remain explicit
+      - Artifact/config drift fails closed instead of unchecked observability authority rendering
+      - Existing metrics, operations, connector observability, deployment-smoke, and protected operations behavior do not regress
+      - No hosted dashboard, alert dispatch, pager/on-call, hosted log retention, deployment-smoke execution from the UI helper, connector, source, DS-017, production traffic observability, or Level 10 behavior changes
 
   # --- Completed ---
   - id: T000
