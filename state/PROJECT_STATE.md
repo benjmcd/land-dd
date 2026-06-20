@@ -1,6 +1,54 @@
 # Project State
 
-## Current checkpoint (2026-06-20 operations guardrails UI G6b)
+## Current checkpoint (2026-06-20 performance guardrails UI G6c)
+
+The active implementation authority is now the narrow `G6c` performance guardrails
+slice from `plans/2026-06-20-performance-guardrails-ui-g6c.md`. This follows the merged
+`G6b` operations guardrails UI slice from PR #98 at
+`51f347d9940016ef428ea3837cbc4888f6ac81c1`. The dirty root checkout remains preserved
+candidate evidence only; continued work should happen from fresh or already-clean
+worktrees under `worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-performance-guardrails-ui-g6c.md`.
+- **Purpose**: reconstruct the third retained `G6` local guardrail surface from live
+  `origin/main`, focused on existing repo-owned performance baseline, spatial
+  query-plan, and queue-backpressure authority, before `G8` local observability
+  readiness or any hosted performance/SLO work.
+- **Implemented scope so far**: `backend/app/performance_guardrails.py` now parses the
+  repo-owned performance baseline and spatial query-plan catalogs, validates required
+  load-test scenarios, result schema fields, false hosted/CI/measured-result limits,
+  required GIST indexes, opt-in manual runtime `EXPLAIN` posture, false spatial
+  runtime/default limits, queue-backpressure settings from `Settings`, runbook phrases,
+  and repo-relative authority paths. `/ui/performance-guardrails` renders a GET-only
+  local operator view over those checked artifacts and links from the current local UI
+  authority pages. OpenAPI stubs were regenerated for the new FastAPI UI route.
+- **Current local validation**: live `origin/main` was fetched and the clean
+  `codex/perf-guard` worktree was confirmed at
+  `51f347d9940016ef428ea3837cbc4888f6ac81c1`, matching `origin/main`. Focused G6c tests
+  first failed on the missing `app.performance_guardrails` module, then passed after
+  implementation (`8 passed`). Focused performance guardrails plus performance artifact,
+  load-test artifact, spatial query-plan, spatial runtime query-plan, and backpressure
+  tests passed (`63 passed`). OpenAPI parity passed (`2 passed`). Focused ruff and mypy
+  passed. Performance-baseline, spatial query-plan, release-readiness, and
+  readiness-matrix validators passed. `.\scripts\run_load_test.ps1 -ValidateOnly`
+  passed without live HTTP requests or measured artifacts. `tasks/task_queue.yaml`
+  parses with active plan `plans/2026-06-20-performance-guardrails-ui-g6c.md` and active
+  task `G6c`. `git diff --check` passed with only existing OpenAPI line-ending
+  normalization warnings, no tracked deletions were reported, workspace validation
+  passed, and final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy
+  over `338` source files. DB smoke was skipped by default.
+- **Known boundaries to preserve**: no live load-test execution, runtime `EXPLAIN`, DB
+  connection, queue mutation, generated performance artifact, Docker invocation, hosted
+  dashboard, alert routing, production capacity claim, SLO claim, DS-017 approval,
+  source/vendor expansion, generic AOI proof, Bologna pilot, public JSON API behavior
+  change, DB schema change, report-semantics change, hosted deployment, hosted source
+  authority, hosted identity/RBAC, hosted observability, or Level 10 completion claim.
+- **Next required step**: run final workspace/full verification, publish the focused
+  `codex/perf-guard` PR if verification stays green, wait for CI, merge only if local
+  and CI proof agree, then re-check live `origin/main` before selecting `G8` local
+  observability readiness or another retained post-reconciliation slice.
+
+## Previous checkpoint (2026-06-20 operations guardrails UI G6b)
 
 The active implementation authority is now the narrow `G6b` operations guardrails slice
 from `plans/2026-06-20-operations-guardrails-ui-g6b.md`. This follows the merged `G6a`

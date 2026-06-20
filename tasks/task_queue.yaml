@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-operations-guardrails-ui-g6b.md
+active_plan: plans/2026-06-20-performance-guardrails-ui-g6c.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -8,14 +8,15 @@ routing_note: >
   posture merged through PR #90. G1b raw-data inventory UI merged through PR #91, G3b
   selected-county source-provenance catalog merged through PR #92, and G2
   runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
-  through PR #94, G5 source-provenance UI merged through PR #96, and G6a
-  security/access-control guardrails merged through PR #97. Active lane: narrow G6b
-  operations guardrails over existing repo-local alerting, incident, backup/restore,
-  retention, queue/recovery, and cost-monitoring authority files. This slice must not
-  execute operational actions, run connectors, seed runtime provenance, relabel fixture
+  through PR #94, G5 source-provenance UI merged through PR #96, G6a
+  security/access-control guardrails merged through PR #97, and G6b operations
+  guardrails merged through PR #98. Active lane: narrow G6c performance guardrails over
+  existing repo-local performance baseline, spatial query-plan, and queue-backpressure
+  authority files. This slice must not run live load tests, open runtime DB EXPLAIN,
+  write performance artifacts, run connectors, seed runtime provenance, relabel fixture
   evidence as live data, approve DS-017, expand selected geography/source coverage,
-  start Bologna, add hosted alerting/pager/scheduler/billing/source/identity/RBAC
-  authority, or claim Level 10 operations.
+  start Bologna, add hosted SLO/capacity/observability/source/identity/RBAC authority,
+  or claim Level 10 performance.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -936,7 +937,7 @@ tasks:
 
   - id: G6b
     title: Operations guardrails UI
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5, G6a]
     lane: coordinator
     spec: plans/2026-06-20-operations-guardrails-ui-g6b.md
@@ -969,6 +970,41 @@ tasks:
       - Artifact/config drift fails closed instead of unchecked operations authority rendering
       - Existing protected `/ui/operations` and `/operations/*` reviewer-scope behavior does not regress
       - No operational scripts execute from the UI helper; no recovery, queue mutation, alert dispatch, purge, backup/restore, connector, source, DS-017, hosted observability, hosted alerting, or Level 10 behavior changes
+
+  - id: G6c
+    title: Performance guardrails UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3, G5, G6a, G6b]
+    lane: coordinator
+    spec: plans/2026-06-20-performance-guardrails-ui-g6c.md
+    notes: >
+      Add the third isolated G6 guardrail surface over existing repo-local
+      performance-baseline, spatial query-plan, and queue-backpressure artifacts. This
+      is a read-only local operator visibility slice, not live load execution, runtime
+      EXPLAIN, generated performance evidence, hosted SLO/capacity, hosted
+      observability, DS-017, connector, source-entitlement, or production-authority
+      work.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_performance_guardrails.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_performance_guardrails.py .\tests\test_performance_artifacts.py .\tests\test_load_test_artifacts.py .\tests\test_spatial_query_plan_artifacts.py .\tests\test_spatial_query_plan_runtime_artifacts.py .\tests\api\test_backpressure.py
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_openapi_contract.py::test_openapi_stub_path_methods_match_runtime_schema .\tests\test_planning_pack_schema_copies.py::test_planning_pack_openapi_stub_matches_generated_fastapi_contract
+      - cd backend; ruff check .\app\performance_guardrails.py .\app\api\ui.py .\tests\api\test_ui_performance_guardrails.py
+      - cd backend; py -3.12 -m mypy .\app\performance_guardrails.py .\app\api\ui.py .\tests\api\test_ui_performance_guardrails.py
+      - py -3.12 .\scripts\performance_baseline_check.py
+      - py -3.12 .\scripts\spatial_query_plan_check.py
+      - .\scripts\run_load_test.ps1 -ValidateOnly
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - '`/ui/performance-guardrails` renders checked local performance guardrail evidence without mutating state'
+      - Load-test baseline, spatial query-plan, runtime EXPLAIN, and backpressure blockers remain explicit
+      - Artifact/config drift fails closed instead of unchecked performance authority rendering
+      - Existing backpressure runtime behavior and protected operations behavior do not regress
+      - No load-test traffic, runtime DB connection, performance artifact write, connector, source, DS-017, hosted observability, hosted SLO/capacity, or Level 10 behavior changes
 
   # --- Completed ---
   - id: T000

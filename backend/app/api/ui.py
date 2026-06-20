@@ -63,6 +63,11 @@ from app.operations_guardrails import (
     OperationsGuardrailsReadiness,
     load_operations_guardrails,
 )
+from app.performance_guardrails import (
+    PerformanceGuardrailsError,
+    PerformanceGuardrailsReadiness,
+    load_performance_guardrails,
+)
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
 from app.security_guardrails import (
@@ -95,6 +100,12 @@ _OPERATIONS_GUARDRAILS_BOUNDARY = (
     "does not execute recovery, does not dispatch alerts, does not run backup/restore, "
     "does not purge audit events, does not mutate queues, does not call live connectors, "
     "does not claim hosted alerting, and does not claim Level 10 operations authority."
+)
+_PERFORMANCE_GUARDRAILS_BOUNDARY = (
+    "does not run live load tests, does not run runtime EXPLAIN, does not write "
+    "performance artifacts, does not mutate queues, does not open database connections, "
+    "does not claim hosted SLO, does not claim hosted performance, and does not claim "
+    "Level 10 performance authority."
 )
 
 router = APIRouter(prefix="/ui", tags=["ui"])
@@ -896,6 +907,7 @@ def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1038,6 +1050,7 @@ def _security_guardrails_page(readiness: SecurityGuardrailsReadiness) -> str:
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1246,6 +1259,7 @@ def _operations_guardrails_page(readiness: OperationsGuardrailsReadiness) -> str
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1327,6 +1341,234 @@ def _operations_guardrails_page(readiness: OperationsGuardrailsReadiness) -> str
 </html>"""
 
 
+def _performance_scenarios_table(readiness: PerformanceGuardrailsReadiness) -> str:
+    rows = []
+    for scenario in readiness.performance_scenarios:
+        thresholds = ", ".join(
+            f"{key}: {value:g}" for key, value in sorted(scenario.thresholds.items())
+        )
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(scenario.scenario_id)}</code></td>"
+            f"<td>{scenario.request_count}</td>"
+            f"<td>{_html.escape(str(scenario.workers or 'sequential'))}</td>"
+            f"<td><code>{_html.escape(', '.join(scenario.endpoints))}</code></td>"
+            f"<td><code>{_html.escape(thresholds)}</code></td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="performance-guardrails-table">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Requests</th>
+          <th>Workers</th>
+          <th>Endpoints</th>
+          <th>Thresholds</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _performance_spatial_indexes_table(readiness: PerformanceGuardrailsReadiness) -> str:
+    rows = []
+    for index in readiness.spatial_required_indexes:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(index.index_name)}</code></td>"
+            f"<td>{_html.escape(index.schema_name)}.{_html.escape(index.table_name)}</td>"
+            f"<td><code>{_html.escape(index.column_name)}</code></td>"
+            f"<td>{_html.escape(index.method)}</td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="performance-guardrails-table">
+      <thead>
+        <tr>
+          <th>Index</th>
+          <th>Table</th>
+          <th>Column</th>
+          <th>Method</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _performance_spatial_reviews_table(readiness: PerformanceGuardrailsReadiness) -> str:
+    rows = []
+    for review in readiness.spatial_query_reviews:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(review.review_id)}</code></td>"
+            f"<td><code>{_html.escape(', '.join(review.required_indexes))}</code></td>"
+            f"<td><code>{_html.escape(review.runtime_requires_target_index)}</code></td>"
+            f"<td>{_html.escape(str(review.default_release_readiness).lower())}</td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="performance-guardrails-table">
+      <thead>
+        <tr>
+          <th>Review</th>
+          <th>Required indexes</th>
+          <th>Runtime target</th>
+          <th>Default release gate</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _performance_backpressure_table(readiness: PerformanceGuardrailsReadiness) -> str:
+    rows = []
+    for setting in readiness.backpressure_settings:
+        rows.append(
+            "<tr>"
+            f"<td><code>{_html.escape(setting.setting_id)}</code></td>"
+            f"<td><code>{_html.escape(setting.default_value)}</code></td>"
+            f"<td>{_html.escape(setting.description)}</td>"
+            "</tr>"
+        )
+    return f"""
+    <table class="performance-guardrails-table">
+      <thead>
+        <tr>
+          <th>Setting</th>
+          <th>Default</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>{''.join(rows)}</tbody>
+    </table>"""
+
+
+def _performance_guardrails_page(readiness: PerformanceGuardrailsReadiness) -> str:
+    scenario_summary = ", ".join(readiness.performance_scenario_ids)
+    spatial_summary = (
+        f"{readiness.spatial_schema_version}; "
+        f"mode: {readiness.spatial_default_mode}"
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Performance Guardrails</title>
+<style>
+{_INDEX_CSS}
+.performance-guardrails-shell .console-grid {{ grid-template-columns: 1fr; }}
+.performance-guardrails-card {{ display: grid; gap: 0.75rem; }}
+.performance-guardrails-card h2 {{ margin-bottom: 0.25rem; }}
+.performance-guardrails-table {{ border-collapse: collapse; min-width: 860px; width: 100%; }}
+.performance-guardrails-table th, .performance-guardrails-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.performance-guardrails-table th {{ background: var(--soft); }}
+.performance-guardrails-boundary {{ margin-top: 1rem; }}
+@media (max-width: 640px) {{
+  .performance-guardrails-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Performance Guardrails</h1>
+      <span>Local baseline, spatial plan, and backpressure boundary view</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/security-guardrails">Security guardrails</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell performance-guardrails-shell">
+  <div class="status-strip" aria-label="Performance guardrails summary">
+    <div class="status-item">
+      <strong>Baseline catalog</strong>
+      <span>{_html.escape(readiness.baseline_schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Scope</strong>
+      <span>{_html.escape(readiness.baseline_scope)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Scenarios</strong>
+      <span>{_html.escape(scenario_summary)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Spatial review</strong>
+      <span>{_html.escape(spatial_summary)}</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel performance-guardrails-card" aria-labelledby="perf-baseline-title">
+      <div>
+        <h2 id="perf-baseline-title">Load-Test Baseline Contract</h2>
+        <p>Status: <code>{_html.escape(readiness.baseline_status)}</code>;
+        result schema: <code>{_html.escape(readiness.result_schema_version)}</code>.</p>
+      </div>
+      <div class="table-wrap">{_performance_scenarios_table(readiness)}</div>
+      <h2>Result required fields</h2>
+      {_deployment_list(readiness.result_required_fields)}
+      <h2>Baseline limits</h2>
+      <div class="table-wrap">{_deployment_limits_table(readiness.baseline_limits)}</div>
+    </section>
+    <section class="panel performance-guardrails-card" aria-labelledby="perf-spatial-title">
+      <div>
+        <h2 id="perf-spatial-title">Spatial Query-Plan Contract</h2>
+        <p>Scope: <code>{_html.escape(readiness.spatial_scope)}</code>;
+        runtime result schema:
+        <code>{_html.escape(readiness.spatial_runtime_output_schema_version)}</code>;
+        checker: <code>{_html.escape(readiness.spatial_runtime_checker)}</code>.</p>
+      </div>
+      <div class="table-wrap">{_performance_spatial_reviews_table(readiness)}</div>
+      <h2>Required indexes</h2>
+      <div class="table-wrap">{_performance_spatial_indexes_table(readiness)}</div>
+      <h2>Spatial limits</h2>
+      <div class="table-wrap">{_deployment_limits_table(readiness.spatial_limits)}</div>
+    </section>
+    <section class="panel performance-guardrails-card" aria-labelledby="perf-backpressure-title">
+      <div>
+        <h2 id="perf-backpressure-title">Queue Backpressure Controls</h2>
+        <p>Queue health authority:
+        <code>{_html.escape(readiness.queue_health_path)}</code>.</p>
+      </div>
+      <div class="table-wrap">{_performance_backpressure_table(readiness)}</div>
+    </section>
+    <section class="panel performance-guardrails-card" aria-labelledby="perf-validation-title">
+      <div>
+        <h2 id="perf-validation-title">Validate-Only Commands</h2>
+        <p>These commands verify local contracts without live load traffic or runtime DB
+        review by default.</p>
+      </div>
+      {_deployment_list(readiness.validation_commands)}
+    </section>
+  </main>
+  <div class="note performance-guardrails-boundary">
+    <strong>Performance guardrails boundary.</strong> This page is read-only local
+    visibility over repo-owned performance catalogs and runbooks. It
+    {_html.escape(_PERFORMANCE_GUARDRAILS_BOUNDARY)}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     package = readiness.package
     image = readiness.image
@@ -1370,6 +1612,7 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -1486,6 +1729,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -1650,6 +1894,25 @@ def ui_operations_guardrails() -> str | HTMLResponse:
 
 
 @router.get(
+    "/performance-guardrails",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_performance_guardrails() -> str | HTMLResponse:
+    try:
+        readiness = load_performance_guardrails()
+    except PerformanceGuardrailsError as exc:
+        return error_page(
+            "Performance Guardrails Unavailable",
+            f"Performance guardrails unavailable from repo-owned artifacts: {exc}",
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _performance_guardrails_page(readiness)
+
+
+@router.get(
     "/deployment-readiness",
     response_class=HTMLResponse,
     response_model=None,
@@ -1781,6 +2044,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
