@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Post-SE001 routing and Bologna preflight BP-001
+
+- Started clean worktree `worktrees/authority-next` on `codex/authority-next` from live
+  `origin/main` at `a508cd207c95fb79736340295c7eaaee908cc2bf` after confirming the root
+  checkout remains the dirty preserved-candidate branch and `worktrees/` is ignored.
+- Re-audited live routing after SE-001 merged. `tasks/task_queue.yaml`,
+  `plans/README.md`, and `state/PROJECT_STATE.md` still marked SE-001 active, while
+  source readiness still reported Must `sources=8 ready=7 blocked=1` with DS-017 as the
+  only blocked Must source. Hosted authority remained external, and Bologna appeared
+  only as an explicit non-authority boundary.
+- Added `config/bologna_preflight.yaml`, `docs/runbooks/bologna_preflight.md`,
+  `scripts/bologna_preflight_check.py`, Windows/POSIX wrappers, and focused artifact
+  tests. The checker keeps all Bologna approval flags false and requires missing or
+  blocked candidate, Italy/EU source-rights, DS-017-treatment, rulepack, fixture-corpus,
+  report-runtime, hosted, and multi-geography prerequisites to stay visible.
+- Added a Bologna recorded-source pilot section to
+  `state/PRODUCTION_AUTHORITY_PACKET.md`, routed the new preflight surface from
+  `MANIFEST.md`, marked SE-001 done, and made `BP-001` the only active task/plan.
+  Boundaries remain: no Bologna implementation, no Italy/EU source approval, no
+  rulepack approval, no DS-017 unblock, no hosted authority, no runtime artifact, and no
+  Level 10 claim.
+- Final default `.\scripts\verify.ps1` passed with workspace validation, full backend
+  tests, ruff, and mypy over `344` source files. DB smoke was skipped by default.
+
 ## 2026-06-20 Supported-AOI UI runtime proof G9c
 
 - Started clean worktree `worktrees/next-route` on `codex/next-route` from live

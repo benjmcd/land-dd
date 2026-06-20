@@ -1,0 +1,184 @@
+schema_version: bologna_preflight_v1
+operator_runbook: docs/runbooks/bologna_preflight.md
+status: repo_local_validate_only
+validation: scripts/run_bologna_preflight_check.ps1
+
+candidate:
+  id: bologna_recorded_source_pilot
+  status: not_started_external_authority_required
+  description: >
+    Future recorded-source pilot for one Bologna AOI. This catalog only records the
+    prerequisite authority and evidence gaps. It does not select Bologna for
+    implementation, approve Italy/EU sources, approve a rulepack, run connectors, seed
+    data, or create runtime artifacts.
+  authority:
+    - state/LEVEL_9_10_GATE_MATRIX.md
+    - state/PRODUCTION_AUTHORITY_PACKET.md
+    - docs/checklists/jurisdiction_readiness.md
+    - docs/checklists/rulepack_readiness.md
+    - config/source_entitlements.yaml
+  approvals:
+    bologna_selected: false
+    italy_sources_approved: false
+    eu_italy_rulepack_approved: false
+    recorded_source_corpus_committed: false
+    ds017_resolved_or_deferred: false
+    hosted_production_ready: false
+    multi_geography_framework_approved: false
+
+limits:
+  validate_only_catalog: true
+  selects_bologna: false
+  approves_italy_sources: false
+  approves_eu_italy_rulepack: false
+  runs_live_connectors: false
+  creates_runtime_artifacts: false
+  mutates_database: false
+  changes_source_readiness: false
+  unblocks_ds017: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+
+preflight_gates:
+  - id: lower_layer_runtime_boundary
+    status: repo_confirmed
+    evidence:
+      - state/LEVEL_9_10_GATE_MATRIX.md
+      - state/PROJECT_STATE.md
+    evidence_assertions:
+      - path: state/LEVEL_9_10_GATE_MATRIX.md
+        contains: L9-002 area/select intent flow
+      - path: state/PROJECT_STATE.md
+        contains: supported-AOI UI/runtime proof
+    interpretation: >
+      Selected-county generic/supported-AOI workflow proof exists below hosted and
+      expansion authority, but it is not Bologna authority.
+
+  - id: pilot_candidate_authority
+    status: missing_candidate_decision
+    evidence:
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+      - plans/2026-06-20-post-se001-bologna-preflight.md
+    blocker_authority:
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    next_action: >
+      Record an explicit product decision that authorizes a Bologna recorded-source
+      pilot candidate and names its one-AOI scope before implementation starts.
+
+  - id: jurisdiction_model_authority
+    status: blocked_external_authority
+    evidence:
+      - docs/checklists/jurisdiction_readiness.md
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    blocker_authority:
+      - docs/checklists/jurisdiction_readiness.md
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    next_action: >
+      Define the applicable country, regional, municipal, cadastral, CRS, and local
+      professional-review boundaries for the Bologna pilot without reusing the US
+      county checklist as approval.
+
+  - id: italy_source_inventory
+    status: missing_candidate_decision
+    evidence:
+      - registers/data_source_registry.csv
+      - docs/DATA_SOURCE_STRATEGY.md
+    blocker_authority:
+      - registers/data_source_registry.csv
+      - schemas/source_schema.json
+    next_action: >
+      Name the recorded-source corpus candidates, source owners, source versions,
+      retrieval metadata, terms references, and caveats before any Bologna fixture is
+      committed.
+
+  - id: italy_source_rights_review
+    status: blocked_external_authority
+    evidence:
+      - schemas/source_schema.json
+      - docs/runbooks/source_entitlements.md
+      - config/source_entitlements.yaml
+    blocker_authority:
+      - schemas/source_schema.json
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    next_action: >
+      Complete license, redistribution, cache, export, AI-use, attribution, and raw-data
+      review for every Italy/EU/local recorded source before using it in a report.
+
+  - id: ds017_treatment
+    status: blocked_external_authority
+    evidence:
+      - config/source_entitlements.yaml
+      - scripts/source_readiness.py
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    blocker_authority:
+      - config/source_entitlements.yaml
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    next_action: >
+      Choose an explicit DS-017 path for the broader release boundary: approve under
+      reviewed contract, defer or remove from Must scope, or substitute approved
+      public/official sources.
+
+  - id: eu_italy_rulepack_scope
+    status: missing_candidate_decision
+    evidence:
+      - docs/checklists/rulepack_readiness.md
+      - config/ruleset_homestead_mvp.yaml
+    blocker_authority:
+      - docs/checklists/rulepack_readiness.md
+      - docs/SECURITY.md
+    next_action: >
+      Decide whether the Bologna pilot is evidence-only, a constrained locality dossier,
+      or a new rulepack; do not reuse the US homestead rulepack outside its documented
+      geography.
+
+  - id: recorded_source_fixture_corpus
+    status: missing_repo_evidence
+    evidence:
+      - tests/fixtures
+      - docs/connectors/connector_runbook.md
+    blocker_authority:
+      - docs/connectors/connector_runbook.md
+      - schemas/evidence_schema.json
+    next_action: >
+      Commit a recorded-source fixture corpus only after source rights and pilot scope
+      are approved; include provenance, retrieval metadata, source versions, CRS, and
+      source-failure fixtures.
+
+  - id: bologna_report_runtime_proof
+    status: missing_repo_evidence
+    evidence:
+      - backend/tests/private_mvp
+      - backend/tests/reports
+      - scripts/ui_runtime_smoke.py
+    blocker_authority:
+      - state/LEVEL_9_10_GATE_MATRIX.md
+    next_action: >
+      After the recorded-source corpus exists, prove one DB-backed report with
+      evidence, claims or unknowns, caveats, artifact persistence, and lineage; keep it
+      out of hosted-production claims.
+
+  - id: hosted_identity_artifact_boundary
+    status: blocked_external_authority
+    evidence:
+      - config/hosted_deployment.yaml
+      - config/access_control.yaml
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    blocker_authority:
+      - config/hosted_deployment.yaml
+      - state/PRODUCTION_AUTHORITY_PACKET.md
+    next_action: >
+      Keep Bologna pilot proof local/recorded until hosted platform, identity/RBAC,
+      object-store, observability, alerting, billing, and secret-manager authority
+      exist.
+
+  - id: multi_geography_framework_boundary
+    status: missing_repo_evidence
+    evidence:
+      - docs/planning_pack/06_GLOBAL_EXPANSION_STRATEGY.md
+      - state/LEVEL_9_10_GATE_MATRIX.md
+    blocker_authority:
+      - plans/2026-06-20-post-se001-bologna-preflight.md
+    next_action: >
+      Design the repeatable multi-geography source/rulepack framework only after the
+      Bologna pilot exposes the real shared contracts and country-specific seams.

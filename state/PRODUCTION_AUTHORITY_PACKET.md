@@ -269,6 +269,48 @@ Source of current truth: `config/performance_baseline.yaml`,
   - Hosted load-test proof, queue/backpressure threshold tuning, object-store capacity
     checks, hosted retention scheduler integration, and production workload dashboards.
 
+## Bologna Recorded-Source Pilot Authority
+
+Source of current truth: `config/bologna_preflight.yaml`,
+`docs/runbooks/bologna_preflight.md`, `docs/checklists/jurisdiction_readiness.md`,
+`docs/checklists/rulepack_readiness.md`, `state/LEVEL_9_10_GATE_MATRIX.md`.
+
+This packet does not approve or start Bologna. It records the authority and evidence
+required before a future one-AOI recorded-source pilot can begin.
+
+- External decisions required:
+  - Product decision that authorizes a Bologna recorded-source pilot and names the
+    exact one-AOI scope, intended operator, non-goals, and stop conditions.
+  - Italy/EU/local source review for each recorded source, including source owner,
+    source version/date, retrieval metadata, license/terms reference, redistribution,
+    cache, export, AI-use, attribution, raw-data handling, and caveats.
+  - Jurisdiction and locality boundary model for the pilot, including country,
+    regional, municipal, cadastral, CRS/geometry, local professional-review, and
+    legal-interpretation boundaries.
+  - Rulepack decision: evidence-only pilot, constrained locality dossier, or new
+    rulepack. Do not reuse the US homestead rulepack outside its documented geography.
+  - DS-017 broader-release treatment: approve under reviewed contract, defer or remove
+    from Must scope, or substitute approved public/official sources.
+- Evidence fields required:
+  - Authorized AOI, recorded-source manifest, source-rights decisions, source versions,
+    retrieval metadata, CRS and geometry precision, fixture corpus, source-failure
+    fixtures, rulepack or evidence-only scope, caveat language, and no-overclaim review.
+  - DB-backed report proof only after the recorded-source corpus is approved: evidence,
+    claims or unknowns, caveats, artifact persistence, and lineage.
+- Acceptable unblock criteria:
+  - All candidate, source, jurisdiction, rulepack, DS-017-treatment, and fixture-corpus
+    prerequisites are explicit and reviewed.
+  - Source failures, no-data, stale data, ambiguity, license blocks, CRS ambiguity, and
+    partial records become first-class evidence or unknowns, not clean findings.
+  - The pilot remains recorded-source and local unless hosted platform, identity/RBAC,
+    object-store, observability, alerting, billing, and secret-manager authority exists.
+  - Do not generalize into a multi-geography framework until Bologna pilot evidence
+    exposes the actual shared contracts and country-specific boundaries.
+- Repo lane unlocked only after authority exists:
+  - Bologna recorded-source fixture corpus, source-rights catalog updates, pilot
+    rulepack or evidence-only configuration, DB-backed runtime proof, and then a
+    post-pilot multi-geography framework plan.
+
 ## Repo-Local Follow-On Map
 
 | Authority received | Repo-local follow-on |
@@ -281,10 +323,13 @@ Source of current truth: `config/performance_baseline.yaml`,
 | Billing/cost authority | Hosted billing reconciliation, paid-source cost attribution, spend alerts, batch/concurrency guardrails. |
 | Alerting/on-call authority | Hosted alert routes, dashboards, queue/source freshness monitors, incident validation. |
 | Production workload/retention authority | Hosted load proof, SLO threshold checks, retention scheduler, log retention, object-store capacity proof. |
+| Bologna recorded-source pilot authority | Recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan. |
 
 ## Open Blockers
 
 - DS-017 has no vendor, license, cost, entitlement, or connector authority.
+- Bologna has no selected AOI, Italy/EU/local source-rights authority, pilot rulepack
+  scope, recorded-source fixture corpus, or DB-backed pilot proof.
 - Hosted platform, database, DNS/TLS, registry, public URL, and production smoke
   authority are not available.
 - External secret manager, IdP/OAuth/OIDC, full user RBAC, billing reconciliation,

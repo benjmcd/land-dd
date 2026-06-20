@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-source-entitlement-decision-packet.md
+active_plan: plans/2026-06-20-post-se001-bologna-preflight.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -14,11 +14,13 @@ routing_note: >
   observability readiness merged through PR #100, G9a custom AOI UI runtime smoke
   merged through PR #101, REC-002 post-G9a routing merged through PR #102, and G9b
   generic supported-AOI evidence closure merged through PR #104, and G9c
-  supported-AOI UI/runtime proof merged through PR #105. Active lane: DS-017
-  source-entitlement decision packet. This slice must not
-  create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
-  authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
-  production traffic proof, ranking/recommendation semantics, or Level 10 authority.
+  supported-AOI UI/runtime proof merged through PR #105, and SE-001 source-entitlement
+  decision packet merged through PR #106. Active lane: BP-001 post-SE001 routing and
+  Bologna preflight. This slice must not create hosted deployment, hosted identity/RBAC,
+  hosted observability, source/vendor authority, new jurisdiction/rulepack/source
+  coverage, DS-017 approval, Bologna implementation, production traffic proof,
+  ranking/recommendation semantics, multi-geography framework implementation, or Level
+  10 authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -1157,7 +1159,7 @@ tasks:
 
   - id: SE-001
     title: Source entitlement decision packet
-    status: active
+    status: done
     depends_on: [G9c]
     lane: coordinator
     spec: plans/2026-06-20-source-entitlement-decision-packet.md
@@ -1182,6 +1184,38 @@ tasks:
       - The checker cross-checks DS-017 against current source-readiness and fails closed if the blocked state drifts
       - Release readiness composes the source-entitlement checker as validate-only proof
       - DS-017 remains blocked unless external source/vendor authority changes
+
+  - id: BP-001
+    title: Post-SE001 routing and Bologna preflight
+    status: active
+    depends_on: [SE-001]
+    lane: coordinator
+    spec: plans/2026-06-20-post-se001-bologna-preflight.md
+    notes: >
+      Restore live routing after the merged SE-001 source-entitlement packet and add a
+      validate-only Bologna recorded-source pilot preflight. This makes the long-term
+      Bologna and multi-geography path explicit without selecting Bologna, approving
+      Italy/EU/local sources, approving a rulepack, unblocking DS-017, creating hosted
+      authority, seeding data, changing runtime behavior, or claiming Level 10
+      production proof.
+    validation:
+      - py -3.12 -m pytest backend\tests\test_bologna_preflight_artifacts.py -q
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - .\scripts\run_bologna_preflight_check.ps1
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\source_entitlement_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - SE-001 is recorded as complete after PR #106 and DS-017 remains blocked
+      - Active routing points at BP-001 and only BP-001 is active
+      - Bologna preflight approval flags remain false and the checker passes
+      - The US jurisdiction/rulepack dry-run remains distinct from Bologna/Italy/EU authority
+      - No hosted, DS-017 approval, source expansion, Bologna implementation, rulepack implementation, multi-geography framework implementation, ranking/recommendation, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000
