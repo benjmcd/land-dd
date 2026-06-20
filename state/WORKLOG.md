@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Deployment-readiness UI G3
+
+- Started narrow `G3` from `plans/2026-06-20-deployment-readiness-ui-g3.md` in clean
+  worktree `worktrees/g3-deploy` after confirming live `origin/main` at
+  `beedde0990e598beaa3ccefd99392fe5d9856e1f`, no open GitHub PRs, and no active
+  `agent-inbox` ownership collision.
+- Audited live release-package, image-publication, hosted-deployment, release-readiness,
+  UI, and OpenAPI surfaces plus the dirty-root deployment-readiness candidate as
+  evidence only. The retained scope is one read-only `/ui/deployment-readiness` route
+  over existing package/image/hosted catalogs; readiness overview, selected-geography
+  coverage, expansion, production authority, source/report provenance, guardrails,
+  observability, and default smoke expansion remain later/deferred slices.
+- Added an intentional red focused test proving `app.deployment_readiness` was absent,
+  then added a packaged parser that validates request-critical catalog invariants and
+  fails closed on schema, runtime-input, blocker, limit, path, read-error path leakage,
+  or evidence-status drift.
+- Added the GET-only deployment-readiness page with home/raw-data navigation links and
+  explicit copy that it does not build or publish packages, push images, create hosted
+  deployment, write secrets, open public endpoints, approve DS-017, add OAuth/OIDC, or
+  provide full identity/RBAC.
+- Final verification: focused deployment-readiness tests passed (`9 passed`); focused
+  mypy passed; focused ruff passed using the local `ruff` executable; OpenAPI stubs were
+  regenerated and OpenAPI parity tests passed (`2 passed`); release-package,
+  image-publication, hosted-deployment, release-readiness, readiness-matrix,
+  private-MVP, and access-control validators passed; diff/no-deletion and workspace
+  validation passed; final `.\scripts\verify.ps1` passed with backend tests, ruff, and
+  mypy over `330` source files. DB smoke was skipped by default.
+
 ## 2026-06-20 Raw-data inventory UI
 
 - Started `G1b` from `plans/2026-06-20-raw-data-inventory.md` in clean worktree

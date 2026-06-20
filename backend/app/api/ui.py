@@ -50,6 +50,11 @@ from app.api.ui_shared import (
 )
 from app.core.config import Settings
 from app.core.error_safety import safe_error_message
+from app.deployment_readiness import (
+    DeploymentReadiness,
+    DeploymentReadinessError,
+    load_deployment_readiness,
+)
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
@@ -696,6 +701,148 @@ def _raw_inventory_section(
     )
 
 
+def _deployment_list(values: Sequence[str]) -> str:
+    items = "".join(f"<li><code>{_html.escape(value)}</code></li>" for value in values)
+    return f"<ul class='deployment-list'>{items}</ul>"
+
+
+def _deployment_limits_table(limits: dict[str, bool]) -> str:
+    rows = "".join(
+        "<tr>"
+        f"<td><code>{_html.escape(key)}</code></td>"
+        f"<td>{_html.escape(str(value).lower())}</td>"
+        "</tr>"
+        for key, value in sorted(limits.items())
+    )
+    return (
+        "<table class='deployment-table'>"
+        "<thead><tr><th>Limit</th><th>Value</th></tr></thead>"
+        f"<tbody>{rows}</tbody>"
+        "</table>"
+    )
+
+
+def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
+    package = readiness.package
+    image = readiness.image
+    hosted = readiness.hosted
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Deployment Readiness</title>
+<style>
+{_INDEX_CSS}
+.deployment-shell .console-grid {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
+.deployment-card {{ display: grid; gap: 0.75rem; }}
+.deployment-card h2 {{ margin-bottom: 0.25rem; }}
+.deployment-list {{ margin: 0; padding-left: 1.2rem; line-height: 1.55; }}
+.deployment-table {{ border-collapse: collapse; min-width: 520px; width: 100%; }}
+.deployment-table th, .deployment-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.deployment-table th {{ background: var(--soft); }}
+.deployment-boundary {{ margin-top: 1rem; }}
+@media (max-width: 1080px) {{
+  .deployment-shell .console-grid {{ grid-template-columns: 1fr; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Deployment Readiness</h1>
+      <span>Local validate-only catalog view</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell deployment-shell">
+  <div class="status-strip" aria-label="Deployment readiness summary">
+    <div class="status-item">
+      <strong>Package catalog</strong>
+      <span>{_html.escape(package.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Image catalog</strong>
+      <span>{_html.escape(image.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Hosted catalog</strong>
+      <span>{_html.escape(hosted.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Authority boundary</strong>
+      <span>local validate-only; blockers remain active</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel deployment-card" aria-labelledby="package-readiness-title">
+      <div>
+        <h2 id="package-readiness-title">Release Package</h2>
+        <p>Local package boundary for <strong>{_html.escape(package.package_name)}</strong>.</p>
+      </div>
+      <div class="meta">schema: {_html.escape(package.schema_version)}</div>
+      <p>Output directory: <code>{_html.escape(package.output_dir)}</code></p>
+      <p>Manifest: <code>{_html.escape(package.manifest_filename)}</code></p>
+      <p>Includes: {package.include_count}; excluded path parts:
+        {package.exclude_part_count}; excluded suffixes: {package.exclude_suffix_count}.</p>
+      <h2>Required gates</h2>
+      {_deployment_list(package.required_gates)}
+    </section>
+    <section class="panel deployment-card" aria-labelledby="image-readiness-title">
+      <div>
+        <h2 id="image-readiness-title">Image Publication</h2>
+        <p>Registry image boundary for <strong>{_html.escape(image.image_name)}</strong>.</p>
+      </div>
+      <div class="meta">schema: {_html.escape(image.schema_version)}</div>
+      <p>Dockerfile: <code>{_html.escape(image.dockerfile)}</code></p>
+      <p>Registry env: <code>{_html.escape(image.registry_image_env)}</code></p>
+      <h2>Required attestations</h2>
+      {_deployment_list(image.required_attestations)}
+      <h2>Blockers</h2>
+      {_deployment_list(image.blockers)}
+      <div class="table-wrap">{_deployment_limits_table(image.limits)}</div>
+    </section>
+    <section class="panel deployment-card" aria-labelledby="hosted-readiness-title">
+      <div>
+        <h2 id="hosted-readiness-title">Hosted Deployment</h2>
+        <p>Container runtime boundary for <strong>{_html.escape(hosted.service_name)}</strong>.</p>
+      </div>
+      <div class="meta">schema: {_html.escape(hosted.schema_version)}</div>
+      <p>Runtime: <code>{_html.escape(hosted.runtime)}</code></p>
+      <h2>Required runtime inputs</h2>
+      {_deployment_list(hosted.required_runtime_inputs)}
+      <h2>Required runtime evidence</h2>
+      {_deployment_list(hosted.required_runtime_evidence)}
+      <h2>Blockers</h2>
+      {_deployment_list(hosted.blockers)}
+      <div class="table-wrap">{_deployment_limits_table(hosted.limits)}</div>
+    </section>
+  </main>
+  <div class="note deployment-boundary">
+    <strong>Deployment readiness boundary.</strong> This page is local validate-only
+    visibility over repo-owned catalogs. It does not build or publish a release package,
+    does not push a registry image, does not create hosted deployment, does not write secrets,
+    does not open public endpoints, does not approve DS-017, does not add OAuth/OIDC,
+    and does not provide full identity/RBAC.
+  </div>
+</div>
+</body>
+</html>"""
+
+
 @router.get("/", response_class=HTMLResponse)
 def ui_index(request: Request, services: ServicesDep) -> str:
     intent_options = "\n".join(
@@ -727,6 +874,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>
@@ -831,6 +979,28 @@ document.getElementById('report-form').addEventListener('submit', function(event
 </script>
 </body>
 </html>"""
+
+
+@router.get(
+    "/deployment-readiness",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_deployment_readiness() -> str | HTMLResponse:
+    try:
+        readiness = load_deployment_readiness()
+    except DeploymentReadinessError as exc:
+        return error_page(
+            "Deployment Readiness Unavailable",
+            (
+                "Deployment readiness unavailable from repo-owned deployment-path "
+                f"artifacts: {exc}"
+            ),
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _deployment_readiness_page(readiness)
 
 
 @router.get("/raw-data", response_class=HTMLResponse)
@@ -939,6 +1109,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/">Home</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/ui/connector-review-queue">Connector review queue</a>

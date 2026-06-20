@@ -2,16 +2,16 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-selected-county-source-provenance-catalog.md`.
+Latest completed plan: `2026-06-20-runtime-browser-smoke-g2.md`.
 
-Active plan: `2026-06-20-runtime-browser-smoke-g2.md`.
+Active plan: `2026-06-20-deployment-readiness-ui-g3.md`.
 
-The active slice is `G2`, the next retained product/control slice after `G3b`
-selected-county source-provenance catalog merged. It rebuilds runtime/browser smoke
-around the accepted G1 UI surface: account-free default local operation, read-only
-`/ui/raw-data`, explicit default-disabled `/ui/auth*` checks, opt-in protected auth
-checks, and DB-backed deployment smoke composition without adding later readiness,
-provenance, guardrail, hosted, identity/RBAC, or Level 10 claims.
+The active slice is the narrow `G3` deployment-readiness UI surface after `G2`
+runtime/browser smoke merged. It adds a read-only `/ui/deployment-readiness` page over
+the existing release-package, image-publication, and hosted-deployment catalogs without
+building packages, pushing images, creating hosted infrastructure, writing secrets,
+opening public endpoints, approving DS-017, adding identity/RBAC, or claiming Level 10
+production authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

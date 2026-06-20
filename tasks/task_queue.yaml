@@ -1,16 +1,17 @@
 version: 2
-active_plan: plans/2026-06-20-selected-county-source-provenance-catalog.md
+active_plan: plans/2026-06-20-deployment-readiness-ui-g3.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
   preserved evidence only. G7a package-manifest CI gate merged through PR #88, and G3a
   source-readiness module extraction merged through PR #89. G1a account-free local auth
-  posture merged through PR #90. G1b raw-data inventory UI merged through PR #91.
-  Active lane: G3b selected-county source-provenance catalog, opened from live
-  origin/main after G1b. This slice adds a validate-only dataset/version/retrieval
-  expectation catalog for selected DS-010/DS-011/DS-023 county/source combinations; it
-  does not seed runtime provenance, run connectors, change source rights, approve
-  DS-017, expand county/vendor coverage, or add hosted identity/RBAC/deployment
+  posture merged through PR #90. G1b raw-data inventory UI merged through PR #91, G3b
+  selected-county source-provenance catalog merged through PR #92, and G2
+  runtime/browser smoke merged through PR #93. Active lane: narrow G3
+  deployment-readiness UI over existing release-package, image-publication, and
+  hosted-deployment catalogs. This slice does not build or publish packages, push
+  images, create hosted infrastructure, write secrets, open public endpoints, approve
+  DS-017, expand selected geography/source coverage, or add hosted identity/RBAC
   authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
