@@ -2,6 +2,68 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-20 Production Authority Intake Guard PAI-001
+
+**Scope:** Add a validate-only production-authority intake packet and checker. This
+does not approve DS-017, select a vendor, provision hosted infrastructure, publish
+images, write secrets, create billing integration, create hosted observability, select
+a Bologna AOI, approve Bologna sources, change source readiness, implement a
+multi-geography framework, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git log --oneline --decorate -5
+py -3.12 .\scripts\production_authority_intake_check.py
+.\scripts\run_production_authority_intake_check.ps1
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 -m pytest backend\tests\test_production_authority_intake_artifacts.py backend\tests\test_release_readiness_artifacts.py -q
+cd backend; ruff check ..\scripts\production_authority_intake_check.py ..\scripts\release_readiness_check.py .\tests\test_production_authority_intake_artifacts.py .\tests\test_release_readiness_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\production_authority_intake_check.py ..\scripts\release_readiness_check.py .\tests\test_production_authority_intake_artifacts.py .\tests\test_release_readiness_artifacts.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_entitlement_check.py
+py -3.12 .\scripts\bologna_source_authority_intake_check.py
+py -3.12 .\scripts\hosted_deployment_check.py
+py -3.12 .\scripts\access_control_check.py
+py -3.12 .\scripts\image_publication_check.py
+py -3.12 .\scripts\observability_readiness_check.py
+py -3.12 .\scripts\cost_monitoring_check.py
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Live history confirmed `origin/main` contains PR #109, PR #110, and PR #111 before
+  this branch.
+- New production-authority intake checker passed; the Windows wrapper passed and emits
+  the same success token as the checker.
+- Aggregate release-readiness passed with production-authority intake composed.
+- Focused production-authority and release-readiness artifact tests passed (`20
+  passed`).
+- Focused ruff passed, and focused mypy passed with no issues in 4 source files.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
+- Readiness-matrix, source-entitlement, Bologna source-authority intake, hosted
+  deployment, access-control, image-publication, observability-readiness,
+  cost-monitoring, Bologna source-rights, and Bologna preflight validators passed.
+- `git diff --check` passed, and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Default `.\scripts\verify.ps1` passed: workspace validation passed, backend tests
+  passed, ruff passed, mypy passed over `348` source files, DB smoke was skipped by
+  default, and the gate ended with `verify: ok`.
+
+**Residual risk:** Production authority remains externally blocked. The intake guard is
+only a machine-readable handoff/checklist for missing external evidence; it does not
+unblock DS-017, hosted deployment, identity/RBAC, hosted observability, billing,
+image-publication, secret-manager, Bologna recorded-source work, or Level 10 authority.
+
 ## 2026-06-20 Bologna Source-Authority Intake Guard BSG-001
 
 **Scope:** Add a validate-only Bologna source-authority intake packet and checker. This

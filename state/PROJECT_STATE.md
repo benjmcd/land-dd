@@ -1,38 +1,38 @@
 # Project State
 
-## Current checkpoint (2026-06-20 Bologna source-authority intake guard)
+## Current checkpoint (2026-06-20 production authority intake guard)
 
-`BSR-001` Bologna source-rights matrix is complete and merged through PR #109 at
-`4decd1bb3135a060c75c3534d5223da79f7618a7`. The matrix exists as validate-only
-decision-readiness proof: every Bologna candidate source remains pending review, not
-approved, not source-registry-promoted, and disallowed for fixtures, runtime, reports,
-and raw export. Post-merge validation passed on `origin/main`, and
-`worktrees/bol-rights` was removed.
+Live `origin/main` contains `BSR-001` through PR #109, post-BSR routing through PR
+#110, and `BSG-001` through PR #111 at
+`53aaa96eaa5cb1b451b5f503a5e6be45240b1ecd`. `BSA-001` Bologna source-authority
+intake remains blocked until explicit product/AOI/source-review authority exists for
+exact candidate sources.
 
-- **Current routing plan**: `plans/2026-06-20-post-bsr-roadmap.md`.
-- **Latest completed repo-local guard**:
-  `plans/2026-06-20-bologna-source-authority-intake-guard.md` adds
-  `config/bologna_source_authority_intake.yaml`,
-  `docs/runbooks/bologna_source_authority_intake.md`,
-  `scripts/bologna_source_authority_intake_check.py`, wrappers, focused tests, and
-  Bologna preflight composition. It makes future authority evidence checkable against
-  the source-rights matrix while keeping all authority references empty and all
-  decision updates disallowed.
-- **Current task state**: `BSR-001` and `BSG-001` are done. `BSA-001` Bologna
-  source-authority intake is blocked until explicit product/AOI/source-review authority
-  exists for exact candidate sources.
-- **Immediate next step**: if authority exists, fill the rights matrix from cited
-  review evidence. If authority is absent, keep `BSA-001` blocked and do not capture
-  fixtures, promote source rows, run connectors, approve a Bologna rulepack, or create
-  report/runtime proof.
+- **Current implementation plan**:
+  `plans/2026-06-20-production-authority-intake-guard.md`.
+- **Latest repo-local guard**: `PAI-001` adds
+  `config/production_authority_intake.yaml`,
+  `docs/runbooks/production_authority_intake.md`,
+  `scripts/production_authority_intake_check.py`, wrappers, focused tests, and
+  release-readiness composition. It cross-checks DS-017, hosted platform, secrets,
+  identity/RBAC, image publication, billing, hosted observability, and Bologna
+  recorded-source authority streams against their existing catalogs while keeping every
+  stream blocked, uncited, and decision-update-disallowed.
+- **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, and `PAI-001` are
+  done. `BSA-001` remains blocked. Must-source readiness remains
+  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
+- **Immediate next step if external authority exists**: cite exact authority in the
+  matching lower-level catalog before any stream can move from blocked. For Bologna,
+  that means filling the source-rights matrix from cited product/AOI/source-review
+  evidence before fixtures, source rows, connectors, rulepacks, or reports.
+- **Immediate next step if authority is absent**: keep `BSA-001`, DS-017, hosted
+  platform, identity/RBAC, hosted observability, billing, image publication, secret
+  manager, and Level 10 authority blocked; use the production-authority intake guard as
+  the handoff checklist for the missing external evidence.
 - **Mid-term sequence**: after approved rights, build a one-AOI recorded-source corpus
   with source versions, retrieval metadata, attribution, CRS, caveats, source-failure
   fixtures, and storage/export boundaries; then prove one DB-backed Bologna report with
   evidence, unknowns/claims, caveats, artifacts, and lineage.
-- **Parallel blockers**: DS-017 treatment, hosted platform/database/DNS/TLS,
-  identity/RBAC, object-store, observability/log retention/alerting, billing,
-  secret-manager, image-publication, and production workload authority remain separate
-  external gates.
 - **Long-term target**: extract a repeatable multi-geography source/rulepack framework
   only after the Bologna pilot exposes real reusable contracts and country-specific
   boundaries.
