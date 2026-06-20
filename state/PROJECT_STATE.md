@@ -1,6 +1,46 @@
 # Project State
 
-## Current checkpoint (2026-06-20 raw-data inventory UI)
+## Current checkpoint (2026-06-20 selected-county source-provenance catalog)
+
+The active implementation authority is `G3b` selected-county source-provenance catalog
+from `plans/2026-06-20-selected-county-source-provenance-catalog.md`. This is the next
+retained product/control slice after `G1b` raw-data inventory UI merged through PR #91
+at `5440934218182b309b784bfde29a5bc7d34d870e`. The dirty root checkout remains
+preserved candidate evidence only; this slice was opened from live `origin/main` in
+`worktrees/prov-cat`.
+
+- **Active plan**: `plans/2026-06-20-selected-county-source-provenance-catalog.md`.
+- **Purpose**: add a validate-only selected-county source-provenance expectation
+  catalog for DS-010, DS-011, and DS-023 across Buncombe, Chatham, and Brunswick so
+  future raw-data/source-provenance UI and report-path work has a machine-checkable
+  source of truth for dataset, version, retrieval, connector, and out-of-scope
+  expectations.
+- **Implemented scope so far**: focused tests now cover the provenance catalog shape,
+  DS-017 exclusion, connector cross-checking against selected-county source scope, and
+  Buncombe DS-023 out-of-scope expectations. `config/private_mvp_beta_readiness.yaml`
+  now declares `selected_county_source_provenance_scope`; the private-MVP readiness
+  checker validates that scope against selected source scope and county manifest scope.
+  `MANIFEST.md`, `docs/IMPLEMENTATION_READINESS.md`, and `docs/runbooks/mvp_operator.md`
+  route future source/provenance work to the catalog without claiming runtime
+  hydration, live vendor execution, DS-017 approval, hosted deployment, or identity/RBAC
+  completion.
+- **Current local validation**: intentional red focused pytest failed for the missing
+  `selected_county_source_provenance_scope` section; after adding the catalog and
+  validator, focused private-MVP readiness tests passed (`31 passed`). Private-MVP,
+  release-readiness, readiness-matrix, Must-source readiness, focused ruff, focused
+  mypy, wrapper, diff/no-deletion, workspace validation, and full `.\scripts\verify.ps1`
+  passed. Full verify ran backend tests, ruff, and mypy over `328` source files; DB
+  smoke was skipped by default.
+- **Known boundaries to preserve**: no connector execution, no fixture/runtime seeding,
+  no provenance record creation, no DB requirement, no DS-017 approval, no source/vendor
+  expansion, no public API/UI/runtime semantics change, no report semantics change, no
+  auth/security boundary change, no hosted deployment, no full identity/RBAC, and no
+  Level 10 completion claim.
+- **Next required step**: finish focused and full verification, publish the focused
+  `codex/prov-cat` PR, wait for CI, merge only if local and CI proof agree, then
+  re-check live `origin/main` and re-rank the next retained slice.
+
+## Previous checkpoint (2026-06-20 raw-data inventory UI)
 
 The active implementation authority is `G1b` raw-data inventory UI from
 `plans/2026-06-20-raw-data-inventory.md`. This is the next retained
