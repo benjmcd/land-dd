@@ -60,11 +60,22 @@ from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
+from app.source_provenance import (
+    SourceProvenanceError,
+    SourceProvenanceReadiness,
+    load_source_provenance,
+)
 
 _UI_PAGE_SIZE = 30
 _RAW_INVENTORY_LIMIT = 50
 _REPORT_REFRESH_SECONDS_DEFAULT = 3
 _REPORT_REFRESH_SECONDS_OPTIONS = (3, 10, 30, 60)
+_SOURCE_PROVENANCE_BOUNDARY = (
+    "does not run connectors, does not seed runtime provenance, "
+    "does not relabel fixture evidence as live data, does not approve DS-017, "
+    "does not expand county coverage, does not start Bologna, and does not prove "
+    "hosted source authority."
+)
 
 router = APIRouter(prefix="/ui", tags=["ui"])
 ServicesDep = Annotated[ApiServices, Depends(get_services)]
@@ -722,6 +733,199 @@ def _deployment_limits_table(limits: dict[str, bool]) -> str:
     )
 
 
+def _provenance_inline_list(values: Sequence[str]) -> str:
+    if not values:
+        return "<span>n/a</span>"
+    items = "".join(f"<li><code>{_html.escape(value)}</code></li>" for value in values)
+    return f"<ul class='provenance-list'>{items}</ul>"
+
+
+def _provenance_expectation_table(
+    expectation_enums: dict[str, tuple[str, ...]],
+) -> str:
+    rows = "".join(
+        "<tr>"
+        f"<td><code>{_html.escape(key)}</code></td>"
+        f"<td>{_provenance_inline_list(values)}</td>"
+        "</tr>"
+        for key, values in sorted(expectation_enums.items())
+    )
+    return (
+        "<table class='provenance-table'>"
+        "<thead><tr><th>Expectation group</th><th>Allowed values</th></tr></thead>"
+        f"<tbody>{rows}</tbody>"
+        "</table>"
+    )
+
+
+def _source_provenance_county_sections(readiness: SourceProvenanceReadiness) -> str:
+    sections: list[str] = []
+    for county in readiness.counties:
+        county_title_id = _html.escape(f"{county.county_key}-title")
+        county_label = _html.escape(county.county_label)
+        source_manifest = _html.escape(county.source_manifest)
+        rows = "".join(
+            "<tr>"
+            f"<td><code>{_html.escape(source.source_registry_id)}</code><br>"
+            f"{_html.escape(source.source_name)}</td>"
+            f"<td>{_provenance_inline_list(source.connector_names)}</td>"
+            f"<td><code>{_html.escape(source.dataset_expectation)}</code></td>"
+            f"<td><code>{_html.escape(source.version_expectation)}</code></td>"
+            f"<td><code>{_html.escape(source.retrieval_expectation)}</code></td>"
+            f"<td>{_html.escape(str(source.out_of_scope).lower())}</td>"
+            f"<td>{_html.escape(source.out_of_scope_reason or 'in selected-county scope')}</td>"
+            "</tr>"
+            for source in county.sources
+        )
+        sections.append(
+            f"""
+    <section class="panel provenance-card" aria-labelledby="{county_title_id}">
+      <div>
+        <h2 id="{county_title_id}">{county_label}</h2>
+        <p>Manifest: <code>{source_manifest}</code></p>
+      </div>
+      <div class="table-wrap">
+        <table class="provenance-table">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Connectors</th>
+              <th>Dataset</th>
+              <th>Version</th>
+              <th>Retrieval</th>
+              <th>Out of scope</th>
+              <th>Boundary</th>
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
+    </section>"""
+        )
+    return "".join(sections)
+
+
+def _source_provenance_blocker_table(readiness: SourceProvenanceReadiness) -> str:
+    blocker = readiness.ds017_blocker
+    if blocker is None:
+        return "<p>DS-017 blocker unavailable.</p>"
+    return f"""
+    <div class="table-wrap">
+      <table class="provenance-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Domain</th>
+            <th>Review status</th>
+            <th>License status</th>
+            <th>Connector ready</th>
+            <th>Blocked fields</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>{_html.escape(blocker.source_registry_id)}</code><br>{_html.escape(blocker.name)}</td>
+            <td>{_html.escape(blocker.domain)}</td>
+            <td>{_html.escape(blocker.review_status)}</td>
+            <td>{_html.escape(blocker.license_status)}</td>
+            <td>{_html.escape(str(blocker.connector_ready).lower())}</td>
+            <td>{_provenance_inline_list(blocker.blocked_fields)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>"""
+
+
+def _source_provenance_page(readiness: SourceProvenanceReadiness) -> str:
+    selected_source_count = str(len(readiness.selected_source_ids))
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Source Provenance</title>
+<style>
+{_INDEX_CSS}
+.provenance-shell .console-grid {{ grid-template-columns: 1fr; }}
+.provenance-card {{ display: grid; gap: 0.75rem; }}
+.provenance-list {{ margin: 0; padding-left: 1.2rem; line-height: 1.55; }}
+.provenance-table {{ border-collapse: collapse; min-width: 980px; width: 100%; }}
+.provenance-table th, .provenance-table td {{
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}}
+.provenance-table th {{ background: var(--soft); }}
+.provenance-boundary {{ margin-top: 1rem; }}
+@media (max-width: 640px) {{
+  .provenance-shell .table-wrap {{ overflow-x: auto; max-width: 100%; }}
+}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Source Provenance</h1>
+      <span>Selected-county source, version, and retrieval expectations</span>
+    </div>
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/ui/operations">Operations</a>
+      <a href="/docs">API docs</a>
+    </nav>
+  </div>
+</header>
+<div class="shell provenance-shell">
+  <div class="status-strip" aria-label="Source provenance summary">
+    <div class="status-item">
+      <strong>Catalog schema</strong>
+      <span>{_html.escape(readiness.schema_version)}</span>
+    </div>
+    <div class="status-item">
+      <strong>Selected sources</strong>
+      <span>{selected_source_count}: {_html.escape(', '.join(readiness.selected_source_ids))}</span>
+    </div>
+    <div class="status-item">
+      <strong>Must-source readiness</strong>
+      <span>{readiness.must_ready_count} ready / {readiness.must_source_count} total</span>
+    </div>
+    <div class="status-item">
+      <strong>Blocked Must source</strong>
+      <span>{_html.escape(', '.join(readiness.must_blocked_source_ids))}</span>
+    </div>
+  </div>
+  <main class="console-grid">
+    <section class="panel provenance-card" aria-labelledby="provenance-enums-title">
+      <div>
+        <h2 id="provenance-enums-title">Expectation Vocabulary</h2>
+        <p>Allowed dataset, version, and retrieval expectation values from the catalog.</p>
+      </div>
+      <div class="table-wrap">{_provenance_expectation_table(readiness.expectation_enums)}</div>
+    </section>
+    {_source_provenance_county_sections(readiness)}
+    <section class="panel provenance-card" aria-labelledby="ds017-blocker-title">
+      <div>
+        <h2 id="ds017-blocker-title">DS-017 Full-Release Blocker</h2>
+        <p>Commercial parcel vendor authority remains blocked and outside private-MVP proof.</p>
+      </div>
+      {_source_provenance_blocker_table(readiness)}
+    </section>
+  </main>
+  <div class="note provenance-boundary">
+    <strong>Source provenance boundary.</strong> This page is a read-only expectation
+    view over repo-owned source readiness and selected-county provenance catalogs. It
+    {_html.escape(_SOURCE_PROVENANCE_BOUNDARY)}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     package = readiness.package
     image = readiness.image
@@ -762,6 +966,7 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/">Home</a>
       <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
       <a href="/docs">API docs</a>
@@ -874,6 +1079,7 @@ def ui_index(request: Request, services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>
@@ -979,6 +1185,25 @@ document.getElementById('report-form').addEventListener('submit', function(event
 </script>
 </body>
 </html>"""
+
+
+@router.get(
+    "/source-provenance",
+    response_class=HTMLResponse,
+    response_model=None,
+)
+def ui_source_provenance() -> str | HTMLResponse:
+    try:
+        readiness = load_source_provenance()
+    except SourceProvenanceError as exc:
+        return error_page(
+            "Source Provenance Unavailable",
+            f"Source provenance unavailable from repo-owned artifacts: {exc}",
+            "/ui/",
+            503,
+            css=_INDEX_CSS,
+        )
+    return _source_provenance_page(readiness)
 
 
 @router.get(
@@ -1109,6 +1334,7 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/">Home</a>
+      <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/report-runs">Report runs</a>
       <a href="/ui/operations">Operations</a>

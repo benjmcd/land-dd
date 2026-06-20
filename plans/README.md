@@ -2,15 +2,15 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-runtime-browser-smoke-g2.md`.
+Latest completed plan: `2026-06-20-deployment-readiness-ui-g3.md`.
 
-Active plan: `2026-06-20-deployment-readiness-ui-g3.md`.
+Active plan: `2026-06-20-source-provenance-ui-g5.md`.
 
-The active slice is the narrow `G3` deployment-readiness UI surface after `G2`
-runtime/browser smoke merged. It adds a read-only `/ui/deployment-readiness` page over
-the existing release-package, image-publication, and hosted-deployment catalogs without
-building packages, pushing images, creating hosted infrastructure, writing secrets,
-opening public endpoints, approving DS-017, adding identity/RBAC, or claiming Level 10
+The active slice is the narrow `G5` source-provenance UI surface after `G3`
+deployment-readiness merged. It adds a read-only `/ui/source-provenance` page over the
+selected-county provenance catalog and Must-source readiness records without running
+connectors, seeding runtime provenance, approving DS-017, expanding county/source
+coverage, starting Bologna, proving hosted source authority, or claiming Level 10
 production authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,

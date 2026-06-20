@@ -646,6 +646,22 @@ area associated with the approved connector run and redirects to the report page
 Terminal queue items with no valid mutation action render an explicit no-actions message
 instead of invalid action forms.
 
+### Source provenance (`/ui/source-provenance`)
+
+Navigate to `/ui/source-provenance` from the operator console, raw-data inventory, or
+deployment-readiness page. The page is a read-only local view over
+`config/private_mvp_beta_readiness.yaml`, `registers/data_source_registry.csv`, and the
+selected-county source manifests. It shows the DS-010, DS-011, and DS-023
+dataset/version/retrieval expectations for Buncombe, Chatham, and Brunswick, and keeps
+the DS-017 commercial parcel vendor blocker visible as a full-release source authority
+blocker.
+
+This page does not run connectors, seed runtime provenance, relabel fixture evidence as
+live data, approve DS-017, expand county coverage, start the Bologna pilot, or prove
+hosted source authority. If the selected-county provenance catalog or source registry
+drifts from the validated contract, the page fails closed with a 503 instead of
+rendering unchecked catalog data as source authority.
+
 ### Deployment readiness (`/ui/deployment-readiness`)
 
 Navigate to `/ui/deployment-readiness` from the operator console or raw-data inventory.

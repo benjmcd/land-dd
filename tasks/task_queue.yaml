@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-deployment-readiness-ui-g3.md
+active_plan: plans/2026-06-20-source-provenance-ui-g5.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -7,12 +7,12 @@ routing_note: >
   source-readiness module extraction merged through PR #89. G1a account-free local auth
   posture merged through PR #90. G1b raw-data inventory UI merged through PR #91, G3b
   selected-county source-provenance catalog merged through PR #92, and G2
-  runtime/browser smoke merged through PR #93. Active lane: narrow G3
-  deployment-readiness UI over existing release-package, image-publication, and
-  hosted-deployment catalogs. This slice does not build or publish packages, push
-  images, create hosted infrastructure, write secrets, open public endpoints, approve
-  DS-017, expand selected geography/source coverage, or add hosted identity/RBAC
-  authority.
+  runtime/browser smoke merged through PR #93. G3 deployment-readiness UI merged
+  through PR #94. Active lane: narrow G5 source-provenance UI over the selected-county
+  provenance catalog and Must-source readiness records. This slice does not run
+  connectors, seed runtime provenance, relabel fixture evidence as live data, approve
+  DS-017, expand selected geography/source coverage, start Bologna, or add hosted
+  source/identity/RBAC authority.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -814,7 +814,7 @@ tasks:
 
   - id: G2
     title: Runtime and browser smoke reconstruction
-    status: active
+    status: done
     depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b]
     lane: coordinator
     spec: plans/2026-06-20-runtime-browser-smoke-g2.md
@@ -847,6 +847,60 @@ tasks:
       - `/ui/raw-data` does not create page-level horizontal overflow on mobile browser smoke
       - Browser smoke remains an explicit operator gate, not a default verification side effect
       - No later readiness/provenance/guardrail/deployment/production-authority/dossier UI, source expansion, DS-017 approval, hosted identity/RBAC, or Level 10 claim is introduced
+
+  - id: G3
+    title: Deployment-readiness UI
+    status: done
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2]
+    lane: coordinator
+    spec: plans/2026-06-20-deployment-readiness-ui-g3.md
+    notes: >
+      Add the read-only `/ui/deployment-readiness` surface over release-package,
+      image-publication, and hosted-deployment catalogs. This landed through PR #94
+      without building packages, publishing images, deploying hosted infrastructure,
+      writing secrets, opening public endpoints, approving DS-017, adding hosted
+      identity/RBAC, or claiming Level 10 production authority.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_deployment_readiness.py
+      - cd backend; ruff check .\app\deployment_readiness.py .\app\api\ui.py .\tests\api\test_ui_deployment_readiness.py
+      - cd backend; py -3.12 -m mypy .\app\deployment_readiness.py .\app\api\ui.py .\tests\api\test_ui_deployment_readiness.py
+      - py -3.12 .\scripts\release_package_check.py
+      - py -3.12 .\scripts\image_publication_check.py
+      - py -3.12 .\scripts\hosted_deployment_check.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - `/ui/deployment-readiness` renders package, image, hosted-runtime, blocker, and validate-only limit data from checked catalogs
+      - Catalog drift fails closed with 503 instead of unchecked readiness rendering
+      - G3 does not create package/image/hosted side effects or source/vendor authority claims
+
+  - id: G5
+    title: Source-provenance UI
+    status: active
+    depends_on: [REC-001, G7a, G3a, G1a, G1b, G3b, G2, G3]
+    lane: coordinator
+    spec: plans/2026-06-20-source-provenance-ui-g5.md
+    notes: >
+      Add the read-only `/ui/source-provenance` surface over the selected-county
+      source-provenance catalog and Must-source readiness records. This is the next
+      provenance visibility step before generic AOI, Bologna, or multi-geography
+      expansion work.
+    validation:
+      - cd backend; py -3.12 -m pytest -q .\tests\api\test_ui_source_provenance.py
+      - cd backend; ruff check .\app\source_provenance.py .\app\api\ui.py .\tests\api\test_ui_source_provenance.py
+      - cd backend; py -3.12 -m mypy .\app\source_provenance.py .\app\api\ui.py .\tests\api\test_ui_source_provenance.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\private_mvp_readiness_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - `/ui/source-provenance` renders selected-county DS-010/DS-011/DS-023 dataset, version, retrieval, connector, and out-of-scope expectations from checked artifacts
+      - DS-017 remains visible as the only blocked Must source and remains outside private-MVP proof
+      - Catalog drift fails closed with 503 instead of unchecked source authority rendering
+      - No connector execution, runtime provenance seeding, fixture relabeling, source expansion, Bologna work, hosted source authority, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000
