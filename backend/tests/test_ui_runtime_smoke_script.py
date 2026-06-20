@@ -26,9 +26,11 @@ EXPECTED_DISABLED_AUTH_LABELS = [
 
 
 class _SmokeHandler(BaseHTTPRequestHandler):
-    route_bodies: ClassVar[dict[str, str]] = {}
+    route_bodies: ClassVar[dict[str, str | list[str]]] = {}
+    route_get_counts: ClassVar[dict[str, int]] = {}
     post_bodies: ClassVar[list[tuple[str, dict[str, list[str]]]]] = []
     operator_report_ids: ClassVar[list[str]] = ["operator-smoke"]
+    custom_report_ids: ClassVar[list[str]] = ["custom-smoke"]
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path not in self.route_bodies:
@@ -38,7 +40,13 @@ class _SmokeHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"detail":"Not Found"}')
             return
 
-        body = self.route_bodies[self.path]
+        route_body = self.route_bodies[self.path]
+        if isinstance(route_body, list):
+            route_index = self.route_get_counts.get(self.path, 0)
+            self.route_get_counts[self.path] = route_index + 1
+            body = route_body[min(route_index, len(route_body) - 1)]
+        else:
+            body = route_body
         self.send_response(200)
         content_type = (
             "application/json"
@@ -54,7 +62,15 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         self.wfile.write(body.encode("utf-8"))
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/ui/operator-cases/report" and self.path not in self.route_bodies:
+        is_approval_path = self.path.startswith("/ui/report-runs/") and self.path.endswith(
+            "/approve"
+        )
+        report_paths = {"/ui/operator-cases/report", "/ui/intake"}
+        if (
+            not is_approval_path
+            and self.path not in report_paths
+            and self.path not in self.route_bodies
+        ):
             self.send_response(404)
             self.send_header("content-type", "application/json")
             self.end_headers()
@@ -65,12 +81,21 @@ class _SmokeHandler(BaseHTTPRequestHandler):
         self.post_bodies.append((self.path, parse_qs(raw_body)))
         self.send_response(303)
         report_index = sum(1 for path, _body in self.post_bodies if path == self.path) - 1
-        report_id = self.operator_report_ids[min(report_index, len(self.operator_report_ids) - 1)]
-        location = (
-            f"/ui/report-runs/{report_id}"
-            if self.path == "/ui/operator-cases/report"
-            else "/ui/"
-        )
+        if is_approval_path:
+            location = self.path.removesuffix("/approve")
+            self.route_bodies[location] = _operator_report_html()
+        elif self.path == "/ui/operator-cases/report":
+            report_id = self.operator_report_ids[
+                min(report_index, len(self.operator_report_ids) - 1)
+            ]
+            location = f"/ui/report-runs/{report_id}"
+        elif self.path == "/ui/intake":
+            report_id = self.custom_report_ids[
+                min(report_index, len(self.custom_report_ids) - 1)
+            ]
+            location = f"/ui/report-runs/{report_id}"
+        else:
+            location = "/ui/"
         self.send_header("location", location)
         self.send_header("set-cookie", "land_dd_ui_reviewer=test; Path=/ui; HttpOnly")
         self.end_headers()
@@ -88,7 +113,7 @@ def _html(*body: str) -> str:
     )
 
 
-def _required_routes(*, reviewer_session: bool = False) -> dict[str, str]:
+def _required_routes(*, reviewer_session: bool = False) -> dict[str, str | list[str]]:
     operations = ["Operations Dashboard"]
     if reviewer_session:
         operations.append("Using reviewer session")
@@ -138,14 +163,25 @@ def _operator_lineage_html(*body: str) -> str:
     )
 
 
-def _run_server(route_bodies: dict[str, str]) -> tuple[ThreadingHTTPServer, str]:
+def _pending_report_html(*body: str) -> str:
+    return _html(
+        "Report Pending Approval",
+        "Approve Report",
+        "Review status: needs_review",
+        *body,
+    )
+
+
+def _run_server(route_bodies: dict[str, str | list[str]]) -> tuple[ThreadingHTTPServer, str]:
     handler = type(
         "SmokeHandler",
         (_SmokeHandler,),
         {
             "route_bodies": route_bodies,
+            "route_get_counts": {},
             "post_bodies": [],
             "operator_report_ids": ["operator-smoke"],
+            "custom_report_ids": ["custom-smoke"],
         },
     )
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -227,6 +263,120 @@ def test_ui_runtime_smoke_operator_case_flag_posts_and_checks_report_page() -> N
     assert (
         "/ui/operator-cases/report",
         {"selected_county_case_id": ["BUN-slope"]},
+    ) in handler.post_bodies
+
+
+def test_ui_runtime_smoke_custom_aoi_fixture_posts_and_checks_report_page() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/custom-smoke"] = _operator_report_html()
+    routes["/ui/report-runs/custom-smoke/lineage"] = _operator_lineage_html()
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--custom-aoi-fixture",
+            str(ROOT / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"),
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    custom_result = payload["routes"][-2]
+    assert custom_result == {
+        "label": "custom-aoi-report",
+        "path": "/ui/report-runs/custom-smoke",
+        "status": 200,
+        "ok": True,
+        "failures": [],
+    }
+    lineage_result = payload["routes"][-1]
+    assert lineage_result == {
+        "label": "custom-aoi-lineage",
+        "path": "/ui/report-runs/custom-smoke/lineage",
+        "status": 200,
+        "ok": True,
+        "failures": [],
+    }
+    custom_posts = [body for path, body in handler.post_bodies if path == "/ui/intake"]
+    assert len(custom_posts) == 1
+    custom_body = custom_posts[0]
+    assert custom_body["intent"] == ["rural_land_purchase"]
+    assert json.loads(custom_body["area_geojson"][0])["type"] == "Polygon"
+
+
+def test_ui_runtime_smoke_custom_aoi_waits_for_report_delivery_page() -> None:
+    routes = _required_routes()
+    routes["/ui/report-runs/custom-smoke"] = [
+        _html("Generating Report", "Status: queued"),
+        _operator_report_html(),
+    ]
+    routes["/ui/report-runs/custom-smoke/lineage"] = _operator_lineage_html()
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--custom-aoi-fixture",
+            str(ROOT / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"),
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["routes"][-2]["label"] == "custom-aoi-report"
+    assert payload["routes"][-2]["ok"] is True
+    assert handler.route_get_counts["/ui/report-runs/custom-smoke"] >= 2
+
+
+def test_ui_runtime_smoke_custom_aoi_approves_pending_report_with_reviewer_session() -> None:
+    routes = _required_routes(reviewer_session=True)
+    routes["/ui/"] = _html(
+        "Land Diligence",
+        '<input name="csrf_token" type="hidden" value="csrf-home">',
+    )
+    routes["/ui/auth/reviewer"] = _html("Reviewer session")
+    routes["/ui/report-runs/custom-smoke"] = _pending_report_html(
+        '<input name="csrf_token" type="hidden" value="csrf-report">',
+    )
+    routes["/ui/report-runs/custom-smoke/lineage"] = _operator_lineage_html()
+    routes["/report-runs/custom-smoke/artifact"] = json.dumps(
+        {"artifact_metadata": {"persistence": "postgres+object_store"}},
+    )
+    server, base_url = _run_server(routes)
+    handler = cast(type[_SmokeHandler], server.RequestHandlerClass)
+    try:
+        result = _run_smoke(
+            base_url,
+            "--reviewer-id",
+            "fixture-reviewer",
+            "--reviewer-token",
+            "fixture-token-123",
+            "--custom-aoi-fixture",
+            str(ROOT / "tests" / "fixtures" / "geometries" / "valid_polygon.geojson"),
+            "--report-wait-seconds",
+            "0.1",
+            "--expect-artifact-persistence",
+            "postgres+object_store",
+            "--json",
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["routes"][-2]["label"] == "custom-aoi-report"
+    assert payload["routes"][-2]["ok"] is True
+    assert (
+        "/ui/report-runs/custom-smoke/approve",
+        {"csrf_token": ["csrf-report"]},
     ) in handler.post_bodies
 
 

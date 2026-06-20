@@ -1,6 +1,6 @@
 # Level 9/10 Gate Matrix
 
-Last updated: 2026-06-18
+Last updated: 2026-06-20
 
 Purpose: classify current Level 9 and Level 10 readiness against current repo evidence.
 This matrix is not a completion claim for Level 10. It exists to choose the next
@@ -35,11 +35,11 @@ Status legend:
 | Gate | Status | Current evidence | Next action |
 |---|---|---|---|
 | L9-001 operator can complete workflow | `PROVEN_PRIVATE_MVP` | `docs/runbooks/mvp_operator.md`; `config/private_mvp_beta_readiness.yaml`; UI runtime smoke guidance | Re-run full UI/runtime smoke during the next release-candidate pass. |
-| L9-002 area/select intent flow | `PROVEN_PRIVATE_MVP` | `/ui/`, `/intake`, `/operator-cases`; private-MVP and API tests | Keep scope limited to selected counties until jurisdiction readiness passes. |
+| L9-002 area/select intent flow | `PROVEN_PRIVATE_MVP` | `/ui/`, `/intake`, `/operator-cases`; private-MVP and API tests; custom AOI UI runtime smoke posts fixture GeoJSON through `/ui/intake` | Keep scope limited to selected counties and explicit fixture/custom AOI proof until jurisdiction readiness passes. |
 | L9-003 report status tracking | `PROVEN_REPO_LOCAL` | async report job store, `/report-runs/{id}`, UI status pages, retry lineage tests | Hosted monitoring remains Level 10 work. |
-| L9-004 evidence behind claims inspectable | `PROVEN_REPO_LOCAL` | `GET /report-runs/{id}/lineage`; `/ui/report-runs/{id}/lineage`; lineage UI/API tests; selected-county runtime smoke now follows approved-report lineage | Re-run lineage smoke during each release-candidate pass. |
+| L9-004 evidence behind claims inspectable | `PROVEN_REPO_LOCAL` | `GET /report-runs/{id}/lineage`; `/ui/report-runs/{id}/lineage`; lineage UI/API tests; selected-county and custom AOI runtime smoke follow approved-report lineage | Re-run lineage smoke during each release-candidate pass. |
 | L9-005 red flags, unknowns, blockers, verification tasks visible | `PROVEN_PRIVATE_MVP` | report regression tests, dossier tests, private-MVP overclaim/unknown checks | Keep adding red-flag/unknown fixtures with new sources or rulepacks. |
-| L9-006 export preserves source/caveat appendix | `PROVEN_REPO_LOCAL` | Markdown dossier and JSON artifact endpoints; artifact path trust tests; DB artifact persistence tests | Hosted artifact storage evidence remains Level 10 deployment work. |
+| L9-006 export preserves source/caveat appendix | `PROVEN_REPO_LOCAL` | Markdown dossier and JSON artifact endpoints; artifact path trust tests; DB artifact persistence tests; selected-county and custom AOI runtime smoke assert artifact persistence after approval | Hosted artifact storage evidence remains Level 10 deployment work. |
 | L9-007 human review without overwriting source evidence | `PROVEN_REPO_LOCAL` | reviewer-scoped approval/review actions, action history, connector review queue tests | Full user-bound audit identity remains blocked with production RBAC. |
 | L9-008 compare at least two candidate areas | `PROVEN_REPO_LOCAL` | `GET /report-runs/compare`; `/ui/compare`; compare API/UI tests | Keep compare logic tied to report summaries and approved delivery gating. |
 | L9-009 scope and coverage limitations visible | `PROVEN_PRIVATE_MVP` | MVP operator runbook, private-MVP readiness catalog, selected-county manifests | Re-check after any new geography/source/rulepack. |

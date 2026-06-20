@@ -2,17 +2,17 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-performance-guardrails-ui-g6c.md`.
+Latest completed plan: `2026-06-20-observability-readiness-ui-g8.md`.
 
-Active plan: `2026-06-20-observability-readiness-ui-g8.md`.
+Active plan: `2026-06-20-custom-aoi-ui-runtime-smoke.md`.
 
-The active slice is the narrow `G8` observability readiness surface after `G6c`
-performance guardrails merged. It should expose existing local metrics, queue health,
-recovery preview, connector observability, source-failure evidence, alert-rule,
-deployment-smoke reference, and hosted-blocker authority without creating hosted
-dashboards, dispatching alerts, provisioning pager/on-call or hosted log retention,
-running deployment smoke from the UI helper, approving DS-017, proving production
-traffic observability, or claiming Level 10 production observability.
+The active slice is the narrow `G9a` custom AOI UI runtime smoke proof after `G8`
+observability readiness merged. It should prove the existing custom GeoJSON intake UI
+path through runtime smoke by creating a fixture AOI report, waiting for async report
+completion, approving through the existing reviewer UI path when needed, and checking
+approved delivery, artifact persistence, and lineage. It must not select a new
+jurisdiction, add sources/connectors/rulepacks, approve DS-017, start Bologna, create
+hosted deployment/identity/observability authority, or claim Level 10 production proof.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

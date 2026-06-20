@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Custom AOI UI runtime smoke G9a
+
+- Started narrow `G9a` from `plans/2026-06-20-custom-aoi-ui-runtime-smoke.md` in
+  clean worktree `worktrees/aoi-smoke` after confirming live `origin/main` at
+  `2522b734578ad498910f10598aa5404fb6601129`, no `codex/aoi-smoke` branch/worktree
+  collision, no matching open PR, and the root checkout remained a dirty
+  preserved-candidate branch rather than live implementation authority.
+- Audited the existing custom GeoJSON UI intake form, `/ui/intake` route, report status
+  UI, reviewer approval route, deployment smoke wrappers, and runtime smoke script.
+  The gap was that custom AOI was proven through API-level deployment smoke and route
+  tests, but not through the server-rendered UI runtime smoke surface.
+- Added intentional red runtime-smoke tests for the missing `--custom-aoi-fixture`
+  option and the missing pending-approval reviewer path, then implemented custom AOI
+  fixture submission, bounded async report wait, reviewer-session or fallback reviewer
+  approval, artifact persistence checking, and `custom-aoi-lineage` verification.
+- Updated PowerShell and POSIX deployment smoke wrappers so the DB-backed reviewer smoke
+  now exercises selected-county compare and custom AOI UI runtime smoke in one run.
+  Boundaries remain: no new source, connector, geography, rulepack, DS-017 approval,
+  Bologna, hosted deployment, hosted identity/RBAC, hosted observability, production
+  traffic proof, ranking/recommendation semantics, or Level 10 claim.
+- Verification so far: focused runtime-smoke tests passed (`19 passed`), focused ruff
+  passed for the changed smoke script and tests, focused mypy passed for the changed
+  smoke script and test after widening the fake route map helper type, private-MVP,
+  release-readiness, and readiness-matrix validators passed, readiness-matrix wrapper
+  and artifact tests passed, diff/no-deletion/workspace checks passed, and final
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `341` source
+  files. DB smoke was skipped by default.
+
 ## 2026-06-20 Observability readiness UI G8
 
 - Started narrow `G8` from `plans/2026-06-20-observability-readiness-ui-g8.md` in
