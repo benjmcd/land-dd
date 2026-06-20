@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Source-readiness module extraction
+
+- Started `G3a` from `plans/2026-06-20-source-readiness-module.md` in clean worktree
+  `worktrees/src-ready` after confirming live `origin/main` at
+  `8b0e750ec13d6289af279b06716e9cddbaaf67a0`, no active source-readiness inbox
+  collision, and `G7a` package-manifest CI gate already merged through PR #88.
+- Audited live source-readiness routing and dirty-root candidate evidence. The retained
+  scope is packaged-module extraction only: no source policy/count changes, no DS-017
+  approval, no connector behavior, no UI route, no API/schema change, and no hosted or
+  publishing authority.
+- Added an intentional red test proving `app.source_registry.readiness` was absent,
+  then moved source-readiness dataclasses and freshness/blocking helpers into
+  `backend/app/source_registry/readiness.py`.
+- Refactored `scripts/source_readiness.py` into a CLI wrapper that loads registry rows
+  and serializes records from the packaged module. Direct tests now import the packaged
+  module, while subprocess tests continue to cover CLI JSON output and `--require-ready`.
+- Verification: intentional red focused pytest failed only for missing packaged module;
+  focused source-readiness tests passed (`17 passed`); alerting/source-readiness
+  compatibility tests passed (`18 passed`); Must source-readiness JSON and
+  `--require-ready` passed with `sources=8 ready=7 blocked=1`; release-readiness and
+  readiness-matrix validators passed after adding the required Level 9/10 matrix
+  citation to the plan; focused ruff/mypy passed; `git diff --check`, no-deletion
+  audit, workspace validation, and final `.\scripts\verify.ps1` passed. DB smoke was
+  skipped by default.
+
 ## 2026-06-20 Package-manifest CI gate
 
 - Started `G7a` from `plans/2026-06-20-package-manifest-ci.md` in clean worktree

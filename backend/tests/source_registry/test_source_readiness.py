@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
 import subprocess
@@ -15,14 +16,7 @@ def _repo_root() -> Path:
 
 
 def _load_readiness_module() -> ModuleType:
-    module_path = _repo_root() / "scripts" / "source_readiness.py"
-    spec = importlib.util.spec_from_file_location("source_readiness", module_path)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("app.source_registry.readiness")
 
 
 def _load_seed_module() -> ModuleType:
@@ -74,6 +68,16 @@ def _single_record(source: Any) -> Any:
         [source],
         as_of=date(2026, 6, 18),
     )[0]
+
+
+def test_source_readiness_records_are_owned_by_packaged_module() -> None:
+    readiness = _load_readiness_module()
+
+    assert readiness.__file__ is not None
+    assert Path(readiness.__file__).as_posix().endswith(
+        "backend/app/source_registry/readiness.py"
+    )
+    assert hasattr(readiness, "build_readiness_records")
 
 
 def test_load_registry_sources_defaults_to_all_registry_rows() -> None:

@@ -38,7 +38,7 @@ If you are a **lane agent**, start here after reading the always-check files abo
 | Backend source | `backend/app/**` | Application code organized by lane module |
 | Backend tests | `backend/tests/**` | Per-lane subdirectories: source_registry/, area_geometry/, evidence_ledger/, claims_engine/, reports/, api/ |
 | Shared domain | `backend/app/domain/` | Shared enums, protocols, per-lane contracts; see LANE_OWNERSHIP.md for ownership |
-| Data/source strategy | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `docs/source-reviews/*.md`, `schemas/source_schema.json` | Source metadata, licensing, provenance |
+| Data/source strategy | `docs/DATA_SOURCE_STRATEGY.md`, `registers/data_source_registry.csv`, `docs/source-reviews/*.md`, `schemas/source_schema.json`, `backend/app/source_registry/readiness.py`, `scripts/source_readiness.py` | Source metadata, licensing, provenance, and source-readiness proof |
 | Evidence/claims | `schemas/evidence_schema.json`, `schemas/claim_schema.json`, `config/ruleset_homestead_mvp.yaml` | Claim-first semantics |
 | Reports | `backend/app/domain/report_contracts.py`, `schemas/report_run_schema.json`, `backend/tests/reports/test_report_regression.py` | Report-run contract, JSON schema, and stable artifact semantics |
 | Agent operations | `.agent/PLANS.md`, `docs/AGENT_OPERATING_MODEL.md`, `.claude/skills/**`, `.claude/agents/**` | Long-form agent procedures; not startup context |

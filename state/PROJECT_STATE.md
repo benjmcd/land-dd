@@ -1,6 +1,41 @@
 # Project State
 
-## Current checkpoint (2026-06-20 package-manifest CI gate)
+## Current checkpoint (2026-06-20 source-readiness module extraction)
+
+The active implementation authority is `G3a` source-readiness packaged-module
+extraction from `plans/2026-06-20-source-readiness-module.md`. This is the next
+retained product/control slice after the `G7a` package-manifest CI gate merged through
+PR #88. The dirty root checkout remains preserved candidate evidence only; this slice
+was opened from live `origin/main` at
+`8b0e750ec13d6289af279b06716e9cddbaaf67a0`.
+
+- **Active plan**: `plans/2026-06-20-source-readiness-module.md`.
+- **Purpose**: make `backend/app/source_registry/readiness.py` the packaged authority
+  for source-readiness record construction and freshness fail-closed behavior while
+  keeping `scripts/source_readiness.py` as the validate-only CLI wrapper.
+- **Implemented scope so far**: an intentional red test proved the packaged module was
+  absent; the readiness dataclasses and record/freshness helpers were extracted into
+  `backend/app/source_registry/readiness.py`; the CLI now delegates to that module; and
+  source-readiness tests import the package module directly while subprocess tests
+  continue proving CLI JSON output.
+- **Current local validation**: focused source-readiness tests passed (`17 passed`);
+  focused alerting/source-readiness compatibility tests passed (`18 passed`);
+  Must-source CLI JSON and `--require-ready` paths passed and preserved
+  `sources=8 ready=7 blocked=1`; release-readiness and readiness-matrix validators
+  passed after the plan was corrected to cite `state/LEVEL_9_10_GATE_MATRIX.md`;
+  focused ruff and mypy passed; `git diff --check`, no-deletion audit,
+  `.\scripts\validate_workspace.ps1`, and final `.\scripts\verify.ps1` passed with
+  backend tests, ruff, and mypy over `327` source files. DB smoke was skipped by
+  default.
+- **Known boundaries to preserve**: no source-readiness count changes, no DS-017
+  approval, no source-rights policy change, no connector behavior change, no UI/public
+  API change, no DB schema change, no release-package/publishing behavior change, and
+  no hosted/source/tenant authority claim.
+- **Next required step**: publish the focused `codex/src-ready` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` and re-rank the
+  next retained slice.
+
+## Previous checkpoint (2026-06-20 package-manifest CI gate)
 
 The active implementation authority is `G7a` package-manifest CI gate from
 `plans/2026-06-20-package-manifest-ci.md`. This is the first retained product/control
@@ -37,9 +72,9 @@ dirty root checkout remains preserved candidate evidence only.
   approve DS-017, change source-rights policy, change public APIs, change DB schema,
   change report semantics, or claim hosted release authority. Generated package
   artifacts remain ignored under `local_artifacts/releases`.
-- **Next required step**: publish the `codex/pkg-manifest` branch, open the PR, wait for
-  CI, and merge only if local and CI proof agree; then re-check live `origin/main` and
-  re-rank the next retained slice.
+- **Merge status**: PR #88 merged at
+  `8b0e750ec13d6289af279b06716e9cddbaaf67a0`; detached post-merge package and full
+  verification proof passed before selecting `G3a`.
 
 ## Previous checkpoint (2026-06-20 repository-state reconciliation)
 
