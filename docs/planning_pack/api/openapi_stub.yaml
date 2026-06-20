@@ -3693,6 +3693,19 @@ paths:
             text/html:
               schema:
                 type: string
+  /ui/operations-guardrails:
+    get:
+      tags:
+      - ui
+      summary: Ui Operations Guardrails
+      operationId: ui_operations_guardrails_ui_operations_guardrails_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
   /ui/deployment-readiness:
     get:
       tags:

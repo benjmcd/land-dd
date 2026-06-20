@@ -1,6 +1,55 @@
 # Project State
 
-## Current checkpoint (2026-06-20 security guardrails UI G6a)
+## Current checkpoint (2026-06-20 operations guardrails UI G6b)
+
+The active implementation authority is now the narrow `G6b` operations guardrails slice
+from `plans/2026-06-20-operations-guardrails-ui-g6b.md`. This follows the merged `G6a`
+security/access-control guardrails UI slice from PR #97 at
+`98d7211f705a91fe3e0963b294aeb5813916bff5`. The dirty root checkout remains preserved
+candidate evidence only; continued work should happen from fresh or already-clean
+worktrees under `worktrees/<short-name>`.
+
+- **Active plan**: `plans/2026-06-20-operations-guardrails-ui-g6b.md`.
+- **Purpose**: reconstruct the second retained `G6` local guardrail surface from live
+  `origin/main`, focused on existing repo-owned alerting, incident/rollback,
+  backup/restore, data-retention, queue/recovery, and cost-monitoring authority, before
+  performance guardrails or `G8` local observability readiness.
+- **Implemented scope so far**: `backend/app/operations_guardrails.py` now parses the
+  repo-owned operations catalogs and runbooks, validates required alert signals,
+  incident/recovery text, backup/restore references, retention classes and dry-run
+  purge posture, blocked hosted scheduler status, cost categories, and repo-relative
+  authority paths, and fails closed on drift. `/ui/operations-guardrails` renders a
+  GET-only local operator view over those checked artifacts and links from the current
+  local UI authority pages. OpenAPI stubs were regenerated for the new FastAPI UI route.
+- **Current local validation**: live `origin/main` was fetched and the clean
+  `codex/ops-guard` worktree was confirmed at
+  `98d7211f705a91fe3e0963b294aeb5813916bff5`, matching `origin/main`. Focused G6b tests
+  first failed on the missing `app.operations_guardrails` module, then passed after
+  implementation (`8 passed`). Focused operations guardrails plus alerting,
+  incident/rollback, data-retention, cost-monitoring, operations API, and operations UI
+  route tests passed (`75 passed`). OpenAPI parity passed (`2 passed`). Focused ruff
+  and mypy passed. Alert rules, incident/rollback, data-retention, cost-monitoring,
+  release-readiness, and readiness-matrix validators passed. `tasks/task_queue.yaml`
+  now parses as YAML after narrow syntax fixes to older unquoted scalar lines. Full
+  `.\scripts\verify.ps1` first failed because the active G6b plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, the readiness-matrix
+  validator and focused readiness-matrix test passed, and final `.\scripts\verify.ps1`
+  passed with backend tests, ruff, and mypy over `336` source files. DB smoke was skipped
+  by default.
+- **Known boundaries to preserve**: no hosted alert routing, pager/on-call system,
+  dashboard provisioning, hosted observability, cloud billing integration, hosted backup
+  policy, hosted scheduler, production operations claim, queue mutation, recovery
+  execution, report retry, live connector execution, purge execution, backup/restore
+  execution, alert dispatch, Docker invocation from the UI helper, runtime
+  source-readiness validation from the UI helper, DS-017 approval, source/vendor
+  expansion, generic AOI proof, Bologna pilot, DB schema change, public JSON API behavior
+  change, report-semantics change, hosted deployment, hosted source authority, hosted
+  identity/RBAC, or Level 10 completion claim.
+- **Next required step**: publish the focused `codex/ops-guard` PR, wait for CI, merge
+  only if local and CI proof agree, then re-check live `origin/main` before selecting
+  the next retained G6 performance guardrail or G8 local observability slice.
+
+## Previous checkpoint (2026-06-20 security guardrails UI G6a)
 
 The active implementation authority is now the narrow `G6a` security/access-control
 guardrails slice from `plans/2026-06-20-security-guardrails-ui-g6a.md`. This follows
@@ -45,9 +94,10 @@ worktrees under `worktrees/<short-name>`.
   generic AOI proof, Bologna pilot, jurisdiction/rulepack approval, DB schema change,
   public JSON API behavior change, report-semantics change, hosted deployment, hosted
   source authority, hosted observability, or Level 10 completion claim.
-- **Next required step**: publish the focused `codex/guard-next` PR, wait for CI, merge
-  only if local and CI proof agree, then re-check live `origin/main` before selecting
-  the next retained G6 operations/performance guardrail or G8 local observability slice.
+- **Post-merge status**: PR #97 is merged on `origin/main` at
+  `98d7211f705a91fe3e0963b294aeb5813916bff5`; `worktrees/guard-next` was removed after
+  post-merge proof. The next retained slice is the narrow `G6b` operations guardrails
+  surface.
 
 ## Previous checkpoint (2026-06-20 source-provenance UI G5)
 

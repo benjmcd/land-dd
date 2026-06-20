@@ -3978,3 +3978,36 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
 - Focused G6a tests, OpenAPI parity, ruff, mypy, access-control, release-readiness,
   readiness-matrix, Must-source readiness, workspace validation, and full verification
   passed. DB smoke was skipped by default.
+
+## 2026-06-20 Operations guardrails UI G6b
+
+- Continued from live `origin/main` in clean `worktrees/ops-guard` on
+  `codex/ops-guard` after confirming `HEAD` at
+  `98d7211f705a91fe3e0963b294aeb5813916bff5` and preserving the dirty root as
+  candidate evidence only.
+- Added the executable `G6b` plan for the second isolated G6 guardrail surface. The plan
+  keeps hosted alerting, pager/on-call, scheduler, billing, backup-policy, observability,
+  DS-017, connector/source entitlement, and Level 10 production operations out of scope.
+- Added focused tests for `app.operations_guardrails` and `/ui/operations-guardrails`.
+  The first run failed as expected because `app.operations_guardrails` did not exist.
+- Implemented `backend/app/operations_guardrails.py` as a read-only parser over existing
+  alerting, incident/rollback, backup/restore, retention, and cost-monitoring artifacts.
+  The parser validates required alert signals, runbook phrases, dry-run retention limits,
+  blocked hosted scheduler status, cost categories, and repo-relative authority paths.
+- Added the GET-only `/ui/operations-guardrails` local operator page and navigation links
+  from home, raw-data inventory, source provenance, deployment readiness, and security
+  guardrails pages.
+- Regenerated `api/openapi_stub.yaml` and
+  `docs/planning_pack/api/openapi_stub.yaml` for the new route and updated `MANIFEST.md`
+  to route operations guardrail work to the new helper.
+- Preserved the existing operations boundaries: no queue mutation, recovery execution,
+  report retry, live connector execution, purge execution, backup/restore execution,
+  alert dispatch, runtime validator execution from the UI helper, hosted operations
+  authority, DS-017 approval, source expansion, hosted deployment, or Level 10 claim.
+- Focused G6b tests, OpenAPI parity, ruff, mypy, alert-rules, incident/rollback,
+  data-retention, cost-monitoring, release-readiness, and readiness-matrix validators
+  passed. A task-queue YAML parse check exposed older unquoted scalar syntax drift; fixed
+  the limited parse-blocking lines while updating G6b routing. Full verification first
+  failed because the new active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`; the
+  plan was corrected, readiness-matrix checks passed, and final `.\scripts\verify.ps1`
+  passed. DB smoke was skipped by default.
