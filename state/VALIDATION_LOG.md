@@ -13181,3 +13181,63 @@ git diff --name-only --diff-filter=D
   entitlement, hosted deployment, or Level 10 performance completion.
 - Runtime spatial `EXPLAIN` and live load-test result artifacts remain explicit,
   operator-triggered release-candidate evidence paths outside default validation.
+
+---
+
+## 2026-06-20 - Source Entitlement Decision Packet SE-001
+
+**Scope:** Add a validate-only, machine-readable DS-017 source-entitlement packet and
+checker. This is decision-readiness proof only; it does not approve DS-017, select a
+vendor, implement a connector, change source readiness, expose owner/value/title/raw
+vendor fields, prove paid-source metering, create hosted authority, start Bologna, or
+claim Level 10 completion.
+
+**Commands/checks run:**
+
+```powershell
+py -3.12 -m pytest backend\tests\test_source_entitlement_artifacts.py -q
+py -3.12 -m pytest backend\tests\test_source_entitlement_artifacts.py backend\tests\test_release_readiness_artifacts.py -q
+cd backend; ruff check ..\scripts\source_entitlement_check.py ..\scripts\release_readiness_check.py .\tests\test_source_entitlement_artifacts.py .\tests\test_release_readiness_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\source_entitlement_check.py ..\scripts\release_readiness_check.py .\tests\test_source_entitlement_artifacts.py .\tests\test_release_readiness_artifacts.py
+py -3.12 .\scripts\source_entitlement_check.py
+.\scripts\run_source_entitlement_check.ps1
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+.\scripts\run_release_readiness_check.ps1
+.\scripts\run_readiness_matrix_check.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused pytest failed as expected on missing
+  `config/source_entitlements.yaml`, `scripts/source_entitlement_check.py`, wrappers,
+  and `docs/runbooks/source_entitlements.md`.
+- After implementation, focused source-entitlement tests passed (`5 passed`).
+- Focused source-entitlement plus release-readiness artifact tests passed
+  (`18 passed`).
+- Focused ruff passed after import/line-length cleanup.
+- Focused mypy passed for the new checker, release-readiness checker, and focused
+  tests.
+- Source-entitlement validator and wrapper passed. The wrapper prints the validator's
+  success line and its own success line.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with DS-017 as the
+  only blocked Must source.
+- Release-readiness and readiness-matrix validators passed, including PowerShell
+  wrappers.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- Final default `.\scripts\verify.ps1` passed: workspace validation passed, backend
+  tests passed, ruff passed, mypy passed over `343` source files, DB smoke was skipped
+  by default, and the gate ended with `verify: ok`.
+
+**Residual risk:**
+
+- DS-017 remains externally blocked on vendor/license/cost/entitlement authority or an
+  explicit product decision to defer, remove, or replace it.
+- DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.

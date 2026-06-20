@@ -7,8 +7,8 @@ catalog. It gathers the existing verification, DB, deployment smoke, supply-chai
 security-scan, image scan, backup/restore, incident, alerting, cost, access-control,
 threat-proxy-audit, release-package, image-publication, hosted-deployment,
 source-readiness, data-retention, load-test, performance, data-lineage,
-jurisdiction-readiness, rulepack-readiness, and checklist-dry-run proofs into one
-release boundary.
+jurisdiction-readiness, rulepack-readiness, checklist-dry-run, and source-entitlement
+proofs into one release boundary.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -38,6 +38,10 @@ The check is validate-only. It verifies that:
   `RUN_DB_SMOKE='1'` is enabled;
 - the `release-readiness` CI job runs the POSIX readiness proof;
 - current Must-source readiness remains explicit about `sources=8 ready=7 blocked=1`;
+- the local source-entitlement packet is `config/source_entitlements.yaml`, and the
+  release proof composes `scripts/run_source_entitlement_check.ps1` /
+  `scripts/source_entitlement_check.py` as a validate-only source-entitlement check for
+  DS-017 decision requirements;
 - Must current-effective source reviews keep `Last Checked At` within the 90-day
   repo-local freshness horizon enforced by `scripts/source_readiness.py` and
   `scripts/alert_rules_check.py`, while source-specific upstream/update cadence and
@@ -133,7 +137,10 @@ The check is validate-only. It verifies that:
 - No published registry-image attestation, signed image SBOM, or SLSA provenance
   attestation exists yet.
 - Commercial parcel vendor data (DS-017) remains blocked until vendor, license, cost,
-  source-rights, and connector-surface decisions are made. DS-011 is connector-ready
-  only as explicit not-evaluated source-failure evidence, not live assessor data.
+  source-rights, entitlement, and connector-surface decisions are made. The
+  source-entitlement check proves those decision requirements are explicit; it does not
+  approve DS-017, select a vendor, call a live vendor, implement paid-source metering,
+  or change source readiness. DS-011 is connector-ready only as explicit
+  not-evaluated source-failure evidence, not live assessor data.
   DS-010 parcel connectors are ready only for immediate operator API and request-time
   orchestration surfaces; durable live-job support is not claimed for DS-010.

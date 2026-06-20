@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-supported-aoi-ui-runtime.md
+active_plan: plans/2026-06-20-source-entitlement-decision-packet.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -13,8 +13,9 @@ routing_note: >
   merged through PR #98, G6c performance guardrails merged through PR #99, G8
   observability readiness merged through PR #100, G9a custom AOI UI runtime smoke
   merged through PR #101, REC-002 post-G9a routing merged through PR #102, and G9b
-  generic supported-AOI evidence closure merged through PR #104. Active lane: G9c
-  supported-AOI UI/runtime proof. This slice must not
+  generic supported-AOI evidence closure merged through PR #104, and G9c
+  supported-AOI UI/runtime proof merged through PR #105. Active lane: DS-017
+  source-entitlement decision packet. This slice must not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna work,
   production traffic proof, ranking/recommendation semantics, or Level 10 authority.
@@ -1129,7 +1130,7 @@ tasks:
 
   - id: G9c
     title: Supported-AOI UI runtime proof
-    status: active
+    status: done
     depends_on: [G9b]
     lane: coordinator
     spec: plans/2026-06-20-supported-aoi-ui-runtime.md
@@ -1153,6 +1154,34 @@ tasks:
       - Runtime smoke can post the supported-AOI UI route and follow report lineage
       - Generic POST /report-runs remains evidence-consumer-only by default
       - No hosted, DS-017, new geography, Bologna, ranking/recommendation, or Level 10 claim is introduced
+
+  - id: SE-001
+    title: Source entitlement decision packet
+    status: active
+    depends_on: [G9c]
+    lane: coordinator
+    spec: plans/2026-06-20-source-entitlement-decision-packet.md
+    notes: >
+      Add a validate-only, machine-readable source-entitlement packet and checker for
+      DS-017 so the remaining Must-source blocker is decision-ready without approving a
+      vendor, selecting a connector, exposing owner/value/title fields, changing source
+      readiness, starting Bologna, or claiming hosted/Level 10 authority.
+    validation:
+      - py -3.12 -m pytest backend\tests\test_source_entitlement_artifacts.py backend\tests\test_release_readiness_artifacts.py -q
+      - py -3.12 .\scripts\source_entitlement_check.py
+      - .\scripts\run_source_entitlement_check.ps1
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - DS-017 required vendor, license, entitlement, field, cost, and connector decisions are machine-readable
+      - The checker cross-checks DS-017 against current source-readiness and fails closed if the blocked state drifts
+      - Release readiness composes the source-entitlement checker as validate-only proof
+      - DS-017 remains blocked unless external source/vendor authority changes
 
   # --- Completed ---
   - id: T000
