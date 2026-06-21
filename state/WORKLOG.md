@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Empirical qualification boundary consolidation EQ-1
+
+- Started clean worktree `worktrees/eq-1` on `eq/eq1` from live `origin/main` at
+  `358389b2904a06e2a2b3192b5d118ec71190efce`; root remains dirty preserved handoff
+  state on `codex/r026-raw-readiness-ui`.
+- Read the active inbox handoff, empirical-qualification adoption plan, repo operating
+  files, existing ADRs, and the required read-only package assessment files.
+- Added the EQ-1 execution plan and ADR 0004 to record the empirical-qualification
+  catalog as the future canonical empirical-validity authority while existing
+  readiness/authority gates report into it.
+- Updated thin agent/routing surfaces and queued EQ-1 through EQ-5 plus Lane R in the
+  task queue without landing framework spine files, CI gates, status files, or any
+  qualification PASS/owner-decision unfreeze.
+
 ## 2026-06-21 Bologna scope decision requests BPS-REQ-001
 
 - Started clean worktree `worktrees/bol-req` on `codex/bol-req` from live

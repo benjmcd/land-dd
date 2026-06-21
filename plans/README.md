@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-bologna-pilot-scope-authority.md`.
+Latest completed plan: `2026-06-21-bologna-scope-decision-requests.md`.
 
-Current routing plan: `2026-06-21-bologna-scope-decision-requests.md`.
+Current routing plan: `2026-06-21-eq-1-boundary-consolidation.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -68,6 +68,19 @@ keeping all authority references empty and downstream source/corpus updates disa
 `scope_decision_requests` rows inside the existing pilot-scope authority packet so the
 missing external evidence is actionable without approving a source, selecting an AOI,
 capturing fixtures, changing source rights, or starting runtime work.
+
+`EQ-ADOPT` records the empirical-qualification framework adoption milestone from PR
+#123. The framework is an ADAPT path, not a whole-bundle adoption: EQ-1 must first
+record the consolidation boundary, EQ-2 lands the self-validating spine, EQ-3 reports
+an honest `P0 = BLOCKED`, EQ-4 subordinates existing readiness/authority checks through
+a crosswalk, and EQ-5 tracks owner-decision blockers. Lane R separately corrects the
+known false residual-reconciliation claim. No qualification `PASS`, source authority,
+hosted authority, DS-017 approval, Bologna authority, or owner-decision unfreeze is
+introduced by this routing.
+
+`EQ-1` is the current gate. It adds ADR 0004 and thin routing references so the
+empirical-qualification catalog can become the canonical empirical-validity authority
+without turning existing readiness and authority gates into competing truth sources.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

@@ -18,6 +18,10 @@ This is the canonical operating contract for AI coding agents working in this re
 - Every source-derived record must carry provenance, source version/date when available, retrieval metadata, caveats, and confidence.
 - Suitability and confidence are separate concepts.
 - Source failures are first-class evidence, not silent “no issue found” results.
+- Once landed, the empirical-qualification catalog is the canonical empirical-validity
+  authority. Existing readiness/authority checks and the Level 9/10 matrix are
+  CI/deployment gates that report into it, not competing qualification authorities; do
+  not claim qualification `PASS` or unfreeze owner decisions from repo-local inference.
 - No report may assert final legal access, buildability, title status, water rights, wetland jurisdiction, surveyed boundaries, insurability, appraisal value, lending suitability, or investment advice.
 - No protected-class, demographic, neighborhood desirability, or residential steering features.
 - Prefer small, reversible diffs. Do not suppress failing tests, type errors, or linter errors to make checks pass.

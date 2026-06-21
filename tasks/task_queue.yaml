@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-bologna-scope-decision-requests.md
+active_plan: plans/2026-06-21-eq-1-boundary-consolidation.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -29,15 +29,17 @@ routing_note: >
   production-authority handoff hardening merged through PR #118, and READINESS-CORE
   control-plane parser rework merged through PR #119, and BOL-PRIORITY Bologna
   next-pursuit routing merged through PR #120, and BPS-001 Bologna pilot-scope
-  authority merged through PR #121. Current lane: BPS-REQ-001 Bologna scope decision
-  requests. Prefer collecting these first-gate product/AOI/scope decision references,
-  then BSA-001 source/AOI/right-authority preparation, ahead of generic
-  hosted-production, generic DS-017, and broad production-authority work. Do not
+  authority merged through PR #121, BPS-REQ-001 Bologna scope decision requests merged
+  through PR #122, and empirical-qualification adoption handoff merged through PR #123.
+  Current lane: EQ-1 empirical-qualification boundary consolidation. Prefer EQ-1
+  before any qualification spine code so the catalog becomes the canonical
+  empirical-validity authority and existing readiness/authority checks report into it
+  rather than competing with it. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
-  implementation, fixture capture, production traffic proof, ranking/recommendation
-  semantics, multi-geography framework implementation, or Level 10 authority from
-  repo-local inference alone.
+  implementation, fixture capture, production traffic proof, qualification PASS,
+  owner-decision unfreeze, ranking/recommendation semantics, multi-geography framework
+  implementation, or Level 10 authority from repo-local inference alone.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -1679,6 +1681,111 @@ tasks:
       - Every request remains missing-authority, uncited, and update-disallowed
       - Production-authority intake cannot drift from the pilot-scope request rows
       - No AOI selection, source approval, fixture capture, runtime/report proof, source registry promotion, DB seed, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: EQ-1
+    title: Empirical qualification boundary consolidation
+    status: done
+    depends_on: [BPS-REQ-001]
+    lane: coordinator
+    spec: plans/2026-06-21-eq-1-boundary-consolidation.md
+    notes: >
+      Record ADR 0004 and thin routing references before the empirical-qualification
+      spine lands. This makes the qualification catalog the canonical
+      empirical-validity authority once landed, while existing readiness and authority
+      gates remain CI/deployment layers that report into it. No qualification spine,
+      status file, CI gate, PASS claim, owner-decision unfreeze, product behavior, DB,
+      API, auth, report semantics, source authority, or hosted authority changes land
+      in this gate.
+    validation:
+      - py -3.11 -c "import yaml; yaml.safe_load(open('tasks/task_queue.yaml', encoding='utf-8')); print('task queue parses')"
+      - .\scripts\agent-context-check.ps1
+      - .\scripts\validate_workspace.ps1
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - ADR 0004 records the empirical-qualification catalog as the canonical empirical-validity authority once the spine lands
+      - AGENTS.md and MANIFEST.md route future agents to the boundary without loading the full framework
+      - EQ-1 through EQ-5 and Lane R are visible in task routing
+      - No qualification spine, status file, CI gate, PASS claim, owner-decision unfreeze, product behavior, or runtime dependency is introduced
+
+  - id: EQ-2
+    title: Empirical qualification self-validating spine
+    status: queued
+    depends_on: [EQ-1]
+    lane: coordinator
+    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-2--land-the-self-validating-spine--ci-gate
+    notes: >
+      Copy and adapt the read-only framework vocabulary, catalog, profiles, schemas,
+      validator, and selftest; add qualification-selftest CI and verify wiring; ensure
+      jsonschema is available as a dev/validation dependency without creating a
+      runtime/product dependency or false local py -3.12 failure.
+    acceptance:
+      - Qualification selftest and catalog validation pass locally and in CI
+      - backend[dev] provides jsonschema for CI validation
+      - No status PASS or owner-decision unfreeze is introduced
+
+  - id: EQ-3
+    title: Empirical qualification honest blocked status
+    status: queued
+    depends_on: [EQ-2]
+    lane: coordinator
+    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-3--honest-status--minimal-parameterization-surface
+    notes: >
+      Add the honest empirical qualification status at P0 = BLOCKED, collapse the eight
+      domain stubs to one template, and add one real source-quality profile mapped to
+      existing source usage-rights fields without inventing a parallel rights
+      vocabulary.
+    acceptance:
+      - Status validates and reports P0 = BLOCKED
+      - One domain template and one approved-source profile validate
+      - No gate PASS, source-rights expansion, or owner-decision unfreeze is introduced
+
+  - id: EQ-4
+    title: Empirical qualification readiness crosswalk
+    status: queued
+    depends_on: [EQ-3]
+    lane: coordinator
+    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-4--consolidation-crosswalk-subordinate-the-ad-hoc-checkers
+    notes: >
+      Self-derive the live readiness and authority checker inventory, map existing
+      gates to qualification criterion IDs, add the change-impact matrix, and list gaps
+      or orphaned checks without changing existing gate behavior.
+    acceptance:
+      - Crosswalk maps existing checks to catalog criterion IDs
+      - Change-impact matrix validates criterion IDs against the catalog
+      - Existing readiness/authority behavior remains unchanged
+
+  - id: EQ-5
+    title: Empirical qualification parameterization backlog
+    status: queued
+    depends_on: [EQ-4]
+    lane: coordinator
+    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
+    notes: >
+      Track all frozen-decision blockers, zero approved source profiles, unfrozen
+      domain profiles, judgment rubrics, and target bindings as BLOCKED external/owner
+      authority items with the gates they unblock.
+    acceptance:
+      - Backlog lists every owner-decision blocker with gate mapping
+      - Task queue parses and reflects blocked follow-ons
+      - No blocker is resolved or unblocked by repo-local inference
+
+  - id: EQ-R
+    title: Residual reconciliation falsehood correction
+    status: queued
+    depends_on: [BPS-REQ-001]
+    lane: coordinator
+    spec: plans/2026-06-21-empirical-qualification-adoption.md#lane-r--correct-the-residual-reconciliation-falsehood-parallel-independent
+    notes: >
+      Correct the false STILL_DIVERGENT: none residual claim by either extracting the
+      stranded guardrail-readiness UI files to a fresh defer branch off current main or
+      explicitly recording them as decaying DEFER work with file list, gates, and decay
+      warning.
+    acceptance:
+      - state/residual-reconciliation.md no longer claims no divergent deferred files
+      - Stranded files are either extracted to a defer branch or explicitly listed as decaying DEFER work
+      - No deferred product slice is promoted to PASS
 
   # --- Completed ---
   - id: T000
