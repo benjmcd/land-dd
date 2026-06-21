@@ -12,11 +12,16 @@ _SENSITIVE_ERROR_MARKERS = (
     "traceback (most recent call last)",
     'file "',
     "api_key",
+    "apikey",
     "authorization",
     "bearer ",
     "cookie",
+    "credential",
     "database_url",
+    "passwd",
     "password",
+    "private_key",
+    "privatekey",
     "raw_payload",
     "secret",
     "token",
@@ -28,13 +33,20 @@ _LOCAL_PATH_MARKERS = (
     "/app/",
     "/home/",
     "/users/",
+    "/workspace/",
 )
 _SENSITIVE_PAYLOAD_KEY_MARKERS = (
     "api_key",
+    "apikey",
+    "accesstoken",
     "authorization",
     "cookie",
+    "credential",
     "database_url",
+    "passwd",
     "password",
+    "private_key",
+    "privatekey",
     "raw_payload",
     "secret",
     "token",
@@ -63,14 +75,48 @@ def safe_error_message(message: str | None) -> str | None:
 
 
 def safe_url_summary(url: str | None) -> str | None:
+    """Return a credential-free, query-free summary of *url*.
+
+    Guarantees:
+    - Never raises to the caller (fails closed to REDACTED_ERROR_MESSAGE).
+    - Strips userinfo from any URL that has a netloc (scheme-relative included).
+    - Re-wraps IPv6 literal hosts in [...] so the output is re-parseable.
+    - Routes the sanitised URL through safe_error_message so sensitive path
+      segments and markers are still redacted.
+    - Broadened: handles non-http(s) schemes (ftp, etc.) identically.
+    """
     if url is None:
         return None
     stripped = url.strip()
     if not stripped:
         return None
-    parsed = urlsplit(stripped)
-    if parsed.scheme and parsed.netloc:
-        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+    try:
+        parsed = urlsplit(stripped)
+    except ValueError:
+        return REDACTED_ERROR_MESSAGE
+
+    if parsed.netloc:
+        # Fail closed on any port/hostname access error (malformed port, IPv6, …)
+        try:
+            hostname = parsed.hostname or ""
+            port = parsed.port  # raises ValueError for non-numeric / out-of-range
+        except ValueError:
+            return REDACTED_ERROR_MESSAGE
+
+        # Re-wrap IPv6 literal hosts (parsed.hostname strips the brackets).
+        if ":" in hostname:
+            host_part = f"[{hostname}]"
+        else:
+            host_part = hostname
+
+        netloc_clean = f"{host_part}:{port}" if port else host_part
+        clean_url = urlunsplit((parsed.scheme, netloc_clean, parsed.path, "", ""))
+        return safe_error_message(clean_url)
+
+    # No netloc: fall back to marker-checking the raw stripped value.
+    # Guard against bare "user:pass@host" shapes leaking via the fallback.
+    if "@" in stripped:
+        return REDACTED_ERROR_MESSAGE
     return safe_error_message(stripped)
 
 
@@ -104,6 +150,10 @@ def _safe_payload_value(value: object) -> object | None:
     if value is None or isinstance(value, int | float | bool):
         return value
     if isinstance(value, str):
+        # Route any URL-shaped value through safe_url_summary so userinfo and
+        # query params are stripped regardless of scheme (ftp://, //host, etc.).
+        if "://" in value or (value.startswith("//") and "@" in value):
+            return safe_url_summary(value)
         return safe_error_message(value)
     if isinstance(value, Mapping):
         return safe_payload_copy(value)
