@@ -148,15 +148,18 @@ preflight_gates:
   - id: recorded_source_fixture_corpus
     status: missing_repo_evidence
     evidence:
+      - config/bologna_recorded_source_corpus.yaml
+      - docs/runbooks/bologna_recorded_source_corpus.md
       - tests/fixtures
       - docs/connectors/connector_runbook.md
     blocker_authority:
+      - config/bologna_recorded_source_corpus.yaml
       - docs/connectors/connector_runbook.md
       - schemas/evidence_schema.json
     next_action: >
       Commit a recorded-source fixture corpus only after source rights and pilot scope
-      are approved; include provenance, retrieval metadata, source versions, CRS, and
-      source-failure fixtures.
+      are approved and the recorded-source corpus contract is unlocked; include
+      provenance, retrieval metadata, source versions, CRS, and source-failure fixtures.
 
   - id: bologna_report_runtime_proof
     status: missing_repo_evidence

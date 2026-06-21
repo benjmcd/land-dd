@@ -1,0 +1,182 @@
+schema_version: bologna_recorded_source_corpus_v1
+operator_runbook: docs/runbooks/bologna_recorded_source_corpus.md
+preflight_catalog: config/bologna_preflight.yaml
+source_authority_intake: config/bologna_source_authority_intake.yaml
+source_rights_matrix: config/bologna_source_rights.yaml
+status: blocked_no_authority
+validation: scripts/run_bologna_recorded_source_corpus_check.ps1
+
+authority:
+  - config/bologna_preflight.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - state/LEVEL_9_10_GATE_MATRIX.md
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - schemas/source_schema.json
+  - schemas/evidence_schema.json
+
+approvals:
+  corpus_contract_complete: false
+  one_aoi_scope_authorized: false
+  exact_sources_authorized: false
+  source_rights_review_complete: false
+  source_registry_promotion_allowed: false
+  recorded_fixture_capture_allowed: false
+  source_failure_fixture_capture_allowed: false
+  runtime_use_allowed: false
+  report_use_allowed: false
+  db_seed_allowed: false
+
+limits:
+  validate_only_contract: true
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  changes_source_readiness: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+
+required_corpus_decisions:
+  - one_aoi_scope
+  - exact_source_selection
+  - completed_per_source_rights_review
+  - source_contract_fields_complete
+  - source_registry_row_review
+  - recorded_fixture_scope
+  - retrieval_metadata_policy
+  - source_version_policy
+  - attribution_policy
+  - crs_precision_policy
+  - field_allowlist
+  - field_denylist
+  - no_data_policy
+  - source_failure_policy
+  - caveat_policy
+  - report_use_policy
+  - raw_data_export_policy
+  - review_owner
+  - no_overclaim_review
+
+required_manifest_fields:
+  - manifest_schema_version
+  - corpus_id
+  - one_aoi_authority_reference
+  - source_authority_references
+  - source_contract_references
+  - source_versions
+  - retrieval_metadata
+  - fixture_file_manifest
+  - source_failure_fixture_manifest
+  - attribution_text
+  - crs_and_precision
+  - field_allowlist
+  - field_denylist
+  - no_data_policy
+  - caveat_policy
+  - report_use_policy
+  - review_owner
+  - no_overclaim_review
+
+candidate_corpus_reviews:
+  - candidate_id: comune_bologna_pug_webgis
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - effective_pug_document_or_webgis_version
+      - terms_or_reuse_reference
+      - allowed_cache_export_ai_raw_data_decisions
+      - attribution_text
+      - planning_context_caveats
+
+  - candidate_id: comune_bologna_open_data_pug_constraints
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - exact_dataset_identifier
+      - dataset_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - attribution_text
+      - environmental_or_constraint_screening_caveats
+
+  - candidate_id: rer_geoportale_dbtr_altimetry
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - exact_layer_metadata
+      - license_and_attribution_mapping
+      - source_version_or_update_timestamp
+      - crs_and_precision_decision
+      - terrain_context_caveats
+
+  - candidate_id: rer_geoportale_catalog_services
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - exact_layer_selection
+      - per_layer_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - service_or_download_retrieval_policy
+      - layer_specific_caveats
+
+  - candidate_id: rer_crs_reference
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - official_crs_reference
+      - transformation_policy
+      - geometry_precision_policy
+      - fixture_crs_metadata_policy
+      - reference_not_report_claim_caveat
+
+  - candidate_id: arpae_cartographic_portal
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    required_manifest_evidence:
+      - exact_environmental_layer_selection
+      - layer_metadata_and_terms_reference
+      - source_version_or_update_timestamp
+      - environmental_screening_caveats
+      - no_jurisdiction_or_liability_claim_policy
+
+cadastral_corpus_review:
+  corpus_state: blocked_direct_source_review_required
+  fixture_manifest_entry_allowed: false
+  source_failure_fixture_allowed: false
+  required_manifest_evidence:
+    - official_terms_reference
+    - allowed_access_method
+    - cache_export_ai_raw_data_decisions
+    - cadastral_geometry_precision_and_caveats
+    - explicit_no_owner_title_access_buildability_authority
+
+promotion_blockers:
+  - authorized_one_aoi_scope
+  - exact_source_selection
+  - completed_per_source_rights_review
+  - source_contract_fields_complete
+  - source_registry_row_review
+  - recorded_fixture_scope
+  - crs_precision_policy
+  - rulepack_or_evidence_only_scope
+  - no_overclaim_review
+
+unlock_conditions:
+  - Product authority names the one Bologna AOI and evidence-only or rulepack scope.
+  - Source-authority intake references are present for every selected source.
+  - Source-rights decisions are complete for every selected source.
+  - Source registry rows are reviewed before any recorded fixture appears in a manifest.
+  - Fixture and source-failure fixture manifests carry versions, retrieval metadata, CRS, caveats, and attribution.
+  - Runtime/report use remains disabled until the recorded corpus is reviewed.

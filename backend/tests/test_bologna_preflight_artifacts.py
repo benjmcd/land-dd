@@ -68,6 +68,14 @@ def test_bologna_preflight_gate_set_and_statuses_are_pinned() -> None:
         in gates["italy_source_rights_review"]["evidence"]
     )
     assert gates["italy_source_rights_review"]["status"] == "blocked_external_authority"
+    assert (
+        "config/bologna_recorded_source_corpus.yaml"
+        in gates["recorded_source_fixture_corpus"]["evidence"]
+    )
+    assert (
+        "config/bologna_recorded_source_corpus.yaml"
+        in gates["recorded_source_fixture_corpus"]["blocker_authority"]
+    )
 
 
 def test_bologna_preflight_validator_passes_current_artifacts() -> None:
@@ -92,6 +100,12 @@ def test_bologna_preflight_composes_source_authority_intake() -> None:
     validator = cast(Any, _load_validator())
 
     validator.validate_source_authority_intake()
+
+
+def test_bologna_preflight_composes_recorded_source_corpus_contract() -> None:
+    validator = cast(Any, _load_validator())
+
+    validator.validate_recorded_source_corpus()
 
 
 def test_bologna_preflight_validator_fails_if_approval_flips(
@@ -187,6 +201,7 @@ def test_bologna_preflight_runbook_and_authority_packet_preserve_boundary() -> N
         "does not approve an EU/Italy rulepack",
         "does not unblock DS-017",
         "does not claim hosted production readiness",
+        "bologna_recorded_source_corpus_v1",
     ):
         assert phrase in runbook
     for phrase in (

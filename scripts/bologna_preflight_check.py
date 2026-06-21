@@ -58,17 +58,22 @@ REQUIRED_FILES = (
     "config/bologna_source_candidates.yaml",
     "config/bologna_source_rights.yaml",
     "config/bologna_source_authority_intake.yaml",
+    "config/bologna_recorded_source_corpus.yaml",
     "docs/source-reviews/bologna-source-candidates.md",
     "docs/source-reviews/bologna-source-rights.md",
+    "docs/runbooks/bologna_recorded_source_corpus.md",
     "scripts/bologna_source_candidates_check.py",
     "scripts/bologna_source_rights_check.py",
     "scripts/bologna_source_authority_intake_check.py",
+    "scripts/bologna_recorded_source_corpus_check.py",
     "scripts/run_bologna_source_candidates_check.ps1",
     "scripts/run_bologna_source_candidates_check.sh",
     "scripts/run_bologna_source_rights_check.ps1",
     "scripts/run_bologna_source_rights_check.sh",
     "scripts/run_bologna_source_authority_intake_check.ps1",
     "scripts/run_bologna_source_authority_intake_check.sh",
+    "scripts/run_bologna_recorded_source_corpus_check.ps1",
+    "scripts/run_bologna_recorded_source_corpus_check.sh",
     "scripts/run_bologna_preflight_check.ps1",
     "scripts/run_bologna_preflight_check.sh",
     "state/LEVEL_9_10_GATE_MATRIX.md",
@@ -83,6 +88,7 @@ RUNBOOK_PHRASES = (
     "bologna_source_candidates_v1",
     "bologna_source_rights_v1",
     "bologna_source_authority_intake_v1",
+    "bologna_recorded_source_corpus_v1",
     "not_started_external_authority_required",
     "does not select Bologna",
     "does not approve Italy sources",
@@ -377,12 +383,55 @@ def validate_source_authority_intake() -> None:
         )
 
 
+def validate_recorded_source_corpus() -> None:
+    payload = require_mapping(
+        yaml.safe_load(read_text("config/bologna_recorded_source_corpus.yaml")),
+        "Bologna recorded-source corpus catalog must be a mapping",
+    )
+    require(
+        payload.get("schema_version") == "bologna_recorded_source_corpus_v1",
+        "Bologna recorded-source corpus schema mismatch",
+    )
+    require(
+        payload.get("status") == "blocked_no_authority",
+        "Bologna recorded-source corpus must remain blocked",
+    )
+    approvals = require_mapping(
+        payload.get("approvals"),
+        "Bologna recorded-source corpus approvals missing",
+    )
+    require(
+        all(value is False for value in approvals.values()),
+        "Bologna recorded-source corpus approvals must remain false",
+    )
+    reviews = require_non_empty_list(
+        payload.get("candidate_corpus_reviews"),
+        "Bologna recorded-source corpus reviews missing",
+    )
+    for review in reviews:
+        review = require_mapping(review, "each corpus review must be a mapping")
+        candidate_id = require_text(review.get("candidate_id"), "corpus candidate id missing")
+        require(
+            review.get("corpus_state") == "blocked_no_authority",
+            f"{candidate_id} corpus state promoted",
+        )
+        require(
+            review.get("fixture_manifest_entry_allowed") is False,
+            f"{candidate_id} fixture manifest unexpectedly allowed",
+        )
+        require(
+            review.get("source_failure_fixture_allowed") is False,
+            f"{candidate_id} source-failure fixture unexpectedly allowed",
+        )
+
+
 def main() -> int:
     validate_required_files()
     validate_catalog()
     validate_source_candidates()
     validate_source_rights()
     validate_source_authority_intake()
+    validate_recorded_source_corpus()
     validate_runbook()
     validate_production_packet()
     print("Bologna preflight check: ok")
