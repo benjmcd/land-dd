@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-selected-county-runtime-provenance-regression.md`.
+Latest completed plan: `2026-06-20-post-srp-roadmap.md`.
 
-Current routing plan: `2026-06-20-post-srp-roadmap.md`.
+Current routing plan: `2026-06-20-pr114-sync.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -22,7 +22,8 @@ current-main selected-county fixture review-bundle/idempotency test. It is test-
 and does not change source/report behavior, source readiness, hosted authority, Bologna
 authority, or Level 10 status.
 
-After `SRP-001`, the only remaining `STILL_DIVERGENT` residual candidate paths are
+`RSR-001` merged through PR #114 and records the post-SRP residual routing closeout.
+After `RSR-001`, the only remaining `STILL_DIVERGENT` residual candidate paths are
 `backend/app/project_readiness.py` and `backend/app/release_readiness.py`; both remain
 deferred until a real control-plane consolidation slice is explicitly selected.
 

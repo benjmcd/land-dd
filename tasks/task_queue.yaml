@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-post-srp-roadmap.md
+active_plan: plans/2026-06-20-pr114-sync.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -22,8 +22,9 @@ routing_note: >
   #111. Current lane: PAI-001 production-authority intake guard. BSA-001 Bologna
   source-authority intake remains blocked until product/AOI/source-review authority
   exists. SRP-001 reworks the retained selected-county runtime-provenance regression as
-  a test-only residual closeout and merged through PR #113. Current lane: RSR-001
-  post-SRP routing closeout. Do not create hosted deployment, hosted identity/RBAC,
+  a test-only residual closeout and merged through PR #113. RSR-001 post-SRP routing
+  closeout merged through PR #114. Current lane: PR114-SYNC post-merge routing sync.
+  Do not create hosted deployment, hosted identity/RBAC,
   hosted observability, source/vendor authority, new jurisdiction/rulepack/source
   coverage, DS-017 approval, Bologna implementation, fixture capture, production
   traffic proof, ranking/recommendation semantics, multi-geography framework
@@ -1431,6 +1432,31 @@ tasks:
       - Active routing no longer points at the completed SRP implementation plan
       - Residual reconciliation records SRP as merged and leaves only parser candidates divergent
       - Remaining parser candidates are deferred rather than copied from dirty root
+      - DS-017, hosted, Bologna, and Level 10 authority remain externally blocked
+
+  - id: PR114-SYNC
+    title: Post-PR114 routing sync
+    status: done
+    depends_on: [RSR-001]
+    lane: coordinator
+    spec: plans/2026-06-20-pr114-sync.md
+    notes: >
+      Refresh live routing after PR #114 merged RSR-001 at
+      12de4f5bcf044f813f68e04d71c1617dab5c4eb9. This is state/routing only and
+      preserves external blockers for DS-017, hosted authority, Bologna authority, and
+      Level 10 status.
+    validation:
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\production_authority_intake_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Current live main references PR #114 and merge commit 12de4f5bcf044f813f68e04d71c1617dab5c4eb9
+      - Current routing no longer implies PR #113 is the latest checkpoint
       - DS-017, hosted, Bologna, and Level 10 authority remain externally blocked
 
   # --- Completed ---

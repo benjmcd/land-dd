@@ -6,7 +6,7 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 
 ## Authority
 
-- **Current live main**: `b144544d6224381875e92eb6d27206171799de9d`.
+- **Current live main**: `12de4f5bcf044f813f68e04d71c1617dab5c4eb9`.
 - **Dirty-root candidate branch**: `codex/r026-raw-readiness-ui` at `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
 - **Comparison source**: `git status --porcelain=v1 -uall` from the dirty root plus content comparison against the clean `res-rec` worktree at current main.
 - **Prior disposition source**: `state/reconciliation-dispositions.md`.
@@ -40,10 +40,11 @@ and merged through PR #113.
 
 ## Next-Slice Determination
 
-REC-002 and the later SRP closeout do not find a dirty-root implementation slice that
-should be copied forward wholesale. Generic supported-AOI workflow proof has already
-landed through the G9b/G9c lanes, and the selected-county runtime-provenance regression
-candidate has now been reworked and merged as `SRP-001`.
+REC-002 and the later SRP/RSR closeouts do not find a dirty-root implementation slice
+that should be copied forward wholesale. Generic supported-AOI workflow proof has
+already landed through the G9b/G9c lanes, the selected-county runtime-provenance
+regression candidate has been reworked and merged as `SRP-001`, and post-SRP routing
+has been merged as `RSR-001` through PR #114.
 
 The remaining project/release readiness orientation modules stay deferred until
 repeated merged control-plane patterns justify consolidation. Hosted deployment,

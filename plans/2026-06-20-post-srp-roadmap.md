@@ -16,9 +16,10 @@ advance.
   10 authority.
 
 ## Current state
-Live `origin/main` is `b144544d6224381875e92eb6d27206171799de9d`, which includes PR
-#113 (`SRP-001`). `SRP-001` reworked the retained dirty-root runtime-provenance
-candidate as a current-main test-only regression.
+Live `origin/main` is `12de4f5bcf044f813f68e04d71c1617dab5c4eb9`, which includes PR
+#114 (`RSR-001`) and its prerequisite PR #113 (`SRP-001`). `SRP-001` reworked the
+retained dirty-root runtime-provenance candidate as a current-main test-only
+regression; `RSR-001` records the post-SRP residual routing closeout.
 
 `state/residual-reconciliation.md` now has two remaining `STILL_DIVERGENT` paths:
 
@@ -100,3 +101,5 @@ git diff --name-only --diff-filter=D
   at `b144544`.
 - 2026-06-20: Updated plan routing, task queue, project state, and residual
   reconciliation to close `SRP-001` and keep remaining parser candidates deferred.
+- 2026-06-20: Merged through PR #114 at
+  `12de4f5bcf044f813f68e04d71c1617dab5c4eb9`.
