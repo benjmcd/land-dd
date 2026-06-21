@@ -2,6 +2,58 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 EQP2-4 Checker Advertisement Parity
+
+**Scope:** Make crosswalk-mapped readiness/authority checkers advertise their mapped
+criterion IDs in machine-readable form, make validation prove checker/crosswalk parity,
+and make status derivation consume the checker-advertised IDs. This does not change
+checker gate behavior, move any qualification to `PASS`, create a P0 result artifact,
+unfreeze owner/source/AOI/Bologna/hosted/DS-017 decisions, capture fixtures, run
+connectors, seed the database, change API/auth/report semantics, or claim Level 10.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_checker_advertisement.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_spine.py -q
+py -3.12 scripts\source_readiness.py --qualification-criteria-json
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root .
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+ruff check scripts\qualification_checker_advertisement.py scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_checker_advertisement.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- RED focused tests failed before implementation because mapped checkers did not emit
+  advertisement JSON, `scripts/qualification_checker_advertisement.py` did not exist,
+  `qualification_status_check.py` did not carry checker-advertised criterion IDs, and
+  validator parity checking did not exist.
+- Added the shared advertisement helper and opt-in checker hooks for all 29
+  crosswalk-mapped checker paths.
+- Direct `source_readiness.py --qualification-criteria-json` emitted
+  `qualification_checker_advertisement_v1` with criterion IDs `DQ-001`, `DQ-018`,
+  `Q1-012`, and `S-016`.
+- Initial full verify failed because checker modules imported by tests could not see
+  the helper at module-import time and two routing tests still expected EQP2-3 active.
+  Moved the helper import inside the `__main__` advertisement hook and updated routing
+  tests to EQP2-4.
+- Focused EQP2-4 tests passed.
+- Direct qualification validator, status checker, selftest, change-impact checker, and
+  P0 auto-evidence checker passed.
+- Final `.\scripts\verify.ps1` passed workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change impact,
+  qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke was skipped
+  because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Checker advertisements intentionally derive from the canonical
+crosswalk rather than duplicating criterion IDs in every checker. This avoids a second
+mapping authority and proves every mapped checker participates in the reporting
+protocol, but semantic criterion mapping correctness still belongs to crosswalk review.
+P0 remains blocked and no status moves to `PASS`.
+
 ## 2026-06-21 EQP2-3 Blocked P0 Repo-Local Auto-Evidence
 
 **Scope:** Collect repo-local evidence pointers for `P0-004`, `P0-005`,

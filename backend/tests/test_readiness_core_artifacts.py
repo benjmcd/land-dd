@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-21-eqp2-3-p0-auto-evidence.md"
+        == "plans/2026-06-21-eqp2-4-checker-parity.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids

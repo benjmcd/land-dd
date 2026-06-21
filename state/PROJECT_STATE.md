@@ -1,22 +1,26 @@
 # Project State
 
-## Current checkpoint (2026-06-21 EQP2-3 P0 auto-evidence)
+## Current checkpoint (2026-06-21 EQP2-4 checker advertisement parity)
 
-Live `origin/main` contains the jsonschema mypy stub fix through PR #136 at
-`71c6a74eae08811d4e178b0c11365ff1e247772d`, on top of the report-run rights
-optionality fix through PR #134 at `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`,
-the report-run contract backward-compat ADR through PR #133 at
+Live `origin/main` contains EQP2-3 blocked P0 repo-local auto-evidence through
+PR #135 at `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`, on top of the jsonschema
+mypy stub fix through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`,
+the report-run rights optionality fix through PR #134 at
+`af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, the report-run contract
+backward-compat ADR through PR #133 at
 `8822a1408cce54bc99fe760f3386243a29e64b0d`, the error-safety redaction
 hardening through PR #132 at `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`,
 `EQP2-2` through PR #131 at
 `0f0f592b9522d26afb70007281870325edd13579`, `EQP2-1` through PR #130 at
 `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, and the EQ Phase 2 handoff
 through PR #129 at `b88d608aec21a988bc4127f167ee0972f6da06f2`.
-`EQP2-3` is the current repo-local lane: collect evidence pointers for the four
-selected P0 invariants while keeping P0 blocked and result-free.
+`EQP2-4` makes mapped readiness/authority checkers advertise their crosswalk
+criterion IDs, makes validation prove crosswalk/checker parity, and makes status
+derivation consume checker-advertised criteria while keeping all statuses honest
+and non-passing.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-eqp2-3-p0-auto-evidence.md`.
+  `plans/2026-06-21-eqp2-4-checker-parity.md`.
 - **Latest repo-local test hardening**:
   `backend/tests/test_qualification_status_check.py` proves the derived status view
   matches the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` shape, rejects P0 drift to
@@ -49,7 +53,11 @@ selected P0 invariants while keeping P0 blocked and result-free.
   `scripts/run_qualification_p0_evidence_check.sh`; the checker validates exactly
   `P0-004`, `P0-005`, `P0-021`, and `P0-023` as blocked repo-local evidence rows
   against the live catalog, status, backlog, and local suppression/control signals.
-  `EQP2-4` remains queued.
+  `EQP2-4` adds `scripts/qualification_checker_advertisement.py`, checker
+  `--qualification-criteria-json` hooks, validator crosswalk/checker parity, and
+  status derivation through checker-advertised criterion IDs. EQ Phase 2 is
+  implementation-complete in repo-local state pending PR merge and detached
+  post-merge proof.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
@@ -60,10 +68,11 @@ selected P0 invariants while keeping P0 blocked and result-free.
   wired immediately after the status checker in the same local verify scripts and
   dedicated qualification CI job. The EQP2-3 P0 auto-evidence checker is wired after
   change-impact in the same local verify scripts and dedicated qualification CI job.
-- **Immediate next pursuit after EQP2-3**: `EQP2-4` should make existing checkers advertise their
-  crosswalk criterion IDs and prove crosswalk/checker parity. The Bologna path remains
-  prioritized but still requires external product/AOI/source-rights authority before
-  corpus or DB-backed report work.
+- **Immediate next pursuit after EQP2-4**: merge/verify this lane, then treat the
+  active Phase 2 goal as complete if post-merge proof still shows status derivation,
+  change-impact invalidation, P0 repo-local evidence, and checker advertisement
+  parity all green. The Bologna path remains prioritized but still requires external
+  product/AOI/source-rights authority before corpus or DB-backed report work.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,

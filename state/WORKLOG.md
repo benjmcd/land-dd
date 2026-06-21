@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 EQP2-4 checker advertisement parity
+
+- Started clean worktree `worktrees/eqp2-4` on `eqp2/4-checker-parity` from
+  live `origin/main` at `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663` after
+  EQP2-3 merged through PR #135 and detached post-merge proof passed.
+- Added `plans/2026-06-21-eqp2-4-checker-parity.md` and routed
+  `tasks/task_queue.yaml`, `state/PROJECT_STATE.md`, `plans/README.md`, and
+  `MANIFEST.md` to the EQP2-4 lane.
+- Added `scripts/qualification_checker_advertisement.py` with
+  `qualification_checker_advertisement_v1` JSON output for mapped checker paths.
+- Added an opt-in `--qualification-criteria-json` pre-main hook to all 29 checker
+  paths declared in `config/qualification/readiness_crosswalk.yaml`. Normal checker
+  calls remain on the existing `main()` path.
+- Extended `scripts/validate_qualification.py` to invoke every mapped checker with
+  the advertisement flag and fail closed if the returned criterion IDs drift from the
+  crosswalk.
+- Extended `scripts/qualification_status_check.py` so failed checker results block
+  status through checker-advertised criterion IDs instead of directly reusing
+  crosswalk entries at failure time.
+- Extended `scripts/selftest_qualification_validator.py` and focused pytest coverage
+  to prove checker-advertisement drift fails closed.
+- Preserved boundaries: no qualification `PASS`, no P0 result artifact, no
+  owner-decision unfreeze, no checker gate-behavior change, no Bologna AOI/source
+  approval, no fixture capture, no runtime/report use, no DB seed, no source registry
+  promotion, no DS-017 approval, no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 EQP2-3 blocked P0 repo-local auto-evidence
 
 - Started clean worktree `worktrees/eqp2-3` on `eqp2/3-p0-evidence` from live

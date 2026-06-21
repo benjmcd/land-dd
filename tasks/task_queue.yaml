@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eqp2-3-p0-auto-evidence.md
+active_plan: plans/2026-06-21-eqp2-4-checker-parity.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -43,12 +43,15 @@ routing_note: >
   `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`, report-run contract ADR routing
   merged through PR #133 at `8822a1408cce54bc99fe760f3386243a29e64b0d`,
   report-run rights optionality merged through PR #134 at
-  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, and the jsonschema mypy stub fix
-  merged through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`.
-  Current lane: EQP2-3 blocked P0 repo-local auto-evidence. This collects evidence
-  pointers for `P0-004`, `P0-005`, `P0-021`, and `P0-023`, links them from the
-  blocked status file, and keeps checker advertisement parity plus all approval
-  decisions blocked for later lanes. Do not
+  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, the jsonschema mypy stub fix
+  merged through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`, and
+  EQP2-3 blocked P0 repo-local auto-evidence merged through PR #135 at
+  `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`.
+  Latest local lane: EQP2-4 checker advertisement parity. This makes existing mapped
+  readiness/authority checkers advertise their crosswalk criterion IDs, makes the
+  qualification validator prove crosswalk-to-checker parity, makes status derivation
+  consume checker-advertised criterion IDs, and keeps all approval decisions blocked.
+  Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -1990,13 +1993,25 @@ tasks:
 
   - id: EQP2-4
     title: Qualification checker advertisement parity
-    status: queued
+    status: done
     depends_on: [EQP2-3]
     lane: coordinator
-    spec: plans/2026-06-21-eq-phase2-operationalize.md#eqp2-4--subordinate-the-existing-checkers-executable-consolidation
+    spec: plans/2026-06-21-eqp2-4-checker-parity.md
     notes: >
       Extend existing readiness/authority checkers to advertise mapped criterion IDs
       and validate crosswalk-to-checker parity without changing checker gate behavior.
+      Status derivation now consumes checker-advertised criterion IDs.
+    validation:
+      - py -3.12 -m pytest backend/tests/test_qualification_checker_advertisement.py backend/tests/test_qualification_status_check.py backend/tests/test_qualification_spine.py -q
+      - py -3.12 scripts\validate_qualification.py --root . --layout repo
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Every crosswalk-mapped checker advertises its mapped criterion IDs through --qualification-criteria-json
+      - Validator fails closed on crosswalk-to-checker advertisement drift
+      - Status derivation consumes checker-advertised criterion IDs
+      - No gate PASS, owner-decision unfreeze, or checker gate-behavior change is introduced
 
   - id: EQ-5
     title: Empirical qualification parameterization backlog
