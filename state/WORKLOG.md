@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-20 Post-PR114 routing sync PR114-SYNC
+
+- Started clean worktree `worktrees/post114-sync` on `codex/post114-sync` from live
+  `origin/main` at `12de4f5bcf044f813f68e04d71c1617dab5c4eb9`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current routing after PR #114 merged `RSR-001` and found state/routing
+  files still described PR #113 / `SRP-001` as the live checkpoint.
+- Added `plans/2026-06-20-pr114-sync.md` and refreshed plan/task/project/residual
+  routing so the latest live checkpoint is PR #114 while the substantive blockers stay
+  unchanged.
+- Preserved boundaries: no source/report behavior change, no readiness semantic
+  change, no parser implementation, no DS-017 approval, no hosted authority, no
+  Bologna authority, and no Level 10 claim.
+
 ## 2026-06-20 Post-SRP residual routing closeout RSR-001
 
 - Started clean worktree `worktrees/post-srp` on `codex/post-srp` from live
