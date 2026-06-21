@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eqp2-1-status-check.md
+active_plan: plans/2026-06-21-eqp2-2-change-impact.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -36,12 +36,12 @@ routing_note: >
   self-validating qualification spine merged through PR #126, EQ-3 honest blocked
   qualification status merged through PR #127, EQ-4 readiness crosswalk landed at
   `8dadfbffd90408fa7320cadd59b65cb7f1a5bc78`, and the EQ Phase 2 handoff merged
-  through PR #129. Current lane: EQP2-1 derived qualification status check. This runs
-  mapped readiness, authority, release, source, security, operations, and spatial
-  checker paths, derives only BLOCKED/NOT_RUN status, validates committed status
-  against that derived view, and keeps checker behavior, qualification PASS claims,
-  change-impact execution, P0 evidence collection, checker advertisement parity, and
-  all approval decisions blocked for later lanes. Do not
+  through PR #129, and EQP2-1 derived qualification status merged through PR #130 at
+  `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`. Current lane: EQP2-2 executable
+  change-impact invalidation. This maps changed paths to matrix-owned change classes
+  and crosswalk-owned criterion IDs, reports review/invalidation impact advisory-only,
+  and keeps checker behavior, qualification PASS claims, P0 evidence collection,
+  checker advertisement parity, and all approval decisions blocked for later lanes. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -1931,13 +1931,29 @@ tasks:
 
   - id: EQP2-2
     title: Executable qualification change impact
-    status: queued
+    status: done
     depends_on: [EQP2-1]
     lane: coordinator
-    spec: plans/2026-06-21-eq-phase2-operationalize.md#eqp2-2--executable-change-impact-invalidation
+    spec: plans/2026-06-21-eqp2-2-change-impact.md
     notes: >
-      Add an advisory diff-to-change-class and criterion-impact checker without making
-      affected criteria a false failing gate.
+      Adds advisory diff-to-change-class and criterion-impact reporting without
+      making affected criteria a false failing gate. Change classes are matched from
+      matrix-owned path_globs, crosswalk config/checker paths add surface criterion
+      context, unmatched paths are reported for review, and no qualification status is
+      changed.
+    validation:
+      - py -3.12 -m pytest backend/tests/test_qualification_change_impact_check.py backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py -q
+      - py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path config/release_readiness.yaml --changed-path scripts/source_readiness.py
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - py -3.12 scripts\validate_qualification.py --root . --layout repo
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - .\scripts\verify.ps1
+    acceptance:
+      - Changed paths map to advisory change classes and criterion IDs
+      - Crosswalk config/checker paths surface mapped qualification criteria
+      - Unmatched paths are reported instead of silently treated as safe
+      - Verify and qualification CI run the change-impact check
+      - No gate PASS, owner-decision unfreeze, or checker behavior change is introduced
 
   - id: EQP2-3
     title: Repo-local P0 invariant evidence collection

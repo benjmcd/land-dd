@@ -2,6 +2,36 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 EQP2-2 executable qualification change impact
+
+- Started clean worktree `worktrees/eqp2-2` on `eqp2/2-change-impact` from live
+  `origin/main` at `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670` after EQP2-1
+  merged through PR #130 and detached post-merge proof passed.
+- Added `plans/2026-06-21-eqp2-2-change-impact.md` and updated routing pointers so
+  EQP2-2 is the active repo-local lane while preserving the Level 9/10 gate matrix
+  authority context.
+- Extended `config/qualification/change_impact_matrix.yaml` and its schema with
+  matrix-owned `path_globs` for executable path-to-change-class mapping. The
+  `DOCS_NONSEMANTIC` class intentionally remains path-glob-free because a path alone
+  cannot prove a documentation edit is nonsemantic.
+- Added `scripts/qualification_change_impact_check.py`,
+  `scripts/qualification_change_impact_check.ps1`, and
+  `scripts/run_qualification_change_impact_check.sh`. The checker maps changed paths
+  to change classes, review groups, invalidation criterion IDs, crosswalk surfaces,
+  and crosswalk criterion IDs, while exiting nonzero only for unsafe paths or internal
+  metadata inconsistency.
+- Extended `scripts/selftest_qualification_validator.py`, `scripts/verify.ps1`,
+  `scripts/verify.sh`, and the dedicated `qualification-selftest` CI job so the
+  advisory change-impact check runs with the rest of the qualification control plane.
+- Addressed review feedback by mapping actual current backend packages for connectors,
+  claim/rule logic, area geometry, and evidence ledger, proving those paths with
+  focused tests, and giving the CI jobs that run the checker full fetch history so
+  default diff reporting does not degrade to an empty shallow-checkout report.
+- Preserved boundaries: no qualification `PASS`, no status change, no owner-decision
+  unfreeze, no Bologna AOI/source approval, no fixture capture, no runtime/report use,
+  no DB seed, no source registry promotion, no DS-017 approval, no hosted authority,
+  and no Level 10 claim.
+
 ## 2026-06-21 EQP2-1 derived qualification status check
 
 - Started clean worktree `worktrees/eqp2-1` on `eqp2/1-status-check` from live

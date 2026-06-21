@@ -6,6 +6,7 @@ change_classes:
     - M
     - G
     invalidate_by_default: []
+    path_globs: []
     examples:
     - typo
     - link correction
@@ -20,6 +21,12 @@ change_classes:
     - Q1-011
     - DQ-005
     - DQ-018
+    path_globs:
+    - data/**
+    - fixtures/**
+    - local_artifacts/source-data/**
+    - config/source_*.yaml
+    - config/bologna_*source*.yaml
     conditional:
     - S
     - R
@@ -39,6 +46,17 @@ change_classes:
     - Q3-009
     - DQ-009
     - DQ-017
+    path_globs:
+    - backend/app/connectors/**
+    - backend/app/api/connectors.py
+    - backend/app/api/live_connectors.py
+    - backend/tests/connectors/**
+    - backend/app/source_registry/**
+    - backend/tests/source_registry/**
+    - scripts/source_*.py
+    - scripts/*source*_check.py
+    - schemas/*source*.json
+    - config/source_*.yaml
   SOURCE_RIGHTS_OR_TERMS:
     review:
     - S
@@ -54,6 +72,12 @@ change_classes:
     - Q3-029
     - S-016
     - R-005
+    path_globs:
+    - config/source_entitlements.yaml
+    - config/bologna_source_rights.yaml
+    - config/bologna_source_authority_intake.yaml
+    - docs/source-reviews/**
+    - docs/runbooks/*source*.md
   AOI_IDENTITY_OR_GEOMETRY:
     review:
     - IR
@@ -68,6 +92,15 @@ change_classes:
     - IR-001
     - IR-012
     - DB-006
+    path_globs:
+    - backend/app/area_geometry/**
+    - backend/tests/area_geometry/**
+    - backend/app/areas/**
+    - backend/app/geometry/**
+    - backend/app/spatial/**
+    - config/spatial_query_plan.yaml
+    - scripts/spatial_query_plan*.py
+    - backend/tests/**/test_*spatial*.py
   RULE_OR_CONFIDENCE_SEMANTICS:
     review:
     - Q1
@@ -81,6 +114,17 @@ change_classes:
     - Q1-017
     - Q1-022
     - Q2-011
+    path_globs:
+    - backend/app/claims_engine/**
+    - backend/app/domain/claim_contracts.py
+    - backend/tests/claims_engine/**
+    - backend/app/claims/**
+    - backend/app/rules/**
+    - backend/app/reports/**
+    - schemas/claim_schema.json
+    - config/ruleset_*.yaml
+    - config/qualification/criterion_catalog.yaml
+    - config/qualification/judgment_rubrics.yaml
   REPORT_OR_CAVEAT_SEMANTICS:
     review:
     - Q1
@@ -96,6 +140,15 @@ change_classes:
     - A-006
     - R-007
     - G-011
+    path_globs:
+    - backend/app/evidence_ledger/**
+    - backend/tests/evidence_ledger/**
+    - backend/app/reports/**
+    - backend/tests/**/test_*report*.py
+    - schemas/evidence_schema.json
+    - scripts/generate_dossier.py
+    - api/openapi_stub.yaml
+    - docs/runbooks/release_readiness.md
   UI_WORKFLOW:
     review:
     - Q2
@@ -109,6 +162,11 @@ change_classes:
     - A-001
     - A-003
     - A-007
+    path_globs:
+    - backend/app/api/ui*.py
+    - backend/tests/api/test_ui_*.py
+    - scripts/ui_*.py
+    - scripts/ui_*.mjs
   DB_SCHEMA_OR_MIGRATION:
     review:
     - DB
@@ -122,6 +180,14 @@ change_classes:
     - DB-014
     - Q1-021
     - Q3-030
+    path_globs:
+    - backend/app/db/**
+    - backend/alembic/**
+    - backend/migrations/**
+    - scripts/db_*.py
+    - scripts/db_*.ps1
+    - scripts/db_*.sh
+    - docker-compose.yml
   AUTH_TENANCY_PRIVACY:
     review:
     - S
@@ -135,6 +201,12 @@ change_classes:
     - S-012
     - DB-010
     - O-002
+    path_globs:
+    - backend/app/api/*auth*.py
+    - backend/app/security*.py
+    - backend/tests/api/test_*auth*.py
+    - config/access_control.yaml
+    - scripts/access_control_check.py
   DEPLOYMENT_INFRASTRUCTURE:
     review:
     - O
@@ -148,6 +220,17 @@ change_classes:
     - O-019
     - S-013
     - DB-012
+    path_globs:
+    - .github/workflows/**
+    - backend/Dockerfile
+    - docker-compose.yml
+    - config/*deployment*.yaml
+    - config/release_readiness.yaml
+    - scripts/*deployment*.py
+    - scripts/release_*_check.py
+    - scripts/package_manifest_check.py
+    - scripts/verify.sh
+    - scripts/verify.ps1
   AI_MODEL_PROMPT_PROVIDER:
     review:
     - AI
@@ -163,6 +246,12 @@ change_classes:
     - AI-009
     - Q1-004
     - Q2-014
+    path_globs:
+    - prompts/**
+    - config/ai*.yaml
+    - backend/app/**/ai*.py
+    - backend/app/**/*prompt*.py
+    - backend/tests/**/*prompt*.py
   NEW_INTENT_OR_DOMAIN:
     review:
     - P0
@@ -178,6 +267,11 @@ change_classes:
     - Q1-037
     - Q2-027
     - DQ-019
+    path_globs:
+    - config/qualification/qualification_targets.yaml
+    - config/qualification/qualification_profiles.yaml
+    - config/qualification/domain_profiles/**
+    - docs/qualification/**
   NEW_US_JURISDICTION:
     review:
     - Q3A
@@ -191,6 +285,11 @@ change_classes:
     - R-001
     - R-009
     - DQ-013
+    path_globs:
+    - config/checklist_dry_run.yaml
+    - backend/app/**/jurisdiction*.py
+    - backend/tests/**/*jurisdiction*.py
+    - docs/runbooks/*jurisdiction*.md
   NEW_NON_US_JURISDICTION:
     review:
     - Q3C
@@ -205,6 +304,11 @@ change_classes:
     - R-009
     - S-025
     - DQ-013
+    path_globs:
+    - config/bologna_*.yaml
+    - docs/runbooks/bologna_*.md
+    - docs/source-reviews/bologna-*.md
+    - backend/tests/**/*bologna*.py
   CANDIDATE_SEARCH_OR_RANKING:
     review:
     - CG
@@ -222,6 +326,12 @@ change_classes:
     - CG-012
     - Q2-017
     - S-015
+    path_globs:
+    - backend/app/**/*candidate*.py
+    - backend/app/**/*ranking*.py
+    - backend/tests/**/*candidate*.py
+    - backend/tests/**/*ranking*.py
+    - config/qualification/qualification_profiles.yaml
   FINANCIAL_MODEL_OR_MARKET_DATA:
     review:
     - FIN
@@ -240,6 +350,12 @@ change_classes:
     - FIN-012
     - R-004
     - Q1-004
+    path_globs:
+    - backend/app/**/*financial*.py
+    - backend/app/**/*valuation*.py
+    - backend/tests/**/*financial*.py
+    - backend/tests/**/*valuation*.py
+    - config/*market*.yaml
   WINDOWS_TOOLING_OR_LOCAL_RUNTIME:
     review:
     - W
@@ -252,6 +368,11 @@ change_classes:
     - W-003
     - W-007
     - M-012
+    path_globs:
+    - scripts/*.ps1
+    - scripts/*.cmd
+    - .env.example
+    - Makefile
   DOCUMENT_EXTRACTION_OR_OCR:
     review:
     - DQ
@@ -267,6 +388,13 @@ change_classes:
     - Q1-003
     - AI-009
     - S-008
+    path_globs:
+    - backend/app/**/*ocr*.py
+    - backend/app/**/*document*.py
+    - backend/tests/**/*ocr*.py
+    - backend/tests/**/*document*.py
+    - scripts/*ocr*.py
+    - scripts/*document*.py
   DOMAIN_REFERENCE_OR_RUBRIC:
     review:
     - P0
@@ -282,3 +410,16 @@ change_classes:
     - Q2-013
     - DQ-012
     - G-008
+    path_globs:
+    - config/qualification/criterion_catalog.yaml
+    - config/qualification/change_impact_matrix.yaml
+    - config/qualification/judgment_rubrics.yaml
+    - config/qualification/domain_profiles/**
+    - schemas/qualification/**
+    - scripts/qualification_*.py
+    - scripts/qualification_*.ps1
+    - scripts/run_qualification*.sh
+    - scripts/validate_qualification.py
+    - scripts/selftest_qualification_validator.py
+    - backend/tests/test_qualification*.py
+    - docs/qualification/**

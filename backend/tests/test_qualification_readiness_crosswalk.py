@@ -107,8 +107,12 @@ def test_change_impact_matrix_invalidation_targets_are_catalog_criteria() -> Non
     assert matrix["schema_version"] == "qualification_change_impact_v3"
     for change_class, entry in matrix["change_classes"].items():
         invalidates = entry["invalidate_by_default"]
+        path_globs = entry.get("path_globs", [])
         if change_class == "DOCS_NONSEMANTIC":
+            assert path_globs == []
             assert invalidates == []
             continue
+        assert path_globs, change_class
+        assert all(isinstance(pattern, str) and pattern for pattern in path_globs)
         assert invalidates, change_class
         assert set(invalidates) <= catalog_ids, change_class

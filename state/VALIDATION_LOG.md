@@ -2,6 +2,103 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 EQP2-2 Executable Qualification Change Impact
+
+**Scope:** Make qualification change-impact invalidation executable against changed
+paths while remaining advisory. This reports implicated change classes, review groups,
+matrix invalidation criteria, crosswalk surfaces, and crosswalk criteria; it does not
+change qualification status, mark criteria as failed or passed, run P0, freeze
+targets, approve owner decisions, approve Bologna, capture fixtures, run connectors,
+seed the database, approve DS-017, provision hosted services, or claim Level 10
+authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend/tests/test_qualification_change_impact_check.py backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py -q
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path config/release_readiness.yaml --changed-path scripts/source_readiness.py
+.\scripts\qualification_change_impact_check.ps1 -ChangedPath config/release_readiness.yaml,scripts/source_readiness.py -PythonCommand <python-3.12-executable>
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root . --python-command <python-3.12-executable>
+ruff check scripts/qualification_change_impact_check.py backend/tests/test_qualification_change_impact_check.py backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py
+py -3.12 -m mypy scripts\qualification_change_impact_check.py backend\tests\test_qualification_change_impact_check.py backend\tests\test_qualification_readiness_crosswalk.py backend\tests\test_qualification_spine.py
+.\scripts\verify.ps1
+Push-Location backend; $env:PYTHONPATH='.'; py -3.12 -m pytest tests/test_qualification_change_impact_check.py tests/test_qualification_readiness_crosswalk.py tests/test_qualification_spine.py tests/test_qualification_parameterization_backlog_artifacts.py tests/test_readiness_core_artifacts.py -q; Pop-Location
+ruff check scripts/qualification_change_impact_check.py scripts/selftest_qualification_validator.py backend/tests/test_qualification_change_impact_check.py backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py backend/tests/test_qualification_parameterization_backlog_artifacts.py backend/tests/test_readiness_core_artifacts.py
+Push-Location backend; $env:PYTHONPATH='.'; py -3.12 -m mypy ..\scripts\qualification_change_impact_check.py tests\test_qualification_change_impact_check.py tests\test_qualification_readiness_crosswalk.py tests\test_qualification_spine.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py; Pop-Location
+.\scripts\verify.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red focused tests failed before implementation because
+  `scripts/qualification_change_impact_check.py`, wrappers, path-glob metadata, and
+  verify/CI wiring did not exist.
+- Tightened the docs-path test after review: path alone cannot prove a docs edit is
+  `DOCS_NONSEMANTIC`, so generic docs paths are surfaced as unmatched advisory paths
+  instead of false no-invalidation classifications.
+- Focused change-impact/readiness/spine tests now pass.
+- Direct change-impact checker passed for `config/release_readiness.yaml` and
+  `scripts/source_readiness.py`, reporting `DEPLOYMENT_INFRASTRUCTURE` and
+  `SOURCE_SCHEMA_OR_CONNECTOR`, mapped review groups, matrix invalidation criterion
+  IDs, and crosswalk surfaces `release_readiness` and `source_readiness`.
+- The PowerShell change-impact wrapper passed with the same explicit changed path set.
+- Qualification selftest, structural validator, and status check all pass. Status
+  remains `BLOCKED=1 NOT_RUN=20` with checker results
+  `passed=27 not_run=2 unexpected_failed=0`.
+- First full `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, qualification validation, qualification status, and qualification
+  change-impact checks, then failed in backend tests because two routing assertions
+  still expected EQP2-1 as the active plan.
+- After updating those routing assertions, the focused backend routing/qualification
+  suite passed from `backend` with `PYTHONPATH=.`.
+- Focused ruff and mypy pass for the new checker and touched qualification/routing
+  tests.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status, qualification change
+  impact, backend pytest, ruff, and mypy all succeeded. DB smoke was skipped because
+  `RUN_DB_SMOKE` was not set.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- After fixing the PowerShell wrapper parameter block, focused ruff/mypy passed again
+  and final full `.\scripts\verify.ps1` passed again with the same successful gate
+  sequence. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A post-commit default-diff run initially reported the new checker/config changes as
+  unmatched advisory paths. The matrix was tightened so qualification control-plane
+  configs, schemas, scripts, wrappers, and qualification tests map to
+  `DOMAIN_REFERENCE_OR_RUBRIC` instead of remaining silent.
+- Final full `.\scripts\verify.ps1` after that matrix tightening passed again. The
+  qualification change-impact step reported 21 changed paths and advisory classes
+  `DEPLOYMENT_INFRASTRUCTURE`, `DOMAIN_REFERENCE_OR_RUBRIC`, and
+  `WINDOWS_TOOLING_OR_LOCAL_RUNTIME`, with state/routing docs still surfaced as
+  unmatched advisory paths rather than hidden.
+- Review follow-up found that real `connectors`, `claims_engine`, `area_geometry`, and
+  `evidence_ledger` package paths were under-mapped, and that shallow CI checkout
+  could degrade the advisory diff to an empty report. Added representative package
+  globs, focused regression tests, and `fetch-depth: 0` for the `verify`,
+  `db-verify`, and `qualification-selftest` jobs.
+- Review-fix focused tests passed for the core path mappings and CI wiring:
+  `backend/tests/test_qualification_change_impact_check.py`,
+  `backend/tests/test_qualification_readiness_crosswalk.py`, and
+  `backend/tests/test_qualification_spine.py`.
+- Direct review-fix probe passed for `backend/app/connectors/fema_nfhl.py`,
+  `backend/app/claims_engine/rule_engine.py`,
+  `backend/app/area_geometry/geometry_validator.py`,
+  `backend/app/evidence_ledger/service.py`, `scripts/verify.sh`, and
+  `scripts/verify.ps1`, with no unmatched paths.
+- Focused ruff and mypy passed after the review fixes.
+- Full `.\scripts\verify.ps1` passed after the review fixes. DB smoke was skipped
+  because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Path-glob mapping is conservative advisory metadata, not a semantic
+diff parser. Unmatched paths are reported for review rather than silently treated as
+safe, and this lane intentionally does not decide whether any impacted criterion is
+satisfied.
+
 ## 2026-06-21 EQP2-1 Derived Qualification Status Check
 
 **Scope:** Make empirical qualification status derived and drift-proof from the
