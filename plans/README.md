@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-pr116-sync.md`.
+Latest completed plan: `2026-06-21-authority-handoff.md`.
 
-Current routing plan: `2026-06-21-authority-handoff.md`.
+Current routing plan: `2026-06-21-readiness-core.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -41,6 +41,11 @@ the same DS-017, hosted, Bologna implementation, and Level 10 blockers.
 external evidence checklist stays in sync with the machine-readable blocked authority
 streams. It does not approve DS-017, hosted, identity/RBAC, observability, image,
 billing, Bologna, or Level 10 authority.
+
+`READINESS-CORE` reworks the remaining dirty-root `project_readiness.py` and
+`release_readiness.py` parser concepts into current-main read-only app models. The
+models parse existing project/routing/release artifacts only; they do not change source
+readiness, release semantics, report behavior, hosted authority, or Bologna authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

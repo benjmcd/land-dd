@@ -1,17 +1,17 @@
 # Project State
 
-## Current checkpoint (2026-06-21 production authority handoff hardening)
+## Current checkpoint (2026-06-21 readiness control-plane core)
 
-Live `origin/main` contains `PR116-SYNC` through PR #117 at
-`c58d22450044cf055f719af3feeb27c9c7d37e1f`. `AUTH-HANDOFF` is the current
-repo-local authority-handoff slice: harden the production-authority intake runbook and
-validator so external evidence requests stay aligned with the machine-readable blocked
-streams, without changing behavior or approving any blocked authority. `BSA-001`
-remains blocked until explicit product/AOI/source-review authority exists for exact
-candidate sources.
+Live `origin/main` contains `AUTH-HANDOFF` through PR #118 at
+`7f4fa03677eee523d1bf65d94b74b720fb706893`. `READINESS-CORE` is the current
+repo-local control-plane consolidation slice: rework the remaining dirty-root
+`project_readiness.py` and `release_readiness.py` parser concepts into current-main
+read-only app models, without changing behavior or approving any blocked authority.
+`BSA-001` remains blocked until explicit product/AOI/source-review authority exists for
+exact candidate sources.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-authority-handoff.md`.
+  `plans/2026-06-21-readiness-core.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
@@ -19,12 +19,13 @@ candidate sources.
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, and
-  `AUTH-HANDOFF` are done. `BSA-001` remains blocked. Must-source readiness remains
-  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
+  `AUTH-HANDOFF`, and `READINESS-CORE` are done. `BSA-001` remains blocked.
+  Must-source readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
-  merged. The only remaining `STILL_DIVERGENT` dirty-root candidate paths are
-  `backend/app/project_readiness.py` and `backend/app/release_readiness.py`; both stay
-  deferred until a real control-plane consolidation slice is selected.
+  merged. The remaining dirty-root parser concepts, `backend/app/project_readiness.py`
+  and `backend/app/release_readiness.py`, are reworked in `READINESS-CORE` as
+  current-main read-only app models rather than copied from the dirty root.
 - **Current Bologna corpus boundary**: `config/bologna_recorded_source_corpus.yaml`
   records the future manifest requirements for source versions, retrieval metadata,
   attribution, CRS, field policies, source-failure fixtures, caveats, report-use

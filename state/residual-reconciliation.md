@@ -6,7 +6,7 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 
 ## Authority
 
-- **Current live main**: `12de4f5bcf044f813f68e04d71c1617dab5c4eb9`.
+- **Current live main**: `7f4fa03677eee523d1bf65d94b74b720fb706893`.
 - **Dirty-root candidate branch**: `codex/r026-raw-readiness-ui` at `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
 - **Comparison source**: `git status --porcelain=v1 -uall` from the dirty root plus content comparison against the clean `res-rec` worktree at current main.
 - **Prior disposition source**: `state/reconciliation-dispositions.md`.
@@ -18,20 +18,20 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 |---|---:|---|
 | `ALREADY_LANDED` | 8 | Dirty-root bytes match current main; no further carry-forward needed. |
 | `LANDED_DIFFERENTLY` | 64 | Current main has the path, but the dirty-root content differs; treat current main as authority and do not copy the dirty file wholesale. |
-| `REWORKED_IN_SLICE` | 1 | The dirty-root candidate concept has been reconstructed against current main in a focused slice instead of copied wholesale. |
-| `STILL_DIVERGENT` | 2 | The candidate path is absent on current main and was not previously deferred/reference-only; it needs focused review before any implementation. |
+| `REWORKED_IN_SLICE` | 3 | The dirty-root candidate concept has been reconstructed against current main in a focused slice instead of copied wholesale. |
+| `STILL_DIVERGENT` | 0 | No dirty-root candidate paths remain in this class after `READINESS-CORE`. |
 | `DEFER_STILL_BLOCKED` | 17 | The candidate remains outside the current unblocked path, usually due to hosted/source/geography/report-semantics prerequisites. |
 | `OBSOLETE` | 34 | Historical/reference/generated candidate material; do not promote as live state. |
 | `COORDINATION_OR_GENERATED` | 2 | Agent coordination or generated/runtime state; not product work. |
 
 ## Focused Review Results
 
-After `SRP-001`, the only paths still classified as `STILL_DIVERGENT` are:
+After `READINESS-CORE`, no paths remain classified as `STILL_DIVERGENT`.
 
 | Path | Prior slice | Current determination |
 |---|---|---|
-| `backend/app/project_readiness.py` | `G3` | Read-only orientation/control-plane parser candidate. It should not be next unless a later control-plane consolidation slice is explicitly selected. |
-| `backend/app/release_readiness.py` | `G3/G7` | Read-only release-readiness parser candidate. Existing `scripts/release_readiness_check.py` and release catalog remain authority; defer until real control-plane consolidation is needed. |
+| `backend/app/project_readiness.py` | `G3` | Reworked in `READINESS-CORE` as a current-main read-only parser over `state/PROJECT_STATE.md`, `state/LEVEL_9_10_GATE_MATRIX.md`, `tasks/task_queue.yaml`, and `state/VALIDATION_LOG.md`. |
+| `backend/app/release_readiness.py` | `G3/G7` | Reworked in `READINESS-CORE` as a current-main read-only parser over `config/release_readiness.yaml`; existing release validators remain authority. |
 
 `backend/tests/api/test_operator_cases_runtime_provenance.py` is reworked by
 `plans/2026-06-20-selected-county-runtime-provenance-regression.md` as a current-main
@@ -46,10 +46,9 @@ already landed through the G9b/G9c lanes, the selected-county runtime-provenance
 regression candidate has been reworked and merged as `SRP-001`, and post-SRP routing
 has been merged as `RSR-001` through PR #114.
 
-The remaining project/release readiness orientation modules stay deferred until
-repeated merged control-plane patterns justify consolidation. Hosted deployment,
-DS-017 connector work, and Bologna implementation remain gated by external authority
-or prerequisites.
+The remaining project/release readiness orientation modules have been reworked as
+read-only control-plane models. Hosted deployment, DS-017 connector work, and Bologna
+implementation remain gated by external authority or prerequisites.
 
 ## Residual Path Table
 
@@ -180,8 +179,8 @@ or prerequisites.
 | `OBSOLETE` | `??` | no | `plans/2026-06-19-ci-package-manifest-gate.md` | `ARCHIVE_REFERENCE` | `G7` | Historical/reference/generated candidate; do not publish as live state. |
 | `OBSOLETE` | `??` | no | `plans/2026-06-19-release-package-manifest-verification.md` | `ARCHIVE_REFERENCE` | `G7` | Historical/reference/generated candidate; do not publish as live state. |
 | `OBSOLETE` | `??` | no | `plans/2026-06-19-observability-readiness-ui.md` | `ARCHIVE_REFERENCE` | `G8` | Historical/reference/generated candidate; do not publish as live state. |
-| `STILL_DIVERGENT` | `??` | no | `backend/app/project_readiness.py` | `REWORK_NARROWLY` | `G3` | Unlanded candidate concept needs focused review before any implementation. |
-| `STILL_DIVERGENT` | `??` | no | `backend/app/release_readiness.py` | `REWORK_NARROWLY` | `G3/G7` | Unlanded candidate concept needs focused review before any implementation. |
+| `REWORKED_IN_SLICE` | `??` | yes | `backend/app/project_readiness.py` | `REWORK_NARROWLY` | `G3` | Reworked in `READINESS-CORE` as a current-main read-only project readiness parser; dirty-root content was not copied wholesale. |
+| `REWORKED_IN_SLICE` | `??` | yes | `backend/app/release_readiness.py` | `REWORK_NARROWLY` | `G3/G7` | Reworked in `READINESS-CORE` as a current-main read-only release readiness parser; dirty-root content was not copied wholesale. |
 | `REWORKED_IN_SLICE` | `??` | yes | `backend/tests/api/test_operator_cases_runtime_provenance.py` | `REWORK_NARROWLY` | `G5` | Reworked as `SRP-001`; current-main test targets selected-county fixture package review bundles and repeated-run idempotency instead of stale dirty-root per-DS helper assumptions. |
 
 ## Validation Plan

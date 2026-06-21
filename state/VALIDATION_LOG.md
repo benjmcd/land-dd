@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Readiness Control-Plane Core READINESS-CORE
+
+**Scope:** Rework the remaining dirty-root `project_readiness.py` and
+`release_readiness.py` parser concepts into current-main read-only app models. This
+does not change release-readiness semantics, source readiness, APIs, UI, reports,
+database state, DS-017 status, hosted authority, Bologna authority, or Level 10 status.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\production_authority_intake_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+cd backend; py -3.12 -m pytest tests\test_readiness_core_artifacts.py tests\test_release_readiness_artifacts.py tests\test_production_authority_intake_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline `release_readiness_check.py`, `readiness_matrix_check.py`,
+  `production_authority_intake_check.py`, Must-source readiness, and focused release /
+  authority artifact tests passed before edits.
+- Focused parser tests passed:
+  `tests\test_readiness_core_artifacts.py`.
+- Focused validator bundle passed: `release_readiness_check.py`,
+  `readiness_matrix_check.py`, `production_authority_intake_check.py`, and
+  `source_readiness.py --priority Must --json`.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017`
+  (`Commercial parcel vendor`) as the only blocked Must source.
+- Focused artifact tests passed:
+  `tests\test_readiness_core_artifacts.py`,
+  `tests\test_release_readiness_artifacts.py`, and
+  `tests\test_production_authority_intake_artifacts.py`.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and mypy
+  succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** The new modules are read-only parsed views. The underlying state
+files, gate matrix, release catalog, and validators remain authoritative. DS-017,
+hosted platform, identity/RBAC, hosted observability, Bologna implementation, and
+Level 10 authority remain blocked.
+
 ## 2026-06-21 Production Authority Handoff Hardening AUTH-HANDOFF
 
 **Scope:** Harden the production-authority intake runbook and checker so the external

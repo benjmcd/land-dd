@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-authority-handoff.md
+active_plan: plans/2026-06-21-readiness-core.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -25,8 +25,9 @@ routing_note: >
   a test-only residual closeout and merged through PR #113. RSR-001 post-SRP routing
   closeout merged through PR #114. PR114-SYNC post-merge routing sync merged through
   PR #115. BRC-001 Bologna recorded-source corpus contract merged through PR #116.
-  PR116-SYNC post-merge routing sync merged through PR #117. Current lane:
-  AUTH-HANDOFF production-authority handoff hardening. Do not create
+  PR116-SYNC post-merge routing sync merged through PR #117, and AUTH-HANDOFF
+  production-authority handoff hardening merged through PR #118. Current lane:
+  READINESS-CORE control-plane parser rework. Do not create
   hosted deployment, hosted identity/RBAC,
   hosted observability, source/vendor authority, new jurisdiction/rulepack/source
   coverage, DS-017 approval, Bologna implementation, fixture capture, production
@@ -1549,6 +1550,35 @@ tasks:
       - Production-authority runbook lists every blocked authority stream
       - Runbook lists each stream's source catalog and required evidence fields
       - Checker and tests fail closed if runbook evidence fields drift from the catalog
+      - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
+
+  - id: READINESS-CORE
+    title: Readiness control-plane core
+    status: done
+    depends_on: [AUTH-HANDOFF]
+    lane: coordinator
+    spec: plans/2026-06-21-readiness-core.md
+    notes: >
+      Rework the remaining dirty-root project/release readiness parser concepts into
+      current-main read-only app models. This reconciles the last STILL_DIVERGENT
+      residuals without copying stale dirty-root code and without changing release
+      readiness semantics, source readiness, hosted authority, Bologna authority, or
+      report/runtime behavior.
+    validation:
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - py -3.12 .\scripts\production_authority_intake_check.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - cd backend; py -3.12 -m pytest tests\test_readiness_core_artifacts.py tests\test_release_readiness_artifacts.py tests\test_production_authority_intake_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Project readiness parser loads current project state, gate matrix, task queue, and validation log
+      - Release readiness parser loads current release catalog and keeps blockers blocked
+      - Focused tests fail closed on malformed control-plane inputs
+      - Residual reconciliation has no remaining STILL_DIVERGENT parser candidates
       - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
 
   # --- Completed ---

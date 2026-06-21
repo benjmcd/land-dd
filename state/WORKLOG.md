@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Readiness control-plane core READINESS-CORE
+
+- Started clean worktree `worktrees/readiness-core` on `codex/readiness-core` from live
+  `origin/main` at `7f4fa03677eee523d1bf65d94b74b720fb706893`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited `state/residual-reconciliation.md` and selected the remaining
+  `project_readiness.py` / `release_readiness.py` parser concepts for current-main
+  rework rather than dirty-root copying.
+- Added read-only app models for project readiness and release readiness, plus focused
+  parser tests.
+- Preserved boundaries: no source-readiness change, no release semantic change, no
+  UI/API route, no report behavior change, no DS-017 approval, no hosted authority, no
+  Bologna implementation, and no Level 10 claim.
+
 ## 2026-06-21 Production authority handoff hardening AUTH-HANDOFF
 
 - Started clean worktree `worktrees/auth-handoff` on `codex/auth-handoff` from live
