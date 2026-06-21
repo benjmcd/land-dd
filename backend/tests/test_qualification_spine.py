@@ -104,8 +104,7 @@ def test_qualification_status_is_non_passing_and_targets_remain_draft() -> None:
     assert targets["status"] == "DRAFT"
     assert targets["approved_by"] == []
     assert status["highest_valid_classification"] == "L9-R"
-    assert status["qualifications"]["p0"]["status"] in {"NOT_RUN", "BLOCKED"}
-    assert status["qualifications"]["p0"]["status"] != "PASS"
+    assert status["qualifications"]["p0"]["status"] == "BLOCKED"
     assert status["blocked_decisions"]
 
 

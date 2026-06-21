@@ -14,10 +14,14 @@ candidate:
   criteria_catalog_digest: null
 qualifications:
   p0:
-    status: NOT_RUN
+    status: BLOCKED
     prerequisites: []
     result_path: null
     expires_at: null
+    blocked_reason: P0 cannot run or pass until unresolved project parameterization blockers are closed and frozen.
+    blocker_references:
+    - state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    - docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md
   q1:
     status: NOT_RUN
     prerequisites:

@@ -1,0 +1,56 @@
+schema_version: domain_qualification_profile_v3
+domain_id: domain_profile_template
+version: 0.1.0-template
+status: DRAFT
+scope:
+  intents:
+  - qualification_profile_authoring
+  geographies:
+  - qualification_scope_template
+  input_modalities:
+  - parcel_id
+  - address
+  - coordinates
+  - drawn_or_uploaded_geometry
+  output_channels:
+  - api_json
+  - web_ui
+  - exported_report
+reference_hierarchy:
+- rank: TBD
+  type: domain_specific_reference_hierarchy
+  limitations: Freeze before claiming domain qualification.
+issue_taxonomy:
+- id: DOMAIN_PROFILE_TEMPLATE_TBD
+  criticality: TBD
+  definition: Replace with domain-specific issue taxonomy before qualification.
+severity_rubric:
+- level: TBD
+  definition: Replace with domain-specific severity rubric before qualification.
+confidence_rubric:
+- band: TBD
+  calibration_target: Replace with domain-specific confidence rubric before qualification.
+source_requirements:
+- source_id: TBD
+  required_state: APPROVED
+spatial_temporal_tolerances: {}
+unknown_states:
+- SOURCE_FAILED
+- OUTSIDE_COVERAGE
+- STALE
+- CONFLICTING
+- UNKNOWN
+metrics:
+- id: domain_recall
+  threshold: qualification_targets.yaml
+known_exclusions:
+- This template is not a frozen domain profile and supports no qualification claim.
+owner: TBD
+reviewers:
+- TBD
+expires_at: '2099-01-01T00:00:00Z'
+frozen_at: null
+approved_by: []
+invalidation_triggers:
+- Replace template before P0 with frozen domain-specific references, issue taxonomy, rubrics, sources, tolerances, metrics, and surveillance plan.
+field_surveillance_plan: null

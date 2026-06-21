@@ -2,6 +2,70 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Empirical Qualification Honest Blocked Status EQ-3
+
+**Scope:** Formalize the current qualification truth as `P0 = BLOCKED` without
+creating a qualification result artifact or claiming qualification progress. This adds
+blocked-status metadata, one active domain-profile template, one DS-002 source-quality
+profile mapped to production usage fields, and validator/selftest semantics for P0
+blocked status. It does not run or pass P0, freeze targets, approve owner decisions,
+approve Bologna, capture fixtures, run connectors, seed the database, approve DS-017,
+provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend/tests/test_qualification_honest_blocked_status.py backend/tests/test_qualification_spine.py -q
+py -3.12 scripts/validate_qualification.py --root . --layout repo
+py -3.12 scripts/selftest_qualification_validator.py
+Push-Location backend; ruff check tests/test_qualification_honest_blocked_status.py tests/test_qualification_spine.py; py -3.12 -m mypy tests/test_qualification_honest_blocked_status.py tests/test_qualification_spine.py; Pop-Location
+.\scripts\verify.ps1
+Push-Location backend; py -3.12 -m pytest tests/test_qualification_parameterization_backlog_artifacts.py tests/test_readiness_core_artifacts.py tests/test_readiness_matrix_artifacts.py -q; Pop-Location
+.\scripts\verify.ps1
+py -3.12 scripts/validate_qualification.py --root . --layout repo
+py -3.12 scripts/selftest_qualification_validator.py
+py -3.12 -m pytest backend/tests/test_qualification_honest_blocked_status.py backend/tests/test_qualification_spine.py -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- The focused test failed red before implementation because P0 was `NOT_RUN`, the
+  active domain profile directory still held eight cloned stubs, and the active source
+  profile was the placeholder `example_source`.
+- After implementation, the focused EQ-3/spine tests passed.
+- Direct qualification validation passed with `target status: DRAFT`,
+  `highest valid classification: L9-R`, and blocked-readiness warnings for
+  template-only domain profiles, no frozen `source_profile_ids`, unresolved
+  scope/version fields, unresolved ruleset versions, draft qualification targets,
+  draft criterion contracts, and draft judgment rubrics.
+- The adversarial selftest passed, including the new fail-closed mutation proving a
+  `BLOCKED` status without blocker references is rejected.
+- Backend-scoped ruff and mypy passed for the modified qualification tests. An
+  over-broad ad hoc ruff command against `../scripts` also reported pre-existing script
+  line-lengths outside the normal backend lint scope; script behavior is covered here
+  by direct validator/selftest execution and `verify.ps1`.
+- First full `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, and qualification validation, then failed backend tests because routing
+  assertions and `plans/README.md` still referenced EQ-2 as the active plan.
+- The follow-up focused routing/readiness test rerun first exposed the active-plan
+  requirement to cite `state/LEVEL_9_10_GATE_MATRIX.md` and preserve the literal
+  `Level 9/10` context; the EQ-3 plan now includes both.
+- Focused routing/readiness tests then passed.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, backend pytest, ruff, and mypy all succeeded; DB
+  smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A final coherence pass tightened the validator to the schema's P0-only no-result
+  blocked scope. Direct validator, validator selftest, focused EQ-3/spine tests, and a
+  second final `.\scripts\verify.ps1` all passed; DB smoke remained skipped because
+  `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** EQ-3 makes the blocked state honest and self-validating; it still
+does not prove product qualification. P0 remains blocked, no gate has passed, active
+domain profiles are template-only, selected source-profile IDs remain empty, and
+external owner/source/AOI evidence is still required before Bologna or broader
+qualification work can proceed.
+
 ## 2026-06-21 Empirical Qualification Self-Validating Spine EQ-2
 
 **Scope:** Import the empirical-qualification framework as a repo-owned structural
