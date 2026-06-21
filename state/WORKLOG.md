@@ -2,6 +2,19 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Post-PR116 routing sync PR116-SYNC
+
+- Started clean worktree `worktrees/post116-sync` on `codex/post116-sync` from live
+  `origin/main` at `4b29bcf646e0cf61bbf3eedee00417a4eed9f115`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current routing after PR #116 merged `BRC-001` and found state/routing
+  files still described PR #115 / `BRC-001` as the live/current checkpoint.
+- Added `plans/2026-06-21-pr116-sync.md` and refreshed plan/task/project routing so
+  the latest live checkpoint is PR #116 while the substantive blockers stay unchanged.
+- Preserved boundaries: no source/report behavior change, no readiness semantic change,
+  no Bologna AOI/source approval, no fixture capture, no source registry promotion, no
+  DS-017 approval, no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 Bologna recorded-source corpus contract BRC-001
 
 - Started clean worktree `worktrees/bol-corpus` on `codex/bol-corpus` from live
