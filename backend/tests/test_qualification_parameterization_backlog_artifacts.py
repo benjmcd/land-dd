@@ -67,7 +67,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert (
         task_queue["active_plan"]
-        == "plans/2026-06-21-eqp2-4-checker-parity.md"
+        == "plans/2026-06-21-post-eqp2-bologna-authority-sync.md"
     )
     assert tasks["EQ-BOL"]["status"] == "done"
     assert tasks["EQ-BOL"]["depends_on"] == ["EQ-1"]
@@ -102,3 +102,6 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["EQP2-3"]["status"] == "done"
     assert tasks["EQP2-4"]["depends_on"] == ["EQP2-3"]
     assert tasks["EQP2-4"]["status"] == "done"
+    assert tasks["BOL-AUTH-SYNC"]["depends_on"] == ["EQP2-4"]
+    assert tasks["BOL-AUTH-SYNC"]["status"] == "done"
+    assert tasks["BSA-001"]["status"] == "blocked"

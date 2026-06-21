@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 post-EQP2 Bologna authority routing sync
+
+- Started clean worktree `worktrees/bol-sync` on `codex/bol-auth-routing` from live
+  `origin/main` at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f` after EQP2-4 merged
+  through PR #137 and detached post-merge proof passed.
+- Added `plans/2026-06-21-post-eqp2-bologna-authority-sync.md` to close the completed
+  EQ Phase 2 routing loop and make the next active pursuit the Bologna
+  product/AOI/source-rights authority gate.
+- Updated `tasks/task_queue.yaml`, `plans/README.md`, and `state/PROJECT_STATE.md` so
+  `EQP2-4` is no longer treated as pending and `BOL-AUTH-SYNC` records the routing
+  transition.
+- Preserved boundaries: `BSA-001` remains blocked; no product/AOI/source authority,
+  source-rights approval, source registry promotion, recorded corpus, fixture capture,
+  source-failure fixture, DB seed, runtime/report proof, qualification `PASS`,
+  owner-decision unfreeze, DS-017 approval, hosted authority, or Level 10 claim is
+  introduced.
+
 ## 2026-06-21 EQP2-4 checker advertisement parity
 
 - Started clean worktree `worktrees/eqp2-4` on `eqp2/4-checker-parity` from

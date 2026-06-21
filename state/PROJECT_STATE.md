@@ -1,78 +1,47 @@
 # Project State
 
-## Current checkpoint (2026-06-21 EQP2-4 checker advertisement parity)
+## Current checkpoint (2026-06-21 post-EQP2 Bologna authority routing)
 
-Live `origin/main` contains EQP2-3 blocked P0 repo-local auto-evidence through
-PR #135 at `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`, on top of the jsonschema
-mypy stub fix through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`,
-the report-run rights optionality fix through PR #134 at
-`af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, the report-run contract
-backward-compat ADR through PR #133 at
-`8822a1408cce54bc99fe760f3386243a29e64b0d`, the error-safety redaction
-hardening through PR #132 at `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`,
-`EQP2-2` through PR #131 at
-`0f0f592b9522d26afb70007281870325edd13579`, `EQP2-1` through PR #130 at
-`a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, and the EQ Phase 2 handoff
-through PR #129 at `b88d608aec21a988bc4127f167ee0972f6da06f2`.
-`EQP2-4` makes mapped readiness/authority checkers advertise their crosswalk
-criterion IDs, makes validation prove crosswalk/checker parity, and makes status
-derivation consume checker-advertised criteria while keeping all statuses honest
-and non-passing.
+Live `origin/main` contains the completed EQ Phase 2 control-plane operationalization
+through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`. The four EQP2 lanes are
+merged and post-merge verified: derived status checking, advisory change-impact
+reporting, blocked P0 repo-local evidence, and checker advertisement parity are now
+executable repo-local controls. This checkpoint syncs routing back to the prioritized
+Bologna recorded-source path without crossing the missing authority boundary.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-eqp2-4-checker-parity.md`.
+  `plans/2026-06-21-post-eqp2-bologna-authority-sync.md`.
 - **Latest repo-local test hardening**:
-  `backend/tests/test_qualification_status_check.py` proves the derived status view
-  matches the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` shape, rejects P0 drift to
-  `NOT_RUN`, treats unexpected checker failures as mapped `BLOCKED` drift, and fails
-  closed if a mapped checker result is missing. `backend/tests/test_qualification_change_impact_check.py`
-  now proves advisory path-to-change-class mapping, crosswalk surface enrichment,
-  unmatched-path reporting, unsafe-path fail-closed behavior, and CLI output for the
-  EQP2-2 change-impact checker. `backend/tests/test_qualification_p0_auto_evidence.py`
-  proves the P0 auto-evidence artifact matches the live catalog rows, links from the
-  blocked status file, leaves `result_path` null, records backlog rows as
-  `auto-evidenced; still target-blocked`, and fails closed when the status link is
-  missing.
+  `backend/tests/test_readiness_core_artifacts.py` and
+  `backend/tests/test_qualification_parameterization_backlog_artifacts.py` now assert
+  that the active plan is the post-EQP2 Bologna authority sync, `EQP2-4` is done,
+  `BOL-AUTH-SYNC` is done, and `BSA-001` remains blocked. The existing Bologna
+  authority tests still prove pilot-scope authority, source-authority intake,
+  source-rights, and recorded-source corpus artifacts are validate-only and uncited.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
   `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
-  `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, and `EQP2-3` are done in the current routing model. `EQP2-1` adds
-  `scripts/qualification_status_check.py`, `scripts/qualification_status_check.ps1`,
-  and `scripts/run_qualification_status_check.sh`. The checker runs mapped readiness,
-  authority, source, release, security, operations, and spatial checker paths; default
-  passing checks remain qualification `NOT_RUN`; the known unstarted runtime inputs
-  for package-manifest and spatial DB-runtime checks remain `NOT_RUN`; any other
-  nonzero mapped checker result derives `BLOCKED` and fails the committed-status
-  comparison. `EQP2-2` adds `scripts/qualification_change_impact_check.py`,
-  `scripts/qualification_change_impact_check.ps1`, and
-  `scripts/run_qualification_change_impact_check.sh`; the checker maps changed paths
-  through matrix-owned `path_globs` and crosswalk config/checker paths while remaining
-  advisory. `EQP2-3` adds `docs/qualification/P0_AUTO_EVIDENCE.yaml`,
-  `scripts/qualification_p0_evidence_check.py`,
-  `scripts/qualification_p0_evidence_check.ps1`, and
-  `scripts/run_qualification_p0_evidence_check.sh`; the checker validates exactly
-  `P0-004`, `P0-005`, `P0-021`, and `P0-023` as blocked repo-local evidence rows
-  against the live catalog, status, backlog, and local suppression/control signals.
-  `EQP2-4` adds `scripts/qualification_checker_advertisement.py`, checker
-  `--qualification-criteria-json` hooks, validator crosswalk/checker parity, and
-  status derivation through checker-advertised criterion IDs. EQ Phase 2 is
-  implementation-complete in repo-local state pending PR merge and detached
-  post-merge proof.
+  `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`, and
+  `BOL-AUTH-SYNC` are done in the current routing model. `BSA-001` remains blocked
+  until product/AOI/source-review authority is cited in
+  `config/bologna_pilot_scope_authority.yaml`,
+  `config/bologna_source_authority_intake.yaml`, and
+  `config/bologna_source_rights.yaml`. `EQ-5` remains queued behind this sync as a
+  repo-local fallback if external Bologna authority is absent, and `EQ-R` remains an
+  independent residual-reconciliation correction.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
-- **Verification routing**: the new status checker is wired after structural
-  qualification validation in `scripts/verify.ps1` and `scripts/verify.sh`, and in the
-  dedicated `qualification-selftest` CI job through
-  `scripts/run_qualification_status_check.sh`. The EQP2-2 change-impact checker is
-  wired immediately after the status checker in the same local verify scripts and
-  dedicated qualification CI job. The EQP2-3 P0 auto-evidence checker is wired after
-  change-impact in the same local verify scripts and dedicated qualification CI job.
-- **Immediate next pursuit after EQP2-4**: merge/verify this lane, then treat the
-  active Phase 2 goal as complete if post-merge proof still shows status derivation,
-  change-impact invalidation, P0 repo-local evidence, and checker advertisement
-  parity all green. The Bologna path remains prioritized but still requires external
-  product/AOI/source-rights authority before corpus or DB-backed report work.
+- **Bologna authority boundary**: `config/bologna_pilot_scope_authority.yaml` still
+  has no authority references; `config/bologna_source_authority_intake.yaml` remains
+  `blocked_no_authority`; `config/bologna_source_rights.yaml` keeps candidates in
+  pending review; and `config/bologna_recorded_source_corpus.yaml` remains
+  `blocked_no_authority`.
+- **Immediate next pursuit**: cite real product/AOI/source-review authority for the
+  first Bologna gate. If authority is available, update the Bologna pilot-scope,
+  source-authority, and source-rights packets before any corpus/report work. If it is
+  not available, keep `BSA-001` blocked and do not fabricate a corpus, source profile,
+  fixture, DB seed, or report proof from repo-local inference.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,
