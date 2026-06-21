@@ -1,0 +1,417 @@
+schema_version: qualification_readiness_crosswalk_v1
+purpose: Maps active readiness, authority, release, source, security, operations, and spatial gate surfaces to empirical qualification criterion IDs without claiming those criteria pass.
+inventory:
+  config_globs:
+  - config/*readiness*.yaml
+  - config/*authority*.yaml
+  - config/*entitlement*.yaml
+  - config/bologna_*.yaml
+  - config/access_control.yaml
+  - config/checklist_dry_run.yaml
+  - config/data_retention.yaml
+  - config/hosted_deployment.yaml
+  - config/image_publication.yaml
+  - config/ops_alert_rules.yaml
+  - config/ops_cost_monitoring.yaml
+  - config/performance_baseline.yaml
+  - config/release_package.yaml
+  - config/spatial_query_plan.yaml
+  - config/threat_proxy_audit.yaml
+  checker_globs:
+  - scripts/*readiness*_check.py
+  - scripts/*authority*_check.py
+  - scripts/*entitlement*_check.py
+  - scripts/bologna_*_check.py
+  - scripts/access_control_check.py
+  - scripts/alert_rules_check.py
+  - scripts/checklist_dry_run_check.py
+  - scripts/container_scan_check.py
+  - scripts/cost_monitoring_check.py
+  - scripts/data_retention_check.py
+  - scripts/hosted_deployment_check.py
+  - scripts/image_publication_check.py
+  - scripts/incident_rollback_check.py
+  - scripts/package_manifest_check.py
+  - scripts/performance_baseline_check.py
+  - scripts/release_package_check.py
+  - scripts/source_readiness.py
+  - scripts/spatial_query_plan_check.py
+  - scripts/spatial_query_plan_runtime_check.py
+  - scripts/supply_chain_check.py
+  - scripts/threat_proxy_audit_check.py
+  intentional_exclusions: []
+entries:
+- surface_id: level_9_10_matrix
+  surface_type: release
+  config_paths: []
+  checker_paths:
+  - scripts/readiness_matrix_check.py
+  criterion_ids:
+  - G-011
+  - G-016
+  - G-017
+  - M-014
+  evidence_role: feeds_status
+  notes: Routes Level 9/10 status into the qualification framework rather than acting as a separate pass authority.
+- surface_id: release_readiness
+  surface_type: release
+  config_paths:
+  - config/release_readiness.yaml
+  checker_paths:
+  - scripts/release_readiness_check.py
+  criterion_ids:
+  - G-002
+  - G-016
+  - O-020
+  - M-014
+  evidence_role: deployment_gate
+  notes: Release readiness can block publication but does not satisfy empirical criteria by itself.
+- surface_id: private_mvp_readiness
+  surface_type: readiness
+  config_paths:
+  - config/private_mvp_beta_readiness.yaml
+  checker_paths:
+  - scripts/private_mvp_readiness_check.py
+  criterion_ids:
+  - Q1-002
+  - Q1-003
+  - Q1-018
+  - Q2-020
+  evidence_role: feeds_status
+  notes: Private MVP readiness feeds claim, evidence, caveat, and limited user-workflow governance.
+- surface_id: source_readiness
+  surface_type: source
+  config_paths: []
+  checker_paths:
+  - scripts/source_readiness.py
+  criterion_ids:
+  - Q1-012
+  - DQ-001
+  - DQ-018
+  - S-016
+  evidence_role: feeds_status
+  notes: Source registry readiness indicates source-governance posture but cannot replace stored evidence.
+- surface_id: source_entitlements
+  surface_type: source
+  config_paths:
+  - config/source_entitlements.yaml
+  checker_paths:
+  - scripts/source_entitlement_check.py
+  criterion_ids:
+  - Q1-012
+  - S-016
+  - R-005
+  - DQ-018
+  evidence_role: authority_blocker
+  notes: Entitlement checks block restricted source use until source rights are explicitly recorded.
+- surface_id: production_authority_intake
+  surface_type: authority
+  config_paths:
+  - config/production_authority_intake.yaml
+  checker_paths:
+  - scripts/production_authority_intake_check.py
+  criterion_ids:
+  - G-021
+  - O-020
+  - S-005
+  - R-005
+  evidence_role: authority_blocker
+  notes: Production authority intake is owner-decision evidence, not empirical proof.
+- surface_id: bologna_preflight
+  surface_type: jurisdiction
+  config_paths:
+  - config/bologna_preflight.yaml
+  checker_paths:
+  - scripts/bologna_preflight_check.py
+  criterion_ids:
+  - R-001
+  - R-002
+  - Q3-027
+  - Q3-028
+  evidence_role: authority_blocker
+  notes: Bologna preflight protects non-US scope and legal-boundary claims before corpus work proceeds.
+- surface_id: bologna_pilot_scope_authority
+  surface_type: authority
+  config_paths:
+  - config/bologna_pilot_scope_authority.yaml
+  checker_paths:
+  - scripts/bologna_pilot_scope_authority_check.py
+  criterion_ids:
+  - P0-001
+  - R-001
+  - R-002
+  - G-011
+  evidence_role: authority_blocker
+  notes: Pilot scope authority gates product and jurisdiction decisions before any Bologna qualification claim.
+- surface_id: bologna_source_candidates
+  surface_type: source
+  config_paths:
+  - config/bologna_source_candidates.yaml
+  checker_paths:
+  - scripts/bologna_source_candidates_check.py
+  criterion_ids:
+  - DQ-013
+  - DQ-017
+  - Q3-006
+  - R-005
+  evidence_role: authority_blocker
+  notes: Candidate source selection is a precondition for approved corpus construction.
+- surface_id: bologna_source_rights
+  surface_type: source
+  config_paths:
+  - config/bologna_source_rights.yaml
+  checker_paths:
+  - scripts/bologna_source_rights_check.py
+  criterion_ids:
+  - Q1-012
+  - S-016
+  - R-005
+  - Q3-029
+  evidence_role: authority_blocker
+  notes: Source-rights approval is required before Bologna source ingestion, retention, display, or export.
+- surface_id: bologna_source_authority_intake
+  surface_type: authority
+  config_paths:
+  - config/bologna_source_authority_intake.yaml
+  checker_paths:
+  - scripts/bologna_source_authority_intake_check.py
+  criterion_ids:
+  - P0-001
+  - Q3-006
+  - S-016
+  - R-005
+  evidence_role: authority_blocker
+  notes: Bologna source authority intake records owner decisions required before source corpus construction.
+- surface_id: bologna_recorded_source_corpus
+  surface_type: source
+  config_paths:
+  - config/bologna_recorded_source_corpus.yaml
+  checker_paths:
+  - scripts/bologna_recorded_source_corpus_check.py
+  criterion_ids:
+  - Q1-003
+  - Q1-033
+  - DQ-018
+  - Q3-020
+  evidence_role: authority_blocker
+  notes: Recorded-source corpus metadata can support later reports but is not itself a report-result pass.
+- surface_id: checklist_dry_run
+  surface_type: jurisdiction
+  config_paths:
+  - config/checklist_dry_run.yaml
+  checker_paths:
+  - scripts/checklist_dry_run_check.py
+  criterion_ids:
+  - Q3-011
+  - Q3-015
+  - R-001
+  - R-009
+  evidence_role: static_guardrail
+  notes: Checklist dry-run coverage guards jurisdiction terminology and rulepack isolation.
+- surface_id: access_control
+  surface_type: security
+  config_paths:
+  - config/access_control.yaml
+  checker_paths:
+  - scripts/access_control_check.py
+  criterion_ids:
+  - S-003
+  - S-004
+  - S-010
+  - S-011
+  evidence_role: static_guardrail
+  notes: Access-control checks guard auth, tenancy, and data-boundary assumptions.
+- surface_id: threat_proxy_audit
+  surface_type: security
+  config_paths:
+  - config/threat_proxy_audit.yaml
+  checker_paths:
+  - scripts/threat_proxy_audit_check.py
+  criterion_ids:
+  - S-015
+  - S-024
+  - R-003
+  - Q2-017
+  evidence_role: static_guardrail
+  notes: Threat-proxy audit blocks proxy or ranking surfaces from becoming residential-steering features.
+- surface_id: data_retention
+  surface_type: security
+  config_paths:
+  - config/data_retention.yaml
+  checker_paths:
+  - scripts/data_retention_check.py
+  criterion_ids:
+  - DB-016
+  - S-011
+  - S-014
+  - G-014
+  evidence_role: static_guardrail
+  notes: Data-retention policy supports reproducibility, privacy, and lifecycle boundaries.
+- surface_id: hosted_deployment
+  surface_type: operations
+  config_paths:
+  - config/hosted_deployment.yaml
+  checker_paths:
+  - scripts/hosted_deployment_check.py
+  criterion_ids:
+  - O-001
+  - O-002
+  - O-003
+  - O-019
+  - S-013
+  evidence_role: deployment_gate
+  notes: Hosted deployment checks operational prerequisites for non-local deployment profiles.
+- surface_id: image_publication
+  surface_type: operations
+  config_paths:
+  - config/image_publication.yaml
+  checker_paths:
+  - scripts/image_publication_check.py
+  criterion_ids:
+  - O-001
+  - S-006
+  - G-020
+  evidence_role: deployment_gate
+  notes: Image publication is supply-chain and release evidence for containerized deployment only.
+- surface_id: release_package
+  surface_type: release
+  config_paths:
+  - config/release_package.yaml
+  checker_paths:
+  - scripts/release_package_check.py
+  - scripts/package_manifest_check.py
+  criterion_ids:
+  - O-001
+  - G-010
+  - G-016
+  - M-014
+  evidence_role: deployment_gate
+  notes: Release package checks publication artifacts and manifests without asserting empirical validity.
+- surface_id: observability_readiness
+  surface_type: operations
+  config_paths:
+  - config/observability_readiness.yaml
+  checker_paths:
+  - scripts/observability_readiness_check.py
+  criterion_ids:
+  - O-012
+  - O-013
+  - O-014
+  - F-001
+  evidence_role: deployment_gate
+  notes: Observability readiness can support hosted operations and field surveillance but is not live evidence.
+- surface_id: alert_rules
+  surface_type: operations
+  config_paths:
+  - config/ops_alert_rules.yaml
+  checker_paths:
+  - scripts/alert_rules_check.py
+  criterion_ids:
+  - O-013
+  - O-014
+  - S-017
+  - F-006
+  evidence_role: deployment_gate
+  notes: Alert rules define escalation guardrails for operational and security events.
+- surface_id: cost_monitoring
+  surface_type: operations
+  config_paths:
+  - config/ops_cost_monitoring.yaml
+  checker_paths:
+  - scripts/cost_monitoring_check.py
+  criterion_ids:
+  - E-001
+  - E-004
+  - E-009
+  - Q3-023
+  evidence_role: static_guardrail
+  notes: Cost monitoring covers economic guardrails, not qualification pass/fail outcomes.
+- surface_id: performance_baseline
+  surface_type: operations
+  config_paths:
+  - config/performance_baseline.yaml
+  checker_paths:
+  - scripts/performance_baseline_check.py
+  criterion_ids:
+  - O-008
+  - Q1-029
+  - Q3-022
+  - E-001
+  evidence_role: static_guardrail
+  notes: Performance baselines bound runtime and cost expectations before hosted claims.
+- surface_id: spatial_query_plan
+  surface_type: spatial
+  config_paths:
+  - config/spatial_query_plan.yaml
+  checker_paths:
+  - scripts/spatial_query_plan_check.py
+  - scripts/spatial_query_plan_runtime_check.py
+  criterion_ids:
+  - DB-006
+  - DB-007
+  - Q1-013
+  - Q3-013
+  evidence_role: static_guardrail
+  notes: Spatial plan checks map geometry, CRS, and query semantics into database and claim criteria.
+- surface_id: container_scan
+  surface_type: security
+  config_paths: []
+  checker_paths:
+  - scripts/container_scan_check.py
+  criterion_ids:
+  - S-006
+  - O-001
+  evidence_role: deployment_gate
+  notes: Container scan evidence is deployment-oriented supply-chain evidence.
+- surface_id: supply_chain
+  surface_type: security
+  config_paths: []
+  checker_paths:
+  - scripts/supply_chain_check.py
+  criterion_ids:
+  - S-006
+  - S-023
+  - G-020
+  evidence_role: deployment_gate
+  notes: Supply-chain checks guard dependencies and publication provenance.
+- surface_id: incident_rollback
+  surface_type: operations
+  config_paths: []
+  checker_paths:
+  - scripts/incident_rollback_check.py
+  criterion_ids:
+  - O-014
+  - O-015
+  - S-017
+  - F-007
+  evidence_role: static_guardrail
+  notes: Incident and rollback checks support operational response criteria after deployment.
+gap_groups:
+- gap_id: empirical_acceptance_cases
+  criterion_ids:
+  - Q1-006
+  - Q1-007
+  - Q1-008
+  - Q1-009
+  - Q2-001
+  - Q2-005
+  reason: Existing readiness gates do not provide sealed empirical acceptance cases or user outcome evidence.
+- gap_id: live_field_surveillance
+  criterion_ids:
+  - F-001
+  - F-003
+  - F-012
+  reason: Readiness configs describe intended monitoring posture but do not create production field surveillance evidence.
+- gap_id: disabled_decision_capabilities
+  criterion_ids:
+  - AI-001
+  - CG-001
+  - FIN-001
+  reason: AI, candidate generation, and financial modeling remain disabled overlays and have no pass-capable readiness surface.
+- gap_id: hosted_runtime_evidence
+  criterion_ids:
+  - O-007
+  - O-013
+  - O-018
+  reason: Hosted-operation criteria need runtime evidence that static readiness configs cannot provide.
+orphaned_surfaces: []

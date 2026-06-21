@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/qualification-readiness-crosswalk-v1.json",
+  "title": "Qualification Readiness Crosswalk V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "purpose",
+    "inventory",
+    "entries",
+    "gap_groups",
+    "orphaned_surfaces"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "qualification_readiness_crosswalk_v1"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 20
+    },
+    "inventory": {
+      "type": "object",
+      "required": [
+        "config_globs",
+        "checker_globs",
+        "intentional_exclusions"
+      ],
+      "properties": {
+        "config_globs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "checker_globs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "intentional_exclusions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "surface_id",
+          "surface_type",
+          "config_paths",
+          "checker_paths",
+          "criterion_ids",
+          "evidence_role",
+          "notes"
+        ],
+        "properties": {
+          "surface_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "surface_type": {
+            "enum": [
+              "readiness",
+              "authority",
+              "release",
+              "security",
+              "operations",
+              "source",
+              "spatial",
+              "jurisdiction"
+            ]
+          },
+          "config_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "checker_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "criterion_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "evidence_role": {
+            "enum": [
+              "feeds_status",
+              "deployment_gate",
+              "authority_blocker",
+              "static_guardrail"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 10
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "gap_groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gap_id",
+          "criterion_ids",
+          "reason"
+        ],
+        "properties": {
+          "gap_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "criterion_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "orphaned_surfaces": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

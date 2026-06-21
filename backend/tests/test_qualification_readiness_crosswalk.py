@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+import importlib
+from pathlib import Path
+from typing import Any, cast
+
+yaml = cast(Any, importlib.import_module("yaml"))
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CROSSWALK_PATH = REPO_ROOT / "config" / "qualification" / "readiness_crosswalk.yaml"
+CROSSWALK_DOC_PATH = REPO_ROOT / "docs" / "qualification" / "readiness-crosswalk.md"
+CATALOG_PATH = REPO_ROOT / "config" / "qualification" / "criterion_catalog.yaml"
+CHANGE_MATRIX_PATH = (
+    REPO_ROOT / "config" / "qualification" / "change_impact_matrix.yaml"
+)
+REQUIRED_CONFIG_GLOBS = {
+    "config/*readiness*.yaml",
+    "config/*authority*.yaml",
+    "config/*entitlement*.yaml",
+    "config/bologna_*.yaml",
+}
+REQUIRED_CHECKER_GLOBS = {
+    "scripts/*readiness*_check.py",
+    "scripts/*authority*_check.py",
+    "scripts/*entitlement*_check.py",
+    "scripts/bologna_*_check.py",
+}
+
+
+def _yaml(path: Path) -> dict[str, Any]:
+    return cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
+def _catalog_ids() -> set[str]:
+    catalog = _yaml(CATALOG_PATH)
+    return {item["criterion_id"] for item in catalog["criteria"]}
+
+
+def _glob_paths(patterns: list[str]) -> set[str]:
+    paths: set[str] = set()
+    for pattern in patterns:
+        paths.update(
+            path.relative_to(REPO_ROOT).as_posix()
+            for path in REPO_ROOT.glob(pattern)
+            if path.is_file()
+        )
+    return paths
+
+
+def test_readiness_crosswalk_covers_live_inventory_and_catalog_ids() -> None:
+    crosswalk = _yaml(CROSSWALK_PATH)
+    catalog_ids = _catalog_ids()
+
+    assert crosswalk["schema_version"] == "qualification_readiness_crosswalk_v1"
+    assert REQUIRED_CONFIG_GLOBS <= set(crosswalk["inventory"]["config_globs"])
+    assert REQUIRED_CHECKER_GLOBS <= set(crosswalk["inventory"]["checker_globs"])
+    entry_ids = [entry["surface_id"] for entry in crosswalk["entries"]]
+    assert len(entry_ids) == len(set(entry_ids))
+    assert crosswalk["orphaned_surfaces"] == []
+
+    mapped_configs = {
+        path
+        for entry in crosswalk["entries"]
+        for path in entry.get("config_paths", [])
+    }
+    mapped_checkers = {
+        path
+        for entry in crosswalk["entries"]
+        for path in entry.get("checker_paths", [])
+    }
+    excluded = set(crosswalk["inventory"]["intentional_exclusions"])
+
+    expected_configs = _glob_paths(crosswalk["inventory"]["config_globs"])
+    expected_checkers = _glob_paths(crosswalk["inventory"]["checker_globs"])
+
+    assert expected_configs - mapped_configs - excluded == set()
+    assert expected_checkers - mapped_checkers - excluded == set()
+
+    for entry in crosswalk["entries"]:
+        assert set(entry["criterion_ids"]) <= catalog_ids
+        assert entry["evidence_role"] in {
+            "feeds_status",
+            "deployment_gate",
+            "authority_blocker",
+            "static_guardrail",
+        }
+
+
+def test_readiness_crosswalk_doc_lists_surfaces_gaps_and_orphans() -> None:
+    crosswalk = _yaml(CROSSWALK_PATH)
+    doc = CROSSWALK_DOC_PATH.read_text(encoding="utf-8")
+
+    assert "## Mapped Surfaces" in doc
+    assert "## Gaps" in doc
+    assert "## Orphans" in doc
+    assert "does not satisfy or pass the mapped criteria" in doc
+    for entry in crosswalk["entries"]:
+        assert entry["surface_id"] in doc
+        for criterion_id in entry["criterion_ids"]:
+            assert criterion_id in doc
+
+
+def test_change_impact_matrix_invalidation_targets_are_catalog_criteria() -> None:
+    catalog_ids = _catalog_ids()
+    matrix = _yaml(CHANGE_MATRIX_PATH)
+
+    assert matrix["schema_version"] == "qualification_change_impact_v3"
+    for change_class, entry in matrix["change_classes"].items():
+        invalidates = entry["invalidate_by_default"]
+        if change_class == "DOCS_NONSEMANTIC":
+            assert invalidates == []
+            continue
+        assert invalidates, change_class
+        assert set(invalidates) <= catalog_ids, change_class

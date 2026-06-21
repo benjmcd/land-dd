@@ -19,6 +19,7 @@ CONFIG_FILES = {
     "config/qualification/qualification_profiles.yaml",
     "config/qualification/qualification_targets.yaml",
     "config/qualification/qualification_vocabulary.yaml",
+    "config/qualification/readiness_crosswalk.yaml",
 }
 SCHEMA_FILES = {
     "schemas/qualification/change_impact_matrix.schema.json",
@@ -31,6 +32,7 @@ SCHEMA_FILES = {
     "schemas/qualification/qualification_result.schema.json",
     "schemas/qualification/qualification_targets.schema.json",
     "schemas/qualification/qualification_vocabulary.schema.json",
+    "schemas/qualification/readiness_crosswalk.schema.json",
     "schemas/qualification/source_quality_profile.schema.json",
 }
 SCRIPT_FILES = {

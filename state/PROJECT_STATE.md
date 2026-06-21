@@ -1,30 +1,29 @@
 # Project State
 
-## Current checkpoint (2026-06-21 EQ-3 honest blocked qualification status)
+## Current checkpoint (2026-06-21 EQ-4 readiness crosswalk)
 
-Live `origin/main` contains EQ-2 through PR #126 at
-`a16a958f253aea9a2071f1b22ad8814eacf2629b`. `EQ-3` is the current repo-local lane:
-formalize honest `P0 = BLOCKED` status without a fabricated qualification result
-artifact, collapse active cloned domain stubs to one template, and add one real DS-002
-source-quality profile mapped to production usage fields.
+Live `origin/main` contains EQ-3 through PR #127 at
+`961bffd513df6b8fc66b177e605094c7205e1dee`. `EQ-4` is the current repo-local lane:
+subordinate the existing readiness, authority, release, source, security, operations,
+and spatial gate surfaces to empirical-qualification criterion IDs without changing
+checker behavior or claiming any qualification pass.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-eq-3-honest-blocked-status.md`.
+  `plans/2026-06-21-eq-4-readiness-crosswalk.md`.
 - **Latest repo-local test hardening**:
-  `backend/tests/test_qualification_honest_blocked_status.py` and
-  `backend/tests/test_qualification_spine.py` prove P0 is `BLOCKED` with concrete
-  blocker references, the status has no result artifact or candidate digest, active
-  domain config is template-only with retired stubs archived, the active source profile
-  is DS-002, and the source profile maps exactly to
-  `backend/app/source_registry/usage_rights.py` production usage fields.
+  `backend/tests/test_qualification_readiness_crosswalk.py` and
+  `backend/tests/test_qualification_spine.py` prove the readiness crosswalk covers the
+  live derived inventory, every mapped criterion ID exists in the catalog, the
+  crosswalk document records mapped surfaces/gaps/orphans, and the change-impact matrix
+  invalidates by catalog criterion IDs rather than prose labels.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
   `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
-  `EQ-2`, and `EQ-3` are done in the current routing model. `EQ-BLOCK-*` tasks record blocked
+  `EQ-2`, `EQ-3`, and `EQ-4` are done in the current routing model. `EQ-BLOCK-*` tasks record blocked
   external/owner-authority decisions for targets, rubrics, domains, source profiles,
   scope/version fields, Bologna pilot scope, Bologna source rights, Bologna recorded
-  corpus, and a DB-backed Bologna report proof. `EQ-4`, `EQ-5`, and `EQ-R` remain
-  queued. `BSA-001` remains blocked until explicit product/AOI/source-review
+  corpus, and a DB-backed Bologna report proof. `EQ-5` and `EQ-R` remain queued.
+  `BSA-001` remains blocked until explicit product/AOI/source-review
   authority exists for exact candidate sources. Must-source readiness remains
   `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
 - **Empirical qualification boundary**: ADR 0004 records that the
@@ -41,6 +40,15 @@ source-quality profile mapped to production usage fields.
   template-only domain profiles, no frozen `source_profile_ids`, unresolved
   scope/version fields, unresolved ruleset versions, draft qualification targets,
   draft criterion contracts, and draft judgment rubrics.
+- **Empirical qualification crosswalk**:
+  `config/qualification/readiness_crosswalk.yaml`,
+  `schemas/qualification/readiness_crosswalk.schema.json`, and
+  `docs/qualification/readiness-crosswalk.md` map `27` active readiness/authority gate
+  surfaces to catalog criterion IDs, list current gaps, and record no known orphaned
+  surfaces. `config/qualification/change_impact_matrix.yaml` now invalidates by
+  criterion IDs, and the validator fails closed if the crosswalk inventory drifts or a
+  crosswalk/change-impact criterion ID is absent from the catalog. This mapping does
+  not satisfy or pass any mapped criterion.
 - **Blocked product posture**: the imported status file preserves no `PASS` claim.
   Its structural P0 row is now `BLOCKED` with `result_path: null`,
   `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md`, and
@@ -59,10 +67,9 @@ source-quality profile mapped to production usage fields.
 - **Immediate next pursuit**: the substantive Bologna path still requires external
   product/AOI/source-rights authority before source-rights rows, recorded corpus
   manifests, or DB-backed report proof can change. If no external authority arrives,
-  the next repo-local empirical-qualification slice is `EQ-4`: map existing
-  readiness/authority gates into criterion IDs, then `EQ-5` reconciles the backlog
-  against the landed spine. Lane R may proceed independently to correct the false
-  residual-reconciliation claim.
+  the next repo-local empirical-qualification slice is `EQ-5`: reconcile the blocker
+  backlog against the landed spine and crosswalk. Lane R may proceed independently to
+  correct the false residual-reconciliation claim.
 - **If qualification authority is absent**: keep all qualification PASS claims blocked
   and do not invent thresholds, reviewers, source profiles, domain profiles, empirical
   evidence, owner decisions, source rights, hosted authority, deployment targets,
