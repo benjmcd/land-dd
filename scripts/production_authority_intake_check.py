@@ -257,7 +257,7 @@ VALIDATORS = {
 }
 
 
-def validate_catalog() -> None:
+def validate_catalog() -> dict[str, Any]:
     payload = load_yaml(CONFIG_PATH)
     require(payload.get("schema_version") == "production_authority_intake_v1", "unexpected schema")
     require(payload.get("operator_runbook") == RUNBOOK_PATH, "runbook mismatch")
@@ -285,18 +285,59 @@ def validate_catalog() -> None:
     for stream_id, validator in VALIDATORS.items():
         validator(by_id[stream_id])
     require_text(payload.get("unlock_rule"), "unlock rule missing")
+    return payload
 
 
-def validate_runbook() -> None:
+def require_runbook_list_items(
+    runbook: str,
+    stream_id: str,
+    key: str,
+    values: list[Any],
+) -> None:
+    for value in values:
+        item = require_text(value, f"{stream_id} {key} item missing")
+        require(
+            f"`{item}`" in runbook,
+            f"production authority runbook missing {stream_id} {key}: {item}",
+        )
+
+
+def validate_runbook(payload: dict[str, Any]) -> None:
     runbook = read_text(RUNBOOK_PATH)
     for phrase in RUNBOOK_PHRASES:
         require(phrase in runbook, f"production authority runbook missing phrase: {phrase}")
+    for raw_stream in require_non_empty_list(payload.get("authority_streams"), "authority streams missing"):
+        stream = require_mapping(raw_stream, "each authority stream must be a mapping")
+        stream_id = require_text(stream.get("id"), "authority stream id missing")
+        source_catalog = require_text(stream.get("source_catalog"), f"{stream_id} source catalog missing")
+        require(f"`{stream_id}`" in runbook, f"production authority runbook missing stream: {stream_id}")
+        require(
+            f"`{source_catalog}`" in runbook,
+            f"production authority runbook missing source catalog: {source_catalog}",
+        )
+        require_runbook_list_items(
+            runbook,
+            stream_id,
+            "required_evidence",
+            require_non_empty_list(
+                stream.get("required_evidence"),
+                f"{stream_id} required evidence missing",
+            ),
+        )
+        for key in ("required_roles", "required_attestations", "blocked_categories"):
+            if key in stream:
+                require_runbook_list_items(
+                    runbook,
+                    stream_id,
+                    key,
+                    require_non_empty_list(stream.get(key), f"{stream_id} {key} missing"),
+                )
 
 
 def main() -> int:
     validate_required_files()
-    validate_catalog()
-    validate_runbook()
+    payload = validate_catalog()
+    validate_runbook(payload)
     print("production authority intake check: ok")
     return 0
 

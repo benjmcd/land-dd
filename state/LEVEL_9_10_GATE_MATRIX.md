@@ -1,6 +1,6 @@
 # Level 9/10 Gate Matrix
 
-Last updated: 2026-06-20
+Last updated: 2026-06-21
 
 Purpose: classify current Level 9 and Level 10 readiness against current repo evidence.
 This matrix is not a completion claim for Level 10. It exists to choose the next
@@ -148,12 +148,13 @@ the DS-017 commercial source blocker decision-ready with a validate-only source
 entitlement packet while keeping DS-017 blocked. `BP-001` restored post-SE001 routing
 and added a validate-only Bologna recorded-source preflight. `BSC-001` added a
 candidate-only Bologna source inventory, `BSR-001` added a fail-closed Bologna
-source-rights matrix, and `BSG-001` added a Bologna source-authority intake guard. The
-current `PAI-001` pass adds a production-wide validate-only intake guard across DS-017,
-hosted platform, secrets, identity/RBAC, image publication, billing, hosted
-observability, and Bologna recorded-source blockers, without approving sources,
-selecting vendors, provisioning hosted services, starting Bologna implementation, or
-claiming Level 10 authority.
+source-rights matrix, `BSG-001` added a Bologna source-authority intake guard, `PAI-001`
+added a production-wide validate-only intake guard, and `BRC-001` added a validate-only
+Bologna recorded-source corpus contract. `PR116-SYNC` refreshed routing after the corpus
+contract merged. The current `AUTH-HANDOFF` pass hardens the production-authority
+runbook and checker so external evidence collection stays aligned with the blocked
+authority streams, without approving sources, selecting vendors, provisioning hosted
+services, starting Bologna implementation, or claiming Level 10 authority.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until

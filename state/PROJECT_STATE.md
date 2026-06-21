@@ -1,25 +1,26 @@
 # Project State
 
-## Current checkpoint (2026-06-21 post-PR116 routing sync)
+## Current checkpoint (2026-06-21 production authority handoff hardening)
 
-Live `origin/main` contains `BRC-001` through PR #116 at
-`4b29bcf646e0cf61bbf3eedee00417a4eed9f115`. `PR116-SYNC` is the current repo-local
-routing slice: refresh canonical plan/task/state surfaces after the corpus contract
-merged, without changing behavior or approving any blocked authority. `BSA-001` remains
-blocked until explicit product/AOI/source-review authority exists for exact candidate
-sources.
+Live `origin/main` contains `PR116-SYNC` through PR #117 at
+`c58d22450044cf055f719af3feeb27c9c7d37e1f`. `AUTH-HANDOFF` is the current
+repo-local authority-handoff slice: harden the production-authority intake runbook and
+validator so external evidence requests stay aligned with the machine-readable blocked
+streams, without changing behavior or approving any blocked authority. `BSA-001`
+remains blocked until explicit product/AOI/source-review authority exists for exact
+candidate sources.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-pr116-sync.md`.
+  `plans/2026-06-21-authority-handoff.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
   review bundles, case-specific connector retrieval scopes, repeated-run idempotency,
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
-  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, and `PR116-SYNC` are done.
-  `BSA-001` remains blocked. Must-source readiness remains `sources=8 ready=7
-  blocked=1`, with `DS-017` as the only blocked Must source.
+  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, and
+  `AUTH-HANDOFF` are done. `BSA-001` remains blocked. Must-source readiness remains
+  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
   merged. The only remaining `STILL_DIVERGENT` dirty-root candidate paths are
   `backend/app/project_readiness.py` and `backend/app/release_readiness.py`; both stay
@@ -35,8 +36,8 @@ sources.
   evidence before fixtures, source rows, connectors, rulepacks, or reports.
 - **Immediate next step if authority is absent**: keep `BSA-001`, DS-017, hosted
   platform, identity/RBAC, hosted observability, billing, image publication, secret
-  manager, and Level 10 authority blocked; use the production-authority intake guard as
-  the handoff checklist for the missing external evidence.
+  manager, and Level 10 authority blocked; use the production-authority intake guard
+  and runbook checklist as the handoff surface for the missing external evidence.
 - **Mid-term sequence**: after approved rights, build a one-AOI recorded-source corpus
   with source versions, retrieval metadata, attribution, CRS, caveats, source-failure
   fixtures, and storage/export boundaries; then prove one DB-backed Bologna report with
