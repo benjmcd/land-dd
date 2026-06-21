@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/judgment-rubrics-v3.json",
+  "title": "Judgment Rubrics V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "rubric_version",
+    "frozen_at",
+    "approved_by",
+    "criteria"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "judgment_rubrics_v3"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "FROZEN",
+        "SUPERSEDED"
+      ]
+    },
+    "rubric_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "frozen_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "approved_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "criteria": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z][A-Z0-9]*-[0-9]{3}$": {
+          "type": "object",
+          "required": [
+            "status",
+            "purpose",
+            "reviewer_competency",
+            "reviewer_independence_required",
+            "dimensions",
+            "rating_scale",
+            "pass_rule",
+            "adjudication_rule",
+            "calibration_cases",
+            "evidence_record_schema"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "DRAFT",
+                "FROZEN"
+              ]
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 10
+            },
+            "reviewer_competency": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reviewer_independence_required": {
+              "type": "boolean"
+            },
+            "dimensions": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "rating_scale": {
+              "type": [
+                "object",
+                "string",
+                "null"
+              ]
+            },
+            "pass_rule": {
+              "type": [
+                "object",
+                "string",
+                "null"
+              ]
+            },
+            "adjudication_rule": {
+              "type": [
+                "object",
+                "string",
+                "null"
+              ]
+            },
+            "calibration_cases": {
+              "type": "array"
+            },
+            "evidence_record_schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "FROZEN"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "reviewer_competency": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "dimensions": {
+                    "minItems": 1
+                  },
+                  "rating_scale": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "pass_rule": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "adjudication_rule": {
+                    "not": {
+                      "type": "null"
+                    }
+                  },
+                  "calibration_cases": {
+                    "minItems": 1
+                  },
+                  "evidence_record_schema": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "FROZEN"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "frozen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_by": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

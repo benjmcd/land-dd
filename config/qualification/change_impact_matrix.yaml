@@ -1,0 +1,199 @@
+schema_version: qualification_change_impact_v3
+default_rule: If impact is uncertain, invalidate every plausibly affected gate until reviewed.
+change_classes:
+  DOCS_NONSEMANTIC:
+    review:
+    - M
+    - G
+    invalidate_by_default: []
+    examples:
+    - typo
+    - link correction
+    - formatting with no semantic change
+  SOURCE_DATA_REFRESH:
+    review:
+    - DQ
+    - Q1
+    - F
+    invalidate_by_default:
+    - Q1_CURRENT_SOURCE
+    conditional:
+    - S
+    - R
+    - G if rights/freshness/coverage changed
+  SOURCE_SCHEMA_OR_CONNECTOR:
+    review:
+    - DQ
+    - Q1
+    - Q3A
+    - Q3B
+    - M
+    - F
+    invalidate_by_default:
+    - affected Q1 domains
+    - affected Q3 lanes
+  SOURCE_RIGHTS_OR_TERMS:
+    review:
+    - S
+    - R
+    - G
+    - Q1
+    - Q3B
+    - F
+    invalidate_by_default:
+    - all claims/exports depending on affected source
+  AOI_IDENTITY_OR_GEOMETRY:
+    review:
+    - IR
+    - DQ
+    - Q1
+    - DB
+    - F
+    invalidate_by_default:
+    - affected Q1 and reports
+  RULE_OR_CONFIDENCE_SEMANTICS:
+    review:
+    - Q1
+    - Q2
+    - M
+    - G
+    - F
+    invalidate_by_default:
+    - Q1
+    - Q2 if user decisions/wording can change
+  REPORT_OR_CAVEAT_SEMANTICS:
+    review:
+    - Q1
+    - Q2
+    - A
+    - R
+    - G
+    invalidate_by_default:
+    - Q1 cross-channel
+    - Q2 if comprehension/decision behavior can change
+  UI_WORKFLOW:
+    review:
+    - Q2
+    - A
+    - S
+    - O
+    invalidate_by_default:
+    - Q2/A affected workflows
+  DB_SCHEMA_OR_MIGRATION:
+    review:
+    - DB
+    - M
+    - O
+    - G
+    invalidate_by_default:
+    - DB
+    - affected reproducibility/lineage gates
+  AUTH_TENANCY_PRIVACY:
+    review:
+    - S
+    - DB
+    - O
+    - R
+    invalidate_by_default:
+    - S/O deployment qualification
+  DEPLOYMENT_INFRASTRUCTURE:
+    review:
+    - O
+    - S
+    - DB
+    - M
+    invalidate_by_default:
+    - O and affected S/DB criteria
+  AI_MODEL_PROMPT_PROVIDER:
+    review:
+    - AI
+    - Q1
+    - Q2
+    - S
+    - E
+    - F
+    invalidate_by_default:
+    - AI
+    - decision-relevant Q1/Q2
+  NEW_INTENT_OR_DOMAIN:
+    review:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - IR
+    - R
+    invalidate_by_default:
+    - no existing gate automatically; new scope remains unqualified
+  NEW_US_JURISDICTION:
+    review:
+    - Q3A
+    - DQ
+    - IR
+    - R
+    invalidate_by_default:
+    - new jurisdiction unqualified until its own profile passes
+  NEW_NON_US_JURISDICTION:
+    review:
+    - Q3C
+    - DQ
+    - IR
+    - R
+    - S
+    invalidate_by_default:
+    - new jurisdiction unqualified until its own profile passes
+  CANDIDATE_SEARCH_OR_RANKING:
+    review:
+    - CG
+    - Q1
+    - Q2
+    - IR
+    - DQ
+    - S
+    - F
+    - G
+    invalidate_by_default:
+    - CG
+    - decision-relevant Q1/Q2 if candidate outputs changed
+  FINANCIAL_MODEL_OR_MARKET_DATA:
+    review:
+    - FIN
+    - Q1
+    - Q2
+    - DQ
+    - S
+    - R
+    - E
+    - F
+    - G
+    invalidate_by_default:
+    - FIN
+    - affected user/financial claims and outputs
+  WINDOWS_TOOLING_OR_LOCAL_RUNTIME:
+    review:
+    - W
+    - M
+    - DB
+    - G
+    invalidate_by_default:
+    - affected W/M/DB local-environment proof
+  DOCUMENT_EXTRACTION_OR_OCR:
+    review:
+    - DQ
+    - Q1
+    - M
+    - S
+    - R
+    - AI
+    invalidate_by_default:
+    - affected document-derived evidence and claims
+  DOMAIN_REFERENCE_OR_RUBRIC:
+    review:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - R
+    - G
+    invalidate_by_default:
+    - affected domain qualification and dependent reports

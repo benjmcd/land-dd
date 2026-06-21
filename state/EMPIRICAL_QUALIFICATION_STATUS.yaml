@@ -1,0 +1,130 @@
+schema_version: empirical_qualification_status_v3
+project: land-dd
+updated_at: null
+selected_product_scope_profile: BOUNDED_USER_VALIDATED
+selected_deployment_profile: LOCAL_SINGLE_USER
+highest_valid_classification: L9-R
+candidate:
+  commit: null
+  tag: null
+  artifact_digest: null
+  protocol_version: null
+  targets_version: null
+  vocabulary_version: null
+  criteria_catalog_digest: null
+qualifications:
+  p0:
+    status: NOT_RUN
+    prerequisites: []
+    result_path: null
+    expires_at: null
+  q1:
+    status: NOT_RUN
+    prerequisites:
+    - p0
+    result_path: null
+    expires_at: null
+  q2:
+    status: NOT_RUN
+    prerequisites:
+    - p0
+    - q1
+    result_path: null
+    expires_at: null
+  q3a:
+    status: NOT_RUN
+    prerequisites:
+    - p0
+    - q1
+    - q2
+    result_path: null
+    expires_at: null
+  q3b:
+    status: NOT_RUN
+    prerequisites:
+    - p0
+    - q1
+    - q2
+    result_path: null
+    expires_at: null
+  q3c:
+    status: NOT_RUN
+    prerequisites:
+    - p0
+    - q1
+    - q2
+    result_path: null
+    expires_at: null
+overlays:
+  data_quality:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  input_resolution:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  database:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  security_privacy_compliance:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  accessibility_human_factors:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  maintainability_modularity:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  hosted_operations:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  regulatory_professional_scope:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  field_surveillance:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  economics:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  governance_release:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+  windows_native:
+    status: NOT_RUN
+    result_path: null
+    expires_at: null
+conditional_overlays:
+  ai_llm:
+    status: NOT_RUN
+    applicable: false
+    result_path: null
+    expires_at: null
+  candidate_generation:
+    status: NOT_RUN
+    applicable: false
+    result_path: null
+    expires_at: null
+  financial_modeling:
+    status: NOT_RUN
+    applicable: false
+    result_path: null
+    expires_at: null
+accepted_residual_risks: []
+blocked_decisions:
+- Freeze remaining null/TBD qualification targets and all applicable DRAFT criterion contracts before P0.
+- Freeze domain qualification profiles for every claimed MVP domain.
+- Approve source-quality/rights/preservation profiles for every enabled production source.
+- Select and freeze exact production deployment targets before any Level 10 claim.
+next_lowest_dependency_action: Resolve project parameterization blockers, freeze the bounded NC qualification scope,
+  validate profiles/targets/contracts, and pass P0 before unsealing Q1 cases.

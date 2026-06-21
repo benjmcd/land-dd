@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/criterion-contract-v3.json",
+  "title": "Qualification Criterion Contract V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "criterion_id",
+    "gate_id",
+    "requirement_class",
+    "applicable_profiles",
+    "statement",
+    "unit_of_analysis",
+    "population_or_input_scope",
+    "pass_logic",
+    "fail_logic",
+    "blocked_logic",
+    "n_a_logic",
+    "metric_definition",
+    "evidence_types",
+    "verification_method",
+    "owner_role",
+    "automation_level",
+    "execution_frequency",
+    "expiry_policy",
+    "invalidation_triggers",
+    "parameterization_status",
+    "target_reference",
+    "controlled_terms",
+    "definition_references",
+    "rubric_reference",
+    "human_judgment_required",
+    "applicability_condition"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "criterion_contract_v3"
+    },
+    "criterion_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*$"
+    },
+    "requirement_class": {
+      "enum": [
+        "INVARIANT",
+        "PROFILE_REQUIRED",
+        "TARGETED",
+        "JUDGMENT_RUBRIC",
+        "DIAGNOSTIC"
+      ]
+    },
+    "applicable_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 10
+    },
+    "unit_of_analysis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "population_or_input_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pass_logic": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fail_logic": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blocked_logic": {
+      "type": "string",
+      "minLength": 1
+    },
+    "n_a_logic": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metric_definition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "numerator": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "denominator": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "threshold": {},
+    "uncertainty_method": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stratification_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "evidence_types": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification_method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewer_role": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "automation_level": {
+      "enum": [
+        "AUTOMATED",
+        "SEMIAUTOMATED",
+        "MANUAL",
+        "MIXED"
+      ]
+    },
+    "execution_frequency": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expiry_policy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "invalidation_triggers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "parameterization_status": {
+      "enum": [
+        "DRAFT",
+        "FROZEN"
+      ]
+    },
+    "target_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "applicable_subgates": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "Q3A",
+          "Q3B",
+          "Q3C"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "controlled_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "definition_references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "rubric_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "human_judgment_required": {
+      "type": "boolean"
+    },
+    "applicability_condition": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "requirement_class": {
+            "const": "TARGETED"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "threshold",
+          "target_reference"
+        ],
+        "properties": {
+          "threshold": {
+            "not": {
+              "type": "null"
+            }
+          },
+          "target_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "requirement_class": {
+            "const": "JUDGMENT_RUBRIC"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reviewer_role",
+          "rubric_reference"
+        ],
+        "properties": {
+          "reviewer_role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rubric_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "human_judgment_required": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reviewer_role",
+          "rubric_reference"
+        ],
+        "properties": {
+          "reviewer_role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rubric_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

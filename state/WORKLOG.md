@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Empirical qualification self-validating spine EQ-2
+
+- Started clean worktree `worktrees/eq-2` on `eq/eq2` from live `origin/main` at
+  `2e5cc0dafe3bc6cbdb25aed165410216badbdc3f`; root remains dirty preserved state on
+  `codex/r026-raw-readiness-ui`.
+- Re-audited the read-only framework package before import. The package validator and
+  adversarial selftest passed in bundle layout.
+- Added `plans/2026-06-21-eq-2-self-validating-spine.md` and
+  `backend/tests/test_qualification_spine.py` before importing artifacts.
+- Imported the framework docs, qualification config, schemas, structural status,
+  validator, selftest, and wrappers into repo-owned paths; added `jsonschema` as a
+  backend dev/validation dependency.
+- Wired qualification validation into `scripts/verify.sh`, `scripts/verify.ps1`, and a
+  dedicated `qualification-selftest` CI job.
+- Preserved boundaries: target registry remains `DRAFT`, no qualification `PASS`, no
+  owner-decision unfreeze, no fabricated candidate commit/artifact digest, no Bologna
+  source/AOI approval, no fixture capture, no runtime/report use, no source registry
+  promotion, no DB seed, no DS-017 approval, no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 Bologna-first qualification parameterization backlog EQ-BOL
 
 - Started clean worktree `worktrees/eq-bol` on `eq/bol-backlog` from live

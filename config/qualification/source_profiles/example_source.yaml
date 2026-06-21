@@ -1,0 +1,57 @@
+schema_version: source_quality_profile_v3
+source_id: example_source
+profile_version: 0.1.0-draft
+status: DRAFT
+authority:
+  publisher: TBD
+  authority_level: TBD
+  official_url: TBD
+rights:
+  commercial_use: UNKNOWN
+  cache: UNKNOWN
+  retain: UNKNOWN
+  redistribute: UNKNOWN
+  export: UNKNOWN
+  ai_use: UNKNOWN
+  attribution: TBD
+preservation_mode: HASHED_RETRIEVAL_MANIFEST
+coverage:
+  geographies: []
+  domains: []
+  known_gaps: []
+freshness:
+  cadence: TBD
+  staleness_threshold: TBD
+  observation_date_field: TBD
+data_quality:
+  completeness:
+    status: TBD
+  logical_consistency:
+    status: TBD
+  positional_accuracy:
+    status: TBD
+  temporal_quality:
+    status: TBD
+  thematic_accuracy:
+    status: TBD
+  lineage_and_usability:
+    status: TBD
+normalization_mapping:
+  version: TBD
+  contract_tests: []
+failure_behavior:
+  terminal_state: DEGRADED_OR_BLOCKED
+  false_clear_prohibited: true
+retirement_plan:
+  kill_switch: TBD
+  historical_reproducibility: TBD
+owner: TBD
+review_at: '2099-01-01T00:00:00Z'
+approved_use_profiles: []
+rights_conditions: {}
+approved_at: null
+approved_by: []
+invalidation_triggers:
+- Publisher, schema, coverage, cadence, authority, rights, preservation, or data-quality change.
+enabled_operations: []
+conditions_enforced_by: []

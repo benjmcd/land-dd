@@ -1,0 +1,223 @@
+schema_version: qualification_profiles_v3
+profiles:
+  REPO_PROVEN:
+    claim: Governed fixtures, regression tests, and local workflows pass.
+    required_gates: []
+    required_milestone: L9-R
+    forbidden_claims:
+    - empirically validated accuracy
+    - user-validated utility
+    - production-grade
+    - cross-jurisdiction readiness
+  BOUNDED_SCREENING_VALIDATED:
+    claim: The frozen bounded land-screening scope demonstrated materially safe and accurate behavior.
+    required_gates:
+    - P0
+    - Q1
+    - DQ
+    - IR
+    - DB
+    - S
+    - M
+    - R
+    - G
+    conditional_gates:
+      W: required when Windows-native operation is within the frozen supported environment
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects any decision-relevant output
+    forbidden_claims:
+    - user workflow improves decisions
+    - production-grade service
+    - cross-state or global readiness
+  BOUNDED_USER_VALIDATED:
+    inherits: BOUNDED_SCREENING_VALIDATED
+    claim: The frozen target users demonstrated improved bounded screening utility.
+    required_gates:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - IR
+    - DB
+    - S
+    - A
+    - M
+    - R
+    - G
+    conditional_gates:
+      W: required when Windows-native operation is within the frozen supported environment
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects released behavior
+    forbidden_claims:
+    - production-grade service
+    - cross-state or global readiness
+  BOUNDED_PRODUCTION_LOCAL:
+    inherits: BOUNDED_USER_VALIDATED
+    deployment_profile: LOCAL_SINGLE_USER
+    claim: Production-grade for the frozen bounded local/single-user scope.
+    required_gates:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - IR
+    - DB
+    - S
+    - A
+    - M
+    - O
+    - R
+    - F
+    - G
+    conditional_gates:
+      W: required when Windows-native operation is within the frozen supported environment
+      E: required for paid/commercial or explicit economic-viability claims
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects released behavior
+    explicitly_not_required:
+    - Q3A
+    - Q3B
+    - Q3C
+  BOUNDED_PRODUCTION_SINGLE_TENANT:
+    inherits: BOUNDED_USER_VALIDATED
+    deployment_profile: PRIVATE_SINGLE_TENANT_HOSTED
+    claim: Production-grade for the frozen bounded hosted single-tenant scope.
+    required_gates:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - IR
+    - DB
+    - S
+    - A
+    - M
+    - O
+    - R
+    - F
+    - G
+    conditional_gates:
+      W: required when Windows-native operation is within the frozen supported environment
+      E: required for paid/commercial or explicit economic-viability claims
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects released behavior
+    explicitly_not_required:
+    - Q3A
+    - Q3B
+    - Q3C
+  BOUNDED_PRODUCTION_MULTI_TENANT:
+    inherits: BOUNDED_PRODUCTION_SINGLE_TENANT
+    deployment_profile: PUBLIC_MULTI_TENANT_SAAS
+    claim: Production-grade for the frozen bounded public multi-tenant scope.
+    required_gates:
+    - P0
+    - Q1
+    - Q2
+    - DQ
+    - IR
+    - DB
+    - S
+    - A
+    - M
+    - O
+    - R
+    - F
+    - G
+    mandatory_criteria:
+    - S-004
+    - DB-011
+    conditional_gates:
+      W: required when Windows-native operation is within the frozen supported environment
+      E: required for paid/commercial or explicit economic-viability claims
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects released behavior
+    explicitly_not_required:
+    - Q3A
+    - Q3B
+    - Q3C
+  US_EXPANSION_READY:
+    inherits: BOUNDED_USER_VALIDATED
+    claim: The architecture demonstrated cross-state extension and restricted-source degradation.
+    required_gates:
+    - Q3A
+    - Q3B
+    forbidden_claims:
+    - nationwide operational coverage
+    - global readiness
+  GLOBAL_ARCHITECTURE_PROBED:
+    inherits: US_EXPANSION_READY
+    claim: The architecture survived a bounded non-US representation probe.
+    required_gates:
+    - Q3C
+    forbidden_claims:
+    - worldwide operational coverage
+    - purchase-grade foreign legal diligence
+  JURISDICTION_OPERATIONALLY_QUALIFIED:
+    claim: One named jurisdiction, intent, and domain package is operationally qualified.
+    required_gates:
+    - P0
+    - Q1
+    - DQ
+    - IR
+    - DB
+    - S
+    - M
+    - O
+    - R
+    - F
+    - G
+    conditional_gates:
+      Q2: required for a user-utility claim
+      A: required for released user-facing workflows
+      W: required when Windows-native operation is within the frozen supported environment
+      E: required for a paid/commercial or economic-viability claim
+      CG: required if automatic candidate generation, filtering, ranking, recommendation, or alerts are enabled
+      FIN: required if valuation, return, liquidity, investment, lending, insurance, or appraisal-like outputs are
+        enabled
+      AI: required if AI affects released behavior
+    notes:
+    - This profile must be instantiated separately for each jurisdiction.
+    - A Q3 architecture probe is not a substitute for this profile.
+deployment_profiles:
+  LOCAL_SINGLE_USER:
+    description: Local/private operation without an externally hosted multi-user service.
+    tenant_isolation_applicable: false
+    hosted_availability_slo_applicable: false
+    backup_restore_required: true
+    security_scope: local attack surface, secrets, files, DB, exports, dependencies
+  PRIVATE_SINGLE_TENANT_HOSTED:
+    description: Hosted for one organization or controlled beta.
+    tenant_isolation_applicable: false
+    hosted_availability_slo_applicable: true
+    backup_restore_required: true
+    security_scope: internet/service attack surface plus organizational authorization
+  PUBLIC_MULTI_TENANT_SAAS:
+    description: Internet-facing multiple-user/workspace service.
+    tenant_isolation_applicable: true
+    hosted_availability_slo_applicable: true
+    backup_restore_required: true
+    security_scope: full public multi-tenant ASVS profile and isolation testing
+  ENTERPRISE_API_OR_ON_PREM:
+    description: Customer API or customer-operated deployment.
+    tenant_isolation_applicable: profile-dependent
+    hosted_availability_slo_applicable: profile-dependent
+    backup_restore_required: true
+    security_scope: deployment contract, upgrade, auth, support, and customer boundary
+conditional_gate_bindings:
+  W: scope.windows_native_required
+  E: scope.commercial_profile_enabled
+  CG: scope.candidate_generation_enabled
+  FIN: scope.financial_modeling_enabled
+  AI: scope.ai_llm_enabled_for_decision_relevant_output
+  Q2: scope.user_utility_claim_enabled
+  A: scope.user_facing_workflow_enabled

@@ -1,0 +1,222 @@
+schema_version: judgment_rubrics_v3
+status: DRAFT
+rubric_version: 0.1.0-draft
+frozen_at: null
+approved_by: []
+criteria:
+  A-010:
+    status: DRAFT
+    purpose: Human factors review finds no dark pattern, forced overconfidence, hidden uncertainty, or deceptive ranking
+      presentation.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  A-012:
+    status: DRAFT
+    purpose: Reading level, terminology, abbreviations, and uncertainty language are validated for each target persona
+      without removing precision.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  A-013:
+    status: DRAFT
+    purpose: Map scale, symbology, overlap, uncertainty, and source-coverage legends do not imply precision beyond the
+      data.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  DQ-020:
+    status: DRAFT
+    purpose: Sampling/measurement bias and known blind spots are documented for every derived or modeled layer.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  E-012:
+    status: DRAFT
+    purpose: Vendor concentration and contract-renewal sensitivity have an approved mitigation or accepted bounded risk.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  FIN-005:
+    status: DRAFT
+    purpose: Comparable selection and adjustment are explainable, reproducible, and reviewed for inappropriate proxy
+      use.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  FIN-018:
+    status: DRAFT
+    purpose: Independent review finds no material model-risk, fairness, leakage, or regulatory blocker for the released
+      claim.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  M-004:
+    status: DRAFT
+    purpose: Critical rule, evidence, geometry, rights, and report logic has unit, integration, DB, regression, and negative-path
+      coverage appropriate to risk.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  M-015:
+    status: DRAFT
+    purpose: A fresh agent completes a bounded maintenance/change task without chat history and without violating invariants.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  P0-025:
+    status: DRAFT
+    purpose: Reviewer competency
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q1-020:
+    status: DRAFT
+    purpose: Verification-action quality
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-009:
+    status: DRAFT
+    purpose: Decision concordance
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-012:
+    status: DRAFT
+    purpose: Verification-action quality
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-014:
+    status: DRAFT
+    purpose: Trust calibration
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-022:
+    status: DRAFT
+    purpose: Usability floor
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-023:
+    status: DRAFT
+    purpose: Qualitative defect saturation
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-029:
+    status: DRAFT
+    purpose: Cognitive-load control
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  Q2-030:
+    status: DRAFT
+    purpose: Comparator honesty
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null
+  R-009:
+    status: DRAFT
+    purpose: Qualified external review is obtained before enabling a materially new high-risk claim class or jurisdiction;
+      reviewer scope and conclusions are recorded.
+    reviewer_competency: null
+    reviewer_independence_required: true
+    dimensions: []
+    rating_scale: null
+    pass_rule: null
+    adjudication_rule: null
+    calibration_cases: []
+    evidence_record_schema: null

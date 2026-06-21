@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/qualification-profiles-v3.json",
+  "title": "Qualification Profiles V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profiles",
+    "deployment_profiles",
+    "conditional_gate_bindings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "qualification_profiles_v3"
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "claim"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string",
+            "minLength": 10
+          },
+          "inherits": {
+            "type": "string"
+          },
+          "deployment_profile": {
+            "type": "string"
+          },
+          "required_gates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "required_milestone": {
+            "type": "string"
+          },
+          "conditional_gates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "mandatory_criteria": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "explicitly_not_required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "forbidden_claims": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "deployment_profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "description",
+          "tenant_isolation_applicable",
+          "hosted_availability_slo_applicable",
+          "backup_restore_required",
+          "security_scope"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_isolation_applicable": {
+            "type": [
+              "boolean",
+              "string"
+            ]
+          },
+          "hosted_availability_slo_applicable": {
+            "type": [
+              "boolean",
+              "string"
+            ]
+          },
+          "backup_restore_required": {
+            "type": "boolean"
+          },
+          "security_scope": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "conditional_gate_bindings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}

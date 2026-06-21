@@ -1,0 +1,667 @@
+schema_version: qualification_targets_v3
+status: DRAFT
+target_version: 0.1.0-draft
+frozen_at: null
+approved_by: []
+scope:
+  product_scope_profile: BOUNDED_USER_VALIDATED
+  deployment_profile: LOCAL_SINGLE_USER
+  commercial_profile_enabled: false
+  product_claim: Bounded rural-land due-diligence screening
+  intents:
+  - rural_land_purchase
+  - homestead_feasibility
+  geographies:
+  - US-NC-Buncombe
+  - US-NC-Chatham
+  - US-NC-Brunswick
+  qualified_domains:
+  - flood
+  - wetlands
+  - slope_terrain
+  - soils_septic_proxy
+  - physical_road_access_proxy
+  - zoning_context
+  - environmental_context
+  - source_availability_and_conflict
+  input_modalities:
+  - parcel_id
+  - address
+  - coordinates
+  - drawn_or_uploaded_geometry
+  - multi_parcel_aoi
+  output_channels:
+  - api_json
+  - web_ui
+  - exported_report
+  ai_llm_enabled_for_decision_relevant_output: false
+  explicitly_unqualified_domains:
+  - legal_access_determination
+  - title
+  - surveyed_boundary
+  - water_rights
+  - mineral_rights
+  - wetland_jurisdiction
+  - septic_approval
+  - appraisal_or_valuation
+  - insurance_or_lending_suitability
+  - investment_recommendation
+  windows_native_required: true
+  candidate_generation_enabled: false
+  financial_modeling_enabled: false
+  user_utility_claim_enabled: true
+  user_facing_workflow_enabled: true
+  international_operation_enabled: false
+  regulated_high_stakes_use_enabled: false
+  source_profile_ids: []
+  ruleset_versions: {}
+  report_contract_version: null
+  api_contract_version: null
+  normalization_schema_version: null
+  geometry_pipeline_version: null
+  supported_locales:
+  - en-US
+  canonical_timezone: UTC
+  source_snapshot_policy: null
+  data_as_of_policy: null
+protocol:
+  acceptance_case_storage: external_restricted_vault
+  confidence_level: 0.95
+  pre_adjudication_reliability_minimum: 0.7
+  qualification_validity_days:
+    q1: 180
+    q2: 365
+    q3a: 365
+    q3b: 365
+    q3c: 365
+  primary_analysis_method: null
+  cluster_handling_method: null
+  multiple_comparison_method: null
+  missing_data_method: null
+  practical_effect_thresholds: null
+q1:
+  minimum_total_aois: 60
+  minimum_aois_per_selected_county: 20
+  minimum_critical_issue_instances: 30
+  minimum_positive_instances_per_qualified_domain: 5
+  minimum_source_gap_instances: 5
+  minimum_source_conflict_instances: 5
+  minimum_geometry_edge_cases: 5
+  minimum_input_identity_ambiguity_cases: 5
+  critical_issue_recall: 1.0
+  material_issue_recall_point_minimum: 0.9
+  material_issue_recall_lower_ci_minimum: 0.8
+  severe_false_positive_point_maximum: 0.1
+  severe_false_positive_upper_ci_maximum: 0.2
+  unknown_fidelity: 1.0
+  claim_evidence_linkage: 1.0
+  citation_resolvability: 1.0
+  high_confidence_claim_correctness_minimum: 0.95
+  verification_action_quality_minimum: 0.9
+  per_geography_critical_floor: 1.0
+  per_intent_critical_floor: 1.0
+  per_domain_critical_floor: 1.0
+  p95_report_runtime_seconds: null
+  p95_report_memory_mb: null
+  confidence_expected_calibration_error_maximum: null
+  severity_weighted_agreement_minimum: null
+  verification_action_coverage_minimum: 1.0
+q2:
+  minimum_total_participants: 24
+  minimum_participants_per_primary_persona: 8
+  workflow_completion_minimum: 0.9
+  critical_exclusion_recognition_minimum: 0.95
+  material_issue_improvement_percentage_points_minimum: 15
+  median_time_reduction_percent_minimum: 30
+  decision_concordance_minimum: 0.8
+  unknown_recognition_minimum: 0.9
+  evidence_traceability_minimum: 0.9
+  verification_action_quality_minimum: 0.9
+  uncorrected_critical_safety_misconceptions_maximum: 0
+  usefulness_median_minimum_1_to_5: 4
+  critical_workflow_median_floor_1_to_5: 3
+  maximum_median_help_requests: null
+  maximum_workload_score: null
+  persona_specific_critical_floor: 0.9
+  trust_calibration_error_maximum: null
+  error_recovery_success_minimum: null
+  accessibility_task_completion_minimum: null
+  support_help_requests_median_maximum: null
+q3:
+  lane_a_minimum_aois: 8
+  lane_b_minimum_aois: 4
+  lane_c_minimum_cases: 6
+  existing_scope_p95_performance_regression_maximum: 0.1
+  lane_p95_runtime_multiplier_vs_baseline_maximum: 2.0
+  source_substitution_required: true
+  source_retirement_drill_required: true
+  q3c_required_only_for_global_architecture_claim: true
+  change_dispersion_is_diagnostic: true
+  lane_incremental_cost_multiplier_maximum: null
+input_resolution:
+  address_match_precision_threshold: null
+  coordinate_tolerance_meters_by_input_type: {}
+  parcel_identity_disambiguation_required: true
+  wrong_aoi_acceptance_failures_maximum: 0
+database:
+  postgresql_versions: []
+  postgis_versions: []
+  proj_gdal_version_policy: null
+  p95_core_query_latency_ms: null
+  max_connection_budget: null
+  representative_data_volume_multiplier: null
+  rpo_minutes: null
+  rto_minutes: null
+  pitr_required: null
+  large_migration_lock_or_downtime_budget_seconds: null
+  capacity_headroom_minimum: null
+security_privacy:
+  asvs_version: 5.0.0
+  asvs_profile: null
+  unresolved_applicable_critical_vulnerabilities_maximum: 0
+  unresolved_applicable_high_vulnerabilities_maximum: 0
+  independent_security_review_required: true
+  data_residency_regions: []
+  rate_limit_and_quota_profile: null
+accessibility:
+  target: WCAG_2_2_AA
+  automated_and_manual_required: true
+  export_accessibility_profile: null
+  supported_browser_os_matrix: []
+  minimum_manual_assistive_technology_reviewers: 1
+  reading_level_or_comprehension_targets_by_persona: {}
+maintainability:
+  critical_module_mutation_score_minimum: 0.8
+  flaky_test_rate_maximum: 0.01
+  maximum_approved_complexity_or_size_thresholds: null
+  maximum_startup_context_lines: null
+operations:
+  availability_slo: null
+  error_budget: null
+  rpo_minutes: null
+  rto_minutes: null
+  p95_api_latency_ms: null
+  p99_api_latency_ms: null
+  p95_report_runtime_seconds: null
+  beta_peak_concurrent_report_jobs: null
+  alert_delivery_seconds_maximum: null
+  staging_observation_days: null
+  production_observation_days: null
+  soak_test_hours: null
+  representative_load_profile: null
+field_surveillance:
+  critical_incident_containment_minutes: null
+  periodic_sample_size: null
+  source_drift_check_frequency_days: null
+  qualification_review_frequency_days: null
+  confidence_calibration_drift_maximum: null
+  unknown_rate_change_maximum: null
+unit_economics:
+  p50_completed_report_cost_usd_maximum: null
+  p95_completed_report_cost_usd_maximum: null
+  p95_degraded_report_cost_usd_maximum: null
+  median_human_review_minutes_maximum: null
+  p95_human_review_minutes_maximum: null
+  minimum_gross_margin_percent_or_internal_budget_rule: null
+  minimum_measured_value_metric: null
+criterion_overrides: {}
+windows_native:
+  supported_windows_versions: []
+  supported_powershell_versions: []
+  supported_python_versions: []
+  supported_docker_desktop_versions: []
+  canonical_shell: PowerShell
+  wsl_or_git_bash_required: false
+  path_with_spaces_required: true
+  unicode_path_required: true
+  long_path_policy: null
+  case_collision_failures_maximum: 0
+  line_ending_policy: null
+  administrator_privileges_required: false
+  symlink_privileges_required: false
+  runtime_state_outside_onedrive_required: true
+  windows_ci_required: true
+  credential_storage_policy: null
+candidate_generation:
+  enabled: false
+  candidate_universe_definition: null
+  minimum_sealed_positive_candidates: null
+  minimum_exclusion_traps: null
+  eligible_candidate_recall_point_minimum: null
+  eligible_candidate_recall_lower_ci_minimum: null
+  critical_false_exclusions_maximum: 0
+  false_exclusion_rate_point_maximum: null
+  false_exclusion_rate_upper_ci_maximum: null
+  rank_stability_metric: null
+  rank_stability_minimum: null
+  weight_sensitivity_bounds: null
+  p95_search_runtime_seconds: null
+  p95_search_cost_usd: null
+  maximum_candidate_volume: null
+  alert_detection_latency_seconds: null
+  protected_or_proxy_features_allowed: false
+financial_modeling:
+  enabled: false
+  claim_class: null
+  intended_decision_context: null
+  model_or_ruleset_type: null
+  minimum_out_of_time_cases: null
+  minimum_out_of_geography_cases: null
+  primary_error_metric: null
+  primary_error_threshold: null
+  interval_coverage_target: null
+  calibration_target: null
+  maximum_high_confidence_error_rate: null
+  maximum_decision_weighted_loss: null
+  market_drift_check_frequency_days: null
+  estimate_expiry_days: null
+  human_review_thresholds: null
+  regulated_use_review_required: true
+  critical_unknown_override_failures_maximum: 0
+document_extraction:
+  enabled: true
+  supported_document_types: []
+  minimum_anchor_resolvability: 1.0
+  minimum_high_confidence_extract_accuracy: null
+  low_confidence_review_threshold: null
+  ocr_languages: []
+  table_extraction_enabled: false
+  figure_or_map_extraction_enabled: false
+data_quality:
+  completeness_thresholds_by_source_domain: {}
+  positional_accuracy_tolerances_by_source_domain: {}
+  staleness_thresholds_by_source_domain: {}
+  thematic_accuracy_thresholds_by_source_domain: {}
+  cross_source_agreement_thresholds_by_domain: {}
+  low_confidence_extraction_review_threshold: null
+regulatory_professional_scope:
+  change_monitoring_frequency_days: null
+  external_review_required_for_new_high_risk_claim_class: true
+ai_llm:
+  enabled: false
+  unsupported_statement_rate_maximum: null
+  critical_unsupported_statements_maximum: 0
+  p95_latency_seconds: null
+  p95_cost_usd: null
+  critical_output_variability_maximum: null
+  minimum_cases_per_domain_language_risk_confidence_stratum: null
+criterion_bindings:
+  P0-014:
+    status: DRAFT
+    references:
+    - protocol.pre_adjudication_reliability_minimum
+  P0-017:
+    status: DRAFT
+    references:
+    - protocol.practical_effect_thresholds
+  Q1-006:
+    status: DRAFT
+    references:
+    - q1.critical_issue_recall
+  Q1-007:
+    status: DRAFT
+    references:
+    - q1.material_issue_recall_point_minimum
+    - q1.material_issue_recall_lower_ci_minimum
+  Q1-008:
+    status: DRAFT
+    references:
+    - q1.severe_false_positive_point_maximum
+    - q1.severe_false_positive_upper_ci_maximum
+  Q1-016:
+    status: DRAFT
+    references:
+    - q1.confidence_expected_calibration_error_maximum
+    - q1.high_confidence_claim_correctness_minimum
+  Q1-017:
+    status: DRAFT
+    references:
+    - q1.severity_weighted_agreement_minimum
+  Q1-019:
+    status: DRAFT
+    references:
+    - q1.verification_action_coverage_minimum
+  Q1-020:
+    status: DRAFT
+    references:
+    - q1.verification_action_quality_minimum
+  Q1-029:
+    status: DRAFT
+    references:
+    - q1.p95_report_runtime_seconds
+    - q1.p95_report_memory_mb
+  Q1-034:
+    status: DRAFT
+    references:
+    - q1.per_geography_critical_floor
+    - q1.per_intent_critical_floor
+    - q1.per_domain_critical_floor
+  Q2-001:
+    status: DRAFT
+    references:
+    - q2.minimum_total_participants
+    - q2.minimum_participants_per_primary_persona
+  Q2-005:
+    status: DRAFT
+    references:
+    - q2.workflow_completion_minimum
+  Q2-006:
+    status: DRAFT
+    references:
+    - q2.critical_exclusion_recognition_minimum
+  Q2-007:
+    status: DRAFT
+    references:
+    - q2.material_issue_improvement_percentage_points_minimum
+  Q2-008:
+    status: DRAFT
+    references:
+    - q2.median_time_reduction_percent_minimum
+  Q2-009:
+    status: DRAFT
+    references:
+    - q2.decision_concordance_minimum
+  Q2-010:
+    status: DRAFT
+    references:
+    - q2.unknown_recognition_minimum
+  Q2-011:
+    status: DRAFT
+    references:
+    - q2.evidence_traceability_minimum
+  Q2-012:
+    status: DRAFT
+    references:
+    - q2.verification_action_quality_minimum
+  Q2-014:
+    status: DRAFT
+    references:
+    - q2.trust_calibration_error_maximum
+  Q2-016:
+    status: DRAFT
+    references:
+    - q2.error_recovery_success_minimum
+  Q2-018:
+    status: DRAFT
+    references:
+    - q2.accessibility_task_completion_minimum
+  Q2-021:
+    status: DRAFT
+    references:
+    - q2.support_help_requests_median_maximum
+  Q2-022:
+    status: DRAFT
+    references:
+    - q2.usefulness_median_minimum_1_to_5
+    - q2.critical_workflow_median_floor_1_to_5
+  Q2-027:
+    status: DRAFT
+    references:
+    - q2.persona_specific_critical_floor
+  Q2-029:
+    status: DRAFT
+    references:
+    - q2.maximum_workload_score
+  Q3-022:
+    status: DRAFT
+    references:
+    - q3.existing_scope_p95_performance_regression_maximum
+    - q3.lane_p95_runtime_multiplier_vs_baseline_maximum
+  Q3-023:
+    status: DRAFT
+    references:
+    - q3.lane_incremental_cost_multiplier_maximum
+  DQ-002:
+    status: DRAFT
+    references:
+    - data_quality.completeness_thresholds_by_source_domain
+  DQ-004:
+    status: DRAFT
+    references:
+    - data_quality.positional_accuracy_tolerances_by_source_domain
+  DQ-005:
+    status: DRAFT
+    references:
+    - data_quality.staleness_thresholds_by_source_domain
+  DQ-006:
+    status: DRAFT
+    references:
+    - data_quality.thematic_accuracy_thresholds_by_source_domain
+  DQ-012:
+    status: DRAFT
+    references:
+    - data_quality.cross_source_agreement_thresholds_by_domain
+  DQ-015:
+    status: DRAFT
+    references:
+    - data_quality
+  DQ-019:
+    status: DRAFT
+    references:
+    - data_quality
+  DQ-022:
+    status: DRAFT
+    references:
+    - data_quality.low_confidence_extraction_review_threshold
+  DB-007:
+    status: DRAFT
+    references:
+    - database.p95_core_query_latency_ms
+  DB-009:
+    status: DRAFT
+    references:
+    - database.max_connection_budget
+  DB-013:
+    status: DRAFT
+    references:
+    - database.rpo_minutes
+    - database.rto_minutes
+  DB-015:
+    status: DRAFT
+    references:
+    - database.representative_data_volume_multiplier
+    - database.large_migration_lock_or_downtime_budget_seconds
+  DB-020:
+    status: DRAFT
+    references:
+    - database.capacity_headroom_minimum
+  S-009:
+    status: DRAFT
+    references:
+    - security_privacy.rate_limit_and_quota_profile
+  A-008:
+    status: DRAFT
+    references:
+    - accessibility.supported_browser_os_matrix
+  A-009:
+    status: DRAFT
+    references:
+    - accessibility.minimum_manual_assistive_technology_reviewers
+  A-012:
+    status: DRAFT
+    references:
+    - accessibility.reading_level_or_comprehension_targets_by_persona
+  M-005:
+    status: DRAFT
+    references:
+    - maintainability.critical_module_mutation_score_minimum
+  M-007:
+    status: DRAFT
+    references:
+    - maintainability.flaky_test_rate_maximum
+  M-009:
+    status: DRAFT
+    references:
+    - maintainability.maximum_approved_complexity_or_size_thresholds
+  O-005:
+    status: DRAFT
+    references:
+    - operations.rpo_minutes
+    - operations.rto_minutes
+  O-007:
+    status: DRAFT
+    references:
+    - operations.availability_slo
+    - operations.error_budget
+    - operations.staging_observation_days
+  O-008:
+    status: DRAFT
+    references:
+    - operations.p95_api_latency_ms
+    - operations.p99_api_latency_ms
+    - operations.p95_report_runtime_seconds
+  O-009:
+    status: DRAFT
+    references:
+    - operations.beta_peak_concurrent_report_jobs
+    - operations.representative_load_profile
+  O-013:
+    status: DRAFT
+    references:
+    - operations.alert_delivery_seconds_maximum
+  O-017:
+    status: DRAFT
+    references:
+    - database.capacity_headroom_minimum
+  O-024:
+    status: DRAFT
+    references:
+    - operations.soak_test_hours
+  E-001:
+    status: DRAFT
+    references:
+    - unit_economics.p50_completed_report_cost_usd_maximum
+    - unit_economics.p95_completed_report_cost_usd_maximum
+    - unit_economics.p95_degraded_report_cost_usd_maximum
+  E-003:
+    status: DRAFT
+    references:
+    - unit_economics.median_human_review_minutes_maximum
+    - unit_economics.p95_human_review_minutes_maximum
+  E-005:
+    status: DRAFT
+    references:
+    - unit_economics.p95_completed_report_cost_usd_maximum
+  E-007:
+    status: DRAFT
+    references:
+    - unit_economics.minimum_gross_margin_percent_or_internal_budget_rule
+  E-011:
+    status: DRAFT
+    references:
+    - unit_economics.minimum_measured_value_metric
+  G-007:
+    status: DRAFT
+    references:
+    - protocol.qualification_validity_days
+  R-008:
+    status: DRAFT
+    references:
+    - regulatory_professional_scope.change_monitoring_frequency_days
+  F-003:
+    status: DRAFT
+    references:
+    - field_surveillance.periodic_sample_size
+    - field_surveillance.qualification_review_frequency_days
+  F-005:
+    status: DRAFT
+    references:
+    - field_surveillance.confidence_calibration_drift_maximum
+    - field_surveillance.unknown_rate_change_maximum
+  F-006:
+    status: DRAFT
+    references:
+    - field_surveillance.critical_incident_containment_minutes
+  F-009:
+    status: DRAFT
+    references:
+    - field_surveillance.source_drift_check_frequency_days
+    - field_surveillance.qualification_review_frequency_days
+  CG-005:
+    status: DRAFT
+    references:
+    - candidate_generation.rank_stability_metric
+    - candidate_generation.rank_stability_minimum
+    - candidate_generation.weight_sensitivity_bounds
+  CG-006:
+    status: DRAFT
+    references:
+    - candidate_generation.minimum_sealed_positive_candidates
+    - candidate_generation.minimum_exclusion_traps
+    - candidate_generation.eligible_candidate_recall_point_minimum
+    - candidate_generation.eligible_candidate_recall_lower_ci_minimum
+  CG-007:
+    status: DRAFT
+    references:
+    - candidate_generation.critical_false_exclusions_maximum
+    - candidate_generation.false_exclusion_rate_point_maximum
+    - candidate_generation.false_exclusion_rate_upper_ci_maximum
+  CG-014:
+    status: DRAFT
+    references:
+    - candidate_generation.rank_stability_minimum
+  CG-016:
+    status: DRAFT
+    references:
+    - candidate_generation.alert_detection_latency_seconds
+  CG-017:
+    status: DRAFT
+    references:
+    - candidate_generation.p95_search_runtime_seconds
+    - candidate_generation.p95_search_cost_usd
+    - candidate_generation.maximum_candidate_volume
+  FIN-004:
+    status: DRAFT
+    references:
+    - financial_modeling.primary_error_metric
+    - financial_modeling.primary_error_threshold
+    - financial_modeling.interval_coverage_target
+    - financial_modeling.calibration_target
+  FIN-009:
+    status: DRAFT
+    references:
+    - financial_modeling.maximum_high_confidence_error_rate
+  FIN-010:
+    status: DRAFT
+    references:
+    - financial_modeling.market_drift_check_frequency_days
+    - financial_modeling.estimate_expiry_days
+  FIN-011:
+    status: DRAFT
+    references:
+    - financial_modeling.human_review_thresholds
+  FIN-016:
+    status: DRAFT
+    references:
+    - financial_modeling.maximum_decision_weighted_loss
+  AI-006:
+    status: DRAFT
+    references:
+    - ai_llm.unsupported_statement_rate_maximum
+    - ai_llm.critical_unsupported_statements_maximum
+  AI-010:
+    status: DRAFT
+    references:
+    - ai_llm.p95_latency_seconds
+    - ai_llm.p95_cost_usd
+  AI-014:
+    status: DRAFT
+    references:
+    - ai_llm.critical_output_variability_maximum
+  AI-018:
+    status: DRAFT
+    references:
+    - ai_llm.minimum_cases_per_domain_language_risk_confidence_stratum
+  W-003:
+    status: DRAFT
+    references:
+    - windows_native.path_with_spaces_required
+    - windows_native.unicode_path_required
+    - windows_native.long_path_policy
+  W-011:
+    status: DRAFT
+    references:
+    - windows_native.supported_windows_versions
+    - windows_native.supported_powershell_versions
+    - windows_native.supported_python_versions
+    - windows_native.supported_docker_desktop_versions
