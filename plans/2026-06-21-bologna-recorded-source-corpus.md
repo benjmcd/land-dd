@@ -15,10 +15,11 @@ multi-geography generalization can happen.
   billing, image publication, or Level 10 status.
 
 ## Current state
-Live `origin/main` is `6253917809b5fc20a6d12c9a41678ea31c3d1de1`, which includes PR
-#115 (`PR114-SYNC`). Bologna has source candidates, source-rights review structure, and
-source-authority intake, but the recorded-source corpus itself is still only a prose
-blocker in preflight and the production authority packet.
+At the start of this slice, live `origin/main` was
+`6253917809b5fc20a6d12c9a41678ea31c3d1de1`, which included PR #115 (`PR114-SYNC`).
+Bologna had source candidates, source-rights review structure, and source-authority
+intake, but the recorded-source corpus itself was still only a prose blocker in
+preflight and the production authority packet.
 
 ## Design
 Add `config/bologna_recorded_source_corpus.yaml` plus a checker, wrappers, runbook, and

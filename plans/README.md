@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-20-pr114-sync.md`.
+Latest completed plan: `2026-06-21-bologna-recorded-source-corpus.md`.
 
-Current routing plan: `2026-06-21-bologna-recorded-source-corpus.md`.
+Current routing plan: `2026-06-21-pr116-sync.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -30,7 +30,12 @@ deferred until a real control-plane consolidation slice is explicitly selected.
 `BRC-001` adds a validate-only Bologna recorded-source corpus contract. It is allowed
 because it defines future fixture-manifest requirements while preserving every external
 authority blocker; it does not capture fixtures, promote sources, start Bologna, or
-claim hosted/Level 10 authority.
+claim hosted/Level 10 authority. `BRC-001` merged through PR #116 at
+`4b29bcf646e0cf61bbf3eedee00417a4eed9f115`.
+
+`PR116-SYNC` is the current routing-only follow-up after PR #116. It updates live-state
+surfaces to stop treating the completed corpus contract as active work while preserving
+the same DS-017, hosted, Bologna implementation, and Level 10 blockers.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

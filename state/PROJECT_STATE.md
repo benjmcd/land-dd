@@ -1,25 +1,25 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna recorded-source corpus contract)
+## Current checkpoint (2026-06-21 post-PR116 routing sync)
 
-Live `origin/main` contains `PR114-SYNC` through PR #115 at
-`6253917809b5fc20a6d12c9a41678ea31c3d1de1`. `BRC-001` is the current repo-local
-implementation slice: add a validate-only Bologna recorded-source corpus contract that
-prepares future fixture-manifest proof without approving sources, selecting an AOI, or
-capturing fixtures. `BSA-001` remains blocked until explicit
-product/AOI/source-review authority exists for exact candidate sources.
+Live `origin/main` contains `BRC-001` through PR #116 at
+`4b29bcf646e0cf61bbf3eedee00417a4eed9f115`. `PR116-SYNC` is the current repo-local
+routing slice: refresh canonical plan/task/state surfaces after the corpus contract
+merged, without changing behavior or approving any blocked authority. `BSA-001` remains
+blocked until explicit product/AOI/source-review authority exists for exact candidate
+sources.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-bologna-recorded-source-corpus.md`.
+  `plans/2026-06-21-pr116-sync.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
   review bundles, case-specific connector retrieval scopes, repeated-run idempotency,
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
-  `SRP-001`, `RSR-001`, `PR114-SYNC`, and `BRC-001` are done. `BSA-001` remains
-  blocked. Must-source readiness remains `sources=8 ready=7 blocked=1`, with
-  `DS-017` as the only blocked Must source.
+  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, and `PR116-SYNC` are done.
+  `BSA-001` remains blocked. Must-source readiness remains `sources=8 ready=7
+  blocked=1`, with `DS-017` as the only blocked Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
   merged. The only remaining `STILL_DIVERGENT` dirty-root candidate paths are
   `backend/app/project_readiness.py` and `backend/app/release_readiness.py`; both stay
@@ -27,7 +27,8 @@ product/AOI/source-review authority exists for exact candidate sources.
 - **Current Bologna corpus boundary**: `config/bologna_recorded_source_corpus.yaml`
   records the future manifest requirements for source versions, retrieval metadata,
   attribution, CRS, field policies, source-failure fixtures, caveats, report-use
-  policy, and no-overclaim review. It is validate-only and remains blocked.
+  policy, and no-overclaim review. It is validate-only, merged through PR #116, and
+  remains blocked for fixture/runtime/report use.
 - **Immediate next step if external authority exists**: cite exact authority in the
   matching lower-level catalog before any stream can move from blocked. For Bologna,
   that means filling the source-rights matrix from cited product/AOI/source-review

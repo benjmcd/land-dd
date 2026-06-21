@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-bologna-recorded-source-corpus.md
+active_plan: plans/2026-06-21-pr116-sync.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -18,13 +18,14 @@ routing_note: >
   decision packet merged through PR #106, BP-001 post-SE001 Bologna preflight merged
   through PR #107, BSC-001 Bologna source-candidate discovery merged through PR #108,
   BSR-001 Bologna source-rights matrix merged through PR #109, post-BSR routing merged
-  through PR #110, and BSG-001 Bologna source-authority intake guard merged through PR
-  #111. Current lane: PAI-001 production-authority intake guard. BSA-001 Bologna
+  through PR #110, BSG-001 Bologna source-authority intake guard merged through PR
+  #111, and PAI-001 production-authority intake guard merged through PR #112. BSA-001 Bologna
   source-authority intake remains blocked until product/AOI/source-review authority
   exists. SRP-001 reworks the retained selected-county runtime-provenance regression as
   a test-only residual closeout and merged through PR #113. RSR-001 post-SRP routing
   closeout merged through PR #114. PR114-SYNC post-merge routing sync merged through
-  PR #115. Current lane: BRC-001 Bologna recorded-source corpus contract. Do not create
+  PR #115. BRC-001 Bologna recorded-source corpus contract merged through PR #116.
+  Current lane: PR116-SYNC post-merge routing sync. Do not create
   hosted deployment, hosted identity/RBAC,
   hosted observability, source/vendor authority, new jurisdiction/rulepack/source
   coverage, DS-017 approval, Bologna implementation, fixture capture, production
@@ -1489,6 +1490,33 @@ tasks:
       - Candidate corpus rows match source-authority intake and source-rights evidence slots
       - Fixture capture, source-failure fixtures, runtime use, report use, and DB seeds remain blocked
       - Bologna preflight and release readiness compose the corpus checker
+      - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
+
+  - id: PR116-SYNC
+    title: Post-PR116 routing sync
+    status: done
+    depends_on: [BRC-001]
+    lane: coordinator
+    spec: plans/2026-06-21-pr116-sync.md
+    notes: >
+      Refresh live routing after PR #116 merged BRC-001 at
+      4b29bcf646e0cf61bbf3eedee00417a4eed9f115. This is state/routing only and
+      preserves external blockers for DS-017, hosted authority, Bologna implementation,
+      source authority, fixture capture, and Level 10 status.
+    validation:
+      - py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Current live main references PR #116 and merge commit 4b29bcf646e0cf61bbf3eedee00417a4eed9f115
+      - Current routing no longer treats BRC-001 as the active implementation lane
+      - BRC-001 remains validate-only and blocked for fixture, runtime, report, source-registry, and DB-seed use
       - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
 
   # --- Completed ---

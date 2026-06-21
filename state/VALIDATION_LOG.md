@@ -2,6 +2,50 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Post-PR116 Routing Sync PR116-SYNC
+
+**Scope:** Refresh state/routing after PR #116 merged `BRC-001`. This is
+state/routing only and does not change source/report behavior, source readiness,
+Bologna authority, fixture/runtime/report use, hosted authority, DS-017 status, or
+Level 10 status.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline focused validators passed before edits:
+  `bologna_recorded_source_corpus_check.py`, `bologna_preflight_check.py`,
+  `release_readiness_check.py`, and `readiness_matrix_check.py`.
+- First focused post-edit validation caught that the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was fixed to preserve the explicit
+  Level 9/10 authority context.
+- `bologna_recorded_source_corpus_check.py`, `bologna_preflight_check.py`,
+  `release_readiness_check.py`, and `readiness_matrix_check.py` passed after the fix.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017`
+  (`Commercial parcel vendor`) as the only blocked Must source.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and mypy
+  succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** This sync only updates routing after merge. Bologna source/AOI
+authority, DS-017 authority, hosted authority, and Level 10 authority remain blocked.
+
 ## 2026-06-21 Bologna Recorded-Source Corpus Contract BRC-001
 
 **Scope:** Add a validate-only recorded-source corpus contract for future Bologna
