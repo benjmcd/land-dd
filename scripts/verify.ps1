@@ -153,6 +153,11 @@ Invoke-PythonCommand `
     -Label 'qualification change impact' `
     -Arguments @('scripts/qualification_change_impact_check.py', '--root', '.')
 
+Write-Host '== qualification P0 auto evidence =='
+Invoke-PythonCommand `
+    -Label 'qualification P0 auto evidence' `
+    -Arguments @('scripts/qualification_p0_evidence_check.py', '--root', '.')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')

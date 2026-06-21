@@ -55,6 +55,7 @@ def test_p0_is_honestly_blocked_without_result_artifact() -> None:
     assert p0["blocker_references"] == [
         "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
         "docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md",
+        "docs/qualification/P0_AUTO_EVIDENCE.yaml",
     ]
     for reference in p0["blocker_references"]:
         assert (REPO_ROOT / reference).exists(), reference

@@ -2,6 +2,50 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 EQP2-3 blocked P0 repo-local auto-evidence
+
+- Started clean worktree `worktrees/eqp2-3` on `eqp2/3-p0-evidence` from live
+  `origin/main` at `0f0f592b9522d26afb70007281870325edd13579` after EQP2-2
+  merged through PR #131 and detached post-merge proof passed.
+- Added `plans/2026-06-21-eqp2-3-p0-auto-evidence.md` after reconciling the
+  handoff labels for `P0-021` and `P0-023` against the live catalog. Live catalog
+  authority wins: `P0-021` is Evidence integrity and `P0-023` is Threshold
+  immutability.
+- Added `docs/qualification/P0_AUTO_EVIDENCE.yaml` with one row for `P0-004`,
+  `P0-005`, `P0-021`, and `P0-023`. Each row records repo-local evidence pointers,
+  live catalog statement, `auto_evidenced_still_target_blocked`, effective
+  `BLOCKED`, `pass_claimed: false`, and caveats for the missing external authority.
+- Added `scripts/qualification_p0_evidence_check.py`,
+  `scripts/qualification_p0_evidence_check.ps1`, and
+  `scripts/run_qualification_p0_evidence_check.sh`. The checker validates the
+  artifact against the catalog, status link, backlog rows, no-PASS status, no CI
+  `continue-on-error`, no pytest xfail suppression, fixture-boundary text, and
+  qualification-control files.
+- Linked `docs/qualification/P0_AUTO_EVIDENCE.yaml` from
+  `state/EMPIRICAL_QUALIFICATION_STATUS.yaml` under P0 `blocker_references` while
+  preserving P0 `status: BLOCKED` and `result_path: null`.
+- Added a P0 repo-local auto-evidence table to
+  `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md`; each row remains
+  `auto-evidenced; still target-blocked`.
+- Wired the P0 auto-evidence checker into `scripts/verify.ps1`, `scripts/verify.sh`,
+  and the dedicated `qualification-selftest` CI job.
+- Separate read-only review found live `origin/main` had advanced to PR #132. Rebased
+  `eqp2/3-p0-evidence` onto `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`,
+  preserving the error-safety redaction hardening and `backend/tests/test_error_safety.py`.
+- A second re-review found live `origin/main` advanced to PR #133. Rebased onto
+  `8822a1408cce54bc99fe760f3386243a29e64b0d`, preserving
+  `docs/adr/lane-d-0021-report-run-contract-backward-compat.md`.
+- Live `origin/main` advanced again to PR #134. Rebased onto
+  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, preserving report-run rights
+  optionality changes.
+- Live `origin/main` advanced again to PR #136. Rebased onto
+  `71c6a74eae08811d4e178b0c11365ff1e247772d`, preserving the jsonschema mypy stub
+  fix.
+- Preserved boundaries: no qualification `PASS`, no P0 result artifact, no
+  owner-decision unfreeze, no Bologna AOI/source approval, no fixture capture, no
+  runtime/report use, no DB seed, no source registry promotion, no DS-017 approval,
+  no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 EQP2-2 executable qualification change impact
 
 - Started clean worktree `worktrees/eqp2-2` on `eqp2/2-change-impact` from live

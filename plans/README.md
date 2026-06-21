@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eqp2-1-status-check.md`.
+Latest completed plan: `2026-06-21-eqp2-2-change-impact.md`.
 
-Current routing plan: `2026-06-21-eqp2-2-change-impact.md`.
+Current routing plan: `2026-06-21-eqp2-3-p0-auto-evidence.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -132,6 +132,14 @@ and reports implicated change classes, review groups, invalidated criterion IDs,
 surface criterion IDs, and unmatched paths without changing status or creating a
 false gate. It must not claim qualification `PASS`, unfreeze owner decisions, or
 expand Bologna/source/runtime authority.
+
+`EQP2-3` collects repo-local evidence pointers for `P0-004`, `P0-005`, `P0-021`,
+and `P0-023` while keeping each row and the P0 gate blocked. It adds
+`docs/qualification/P0_AUTO_EVIDENCE.yaml` plus a checker/wrappers that validate
+the artifact, status link, backlog rows, no-PASS status, no CI `continue-on-error`,
+no pytest xfail suppression, and fixture-boundary signals. It does not create a
+P0 result artifact, unfreeze owner decisions, claim sealed acceptance, capture
+fixtures, approve sources, run connectors, or start Bologna runtime/report work.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

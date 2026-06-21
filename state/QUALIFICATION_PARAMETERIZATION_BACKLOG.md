@@ -47,6 +47,20 @@ No AOI selection, source approval, fixture capture, runtime/report use, or sourc
 | Unresolved scope/version fields | 6 plus `ruleset_versions` | BLOCKED (external/owner authority) |
 | Inactive/conditional DRAFT contracts | 36 | excluded unless owner activates profile |
 
+## P0 Repo-Local Auto-Evidence
+
+These rows have repo-local evidence collected in
+`docs/qualification/P0_AUTO_EVIDENCE.yaml`. They remain blocked because no external
+target, vault, source, rubric, reviewer, candidate, or controlled storage authority has
+been frozen.
+
+| Criterion | Evidence status | Effective status | Still-blocked reason |
+|---|---|---|---|
+| `P0-004` | auto-evidenced; still target-blocked | BLOCKED | External vault/access-control records and sealed-case hashes are not approved. |
+| `P0-005` | auto-evidenced; still target-blocked | BLOCKED | Sealed acceptance case identity and case provenance register are not approved. |
+| `P0-021` | auto-evidenced; still target-blocked | BLOCKED | Controlled storage, archive manifests, and evidence hashes are not approved. |
+| `P0-023` | auto-evidenced; still target-blocked | BLOCKED | Frozen thresholds, candidate artifact, and sealed run/version records are absent. |
+
 ## Active Gates
 
 All active gates require frozen targets, contracts, rubrics where applicable, reviewer

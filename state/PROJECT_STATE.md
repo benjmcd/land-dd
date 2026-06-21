@@ -1,15 +1,22 @@
 # Project State
 
-## Current checkpoint (2026-06-21 EQP2-2 executable change impact)
+## Current checkpoint (2026-06-21 EQP2-3 P0 auto-evidence)
 
-Live `origin/main` contains `EQP2-1` through PR #130 at
-`a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, on top of the EQ Phase 2 handoff
-through PR #129 at `b88d608aec21a988bc4127f167ee0972f6da06f2`. `EQP2-2` is the
-current repo-local lane: make change-impact invalidation executable against a
-diff while staying advisory and non-passing.
+Live `origin/main` contains the jsonschema mypy stub fix through PR #136 at
+`71c6a74eae08811d4e178b0c11365ff1e247772d`, on top of the report-run rights
+optionality fix through PR #134 at `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`,
+the report-run contract backward-compat ADR through PR #133 at
+`8822a1408cce54bc99fe760f3386243a29e64b0d`, the error-safety redaction
+hardening through PR #132 at `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`,
+`EQP2-2` through PR #131 at
+`0f0f592b9522d26afb70007281870325edd13579`, `EQP2-1` through PR #130 at
+`a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, and the EQ Phase 2 handoff
+through PR #129 at `b88d608aec21a988bc4127f167ee0972f6da06f2`.
+`EQP2-3` is the current repo-local lane: collect evidence pointers for the four
+selected P0 invariants while keeping P0 blocked and result-free.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-eqp2-2-change-impact.md`.
+  `plans/2026-06-21-eqp2-3-p0-auto-evidence.md`.
 - **Latest repo-local test hardening**:
   `backend/tests/test_qualification_status_check.py` proves the derived status view
   matches the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` shape, rejects P0 drift to
@@ -17,11 +24,15 @@ diff while staying advisory and non-passing.
   closed if a mapped checker result is missing. `backend/tests/test_qualification_change_impact_check.py`
   now proves advisory path-to-change-class mapping, crosswalk surface enrichment,
   unmatched-path reporting, unsafe-path fail-closed behavior, and CLI output for the
-  EQP2-2 change-impact checker.
+  EQP2-2 change-impact checker. `backend/tests/test_qualification_p0_auto_evidence.py`
+  proves the P0 auto-evidence artifact matches the live catalog rows, links from the
+  blocked status file, leaves `result_path` null, records backlog rows as
+  `auto-evidenced; still target-blocked`, and fails closed when the status link is
+  missing.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
   `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
-  `EQ-2`, `EQ-3`, `EQ-4`, and `EQP2-1` are done in the current routing model. `EQP2-1` adds
+  `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, and `EQP2-3` are done in the current routing model. `EQP2-1` adds
   `scripts/qualification_status_check.py`, `scripts/qualification_status_check.ps1`,
   and `scripts/run_qualification_status_check.sh`. The checker runs mapped readiness,
   authority, source, release, security, operations, and spatial checker paths; default
@@ -32,7 +43,13 @@ diff while staying advisory and non-passing.
   `scripts/qualification_change_impact_check.ps1`, and
   `scripts/run_qualification_change_impact_check.sh`; the checker maps changed paths
   through matrix-owned `path_globs` and crosswalk config/checker paths while remaining
-  advisory. `EQP2-3` and `EQP2-4` remain queued.
+  advisory. `EQP2-3` adds `docs/qualification/P0_AUTO_EVIDENCE.yaml`,
+  `scripts/qualification_p0_evidence_check.py`,
+  `scripts/qualification_p0_evidence_check.ps1`, and
+  `scripts/run_qualification_p0_evidence_check.sh`; the checker validates exactly
+  `P0-004`, `P0-005`, `P0-021`, and `P0-023` as blocked repo-local evidence rows
+  against the live catalog, status, backlog, and local suppression/control signals.
+  `EQP2-4` remains queued.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
@@ -41,9 +58,9 @@ diff while staying advisory and non-passing.
   dedicated `qualification-selftest` CI job through
   `scripts/run_qualification_status_check.sh`. The EQP2-2 change-impact checker is
   wired immediately after the status checker in the same local verify scripts and
-  dedicated qualification CI job.
-- **Immediate next pursuit after EQP2-2**: `EQP2-3` should collect repo-local evidence for the auto-verifiable P0 invariants
-  while keeping P0 blocked. `EQP2-4` should make existing checkers advertise their
+  dedicated qualification CI job. The EQP2-3 P0 auto-evidence checker is wired after
+  change-impact in the same local verify scripts and dedicated qualification CI job.
+- **Immediate next pursuit after EQP2-3**: `EQP2-4` should make existing checkers advertise their
   crosswalk criterion IDs and prove crosswalk/checker parity. The Bologna path remains
   prioritized but still requires external product/AOI/source-rights authority before
   corpus or DB-backed report work.
