@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Bologna Authority Record Contract
+
+**Scope:** Add a machine-checked authority-record contract to the blocked Bologna
+pilot-scope authority packet. This does not approve product, AOI, sources,
+source-rights, DS-017, hosted, or Level 10 authority; does not change source-rights
+decisions; does not create a corpus, fixture, DB seed, runtime artifact, report proof,
+source registry row, source profile, domain profile, or qualification result; and does
+not move any qualification status to `PASS`.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py -q
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red TDD check failed first because `config/bologna_pilot_scope_authority.yaml` had
+  no `authority_record_contract`.
+- After implementation, pilot-scope authority tests passed (`11 passed`).
+- Initial focused validation found `scripts/readiness_matrix_check.py` failing through
+  the qualification status checker because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` or preserve explicit Level 9/10 authority context.
+  The plan was corrected to cite the matrix and keep Level 9/10 context.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checkers passed while remaining validate-only and blocked.
+- Qualification status passed with checker results `passed=27 not_run=2
+  unexpected_failed=0` and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Qualification change-impact passed with no changed-path impacts.
+- Focused routing/Bologna artifact pytest passed (`43 passed`).
+- `git diff --check` passed and no tracked deletions were reported.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed because the
+  active validation-log section did not yet list `.\scripts\verify.ps1`, causing the
+  project-readiness parser test to reject the active validation evidence. This log was
+  updated before rerunning full verification.
+- Targeted project-readiness parser test passed after the validation-log correction.
+- Final `git diff --check`, no tracked-deletion check, and full `.\scripts\verify.ps1`
+  passed. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** `current_authority_records` remains empty and `BSA-001` remains
+blocked because no external product/AOI/source-review authority is cited. This slice
+makes the future authority evidence format executable; it does not satisfy the
+authority blocker or authorize corpus/report work.
+
 ## 2026-06-21 Post-EQP2 Bologna Authority Routing Sync
 
 **Scope:** Close the completed EQ Phase 2 routing loop and make the active routing point

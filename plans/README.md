@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eqp2-4-checker-parity.md`.
+Latest completed plan: `2026-06-21-post-eqp2-bologna-authority-sync.md`.
 
-Current routing plan: `2026-06-21-post-eqp2-bologna-authority-sync.md`.
+Current routing plan: `2026-06-21-bologna-authority-record-contract.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -156,6 +156,14 @@ product/AOI/source-review authority is cited in the pilot-scope, source-authorit
 source-rights packets. This sync does not approve sources, select an AOI, change
 source rights, create a corpus, capture fixtures, seed the DB, prove a report, approve
 DS-017, unfreeze owner decisions, or claim hosted/Level 10 authority.
+
+`BAP-001` is the current authority-first slice. It adds a machine-checked
+`authority_record_contract` to `config/bologna_pilot_scope_authority.yaml` so future
+product/AOI/scope authority can be recorded with required fields, full scope-decision
+coverage, and no-overclaim controls. `current_authority_records` remains empty, and
+this does not approve sources, select an AOI, change source rights, create a corpus,
+capture fixtures, seed the DB, prove a report, approve DS-017, unfreeze owner
+decisions, or claim hosted/Level 10 authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

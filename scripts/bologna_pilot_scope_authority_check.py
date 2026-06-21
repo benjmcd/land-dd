@@ -60,6 +60,44 @@ EXPECTED_DOWNSTREAM = {
     "bologna_source_rights_matrix": "config/bologna_source_rights.yaml",
     "bologna_recorded_source_corpus": "config/bologna_recorded_source_corpus.yaml",
 }
+EXPECTED_AUTHORITY_RECORD_FIELDS = {
+    "authority_record_id",
+    "authority_type",
+    "authority_reference",
+    "decision_owner",
+    "decision_date",
+    "effective_date",
+    "scope_decision_ids",
+    "decision_summary",
+    "evidence_summary",
+    "cited_artifacts",
+    "downstream_unlocks_requested",
+    "caveats",
+    "stop_conditions",
+    "supersedes_authority_record_ids",
+}
+EXPECTED_AUTHORITY_TYPES = {
+    "product_decision",
+    "aoi_boundary_decision",
+    "operator_use_case_decision",
+    "non_goal_review",
+    "jurisdiction_review",
+    "scope_mode_decision",
+    "ds017_treatment_decision",
+    "source_selection_policy",
+    "fixture_boundary_decision",
+    "runtime_boundary_decision",
+    "no_overclaim_review",
+}
+EXPECTED_NO_OVERCLAIM_CONTROLS = {
+    "no_source_approval_by_pilot_scope_record",
+    "no_source_rights_change_by_pilot_scope_record",
+    "no_fixture_capture_by_pilot_scope_record",
+    "no_runtime_report_use_by_pilot_scope_record",
+    "no_db_seed_by_pilot_scope_record",
+    "no_legal_buildability_title_or_value_claim",
+    "no_level_10_or_hosted_claim",
+}
 REQUIRED_FILES = (
     CONFIG_PATH,
     RUNBOOK_PATH,
@@ -81,6 +119,8 @@ RUNBOOK_PHRASES = (
     "does not select a Bologna AOI",
     "does not approve Italy/EU/local sources",
     "scope_decision_requests",
+    "authority_record_contract",
+    "ready_for_external_authority_evidence",
     "authority_state",
     "decision_updates_allowed",
     "config/bologna_source_authority_intake.yaml",
@@ -180,6 +220,57 @@ def validate_scope_decision_requests(payload: dict[str, Any]) -> None:
     )
 
 
+def validate_authority_record_contract(payload: dict[str, Any]) -> None:
+    contract = require_mapping(
+        payload.get("authority_record_contract"),
+        "authority record contract missing",
+    )
+    require(
+        contract.get("contract_state") == "ready_for_external_authority_evidence",
+        "authority record contract state changed",
+    )
+    require(
+        contract.get("current_authority_records") == [],
+        "authority records must remain empty until cited authority exists",
+    )
+    require(
+        list_set(contract.get("required_record_fields"), "authority record fields missing")
+        == EXPECTED_AUTHORITY_RECORD_FIELDS,
+        "authority record fields drifted",
+    )
+    require(
+        list_set(contract.get("allowed_authority_types"), "authority types missing")
+        == EXPECTED_AUTHORITY_TYPES,
+        "authority types drifted",
+    )
+    require(
+        list_set(
+            contract.get("required_scope_decision_coverage"),
+            "authority record coverage missing",
+        )
+        == EXPECTED_SCOPE_DECISIONS,
+        "authority record coverage drifted",
+    )
+    require(
+        contract.get("coverage_policy") == "all_required_scope_decisions",
+        "authority record coverage policy changed",
+    )
+    require(
+        contract.get("decision_update_policy") == "disabled_until_complete_cited_record",
+        "authority record decision update policy changed",
+    )
+    controls = require_mapping(
+        contract.get("no_overclaim_controls"),
+        "authority record no-overclaim controls missing",
+    )
+    require(
+        set(controls) == EXPECTED_NO_OVERCLAIM_CONTROLS,
+        "authority record no-overclaim controls drifted",
+    )
+    for control_id, enabled in controls.items():
+        require(enabled is True, f"{control_id} no-overclaim control disabled")
+
+
 def validate_required_files() -> None:
     for path_text in REQUIRED_FILES:
         require_existing(path_text)
@@ -217,6 +308,7 @@ def validate_catalog() -> dict[str, Any]:
         "required scope decisions changed",
     )
     validate_scope_decision_requests(payload)
+    validate_authority_record_contract(payload)
     review = require_mapping(
         payload.get("scope_authority_review"),
         "scope authority review missing",

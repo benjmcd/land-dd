@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna authority record contract
+
+- Started clean worktree `worktrees/bol-auth` on `codex/bol-auth-packet` from live
+  `origin/main` at `604f7c2739095d9cc543b675ed3b84e619cda54d` after PR #138 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-authority-record-contract.md` for the next
+  authority-first Bologna slice.
+- Added an `authority_record_contract` to `config/bologna_pilot_scope_authority.yaml`
+  and extended `scripts/bologna_pilot_scope_authority_check.py` so the future
+  product/AOI/scope authority record format is machine-checked for required fields,
+  full scope-decision coverage, and no-overclaim controls.
+- Preserved boundaries: `current_authority_records` remains empty, `BSA-001` remains
+  blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
 ## 2026-06-21 post-EQP2 Bologna authority routing sync
 
 - Started clean worktree `worktrees/bol-sync` on `codex/bol-auth-routing` from live

@@ -77,6 +77,41 @@ def test_bologna_pilot_scope_decision_requests_match_required_decisions() -> Non
         assert request["decision_updates_allowed"] is False
 
 
+def test_bologna_pilot_scope_authority_record_contract_is_present_and_blocked() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = _catalog()
+    contract = catalog["authority_record_contract"]
+
+    assert contract["contract_state"] == "ready_for_external_authority_evidence"
+    assert contract["current_authority_records"] == []
+    assert set(contract["required_record_fields"]) == validator.EXPECTED_AUTHORITY_RECORD_FIELDS
+    assert set(contract["allowed_authority_types"]) == validator.EXPECTED_AUTHORITY_TYPES
+    assert set(contract["required_scope_decision_coverage"]) == validator.EXPECTED_SCOPE_DECISIONS
+    assert contract["coverage_policy"] == "all_required_scope_decisions"
+    assert contract["decision_update_policy"] == "disabled_until_complete_cited_record"
+    assert all(value is True for value in contract["no_overclaim_controls"].values())
+
+
+def test_bologna_pilot_scope_authority_record_contract_fails_if_coverage_drifts(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    catalog["authority_record_contract"]["required_scope_decision_coverage"] = (
+        catalog["authority_record_contract"]["required_scope_decision_coverage"][1:]
+    )
+
+    def fake_read_text(path: str) -> str:
+        if path == "config/bologna_pilot_scope_authority.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="authority record coverage drifted"):
+        validator.validate_catalog()
+
+
 def test_bologna_pilot_scope_downstream_unlocks_remain_disabled() -> None:
     validator = cast(Any, _load_validator())
     catalog = _catalog()

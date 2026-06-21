@@ -1,47 +1,51 @@
 # Project State
 
-## Current checkpoint (2026-06-21 post-EQP2 Bologna authority routing)
+## Current checkpoint (2026-06-21 Bologna authority record contract)
 
 Live `origin/main` contains the completed EQ Phase 2 control-plane operationalization
-through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`. The four EQP2 lanes are
-merged and post-merge verified: derived status checking, advisory change-impact
-reporting, blocked P0 repo-local evidence, and checker advertisement parity are now
-executable repo-local controls. This checkpoint syncs routing back to the prioritized
-Bologna recorded-source path without crossing the missing authority boundary.
+through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, plus the post-EQP2
+Bologna authority routing sync through PR #138 at
+`604f7c2739095d9cc543b675ed3b84e619cda54d`. The current lane is the first
+authority-record slice for the prioritized Bologna recorded-source path: make the
+pilot-scope authority evidence format machine-checked while preserving the missing
+authority boundary.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-post-eqp2-bologna-authority-sync.md`.
+  `plans/2026-06-21-bologna-authority-record-contract.md`.
 - **Latest repo-local test hardening**:
-  `backend/tests/test_readiness_core_artifacts.py` and
+  `backend/tests/test_bologna_pilot_scope_authority_artifacts.py` now asserts that the
+  pilot-scope packet carries an `authority_record_contract`, the contract covers every
+  required first-gate scope decision, the current authority-record list is empty, and
+  coverage drift fails closed. `backend/tests/test_readiness_core_artifacts.py` and
   `backend/tests/test_qualification_parameterization_backlog_artifacts.py` now assert
-  that the active plan is the post-EQP2 Bologna authority sync, `EQP2-4` is done,
-  `BOL-AUTH-SYNC` is done, and `BSA-001` remains blocked. The existing Bologna
-  authority tests still prove pilot-scope authority, source-authority intake,
-  source-rights, and recorded-source corpus artifacts are validate-only and uncited.
+  that the active plan is this authority-record contract, `BOL-AUTH-SYNC` is done,
+  `BAP-001` is done, and `BSA-001` remains blocked.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
   `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
   `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`, and
-  `BOL-AUTH-SYNC` are done in the current routing model. `BSA-001` remains blocked
-  until product/AOI/source-review authority is cited in
+  `BOL-AUTH-SYNC`, and `BAP-001` are done in the current routing model. `BSA-001`
+  remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
-  `config/bologna_source_rights.yaml`. `EQ-5` remains queued behind this sync as a
-  repo-local fallback if external Bologna authority is absent, and `EQ-R` remains an
+  `config/bologna_source_rights.yaml`. `EQ-5` remains queued behind `BAP-001` as a
+  repo-local fallback if external Bologna authority remains absent, and `EQ-R` remains an
   independent residual-reconciliation correction.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
-- **Bologna authority boundary**: `config/bologna_pilot_scope_authority.yaml` still
-  has no authority references; `config/bologna_source_authority_intake.yaml` remains
+- **Bologna authority boundary**: `config/bologna_pilot_scope_authority.yaml` now has
+  a validated `authority_record_contract` for future cited authority evidence, but its
+  `current_authority_records` list is still empty and all scope decision rows still
+  have no authority references. `config/bologna_source_authority_intake.yaml` remains
   `blocked_no_authority`; `config/bologna_source_rights.yaml` keeps candidates in
   pending review; and `config/bologna_recorded_source_corpus.yaml` remains
   `blocked_no_authority`.
 - **Immediate next pursuit**: cite real product/AOI/source-review authority for the
-  first Bologna gate. If authority is available, update the Bologna pilot-scope,
-  source-authority, and source-rights packets before any corpus/report work. If it is
-  not available, keep `BSA-001` blocked and do not fabricate a corpus, source profile,
-  fixture, DB seed, or report proof from repo-local inference.
+  first Bologna gate in the authority-record format before any source-authority,
+  source-rights, corpus, or report work. If authority is not available, keep `BSA-001`
+  blocked and do not fabricate a corpus, source profile, fixture, DB seed, or report
+  proof from repo-local inference.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,
