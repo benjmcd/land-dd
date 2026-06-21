@@ -7,6 +7,7 @@ status: blocked_no_authority
 validation: scripts/run_bologna_recorded_source_corpus_check.ps1
 
 authority:
+  - config/bologna_pilot_scope_authority.yaml
   - config/bologna_preflight.yaml
   - config/bologna_source_authority_intake.yaml
   - config/bologna_source_rights.yaml
@@ -174,6 +175,7 @@ promotion_blockers:
   - no_overclaim_review
 
 unlock_conditions:
+  - Pilot-scope authority packet allows downstream source-authority and corpus review.
   - Product authority names the one Bologna AOI and evidence-only or rulepack scope.
   - Source-authority intake references are present for every selected source.
   - Source-rights decisions are complete for every selected source.

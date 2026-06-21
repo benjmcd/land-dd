@@ -25,6 +25,7 @@ authority catalogs:
 - image publication: `config/image_publication.yaml`
 - billing/cost: `config/ops_cost_monitoring.yaml`
 - hosted observability: `config/observability_readiness.yaml`
+- Bologna pilot scope authority: `config/bologna_pilot_scope_authority.yaml`
 - Bologna recorded-source authority: `config/bologna_source_authority_intake.yaml`
 
 ## Boundary
@@ -157,6 +158,25 @@ Collect:
 - `pager_on_call`
 - `hosted_log_retention`
 - `production_traffic_observability`
+
+### `bologna_pilot_scope`
+
+Source catalog: `config/bologna_pilot_scope_authority.yaml`
+
+Collect:
+
+- `product_authorizes_bologna_pilot_reference`
+- `one_aoi_geometry_or_named_boundary`
+- `intended_operator_and_use_case`
+- `pilot_non_goals_and_exclusions`
+- `stop_conditions_and_reversion_plan`
+- `jurisdiction_boundary_review`
+- `evidence_only_or_rulepack_scope`
+- `ds017_treatment_for_pilot`
+- `candidate_source_selection_policy`
+- `fixture_capture_boundary`
+- `report_runtime_boundary`
+- `no_overclaim_review_owner`
 
 ### `bologna_recorded_source`
 

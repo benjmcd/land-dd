@@ -9,8 +9,8 @@ threat-proxy-audit, release-package, image-publication, hosted-deployment,
 source-readiness, data-retention, load-test, performance, data-lineage,
 jurisdiction-readiness, rulepack-readiness, checklist-dry-run, source-entitlement, and
 production-authority intake proofs into one release boundary. It also composes the
-Bologna recorded-source corpus check so future expansion cannot bypass the blocked
-fixture-corpus contract.
+Bologna pilot-scope authority and recorded-source corpus checks so future expansion
+cannot bypass the blocked product/AOI/scope gate or fixture-corpus contract.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -49,14 +49,21 @@ The check is validate-only. It verifies that:
   `scripts/run_production_authority_intake_check.ps1` /
   `scripts/production_authority_intake_check.py` as a validate-only
   production-authority intake check across DS-017, hosted platform, secrets, identity,
-  image publication, billing, hosted observability, and Bologna recorded-source
-  blockers;
+  image publication, billing, hosted observability, Bologna pilot-scope, and Bologna
+  recorded-source blockers;
+- the local Bologna pilot-scope authority packet is
+  `config/bologna_pilot_scope_authority.yaml`, and the release proof composes
+  `scripts/run_bologna_pilot_scope_authority_check.ps1` /
+  `scripts/bologna_pilot_scope_authority_check.py` as a validate-only first-gate
+  Bologna pilot-scope authority check that keeps product, one-AOI, jurisdiction,
+  rulepack/evidence scope, DS-017 treatment, fixture boundary, and runtime/report
+  boundary decisions blocked until cited authority exists;
 - the local Bologna recorded-source corpus contract is
   `config/bologna_recorded_source_corpus.yaml`, and the release proof composes
   `scripts/run_bologna_recorded_source_corpus_check.ps1` /
-  `scripts/bologna_recorded_source_corpus_check.py` as a validate-only Bologna
-  recorded-source corpus check that keeps fixture capture blocked until authority
-  exists;
+  `scripts/bologna_recorded_source_corpus_check.py` as a validate-only
+  Bologna recorded-source corpus check that keeps fixture capture blocked until
+  authority exists;
 - Must current-effective source reviews keep `Last Checked At` within the 90-day
   repo-local freshness horizon enforced by `scripts/source_readiness.py` and
   `scripts/alert_rules_check.py`, while source-specific upstream/update cadence and
@@ -152,6 +159,10 @@ The check is validate-only. It verifies that:
   DS-017, select vendors, provision hosted infrastructure, publish images, write
   secrets, create billing integration, create hosted observability, select a Bologna
   AOI, promote source decisions, or claim Level 10 authority.
+- Bologna pilot-scope authority is cataloged in
+  `config/bologna_pilot_scope_authority.yaml`, but it is only a validate-only first
+  gate. It does not select an AOI, approve sources, change source rights, capture
+  fixtures, start runtime/report proof, approve DS-017, or start Bologna.
 - Bologna recorded-source corpus readiness is cataloged in
   `config/bologna_recorded_source_corpus.yaml`, but it is only a validate-only manifest
   contract. It does not capture fixtures, create source-failure fixtures, approve

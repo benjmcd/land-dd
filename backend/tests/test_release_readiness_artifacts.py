@@ -40,6 +40,7 @@ REQUIRED_CHECKS = {
     "data_lineage",
     "observability_readiness",
     "production_authority_intake",
+    "bologna_pilot_scope_authority",
     "bologna_recorded_source_corpus",
 }
 REQUIRED_BLOCKERS = {
@@ -75,6 +76,7 @@ COMPOSED_VALIDATORS = (
     "scripts/checklist_dry_run_check.py",
     "scripts/source_entitlement_check.py",
     "scripts/production_authority_intake_check.py",
+    "scripts/bologna_pilot_scope_authority_check.py",
     "scripts/bologna_recorded_source_corpus_check.py",
 )
 
@@ -285,6 +287,8 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "run_source_entitlement_check.ps1",
         "production_authority_intake.yaml",
         "run_production_authority_intake_check.ps1",
+        "bologna_pilot_scope_authority.yaml",
+        "run_bologna_pilot_scope_authority_check.ps1",
         "bologna_recorded_source_corpus.yaml",
         "run_bologna_recorded_source_corpus_check.ps1",
         "spatial_query_plan.yaml",
@@ -308,6 +312,7 @@ def test_release_readiness_runbook_records_limits_and_validation() -> None:
         "published registry-image attestation",
         "source-entitlement check",
         "production-authority intake check",
+        "Bologna pilot-scope authority check",
         "Bologna recorded-source corpus check",
     ):
         assert phrase in runbook
@@ -387,18 +392,21 @@ def test_release_readiness_scripts_expect_current_source_counts() -> None:
     assert '"checklist_dry_run"' in script
     assert '"source_entitlement"' in script
     assert '"production_authority_intake"' in script
+    assert '"bologna_pilot_scope_authority"' in script
     assert '"bologna_recorded_source_corpus"' in script
     assert '"config/performance_baseline.yaml"' in script
     assert '"config/threat_proxy_audit.yaml"' in script
     assert '"config/checklist_dry_run.yaml"' in script
     assert '"config/source_entitlements.yaml"' in script
     assert '"config/production_authority_intake.yaml"' in script
+    assert '"config/bologna_pilot_scope_authority.yaml"' in script
     assert '"config/bologna_recorded_source_corpus.yaml"' in script
     assert '"scripts/performance_baseline_check.py"' in script
     assert '"scripts/threat_proxy_audit_check.py"' in script
     assert '"scripts/checklist_dry_run_check.py"' in script
     assert '"scripts/source_entitlement_check.py"' in script
     assert '"scripts/production_authority_intake_check.py"' in script
+    assert '"scripts/bologna_pilot_scope_authority_check.py"' in script
     assert '"scripts/bologna_recorded_source_corpus_check.py"' in script
     assert '"config/spatial_query_plan.yaml"' in script
     assert '"scripts/spatial_query_plan_check.py"' in script

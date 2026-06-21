@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna pilot-scope authority BPS-001
+
+- Started clean worktree `worktrees/bol-auth` on `codex/bol-auth` from live
+  `origin/main` at `d31bb8e5b2c9849e6989544f3bf43fff065e1fef`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current Bologna authority surfaces after PR #120 and found the missing
+  first gate was product/AOI/scope authority, separate from per-source rights review.
+- Added `config/bologna_pilot_scope_authority.yaml`, a runbook, checker, wrappers, and
+  focused artifact tests. The packet keeps all approvals false, authority references
+  empty, and downstream source-authority/source-rights/corpus updates disabled.
+- Composed the first-gate checker into Bologna preflight, production-authority intake,
+  release readiness, manifest, matrix, task routing, and production-authority packet
+  surfaces.
+- Preserved boundaries: no Bologna AOI/source approval, source-rights change, fixture
+  capture, source registry promotion, connector, DB seed, runtime/report use, DS-017
+  approval, hosted authority, or Level 10 claim.
+
 ## 2026-06-21 Bologna priority routing BOL-PRIORITY
 
 - Started clean worktree `worktrees/bol-priority` on `codex/bol-priority` from live

@@ -56,6 +56,7 @@ REQUIRED_FILES = (
     CONFIG_PATH,
     RUNBOOK_PATH,
     "config/bologna_source_candidates.yaml",
+    "config/bologna_pilot_scope_authority.yaml",
     "config/bologna_source_rights.yaml",
     "config/bologna_source_authority_intake.yaml",
     "config/bologna_recorded_source_corpus.yaml",
@@ -63,11 +64,14 @@ REQUIRED_FILES = (
     "docs/source-reviews/bologna-source-rights.md",
     "docs/runbooks/bologna_recorded_source_corpus.md",
     "scripts/bologna_source_candidates_check.py",
+    "scripts/bologna_pilot_scope_authority_check.py",
     "scripts/bologna_source_rights_check.py",
     "scripts/bologna_source_authority_intake_check.py",
     "scripts/bologna_recorded_source_corpus_check.py",
     "scripts/run_bologna_source_candidates_check.ps1",
     "scripts/run_bologna_source_candidates_check.sh",
+    "scripts/run_bologna_pilot_scope_authority_check.ps1",
+    "scripts/run_bologna_pilot_scope_authority_check.sh",
     "scripts/run_bologna_source_rights_check.ps1",
     "scripts/run_bologna_source_rights_check.sh",
     "scripts/run_bologna_source_authority_intake_check.ps1",
@@ -85,6 +89,7 @@ REQUIRED_FILES = (
 RUNBOOK_PHRASES = (
     "bologna_preflight_v1",
     "validate-only",
+    "bologna_pilot_scope_authority_v1",
     "bologna_source_candidates_v1",
     "bologna_source_rights_v1",
     "bologna_source_authority_intake_v1",
@@ -294,6 +299,45 @@ def validate_source_candidates() -> None:
         )
 
 
+def validate_pilot_scope_authority() -> None:
+    payload = require_mapping(
+        yaml.safe_load(read_text("config/bologna_pilot_scope_authority.yaml")),
+        "Bologna pilot-scope authority catalog must be a mapping",
+    )
+    require(
+        payload.get("schema_version") == "bologna_pilot_scope_authority_v1",
+        "Bologna pilot-scope authority schema mismatch",
+    )
+    require(
+        payload.get("status") == "blocked_no_pilot_scope_authority",
+        "Bologna pilot-scope authority must remain blocked",
+    )
+    approvals = require_mapping(
+        payload.get("approvals"),
+        "Bologna pilot-scope approvals missing",
+    )
+    require(
+        all(value is False for value in approvals.values()),
+        "Bologna pilot-scope approvals must remain false",
+    )
+    review = require_mapping(
+        payload.get("scope_authority_review"),
+        "Bologna pilot-scope review missing",
+    )
+    require(
+        review.get("authority_state") == "missing_authority",
+        "Bologna pilot-scope authority state promoted",
+    )
+    require(
+        review.get("authority_references") == [],
+        "Bologna pilot-scope authority references must remain empty",
+    )
+    require(
+        review.get("decision_updates_allowed") is False,
+        "Bologna pilot-scope updates unexpectedly allowed",
+    )
+
+
 def validate_source_rights() -> None:
     payload = require_mapping(
         yaml.safe_load(read_text("config/bologna_source_rights.yaml")),
@@ -428,6 +472,7 @@ def validate_recorded_source_corpus() -> None:
 def main() -> int:
     validate_required_files()
     validate_catalog()
+    validate_pilot_scope_authority()
     validate_source_candidates()
     validate_source_rights()
     validate_source_authority_intake()

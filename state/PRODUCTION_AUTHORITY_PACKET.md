@@ -276,10 +276,12 @@ Source of current truth: `config/performance_baseline.yaml`,
 
 Source of current truth: `config/bologna_preflight.yaml`,
 `config/bologna_source_candidates.yaml`, `config/bologna_source_rights.yaml`,
+`config/bologna_pilot_scope_authority.yaml`,
 `config/bologna_source_authority_intake.yaml`,
 `config/bologna_recorded_source_corpus.yaml`,
 `docs/runbooks/bologna_preflight.md`, `docs/runbooks/bologna_source_candidates.md`,
 `docs/runbooks/bologna_source_rights.md`,
+`docs/runbooks/bologna_pilot_scope_authority.md`,
 `docs/runbooks/bologna_source_authority_intake.md`,
 `docs/runbooks/bologna_recorded_source_corpus.md`,
 `docs/source-reviews/bologna-source-candidates.md`,
@@ -297,6 +299,12 @@ source into `registers/data_source_registry.csv`.
 The Bologna source-rights matrix is validate-only. It records the exact source-schema,
 license, cache, export, AI-use, raw-data, attribution, retrieval, caveat, CRS, fixture,
 and report-use decisions required before any candidate can be promoted.
+
+The Bologna pilot-scope authority packet is validate-only and blocked. It records the
+product, one-AOI, intended-operator, non-goal, stop-condition, jurisdiction,
+rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
+fixture-boundary, runtime-boundary, and no-overclaim decisions required before
+source-authority or corpus updates can start.
 
 The Bologna source-authority intake guard is validate-only and blocked. It records the
 exact authority evidence slots that must be cited before any pending source-rights
@@ -371,14 +379,14 @@ and no-overclaim review, but it does not allow fixture capture.
 | Billing/cost authority | Hosted billing reconciliation, paid-source cost attribution, spend alerts, batch/concurrency guardrails. |
 | Alerting/on-call authority | Hosted alert routes, dashboards, queue/source freshness monitors, incident validation. |
 | Production workload/retention authority | Hosted load proof, SLO threshold checks, retention scheduler, log retention, object-store capacity proof. |
-| Bologna recorded-source pilot authority | Complete source-authority intake, source-rights matrix, recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan. |
+| Bologna recorded-source pilot authority | Complete pilot-scope authority, source-authority intake, source-rights matrix, recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan. |
 
 ## Open Blockers
 
 - DS-017 has no vendor, license, cost, entitlement, or connector authority.
-- Bologna has no selected AOI, promoted source inventory, Italy/EU/local source-rights
-  authority, cadastral source review, pilot rulepack scope, recorded-source fixture
-  corpus, or DB-backed pilot proof.
+- Bologna has no pilot-scope authority, selected AOI, promoted source inventory,
+  Italy/EU/local source-rights authority, cadastral source review, pilot rulepack
+  scope, recorded-source fixture corpus, or DB-backed pilot proof.
 - Hosted platform, database, DNS/TLS, registry, public URL, and production smoke
   authority are not available.
 - External secret manager, IdP/OAuth/OIDC, full user RBAC, billing reconciliation,

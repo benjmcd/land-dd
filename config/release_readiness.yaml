@@ -82,6 +82,9 @@ required_checks:
   - id: production_authority_intake
     proof: scripts/run_production_authority_intake_check.ps1
     ci_job: null
+  - id: bologna_pilot_scope_authority
+    proof: scripts/run_bologna_pilot_scope_authority_check.ps1
+    ci_job: null
   - id: bologna_recorded_source_corpus
     proof: scripts/run_bologna_recorded_source_corpus_check.ps1
     ci_job: null

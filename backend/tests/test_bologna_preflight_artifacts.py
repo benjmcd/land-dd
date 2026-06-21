@@ -60,6 +60,14 @@ def test_bologna_preflight_gate_set_and_statuses_are_pinned() -> None:
         else:
             assert gates[gate_id]["next_action"]
             assert gates[gate_id]["blocker_authority"]
+    assert (
+        "config/bologna_pilot_scope_authority.yaml"
+        in gates["pilot_candidate_authority"]["evidence"]
+    )
+    assert (
+        "config/bologna_pilot_scope_authority.yaml"
+        in gates["pilot_candidate_authority"]["blocker_authority"]
+    )
     assert "config/bologna_source_candidates.yaml" in gates["italy_source_inventory"]["evidence"]
     assert gates["italy_source_inventory"]["status"] == "missing_candidate_decision"
     assert "config/bologna_source_rights.yaml" in gates["italy_source_rights_review"]["evidence"]
@@ -88,6 +96,12 @@ def test_bologna_preflight_composes_source_candidate_inventory() -> None:
     validator = cast(Any, _load_validator())
 
     validator.validate_source_candidates()
+
+
+def test_bologna_preflight_composes_pilot_scope_authority() -> None:
+    validator = cast(Any, _load_validator())
+
+    validator.validate_pilot_scope_authority()
 
 
 def test_bologna_preflight_composes_source_rights_matrix() -> None:
