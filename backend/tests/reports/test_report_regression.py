@@ -413,6 +413,77 @@ def test_advisory_claim_report_artifact_semantics_are_stable() -> None:
     assert projection["artifact_metadata"]["cost_metrics"]["red_flag_count"] == 0
 
 
+def test_generated_report_source_details_carries_rights_sub_fields() -> None:
+    """Writer-presence guard: every source_details entry in a freshly-generated report
+    must carry the 5 rights sub-fields (redistribution_status, cache_allowed,
+    export_allowed, raw_data_allowed, ai_use_allowed).
+
+    Per ADR lane-d-0021: these fields are optional in the *published schema* because
+    pre-tightening v1 artifacts may lack them, but the writer is required to emit them
+    for every new report. This test is the regression lock for that writer-level guarantee.
+    It does NOT pin golden values — only presence of the keys.
+    """
+    _RIGHTS_KEYS = {
+        "redistribution_status",
+        "cache_allowed",
+        "export_allowed",
+        "raw_data_allowed",
+        "ai_use_allowed",
+    }
+    source_service = SourceService(InMemorySourceRepository())
+    area_service = AreaService(InMemoryAreaRepository())
+    evidence_repo = InMemoryEvidenceRepository()
+    evidence_service = EvidenceService(evidence_repo, source_service, area_service)
+    claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
+    report_service = ReportRunService(
+        source_service=source_service,
+        area_service=area_service,
+        evidence_service=evidence_service,
+        claim_service=claim_service,
+        rule_engine=RuleEngine.from_file(),
+    )
+    source_service.register(
+        SourceContract(
+            name="Fixture FEMA Flood Map",
+            organization="FEMA",
+            domain="flood",
+            license_status="approved",
+            commercial_use_status="approved",
+            redistribution_status="restricted",
+            cache_allowed="approved",
+            export_allowed="approved-with-restrictions",
+            raw_data_allowed="approved",
+            ai_use_allowed="restricted",
+            review_status="approved",
+        )
+    )
+    area = area_service.create(
+        AreaContract(
+            label="rights guard fixture polygon",
+            geom_geojson=load_geometry("valid_polygon.geojson"),
+            geom_source="rights sub-field guard fixture",
+        )
+    )
+
+    report_run = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    report_dict = report_run.model_dump(mode="json")
+    source_details = cast(
+        list[dict[str, Any]],
+        report_dict["source_manifest"]["source_details"],
+    )
+    assert source_details, "source_manifest['source_details'] must be present and non-empty"
+    for entry in source_details:
+        missing = _RIGHTS_KEYS - entry.keys()
+        assert not missing, (
+            f"source_details entry '{entry.get('name', '?')}' is missing rights sub-fields: "
+            f"{sorted(missing)}"
+        )
+
+
 def load_geometry(name: str) -> dict[str, object]:
     data = json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
     assert isinstance(data, dict)

@@ -4,7 +4,9 @@ Date: 2026-06-21
 
 ## Status
 
-Proposed
+Accepted
+
+Verified 2026-06-21: across all 23 persisted v1 artifacts the 5 rights sub-fields are absent and the other source_details fields are universal, so only those 5 are relaxed and source_details itself stays required.
 
 (Decision record only. The schema/test change it specifies lands as a separate small
 follow-up PR — see "Sequencing".)
@@ -71,14 +73,17 @@ fields to optional, and keep enforcement at the writer.** Specifically:
    `source_details` provenance block (Context §3), so the block's *presence* is a true v1
    invariant and must stay in `source_manifest.required`; a manifest with no provenance block
    at all is a genuine defect the published contract should keep rejecting. What is *not* a
-   true invariant for all v1-era artifacts is the later-added per-entry sub-fields
-   (`authority_level`, `license_status`, and the `8c877fd` rights cohort
-   `redistribution_status`, `cache_allowed`, `export_allowed`, `raw_data_allowed`,
-   `ai_use_allowed`) — relax these to **optional** inside `source_details[]`, retaining their
-   *type/enum* definitions so any artifact that carries them is still shape-checked. (If the
-   follow-up PR's artifact check finds any persisted `v1` artifact lacking the `source_details`
-   key entirely, widen the relaxation to make `source_details` optional too, and cite that
-   artifact — but the current evidence says keep it required.)
+   true invariant for all v1-era artifacts is the `8c877fd` rights cohort
+   (`redistribution_status`, `cache_allowed`, `export_allowed`, `raw_data_allowed`,
+   `ai_use_allowed`) — relax exactly these five to **optional** inside `source_details[]`,
+   retaining their *type/enum* definitions so any artifact that carries them is still
+   shape-checked. The earlier TD-081 sub-fields (`authority_level`, `license_status`,
+   `commercial_use_status`, `freshness_class`, `review_status`, `review_owner`,
+   `last_checked_at`, `source_id`, `name`) are **kept required**: the artifact check found them
+   present in all 23 persisted `v1` artifacts, while the five rights fields were absent from all
+   23. (If a persisted `v1` artifact lacking `source_details` or a TD-081 sub-field ever
+   surfaces, widen the relaxation accordingly and cite it — current evidence says keep them
+   required.)
 2. **Enforcement of provenance presence stays at the writer, not the published schema.**
    `backend/app/reports/service.py` `_source_manifest` always emits `source_details` with full
    provenance (each entry is a fixed-key dict; `SourceContract` defaults the rights/authority
