@@ -1,0 +1,100 @@
+schema_version: source_quality_profile_v3
+source_id: DS-002
+profile_version: 0.1.0-approved
+status: APPROVED
+authority:
+  publisher: FEMA
+  authority_level: public_official
+  official_url: https://www.fema.gov/flood-maps/national-flood-hazard-layer
+  registry_row: registers/data_source_registry.csv#DS-002
+  license_review: registers/license-reviews/ds-002-fema-nfhl.md
+  review_status: approved
+  license_status: approved-with-restrictions
+rights:
+  commercial_use: CONDITIONAL
+  cache: CONDITIONAL
+  retain: CONDITIONAL
+  redistribute: CONDITIONAL
+  export: CONDITIONAL
+  raw_data: CONDITIONAL
+  ai_use: CONDITIONAL
+  attribution: Source FEMA National Flood Hazard Layer (NFHL); no FEMA endorsement implied.
+production_usage_field_mapping:
+  license_status: authority.license_status
+  commercial_use_status: rights.commercial_use
+  redistribution_status: rights.redistribute
+  cache_allowed: rights.cache
+  export_allowed: rights.export
+  raw_data_allowed: rights.raw_data
+  ai_use_allowed: rights.ai_use
+preservation_mode: HASHED_RETRIEVAL_MANIFEST
+coverage:
+  geographies:
+  - US
+  domains:
+  - flood
+  known_gaps:
+  - Not all areas have modernized FIRM database data.
+  - Preliminary, pending, state, county, private basemap, logo, trademark, and third-party layers are excluded.
+freshness:
+  cadence: continuous_effective_nfhl_updates
+  staleness_threshold: Review before live connector enablement or material FEMA terms/service change.
+  observation_date_field: retrieved_at_or_source_effective_date
+data_quality:
+  completeness:
+    status: reviewed_with_coverage_caveats
+  logical_consistency:
+    status: authoritative_effective_nfhl_service_required
+  positional_accuracy:
+    status: screen_only_not_survey_or_design_grade
+  temporal_quality:
+    status: retrieval_timestamp_and_effective_date_required_when_available
+  thematic_accuracy:
+    status: flood_hazard_screening_only
+  lineage_and_usability:
+    status: retrieval_metadata_endpoint_dataset_label_and_caveats_required
+normalization_mapping:
+  version: not-yet-frozen
+  contract_tests: []
+failure_behavior:
+  terminal_state: EXPLICIT_UNKNOWN_OR_SOURCE_FAILURE
+  false_clear_prohibited: true
+  failure_states:
+  - SOURCE_UNAVAILABLE
+  - OUTSIDE_COVERAGE
+  - NON_MODERNIZED_FIRM
+  - CONFLICTING_SOURCE_METADATA
+retirement_plan:
+  kill_switch: Remove source_profile_ids binding and disable connector/source ingestion before use in P0.
+  historical_reproducibility: Preserve retrieval URL, retrieved_at, dataset label, source version/date when available, and checksum or retrieval manifest.
+owner: data-governance
+review_at: '2026-12-05T00:00:00Z'
+approved_use_profiles:
+- BOUNDED_USER_VALIDATED
+rights_conditions:
+  citation_required: true
+  citation_text: Source FEMA National Flood Hazard Layer (NFHL).
+  no_endorsement: Do not imply FEMA endorsement.
+  raw_export_condition: Gate raw export behind source citation and retrieval metadata.
+  report_condition: Reports must present flood-hazard screening caveats.
+  request_condition: Bound WFS/service requests; WFS requests are limited to 1000 features.
+approved_at: '2026-06-05T00:00:00Z'
+approved_by:
+- data-governance
+invalidation_triggers:
+- FEMA terms, service access, dataset labeling, coverage, source rights, preservation, data quality, or report-caveat requirements materially change.
+- The profile is used for non-FEMA, preliminary, pending, local, private, trademark, basemap, or third-party data.
+enabled_operations:
+- INGEST
+- CACHE
+- ANALYZE
+- DERIVE
+- DISPLAY
+- RAW_EXPORT
+- DERIVED_EXPORT
+- AI_PROCESS
+- RETAIN_HISTORY
+conditions_enforced_by:
+- backend/app/source_registry/usage_rights.py
+- registers/data_source_registry.csv
+- registers/license-reviews/ds-002-fema-nfhl.md

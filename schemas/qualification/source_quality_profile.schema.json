@@ -10,6 +10,7 @@
     "status",
     "authority",
     "rights",
+    "production_usage_field_mapping",
     "preservation_mode",
     "coverage",
     "freshness",
@@ -59,6 +60,7 @@
         "retain",
         "redistribute",
         "export",
+        "raw_data",
         "ai_use",
         "attribution"
       ],
@@ -103,6 +105,14 @@
             "CONDITIONAL"
           ]
         },
+        "raw_data": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
         "ai_use": {
           "enum": [
             "ALLOWED",
@@ -116,6 +126,42 @@
         }
       },
       "additionalProperties": true
+    },
+    "production_usage_field_mapping": {
+      "type": "object",
+      "required": [
+        "license_status",
+        "commercial_use_status",
+        "redistribution_status",
+        "cache_allowed",
+        "export_allowed",
+        "raw_data_allowed",
+        "ai_use_allowed"
+      ],
+      "properties": {
+        "license_status": {
+          "const": "authority.license_status"
+        },
+        "commercial_use_status": {
+          "const": "rights.commercial_use"
+        },
+        "redistribution_status": {
+          "const": "rights.redistribute"
+        },
+        "cache_allowed": {
+          "const": "rights.cache"
+        },
+        "export_allowed": {
+          "const": "rights.export"
+        },
+        "raw_data_allowed": {
+          "const": "rights.raw_data"
+        },
+        "ai_use_allowed": {
+          "const": "rights.ai_use"
+        }
+      },
+      "additionalProperties": false
     },
     "preservation_mode": {
       "enum": [
@@ -286,6 +332,13 @@
                 ]
               },
               "export": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "raw_data": {
                 "enum": [
                   "ALLOWED",
                   "PROHIBITED",

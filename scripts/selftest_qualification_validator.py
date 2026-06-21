@@ -103,10 +103,30 @@ def main() -> int:
         baseline = temp_root / "baseline"
         copy_fixture(source, baseline)
         assert_result(
-            "baseline DRAFT validates structurally",
+            "baseline blocked status validates structurally",
             run_validator(validator, baseline),
             True,
             "qualification structural validation: PASS",
+        )
+
+        blocked_without_refs = temp_root / "blocked-without-refs"
+        copy_fixture(source, blocked_without_refs)
+
+        def remove_blocker_references(value):
+            value["qualifications"]["p0"]["status"] = "BLOCKED"
+            value["qualifications"]["p0"]["result_path"] = None
+            value["qualifications"]["p0"].pop("blocked_reason", None)
+            value["qualifications"]["p0"].pop("blocker_references", None)
+
+        mutate_yaml(
+            control_paths(blocked_without_refs)["status"],
+            remove_blocker_references,
+        )
+        assert_result(
+            "blocked status requires concrete blocker references",
+            run_validator(validator, blocked_without_refs),
+            False,
+            "BLOCKED but has no blocker_references",
         )
 
         classification = temp_root / "classification"

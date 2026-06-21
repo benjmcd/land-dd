@@ -67,7 +67,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert (
         task_queue["active_plan"]
-        == "plans/2026-06-21-eq-2-self-validating-spine.md"
+        == "plans/2026-06-21-eq-3-honest-blocked-status.md"
     )
     assert tasks["EQ-BOL"]["status"] == "done"
     assert tasks["EQ-BOL"]["depends_on"] == ["EQ-1"]
@@ -90,3 +90,5 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert tasks["EQ-2"]["depends_on"] == ["EQ-BOL"]
     assert tasks["EQ-2"]["status"] == "done"
+    assert tasks["EQ-3"]["depends_on"] == ["EQ-2"]
+    assert tasks["EQ-3"]["status"] == "done"

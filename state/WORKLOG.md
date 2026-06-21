@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Empirical qualification honest blocked status EQ-3
+
+- Started clean worktree `worktrees/eq-3` on `eq/eq3` from live `origin/main` at
+  `a16a958f253aea9a2071f1b22ad8814eacf2629b`; root remains dirty preserved state on
+  `codex/r026-raw-readiness-ui`.
+- Reconciled the live inbox handoff before acting; the RC2 connector closeout request
+  failed closed because live `benjmcd/land-dd` had no PR #2374 and none of the cited
+  SHAs were valid ancestors of `origin/main`. Appended a mismatch note to
+  `state/agent-inbox/for-claude.md` in the root checkout without claiming completion.
+- Added `plans/2026-06-21-eq-3-honest-blocked-status.md` and red tests for the
+  honest blocked status, template-only active domain profile surface, and DS-002 source
+  profile mapping to production usage fields.
+- Set `state/EMPIRICAL_QUALIFICATION_STATUS.yaml` P0 to `BLOCKED` with concrete
+  blocker references and no result artifact, candidate commit, or artifact digest.
+- Archived the eight active cloned domain stubs and the placeholder source profile;
+  added one active domain template and one DS-002 source-quality profile based on the
+  existing DS-002 source review and registry row.
+- Updated the validator and selftest so P0 `BLOCKED` without a result artifact validates
+  only with repo-local blocker references, while P0 `PASS` still requires frozen
+  targets/profiles/evidence and fails closed.
+- Preserved boundaries: no qualification `PASS`, no P0 run/result artifact, no
+  fabricated candidate digest, no owner-decision unfreeze, no Bologna AOI/source
+  approval, no fixture capture, no runtime/report use, no source registry promotion,
+  no DB seed, no DS-017 approval, no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 Empirical qualification self-validating spine EQ-2
 
 - Started clean worktree `worktrees/eq-2` on `eq/eq2` from live `origin/main` at

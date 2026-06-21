@@ -651,6 +651,7 @@ def validate_result_records(
     result_schema_path: Path,
     errors: list[str],
 ) -> None:
+    root = root.resolve()
     for section in ("qualifications", "overlays", "conditional_overlays"):
         for name, record in status.get(section, {}).items():
             current_status = record.get("status")
@@ -658,6 +659,13 @@ def validate_result_records(
                 continue
             result_ref = record.get("result_path")
             if not result_ref:
+                if (
+                    current_status == "BLOCKED"
+                    and section == "qualifications"
+                    and name == "p0"
+                ):
+                    validate_blocked_record(root, section, name, record, errors)
+                    continue
                 errors.append(
                     f"status: {section}.{name} is {current_status} but has no result_path"
                 )
@@ -671,9 +679,46 @@ def validate_result_records(
             )
             if result and result.get("status") != current_status:
                 errors.append(
-                    f"status: {section}.{name}={current_status} but result file says {result.get('status')}"
+                    f"status: {section}.{name}={current_status} "
+                    f"but result file says {result.get('status')}"
                 )
 
+
+def validate_blocked_record(
+    root: Path,
+    section: str,
+    name: str,
+    record: dict[str, Any],
+    errors: list[str],
+) -> None:
+    label = f"{section}.{name}"
+    blocked_reason = record.get("blocked_reason")
+    if not isinstance(blocked_reason, str) or not blocked_reason.strip():
+        errors.append(f"status: {label} is BLOCKED but has no blocked_reason")
+
+    blocker_references = record.get("blocker_references")
+    if not isinstance(blocker_references, list) or not blocker_references:
+        errors.append(f"status: {label} is BLOCKED but has no blocker_references")
+        return
+
+    for reference in blocker_references:
+        if not isinstance(reference, str) or not reference.strip():
+            errors.append(f"status: {label} has invalid blocker reference {reference!r}")
+            continue
+        reference_path = Path(reference)
+        if reference_path.is_absolute():
+            errors.append(
+                f"status: {label} blocker reference must be repo-local: {reference}"
+            )
+            continue
+        resolved = (root / reference_path).resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            errors.append(f"status: {label} blocker reference escapes repo: {reference}")
+            continue
+        if not resolved.exists():
+            errors.append(f"status: {label} blocker reference does not exist: {reference}")
 
 
 def load_profile_directory(
@@ -712,21 +757,40 @@ def validate_domain_and_source_profiles(
     scope = targets.get("scope", {})
     required_domains = set(scope.get("qualified_domains", []))
     required_sources = set(scope.get("source_profile_ids", []))
+    p0_pass = status.get("qualifications", {}).get("p0", {}).get("status") == "PASS"
 
     missing_domains = sorted(required_domains - set(domain_profiles))
     missing_sources = sorted(required_sources - set(source_profiles))
     if missing_domains:
-        errors.append(f"domain profiles missing for qualified domains: {missing_domains}")
+        if p0_pass:
+            errors.append(
+                f"domain profiles missing for qualified domains: {missing_domains}"
+            )
+        elif "domain_profile_template" in domain_profiles:
+            warnings.append(
+                f"{len(missing_domains)} qualified-domain profiles "
+                "are represented by template only"
+            )
+        else:
+            warnings.append(
+                f"{len(missing_domains)} qualified-domain profiles are missing before P0"
+            )
     if missing_sources:
-        errors.append(f"source profiles missing for selected sources: {missing_sources}")
+        if p0_pass:
+            errors.append(
+                f"source profiles missing for selected sources: {missing_sources}"
+            )
+        else:
+            warnings.append(
+                f"{len(missing_sources)} selected source profiles are missing before P0"
+            )
 
-    p0_pass = status.get("qualifications", {}).get("p0", {}).get("status") == "PASS"
     if not p0_pass:
         draft_domains = sorted(
             key for key in required_domains
             if domain_profiles.get(key, {}).get("status") != "FROZEN"
         )
-        if draft_domains:
+        if draft_domains and not missing_domains:
             warnings.append(f"{len(draft_domains)} qualified-domain profiles remain DRAFT")
         if not required_sources:
             warnings.append("no source_profile_ids are frozen in the target scope")
@@ -736,7 +800,9 @@ def validate_domain_and_source_profiles(
                 if source_profiles.get(key, {}).get("status") != "APPROVED"
             )
             if draft_sources:
-                warnings.append(f"{len(draft_sources)} selected source profiles are not APPROVED")
+                warnings.append(
+                    f"{len(draft_sources)} selected source profiles are not APPROVED"
+                )
         return
 
     if not required_sources:
@@ -782,7 +848,7 @@ def validate_domain_and_source_profiles(
         right_by_operation = {
             "CACHE": "cache",
             "RETAIN_HISTORY": "retain",
-            "RAW_EXPORT": "export",
+            "RAW_EXPORT": "raw_data",
             "DERIVED_EXPORT": "export",
             "DISPLAY": "redistribute",
             "AI_PROCESS": "ai_use",

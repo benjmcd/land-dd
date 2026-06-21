@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eq-2-self-validating-spine.md`.
+Latest completed plan: `2026-06-21-eq-3-honest-blocked-status.md`.
 
-Current routing plan: `2026-06-21-eq-2-self-validating-spine.md`.
+Current routing plan: `2026-06-21-eq-3-honest-blocked-status.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -89,15 +89,22 @@ plus Bologna pilot-scope, source-rights, recorded-corpus, and DB-backed report p
 blockers. It does not land the qualification spine, status file, CI gate, source
 approval, AOI selection, fixture capture, runtime/report use, DS-017 approval, hosted
 authority, owner-decision unfreeze, or Level 10 claim. If no external Bologna authority
-arrives, the next repo-local empirical-qualification slice remains `EQ-2`.
+arrives, the next repo-local empirical-qualification slice is `EQ-4`.
 
 `EQ-2` lands the self-validating empirical-qualification spine. It imports the
 framework docs, configuration, schemas, structural status, validator, and adversarial
 selftest into repo-owned paths; adds `backend/tests/test_qualification_spine.py`;
 adds `jsonschema` as a dev/validation dependency; and wires the qualification gate into
 CI plus `verify`. The target registry remains `DRAFT`, the structural status has no
-`PASS`, and the validator reports blocked-readiness warnings. Formal P0 blocked-result
-work remains `EQ-3`; do not fabricate candidate commits or artifact digests.
+`PASS`, and the validator reports blocked-readiness warnings.
+
+`EQ-3` formalizes the honest blocked status. It records P0 as `BLOCKED` with concrete
+blocker references and no result artifact, archives the cloned draft domain stubs in
+favor of one active template, and adds one DS-002 source-quality profile mapped to
+production usage fields. No qualification `PASS`, owner-decision unfreeze, source
+rights expansion, Bologna approval, fixture capture, runtime/report use, or fabricated
+candidate artifact is introduced. If no external authority arrives, the next
+repo-local slice is `EQ-4` readiness/authority crosswalk.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
