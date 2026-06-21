@@ -139,6 +139,7 @@ def test_production_authority_intake_runbook_preserves_boundary() -> None:
     runbook = (
         REPO_ROOT / "docs" / "runbooks" / "production_authority_intake.md"
     ).read_text(encoding="utf-8")
+    catalog = _catalog()
 
     for phrase in (
         "production_authority_intake_v1",
@@ -149,3 +150,14 @@ def test_production_authority_intake_runbook_preserves_boundary() -> None:
         "Level 10 authority",
     ):
         assert phrase in runbook
+    for stream in catalog["authority_streams"]:
+        assert f"`{stream['id']}`" in runbook
+        assert f"`{stream['source_catalog']}`" in runbook
+        for key in (
+            "required_evidence",
+            "required_roles",
+            "required_attestations",
+            "blocked_categories",
+        ):
+            for value in stream.get(key, []):
+                assert f"`{value}`" in runbook

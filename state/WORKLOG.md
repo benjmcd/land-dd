@@ -2,6 +2,20 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Production authority handoff hardening AUTH-HANDOFF
+
+- Started clean worktree `worktrees/auth-handoff` on `codex/auth-handoff` from live
+  `origin/main` at `c58d22450044cf055f719af3feeb27c9c7d37e1f`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited the current authority surfaces and selected a handoff-hardening slice
+  instead of another pure merge-SHA sync or a blocked implementation lane.
+- Expanded `docs/runbooks/production_authority_intake.md` into a stream-by-stream
+  external evidence checklist and tightened the checker/tests so the runbook must stay
+  aligned with `config/production_authority_intake.yaml`.
+- Preserved boundaries: no source approval, no vendor/platform/IdP/observability/image
+  publication decision, no Bologna AOI/source approval, no fixture capture, no runtime
+  artifacts, no source-readiness change, and no Level 10 claim.
+
 ## 2026-06-21 Post-PR116 routing sync PR116-SYNC
 
 - Started clean worktree `worktrees/post116-sync` on `codex/post116-sync` from live

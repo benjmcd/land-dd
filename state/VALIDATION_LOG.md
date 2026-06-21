@@ -2,6 +2,66 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Production Authority Handoff Hardening AUTH-HANDOFF
+
+**Scope:** Harden the production-authority intake runbook and checker so the external
+evidence checklist stays aligned with `config/production_authority_intake.yaml`. This
+does not approve sources, select vendors, provision hosted infrastructure, publish
+images, write secrets, create billing integration, select a Bologna AOI, capture
+fixtures, create runtime artifacts, mutate the database, change source readiness, or
+claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\production_authority_intake_check.py
+py -3.12 .\scripts\source_entitlement_check.py
+py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+cd backend; py -3.12 -m pytest tests\test_production_authority_intake_artifacts.py tests\test_source_entitlement_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline authority validators passed before edits:
+  `production_authority_intake_check.py`, `bologna_recorded_source_corpus_check.py`,
+  `bologna_preflight_check.py`, `source_entitlement_check.py`,
+  `release_readiness_check.py`, and `readiness_matrix_check.py`.
+- `production_authority_intake_check.py` passed after the runbook/checker hardening,
+  proving the runbook lists every stream id, source catalog, required evidence field,
+  required role, required attestation, and blocked category from
+  `config/production_authority_intake.yaml`.
+- Focused validators passed: `source_entitlement_check.py`,
+  `bologna_recorded_source_corpus_check.py`, `bologna_preflight_check.py`,
+  `release_readiness_check.py`, and `readiness_matrix_check.py`.
+- Focused artifact tests passed:
+  `tests\test_production_authority_intake_artifacts.py`,
+  `tests\test_source_entitlement_artifacts.py`, and
+  `tests\test_bologna_recorded_source_corpus_artifacts.py`.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017`
+  (`Commercial parcel vendor`) as the only blocked Must source.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- The first `.\scripts\verify.ps1` run failed on a line-length lint error in
+  `tests\test_production_authority_intake_artifacts.py`; the test loop was wrapped.
+- Final `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and
+  mypy succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** The runbook is still an evidence-collection surface only. DS-017,
+hosted platform, identity/RBAC, hosted observability, image publication, billing,
+Bologna implementation, and Level 10 authority remain blocked until cited external
+evidence exists.
+
 ## 2026-06-21 Post-PR116 Routing Sync PR116-SYNC
 
 **Scope:** Refresh state/routing after PR #116 merged `BRC-001`. This is

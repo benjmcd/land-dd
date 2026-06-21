@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-bologna-recorded-source-corpus.md`.
+Latest completed plan: `2026-06-21-pr116-sync.md`.
 
-Current routing plan: `2026-06-21-pr116-sync.md`.
+Current routing plan: `2026-06-21-authority-handoff.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -36,6 +36,11 @@ claim hosted/Level 10 authority. `BRC-001` merged through PR #116 at
 `PR116-SYNC` is the current routing-only follow-up after PR #116. It updates live-state
 surfaces to stop treating the completed corpus contract as active work while preserving
 the same DS-017, hosted, Bologna implementation, and Level 10 blockers.
+
+`AUTH-HANDOFF` hardens the production-authority intake runbook and validator so the
+external evidence checklist stays in sync with the machine-readable blocked authority
+streams. It does not approve DS-017, hosted, identity/RBAC, observability, image,
+billing, Bologna, or Level 10 authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
