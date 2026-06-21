@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/qualification-vocabulary-v3.json",
+  "title": "Qualification Vocabulary V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "terms",
+    "issue_criticality",
+    "source_states",
+    "report_terminal_states",
+    "criterion_results",
+    "gate_statuses"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "qualification_vocabulary_v3"
+    },
+    "terms": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "definition"
+        ],
+        "properties": {
+          "definition": {
+            "type": "string",
+            "minLength": 10
+          },
+          "must_define_per_domain": {
+            "type": "boolean"
+          },
+          "cannot_mean": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issue_criticality": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "source_states": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "report_terminal_states": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "criterion_results": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "gate_statuses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

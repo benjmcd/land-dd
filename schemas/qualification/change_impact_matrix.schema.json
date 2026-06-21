@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/qualification-change-impact-v3.json",
+  "title": "Qualification Change Impact Matrix V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "default_rule",
+    "change_classes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "qualification_change_impact_v3"
+    },
+    "default_rule": {
+      "type": "string",
+      "minLength": 10
+    },
+    "change_classes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "review",
+          "invalidate_by_default"
+        ],
+        "properties": {
+          "review": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "invalidate_by_default": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "conditional": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

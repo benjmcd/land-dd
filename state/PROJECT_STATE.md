@@ -1,42 +1,50 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna-first qualification backlog EQ-BOL)
+## Current checkpoint (2026-06-21 EQ-2 self-validating qualification spine)
 
-Live `origin/main` contains EQ-1 through PR #124 at
-`6d671875aee1c0a7fcba1d6124c2ffbb05841457`. `EQ-BOL` is the current repo-local
-visibility lane: pull the Bologna/parameterization blocker register forward before
-the qualification spine lands, per user priority, without approving any decision.
+Live `origin/main` contains EQ-BOL through PR #125 at
+`2e5cc0dafe3bc6cbdb25aed165410216badbdc3f`. `EQ-2` is the current repo-local lane:
+land the repo-owned empirical-qualification spine, validator, selftest, CI job, and
+verify gate without claiming qualification or approving any blocked decision.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-eq-bologna-parameterization-backlog.md`.
-- **Latest repo-local test hardening**: `SRP-001` adds
-  `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
-  regression for selected-county fixture package source manifests, source-provenance
-  review bundles, case-specific connector retrieval scopes, repeated-run idempotency,
-  and unsupported screening source no-run boundaries.
+  `plans/2026-06-21-eq-2-self-validating-spine.md`.
+- **Latest repo-local test hardening**: `backend/tests/test_qualification_spine.py`
+  proves the qualification artifacts are repo-owned, the validator imports and passes
+  in repo layout, framework IDs exactly match the criterion catalog, the adversarial
+  selftest still passes after import, `jsonschema` is available through
+  `backend[dev]`, and CI/verify wiring names the qualification gate.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
-  `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, and `EQ-BOL`
-  are done in the current routing model. `EQ-BLOCK-*` tasks record blocked
+  `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
+  and `EQ-2` are done in the current routing model. `EQ-BLOCK-*` tasks record blocked
   external/owner-authority decisions for targets, rubrics, domains, source profiles,
   scope/version fields, Bologna pilot scope, Bologna source rights, Bologna recorded
-  corpus, and a DB-backed Bologna report proof. `EQ-2`, `EQ-3`, `EQ-4`, `EQ-5`, and
-  `EQ-R` remain queued. `BSA-001` remains blocked until explicit
-  product/AOI/source-review authority exists for exact candidate sources. Must-source
-  readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked
-  Must source.
+  corpus, and a DB-backed Bologna report proof. `EQ-3`, `EQ-4`, `EQ-5`, and `EQ-R`
+  remain queued. `BSA-001` remains blocked until explicit product/AOI/source-review
+  authority exists for exact candidate sources. Must-source readiness remains
+  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
 - **Empirical qualification boundary**: ADR 0004 records that the
-  empirical-qualification catalog is the canonical empirical-validity authority once
-  the spine lands. Existing readiness YAML/checkers, authority packets,
-  release-readiness checks, and `state/LEVEL_9_10_GATE_MATRIX.md` remain
-  CI/deployment gates that report into the qualification control plane rather than
-  competing qualification authorities.
-- **Empirical qualification status**: `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md`
-  now records the pulled-forward blocked parameterization surface. No qualification
-  spine, catalog, status file, CI selftest gate, or crosswalk has landed yet. The
-  framework source package is read-only input. The intended status remains honest
-  `P0 = BLOCKED` until owner decisions, source profiles, domain profiles, target
-  bindings, rubrics, reviewers, and empirical evidence are frozen.
+  empirical-qualification catalog is the canonical empirical-validity authority.
+  Existing readiness YAML/checkers, authority packets, release-readiness checks, and
+  `state/LEVEL_9_10_GATE_MATRIX.md` remain CI/deployment gates that report into the
+  qualification control plane rather than competing qualification authorities.
+- **Empirical qualification spine**: `docs/qualification/**`,
+  `config/qualification/**`, `schemas/qualification/**`,
+  `state/EMPIRICAL_QUALIFICATION_STATUS.yaml`, `scripts/validate_qualification.py`,
+  and `scripts/selftest_qualification_validator.py` now land as repo-owned structural
+  artifacts. Validation reports `target status: DRAFT`,
+  `highest valid classification: L9-R`, and `BLOCKED-READINESS` warnings for draft
+  domain profiles, no frozen source profiles, unresolved scope/version fields,
+  unresolved ruleset versions, draft qualification targets, draft criterion contracts,
+  and draft judgment rubrics.
+- **Blocked product posture**: the imported status file preserves no `PASS` claim.
+  Its structural P0 row remains `NOT_RUN`; product qualification remains blocked by
+  `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md` until owner decisions, source
+  profiles, domain profiles, target bindings, rubrics, reviewers, candidate artifacts,
+  and empirical evidence are frozen. `EQ-3` is still the formal blocked-status/result
+  lane; do not fabricate a candidate commit or artifact digest just to label a formal
+  result `BLOCKED`.
 - **Current Bologna scope boundary**: `config/bologna_pilot_scope_authority.yaml`
   records the missing product, one-AOI, intended-operator, non-goal, stop-condition,
   jurisdiction, rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
@@ -47,14 +55,14 @@ the qualification spine lands, per user priority, without approving any decision
 - **Immediate next pursuit**: the substantive Bologna path still requires external
   product/AOI/source-rights authority before source-rights rows, recorded corpus
   manifests, or DB-backed report proof can change. If no external authority arrives,
-  the next repo-local empirical-qualification slice is `EQ-2`: land the
-  self-validating qualification spine and CI/verify gate while preserving blocked
-  status. `EQ-3` then reports `P0 = BLOCKED`, `EQ-4` maps existing readiness/authority
+  the next repo-local empirical-qualification slice is `EQ-3`: formalize the honest
+  blocked status/result without PASS, then `EQ-4` maps existing readiness/authority
   gates into criterion IDs, and `EQ-5` reconciles the backlog against the landed spine.
   Lane R may proceed independently to correct the false residual-reconciliation claim.
 - **If qualification authority is absent**: keep all qualification PASS claims blocked
   and do not invent thresholds, reviewers, source profiles, domain profiles, empirical
-  evidence, owner decisions, source rights, hosted authority, or deployment targets.
+  evidence, owner decisions, source rights, hosted authority, deployment targets,
+  candidate commits, or artifact digests.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,

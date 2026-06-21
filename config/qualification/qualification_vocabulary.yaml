@@ -1,0 +1,142 @@
+schema_version: qualification_vocabulary_v3
+terms:
+  critical_issue:
+    definition: A preregistered domain-specific condition whose omission or material understatement could plausibly cause
+      severe financial, legal, safety, feasibility, rights, or irreversible decision harm within the declared screening
+      scope.
+    must_define_per_domain: true
+    cannot_mean: Any undesirable condition or any issue selected after viewing results.
+  material_issue:
+    definition: A condition expected to change a competent user's shortlist, verification plan, expected cost, or risk
+      posture within the declared intent.
+    must_define_per_domain: true
+  severe_blocker:
+    definition: A screening-level output indicating that the current evidence justifies stopping or escalating diligence
+      before proceeding. It is not a final legal or professional determination.
+    must_define_per_domain: true
+  screenable_positive:
+    definition: A reference condition that the qualified source/evidence/rule workflow is explicitly designed and sufficiently
+      informed to surface.
+  screenable_negative:
+    definition: A reference condition for which qualified evidence is sufficient to support absence of the specified
+      screenable condition, subject to stated scope and source limits.
+  critical_false_reassurance:
+    definition: Output that states or materially implies clear/no issue/low risk/approved when the reference is a critical
+      positive, critical unknown, failed/restricted source, or insufficiently resolved AOI.
+  source_failure:
+    definition: A retrieval, parsing, rights, freshness, availability, coverage, schema, or validation condition that
+      prevents the source from supporting its intended observation.
+  source_gap:
+    definition: A geographic, temporal, thematic, rights, precision, or authority gap in source coverage.
+  stale_source:
+    definition: A source whose observation/version date exceeds its frozen domain-specific staleness threshold or whose
+      currency cannot be established.
+  conflicting_evidence:
+    definition: Two or more material observations or authoritative interpretations cannot be reconciled under the frozen
+      source hierarchy and temporal rules.
+  degraded_report:
+    definition: A terminal, reproducible report that completed with one or more explicitly unavailable, blocked, stale,
+      restricted, or failed domains and does not imply full coverage.
+  correct_claim:
+    definition: A claim whose state, severity, confidence, caveat, spatial/temporal scope, and verification action match
+      the adjudicated reference within frozen tolerance.
+  high_confidence:
+    definition: A frozen confidence band with an empirical calibration target, not a synonym for severe or important.
+  representative_workload:
+    definition: A preregistered workload distribution covering expected AOI sizes, domains, source states, concurrency,
+      artifact generation, and user behavior for the selected deployment profile.
+  independent_reviewer:
+    definition: A reviewer who did not implement the behavior under test, has disclosed financial/professional conflicts,
+      and satisfies the frozen competency criteria for the assigned domain.
+  fresh_operator:
+    definition: A person or agent using a clean checkout/deployment, no prior chat history or hidden local state, and
+      only the documented credentials, source access, and instructions.
+  semantic_equivalence:
+    definition: Equality of normalized decision-relevant content after excluding only preregistered nondeterministic
+      fields; formatting/order differences alone do not count.
+  material_change:
+    definition: A change capable of altering AOI identity, evidence, source status, rights, claim state/severity/confidence,
+      caveat, user decision, report semantics, security boundary, recoverability, or operating profile.
+  supported_environment:
+    definition: An OS/browser/runtime/deployment combination explicitly named in the frozen target registry and tested
+      through the applicable critical workflows.
+  production_grade:
+    definition: All required empirical, data, database, security, accessibility, maintainability, operations, regulatory,
+      field-surveillance, governance, and conditional economic/AI gates pass for one exact frozen scope and deployment
+      profile.
+  appropriate:
+    definition: Meets a frozen criterion-specific rubric for correctness, feasibility, relevance, non-duplication, and
+      non-misleading effect; reviewer and adjudication rules are recorded.
+  sufficient:
+    definition: Meets the frozen minimum evidence, authority, coverage, precision, sample, or operational target for
+      the criterion; never evaluator intuition alone.
+  reasonable:
+    definition: Within a frozen target/rubric justified by risk, context, and comparable practice; rationale and approver
+      are recorded.
+  adequate:
+    definition: All explicitly applicable pass criteria are satisfied. The term cannot substitute for enumerated requirements.
+  qualified:
+    definition: Holds a valid, unexpired PASS for the exact frozen scope, profile, candidate, and gate prerequisites.
+  current:
+    definition: Within the frozen source/domain freshness threshold as of the report or evaluation timestamp.
+  acceptable:
+    definition: Within a frozen numeric threshold or structured judgment rubric; not decided after observing the result.
+  timely:
+    definition: Within a frozen detection, response, completion, or notification duration.
+  meaningful:
+    definition: Meets the preregistered practical-effect threshold, not merely statistical significance.
+  major:
+    definition: The MAJOR level in the frozen issue/defect criticality taxonomy.
+  high-risk:
+    definition: Falls within a preregistered risk class requiring enhanced control or human review.
+  critical:
+    definition: The CRITICAL level in the frozen issue/defect taxonomy; exact domain conditions are frozen before testing.
+  severe:
+    definition: The configured severe/blocker category in the frozen issue taxonomy; it remains a screening classification.
+  significant:
+    definition: Meets the preregistered statistical and practical-effect rules; statistical significance alone is insufficient.
+  independent:
+    definition: Satisfies the frozen role-separation, conflict-disclosure, and non-implementation criteria.
+  supported:
+    definition: Explicitly included in the frozen scope/environment matrix and tested through applicable critical workflows.
+  relevant:
+    definition: Within the frozen product claim, intent, domain, geography, user, or deployment scope.
+  high-value:
+    definition: Exceeds the frozen financial exposure or decision-impact threshold.
+  low-confidence:
+    definition: Falls below the frozen confidence-band threshold and invokes the configured unknown/review behavior.
+issue_criticality:
+  CRITICAL: Potential severe/irreversible harm; zero critical false reassurance permitted.
+  MAJOR: Likely to change shortlist, feasibility, or verification cost materially.
+  MODERATE: Decision-relevant but unlikely alone to determine disposition.
+  MINOR: Useful context with limited decision effect.
+  INFORMATIONAL: Descriptive context; not a risk conclusion.
+source_states:
+- CURRENT
+- STALE
+- UNKNOWN_DATE
+- FAILED
+- RESTRICTED
+- UNAPPROVED
+- OUTSIDE_COVERAGE
+- CONFLICTING
+- SUPERSEDED
+- NOT_EVALUATED
+report_terminal_states:
+- COMPLETE
+- DEGRADED
+- BLOCKED
+- FAILED
+criterion_results:
+- PASS
+- FAIL
+- BLOCKED
+- N/A
+gate_statuses:
+- NOT_RUN
+- RUNNING
+- BLOCKED
+- FAIL
+- PASS
+- INVALIDATED
+- EXPIRED

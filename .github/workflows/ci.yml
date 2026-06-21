@@ -50,6 +50,22 @@ jobs:
           DATABASE_URL: postgresql+psycopg://land:land@localhost:5432/land_diligence
         run: ./scripts/verify.sh
 
+  qualification-selftest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install backend dev dependencies
+        run: python -m pip install -e "backend[dev]"
+      - name: Run qualification validator selftest
+        run: ./scripts/run_qualification_selftest.sh
+      - name: Validate qualification control plane
+        run: ./scripts/run_qualification_validate.sh
+
   supply-chain:
     runs-on: ubuntu-latest
     permissions:

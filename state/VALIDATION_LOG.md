@@ -2,6 +2,78 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Empirical Qualification Self-Validating Spine EQ-2
+
+**Scope:** Import the empirical-qualification framework as a repo-owned structural
+control plane and wire validator/selftest gates into CI and local verification. This
+does not claim qualification `PASS`, freeze targets, approve owner decisions, create a
+formal P0 result artifact, approve Bologna, capture fixtures, run connectors, seed the
+database, approve DS-017, provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+python C:\Users\benny\Downloads\land-dd_empirical_qualification\scripts\selftest_qualification_validator.py
+python C:\Users\benny\Downloads\land-dd_empirical_qualification\scripts\validate_qualification.py --root C:\Users\benny\Downloads\land-dd_empirical_qualification
+python -m pytest backend/tests/test_qualification_spine.py -q
+python scripts\validate_qualification.py --root . --layout repo
+python scripts\selftest_qualification_validator.py
+.\scripts\validate_qualification.ps1 -Root .
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_qualification.ps1 -Root .
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\selftest_qualification_validator.ps1
+bash scripts/run_qualification_validate.sh
+bash scripts/run_qualification_selftest.sh
+py -3.12 -m pip install -e "backend[dev]"
+py -3.12 -m pytest backend\tests\test_qualification_spine.py -q
+py -3.12 -c "import yaml; yaml.safe_load(open('tasks/task_queue.yaml', encoding='utf-8')); print('task queue parses')"
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+.\scripts\verify.ps1
+py -3.12 -m pytest backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_readiness_matrix_artifacts.py -q
+py -3.12 scripts\readiness_matrix_check.py
+Push-Location backend; ruff check tests\test_qualification_spine.py; Pop-Location
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- The read-only package selftest passed before import.
+- The read-only package bundle validation passed with structural `PASS`, `target status:
+  DRAFT`, `highest valid classification: L9-R`, and blocked-readiness warnings.
+- The new focused test first failed as expected because repo-owned qualification
+  artifacts and wiring were absent.
+- After import/wiring, `backend/tests/test_qualification_spine.py` passed under default
+  Python and under `py -3.12`.
+- Direct Python validator/selftest entrypoints passed in repo layout.
+- The copied PowerShell wrapper failed under the machine's default execution policy;
+  the same wrappers passed with process-level `-ExecutionPolicy Bypass`.
+- The `.sh` wrappers could not be run locally because `bash` resolves to the Windows
+  WSL shim and `/bin/bash` is unavailable. The wrappers are retained for Linux CI and
+  are covered by the CI wiring test.
+- `py -3.12` initially lacked `jsonschema`; installing `backend[dev]` from the updated
+  pyproject supplied `jsonschema` plus the dev gate tools.
+- First full `.\scripts\verify.ps1` failed after moving the active plan to EQ-2 because
+  existing routing tests still expected EQ-BOL and the active plan lacked the required
+  `state/LEVEL_9_10_GATE_MATRIX.md` / `Level 9/10` citation.
+- Updated the routing tests and EQ-2 plan authority context; focused routing/readiness
+  tests and `scripts\readiness_matrix_check.py` then passed.
+- Second full `.\scripts\verify.ps1` failed only on ruff line-length issues in the new
+  qualification spine test.
+- Split the long lines; focused qualification test and ruff on the new test passed.
+- Tightened `scripts/selftest_qualification_validator.py` so repo-layout fixture copies
+  ignore `.git`, `worktrees`, `local_artifacts`, and cache directories; the selftest and
+  focused qualification spine test still passed.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, backend pytest, ruff, and mypy all succeeded; DB
+  smoke was skipped because `RUN_DB_SMOKE` was not set.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+
+**Residual risk:** EQ-2 proves structural qualification-control-plane validation, not
+product qualification. The target registry remains `DRAFT`, the structural status has
+no `PASS`, formal P0 blocked-result work remains EQ-3, the readiness/authority
+crosswalk remains EQ-4, and owner/source/AOI decisions remain blocked.
+
 ## 2026-06-21 Bologna-First Qualification Parameterization Backlog EQ-BOL
 
 **Scope:** Pull the empirical-qualification parameterization backlog forward for the

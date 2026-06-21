@@ -1,0 +1,61 @@
+schema_version: domain_qualification_profile_v3
+domain_id: source_availability_and_conflict
+version: 0.1.0-draft
+status: DRAFT
+scope:
+  intents:
+  - rural_land_purchase
+  - homestead_feasibility
+  geographies:
+  - US-NC-Buncombe
+  - US-NC-Chatham
+  - US-NC-Brunswick
+  input_modalities:
+  - parcel_id
+  - address
+  - coordinates
+  - drawn_or_uploaded_geometry
+  output_channels:
+  - api_json
+  - web_ui
+  - exported_report
+reference_hierarchy:
+- rank: 1
+  type: authoritative_effective_flood_hazard_source
+  limitations: screening, not insurance or permitting determination
+- rank: 2
+  type: independent_geospatial_recalculation
+  limitations: validates intersection/area only
+issue_taxonomy:
+- id: SOURCE_AVAILABILITY_AND_CONFLICT_PROFILE_TBD
+  criticality: TBD
+  definition: Freeze domain-specific issue taxonomy before qualification.
+severity_rubric:
+- level: TBD
+  definition: Freeze before qualification
+confidence_rubric:
+- band: TBD
+  calibration_target: Freeze before qualification
+source_requirements:
+- source_id: TBD
+  required_state: APPROVED
+spatial_temporal_tolerances: {}
+unknown_states:
+- SOURCE_FAILED
+- OUTSIDE_COVERAGE
+- STALE
+- CONFLICTING
+metrics:
+- id: recall
+  threshold: from qualification_targets.yaml
+known_exclusions:
+- 'DRAFT profile: no domain qualification claim is permitted until frozen.'
+owner: TBD
+reviewers:
+- TBD
+expires_at: '2099-01-01T00:00:00Z'
+frozen_at: null
+approved_by: []
+invalidation_triggers:
+- Material source, rule, reference hierarchy, issue taxonomy, severity, confidence, or report-semantic change.
+field_surveillance_plan: null

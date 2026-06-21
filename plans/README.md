@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eq-bologna-parameterization-backlog.md`.
+Latest completed plan: `2026-06-21-eq-2-self-validating-spine.md`.
 
-Current routing plan: `2026-06-21-eq-bologna-parameterization-backlog.md`.
+Current routing plan: `2026-06-21-eq-2-self-validating-spine.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -90,6 +90,14 @@ blockers. It does not land the qualification spine, status file, CI gate, source
 approval, AOI selection, fixture capture, runtime/report use, DS-017 approval, hosted
 authority, owner-decision unfreeze, or Level 10 claim. If no external Bologna authority
 arrives, the next repo-local empirical-qualification slice remains `EQ-2`.
+
+`EQ-2` lands the self-validating empirical-qualification spine. It imports the
+framework docs, configuration, schemas, structural status, validator, and adversarial
+selftest into repo-owned paths; adds `backend/tests/test_qualification_spine.py`;
+adds `jsonschema` as a dev/validation dependency; and wires the qualification gate into
+CI plus `verify`. The target registry remains `DRAFT`, the structural status has no
+`PASS`, and the validator reports blocked-readiness warnings. Formal P0 blocked-result
+work remains `EQ-3`; do not fabricate candidate commits or artifact digests.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/source-quality-profile-v3.json",
+  "title": "Source Quality Profile V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_id",
+    "profile_version",
+    "status",
+    "authority",
+    "rights",
+    "preservation_mode",
+    "coverage",
+    "freshness",
+    "data_quality",
+    "normalization_mapping",
+    "failure_behavior",
+    "retirement_plan",
+    "owner",
+    "review_at",
+    "approved_use_profiles",
+    "rights_conditions",
+    "approved_at",
+    "approved_by",
+    "invalidation_triggers",
+    "enabled_operations",
+    "conditions_enforced_by"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "source_quality_profile_v3"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "APPROVED",
+        "BLOCKED",
+        "RETIRED",
+        "SUPERSEDED"
+      ]
+    },
+    "authority": {
+      "type": "object"
+    },
+    "rights": {
+      "type": "object",
+      "required": [
+        "commercial_use",
+        "cache",
+        "retain",
+        "redistribute",
+        "export",
+        "ai_use",
+        "attribution"
+      ],
+      "properties": {
+        "commercial_use": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "cache": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "retain": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "redistribute": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "export": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "ai_use": {
+          "enum": [
+            "ALLOWED",
+            "PROHIBITED",
+            "UNKNOWN",
+            "CONDITIONAL"
+          ]
+        },
+        "attribution": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "preservation_mode": {
+      "enum": [
+        "FULL_SNAPSHOT",
+        "CONTROLLED_SNAPSHOT",
+        "HASHED_RETRIEVAL_MANIFEST",
+        "PROVIDER_REPLAY",
+        "SYNTHETIC_CONTRACT_FIXTURE"
+      ]
+    },
+    "coverage": {
+      "type": "object"
+    },
+    "freshness": {
+      "type": "object"
+    },
+    "data_quality": {
+      "type": "object",
+      "required": [
+        "completeness",
+        "logical_consistency",
+        "positional_accuracy",
+        "temporal_quality",
+        "thematic_accuracy",
+        "lineage_and_usability"
+      ],
+      "properties": {
+        "completeness": {},
+        "logical_consistency": {},
+        "positional_accuracy": {},
+        "temporal_quality": {},
+        "thematic_accuracy": {},
+        "lineage_and_usability": {}
+      },
+      "additionalProperties": true
+    },
+    "normalization_mapping": {
+      "type": "object"
+    },
+    "failure_behavior": {
+      "type": "object"
+    },
+    "retirement_plan": {
+      "type": "object"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approved_use_profiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "rights_conditions": {
+      "type": "object"
+    },
+    "approved_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "approved_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "invalidation_triggers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "enabled_operations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "INGEST",
+          "CACHE",
+          "ANALYZE",
+          "DERIVE",
+          "DISPLAY",
+          "RAW_EXPORT",
+          "DERIVED_EXPORT",
+          "AI_PROCESS",
+          "RETAIN_HISTORY"
+        ]
+      }
+    },
+    "conditions_enforced_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "APPROVED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "approved_use_profiles": {
+            "minItems": 1
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_by": {
+            "minItems": 1
+          },
+          "preservation_mode": {
+            "enum": [
+              "FULL_SNAPSHOT",
+              "CONTROLLED_SNAPSHOT",
+              "HASHED_RETRIEVAL_MANIFEST",
+              "PROVIDER_REPLAY"
+            ]
+          },
+          "rights": {
+            "properties": {
+              "commercial_use": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "cache": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "retain": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "redistribute": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "export": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              },
+              "ai_use": {
+                "enum": [
+                  "ALLOWED",
+                  "PROHIBITED",
+                  "CONDITIONAL"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

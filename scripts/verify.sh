@@ -67,6 +67,12 @@ echo "== agent context =="
 echo "== workspace validation =="
 PYTHON_BIN="$PYTHON_BIN" ./scripts/validate_workspace.sh
 
+echo "== qualification selftest =="
+"$PYTHON_BIN" scripts/selftest_qualification_validator.py
+
+echo "== qualification validation =="
+"$PYTHON_BIN" scripts/validate_qualification.py --root . --layout repo
+
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db migration =="
   ./scripts/db_apply_migrations.sh

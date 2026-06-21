@@ -1,0 +1,1914 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/empirical-qualification-status-v3.json",
+  "title": "Empirical Qualification Status V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "updated_at",
+    "selected_product_scope_profile",
+    "selected_deployment_profile",
+    "highest_valid_classification",
+    "candidate",
+    "qualifications",
+    "overlays",
+    "conditional_overlays",
+    "accepted_residual_risks",
+    "blocked_decisions",
+    "next_lowest_dependency_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "empirical_qualification_status_v3"
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "selected_product_scope_profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selected_deployment_profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "highest_valid_classification": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "commit",
+        "tag",
+        "artifact_digest",
+        "protocol_version",
+        "targets_version",
+        "vocabulary_version",
+        "criteria_catalog_digest"
+      ],
+      "properties": {
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "artifact_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "protocol_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targets_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vocabulary_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "criteria_catalog_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "qualifications": {
+      "type": "object",
+      "required": [
+        "p0",
+        "q1",
+        "q2",
+        "q3a",
+        "q3b",
+        "q3c"
+      ],
+      "properties": {
+        "p0": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "q1": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "q2": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "q3a": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "q3b": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "q3c": {
+          "type": "object",
+          "required": [
+            "status",
+            "prerequisites",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "overlays": {
+      "type": "object",
+      "required": [
+        "data_quality",
+        "input_resolution",
+        "database",
+        "security_privacy_compliance",
+        "accessibility_human_factors",
+        "maintainability_modularity",
+        "hosted_operations",
+        "regulatory_professional_scope",
+        "field_surveillance",
+        "economics",
+        "governance_release",
+        "windows_native"
+      ],
+      "properties": {
+        "data_quality": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "input_resolution": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "database": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "security_privacy_compliance": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "accessibility_human_factors": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "maintainability_modularity": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "hosted_operations": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "regulatory_professional_scope": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "field_surveillance": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "economics": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "governance_release": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "windows_native": {
+          "type": "object",
+          "required": [
+            "status",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "PASS"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "result_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "INVALIDATED",
+                      "EXPIRED"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "invalidation_reason"
+                ],
+                "properties": {
+                  "invalidation_reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "conditional_overlays": {
+      "type": "object",
+      "required": [
+        "ai_llm",
+        "candidate_generation",
+        "financial_modeling"
+      ],
+      "properties": {
+        "ai_llm": {
+          "type": "object",
+          "required": [
+            "status",
+            "applicable",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "applicable": {
+              "type": "boolean"
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "candidate_generation": {
+          "type": "object",
+          "required": [
+            "status",
+            "applicable",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "applicable": {
+              "type": "boolean"
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "financial_modeling": {
+          "type": "object",
+          "required": [
+            "status",
+            "applicable",
+            "result_path",
+            "expires_at"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_RUN",
+                "RUNNING",
+                "BLOCKED",
+                "FAIL",
+                "PASS",
+                "INVALIDATED",
+                "EXPIRED"
+              ]
+            },
+            "applicable": {
+              "type": "boolean"
+            },
+            "result_path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "invalidation_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "accepted_residual_risks": {
+      "type": "array"
+    },
+    "blocked_decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_lowest_dependency_action": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

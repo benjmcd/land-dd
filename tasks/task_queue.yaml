@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eq-bologna-parameterization-backlog.md
+active_plan: plans/2026-06-21-eq-2-self-validating-spine.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -31,11 +31,12 @@ routing_note: >
   next-pursuit routing merged through PR #120, and BPS-001 Bologna pilot-scope
   authority merged through PR #121, BPS-REQ-001 Bologna scope decision requests merged
   through PR #122, empirical-qualification adoption handoff merged through PR #123,
-  and EQ-1 boundary consolidation merged through PR #124. Current lane: EQ-BOL
-  Bologna-first qualification parameterization backlog. This pulls the
-  owner/source/AOI blocker visibility slice forward per user priority while leaving
-  EQ-2 self-validating spine work, EQ-3 status, EQ-4 crosswalk, and all approval
-  decisions blocked. Do not
+  EQ-1 boundary consolidation merged through PR #124, and EQ-BOL Bologna-first
+  qualification parameterization backlog merged through PR #125. Current lane: EQ-2
+  self-validating qualification spine. This lands the repo-owned structural
+  qualification framework, validator, selftest, CI job, and verify gate while leaving
+  formal P0 blocked-result work, EQ-4 crosswalk, and all approval decisions blocked.
+  Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -1845,19 +1846,19 @@ tasks:
 
   - id: EQ-2
     title: Empirical qualification self-validating spine
-    status: queued
+    status: done
     depends_on: [EQ-BOL]
     lane: coordinator
-    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-2--land-the-self-validating-spine--ci-gate
+    spec: plans/2026-06-21-eq-2-self-validating-spine.md
     notes: >
-      Copy and adapt the read-only framework vocabulary, catalog, profiles, schemas,
-      validator, and selftest; add qualification-selftest CI and verify wiring; ensure
-      jsonschema is available as a dev/validation dependency without creating a
-      runtime/product dependency or false local py -3.12 failure.
+      Copied and adapted the read-only framework into repo-owned structural
+      qualification docs/config/schemas/state surfaces; added validator, selftest,
+      qualification-selftest CI, verify wiring, and jsonschema dev dependency without
+      creating a runtime/product dependency.
     acceptance:
       - Qualification selftest and catalog validation pass locally and in CI
       - backend[dev] provides jsonschema for CI validation
-      - No status PASS or owner-decision unfreeze is introduced
+      - No status PASS, formal qualification result PASS, or owner-decision unfreeze is introduced
 
   - id: EQ-3
     title: Empirical qualification honest blocked status

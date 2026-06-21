@@ -133,6 +133,16 @@ Select-Python
 Write-Host '== workspace validation =='
 & (Join-Path $PSScriptRoot 'validate_workspace.ps1')
 
+Write-Host '== qualification selftest =='
+Invoke-PythonCommand `
+    -Label 'qualification selftest' `
+    -Arguments @('scripts/selftest_qualification_validator.py')
+
+Write-Host '== qualification validation =='
+Invoke-PythonCommand `
+    -Label 'qualification validation' `
+    -Arguments @('scripts/validate_qualification.py', '--root', '.', '--layout', 'repo')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')

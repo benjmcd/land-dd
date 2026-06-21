@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/qualification-targets-v3.json",
+  "title": "Qualification Targets V3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "target_version",
+    "scope",
+    "protocol",
+    "q1",
+    "q2",
+    "q3",
+    "input_resolution",
+    "database",
+    "security_privacy",
+    "accessibility",
+    "maintainability",
+    "operations",
+    "field_surveillance",
+    "unit_economics",
+    "criterion_overrides",
+    "windows_native",
+    "candidate_generation",
+    "financial_modeling",
+    "document_extraction",
+    "data_quality",
+    "regulatory_professional_scope",
+    "ai_llm",
+    "criterion_bindings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "qualification_targets_v3"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "FROZEN",
+        "SUPERSEDED"
+      ]
+    },
+    "target_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "frozen_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "approved_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "product_scope_profile",
+        "deployment_profile",
+        "commercial_profile_enabled",
+        "product_claim",
+        "intents",
+        "geographies",
+        "qualified_domains",
+        "input_modalities",
+        "output_channels",
+        "ai_llm_enabled_for_decision_relevant_output",
+        "explicitly_unqualified_domains",
+        "windows_native_required",
+        "candidate_generation_enabled",
+        "financial_modeling_enabled",
+        "user_utility_claim_enabled",
+        "user_facing_workflow_enabled",
+        "international_operation_enabled",
+        "regulated_high_stakes_use_enabled",
+        "source_profile_ids",
+        "ruleset_versions",
+        "report_contract_version",
+        "api_contract_version",
+        "normalization_schema_version",
+        "geometry_pipeline_version",
+        "supported_locales",
+        "canonical_timezone",
+        "source_snapshot_policy",
+        "data_as_of_policy"
+      ],
+      "properties": {
+        "product_scope_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deployment_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commercial_profile_enabled": {
+          "type": "boolean"
+        },
+        "product_claim": {
+          "type": "string",
+          "minLength": 10
+        },
+        "intents": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "geographies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "qualified_domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "input_modalities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "output_channels": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "ai_llm_enabled_for_decision_relevant_output": {
+          "type": "boolean"
+        },
+        "explicitly_unqualified_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "windows_native_required": {
+          "type": "boolean"
+        },
+        "candidate_generation_enabled": {
+          "type": "boolean"
+        },
+        "financial_modeling_enabled": {
+          "type": "boolean"
+        },
+        "user_utility_claim_enabled": {
+          "type": "boolean"
+        },
+        "user_facing_workflow_enabled": {
+          "type": "boolean"
+        },
+        "international_operation_enabled": {
+          "type": "boolean"
+        },
+        "regulated_high_stakes_use_enabled": {
+          "type": "boolean"
+        },
+        "source_profile_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "ruleset_versions": {
+          "type": "object"
+        },
+        "report_contract_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "api_contract_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "normalization_schema_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "geometry_pipeline_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supported_locales": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "canonical_timezone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_snapshot_policy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data_as_of_policy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "protocol": {
+      "type": "object"
+    },
+    "q1": {
+      "type": "object"
+    },
+    "q2": {
+      "type": "object"
+    },
+    "q3": {
+      "type": "object"
+    },
+    "input_resolution": {
+      "type": "object"
+    },
+    "database": {
+      "type": "object"
+    },
+    "security_privacy": {
+      "type": "object"
+    },
+    "accessibility": {
+      "type": "object"
+    },
+    "maintainability": {
+      "type": "object"
+    },
+    "operations": {
+      "type": "object"
+    },
+    "field_surveillance": {
+      "type": "object"
+    },
+    "unit_economics": {
+      "type": "object"
+    },
+    "criterion_overrides": {
+      "type": "object"
+    },
+    "windows_native": {
+      "type": "object"
+    },
+    "candidate_generation": {
+      "type": "object"
+    },
+    "financial_modeling": {
+      "type": "object"
+    },
+    "document_extraction": {
+      "type": "object"
+    },
+    "data_quality": {
+      "type": "object"
+    },
+    "regulatory_professional_scope": {
+      "type": "object"
+    },
+    "ai_llm": {
+      "type": "object"
+    },
+    "criterion_bindings": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z][A-Z0-9]*-[0-9]{3}$": {
+          "type": "object",
+          "required": [
+            "status",
+            "references"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "DRAFT",
+                "FROZEN"
+              ]
+            },
+            "references": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "combined_rule": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rationale": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "FROZEN"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "frozen_at",
+          "approved_by"
+        ],
+        "properties": {
+          "frozen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_by": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
