@@ -143,6 +143,11 @@ Invoke-PythonCommand `
     -Label 'qualification validation' `
     -Arguments @('scripts/validate_qualification.py', '--root', '.', '--layout', 'repo')
 
+Write-Host '== qualification status =='
+Invoke-PythonCommand `
+    -Label 'qualification status' `
+    -Arguments @('scripts/qualification_status_check.py', '--root', '.', '--python-command', $script:PythonExecutable)
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')

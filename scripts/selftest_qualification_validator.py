@@ -7,6 +7,7 @@ import contextlib
 import importlib.util
 import io
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -23,11 +24,31 @@ def load_validator(source_root: Path):
     return module
 
 
+def load_status_checker(source_root: Path):
+    path = source_root / "scripts" / "qualification_status_check.py"
+    spec = importlib.util.spec_from_file_location("qualification_status_check_under_test", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load status checker: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def run_validator(module, root: Path) -> tuple[int, str]:
     stdout = io.StringIO()
     stderr = io.StringIO()
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         return_code = module.main(["--root", str(root)])
+    return return_code, stdout.getvalue() + "\n" + stderr.getvalue()
+
+
+def run_status_checker(module, root: Path) -> tuple[int, str]:
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        return_code = module.main(
+            ["--root", str(root), "--python-command", sys.executable]
+        )
     return return_code, stdout.getvalue() + "\n" + stderr.getvalue()
 
 
@@ -100,6 +121,7 @@ def assert_result(
 def main() -> int:
     source = Path(__file__).resolve().parent.parent
     validator = load_validator(source)
+    status_checker = load_status_checker(source)
 
     with tempfile.TemporaryDirectory(prefix="qualification-validator-") as temp:
         temp_root = Path(temp)
@@ -111,6 +133,29 @@ def main() -> int:
             run_validator(validator, baseline),
             True,
             "qualification structural validation: PASS",
+        )
+        assert_result(
+            "baseline derived status matches committed status",
+            run_status_checker(status_checker, baseline),
+            True,
+            "qualification status check: ok",
+        )
+
+        status_drift = temp_root / "status-drift"
+        copy_fixture(source, status_drift)
+
+        def drift_p0_to_not_run(value):
+            value["qualifications"]["p0"]["status"] = "NOT_RUN"
+
+        mutate_yaml(
+            control_paths(status_drift)["status"],
+            drift_p0_to_not_run,
+        )
+        assert_result(
+            "derived status drift is rejected",
+            run_status_checker(status_checker, status_drift),
+            False,
+            "qualifications.p0 expected BLOCKED but found NOT_RUN",
         )
 
         blocked_without_refs = temp_root / "blocked-without-refs"

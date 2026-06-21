@@ -2,6 +2,89 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 EQP2-1 Derived Qualification Status Check
+
+**Scope:** Make empirical qualification status derived and drift-proof from the
+catalog, readiness crosswalk, and mapped checker exit results. This does not satisfy
+or pass any mapped criterion, run P0, freeze targets, approve owner decisions, approve
+Bologna, capture fixtures, run connectors, seed the database, approve DS-017,
+provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend/tests/test_qualification_status_check.py -q
+py -3.12 scripts/qualification_status_check.py --root .
+py -3.12 scripts/selftest_qualification_validator.py
+py -3.12 -m pytest backend/tests/test_qualification_status_check.py backend/tests/test_qualification_spine.py -q
+.\scripts\qualification_status_check.ps1
+.\scripts\verify.ps1
+Push-Location backend; $env:PYTHONPATH='.'; py -3.12 -m pytest tests/test_qualification_status_check.py tests/test_qualification_spine.py tests/test_readiness_core_artifacts.py tests/test_readiness_matrix_artifacts.py tests/test_qualification_parameterization_backlog_artifacts.py -q; Pop-Location
+.\scripts\verify.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+ruff check scripts/qualification_status_check.py scripts/selftest_qualification_validator.py backend/tests/test_qualification_status_check.py backend/tests/test_qualification_spine.py backend/tests/test_readiness_core_artifacts.py backend/tests/test_qualification_parameterization_backlog_artifacts.py
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:5432/land_diligence'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:5432/land_diligence'; py -3.12 -m pytest backend/tests/test_qualification_status_check.py -q
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:5432/land_diligence'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:5432/land_diligence'; py -3.12 scripts/selftest_qualification_validator.py
+$env:DATABASE_URL='postgresql+psycopg://land:land@localhost:5432/land_diligence'; $env:DATABASE_URL_SYNC='postgresql://land:land@localhost:5432/land_diligence'; py -3.12 scripts/qualification_status_check.py --root .
+.\scripts\verify.ps1
+py -3.12 -m pytest backend/tests/test_qualification_status_check.py -q
+ruff check scripts/qualification_status_check.py backend/tests/test_qualification_status_check.py
+py -3.12 scripts/qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- The focused status-check test failed red before implementation because
+  `scripts/qualification_status_check.py` did not exist.
+- After implementation, focused status-check tests passed.
+- Direct status check passed with checker results
+  `passed=27 not_run=2 unexpected_failed=0` and derived statuses
+  `BLOCKED=1 NOT_RUN=20`.
+- The adversarial selftest passed, including the new status-drift mutation proving a
+  committed P0 drift from `BLOCKED` to `NOT_RUN` fails closed.
+- The combined status/spine focused suite passed.
+- The PowerShell status wrapper passed with the same derived status counts.
+- First full `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, qualification validation, and the new qualification status check, then
+  failed in backend tests because two routing assertions still expected EQ-4 active
+  routing and this validation entry did not yet list the full verify command.
+- After routing assertion fixes, the focused backend routing/qualification suite
+  passed with `PYTHONPATH=.` from `backend`.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status check, backend pytest,
+  ruff, and mypy all succeeded. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Focused ruff passed for the new status checker, touched qualification selftest, and
+  touched backend tests.
+- Draft PR CI initially showed `db-verify` failing because ambient `DATABASE_URL*`
+  variables made the status selftest attempt `spatial_query_plan_runtime_check.py`
+  before migrations. The status checker now suppresses runtime env for known
+  runtime-required checkers unless `--allow-runtime-checkers` is explicitly set.
+- With ambient DB URL variables present, the focused status test, qualification
+  selftest, and direct status check all passed and still derived
+  `BLOCKED=1 NOT_RUN=20`.
+- Final post-fix `.\scripts\verify.ps1` passed again: workspace validation,
+  qualification selftest, qualification validation, qualification status check,
+  backend pytest, ruff, and mypy all succeeded. DB smoke was skipped because
+  `RUN_DB_SMOKE` was not set.
+- Independent read-only code review found no critical or important issues and one
+  minor timeout-output normalization edge case in
+  `scripts/qualification_status_check.py`.
+- After fixing the review item, focused status tests, focused ruff, and the direct
+  status check passed.
+- Final post-review `.\scripts\verify.ps1` passed again with workspace validation,
+  qualification selftest, qualification validation, qualification status check,
+  backend pytest, ruff, and mypy all succeeding. DB smoke was skipped because
+  `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** EQP2-1 is derivation and drift detection only. It keeps the
+package-manifest and spatial DB-runtime checker paths as explicit `NOT_RUN` cases
+because their runtime inputs are absent; EQP2-4 should replace that local policy with
+checker-advertised metadata. P0 remains blocked and no status moves to `PASS`.
+
 ## 2026-06-21 Empirical Qualification Readiness Crosswalk EQ-4
 
 **Scope:** Map active readiness, authority, release, source, security, operations, and

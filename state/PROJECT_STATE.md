@@ -1,6 +1,57 @@
 # Project State
 
-## Current checkpoint (2026-06-21 EQ-4 readiness crosswalk)
+## Current checkpoint (2026-06-21 EQP2-1 derived qualification status)
+
+Live `origin/main` contains the EQ Phase 2 handoff through PR #129 at
+`b88d608aec21a988bc4127f167ee0972f6da06f2`, on top of the EQ-4 readiness
+crosswalk commit `8dadfbffd90408fa7320cadd59b65cb7f1a5bc78`. `EQP2-1` is the
+current repo-local lane: make the committed empirical-qualification status
+derived from the catalog, readiness crosswalk, and real mapped checker exit
+results without claiming any qualification `PASS`.
+
+- **Current implementation plan**:
+  `plans/2026-06-21-eqp2-1-status-check.md`.
+- **Latest repo-local test hardening**:
+  `backend/tests/test_qualification_status_check.py` proves the derived status view
+  matches the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` shape, rejects P0 drift to
+  `NOT_RUN`, treats unexpected checker failures as mapped `BLOCKED` drift, and fails
+  closed if a mapped checker result is missing. `backend/tests/test_qualification_spine.py`
+  now also proves the status checker artifacts and CI/verify wiring exist.
+- **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
+  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
+  `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
+  `EQ-2`, `EQ-3`, and `EQ-4` are done in the current routing model. `EQP2-1` adds
+  `scripts/qualification_status_check.py`, `scripts/qualification_status_check.ps1`,
+  and `scripts/run_qualification_status_check.sh`. The checker runs mapped readiness,
+  authority, source, release, security, operations, and spatial checker paths; default
+  passing checks remain qualification `NOT_RUN`; the known unstarted runtime inputs
+  for package-manifest and spatial DB-runtime checks remain `NOT_RUN`; any other
+  nonzero mapped checker result derives `BLOCKED` and fails the committed-status
+  comparison. `EQP2-2`, `EQP2-3`, and `EQP2-4` remain queued.
+- **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
+  qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
+  `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
+- **Verification routing**: the new status checker is wired after structural
+  qualification validation in `scripts/verify.ps1` and `scripts/verify.sh`, and in the
+  dedicated `qualification-selftest` CI job through
+  `scripts/run_qualification_status_check.sh`.
+- **Immediate next pursuit after EQP2-1**: `EQP2-2` should make change-impact
+  invalidation executable against a diff while staying advisory and non-passing.
+  `EQP2-3` should collect repo-local evidence for the auto-verifiable P0 invariants
+  while keeping P0 blocked. `EQP2-4` should make existing checkers advertise their
+  crosswalk criterion IDs and prove crosswalk/checker parity. The Bologna path remains
+  prioritized but still requires external product/AOI/source-rights authority before
+  corpus or DB-backed report work.
+- **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
+  Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
+  approval, source registry promotion, recorded fixture, connector, DB seed,
+  report/API/UI/schema change, auth change, report semantic change, DS-017 approval,
+  vendor selection, hosted deployment, hosted identity/RBAC, hosted observability/log
+  retention/alerting, hosted object-store proof, new jurisdiction, EU/Italy rulepack,
+  production traffic proof, ranking/recommendation semantics, multi-geography
+  framework implementation, report semantic overclaim, or Level 10 completion claim.
+
+## Previous checkpoint (2026-06-21 EQ-4 readiness crosswalk)
 
 Live `origin/main` contains EQ-3 through PR #127 at
 `961bffd513df6b8fc66b177e605094c7205e1dee`. `EQ-4` is the current repo-local lane:

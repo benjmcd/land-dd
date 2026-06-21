@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eq-4-readiness-crosswalk.md`.
+Latest completed plan: `2026-06-21-eqp2-1-status-check.md`.
 
-Current routing plan: `2026-06-21-eq-4-readiness-crosswalk.md`.
+Current routing plan: `2026-06-21-eqp2-1-status-check.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -113,6 +113,16 @@ qualification validator/selftest so inventory drift and unknown criterion IDs fa
 closed. It does not change checker behavior, satisfy any mapped criterion, claim a
 qualification `PASS`, or unblock owner decisions. If no external authority arrives,
 the next repo-local slice is `EQ-5` backlog reconciliation.
+
+`EQP2-1` starts EQ Phase 2 operationalization after the PR #129 handoff. It adds a
+derived qualification status checker that runs mapped readiness/authority checker
+paths, treats passing readiness checks as non-passing inputs, keeps package-manifest
+and spatial DB-runtime checks as explicit `NOT_RUN` cases until runtime inputs exist,
+and fails closed when committed status drifts from the derived `P0 = BLOCKED` /
+non-P0 `NOT_RUN` view. It wires that status check into verify and the dedicated
+qualification CI job. No qualification `PASS`, owner-decision unfreeze, Bologna
+approval, source approval, fixture capture, DB seed, report/runtime use, hosted
+authority, DS-017 approval, or Level 10 claim is introduced.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

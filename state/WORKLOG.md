@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 EQP2-1 derived qualification status check
+
+- Started clean worktree `worktrees/eqp2-1` on `eqp2/1-status-check` from live
+  `origin/main` at `b88d608aec21a988bc4127f167ee0972f6da06f2`; root remains dirty
+  preserved state on `codex/r026-raw-readiness-ui`.
+- Reconciled the Phase 2 handoff against live Git history. PR #129 is the Phase 2
+  operationalization handoff on top of EQ-4; no separate visible EQ-5 implementation
+  commit is treated as current authority.
+- Added `plans/2026-06-21-eqp2-1-status-check.md` and focused tests for derived
+  qualification status, P0 drift rejection, unexpected mapped checker failures, and
+  missing checker-result fail-closed behavior.
+- Added `scripts/qualification_status_check.py`, `scripts/qualification_status_check.ps1`,
+  and `scripts/run_qualification_status_check.sh`. The checker derives only
+  `BLOCKED`/`NOT_RUN`, keeps P0 blocked while targets/candidate identity are unresolved,
+  runs mapped checker paths, treats passing readiness checks as non-passing inputs, and
+  leaves package-manifest/spatial DB runtime checks as explicit `NOT_RUN` cases until
+  their runtime inputs exist.
+- Extended `scripts/selftest_qualification_validator.py` with a status-drift mutation
+  proving that committed P0 `NOT_RUN` is rejected even though structural validation
+  alone would not catch it.
+- Wired the status check into `scripts/verify.ps1`, `scripts/verify.sh`, and the
+  dedicated `qualification-selftest` CI job.
+- Preserved boundaries: no qualification `PASS`, no non-P0 result artifact, no
+  owner-decision unfreeze, no Bologna AOI/source approval, no fixture capture, no
+  runtime/report use, no DB seed, no source registry promotion, no DS-017 approval, no
+  hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 Empirical qualification readiness crosswalk EQ-4
 
 - Started clean worktree `worktrees/eq-4` on `eq/eq4` from live `origin/main` at
