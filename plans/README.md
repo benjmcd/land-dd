@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-authority-handoff.md`.
+Latest completed plan: `2026-06-21-readiness-core.md`.
 
-Current routing plan: `2026-06-21-readiness-core.md`.
+Current routing plan: `2026-06-21-bologna-priority-routing.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -46,6 +46,15 @@ billing, Bologna, or Level 10 authority.
 `release_readiness.py` parser concepts into current-main read-only app models. The
 models parse existing project/routing/release artifacts only; they do not change source
 readiness, release semantics, report behavior, hosted authority, or Bologna authority.
+`READINESS-CORE` merged through PR #119 at
+`fa66b561e8820273963f51642d7dc3ef56ac0491`.
+
+`BOL-PRIORITY` records the next-pursuit decision: the Bologna recorded-source pilot path
+is now preferred over generic hosted-production, generic DS-017, and broad
+production-authority lanes. The first Bologna pursuit remains `BSA-001` source/AOI/right
+authority preparation; fixture capture, source promotion, runtime/report use, DB seeds,
+hosted authority, DS-017 approval, and Level 10 claims remain blocked until cited
+authority exists.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

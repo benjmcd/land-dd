@@ -1,17 +1,17 @@
 # Project State
 
-## Current checkpoint (2026-06-21 readiness control-plane core)
+## Current checkpoint (2026-06-21 Bologna priority routing)
 
-Live `origin/main` contains `AUTH-HANDOFF` through PR #118 at
-`7f4fa03677eee523d1bf65d94b74b720fb706893`. `READINESS-CORE` is the current
-repo-local control-plane consolidation slice: rework the remaining dirty-root
-`project_readiness.py` and `release_readiness.py` parser concepts into current-main
-read-only app models, without changing behavior or approving any blocked authority.
-`BSA-001` remains blocked until explicit product/AOI/source-review authority exists for
-exact candidate sources.
+Live `origin/main` contains `READINESS-CORE` through PR #119 at
+`fa66b561e8820273963f51642d7dc3ef56ac0491`. `BOL-PRIORITY` is the current
+repo-local routing slice: make the Bologna recorded-source pilot path the preferred next
+pursuit ahead of generic hosted-production, generic DS-017, and broad
+production-authority lanes, without approving any blocked authority. `BSA-001` is the
+first Bologna pursuit and remains blocked until explicit product/AOI/source-review
+authority exists for exact candidate sources.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-readiness-core.md`.
+  `plans/2026-06-21-bologna-priority-routing.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
@@ -19,7 +19,8 @@ exact candidate sources.
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, and
-  `AUTH-HANDOFF`, and `READINESS-CORE` are done. `BSA-001` remains blocked.
+  `AUTH-HANDOFF`, and `READINESS-CORE` are done. `BOL-PRIORITY` is the active
+  routing decision. `BSA-001` remains blocked but is now the preferred next pursuit.
   Must-source readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the
   only blocked Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
@@ -31,14 +32,16 @@ exact candidate sources.
   attribution, CRS, field policies, source-failure fixtures, caveats, report-use
   policy, and no-overclaim review. It is validate-only, merged through PR #116, and
   remains blocked for fixture/runtime/report use.
-- **Immediate next step if external authority exists**: cite exact authority in the
-  matching lower-level catalog before any stream can move from blocked. For Bologna,
-  that means filling the source-rights matrix from cited product/AOI/source-review
-  evidence before fixtures, source rows, connectors, rulepacks, or reports.
-- **Immediate next step if authority is absent**: keep `BSA-001`, DS-017, hosted
-  platform, identity/RBAC, hosted observability, billing, image publication, secret
-  manager, and Level 10 authority blocked; use the production-authority intake guard
-  and runbook checklist as the handoff surface for the missing external evidence.
+- **Immediate next pursuit**: prioritize the Bologna path by trying to unblock
+  `BSA-001` with cited product/AOI/source-review authority for exact candidate sources.
+  If authority exists, cite it first in `config/bologna_source_authority_intake.yaml`
+  and `config/bologna_source_rights.yaml`; only then can the recorded-source corpus
+  move beyond validate-only contract status.
+- **If Bologna authority is absent**: keep `BSA-001` blocked and do not fabricate
+  source approval, AOI selection, fixture capture, source rows, connectors, rulepacks,
+  reports, or DB seeds. Generic hosted-production, generic DS-017, broad production
+  authority, and Level 10 work are lower priority unless they are explicitly needed for
+  the Bologna pilot boundary or arrive with concrete external evidence.
 - **Mid-term sequence**: after approved rights, build a one-AOI recorded-source corpus
   with source versions, retrieval metadata, attribution, CRS, caveats, source-failure
   fixtures, and storage/export boundaries; then prove one DB-backed Bologna report with

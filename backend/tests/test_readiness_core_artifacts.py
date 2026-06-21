@@ -57,13 +57,15 @@ def test_release_readiness_app_model_rejects_duplicate_checks() -> None:
 def test_project_readiness_app_model_loads_current_control_plane() -> None:
     readiness = load_project_readiness(REPO_ROOT)
 
-    assert readiness.checkpoint.active_plan == "plans/2026-06-21-readiness-core.md"
+    assert readiness.checkpoint.active_plan == "plans/2026-06-21-bologna-priority-routing.md"
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "DS-017" in readiness.checkpoint.blocked_terms
     assert "Level 10" in readiness.checkpoint.blocked_terms
     assert "Bologna" in readiness.checkpoint.boundary_text
     assert readiness.task_queue.active_plan == readiness.checkpoint.active_plan
     assert any(task.task_id == "READINESS-CORE" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-PRIORITY" for task in readiness.task_queue.completed_tasks)
     assert readiness.gate_matrix.status_counts["BLOCKED"] >= 1
     assert "L10-SEC-010" in readiness.gate_matrix.blocked_gate_ids
     assert any("verify.ps1" in command for command in readiness.validation.commands)
