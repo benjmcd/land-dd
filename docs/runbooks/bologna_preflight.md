@@ -23,6 +23,12 @@ retrieval, caveat, CRS, fixture, and report-use decisions are reviewed.
 must cite real product/AOI/source-review authority before any pending source-rights
 matrix decision is changed.
 
+`config/bologna_recorded_source_corpus.yaml`
+(`bologna_recorded_source_corpus_v1`) is the blocked recorded-source corpus contract. It
+defines future manifest requirements for source versions, retrieval metadata,
+attribution, CRS, source-failure fixtures, caveats, and no-overclaim review without
+allowing fixture capture.
+
 This proof does not select Bologna, does not approve Italy sources, does not approve an
 EU/Italy rulepack, does not unblock DS-017, does not create runtime artifacts, and does
 not claim hosted production readiness.
@@ -51,6 +57,7 @@ The check is validate-only. It verifies that:
 - the Bologna source-candidates packet remains candidate-only and unapproved;
 - the Bologna source-rights matrix remains validate-only and unapproved;
 - the Bologna source-authority intake remains blocked and uncited;
+- the Bologna recorded-source corpus contract remains blocked and fixture-free;
 - every non-`repo_confirmed` gate has a `next_action` and blocker authority;
 - `blocked_external_authority` gates point to existing authority files;
 - the runbook and production authority packet preserve the boundary that this does not

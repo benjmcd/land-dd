@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Bologna Recorded-Source Corpus Contract BRC-001
+
+**Scope:** Add a validate-only recorded-source corpus contract for future Bologna
+fixture manifests. This does not approve sources, select an AOI, capture fixtures,
+create source-failure fixtures, change source readiness, mutate the database, create
+runtime/report artifacts, approve hosted authority, unblock DS-017, or claim Level 10.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\bologna_source_authority_intake_check.py
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\release_readiness_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+cd backend; py -3.12 -m pytest tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_bologna_preflight_artifacts.py tests\test_release_readiness_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline Bologna preflight, source-rights, source-authority intake, and
+  readiness-matrix validators passed before edits.
+- `bologna_recorded_source_corpus_check.py`, `bologna_preflight_check.py`,
+  `bologna_source_authority_intake_check.py`, `bologna_source_rights_check.py`,
+  `release_readiness_check.py`, and `readiness_matrix_check.py` passed after edits.
+- Focused artifact tests passed:
+  `tests\test_bologna_recorded_source_corpus_artifacts.py`,
+  `tests\test_bologna_preflight_artifacts.py`, and
+  `tests\test_release_readiness_artifacts.py`.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and mypy
+  succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** This contract prepares future corpus validation only. Bologna
+authority, DS-017 authority, hosted authority, and Level 10 authority remain blocked.
+
 ## 2026-06-20 Post-PR114 Routing Sync PR114-SYNC
 
 **Scope:** Refresh state/routing after PR #114 merged `RSR-001`. This is

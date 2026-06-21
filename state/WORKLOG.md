@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna recorded-source corpus contract BRC-001
+
+- Started clean worktree `worktrees/bol-corpus` on `codex/bol-corpus` from live
+  `origin/main` at `6253917809b5fc20a6d12c9a41678ea31c3d1de1`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current Bologna authority surfaces and selected the next unblocked
+  repo-local slice: a validate-only recorded-source corpus contract, not fixture
+  capture or source approval.
+- Added `config/bologna_recorded_source_corpus.yaml`, a runbook, checker, wrappers,
+  and focused artifact tests. The checker cross-checks candidate ids and required
+  manifest evidence against source-authority intake and source-rights matrices.
+- Composed the checker into Bologna preflight and release readiness.
+- Preserved boundaries: no AOI selection, no source approval, no source-rights change,
+  no source registry promotion, no fixture capture, no source-failure fixture capture,
+  no runtime/report use, no DB seed, no DS-017 approval, no hosted authority, and no
+  Level 10 claim.
+
 ## 2026-06-20 Post-PR114 routing sync PR114-SYNC
 
 - Started clean worktree `worktrees/post114-sync` on `codex/post114-sync` from live

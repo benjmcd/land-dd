@@ -277,9 +277,11 @@ Source of current truth: `config/performance_baseline.yaml`,
 Source of current truth: `config/bologna_preflight.yaml`,
 `config/bologna_source_candidates.yaml`, `config/bologna_source_rights.yaml`,
 `config/bologna_source_authority_intake.yaml`,
+`config/bologna_recorded_source_corpus.yaml`,
 `docs/runbooks/bologna_preflight.md`, `docs/runbooks/bologna_source_candidates.md`,
 `docs/runbooks/bologna_source_rights.md`,
 `docs/runbooks/bologna_source_authority_intake.md`,
+`docs/runbooks/bologna_recorded_source_corpus.md`,
 `docs/source-reviews/bologna-source-candidates.md`,
 `docs/source-reviews/bologna-source-rights.md`,
 `docs/checklists/jurisdiction_readiness.md`, `docs/checklists/rulepack_readiness.md`,
@@ -299,6 +301,11 @@ and report-use decisions required before any candidate can be promoted.
 The Bologna source-authority intake guard is validate-only and blocked. It records the
 exact authority evidence slots that must be cited before any pending source-rights
 decision can change.
+
+The Bologna recorded-source corpus contract is validate-only and blocked. It records
+the future fixture-manifest requirements for source versions, retrieval metadata,
+attribution, CRS, field policies, source-failure fixtures, caveats, report-use policy,
+and no-overclaim review, but it does not allow fixture capture.
 
 - External decisions required:
   - Product decision that authorizes a Bologna recorded-source pilot and names the
@@ -323,6 +330,8 @@ decision can change.
   - Authorized AOI, recorded-source manifest, source-rights decisions, source versions,
     retrieval metadata, CRS and geometry precision, fixture corpus, source-failure
     fixtures, rulepack or evidence-only scope, caveat language, and no-overclaim review.
+  - Completed `config/bologna_recorded_source_corpus.yaml` rows before any recorded
+    fixture or source-failure fixture is committed.
   - Candidate-source review evidence showing why each promoted source is allowed for
     cache, redistribution, export, AI use, raw retention, attribution, fixture capture,
     and report use.

@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-20-pr114-sync.md
+active_plan: plans/2026-06-21-bologna-recorded-source-corpus.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -23,8 +23,9 @@ routing_note: >
   source-authority intake remains blocked until product/AOI/source-review authority
   exists. SRP-001 reworks the retained selected-county runtime-provenance regression as
   a test-only residual closeout and merged through PR #113. RSR-001 post-SRP routing
-  closeout merged through PR #114. Current lane: PR114-SYNC post-merge routing sync.
-  Do not create hosted deployment, hosted identity/RBAC,
+  closeout merged through PR #114. PR114-SYNC post-merge routing sync merged through
+  PR #115. Current lane: BRC-001 Bologna recorded-source corpus contract. Do not create
+  hosted deployment, hosted identity/RBAC,
   hosted observability, source/vendor authority, new jurisdiction/rulepack/source
   coverage, DS-017 approval, Bologna implementation, fixture capture, production
   traffic proof, ranking/recommendation semantics, multi-geography framework
@@ -1458,6 +1459,37 @@ tasks:
       - Current live main references PR #114 and merge commit 12de4f5bcf044f813f68e04d71c1617dab5c4eb9
       - Current routing no longer implies PR #113 is the latest checkpoint
       - DS-017, hosted, Bologna, and Level 10 authority remain externally blocked
+
+  - id: BRC-001
+    title: Bologna recorded-source corpus contract
+    status: done
+    depends_on: [PR114-SYNC]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-recorded-source-corpus.md
+    notes: >
+      Added a validate-only recorded-source corpus contract for the future Bologna
+      pilot. The contract defines fixture-manifest, source-version, retrieval metadata,
+      CRS, attribution, source-failure fixture, caveat, report-use, review-owner, and
+      no-overclaim requirements while keeping source approval, fixture capture,
+      runtime use, report use, DB seeds, DS-017, hosted, and Level 10 authority blocked.
+    validation:
+      - py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\bologna_source_authority_intake_check.py
+      - py -3.12 .\scripts\bologna_source_rights_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - cd backend; py -3.12 -m pytest tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_bologna_preflight_artifacts.py tests\test_release_readiness_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Recorded-source corpus contract is machine-readable and validate-only
+      - Candidate corpus rows match source-authority intake and source-rights evidence slots
+      - Fixture capture, source-failure fixtures, runtime use, report use, and DB seeds remain blocked
+      - Bologna preflight and release readiness compose the corpus checker
+      - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
 
   # --- Completed ---
   - id: T000

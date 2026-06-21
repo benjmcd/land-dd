@@ -8,7 +8,9 @@ security-scan, image scan, backup/restore, incident, alerting, cost, access-cont
 threat-proxy-audit, release-package, image-publication, hosted-deployment,
 source-readiness, data-retention, load-test, performance, data-lineage,
 jurisdiction-readiness, rulepack-readiness, checklist-dry-run, source-entitlement, and
-production-authority intake proofs into one release boundary.
+production-authority intake proofs into one release boundary. It also composes the
+Bologna recorded-source corpus check so future expansion cannot bypass the blocked
+fixture-corpus contract.
 
 This runbook does not publish a release package, push an image, create a hosted
 deployment, attach registry attestations, approve paid vendors, approve hosted billing,
@@ -49,6 +51,12 @@ The check is validate-only. It verifies that:
   production-authority intake check across DS-017, hosted platform, secrets, identity,
   image publication, billing, hosted observability, and Bologna recorded-source
   blockers;
+- the local Bologna recorded-source corpus contract is
+  `config/bologna_recorded_source_corpus.yaml`, and the release proof composes
+  `scripts/run_bologna_recorded_source_corpus_check.ps1` /
+  `scripts/bologna_recorded_source_corpus_check.py` as a validate-only Bologna
+  recorded-source corpus check that keeps fixture capture blocked until authority
+  exists;
 - Must current-effective source reviews keep `Last Checked At` within the 90-day
   repo-local freshness horizon enforced by `scripts/source_readiness.py` and
   `scripts/alert_rules_check.py`, while source-specific upstream/update cadence and
@@ -144,6 +152,10 @@ The check is validate-only. It verifies that:
   DS-017, select vendors, provision hosted infrastructure, publish images, write
   secrets, create billing integration, create hosted observability, select a Bologna
   AOI, promote source decisions, or claim Level 10 authority.
+- Bologna recorded-source corpus readiness is cataloged in
+  `config/bologna_recorded_source_corpus.yaml`, but it is only a validate-only manifest
+  contract. It does not capture fixtures, create source-failure fixtures, approve
+  report use, promote source registry rows, mutate the database, or start Bologna.
 - No hosted deployment, domain, TLS endpoint, hosted alerting, or pager routing is
   created by this proof.
 - No published registry-image attestation, signed image SBOM, or SLSA provenance
