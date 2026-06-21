@@ -65,6 +65,8 @@ jobs:
         run: ./scripts/run_qualification_selftest.sh
       - name: Validate qualification control plane
         run: ./scripts/run_qualification_validate.sh
+      - name: Verify qualification status derivation
+        run: ./scripts/run_qualification_status_check.sh
 
   supply-chain:
     runs-on: ubuntu-latest

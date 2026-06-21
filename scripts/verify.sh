@@ -73,6 +73,9 @@ echo "== qualification selftest =="
 echo "== qualification validation =="
 "$PYTHON_BIN" scripts/validate_qualification.py --root . --layout repo
 
+echo "== qualification status =="
+"$PYTHON_BIN" scripts/qualification_status_check.py --root . --python-command "$PYTHON_BIN"
+
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db migration =="
   ./scripts/db_apply_migrations.sh
