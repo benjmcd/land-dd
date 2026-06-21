@@ -2,6 +2,54 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Empirical Qualification Boundary Consolidation EQ-1
+
+**Scope:** Record the empirical-qualification control-plane boundary before any spine
+code lands. This adds ADR/routing/state only; it does not copy qualification catalog,
+vocabulary, profiles, schemas, validator, selftest, status files, CI gates, or backlog
+artifacts, and it does not claim qualification `PASS`, unfreeze owner decisions,
+change product behavior, or add runtime dependencies.
+
+**Commands run:**
+
+```powershell
+py -3.11 -c "import yaml; yaml.safe_load(open('tasks/task_queue.yaml', encoding='utf-8')); print('task queue parses')"
+.\scripts\agent-context-check.ps1
+.\scripts\validate_workspace.ps1
+cd backend; py -3.12 -m pytest tests\test_readiness_core_artifacts.py -q
+py -3.12 .\scripts\readiness_matrix_check.py
+cd backend; py -3.12 -m pytest tests\test_readiness_matrix_artifacts.py tests\test_readiness_core_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `tasks/task_queue.yaml` parsed with PyYAML on `py -3.11`.
+- Agent-context and workspace validation passed.
+- Focused readiness-core artifact test passed after updating active-plan and EQ-1 task
+  assertions.
+- First full `.\scripts\verify.ps1` run failed in the readiness-matrix artifact test
+  because the new active plan cited `state/LEVEL_9_10_GATE_MATRIX.md` but did not
+  include the literal `Level 9/10` authority phrase.
+- Added the required Level 9/10 authority-context sentence to the active plan.
+- Readiness-matrix validator and focused readiness-matrix/readiness-core tests passed
+  after the plan update (`8 passed`).
+- Separate read-only code-review lane reported no blocking findings. It noted one
+  medium packaging risk: the new ADR and EQ-1 plan were untracked before staging, so
+  they must be included in the commit with the routing references.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, backend pytest,
+  ruff, and mypy succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** EQ-1 is a governance boundary only. The qualification spine, CI
+selftest gate, status file, crosswalk, backlog, and source/domain/target/rubric
+parameterization remain unimplemented. `P0` remains blocked; no owner decision,
+source authority, Bologna authority, DS-017 approval, hosted authority, or Level 10
+claim is changed.
+
 ## 2026-06-21 Bologna Scope Decision Requests BPS-REQ-001
 
 **Scope:** Add structured request rows for every missing Bologna pilot-scope decision

@@ -1,15 +1,14 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna scope decision requests)
+## Current checkpoint (2026-06-21 empirical qualification boundary EQ-1)
 
-Live `origin/main` contains `BPS-001` through PR #121 at
-`df96c21f9445fc5cb915d2b06ec0b2eb6c731f2f`. `BPS-REQ-001` is the current repo-local
-Bologna slice: make the blocked first-gate pilot-scope authority packet actionable
-with structured decision-request rows, without approving any blocked authority or
-starting Bologna implementation.
+Live `origin/main` contains the empirical-qualification adoption handoff through PR
+#123 at `358389b2904a06e2a2b3192b5d118ec71190efce`. `EQ-1` is the current
+repo-local governance gate: record the empirical-qualification control-plane boundary
+before any qualification spine code lands.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-bologna-scope-decision-requests.md`.
+  `plans/2026-06-21-eq-1-boundary-consolidation.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
@@ -17,15 +16,22 @@ starting Bologna implementation.
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
-  `READINESS-CORE`, `BOL-PRIORITY`, and `BPS-001` are done. `BPS-REQ-001` is the
-  active first-gate scope-decision request slice. `BSA-001` remains blocked until
-  explicit product/AOI/source-review authority exists for exact candidate sources.
-  Must-source readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the
-  only blocked Must source.
-- **Candidate reconciliation state**: the runtime-provenance residual is reworked and
-  merged. The remaining dirty-root parser concepts, `backend/app/project_readiness.py`
-  and `backend/app/release_readiness.py`, are reworked in `READINESS-CORE` as
-  current-main read-only app models rather than copied from the dirty root.
+  `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, and `EQ-1` are done
+  in the current routing model. `EQ-2`, `EQ-3`, `EQ-4`, `EQ-5`, and `EQ-R` are queued.
+  `BSA-001` remains blocked until explicit product/AOI/source-review authority exists
+  for exact candidate sources. Must-source readiness remains
+  `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked Must source.
+- **Empirical qualification boundary**: ADR 0004 records that the
+  empirical-qualification catalog is the canonical empirical-validity authority once
+  the spine lands. Existing readiness YAML/checkers, authority packets,
+  release-readiness checks, and `state/LEVEL_9_10_GATE_MATRIX.md` remain
+  CI/deployment gates that report into the qualification control plane rather than
+  competing qualification authorities.
+- **Empirical qualification status**: no qualification spine, catalog, status file, CI
+  selftest gate, crosswalk, or backlog has landed yet. The framework source package is
+  read-only input. The intended status remains honest `P0 = BLOCKED` until owner
+  decisions, source profiles, domain profiles, target bindings, rubrics, reviewers, and
+  empirical evidence are frozen.
 - **Current Bologna scope boundary**: `config/bologna_pilot_scope_authority.yaml`
   records the missing product, one-AOI, intended-operator, non-goal, stop-condition,
   jurisdiction, rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
@@ -33,38 +39,22 @@ starting Bologna implementation.
   `scope_decision_requests` rows name the expected reference, minimum evidence, and
   downstream use for each missing decision. It is validate-only, uncited, and blocked;
   all downstream source-authority, source-rights, and corpus updates remain disabled.
-- **Current Bologna corpus boundary**: `config/bologna_recorded_source_corpus.yaml`
-  records the future manifest requirements for source versions, retrieval metadata,
-  attribution, CRS, field policies, source-failure fixtures, caveats, report-use
-  policy, and no-overclaim review. It is validate-only, merged through PR #116, and
-  remains blocked for fixture/runtime/report use.
-- **Immediate next pursuit**: keep Bologna prioritized by collecting or explicitly
-  blocking the `BPS-REQ-001` decision requests. Only after product/AOI/scope authority
-  is cited can
-  `BSA-001` cite exact source-review authority in
-  `config/bologna_source_authority_intake.yaml` and
-  `config/bologna_source_rights.yaml`; only then can the recorded-source corpus move
-  beyond validate-only contract status.
-- **If Bologna authority is absent**: keep `BPS-001` and `BSA-001` blocked and do not
-  fabricate source approval, AOI selection, fixture capture, source rows, connectors,
-  rulepacks, reports, or DB seeds. Generic hosted-production, generic DS-017, broad
-  production authority, and Level 10 work are lower priority unless explicitly needed
-  for the Bologna pilot boundary or supplied with concrete external evidence.
-- **Mid-term sequence**: after approved scope and source rights, build a one-AOI
-  recorded-source corpus with source versions, retrieval metadata, attribution, CRS,
-  caveats, source-failure fixtures, and storage/export boundaries; then prove one
-  DB-backed Bologna report with evidence, unknowns/claims, caveats, artifacts, and
-  lineage.
-- **Long-term target**: extract a repeatable multi-geography source/rulepack framework
-  only after the Bologna pilot exposes real reusable contracts and country-specific
-  boundaries.
-- **Known boundaries to preserve**: no Bologna AOI selection, source approval, source
-  registry promotion, recorded fixture, connector, DB seed, report/API/UI/schema
-  change, DS-017 approval, vendor selection, hosted deployment, hosted identity/RBAC,
-  hosted observability/log retention/alerting, hosted object-store proof, new
-  jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation
-  semantics, multi-geography framework implementation, report semantic overclaim, or
-  Level 10 completion claim.
+- **Immediate next pursuit**: after EQ-1 merges, run EQ-2 to land the self-validating
+  qualification spine and CI/verify gate while preserving blocked status. EQ-3 then
+  reports `P0 = BLOCKED`, EQ-4 maps existing readiness/authority gates into criterion
+  IDs, and EQ-5 tracks owner-decision blockers. Lane R may proceed independently to
+  correct the false residual-reconciliation claim.
+- **If qualification authority is absent**: keep all qualification PASS claims blocked
+  and do not invent thresholds, reviewers, source profiles, domain profiles, empirical
+  evidence, owner decisions, source rights, hosted authority, or deployment targets.
+- **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
+  Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
+  approval, source registry promotion, recorded fixture, connector, DB seed,
+  report/API/UI/schema change, auth change, report semantic change, DS-017 approval,
+  vendor selection, hosted deployment, hosted identity/RBAC, hosted observability/log
+  retention/alerting, hosted object-store proof, new jurisdiction, EU/Italy rulepack,
+  production traffic proof, ranking/recommendation semantics, multi-geography
+  framework implementation, report semantic overclaim, or Level 10 completion claim.
 
 ## Current checkpoint (2026-06-20 Bologna source-candidate discovery BSC-001)
 
