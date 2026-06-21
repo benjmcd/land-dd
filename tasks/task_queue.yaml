@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eq-1-boundary-consolidation.md
+active_plan: plans/2026-06-21-eq-bologna-parameterization-backlog.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -30,11 +30,12 @@ routing_note: >
   control-plane parser rework merged through PR #119, and BOL-PRIORITY Bologna
   next-pursuit routing merged through PR #120, and BPS-001 Bologna pilot-scope
   authority merged through PR #121, BPS-REQ-001 Bologna scope decision requests merged
-  through PR #122, and empirical-qualification adoption handoff merged through PR #123.
-  Current lane: EQ-1 empirical-qualification boundary consolidation. Prefer EQ-1
-  before any qualification spine code so the catalog becomes the canonical
-  empirical-validity authority and existing readiness/authority checks report into it
-  rather than competing with it. Do not
+  through PR #122, empirical-qualification adoption handoff merged through PR #123,
+  and EQ-1 boundary consolidation merged through PR #124. Current lane: EQ-BOL
+  Bologna-first qualification parameterization backlog. This pulls the
+  owner/source/AOI blocker visibility slice forward per user priority while leaving
+  EQ-2 self-validating spine work, EQ-3 status, EQ-4 crosswalk, and all approval
+  decisions blocked. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -1709,10 +1710,143 @@ tasks:
       - EQ-1 through EQ-5 and Lane R are visible in task routing
       - No qualification spine, status file, CI gate, PASS claim, owner-decision unfreeze, product behavior, or runtime dependency is introduced
 
+  - id: EQ-BOL
+    title: Bologna-first qualification parameterization backlog
+    status: done
+    depends_on: [EQ-1]
+    lane: coordinator
+    spec: plans/2026-06-21-eq-bologna-parameterization-backlog.md
+    notes: >
+      Pull the empirical-qualification parameterization backlog forward for the
+      prioritized Bologna path. This records P0 blockers, zero approved source
+      profiles, draft domain/rubric/target blockers, and Bologna product/AOI/source
+      rights/corpus/report prerequisites as blocked external/owner authority work
+      without landing the qualification spine or approving any decision.
+    validation:
+      - py -3.11 -c "import yaml; yaml.safe_load(open('tasks/task_queue.yaml', encoding='utf-8')); print('task queue parses')"
+      - py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 .\scripts\bologna_source_rights_check.py
+      - py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - cd backend; py -3.12 -m pytest tests\test_qualification_parameterization_backlog_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_readiness_core_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Qualification parameterization backlog lists current P0 blockers and Bologna decision blockers
+      - Task queue reflects blocked external/owner-authority follow-ons
+      - EQ-2 remains queued for the self-validating spine
+      - No qualification PASS, owner-decision unfreeze, Bologna approval, fixture capture, runtime/report use, source registry promotion, DB seed, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: EQ-BLOCK-TARGETS
+    title: Freeze active qualification targets and contracts
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: active qualification target bindings and
+      criterion contracts remain DRAFT/unresolved until owners freeze thresholds,
+      contracts, reviewers, and evidence expectations.
+
+  - id: EQ-BLOCK-RUBRICS
+    title: Freeze active judgment rubrics
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: active judgment rubrics require reviewer
+      competence, dimensions, scales, pass rules, adjudication, calibration cases, and
+      evidence schema before any gate can pass.
+
+  - id: EQ-BLOCK-DOMAINS
+    title: Freeze qualification domain profiles
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: flood, wetlands, slope/terrain, soils/septic,
+      access, zoning, environmental, and source-conflict profiles remain DRAFT until
+      source hierarchy, issue taxonomy, tolerances, metrics, reviewers, and surveillance
+      plans are frozen.
+
+  - id: EQ-BLOCK-SOURCES
+    title: Approve selected source-quality profiles
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: selected source profile count remains zero until
+      exact sources, rights, cache/export/AI/raw-data permissions, coverage, freshness,
+      quality, failure behavior, retirement, and enforcement controls are approved.
+
+  - id: EQ-BLOCK-SCOPE-VERSIONS
+    title: Freeze qualification scope and version fields
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: report, API, normalization, geometry pipeline,
+      source snapshot, data-as-of, and ruleset_versions fields remain unresolved.
+
+  - id: EQ-BLOCK-BOLOGNA-SCOPE
+    title: Approve Bologna pilot product and AOI scope
+    status: blocked
+    depends_on: [EQ-BOL]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: product authorization, one-AOI boundary,
+      operator/use case, non-goals, stop conditions, jurisdiction boundary,
+      evidence-only/rulepack scope, DS-017 treatment, fixture boundary, runtime
+      boundary, and no-overclaim owner remain missing.
+
+  - id: EQ-BLOCK-BOLOGNA-SOURCE-RIGHTS
+    title: Approve Bologna exact source rights
+    status: blocked
+    depends_on: [EQ-BLOCK-BOLOGNA-SCOPE]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: exact Bologna candidate sources cannot leave
+      pending rights review until source-schema, license, cache, export, AI-use,
+      raw-data, attribution, fixture-use, runtime-use, report-use, caveat, and
+      source-version evidence is cited.
+
+  - id: EQ-BLOCK-BOLOGNA-CORPUS
+    title: Approve Bologna recorded-source corpus
+    status: blocked
+    depends_on: [EQ-BLOCK-BOLOGNA-SOURCE-RIGHTS]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: recorded fixture and source-failure fixture
+      manifests cannot be captured until one-AOI scope, exact sources, rights review,
+      source contract fields, source registry row review, retrieval metadata, source
+      versions, CRS, attribution, caveats, raw export policy, and no-overclaim review
+      are approved.
+
+  - id: EQ-BLOCK-BOLOGNA-REPORT
+    title: Prove one DB-backed Bologna report
+    status: blocked
+    depends_on: [EQ-BLOCK-BOLOGNA-CORPUS]
+    lane: coordinator
+    spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+    notes: >
+      BLOCKED external/owner authority: DB-backed Bologna report proof cannot begin
+      until pilot scope, source rights, recorded corpus, report-use policy, lineage,
+      caveat, artifact, and no-overclaim requirements are approved.
+
   - id: EQ-2
     title: Empirical qualification self-validating spine
     status: queued
-    depends_on: [EQ-1]
+    depends_on: [EQ-BOL]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-2--land-the-self-validating-spine--ci-gate
     notes: >

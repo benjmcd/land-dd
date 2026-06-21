@@ -296,10 +296,17 @@ branch off main or explicitly re-recorded as decaying DEFER work with their gate
 ---
 
 ## Decision log
+- 2026-06-21: User elevated the Bologna recorded-source path above broad EQ-2/EQ-3/EQ-4
+  work. `EQ-BOL` is a pulled-forward visibility slice after EQ-1: it creates the
+  blocked parameterization backlog now, while EQ-5 later reconciles or graduates that
+  backlog after the self-validating spine, status file, and crosswalk exist.
 - 2026-06-21: Milestone scoped as ADAPT (land spine, consolidate, defer expansion) per
   Audit B; sequenced EQ-1 (gate) → EQ-5 + parallel Lane R. Q3/conditional overlays and any
   gate PASS explicitly deferred. `jsonschema` adopted as dev/validation dep (EQ-2/ADR).
 
 ## Progress log
+- 2026-06-21: EQ-1 merged through PR #124. `EQ-BOL` branch started from
+  `origin/main@6d671875aee1c0a7fcba1d6124c2ffbb05841457` to record the blocked
+  Bologna-first parameterization backlog without landing qualification spine code.
 - 2026-06-21: Handoff authored off `origin/main@cc54776`. Awaiting receiving session to set
   goal and begin EQ-1.

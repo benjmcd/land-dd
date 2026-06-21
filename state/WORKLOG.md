@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna-first qualification parameterization backlog EQ-BOL
+
+- Started clean worktree `worktrees/eq-bol` on `eq/bol-backlog` from live
+  `origin/main` at `6d671875aee1c0a7fcba1d6124c2ffbb05841457`; root remains dirty
+  preserved state on `codex/r026-raw-readiness-ui`.
+- Re-audited current empirical-qualification and Bologna authority surfaces after
+  EQ-1. Selected a narrow Bologna-first backlog lane because the user prioritized the
+  Bologna recorded-source path over broad EQ-2/EQ-3/EQ-4 work.
+- Added `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md` to record active P0 blockers,
+  zero approved source profiles, draft target/rubric/domain/source/scope blockers, and
+  Bologna pilot-scope/source-rights/corpus/report proof blockers as external/owner
+  authority items.
+- Updated task routing and state surfaces so `EQ-BOL` is done, the blocked follow-ons
+  are explicit, and `EQ-2` remains queued for the self-validating qualification spine.
+- Preserved boundaries: no qualification spine, status file, CI gate, PASS claim,
+  owner-decision unfreeze, Bologna AOI/source approval, source-rights change, fixture
+  capture, source registry promotion, connector, DB seed, runtime/report use, DS-017
+  approval, hosted authority, or Level 10 claim.
+
 ## 2026-06-21 Empirical qualification boundary consolidation EQ-1
 
 - Started clean worktree `worktrees/eq-1` on `eq/eq1` from live `origin/main` at

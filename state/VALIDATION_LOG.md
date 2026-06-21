@@ -2,6 +2,70 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Bologna-First Qualification Parameterization Backlog EQ-BOL
+
+**Scope:** Pull the empirical-qualification parameterization backlog forward for the
+prioritized Bologna path. This adds backlog/routing/state visibility only; it does not
+copy the qualification spine, create status files, wire CI gates, claim qualification
+`PASS`, unfreeze owner decisions, approve Bologna, select an AOI, approve sources,
+change source rights, capture fixtures, run connectors, seed the database, create
+runtime/report artifacts, approve DS-017, provision hosted services, or claim Level 10
+authority.
+
+**Commands run:**
+
+```powershell
+cd backend; py -3.12 -m pytest tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.11 -c "import yaml; yaml.safe_load(open('tasks/task_queue.yaml', encoding='utf-8')); print('task queue parses')"
+py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\readiness_matrix_check.py
+cd backend; py -3.12 -m pytest tests\test_qualification_parameterization_backlog_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_readiness_core_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused backlog artifact test failed as expected because
+  `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md` did not exist and
+  `tasks/task_queue.yaml` still pointed at EQ-1.
+- Focused backlog artifact test passed after adding the backlog and task routing.
+- First combined focused command exposed a real readiness-matrix failure:
+  `active follow-on plan must cite the Level 9/10 gate matrix`. Added the required
+  `state/LEVEL_9_10_GATE_MATRIX.md` and `Level 9/10` authority-context citation to the
+  active plan.
+- Direct `py -3.12 .\scripts\readiness_matrix_check.py` then passed.
+- PyYAML task-queue parse, Bologna pilot-scope, source-rights, recorded-source corpus,
+  preflight, readiness-matrix, and focused backlog/Bologna/readiness-core tests passed
+  with explicit exit handling.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- First full `.\scripts\verify.ps1` failed in backend lint because the new backlog test
+  had one long expected-string line.
+- Split the string while preserving the expected text; focused backlog test, ruff, and
+  mypy passed for the new test file.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, backend pytest,
+  ruff, and mypy succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- Separate read-only code-review lane reported no blocking findings. It flagged one
+  medium consistency issue, that the adoption plan still lacked the `EQ-BOL`
+  pulled-forward sequencing note, and one low issue, that `plans/README.md` still
+  labeled EQ-1 as the latest completed plan.
+- Added the adoption-plan decision/progress addendum and updated `plans/README.md` so
+  `EQ-BOL` is the latest completed plan.
+- After review fixes, PyYAML task-queue parse, readiness-matrix check, and focused
+  backlog/readiness-core tests passed.
+
+**Residual risk:** The backlog is visibility only. The qualification spine, status
+file, CI selftest gate, readiness crosswalk, actual owner decisions, source profiles,
+domain profiles, frozen target bindings, judgment rubrics, Bologna AOI/source approval,
+recorded corpus, and DB-backed report proof remain unimplemented or blocked.
+
 ## 2026-06-21 Empirical Qualification Boundary Consolidation EQ-1
 
 **Scope:** Record the empirical-qualification control-plane boundary before any spine
