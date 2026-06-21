@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-bologna-scope-decision-requests.md`.
+Latest completed plan: `2026-06-21-eq-bologna-parameterization-backlog.md`.
 
-Current routing plan: `2026-06-21-eq-1-boundary-consolidation.md`.
+Current routing plan: `2026-06-21-eq-bologna-parameterization-backlog.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -78,9 +78,18 @@ known false residual-reconciliation claim. No qualification `PASS`, source autho
 hosted authority, DS-017 approval, Bologna authority, or owner-decision unfreeze is
 introduced by this routing.
 
-`EQ-1` is the current gate. It adds ADR 0004 and thin routing references so the
+`EQ-1` completed the boundary gate. It adds ADR 0004 and thin routing references so the
 empirical-qualification catalog can become the canonical empirical-validity authority
 without turning existing readiness and authority gates into competing truth sources.
+
+`EQ-BOL` pulls the parameterization backlog visibility slice forward for the
+prioritized Bologna path. It adds `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md`
+and blocked task routing for P0 target/contract/rubric/domain/source/scope blockers,
+plus Bologna pilot-scope, source-rights, recorded-corpus, and DB-backed report proof
+blockers. It does not land the qualification spine, status file, CI gate, source
+approval, AOI selection, fixture capture, runtime/report use, DS-017 approval, hosted
+authority, owner-decision unfreeze, or Level 10 claim. If no external Bologna authority
+arrives, the next repo-local empirical-qualification slice remains `EQ-2`.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
