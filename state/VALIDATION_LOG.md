@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Bologna Priority Routing BOL-PRIORITY
+
+**Scope:** Record Bologna recorded-source pilot preparation as the preferred next
+pursuit after `READINESS-CORE`, ahead of generic hosted-production, generic DS-017, and
+broad production-authority lanes. This does not approve Bologna source/AOI authority,
+change source rights, capture fixtures, promote sources, run connectors, seed data,
+change report/runtime behavior, approve DS-017, provision hosted services, or claim
+Level 10 authority.
+
+**Commands run:**
+
+```powershell
+git fetch origin main --prune
+git worktree list
+git rev-parse origin/main
+py -3.12 .\scripts\bologna_source_authority_intake_check.py
+py -3.12 .\scripts\bologna_source_rights_check.py
+py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\production_authority_intake_check.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Bologna source-authority intake, source-rights, recorded-source corpus, and preflight
+  checkers passed.
+- Production-authority intake and readiness-matrix checks passed after preserving the
+  required Level 9/10 authority context and hosted-deployment guard phrases.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017`
+  (`Commercial parcel vendor`) as the only blocked Must source.
+- Focused readiness-core artifact tests passed after updating the active-plan
+  expectation to `plans/2026-06-21-bologna-priority-routing.md`.
+- `git diff --check` passed and no deleted files were present.
+- `.\scripts\validate_workspace.ps1` passed.
+- `.\scripts\verify.ps1` passed: workspace validation, backend pytest, ruff, and mypy
+  succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** The priority change can be misread as Bologna approval. The
+authority catalogs remain fail-closed; `BSA-001` is the preferred next pursuit but is
+still blocked until exact product/AOI/source-review authority is cited.
+
 ## 2026-06-21 Readiness Control-Plane Core READINESS-CORE
 
 **Scope:** Rework the remaining dirty-root `project_readiness.py` and

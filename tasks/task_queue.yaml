@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-readiness-core.md
+active_plan: plans/2026-06-21-bologna-priority-routing.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -25,9 +25,12 @@ routing_note: >
   a test-only residual closeout and merged through PR #113. RSR-001 post-SRP routing
   closeout merged through PR #114. PR114-SYNC post-merge routing sync merged through
   PR #115. BRC-001 Bologna recorded-source corpus contract merged through PR #116.
-  PR116-SYNC post-merge routing sync merged through PR #117, and AUTH-HANDOFF
-  production-authority handoff hardening merged through PR #118. Current lane:
-  READINESS-CORE control-plane parser rework. Do not create
+  PR116-SYNC post-merge routing sync merged through PR #117, AUTH-HANDOFF
+  production-authority handoff hardening merged through PR #118, and READINESS-CORE
+  control-plane parser rework merged through PR #119. Current lane: BOL-PRIORITY
+  Bologna next-pursuit routing. Prefer BSA-001 source/AOI/right-authority preparation
+  as the next pursuit ahead of generic hosted-production, generic DS-017, and broad
+  production-authority work. Do not create
   hosted deployment, hosted identity/RBAC,
   hosted observability, source/vendor authority, new jurisdiction/rulepack/source
   coverage, DS-017 approval, Bologna implementation, fixture capture, production
@@ -1580,6 +1583,37 @@ tasks:
       - Focused tests fail closed on malformed control-plane inputs
       - Residual reconciliation has no remaining STILL_DIVERGENT parser candidates
       - DS-017, hosted, Bologna implementation, and Level 10 authority remain externally blocked
+
+  - id: BOL-PRIORITY
+    title: Bologna priority routing
+    status: done
+    depends_on: [READINESS-CORE]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-priority-routing.md
+    notes: >
+      Record the decision to prioritize the Bologna recorded-source pilot path over
+      generic hosted-production, generic DS-017, and broad production-authority lanes.
+      The first pursuit is BSA-001 source/AOI/right-authority preparation; this remains
+      blocked until cited authority exists and does not approve fixtures, sources,
+      source registry promotion, runtime/report use, DB seeds, hosted authority, DS-017,
+      or Level 10 status.
+    validation:
+      - py -3.12 .\scripts\bologna_source_authority_intake_check.py
+      - py -3.12 .\scripts\bologna_source_rights_check.py
+      - py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\production_authority_intake_check.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Current routing points to Bologna source/AOI/right-authority preparation as the preferred next pursuit
+      - Hosted, generic DS-017, and broad production-authority work remain lower priority unless concrete external evidence arrives or Bologna explicitly requires them
+      - BSA-001 remains blocked until product/AOI/source-review authority is cited
+      - No Bologna fixture, source registry, connector, DB seed, runtime/report, rulepack, multi-geography, DS-017 approval, hosted, or Level 10 authority is introduced
 
   # --- Completed ---
   - id: T000

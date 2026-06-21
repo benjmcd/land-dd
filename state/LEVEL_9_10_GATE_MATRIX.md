@@ -139,28 +139,30 @@ work, or production workload work.
 
 ## Next Unblocked Pass
 
-The lowest-dependency next pass is not hosted deployment. Hosted production remains
-blocked by external platform, secret-manager, billing, alerting, identity/RBAC, and
-source/vendor authority. `R-019` rehearsed the existing US expansion checklists with a
-validate-only dry-run catalog/checker without selecting or approving a new geography,
-rulepack, source, connector, DS-017 path, or hosted production proof. `SE-001` then made
-the DS-017 commercial source blocker decision-ready with a validate-only source
-entitlement packet while keeping DS-017 blocked. `BP-001` restored post-SE001 routing
-and added a validate-only Bologna recorded-source preflight. `BSC-001` added a
-candidate-only Bologna source inventory, `BSR-001` added a fail-closed Bologna
-source-rights matrix, `BSG-001` added a Bologna source-authority intake guard, `PAI-001`
-added a production-wide validate-only intake guard, and `BRC-001` added a validate-only
-Bologna recorded-source corpus contract. `PR116-SYNC` refreshed routing after the corpus
-contract merged. The current `AUTH-HANDOFF` pass hardens the production-authority
-runbook and checker so external evidence collection stays aligned with the blocked
-authority streams, without approving sources, selecting vendors, provisioning hosted
-services, starting Bologna implementation, or claiming Level 10 authority.
+The preferred next pursuit is now the Bologna recorded-source pilot path, beginning
+with `BSA-001` source/AOI/right-authority preparation. This priority supersedes generic
+hosted-production, generic DS-017, and broad production-authority follow-up as the next
+planning target, but it does not lower any authority threshold.
+
+The first Bologna action is to cite product, one-AOI, exact source-selection,
+per-source terms, source version/date, cache/export/AI/raw-data, attribution, CRS,
+caveat, fixture, report-use, and no-overclaim authority into the Bologna
+source-authority intake and source-rights matrix. If that authority is absent,
+`BSA-001` remains blocked and no Bologna implementation starts.
+
+Hosted production remains blocked by external platform, secret-manager, billing,
+alerting, identity/RBAC, image-publication, object-store, and production workload
+authority. DS-017 remains the only blocked Must source and no DS-017 connector work
+starts without source/vendor authority. Those streams should not displace Bologna
+source-authority preparation unless concrete external evidence arrives or the Bologna
+pilot explicitly requires a DS-017 treatment decision.
 
 Do not start external hosted deployment work until `config/hosted_deployment.yaml`
 blockers have named authorities and evidence. Do not start DS-017 connector work until
-source/vendor blockers have named authorities and evidence. Do not start Bologna
-implementation until `config/bologna_preflight.yaml`,
-`config/bologna_source_candidates.yaml`, and `config/bologna_source_rights.yaml` have
-been replaced or superseded by an approved pilot plan with source-rights,
-recorded-source, jurisdiction, rulepack, DS-017-treatment, fixture-corpus, and
-runtime-proof authority.
+source/vendor blockers have named authorities and evidence.
+
+Do not start Bologna fixture capture, source registry promotion, connector work, DB
+seeds, runtime/report use, EU/Italy rulepack implementation, or multi-geography
+framework work until the validate-only Bologna catalogs are superseded by an approved
+pilot plan with cited source-rights, recorded-source, jurisdiction, rulepack or
+evidence-only scope, DS-017-treatment, fixture-corpus, and runtime-proof authority.

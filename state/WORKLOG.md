@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna priority routing BOL-PRIORITY
+
+- Started clean worktree `worktrees/bol-priority` on `codex/bol-priority` from live
+  `origin/main` at `fa66b561e8820273963f51642d7dc3ef56ac0491`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited current Bologna authority surfaces and found the existing first gate is
+  `BSA-001`: fill Bologna source-rights only from explicit product/AOI/source-review
+  authority for exact candidate sources.
+- Updated routing to make the Bologna recorded-source pilot path the preferred next
+  pursuit ahead of generic hosted-production, generic DS-017, and broad
+  production-authority lanes.
+- Preserved boundaries: no Bologna AOI/source approval, source-rights change, fixture
+  capture, source registry promotion, connector, DB seed, runtime/report use, DS-017
+  approval, hosted authority, or Level 10 claim.
+
 ## 2026-06-21 Readiness control-plane core READINESS-CORE
 
 - Started clean worktree `worktrees/readiness-core` on `codex/readiness-core` from live
