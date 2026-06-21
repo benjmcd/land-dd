@@ -32,8 +32,9 @@ attribution. Do NOT add new ad-hoc product/guardrail modules — subordinate, do
 **Canonical authority:** live `origin/main` (was `8dadfbf` at handoff). If the plan conflicts
 with live main, reconcile to main first.
 
-**CI note:** selftest+validator run INSIDE `verify.ps1`/`verify.sh` (no standalone
-`qualification-selftest` job). Keep that pattern; add new checks as verify steps.
+**CI note:** there IS a dedicated `qualification-selftest` job in `.github/workflows/ci.yml`
+(runs the selftest + validator wrappers), AND verify.ps1/verify.sh also run them. Wire new
+qualification checks in BOTH: a verify step (local) AND the CI job/wrappers (enforced).
 
 ---
 

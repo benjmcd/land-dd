@@ -126,11 +126,14 @@ Phase 2 turns the paperwork into enforcement — without crossing the P0-freeze 
 - **P0 auto-verifiable invariants** (repo-local, no owner judgment): **P0-021** test-suppression
   prohibition, **P0-023** evidence-linkage requirement, **P0-004** sealed-acceptance isolation,
   **P0-005** anti-contamination. (PROFILE_REQUIRED P0-001/002/003/006/007/008 need owner freeze.)
-- **CI wiring:** selftest + validator are invoked inside `verify.ps1`/`verify.sh`
-  (`== qualification selftest ==` then `== qualification validation ==`), which run in the
-  `verify` + `db-verify` CI jobs. **There is no separate `qualification-selftest` CI job** —
-  keep this pattern (add new checks as verify steps), and correct any prior wording that
-  implied a standalone job.
+- **CI wiring:** there IS a dedicated **`qualification-selftest` CI job** in
+  `.github/workflows/ci.yml` (line ~53) that runs `./scripts/run_qualification_selftest.sh`
+  then `./scripts/run_qualification_validate.sh`; AND the selftest+validator ALSO run inside
+  `verify.ps1`/`verify.sh` (`== qualification selftest ==` / `== qualification validation ==`)
+  in the `verify`+`db-verify` jobs. When you add a new qualification check (EQP2-1 status,
+  EQP2-2 change-impact), wire it in BOTH places: add a `verify.ps1`/`verify.sh` step (local
+  gate) AND surface it in CI — either extend the `qualification-selftest` job or the wrappers
+  it invokes — so CI enforces it, not just local verify.
 - **Env:** `jsonschema` imports under `py -3.11` and CI's `backend[dev]` 3.12, not bare local
   `py -3.12`. Honor `PYTHON_BIN`/`LAND_DD_PYTHON_EXECUTABLE`.
 
@@ -146,8 +149,9 @@ catalog, (b) the crosswalk `evidence_role` mappings, and (c) the **exit results 
 mapped existing checkers** — then asserts the committed `EMPIRICAL_QUALIFICATION_STATUS.yaml`
 matches the derived view (fail-closed on drift). Derivation must only ever produce
 `BLOCKED`/`NOT_RUN` (never PASS); P0 stays BLOCKED. Wire as a `== qualification status ==`
-step in `verify.ps1`/`verify.sh` after the validator. Extend the selftest with a drift case
-(committed status ≠ derived → FAIL). 
+step in `verify.ps1`/`verify.sh` after the validator, AND surface it in CI via the
+`qualification-selftest` job (extend that job or its wrappers). Extend the selftest with a
+drift case (committed status ≠ derived → FAIL). 
 **Done:** status check green in `verify`/CI; mutating the status file off the derived view
 fails the selftest; P0 still BLOCKED.
 
