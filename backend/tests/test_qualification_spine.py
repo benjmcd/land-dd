@@ -47,6 +47,9 @@ SCRIPT_FILES = {
     "scripts/qualification_status_check.py",
     "scripts/qualification_status_check.ps1",
     "scripts/run_qualification_status_check.sh",
+    "scripts/qualification_change_impact_check.py",
+    "scripts/qualification_change_impact_check.ps1",
+    "scripts/run_qualification_change_impact_check.sh",
 }
 
 
@@ -167,9 +170,11 @@ def test_qualification_ci_verify_and_dev_dependency_are_wired() -> None:
     assert "scripts/selftest_qualification_validator.py" in verify_sh
     assert "scripts/validate_qualification.py" in verify_sh
     assert "scripts/qualification_status_check.py" in verify_sh
+    assert "scripts/qualification_change_impact_check.py" in verify_sh
     assert "selftest_qualification_validator.py" in verify_ps1
     assert "validate_qualification.py" in verify_ps1
     assert "qualification_status_check.py" in verify_ps1
+    assert "qualification_change_impact_check.py" in verify_ps1
 
     job = ci["jobs"]["qualification-selftest"]
     job_steps = _steps_text(job)
@@ -181,3 +186,12 @@ def test_qualification_ci_verify_and_dev_dependency_are_wired() -> None:
     assert "./scripts/run_qualification_selftest.sh" in job_steps
     assert "./scripts/run_qualification_validate.sh" in job_steps
     assert "./scripts/run_qualification_status_check.sh" in job_steps
+    assert "./scripts/run_qualification_change_impact_check.sh" in job_steps
+    for job_name in ("verify", "db-verify", "qualification-selftest"):
+        checkout_steps = [
+            step
+            for step in ci["jobs"][job_name]["steps"]
+            if step.get("uses") == "actions/checkout@v6"
+        ]
+        assert len(checkout_steps) == 1
+        assert checkout_steps[0].get("with", {}).get("fetch-depth") == 0

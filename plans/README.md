@@ -4,7 +4,7 @@ Active implementation plans live here. Keep them executable and narrow.
 
 Latest completed plan: `2026-06-21-eqp2-1-status-check.md`.
 
-Current routing plan: `2026-06-21-eqp2-1-status-check.md`.
+Current routing plan: `2026-06-21-eqp2-2-change-impact.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -122,7 +122,16 @@ and fails closed when committed status drifts from the derived `P0 = BLOCKED` /
 non-P0 `NOT_RUN` view. It wires that status check into verify and the dedicated
 qualification CI job. No qualification `PASS`, owner-decision unfreeze, Bologna
 approval, source approval, fixture capture, DB seed, report/runtime use, hosted
-authority, DS-017 approval, or Level 10 claim is introduced.
+authority, DS-017 approval, or Level 10 claim is introduced. `EQP2-1` merged
+through PR #130 at `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`.
+
+`EQP2-2` makes change-impact invalidation executable against a diff while staying
+advisory and non-passing. It extends the canonical change-impact matrix with
+path-matching metadata, combines that with readiness-crosswalk surface mappings,
+and reports implicated change classes, review groups, invalidated criterion IDs,
+surface criterion IDs, and unmatched paths without changing status or creating a
+false gate. It must not claim qualification `PASS`, unfreeze owner decisions, or
+expand Bologna/source/runtime authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

@@ -34,6 +34,16 @@ def load_status_checker(source_root: Path):
     return module
 
 
+def load_change_impact_checker(source_root: Path):
+    path = source_root / "scripts" / "qualification_change_impact_check.py"
+    spec = importlib.util.spec_from_file_location("qualification_change_impact_check_under_test", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load change-impact checker: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def run_validator(module, root: Path) -> tuple[int, str]:
     stdout = io.StringIO()
     stderr = io.StringIO()
@@ -49,6 +59,17 @@ def run_status_checker(module, root: Path) -> tuple[int, str]:
         return_code = module.main(
             ["--root", str(root), "--python-command", sys.executable]
         )
+    return return_code, stdout.getvalue() + "\n" + stderr.getvalue()
+
+
+def run_change_impact_checker(module, root: Path, changed_paths: list[str]) -> tuple[int, str]:
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    args = ["--root", str(root)]
+    for path in changed_paths:
+        args.extend(["--changed-path", path])
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        return_code = module.main(args)
     return return_code, stdout.getvalue() + "\n" + stderr.getvalue()
 
 
@@ -122,6 +143,7 @@ def main() -> int:
     source = Path(__file__).resolve().parent.parent
     validator = load_validator(source)
     status_checker = load_status_checker(source)
+    change_impact_checker = load_change_impact_checker(source)
 
     with tempfile.TemporaryDirectory(prefix="qualification-validator-") as temp:
         temp_root = Path(temp)
@@ -139,6 +161,19 @@ def main() -> int:
             run_status_checker(status_checker, baseline),
             True,
             "qualification status check: ok",
+        )
+        assert_result(
+            "known mapped path surfaces change-impact criteria",
+            run_change_impact_checker(
+                change_impact_checker,
+                baseline,
+                [
+                    "config/release_readiness.yaml",
+                    "scripts/source_readiness.py",
+                ],
+            ),
+            True,
+            "SOURCE_SCHEMA_OR_CONNECTOR",
         )
 
         status_drift = temp_root / "status-drift"

@@ -76,6 +76,9 @@ echo "== qualification validation =="
 echo "== qualification status =="
 "$PYTHON_BIN" scripts/qualification_status_check.py --root . --python-command "$PYTHON_BIN"
 
+echo "== qualification change impact =="
+"$PYTHON_BIN" scripts/qualification_change_impact_check.py --root .
+
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db migration =="
   ./scripts/db_apply_migrations.sh

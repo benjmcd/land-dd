@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -35,6 +37,8 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -56,6 +60,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -67,6 +73,8 @@ jobs:
         run: ./scripts/run_qualification_validate.sh
       - name: Verify qualification status derivation
         run: ./scripts/run_qualification_status_check.sh
+      - name: Report qualification change impact
+        run: ./scripts/run_qualification_change_impact_check.sh
 
   supply-chain:
     runs-on: ubuntu-latest

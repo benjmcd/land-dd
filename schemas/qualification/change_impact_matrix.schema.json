@@ -40,6 +40,14 @@
             },
             "uniqueItems": true
           },
+          "path_globs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
           "conditional": {
             "type": "array",
             "items": {
