@@ -75,6 +75,8 @@ jobs:
         run: ./scripts/run_qualification_status_check.sh
       - name: Report qualification change impact
         run: ./scripts/run_qualification_change_impact_check.sh
+      - name: Validate qualification P0 auto evidence
+        run: ./scripts/run_qualification_p0_evidence_check.sh
 
   supply-chain:
     runs-on: ubuntu-latest

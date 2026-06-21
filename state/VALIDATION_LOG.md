@@ -2,6 +2,125 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 EQP2-3 Blocked P0 Repo-Local Auto-Evidence
+
+**Scope:** Collect repo-local evidence pointers for `P0-004`, `P0-005`,
+`P0-021`, and `P0-023`; link the evidence artifact from the blocked P0 status;
+and keep every row plus the P0 gate blocked. This does not claim criterion PASS,
+create a P0 result artifact, run P0, freeze targets, approve owner decisions,
+approve Bologna, capture fixtures, run connectors, seed the database, approve
+DS-017, provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py -q
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_change_impact_check.py --root .
+ruff check scripts\qualification_p0_evidence_check.py backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+Push-Location backend; $env:PYTHONPATH='.'; py -3.12 -m mypy ..\scripts\qualification_p0_evidence_check.py tests\test_qualification_p0_auto_evidence.py tests\test_qualification_spine.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py; Pop-Location
+.\scripts\qualification_p0_evidence_check.ps1 -PythonCommand <python-3.12-executable>
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path docs/qualification/P0_AUTO_EVIDENCE.yaml --changed-path scripts/qualification_p0_evidence_check.py --changed-path backend/tests/test_qualification_p0_auto_evidence.py
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_error_safety.py -q
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red focused tests failed before implementation because the P0 auto-evidence
+  artifact, checker/wrappers, status link, backlog rows, and verify/CI wiring did
+  not exist.
+- Direct P0 auto-evidence checker passed after implementation, reporting the four
+  selected criteria, `auto_evidenced_still_target_blocked`, and effective P0
+  `BLOCKED`.
+- Focused P0/routing suites passed after adding the active-plan updates and the
+  existing honest-blocked-status assertion was updated to expect the new blocked
+  evidence reference while preserving `result_path: null`.
+- A status/selftest drift appeared when the new active EQP2-3 plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; adding that Level 9/10 authority context to
+  the plan restored `qualification_status_check.py` and
+  `selftest_qualification_validator.py` to green.
+- Structural qualification validation passed with targets still `DRAFT`,
+  highest valid classification `L9-R`, and blocked-readiness warnings intact.
+- Focused ruff passed after removing one unused import from the new checker.
+- Targeted mypy passed from the backend context with `PYTHONPATH=.`.
+- PowerShell wrapper passed.
+- First full `.\scripts\verify.ps1` reached backend tests and failed on a stale
+  exact blocker-reference assertion. After updating that test, final full
+  `.\scripts\verify.ps1` passed workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change impact,
+  qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke was
+  skipped because `RUN_DB_SMOKE` was not set.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Explicit change-impact probe for the new P0 evidence artifact/checker/test passed
+  and reported `NEW_INTENT_OR_DOMAIN` plus `DOMAIN_REFERENCE_OR_RUBRIC` with no
+  unmatched paths.
+- Separate read-only review found the branch was stale against live `origin/main` and
+  would appear to remove PR #132 error-safety hardening. Rebased onto
+  `origin/main@be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`.
+- `git diff --name-only --diff-filter=D origin/main` reported no tracked deletions
+  after the rebase.
+- `backend/tests/test_error_safety.py` passed after the rebase, confirming the PR #132
+  redaction regression tests are preserved.
+- Post-rebase `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, qualification validation, qualification status, qualification change
+  impact, qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke
+  was skipped because `RUN_DB_SMOKE` was not set.
+- A second read-only review found live `origin/main` had advanced to PR #133.
+  Rebased onto `origin/main@8822a1408cce54bc99fe760f3386243a29e64b0d`, preserving
+  `docs/adr/lane-d-0021-report-run-contract-backward-compat.md`.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the second rebase.
+- Post-PR #133 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A third live-base check found `origin/main` had advanced to PR #134. Rebased onto
+  `origin/main@af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, preserving report-run
+  rights optionality changes.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the third rebase.
+- Post-PR #134 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A fourth live-base check found `origin/main` had advanced to PR #136. Rebased onto
+  `origin/main@71c6a74eae08811d4e178b0c11365ff1e247772d`, preserving the jsonschema
+  mypy stub fix.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the fourth rebase.
+- Post-PR #136 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Repo-local evidence is not sealed acceptance evidence and is not
+immutable external storage. `P0-004`, `P0-005`, `P0-021`, and `P0-023` remain
+blocked until external vault/source/target/candidate/storage authority exists.
+
 ## 2026-06-21 EQP2-2 Executable Qualification Change Impact
 
 **Scope:** Make qualification change-impact invalidation executable against changed

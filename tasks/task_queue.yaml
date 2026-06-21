@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eqp2-2-change-impact.md
+active_plan: plans/2026-06-21-eqp2-3-p0-auto-evidence.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -37,11 +37,18 @@ routing_note: >
   qualification status merged through PR #127, EQ-4 readiness crosswalk landed at
   `8dadfbffd90408fa7320cadd59b65cb7f1a5bc78`, and the EQ Phase 2 handoff merged
   through PR #129, and EQP2-1 derived qualification status merged through PR #130 at
-  `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`. Current lane: EQP2-2 executable
-  change-impact invalidation. This maps changed paths to matrix-owned change classes
-  and crosswalk-owned criterion IDs, reports review/invalidation impact advisory-only,
-  and keeps checker behavior, qualification PASS claims, P0 evidence collection,
-  checker advertisement parity, and all approval decisions blocked for later lanes. Do not
+  `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, and EQP2-2 executable change-impact
+  invalidation merged through PR #131 at `0f0f592b9522d26afb70007281870325edd13579`,
+  error-safety redaction hardening merged through PR #132 at
+  `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`, report-run contract ADR routing
+  merged through PR #133 at `8822a1408cce54bc99fe760f3386243a29e64b0d`,
+  report-run rights optionality merged through PR #134 at
+  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, and the jsonschema mypy stub fix
+  merged through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`.
+  Current lane: EQP2-3 blocked P0 repo-local auto-evidence. This collects evidence
+  pointers for `P0-004`, `P0-005`, `P0-021`, and `P0-023`, links them from the
+  blocked status file, and keeps checker advertisement parity plus all approval
+  decisions blocked for later lanes. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -1957,13 +1964,29 @@ tasks:
 
   - id: EQP2-3
     title: Repo-local P0 invariant evidence collection
-    status: queued
+    status: done
     depends_on: [EQP2-2]
     lane: coordinator
-    spec: plans/2026-06-21-eq-phase2-operationalize.md#eqp2-3--repo-local-evidence-collection-for-auto-verifiable-p0-invariants
+    spec: plans/2026-06-21-eqp2-3-p0-auto-evidence.md
     notes: >
-      Collect repo-local evidence for auto-verifiable P0 invariants while keeping the
-      effective P0 gate blocked by unresolved owner/freeze criteria.
+      Collected repo-local evidence pointers for P0-004, P0-005, P0-021, and P0-023
+      while keeping each row and the effective P0 gate blocked by unresolved
+      owner/freeze criteria. Evidence is linked from the blocked status file and
+      backlog rows are marked auto-evidenced; still target-blocked.
+    validation:
+      - py -3.12 -m pytest backend/tests/test_qualification_p0_auto_evidence.py backend/tests/test_qualification_spine.py -q
+      - py -3.12 scripts\qualification_p0_evidence_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - py -3.12 scripts\validate_qualification.py --root . --layout repo
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - .\scripts\verify.ps1
+    acceptance:
+      - P0 auto-evidence artifact records exactly P0-004, P0-005, P0-021, and P0-023
+      - Status links the evidence artifact while keeping P0 BLOCKED and result_path null
+      - Backlog marks each row auto-evidenced; still target-blocked
+      - Verify and qualification CI run the P0 evidence checker
+      - No gate PASS, owner-decision unfreeze, result artifact, or runtime/report use is introduced
 
   - id: EQP2-4
     title: Qualification checker advertisement parity

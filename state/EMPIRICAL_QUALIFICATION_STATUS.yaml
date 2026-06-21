@@ -22,6 +22,7 @@ qualifications:
     blocker_references:
     - state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
     - docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md
+    - docs/qualification/P0_AUTO_EVIDENCE.yaml
   q1:
     status: NOT_RUN
     prerequisites:
