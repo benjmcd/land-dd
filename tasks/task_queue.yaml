@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-post-eqp2-bologna-authority-sync.md
+active_plan: plans/2026-06-21-bologna-authority-record-contract.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -47,11 +47,13 @@ routing_note: >
   merged through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`,
   EQP2-3 blocked P0 repo-local auto-evidence merged through PR #135 at
   `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`, and EQP2-4 checker advertisement
-  parity merged through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`.
-  Latest local lane: post-EQP2 Bologna authority routing sync. EQ Phase 2 is complete;
-  the next substantive Bologna pursuit is still the existing BSA-001 source-authority
-  intake, but it remains blocked until explicit product/AOI/source-review authority is
-  cited in the pilot-scope/source-authority/source-rights packets. Do not
+  parity merged through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, and
+  BOL-AUTH-SYNC merged through PR #138 at
+  `604f7c2739095d9cc543b675ed3b84e619cda54d`. Latest local lane: BAP-001 Bologna
+  authority record contract. EQ Phase 2 is complete; the next substantive Bologna
+  pursuit is still the existing BSA-001 source-authority intake, but it remains
+  blocked until explicit product/AOI/source-review authority is cited in the
+  pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2053,10 +2055,54 @@ tasks:
       - Bologna scope/source-rights/corpus/report packets remain validate-only and blocked
       - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
 
+  - id: BAP-001
+    title: Bologna authority record contract
+    status: done
+    depends_on: [BOL-AUTH-SYNC]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-authority-record-contract.md
+    notes: >
+      Add a machine-checked authority-record contract to the blocked Bologna
+      pilot-scope authority packet so future product/AOI/scope authority can be
+      recorded with required fields, full scope-decision coverage, and no-overclaim
+      controls. Current authority records remain empty; BSA-001 remains blocked; no
+      source approval, AOI selection, source-rights change, corpus, fixture capture,
+      DB seed, runtime/report proof, qualification PASS, owner-decision unfreeze,
+      DS-017 approval, hosted authority, or Level 10 claim is introduced.
+    files:
+      - plans/2026-06-21-bologna-authority-record-contract.md
+      - config/bologna_pilot_scope_authority.yaml
+      - scripts/bologna_pilot_scope_authority_check.py
+      - docs/runbooks/bologna_pilot_scope_authority.md
+      - backend/tests/test_bologna_pilot_scope_authority_artifacts.py
+      - backend/tests/test_readiness_core_artifacts.py
+      - backend/tests/test_qualification_parameterization_backlog_artifacts.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 scripts\bologna_source_authority_intake_check.py
+      - py -3.12 scripts\bologna_source_rights_check.py
+      - py -3.12 scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Bologna pilot-scope authority packet validates an explicit authority-record contract
+      - Current authority records remain empty and all downstream updates remain disabled
+      - BSA-001 remains blocked until cited product/AOI/source-review authority exists
+      - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [BOL-AUTH-SYNC]
+    depends_on: [BAP-001]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >

@@ -28,6 +28,23 @@ decisions. Each row names the expected reference, minimum evidence, and downstre
 for one required decision while keeping `status: missing_authority`,
 `authority_references: []`, and `decision_updates_allowed: false`.
 
+`authority_record_contract` is the structured format a future cited authority packet
+must satisfy before the missing decisions can be recorded. Its contract state is
+`ready_for_external_authority_evidence`; that means the format is ready, not that any
+authority has been granted. It defines required record fields such as
+`authority_record_id`, `authority_type`, `authority_reference`,
+`decision_owner`, `decision_date`, `effective_date`, `scope_decision_ids`,
+`decision_summary`, `evidence_summary`, `cited_artifacts`,
+`downstream_unlocks_requested`, `caveats`, `stop_conditions`, and
+`supersedes_authority_record_ids`.
+
+The contract is ready for external evidence, but `current_authority_records` remains
+empty. A pilot-scope authority record must cover all required scope decisions before
+any decision update is allowed. The record itself must not approve sources, change
+source rights, authorize fixture capture, authorize report/runtime use, seed the
+database, assert legal/title/buildability/value conclusions, or claim hosted/Level 10
+readiness.
+
 ## Evidence Checklist
 
 Collect all required scope decisions before any Bologna source-rights row can move out
