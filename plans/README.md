@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eqp2-3-p0-auto-evidence.md`.
+Latest completed plan: `2026-06-21-eqp2-4-checker-parity.md`.
 
-Current routing plan: `2026-06-21-eqp2-4-checker-parity.md`.
+Current routing plan: `2026-06-21-post-eqp2-bologna-authority-sync.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -148,6 +148,14 @@ status derivation consume the checker-advertised criterion IDs. It is additive
 reporting only: no checker gate behavior, qualification status, owner decision,
 source authority, Bologna authority, DB/API/auth/report semantics, or hosted
 boundary changes.
+
+`BOL-AUTH-SYNC` closes the completed EQ Phase 2 routing loop after PR #137 and makes
+the next active pursuit the Bologna product/AOI/source-rights authority gate. The
+substantive next task is still `BSA-001`, but it remains blocked until explicit
+product/AOI/source-review authority is cited in the pilot-scope, source-authority, and
+source-rights packets. This sync does not approve sources, select an AOI, change
+source rights, create a corpus, capture fixtures, seed the DB, prove a report, approve
+DS-017, unfreeze owner decisions, or claim hosted/Level 10 authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
