@@ -1,14 +1,15 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna pilot-scope authority)
+## Current checkpoint (2026-06-21 Bologna scope decision requests)
 
-Live `origin/main` contains `BOL-PRIORITY` through PR #120 at
-`d31bb8e5b2c9849e6989544f3bf43fff065e1fef`. `BPS-001` is the current repo-local
-Bologna slice: add a validate-only first-gate pilot-scope authority packet before
-`BSA-001`, without approving any blocked authority or starting Bologna implementation.
+Live `origin/main` contains `BPS-001` through PR #121 at
+`df96c21f9445fc5cb915d2b06ec0b2eb6c731f2f`. `BPS-REQ-001` is the current repo-local
+Bologna slice: make the blocked first-gate pilot-scope authority packet actionable
+with structured decision-request rows, without approving any blocked authority or
+starting Bologna implementation.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-bologna-pilot-scope-authority.md`.
+  `plans/2026-06-21-bologna-scope-decision-requests.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
@@ -16,11 +17,11 @@ Bologna slice: add a validate-only first-gate pilot-scope authority packet befor
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
-  `READINESS-CORE`, and `BOL-PRIORITY` are done. `BPS-001` is the active
-  first-gate scope-authority slice. `BSA-001` remains blocked until explicit
-  product/AOI/source-review authority exists for exact candidate sources. Must-source
-  readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked
-  Must source.
+  `READINESS-CORE`, `BOL-PRIORITY`, and `BPS-001` are done. `BPS-REQ-001` is the
+  active first-gate scope-decision request slice. `BSA-001` remains blocked until
+  explicit product/AOI/source-review authority exists for exact candidate sources.
+  Must-source readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
   merged. The remaining dirty-root parser concepts, `backend/app/project_readiness.py`
   and `backend/app/release_readiness.py`, are reworked in `READINESS-CORE` as
@@ -28,16 +29,18 @@ Bologna slice: add a validate-only first-gate pilot-scope authority packet befor
 - **Current Bologna scope boundary**: `config/bologna_pilot_scope_authority.yaml`
   records the missing product, one-AOI, intended-operator, non-goal, stop-condition,
   jurisdiction, rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
-  fixture-boundary, runtime-boundary, and no-overclaim decisions. It is validate-only,
-  uncited, and blocked; all downstream source-authority, source-rights, and corpus
-  updates remain disabled.
+  fixture-boundary, runtime-boundary, and no-overclaim decisions. Its
+  `scope_decision_requests` rows name the expected reference, minimum evidence, and
+  downstream use for each missing decision. It is validate-only, uncited, and blocked;
+  all downstream source-authority, source-rights, and corpus updates remain disabled.
 - **Current Bologna corpus boundary**: `config/bologna_recorded_source_corpus.yaml`
   records the future manifest requirements for source versions, retrieval metadata,
   attribution, CRS, field policies, source-failure fixtures, caveats, report-use
   policy, and no-overclaim review. It is validate-only, merged through PR #116, and
   remains blocked for fixture/runtime/report use.
-- **Immediate next pursuit**: keep Bologna prioritized by first resolving or recording
-  `BPS-001` scope authority. Only after product/AOI/scope authority is cited can
+- **Immediate next pursuit**: keep Bologna prioritized by collecting or explicitly
+  blocking the `BPS-REQ-001` decision requests. Only after product/AOI/scope authority
+  is cited can
   `BSA-001` cite exact source-review authority in
   `config/bologna_source_authority_intake.yaml` and
   `config/bologna_source_rights.yaml`; only then can the recorded-source corpus move

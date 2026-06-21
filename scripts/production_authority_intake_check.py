@@ -254,9 +254,29 @@ def validate_bologna_pilot_scope(stream: dict[str, Any]) -> None:
         "config/bologna_pilot_scope_authority.yaml",
     )
     catalog = load_yaml("config/bologna_pilot_scope_authority.yaml")
+    request_ids = {
+        require_text(
+            require_mapping(
+                raw_request,
+                "pilot-scope request must be a mapping",
+            ).get("id"),
+            "pilot-scope request id missing",
+        )
+        for raw_request in require_non_empty_list(
+            catalog.get("scope_decision_requests"),
+            "pilot-scope requests missing",
+        )
+    }
+    required_decisions = list_set(
+        catalog.get("required_scope_decisions"),
+        "pilot-scope decisions missing",
+    )
+    stream_evidence = list_set(
+        stream.get("required_evidence"),
+        "Bologna pilot-scope evidence missing",
+    )
     require(
-        list_set(stream.get("required_evidence"), "Bologna pilot-scope evidence missing")
-        == list_set(catalog.get("required_scope_decisions"), "pilot-scope decisions missing"),
+        stream_evidence == required_decisions == request_ids,
         "Bologna pilot-scope evidence drifted",
     )
 

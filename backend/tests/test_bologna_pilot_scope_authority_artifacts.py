@@ -61,6 +61,22 @@ def test_bologna_pilot_scope_authority_review_matches_required_decisions() -> No
     assert review["decision_updates_allowed"] is False
 
 
+def test_bologna_pilot_scope_decision_requests_match_required_decisions() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = _catalog()
+    requests = {request["id"]: request for request in catalog["scope_decision_requests"]}
+
+    assert set(requests) == validator.EXPECTED_SCOPE_DECISIONS
+    for request in requests.values():
+        assert request["status"] == "missing_authority"
+        assert request["expected_reference"]
+        assert request["minimum_evidence"]
+        assert all(item for item in request["minimum_evidence"])
+        assert request["downstream_use"]
+        assert request["authority_references"] == []
+        assert request["decision_updates_allowed"] is False
+
+
 def test_bologna_pilot_scope_downstream_unlocks_remain_disabled() -> None:
     validator = cast(Any, _load_validator())
     catalog = _catalog()
@@ -94,6 +110,17 @@ def test_bologna_pilot_scope_authority_validator_fails_if_scope_promoted(
 
     with pytest.raises(SystemExit, match="updates unexpectedly allowed"):
         validator.validate_catalog()
+
+
+def test_bologna_pilot_scope_authority_validator_fails_if_request_promoted() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    catalog["scope_decision_requests"][0]["authority_references"] = [
+        "state/external-authority.md",
+    ]
+
+    with pytest.raises(SystemExit, match="authority references changed"):
+        validator.validate_scope_decision_requests(catalog)
 
 
 def test_bologna_pilot_scope_authority_script_and_wrappers_are_validate_only() -> None:

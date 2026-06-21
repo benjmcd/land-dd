@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna scope decision requests BPS-REQ-001
+
+- Started clean worktree `worktrees/bol-req` on `codex/bol-req` from live
+  `origin/main` at `df96c21f9445fc5cb915d2b06ec0b2eb6c731f2f`; root remains the dirty
+  preserved `codex/r026-raw-readiness-ui` lane.
+- Re-audited the merged pilot-scope authority packet and selected a narrow follow-up:
+  add structured request rows for every missing product/AOI/scope decision rather than
+  editing source-rights, corpus, fixtures, or runtime/report surfaces.
+- Added `scope_decision_requests` to `config/bologna_pilot_scope_authority.yaml`,
+  updated the pilot-scope and production-authority validators, and added focused tests
+  proving exact request coverage and fail-closed blocked state.
+- Updated runbook, routing, state, production-authority packet, and Level 9/10 matrix
+  language so the request rows are treated as missing-evidence prompts, not approvals.
+- Preserved boundaries: no Bologna AOI/source approval, source-rights change, fixture
+  capture, source registry promotion, connector, DB seed, runtime/report use, DS-017
+  approval, hosted authority, or Level 10 claim.
+
 ## 2026-06-21 Bologna pilot-scope authority BPS-001
 
 - Started clean worktree `worktrees/bol-auth` on `codex/bol-auth` from live

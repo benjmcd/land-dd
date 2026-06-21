@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Bologna Scope Decision Requests BPS-REQ-001
+
+**Scope:** Add structured request rows for every missing Bologna pilot-scope decision
+inside the existing validate-only authority packet. This does not select a Bologna AOI,
+approve sources, change source rights, capture fixtures, promote source registry rows,
+run connectors, seed the database, create runtime/report artifacts, approve DS-017,
+provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+py -3.12 .\scripts\production_authority_intake_check.py
+py -3.12 .\scripts\bologna_preflight_check.py
+py -3.12 .\scripts\release_readiness_check.py
+cd backend; py -3.12 -m pytest tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_production_authority_intake_artifacts.py tests\test_readiness_core_artifacts.py -q
+cd backend; ruff check ..\scripts\bologna_pilot_scope_authority_check.py ..\scripts\production_authority_intake_check.py .\tests\test_bologna_pilot_scope_authority_artifacts.py .\tests\test_production_authority_intake_artifacts.py .\tests\test_readiness_core_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\bologna_pilot_scope_authority_check.py ..\scripts\production_authority_intake_check.py .\tests\test_bologna_pilot_scope_authority_artifacts.py .\tests\test_production_authority_intake_artifacts.py .\tests\test_readiness_core_artifacts.py
+py -3.12 .\scripts\source_readiness.py --priority Must --json
+py -3.12 .\scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\validate_workspace.ps1
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Pilot-scope, production-authority intake, Bologna preflight, and release-readiness
+  validators passed.
+- Initial focused artifact tests failed because the readiness-core test still expected
+  `plans/2026-06-21-bologna-pilot-scope-authority.md`; the test was updated to the
+  new active plan and the rerun passed (`21 passed`).
+- Focused ruff passed for the changed validators and tests.
+- Focused mypy passed for `5` source files.
+- Must-source readiness remained `sources=8 ready=7 blocked=1`, with `DS-017` as the
+  only blocked Must source.
+- Readiness-matrix validator passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- `.\scripts\validate_workspace.ps1` passed.
+- First full `.\scripts\verify.ps1` run timed out during backend tests after workspace
+  validation. Rerun with a longer timeout passed: workspace validation, backend pytest,
+  ruff, and mypy succeeded; DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** `BPS-REQ-001` makes the blocked first-gate decisions actionable but
+does not supply authority. Bologna still lacks product/AOI/scope authority, exact
+source authority, approved source rights, cadastral review, recorded fixtures,
+report/runtime proof, DS-017 treatment, hosted authority, and Level 10 authority.
+
 ## 2026-06-21 Bologna Pilot-Scope Authority BPS-001
 
 **Scope:** Add a validate-only first-gate Bologna pilot-scope authority packet before

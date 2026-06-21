@@ -58,6 +58,139 @@ required_scope_decisions:
   - report_runtime_boundary
   - no_overclaim_review_owner
 
+scope_decision_requests:
+  - id: product_authorizes_bologna_pilot_reference
+    status: missing_authority
+    expected_reference: Product decision record that authorizes a Bologna recorded-source pilot.
+    minimum_evidence:
+      - approving product owner or decision forum
+      - decision date or effective date
+      - cited ticket, ADR, or signed decision record
+    downstream_use: Gates whether any Bologna pilot preparation may proceed beyond blocked catalogs.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: one_aoi_geometry_or_named_boundary
+    status: missing_authority
+    expected_reference: Exact one-AOI geometry, named boundary, or boundary source reference.
+    minimum_evidence:
+      - municipal or parcel-locality boundary reference
+      - CRS or coordinate reference policy
+      - explicit exclusion of broader Bologna or Italy coverage claims
+    downstream_use: Gates source selection, fixture corpus scope, and report subject identity.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: intended_operator_and_use_case
+    status: missing_authority
+    expected_reference: Named pilot operator and intended use-case decision.
+    minimum_evidence:
+      - operator role or owner
+      - use case and audience
+      - confirmation that output remains screening/evidence-led
+    downstream_use: Gates report language, artifact handling, and review workflow assumptions.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: pilot_non_goals_and_exclusions
+    status: missing_authority
+    expected_reference: Reviewed pilot non-goals and excluded claims.
+    minimum_evidence:
+      - excluded legal, title, access, buildability, valuation, and investment claims
+      - excluded live-vendor and hosted-production behavior
+      - local professional-review boundary
+    downstream_use: Gates caveat language, no-overclaim checks, and report semantics.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: stop_conditions_and_reversion_plan
+    status: missing_authority
+    expected_reference: Stop conditions and rollback or reversion decision.
+    minimum_evidence:
+      - conditions that halt source review or fixture capture
+      - owner for stopping the pilot
+      - reversion or archive plan for superseded pilot artifacts
+    downstream_use: Gates safe handling of partial authority, source failures, and stale evidence.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: jurisdiction_boundary_review
+    status: missing_authority
+    expected_reference: Jurisdiction and locality boundary review for the pilot.
+    minimum_evidence:
+      - country, region, municipality, cadastral, and CRS boundaries
+      - legal-interpretation and local professional-review limits
+      - applicability of jurisdiction and rulepack checklists
+    downstream_use: Gates whether the pilot can use existing checklists or needs new review.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: evidence_only_or_rulepack_scope
+    status: missing_authority
+    expected_reference: Decision choosing evidence-only, constrained dossier, or new rulepack scope.
+    minimum_evidence:
+      - selected scope category
+      - prohibited reuse of the US homestead rulepack outside documented geography
+      - owner for rulepack or evidence-only review
+    downstream_use: Gates claim generation, unknown handling, and report semantics.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: ds017_treatment_for_pilot
+    status: missing_authority
+    expected_reference: Explicit DS-017 treatment for the Bologna pilot and broader release boundary.
+    minimum_evidence:
+      - approve, defer, remove, or substitute decision
+      - vendor/license/cost status if approval is proposed
+      - confirmation that DS-017 is not approved by Bologna inference
+    downstream_use: Gates source-readiness claims and paid/commercial data assumptions.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: candidate_source_selection_policy
+    status: missing_authority
+    expected_reference: Policy for choosing which candidate sources may enter source-authority review.
+    minimum_evidence:
+      - allowed candidate IDs or source categories
+      - owner for exact source selection
+      - required per-source rights review before promotion
+    downstream_use: Gates edits to Bologna source-authority intake and source-rights rows.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: fixture_capture_boundary
+    status: missing_authority
+    expected_reference: Boundary for recorded fixture and source-failure fixture capture.
+    minimum_evidence:
+      - allowed fixture capture method
+      - raw retention, cache, export, and attribution limits
+      - source-failure fixture policy
+    downstream_use: Gates recorded-source corpus manifests and committed fixtures.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: report_runtime_boundary
+    status: missing_authority
+    expected_reference: Boundary for DB-backed runtime proof and report artifact handling.
+    minimum_evidence:
+      - local versus hosted runtime boundary
+      - artifact storage/export limits
+      - required lineage and caveat proof
+    downstream_use: Gates report/API/runtime proof after recorded corpus approval.
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: no_overclaim_review_owner
+    status: missing_authority
+    expected_reference: Named owner for no-overclaim and caveat review.
+    minimum_evidence:
+      - reviewer or decision owner
+      - required caveat and prohibited-claim checklist
+      - review timing before fixture, report, or source promotion
+    downstream_use: Gates report wording, caveats, and multi-geography generalization.
+    authority_references: []
+    decision_updates_allowed: false
+
 scope_authority_review:
   authority_state: missing_authority
   evidence_status: missing
