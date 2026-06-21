@@ -12,6 +12,7 @@ authority:
   - config/image_publication.yaml
   - config/ops_cost_monitoring.yaml
   - config/observability_readiness.yaml
+  - config/bologna_pilot_scope_authority.yaml
   - config/bologna_source_authority_intake.yaml
 
 limits:
@@ -166,6 +167,26 @@ authority_streams:
       - crs_precision_policy
       - rulepack_or_evidence_only_scope
       - no_overclaim_review
+    authority_references: []
+    decision_updates_allowed: false
+
+  - id: bologna_pilot_scope
+    status: blocked
+    source_catalog: config/bologna_pilot_scope_authority.yaml
+    evidence_status: missing
+    required_evidence:
+      - product_authorizes_bologna_pilot_reference
+      - one_aoi_geometry_or_named_boundary
+      - intended_operator_and_use_case
+      - pilot_non_goals_and_exclusions
+      - stop_conditions_and_reversion_plan
+      - jurisdiction_boundary_review
+      - evidence_only_or_rulepack_scope
+      - ds017_treatment_for_pilot
+      - candidate_source_selection_policy
+      - fixture_capture_boundary
+      - report_runtime_boundary
+      - no_overclaim_review_owner
     authority_references: []
     decision_updates_allowed: false
 

@@ -35,6 +35,7 @@ EXPECTED_STREAMS = {
     "image_publication",
     "billing_cost",
     "hosted_observability",
+    "bologna_pilot_scope",
     "bologna_recorded_source",
 }
 REQUIRED_FILES = (
@@ -48,6 +49,7 @@ REQUIRED_FILES = (
     "config/image_publication.yaml",
     "config/ops_cost_monitoring.yaml",
     "config/observability_readiness.yaml",
+    "config/bologna_pilot_scope_authority.yaml",
     "config/bologna_source_authority_intake.yaml",
     "scripts/run_production_authority_intake_check.ps1",
     "scripts/run_production_authority_intake_check.sh",
@@ -245,6 +247,20 @@ def validate_bologna(stream: dict[str, Any]) -> None:
     )
 
 
+def validate_bologna_pilot_scope(stream: dict[str, Any]) -> None:
+    validate_stream_common(
+        stream,
+        "bologna_pilot_scope",
+        "config/bologna_pilot_scope_authority.yaml",
+    )
+    catalog = load_yaml("config/bologna_pilot_scope_authority.yaml")
+    require(
+        list_set(stream.get("required_evidence"), "Bologna pilot-scope evidence missing")
+        == list_set(catalog.get("required_scope_decisions"), "pilot-scope decisions missing"),
+        "Bologna pilot-scope evidence drifted",
+    )
+
+
 VALIDATORS = {
     "ds017_source_entitlement": validate_ds017,
     "hosted_platform": validate_hosted,
@@ -253,6 +269,7 @@ VALIDATORS = {
     "image_publication": validate_image,
     "billing_cost": validate_billing,
     "hosted_observability": validate_observability,
+    "bologna_pilot_scope": validate_bologna_pilot_scope,
     "bologna_recorded_source": validate_bologna,
 }
 
@@ -306,11 +323,20 @@ def validate_runbook(payload: dict[str, Any]) -> None:
     runbook = read_text(RUNBOOK_PATH)
     for phrase in RUNBOOK_PHRASES:
         require(phrase in runbook, f"production authority runbook missing phrase: {phrase}")
-    for raw_stream in require_non_empty_list(payload.get("authority_streams"), "authority streams missing"):
+    for raw_stream in require_non_empty_list(
+        payload.get("authority_streams"),
+        "authority streams missing",
+    ):
         stream = require_mapping(raw_stream, "each authority stream must be a mapping")
         stream_id = require_text(stream.get("id"), "authority stream id missing")
-        source_catalog = require_text(stream.get("source_catalog"), f"{stream_id} source catalog missing")
-        require(f"`{stream_id}`" in runbook, f"production authority runbook missing stream: {stream_id}")
+        source_catalog = require_text(
+            stream.get("source_catalog"),
+            f"{stream_id} source catalog missing",
+        )
+        require(
+            f"`{stream_id}`" in runbook,
+            f"production authority runbook missing stream: {stream_id}",
+        )
         require(
             f"`{source_catalog}`" in runbook,
             f"production authority runbook missing source catalog: {source_catalog}",

@@ -1,0 +1,101 @@
+schema_version: bologna_pilot_scope_authority_v1
+operator_runbook: docs/runbooks/bologna_pilot_scope_authority.md
+status: blocked_no_pilot_scope_authority
+validation: scripts/run_bologna_pilot_scope_authority_check.ps1
+
+authority:
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+  - config/bologna_preflight.yaml
+  - config/bologna_source_candidates.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - docs/checklists/jurisdiction_readiness.md
+  - docs/checklists/rulepack_readiness.md
+
+approvals:
+  product_authorizes_bologna_pilot: false
+  one_aoi_scope_authorized: false
+  intended_operator_named: false
+  pilot_non_goals_reviewed: false
+  stop_conditions_defined: false
+  jurisdiction_boundary_reviewed: false
+  evidence_only_or_rulepack_scope_approved: false
+  ds017_treatment_decided: false
+  candidate_source_selection_allowed: false
+  source_authority_updates_allowed: false
+  recorded_corpus_allowed: false
+  runtime_report_proof_allowed: false
+
+limits:
+  validate_only_scope_packet: true
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+
+required_scope_decisions:
+  - product_authorizes_bologna_pilot_reference
+  - one_aoi_geometry_or_named_boundary
+  - intended_operator_and_use_case
+  - pilot_non_goals_and_exclusions
+  - stop_conditions_and_reversion_plan
+  - jurisdiction_boundary_review
+  - evidence_only_or_rulepack_scope
+  - ds017_treatment_for_pilot
+  - candidate_source_selection_policy
+  - fixture_capture_boundary
+  - report_runtime_boundary
+  - no_overclaim_review_owner
+
+scope_authority_review:
+  authority_state: missing_authority
+  evidence_status: missing
+  evidence_slots:
+    - product_authorizes_bologna_pilot_reference
+    - one_aoi_geometry_or_named_boundary
+    - intended_operator_and_use_case
+    - pilot_non_goals_and_exclusions
+    - stop_conditions_and_reversion_plan
+    - jurisdiction_boundary_review
+    - evidence_only_or_rulepack_scope
+    - ds017_treatment_for_pilot
+    - candidate_source_selection_policy
+    - fixture_capture_boundary
+    - report_runtime_boundary
+    - no_overclaim_review_owner
+  authority_references: []
+  decision_updates_allowed: false
+
+downstream_unlocks:
+  - id: bologna_source_authority_intake
+    target_catalog: config/bologna_source_authority_intake.yaml
+    status: blocked_until_scope_authority
+    update_allowed: false
+  - id: bologna_source_rights_matrix
+    target_catalog: config/bologna_source_rights.yaml
+    status: blocked_until_scope_and_source_authority
+    update_allowed: false
+  - id: bologna_recorded_source_corpus
+    target_catalog: config/bologna_recorded_source_corpus.yaml
+    status: blocked_until_scope_and_rights_authority
+    update_allowed: false
+
+unlock_conditions:
+  - Product authority cites the Bologna pilot and names one AOI boundary.
+  - Intended operator, use case, non-goals, stop conditions, and rollback path are explicit.
+  - Jurisdiction boundary review names country, region, municipality, cadastral, CRS, and professional-review limits.
+  - Scope chooses evidence-only, constrained locality dossier, or new rulepack before report semantics change.
+  - DS-017 treatment for the pilot is explicit without approving DS-017 by inference.
+  - Candidate source selection policy names which source candidates can move to source-authority review.
+  - Fixture and runtime/report boundaries remain blocked until later source-rights and corpus checks pass.

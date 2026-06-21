@@ -18,6 +18,12 @@ rights matrix attached to this preflight. It keeps every candidate source pendin
 terms, license, cache, export, AI-use, raw-data, attribution, source version,
 retrieval, caveat, CRS, fixture, and report-use decisions are reviewed.
 
+`config/bologna_pilot_scope_authority.yaml`
+(`bologna_pilot_scope_authority_v1`) is the blocked first-gate pilot-scope authority
+packet. It must cite product, one-AOI, jurisdiction, rulepack/evidence-only,
+DS-017-treatment, fixture-boundary, runtime-boundary, and no-overclaim decisions before
+source-authority or corpus updates can start.
+
 `config/bologna_source_authority_intake.yaml`
 (`bologna_source_authority_intake_v1`) is the blocked source-authority intake guard. It
 must cite real product/AOI/source-review authority before any pending source-rights
@@ -56,6 +62,7 @@ The check is validate-only. It verifies that:
 - every `repo_confirmed` gate has evidence assertions that still match cited files;
 - the Bologna source-candidates packet remains candidate-only and unapproved;
 - the Bologna source-rights matrix remains validate-only and unapproved;
+- the Bologna pilot-scope authority packet remains blocked and uncited;
 - the Bologna source-authority intake remains blocked and uncited;
 - the Bologna recorded-source corpus contract remains blocked and fixture-free;
 - every non-`repo_confirmed` gate has a `next_action` and blocker authority;

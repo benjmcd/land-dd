@@ -1,51 +1,57 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna priority routing)
+## Current checkpoint (2026-06-21 Bologna pilot-scope authority)
 
-Live `origin/main` contains `READINESS-CORE` through PR #119 at
-`fa66b561e8820273963f51642d7dc3ef56ac0491`. `BOL-PRIORITY` is the current
-repo-local routing slice: make the Bologna recorded-source pilot path the preferred next
-pursuit ahead of generic hosted-production, generic DS-017, and broad
-production-authority lanes, without approving any blocked authority. `BSA-001` is the
-first Bologna pursuit and remains blocked until explicit product/AOI/source-review
-authority exists for exact candidate sources.
+Live `origin/main` contains `BOL-PRIORITY` through PR #120 at
+`d31bb8e5b2c9849e6989544f3bf43fff065e1fef`. `BPS-001` is the current repo-local
+Bologna slice: add a validate-only first-gate pilot-scope authority packet before
+`BSA-001`, without approving any blocked authority or starting Bologna implementation.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-bologna-priority-routing.md`.
+  `plans/2026-06-21-bologna-pilot-scope-authority.md`.
 - **Latest repo-local test hardening**: `SRP-001` adds
   `backend/tests/api/test_operator_cases_runtime_provenance.py` as a current-main
   regression for selected-county fixture package source manifests, source-provenance
   review bundles, case-specific connector retrieval scopes, repeated-run idempotency,
   and unsupported screening source no-run boundaries.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
-  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, and
-  `AUTH-HANDOFF`, and `READINESS-CORE` are done. `BOL-PRIORITY` is the active
-  routing decision. `BSA-001` remains blocked but is now the preferred next pursuit.
-  Must-source readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the
-  only blocked Must source.
+  `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
+  `READINESS-CORE`, and `BOL-PRIORITY` are done. `BPS-001` is the active
+  first-gate scope-authority slice. `BSA-001` remains blocked until explicit
+  product/AOI/source-review authority exists for exact candidate sources. Must-source
+  readiness remains `sources=8 ready=7 blocked=1`, with `DS-017` as the only blocked
+  Must source.
 - **Candidate reconciliation state**: the runtime-provenance residual is reworked and
   merged. The remaining dirty-root parser concepts, `backend/app/project_readiness.py`
   and `backend/app/release_readiness.py`, are reworked in `READINESS-CORE` as
   current-main read-only app models rather than copied from the dirty root.
+- **Current Bologna scope boundary**: `config/bologna_pilot_scope_authority.yaml`
+  records the missing product, one-AOI, intended-operator, non-goal, stop-condition,
+  jurisdiction, rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
+  fixture-boundary, runtime-boundary, and no-overclaim decisions. It is validate-only,
+  uncited, and blocked; all downstream source-authority, source-rights, and corpus
+  updates remain disabled.
 - **Current Bologna corpus boundary**: `config/bologna_recorded_source_corpus.yaml`
   records the future manifest requirements for source versions, retrieval metadata,
   attribution, CRS, field policies, source-failure fixtures, caveats, report-use
   policy, and no-overclaim review. It is validate-only, merged through PR #116, and
   remains blocked for fixture/runtime/report use.
-- **Immediate next pursuit**: prioritize the Bologna path by trying to unblock
-  `BSA-001` with cited product/AOI/source-review authority for exact candidate sources.
-  If authority exists, cite it first in `config/bologna_source_authority_intake.yaml`
-  and `config/bologna_source_rights.yaml`; only then can the recorded-source corpus
-  move beyond validate-only contract status.
-- **If Bologna authority is absent**: keep `BSA-001` blocked and do not fabricate
-  source approval, AOI selection, fixture capture, source rows, connectors, rulepacks,
-  reports, or DB seeds. Generic hosted-production, generic DS-017, broad production
-  authority, and Level 10 work are lower priority unless they are explicitly needed for
-  the Bologna pilot boundary or arrive with concrete external evidence.
-- **Mid-term sequence**: after approved rights, build a one-AOI recorded-source corpus
-  with source versions, retrieval metadata, attribution, CRS, caveats, source-failure
-  fixtures, and storage/export boundaries; then prove one DB-backed Bologna report with
-  evidence, unknowns/claims, caveats, artifacts, and lineage.
+- **Immediate next pursuit**: keep Bologna prioritized by first resolving or recording
+  `BPS-001` scope authority. Only after product/AOI/scope authority is cited can
+  `BSA-001` cite exact source-review authority in
+  `config/bologna_source_authority_intake.yaml` and
+  `config/bologna_source_rights.yaml`; only then can the recorded-source corpus move
+  beyond validate-only contract status.
+- **If Bologna authority is absent**: keep `BPS-001` and `BSA-001` blocked and do not
+  fabricate source approval, AOI selection, fixture capture, source rows, connectors,
+  rulepacks, reports, or DB seeds. Generic hosted-production, generic DS-017, broad
+  production authority, and Level 10 work are lower priority unless explicitly needed
+  for the Bologna pilot boundary or supplied with concrete external evidence.
+- **Mid-term sequence**: after approved scope and source rights, build a one-AOI
+  recorded-source corpus with source versions, retrieval metadata, attribution, CRS,
+  caveats, source-failure fixtures, and storage/export boundaries; then prove one
+  DB-backed Bologna report with evidence, unknowns/claims, caveats, artifacts, and
+  lineage.
 - **Long-term target**: extract a repeatable multi-geography source/rulepack framework
   only after the Bologna pilot exposes real reusable contracts and country-specific
   boundaries.

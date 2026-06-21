@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-readiness-core.md`.
+Latest completed plan: `2026-06-21-bologna-priority-routing.md`.
 
-Current routing plan: `2026-06-21-bologna-priority-routing.md`.
+Current routing plan: `2026-06-21-bologna-pilot-scope-authority.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -51,10 +51,18 @@ readiness, release semantics, report behavior, hosted authority, or Bologna auth
 
 `BOL-PRIORITY` records the next-pursuit decision: the Bologna recorded-source pilot path
 is now preferred over generic hosted-production, generic DS-017, and broad
-production-authority lanes. The first Bologna pursuit remains `BSA-001` source/AOI/right
-authority preparation; fixture capture, source promotion, runtime/report use, DB seeds,
-hosted authority, DS-017 approval, and Level 10 claims remain blocked until cited
-authority exists.
+production-authority lanes. `BPS-001` is now the first Bologna pursuit because it
+splits pilot-scope authority from later `BSA-001` source/AOI/right-authority
+preparation; fixture capture, source promotion, runtime/report use, DB seeds, hosted
+authority, DS-017 approval, and Level 10 claims remain blocked until cited authority
+exists.
+
+`BPS-001` adds the missing first-gate pilot-scope authority packet before `BSA-001`.
+It records the required product, one-AOI, jurisdiction, evidence-only/rulepack,
+DS-017-treatment, fixture-boundary, runtime-boundary, and no-overclaim decisions while
+keeping all authority references empty and downstream source/corpus updates disabled.
+This is the current Bologna pursuit because it advances the prioritized path without
+approving a source, selecting an AOI, capturing fixtures, or starting runtime work.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

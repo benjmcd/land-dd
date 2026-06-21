@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-bologna-priority-routing.md
+active_plan: plans/2026-06-21-bologna-pilot-scope-authority.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -27,15 +27,16 @@ routing_note: >
   PR #115. BRC-001 Bologna recorded-source corpus contract merged through PR #116.
   PR116-SYNC post-merge routing sync merged through PR #117, AUTH-HANDOFF
   production-authority handoff hardening merged through PR #118, and READINESS-CORE
-  control-plane parser rework merged through PR #119. Current lane: BOL-PRIORITY
-  Bologna next-pursuit routing. Prefer BSA-001 source/AOI/right-authority preparation
-  as the next pursuit ahead of generic hosted-production, generic DS-017, and broad
-  production-authority work. Do not create
-  hosted deployment, hosted identity/RBAC,
-  hosted observability, source/vendor authority, new jurisdiction/rulepack/source
-  coverage, DS-017 approval, Bologna implementation, fixture capture, production
-  traffic proof, ranking/recommendation semantics, multi-geography framework
-  implementation, or Level 10 authority from repo-local inference alone.
+  control-plane parser rework merged through PR #119, and BOL-PRIORITY Bologna
+  next-pursuit routing merged through PR #120. Current lane: BPS-001 Bologna
+  pilot-scope authority. Prefer this first-gate product/AOI/scope authority packet,
+  then BSA-001 source/AOI/right-authority preparation, ahead of generic
+  hosted-production, generic DS-017, and broad production-authority work. Do not
+  create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
+  authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
+  implementation, fixture capture, production traffic proof, ranking/recommendation
+  semantics, multi-geography framework implementation, or Level 10 authority from
+  repo-local inference alone.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -1593,10 +1594,10 @@ tasks:
     notes: >
       Record the decision to prioritize the Bologna recorded-source pilot path over
       generic hosted-production, generic DS-017, and broad production-authority lanes.
-      The first pursuit is BSA-001 source/AOI/right-authority preparation; this remains
-      blocked until cited authority exists and does not approve fixtures, sources,
-      source registry promotion, runtime/report use, DB seeds, hosted authority, DS-017,
-      or Level 10 status.
+      Follow-on BPS-001 splits pilot-scope authority from later BSA-001
+      source/AOI/right-authority preparation; both remain blocked until cited authority
+      exists and do not approve fixtures, sources, source registry promotion,
+      runtime/report use, DB seeds, hosted authority, DS-017, or Level 10 status.
     validation:
       - py -3.12 .\scripts\bologna_source_authority_intake_check.py
       - py -3.12 .\scripts\bologna_source_rights_check.py
@@ -1610,10 +1611,42 @@ tasks:
       - .\scripts\validate_workspace.ps1
       - .\scripts\verify.ps1
     acceptance:
-      - Current routing points to Bologna source/AOI/right-authority preparation as the preferred next pursuit
+      - Current routing points to the Bologna recorded-source pilot path as the preferred next pursuit
       - Hosted, generic DS-017, and broad production-authority work remain lower priority unless concrete external evidence arrives or Bologna explicitly requires them
       - BSA-001 remains blocked until product/AOI/source-review authority is cited
       - No Bologna fixture, source registry, connector, DB seed, runtime/report, rulepack, multi-geography, DS-017 approval, hosted, or Level 10 authority is introduced
+
+  - id: BPS-001
+    title: Bologna pilot-scope authority
+    status: done
+    depends_on: [BOL-PRIORITY]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-pilot-scope-authority.md
+    notes: >
+      Add a validate-only first-gate product/AOI/scope authority packet for the
+      prioritized Bologna path. This separates pilot-scope decisions from later
+      per-source rights review and keeps source-authority updates, source-rights
+      changes, recorded-source corpus work, runtime/report proof, DS-017 approval,
+      hosted authority, Bologna implementation, and Level 10 status blocked.
+    validation:
+      - py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\production_authority_intake_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - py -3.12 .\scripts\bologna_source_authority_intake_check.py
+      - py -3.12 .\scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - cd backend; py -3.12 -m pytest tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_bologna_preflight_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_production_authority_intake_artifacts.py tests\test_release_readiness_artifacts.py tests\test_readiness_core_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Pilot-scope authority packet exists and remains blocked, uncited, and validate-only
+      - Source-authority intake, source-rights, and recorded-source corpus updates remain disabled
+      - Bologna preflight, production authority intake, and release readiness compose the first-gate checker
+      - No AOI selection, source approval, fixture capture, runtime/report proof, source registry promotion, DB seed, DS-017 approval, hosted authority, or Level 10 claim is introduced
 
   # --- Completed ---
   - id: T000

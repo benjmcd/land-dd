@@ -14,6 +14,7 @@ candidate:
   authority:
     - state/LEVEL_9_10_GATE_MATRIX.md
     - state/PRODUCTION_AUTHORITY_PACKET.md
+    - config/bologna_pilot_scope_authority.yaml
     - docs/checklists/jurisdiction_readiness.md
     - docs/checklists/rulepack_readiness.md
     - config/source_entitlements.yaml
@@ -58,9 +59,11 @@ preflight_gates:
   - id: pilot_candidate_authority
     status: missing_candidate_decision
     evidence:
+      - config/bologna_pilot_scope_authority.yaml
       - state/PRODUCTION_AUTHORITY_PACKET.md
       - plans/2026-06-20-post-se001-bologna-preflight.md
     blocker_authority:
+      - config/bologna_pilot_scope_authority.yaml
       - state/PRODUCTION_AUTHORITY_PACKET.md
     next_action: >
       Record an explicit product decision that authorizes a Bologna recorded-source

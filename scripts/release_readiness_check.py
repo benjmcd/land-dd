@@ -22,6 +22,7 @@ REQUIRED_FILES = (
     "config/checklist_dry_run.yaml",
     "config/source_entitlements.yaml",
     "config/production_authority_intake.yaml",
+    "config/bologna_pilot_scope_authority.yaml",
     "config/bologna_recorded_source_corpus.yaml",
     "docs/runbooks/release_readiness.md",
     "docs/runbooks/release_package.md",
@@ -31,6 +32,7 @@ REQUIRED_FILES = (
     "docs/runbooks/checklist_dry_run.md",
     "docs/runbooks/source_entitlements.md",
     "docs/runbooks/production_authority_intake.md",
+    "docs/runbooks/bologna_pilot_scope_authority.md",
     "docs/runbooks/bologna_recorded_source_corpus.md",
     "docs/runbooks/security_scan.md",
     "docs/runbooks/data_retention.md",
@@ -80,6 +82,9 @@ REQUIRED_FILES = (
     "scripts/production_authority_intake_check.py",
     "scripts/run_production_authority_intake_check.ps1",
     "scripts/run_production_authority_intake_check.sh",
+    "scripts/bologna_pilot_scope_authority_check.py",
+    "scripts/run_bologna_pilot_scope_authority_check.ps1",
+    "scripts/run_bologna_pilot_scope_authority_check.sh",
     "scripts/bologna_recorded_source_corpus_check.py",
     "scripts/run_bologna_recorded_source_corpus_check.ps1",
     "scripts/run_bologna_recorded_source_corpus_check.sh",
@@ -114,6 +119,7 @@ REQUIRED_CHECKS = {
     "data_lineage",
     "observability_readiness",
     "production_authority_intake",
+    "bologna_pilot_scope_authority",
     "bologna_recorded_source_corpus",
 }
 REQUIRED_CI_JOBS = {
@@ -162,6 +168,7 @@ COMPOSED_VALIDATORS = (
     "scripts/checklist_dry_run_check.py",
     "scripts/source_entitlement_check.py",
     "scripts/production_authority_intake_check.py",
+    "scripts/bologna_pilot_scope_authority_check.py",
     "scripts/bologna_recorded_source_corpus_check.py",
 )
 
@@ -522,6 +529,8 @@ def validate_runbook() -> None:
         "run_source_entitlement_check.ps1",
         "production_authority_intake.yaml",
         "run_production_authority_intake_check.ps1",
+        "bologna_pilot_scope_authority.yaml",
+        "run_bologna_pilot_scope_authority_check.ps1",
         "bologna_recorded_source_corpus.yaml",
         "run_bologna_recorded_source_corpus_check.ps1",
         "spatial_query_plan.yaml",
@@ -545,6 +554,7 @@ def validate_runbook() -> None:
         "published registry-image attestation",
         "source-entitlement check",
         "production-authority intake check",
+        "Bologna pilot-scope authority check",
         "Bologna recorded-source corpus check",
     ):
         require(phrase in runbook, f"release readiness runbook missing phrase: {phrase}")
