@@ -213,6 +213,7 @@
           }
         },
         "source_details": {
+          "description": "Documents current writer output (report_run_contract_v1, additive/open contract per lane-d-0010/0013). The 5 rights sub-fields (redistribution_status, cache_allowed, export_allowed, raw_data_allowed, ai_use_allowed) are optional because they were added after the v1 baseline and may be absent from earlier v1 artifacts; all other sub-fields are universal across all persisted v1 artifacts (verified 2026-06-21, 23 artifacts).",
           "type": "array",
           "items": {
             "type": "object",
@@ -222,11 +223,6 @@
               "authority_level",
               "license_status",
               "commercial_use_status",
-              "redistribution_status",
-              "cache_allowed",
-              "export_allowed",
-              "raw_data_allowed",
-              "ai_use_allowed",
               "freshness_class",
               "review_status",
               "review_owner",

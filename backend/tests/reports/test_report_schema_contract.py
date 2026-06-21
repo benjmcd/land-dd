@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
+import jsonschema
+import pytest
+
 from app.domain.enums import AuthorityLevel, IntentCode, JobStatus
 from app.domain.report_contracts import ReportRunContract
 
@@ -76,17 +79,16 @@ def test_report_run_schema_tightens_source_manifest_shape() -> None:
     assert manifest_properties["ruleset_version"]["minLength"] == 1
     assert manifest_properties["source_names"]["items"]["type"] == "string"
 
+    # The 5 rights sub-fields (redistribution_status, cache_allowed, export_allowed,
+    # raw_data_allowed, ai_use_allowed) were added after the v1 baseline (commit 8c877fd)
+    # and are absent from pre-tightening persisted v1 artifacts. Per ADR lane-d-0021
+    # they are relaxed to optional; only the 9 universally-present sub-fields stay required.
     assert set(source_detail_item["required"]) == {
         "source_id",
         "name",
         "authority_level",
         "license_status",
         "commercial_use_status",
-        "redistribution_status",
-        "cache_allowed",
-        "export_allowed",
-        "raw_data_allowed",
-        "ai_use_allowed",
         "freshness_class",
         "review_status",
         "review_owner",
@@ -172,6 +174,82 @@ def test_report_run_schema_tightens_artifact_metadata_shape() -> None:
     )
     assert cost_metrics["additionalProperties"] is True
     assert artifact_metadata["additionalProperties"] is True
+
+
+def _source_detail_subschema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Extract the source_details array items sub-schema for direct jsonschema validation."""
+    return cast(
+        dict[str, Any],
+        schema["properties"]["source_manifest"]["properties"]["source_details"]["items"],
+    )
+
+
+def _minimal_source_detail() -> dict[str, Any]:
+    """A source_details entry with only the 9 required fields — omits the 5 rights fields."""
+    return {
+        "source_id": "00000000-0000-0000-0000-000000000001",
+        "name": "Fixture Source",
+        "authority_level": "official_primary",
+        "license_status": "approved",
+        "commercial_use_status": "approved",
+        "freshness_class": "real_time",
+        "review_status": "approved",
+        "review_owner": None,
+        "last_checked_at": None,
+    }
+
+
+def test_source_details_entry_without_rights_fields_validates_against_relaxed_schema() -> None:
+    """A pre-tightening v1 artifact entry (no rights sub-fields) must pass the relaxed schema.
+
+    Per ADR lane-d-0021: redistribution_status, cache_allowed, export_allowed,
+    raw_data_allowed, ai_use_allowed are optional in the published contract because
+    they were absent from all 23 persisted v1 artifacts predating commit 8c877fd.
+    """
+    schema = load_schema()
+    subschema = _source_detail_subschema(schema)
+    entry = _minimal_source_detail()
+    # Should not raise
+    jsonschema.validate(instance=entry, schema=subschema)
+
+
+def test_source_details_entry_with_rights_fields_also_validates() -> None:
+    """A writer-produced entry (all 14 fields present) must also satisfy the relaxed schema."""
+    schema = load_schema()
+    subschema = _source_detail_subschema(schema)
+    entry = {
+        **_minimal_source_detail(),
+        "redistribution_status": "restricted",
+        "cache_allowed": "approved",
+        "export_allowed": "approved-with-restrictions",
+        "raw_data_allowed": "approved",
+        "ai_use_allowed": "restricted",
+    }
+    # Should not raise
+    jsonschema.validate(instance=entry, schema=subschema)
+
+
+def test_source_manifest_without_source_details_key_fails_schema() -> None:
+    """source_details is still required in source_manifest — absence is a genuine defect.
+
+    Per ADR lane-d-0021 Decision §1: all 23 persisted v1 artifacts carry source_details,
+    so its *presence* is a true v1 invariant that the published contract must keep rejecting.
+    """
+    schema = load_schema()
+    manifest_subschema = cast(dict[str, Any], schema["properties"]["source_manifest"])
+    manifest_without_details = {
+        "source_ids": [],
+        "source_count": 0,
+        "evidence_count": 0,
+        "claim_count": 0,
+        "ruleset_id": "test",
+        "ruleset_version": "0.1",
+        "source_names": [],
+        # source_details intentionally absent
+    }
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=manifest_without_details, schema=manifest_subschema)
 
 
 def test_serialized_report_run_contract_uses_schema_field_set() -> None:
