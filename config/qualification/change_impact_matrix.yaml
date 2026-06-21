@@ -16,7 +16,10 @@ change_classes:
     - Q1
     - F
     invalidate_by_default:
-    - Q1_CURRENT_SOURCE
+    - Q1-003
+    - Q1-011
+    - DQ-005
+    - DQ-018
     conditional:
     - S
     - R
@@ -30,8 +33,12 @@ change_classes:
     - M
     - F
     invalidate_by_default:
-    - affected Q1 domains
-    - affected Q3 lanes
+    - Q1-003
+    - Q1-027
+    - Q3-006
+    - Q3-009
+    - DQ-009
+    - DQ-017
   SOURCE_RIGHTS_OR_TERMS:
     review:
     - S
@@ -41,7 +48,12 @@ change_classes:
     - Q3B
     - F
     invalidate_by_default:
-    - all claims/exports depending on affected source
+    - Q1-012
+    - Q1-025
+    - Q3-007
+    - Q3-029
+    - S-016
+    - R-005
   AOI_IDENTITY_OR_GEOMETRY:
     review:
     - IR
@@ -50,7 +62,12 @@ change_classes:
     - DB
     - F
     invalidate_by_default:
-    - affected Q1 and reports
+    - Q1-013
+    - Q1-014
+    - Q1-031
+    - IR-001
+    - IR-012
+    - DB-006
   RULE_OR_CONFIDENCE_SEMANTICS:
     review:
     - Q1
@@ -59,8 +76,11 @@ change_classes:
     - G
     - F
     invalidate_by_default:
-    - Q1
-    - Q2 if user decisions/wording can change
+    - Q1-002
+    - Q1-016
+    - Q1-017
+    - Q1-022
+    - Q2-011
   REPORT_OR_CAVEAT_SEMANTICS:
     review:
     - Q1
@@ -69,8 +89,13 @@ change_classes:
     - R
     - G
     invalidate_by_default:
-    - Q1 cross-channel
-    - Q2 if comprehension/decision behavior can change
+    - Q1-004
+    - Q1-018
+    - Q1-025
+    - Q2-019
+    - A-006
+    - R-007
+    - G-011
   UI_WORKFLOW:
     review:
     - Q2
@@ -78,7 +103,12 @@ change_classes:
     - S
     - O
     invalidate_by_default:
-    - Q2/A affected workflows
+    - Q2-005
+    - Q2-016
+    - Q2-018
+    - A-001
+    - A-003
+    - A-007
   DB_SCHEMA_OR_MIGRATION:
     review:
     - DB
@@ -86,8 +116,12 @@ change_classes:
     - O
     - G
     invalidate_by_default:
-    - DB
-    - affected reproducibility/lineage gates
+    - DB-002
+    - DB-003
+    - DB-004
+    - DB-014
+    - Q1-021
+    - Q3-030
   AUTH_TENANCY_PRIVACY:
     review:
     - S
@@ -95,7 +129,12 @@ change_classes:
     - O
     - R
     invalidate_by_default:
-    - S/O deployment qualification
+    - S-003
+    - S-004
+    - S-011
+    - S-012
+    - DB-010
+    - O-002
   DEPLOYMENT_INFRASTRUCTURE:
     review:
     - O
@@ -103,7 +142,12 @@ change_classes:
     - DB
     - M
     invalidate_by_default:
-    - O and affected S/DB criteria
+    - O-001
+    - O-002
+    - O-003
+    - O-019
+    - S-013
+    - DB-012
   AI_MODEL_PROMPT_PROVIDER:
     review:
     - AI
@@ -113,8 +157,12 @@ change_classes:
     - E
     - F
     invalidate_by_default:
-    - AI
-    - decision-relevant Q1/Q2
+    - AI-002
+    - AI-004
+    - AI-006
+    - AI-009
+    - Q1-004
+    - Q2-014
   NEW_INTENT_OR_DOMAIN:
     review:
     - P0
@@ -124,7 +172,12 @@ change_classes:
     - IR
     - R
     invalidate_by_default:
-    - no existing gate automatically; new scope remains unqualified
+    - P0-001
+    - P0-006
+    - P0-007
+    - Q1-037
+    - Q2-027
+    - DQ-019
   NEW_US_JURISDICTION:
     review:
     - Q3A
@@ -132,7 +185,12 @@ change_classes:
     - IR
     - R
     invalidate_by_default:
-    - new jurisdiction unqualified until its own profile passes
+    - Q3-011
+    - Q3-013
+    - Q3-015
+    - R-001
+    - R-009
+    - DQ-013
   NEW_NON_US_JURISDICTION:
     review:
     - Q3C
@@ -141,7 +199,12 @@ change_classes:
     - R
     - S
     invalidate_by_default:
-    - new jurisdiction unqualified until its own profile passes
+    - Q3-012
+    - Q3-028
+    - R-006
+    - R-009
+    - S-025
+    - DQ-013
   CANDIDATE_SEARCH_OR_RANKING:
     review:
     - CG
@@ -153,8 +216,12 @@ change_classes:
     - F
     - G
     invalidate_by_default:
-    - CG
-    - decision-relevant Q1/Q2 if candidate outputs changed
+    - CG-001
+    - CG-004
+    - CG-010
+    - CG-012
+    - Q2-017
+    - S-015
   FINANCIAL_MODEL_OR_MARKET_DATA:
     review:
     - FIN
@@ -167,8 +234,12 @@ change_classes:
     - F
     - G
     invalidate_by_default:
-    - FIN
-    - affected user/financial claims and outputs
+    - FIN-001
+    - FIN-002
+    - FIN-004
+    - FIN-012
+    - R-004
+    - Q1-004
   WINDOWS_TOOLING_OR_LOCAL_RUNTIME:
     review:
     - W
@@ -176,7 +247,11 @@ change_classes:
     - DB
     - G
     invalidate_by_default:
-    - affected W/M/DB local-environment proof
+    - W-001
+    - W-002
+    - W-003
+    - W-007
+    - M-012
   DOCUMENT_EXTRACTION_OR_OCR:
     review:
     - DQ
@@ -186,7 +261,12 @@ change_classes:
     - R
     - AI
     invalidate_by_default:
-    - affected document-derived evidence and claims
+    - DQ-021
+    - DQ-022
+    - Q1-002
+    - Q1-003
+    - AI-009
+    - S-008
   DOMAIN_REFERENCE_OR_RUBRIC:
     review:
     - P0
@@ -196,4 +276,9 @@ change_classes:
     - R
     - G
     invalidate_by_default:
-    - affected domain qualification and dependent reports
+    - P0-029
+    - Q1-017
+    - Q1-037
+    - Q2-013
+    - DQ-012
+    - G-008

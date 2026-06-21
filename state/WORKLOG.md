@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Empirical qualification readiness crosswalk EQ-4
+
+- Started clean worktree `worktrees/eq-4` on `eq/eq4` from live `origin/main` at
+  `961bffd513df6b8fc66b177e605094c7205e1dee`; root remains dirty preserved state on
+  `codex/r026-raw-readiness-ui`.
+- Added `plans/2026-06-21-eq-4-readiness-crosswalk.md` and red tests for missing
+  readiness-crosswalk artifacts plus prose-based change-impact invalidation targets.
+- Added `config/qualification/readiness_crosswalk.yaml`,
+  `schemas/qualification/readiness_crosswalk.schema.json`, and
+  `docs/qualification/readiness-crosswalk.md` to map the live readiness/authority
+  inventory to catalog criterion IDs and record gaps/orphans.
+- Normalized `config/qualification/change_impact_matrix.yaml` so invalidation targets
+  are catalog criterion IDs.
+- Extended `scripts/validate_qualification.py` and
+  `scripts/selftest_qualification_validator.py` so crosswalk inventory drift and
+  unknown crosswalk/change-impact criterion IDs fail closed, including required
+  readiness/authority glob-family omissions.
+- Updated routing surfaces to make EQ-4 the current completed lane while keeping EQ-5,
+  Lane R, Bologna authority, owner decisions, and all qualification PASS claims blocked.
+- Preserved boundaries: no readiness checker behavior change, no qualification `PASS`,
+  no owner-decision unfreeze, no Bologna AOI/source approval, no fixture capture, no
+  runtime/report use, no DB seed, no source registry promotion, no DS-017 approval, no
+  hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 Empirical qualification honest blocked status EQ-3
 
 - Started clean worktree `worktrees/eq-3` on `eq/eq3` from live `origin/main` at

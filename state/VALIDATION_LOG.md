@@ -2,6 +2,63 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 Empirical Qualification Readiness Crosswalk EQ-4
+
+**Scope:** Map active readiness, authority, release, source, security, operations, and
+spatial gate surfaces to empirical-qualification criterion IDs, normalize
+change-impact invalidations to catalog IDs, and make validator/selftest enforcement
+fail closed. This does not change any readiness checker behavior, satisfy any mapped
+criterion, run or pass P0, freeze targets, approve owner decisions, approve Bologna,
+capture fixtures, run connectors, seed the database, approve DS-017, provision hosted
+services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend/tests/test_qualification_readiness_crosswalk.py -q
+py -3.12 -m pytest backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py -q
+py -3.12 scripts/validate_qualification.py --root . --layout repo
+py -3.12 scripts/selftest_qualification_validator.py
+py -3.12 scripts/readiness_matrix_check.py
+py -3.12 -m ruff check scripts/validate_qualification.py scripts/selftest_qualification_validator.py backend/tests/test_qualification_readiness_crosswalk.py backend/tests/test_qualification_spine.py
+.\scripts\verify.ps1
+Push-Location backend; py -3.12 -m pytest tests/test_readiness_core_artifacts.py tests/test_qualification_parameterization_backlog_artifacts.py -q; Pop-Location
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- The focused crosswalk test failed red before implementation because
+  `config/qualification/readiness_crosswalk.yaml` was absent and
+  `config/qualification/change_impact_matrix.yaml` still used non-catalog labels.
+- After implementation, focused EQ-4/spine tests passed.
+- Direct qualification validation passed with `target status: DRAFT`,
+  `highest valid classification: L9-R`, and the expected blocked-readiness warnings.
+- The adversarial selftest passed, including new fail-closed mutations for invalid
+  change-impact criterion IDs, readiness-crosswalk criterion IDs, and missing required
+  readiness/authority glob families.
+- Readiness-matrix validation passed.
+- Focused ruff passed for the changed validator, selftest, crosswalk test, and spine
+  test after removing one unused import.
+- First full `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, and qualification validation, then failed in backend tests because this
+  current validation-log entry did not yet list a `verify.ps1` command for the project
+  readiness parser to expose.
+- After recording that failed verify attempt, focused routing/readiness tests and
+  readiness-matrix validation passed.
+- Final focused routing/readiness tests passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, backend pytest, ruff, and mypy all succeeded; DB
+  smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** EQ-4 is governance consolidation only. It maps readiness
+surfaces to catalog criteria and validates that mapping, but no criterion is satisfied
+or passed by the mapping. P0 remains blocked, owner/source/AOI evidence is still
+required, and EQ-5/Lane R remain future routing work.
+
 ## 2026-06-21 Empirical Qualification Honest Blocked Status EQ-3
 
 **Scope:** Formalize the current qualification truth as `P0 = BLOCKED` without

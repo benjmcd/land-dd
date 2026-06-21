@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eq-3-honest-blocked-status.md`.
+Latest completed plan: `2026-06-21-eq-4-readiness-crosswalk.md`.
 
-Current routing plan: `2026-06-21-eq-3-honest-blocked-status.md`.
+Current routing plan: `2026-06-21-eq-4-readiness-crosswalk.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -105,6 +105,14 @@ production usage fields. No qualification `PASS`, owner-decision unfreeze, sourc
 rights expansion, Bologna approval, fixture capture, runtime/report use, or fabricated
 candidate artifact is introduced. If no external authority arrives, the next
 repo-local slice is `EQ-4` readiness/authority crosswalk.
+
+`EQ-4` subordinates existing readiness and authority gates to the empirical
+qualification control plane. It adds a checked readiness crosswalk, schema, and human
+doc; normalizes the change-impact matrix to catalog criterion IDs; and extends the
+qualification validator/selftest so inventory drift and unknown criterion IDs fail
+closed. It does not change checker behavior, satisfy any mapped criterion, claim a
+qualification `PASS`, or unblock owner decisions. If no external authority arrives,
+the next repo-local slice is `EQ-5` backlog reconciliation.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

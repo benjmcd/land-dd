@@ -65,12 +65,16 @@ def control_paths(root: Path) -> dict[str, Path]:
             "status": root / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml",
             "targets": root / "config" / "qualification" / "qualification_targets.yaml",
             "catalog": root / "config" / "qualification" / "criterion_catalog.yaml",
+            "change_matrix": root / "config" / "qualification" / "change_impact_matrix.yaml",
+            "readiness_crosswalk": root / "config" / "qualification" / "readiness_crosswalk.yaml",
             "evidence": root / "docs" / "qualification" / "README.md",
         }
     return {
         "status": root / "empirical_qualification_status.example.yaml",
         "targets": root / "qualification_targets.example.yaml",
         "catalog": root / "criterion_catalog.yaml",
+        "change_matrix": root / "change_impact_matrix.yaml",
+        "readiness_crosswalk": root / "readiness_crosswalk.yaml",
         "evidence": root / "README.md",
     }
 
@@ -170,6 +174,62 @@ def main() -> int:
             run_validator(validator, catalog_drift),
             False,
             "criterion_catalog: missing framework IDs",
+        )
+
+        invalid_change_impact = temp_root / "invalid-change-impact"
+        copy_fixture(source, invalid_change_impact)
+
+        def inject_bad_change_criterion(value):
+            value["change_classes"]["SOURCE_DATA_REFRESH"][
+                "invalidate_by_default"
+            ].append("NOPE-001")
+
+        mutate_yaml(
+            control_paths(invalid_change_impact)["change_matrix"],
+            inject_bad_change_criterion,
+        )
+        assert_result(
+            "change-impact invalidation targets must be catalog criteria",
+            run_validator(validator, invalid_change_impact),
+            False,
+            (
+                "change_impact_matrix.SOURCE_DATA_REFRESH.invalidate_by_default: "
+                "unknown criterion IDs"
+            ),
+        )
+
+        invalid_crosswalk = temp_root / "invalid-crosswalk"
+        copy_fixture(source, invalid_crosswalk)
+
+        def inject_bad_crosswalk_criterion(value):
+            value["entries"][0]["criterion_ids"].append("NOPE-001")
+
+        mutate_yaml(
+            control_paths(invalid_crosswalk)["readiness_crosswalk"],
+            inject_bad_crosswalk_criterion,
+        )
+        assert_result(
+            "readiness crosswalk targets must be catalog criteria",
+            run_validator(validator, invalid_crosswalk),
+            False,
+            "readiness_crosswalk.level_9_10_matrix: unknown criterion IDs",
+        )
+
+        crosswalk_missing_glob = temp_root / "crosswalk-missing-glob"
+        copy_fixture(source, crosswalk_missing_glob)
+
+        def remove_required_crosswalk_glob(value):
+            value["inventory"]["checker_globs"].remove("scripts/bologna_*_check.py")
+
+        mutate_yaml(
+            control_paths(crosswalk_missing_glob)["readiness_crosswalk"],
+            remove_required_crosswalk_glob,
+        )
+        assert_result(
+            "readiness crosswalk inventory policy must retain required globs",
+            run_validator(validator, crosswalk_missing_glob),
+            False,
+            "readiness_crosswalk: missing required checker globs",
         )
 
         frozen_draft = temp_root / "frozen-draft"

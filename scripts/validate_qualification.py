@@ -21,7 +21,6 @@ import argparse
 import hashlib
 import json
 import re
-import sys
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -83,6 +82,19 @@ CLASSIFICATION_REQUIRED_GATES = {
         "P0", "Q1", "Q2", "DQ", "IR", "DB", "S", "A", "M", "R", "G",
         "Q3A", "Q3B", "Q3C"
     },
+}
+
+REQUIRED_READINESS_CONFIG_GLOBS = {
+    "config/*readiness*.yaml",
+    "config/*authority*.yaml",
+    "config/*entitlement*.yaml",
+    "config/bologna_*.yaml",
+}
+REQUIRED_READINESS_CHECKER_GLOBS = {
+    "scripts/*readiness*_check.py",
+    "scripts/*authority*_check.py",
+    "scripts/*entitlement*_check.py",
+    "scripts/bologna_*_check.py",
 }
 
 
@@ -279,6 +291,161 @@ def validate_profiles(
 
     for name in profile_names:
         inherited_profile(profiles, name, errors)
+
+
+def repo_relative_file_paths(root: Path, patterns: Iterable[str]) -> set[str]:
+    root = root.resolve()
+    paths: set[str] = set()
+    for pattern in patterns:
+        for path in root.glob(pattern):
+            if not path.is_file():
+                continue
+            paths.add(path.resolve().relative_to(root).as_posix())
+    return paths
+
+
+def validate_repo_local_paths(
+    root: Path,
+    label: str,
+    references: Iterable[str],
+    errors: list[str],
+) -> set[str]:
+    root = root.resolve()
+    resolved: set[str] = set()
+    for reference in references:
+        path = Path(reference)
+        if path.is_absolute():
+            errors.append(f"{label}: path must be repo-local: {reference}")
+            continue
+        absolute = (root / path).resolve()
+        try:
+            relative = absolute.relative_to(root)
+        except ValueError:
+            errors.append(f"{label}: path escapes repo: {reference}")
+            continue
+        if not absolute.exists():
+            errors.append(f"{label}: path does not exist: {reference}")
+            continue
+        if not absolute.is_file():
+            errors.append(f"{label}: path is not a file: {reference}")
+            continue
+        resolved.add(relative.as_posix())
+    return resolved
+
+
+def validate_criterion_references(
+    label: str,
+    criterion_ids: Iterable[str],
+    known_criteria: set[str],
+    errors: list[str],
+) -> None:
+    unknown = sorted(set(criterion_ids) - known_criteria)
+    if unknown:
+        errors.append(f"{label}: unknown criterion IDs: {unknown}")
+
+
+def validate_change_impact_matrix(
+    change_matrix: dict[str, Any],
+    known_criteria: set[str],
+    errors: list[str],
+) -> None:
+    for change_class, entry in sorted((change_matrix.get("change_classes") or {}).items()):
+        validate_criterion_references(
+            f"change_impact_matrix.{change_class}.invalidate_by_default",
+            entry.get("invalidate_by_default") or [],
+            known_criteria,
+            errors,
+        )
+
+
+def validate_readiness_crosswalk(
+    root: Path,
+    crosswalk: dict[str, Any],
+    schema_path: Path,
+    known_criteria: set[str],
+    errors: list[str],
+) -> None:
+    validate_json_schema(crosswalk, schema_path, "readiness_crosswalk", errors)
+
+    entries = crosswalk.get("entries") or []
+    surface_ids = [entry.get("surface_id") for entry in entries]
+    duplicates = sorted(
+        {
+            surface_id
+            for surface_id in surface_ids
+            if surface_ids.count(surface_id) > 1
+        }
+    )
+    if duplicates:
+        errors.append(f"readiness_crosswalk: duplicate surface IDs: {duplicates}")
+
+    inventory = crosswalk.get("inventory") or {}
+    missing_config_globs = sorted(
+        REQUIRED_READINESS_CONFIG_GLOBS - set(inventory.get("config_globs") or [])
+    )
+    if missing_config_globs:
+        errors.append(
+            f"readiness_crosswalk: missing required config globs: {missing_config_globs}"
+        )
+    missing_checker_globs = sorted(
+        REQUIRED_READINESS_CHECKER_GLOBS - set(inventory.get("checker_globs") or [])
+    )
+    if missing_checker_globs:
+        errors.append(
+            f"readiness_crosswalk: missing required checker globs: {missing_checker_globs}"
+        )
+
+    expected_configs = repo_relative_file_paths(
+        root, inventory.get("config_globs") or []
+    )
+    expected_checkers = repo_relative_file_paths(
+        root, inventory.get("checker_globs") or []
+    )
+    excluded = set(inventory.get("intentional_exclusions") or [])
+    declared_configs: set[str] = set()
+    declared_checkers: set[str] = set()
+
+    for entry in entries:
+        label = f"readiness_crosswalk.{entry.get('surface_id')}"
+        criterion_ids = entry.get("criterion_ids") or []
+        validate_criterion_references(label, criterion_ids, known_criteria, errors)
+        declared_configs |= validate_repo_local_paths(
+            root,
+            f"{label}.config_paths",
+            entry.get("config_paths") or [],
+            errors,
+        )
+        declared_checkers |= validate_repo_local_paths(
+            root,
+            f"{label}.checker_paths",
+            entry.get("checker_paths") or [],
+            errors,
+        )
+
+    for gap in crosswalk.get("gap_groups") or []:
+        validate_criterion_references(
+            f"readiness_crosswalk.gap_groups.{gap.get('gap_id')}",
+            gap.get("criterion_ids") or [],
+            known_criteria,
+            errors,
+        )
+
+    missing_configs = sorted(expected_configs - declared_configs - excluded)
+    if missing_configs:
+        errors.append(
+            f"readiness_crosswalk: missing config inventory paths: {missing_configs}"
+        )
+    missing_checkers = sorted(expected_checkers - declared_checkers - excluded)
+    if missing_checkers:
+        errors.append(
+            f"readiness_crosswalk: missing checker inventory paths: {missing_checkers}"
+        )
+
+    unused_exclusions = sorted(excluded - expected_configs - expected_checkers)
+    if unused_exclusions:
+        errors.append(
+            f"readiness_crosswalk: intentional exclusions are not in inventory: {unused_exclusions}"
+        )
 
 
 def validate_catalog(
@@ -938,12 +1105,14 @@ def main(argv: list[str] | None = None) -> int:
             "profiles": config_root / "qualification_profiles.yaml",
             "vocabulary": config_root / "qualification_vocabulary.yaml",
             "change_matrix": config_root / "change_impact_matrix.yaml",
+            "readiness_crosswalk": config_root / "readiness_crosswalk.yaml",
             "result_schema": schema_root / "qualification_result.schema.json",
             "criterion_schema": schema_root / "criterion_contract.schema.json",
             "catalog_schema": schema_root / "criterion_catalog.schema.json",
             "profiles_schema": schema_root / "qualification_profiles.schema.json",
             "vocabulary_schema": schema_root / "qualification_vocabulary.schema.json",
             "change_schema": schema_root / "change_impact_matrix.schema.json",
+            "readiness_crosswalk_schema": schema_root / "readiness_crosswalk.schema.json",
             "targets_schema": schema_root / "qualification_targets.schema.json",
             "status_schema": schema_root / "empirical_qualification_status.schema.json",
             "rubrics_schema": schema_root / "judgment_rubrics.schema.json",
@@ -1008,6 +1177,11 @@ def main(argv: list[str] | None = None) -> int:
     profiles = load_yaml(required_files["profiles"])
     vocabulary = load_yaml(required_files["vocabulary"])
     change_matrix = load_yaml(required_files["change_matrix"])
+    readiness_crosswalk = (
+        load_yaml(required_files["readiness_crosswalk"])
+        if "readiness_crosswalk" in required_files
+        else None
+    )
     catalog = load_yaml(required_files["catalog"])
 
     validate_json_schema(targets, required_files["targets_schema"], str(targets_path), errors)
@@ -1029,6 +1203,15 @@ def main(argv: list[str] | None = None) -> int:
         errors=errors,
     )
     validate_profiles(profiles, set(catalog_map), errors)
+    validate_change_impact_matrix(change_matrix, set(catalog_map), errors)
+    if readiness_crosswalk is not None:
+        validate_readiness_crosswalk(
+            root,
+            readiness_crosswalk,
+            required_files["readiness_crosswalk_schema"],
+            set(catalog_map),
+            errors,
+        )
 
     domain_profiles = load_profile_directory(
         domain_profiles_dir,
