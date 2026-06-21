@@ -79,6 +79,7 @@ RUNBOOK_PHRASES = (
     "validate-only",
     "does not select a Bologna AOI",
     "does not approve Italy/EU/local sources",
+    "scope_decision_requests",
     "authority_state",
     "decision_updates_allowed",
     "config/bologna_source_authority_intake.yaml",
@@ -123,11 +124,59 @@ def read_text(path_text: str) -> str:
 
 
 def load_yaml(path_text: str) -> dict[str, Any]:
-    return require_mapping(yaml.safe_load(read_text(path_text)), f"{path_text} must be a mapping")
+    return require_mapping(
+        yaml.safe_load(read_text(path_text)),
+        f"{path_text} must be a mapping",
+    )
 
 
 def list_set(value: Any, message: str) -> set[str]:
     return {str(item) for item in require_non_empty_list(value, message)}
+
+
+def validate_scope_decision_requests(payload: dict[str, Any]) -> None:
+    raw_requests = require_non_empty_list(
+        payload.get("scope_decision_requests"),
+        "scope decision requests missing",
+    )
+    requests_by_id: dict[str, dict[str, Any]] = {}
+    for raw_request in raw_requests:
+        request = require_mapping(
+            raw_request,
+            "each scope decision request must be a mapping",
+        )
+        request_id = require_text(request.get("id"), "scope decision request id missing")
+        require(
+            request_id not in requests_by_id,
+            f"duplicate scope decision request: {request_id}",
+        )
+        requests_by_id[request_id] = request
+        require(
+            request.get("status") == "missing_authority",
+            f"{request_id} scope request status changed",
+        )
+        require_text(
+            request.get("expected_reference"),
+            f"{request_id} expected reference missing",
+        )
+        for evidence_item in require_non_empty_list(
+            request.get("minimum_evidence"),
+            f"{request_id} minimum evidence missing",
+        ):
+            require_text(evidence_item, f"{request_id} minimum evidence item missing")
+        require_text(request.get("downstream_use"), f"{request_id} downstream use missing")
+        require(
+            request.get("authority_references") == [],
+            f"{request_id} authority references changed",
+        )
+        require(
+            request.get("decision_updates_allowed") is False,
+            f"{request_id} updates unexpectedly allowed",
+        )
+    require(
+        set(requests_by_id) == EXPECTED_SCOPE_DECISIONS,
+        "scope decision requests drifted from required decisions",
+    )
 
 
 def validate_required_files() -> None:
@@ -166,6 +215,7 @@ def validate_catalog() -> dict[str, Any]:
         == EXPECTED_SCOPE_DECISIONS,
         "required scope decisions changed",
     )
+    validate_scope_decision_requests(payload)
     review = require_mapping(
         payload.get("scope_authority_review"),
         "scope authority review missing",

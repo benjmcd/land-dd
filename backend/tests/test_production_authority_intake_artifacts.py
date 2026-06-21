@@ -69,6 +69,21 @@ def test_production_authority_intake_matches_authority_catalogs() -> None:
     assert validator.main() == 0
 
 
+def test_bologna_pilot_scope_intake_matches_request_rows() -> None:
+    catalog = _catalog()
+    streams = {stream["id"]: stream for stream in catalog["authority_streams"]}
+    pilot_scope = yaml.safe_load(
+        (REPO_ROOT / "config" / "bologna_pilot_scope_authority.yaml").read_text(
+            encoding="utf-8",
+        ),
+    )
+    request_ids = {
+        request["id"] for request in pilot_scope["scope_decision_requests"]
+    }
+
+    assert set(streams["bologna_pilot_scope"]["required_evidence"]) == request_ids
+
+
 def test_production_authority_intake_validator_fails_if_authority_promoted(
     monkeypatch: Any,
 ) -> None:

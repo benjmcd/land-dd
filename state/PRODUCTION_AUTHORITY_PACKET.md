@@ -304,7 +304,9 @@ The Bologna pilot-scope authority packet is validate-only and blocked. It record
 product, one-AOI, intended-operator, non-goal, stop-condition, jurisdiction,
 rulepack/evidence-only, DS-017-treatment, candidate-source-selection,
 fixture-boundary, runtime-boundary, and no-overclaim decisions required before
-source-authority or corpus updates can start.
+source-authority or corpus updates can start. Its `scope_decision_requests` rows name
+the expected external reference, minimum evidence, and downstream use for each missing
+decision while keeping all authority references empty and updates disabled.
 
 The Bologna source-authority intake guard is validate-only and blocked. It records the
 exact authority evidence slots that must be cited before any pending source-rights

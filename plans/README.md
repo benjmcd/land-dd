@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-bologna-priority-routing.md`.
+Latest completed plan: `2026-06-21-bologna-pilot-scope-authority.md`.
 
-Current routing plan: `2026-06-21-bologna-pilot-scope-authority.md`.
+Current routing plan: `2026-06-21-bologna-scope-decision-requests.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -61,8 +61,13 @@ exists.
 It records the required product, one-AOI, jurisdiction, evidence-only/rulepack,
 DS-017-treatment, fixture-boundary, runtime-boundary, and no-overclaim decisions while
 keeping all authority references empty and downstream source/corpus updates disabled.
-This is the current Bologna pursuit because it advances the prioritized path without
-approving a source, selecting an AOI, capturing fixtures, or starting runtime work.
+`BPS-001` merged through PR #121 at
+`df96c21f9445fc5cb915d2b06ec0b2eb6c731f2f`.
+
+`BPS-REQ-001` is the current Bologna pursuit. It adds structured
+`scope_decision_requests` rows inside the existing pilot-scope authority packet so the
+missing external evidence is actionable without approving a source, selecting an AOI,
+capturing fixtures, changing source rights, or starting runtime work.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

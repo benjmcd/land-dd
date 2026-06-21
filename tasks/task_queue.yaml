@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-bologna-pilot-scope-authority.md
+active_plan: plans/2026-06-21-bologna-scope-decision-requests.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -28,8 +28,9 @@ routing_note: >
   PR116-SYNC post-merge routing sync merged through PR #117, AUTH-HANDOFF
   production-authority handoff hardening merged through PR #118, and READINESS-CORE
   control-plane parser rework merged through PR #119, and BOL-PRIORITY Bologna
-  next-pursuit routing merged through PR #120. Current lane: BPS-001 Bologna
-  pilot-scope authority. Prefer this first-gate product/AOI/scope authority packet,
+  next-pursuit routing merged through PR #120, and BPS-001 Bologna pilot-scope
+  authority merged through PR #121. Current lane: BPS-REQ-001 Bologna scope decision
+  requests. Prefer collecting these first-gate product/AOI/scope decision references,
   then BSA-001 source/AOI/right-authority preparation, ahead of generic
   hosted-production, generic DS-017, and broad production-authority work. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -1646,6 +1647,37 @@ tasks:
       - Pilot-scope authority packet exists and remains blocked, uncited, and validate-only
       - Source-authority intake, source-rights, and recorded-source corpus updates remain disabled
       - Bologna preflight, production authority intake, and release readiness compose the first-gate checker
+      - No AOI selection, source approval, fixture capture, runtime/report proof, source registry promotion, DB seed, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: BPS-REQ-001
+    title: Bologna scope decision requests
+    status: done
+    depends_on: [BPS-001]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-scope-decision-requests.md
+    notes: >
+      Add structured scope-decision request rows to the blocked Bologna pilot-scope
+      authority packet. Each row names the expected external reference, minimum
+      evidence, and downstream use while preserving missing-authority status, empty
+      authority references, disabled decision updates, and all downstream source,
+      corpus, fixture, runtime/report, DS-017, hosted, multi-geography, and Level 10
+      blockers.
+    validation:
+      - py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 .\scripts\production_authority_intake_check.py
+      - py -3.12 .\scripts\bologna_preflight_check.py
+      - py -3.12 .\scripts\release_readiness_check.py
+      - cd backend; py -3.12 -m pytest tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_production_authority_intake_artifacts.py tests\test_readiness_core_artifacts.py -q
+      - py -3.12 .\scripts\source_readiness.py --priority Must --json
+      - py -3.12 .\scripts\readiness_matrix_check.py
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\validate_workspace.ps1
+      - .\scripts\verify.ps1
+    acceptance:
+      - Every required pilot-scope decision has exactly one structured request row
+      - Every request remains missing-authority, uncited, and update-disallowed
+      - Production-authority intake cannot drift from the pilot-scope request rows
       - No AOI selection, source approval, fixture capture, runtime/report proof, source registry promotion, DB seed, DS-017 approval, hosted authority, or Level 10 claim is introduced
 
   # --- Completed ---

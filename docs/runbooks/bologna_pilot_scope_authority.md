@@ -23,6 +23,11 @@ The checker verifies that `config/bologna_pilot_scope_authority.yaml` remains
 blocked, references the current Bologna authority catalogs, and keeps every downstream
 unlock disabled until cited authority exists.
 
+`scope_decision_requests` is the structured request table for the missing first-gate
+decisions. Each row names the expected reference, minimum evidence, and downstream use
+for one required decision while keeping `status: missing_authority`,
+`authority_references: []`, and `decision_updates_allowed: false`.
+
 ## Evidence Checklist
 
 Collect all required scope decisions before any Bologna source-rights row can move out

@@ -139,15 +139,16 @@ work, or production workload work.
 
 ## Next Unblocked Pass
 
-The preferred next pursuit is now the Bologna recorded-source pilot path, beginning
-with `BPS-001` pilot-scope authority and then `BSA-001` source/AOI/right-authority
-preparation. This priority supersedes generic hosted-production, generic DS-017, and
-broad production-authority follow-up as the next planning target, but it does not lower
-any authority threshold.
+The preferred next pursuit is now the Bologna recorded-source pilot path. `BPS-001`
+created the blocked pilot-scope authority packet; `BPS-REQ-001` makes its missing
+product/AOI/scope decisions actionable through structured request rows before
+`BSA-001` source/AOI/right-authority preparation. This priority supersedes generic
+hosted-production, generic DS-017, and broad production-authority follow-up as the next
+planning target, but it does not lower any authority threshold.
 
-The first Bologna action is to collect or explicitly block product, one-AOI,
+The next Bologna action is to collect or explicitly block the product, one-AOI,
 jurisdiction, evidence-only/rulepack, DS-017-treatment, fixture-boundary,
-runtime-boundary, and no-overclaim authority in
+runtime-boundary, and no-overclaim request rows in
 `config/bologna_pilot_scope_authority.yaml`. Only after that first gate is cited may
 source-authority intake and source-rights rows move toward exact source-selection,
 per-source terms, source version/date, cache/export/AI/raw-data, attribution, CRS,
