@@ -53,6 +53,7 @@ SCRIPT_FILES = {
     "scripts/qualification_p0_evidence_check.py",
     "scripts/qualification_p0_evidence_check.ps1",
     "scripts/run_qualification_p0_evidence_check.sh",
+    "scripts/qualification_checker_advertisement.py",
 }
 
 

@@ -21,6 +21,8 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -36,6 +38,8 @@ except ImportError as exc:
 GATE_STATUSES = {"NOT_RUN", "RUNNING", "BLOCKED", "FAIL", "PASS", "INVALIDATED", "EXPIRED"}
 CRITERION_RESULTS = {"PASS", "FAIL", "BLOCKED", "N/A"}
 NONBLOCKING_CLASS = "DIAGNOSTIC"
+ADVERTISEMENT_FLAG = "--qualification-criteria-json"
+ADVERTISEMENT_SCHEMA_VERSION = "qualification_checker_advertisement_v1"
 
 GATE_TO_STATUS_KEY = {
     "P0": "p0",
@@ -446,6 +450,75 @@ def validate_readiness_crosswalk(
         errors.append(
             f"readiness_crosswalk: intentional exclusions are not in inventory: {unused_exclusions}"
         )
+
+
+def expected_checker_criteria(crosswalk: dict[str, Any]) -> dict[str, set[str]]:
+    expected: dict[str, set[str]] = {}
+    for entry in crosswalk.get("entries") or []:
+        for checker_path in entry.get("checker_paths") or []:
+            expected.setdefault(checker_path, set()).update(
+                str(criterion_id) for criterion_id in (entry.get("criterion_ids") or [])
+            )
+    return expected
+
+
+def validate_checker_advertisements(
+    root: Path,
+    crosswalk: dict[str, Any],
+    errors: list[str],
+) -> None:
+    def timeout_text(value: str | bytes | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
+    for checker_path, expected_ids in sorted(expected_checker_criteria(crosswalk).items()):
+        try:
+            completed = subprocess.run(
+                [sys.executable, checker_path, ADVERTISEMENT_FLAG],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            errors.append(
+                f"checker advertisement timed out: {checker_path}: "
+                f"{timeout_text(exc.stdout)} {timeout_text(exc.stderr)}"
+            )
+            continue
+
+        if completed.returncode != 0:
+            errors.append(
+                f"checker advertisement failed: {checker_path}: "
+                f"{completed.stdout} {completed.stderr}"
+            )
+            continue
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError as exc:
+            errors.append(f"checker advertisement invalid JSON: {checker_path}: {exc}")
+            continue
+
+        advertised_ids = payload.get("criterion_ids")
+        if (
+            payload.get("schema_version") != ADVERTISEMENT_SCHEMA_VERSION
+            or payload.get("checker_path") != checker_path
+            or not isinstance(advertised_ids, list)
+            or not all(isinstance(item, str) for item in advertised_ids)
+        ):
+            errors.append(f"checker advertisement schema mismatch: {checker_path}")
+            continue
+
+        advertised_set = set(advertised_ids)
+        if advertised_set != expected_ids:
+            errors.append(
+                f"checker advertisement mismatch: {checker_path}: "
+                f"expected {sorted(expected_ids)} got {sorted(advertised_set)}"
+            )
 
 
 def validate_catalog(
@@ -1212,6 +1285,7 @@ def main(argv: list[str] | None = None) -> int:
             set(catalog_map),
             errors,
         )
+        validate_checker_advertisements(root, readiness_crosswalk, errors)
 
     domain_profiles = load_profile_directory(
         domain_profiles_dir,

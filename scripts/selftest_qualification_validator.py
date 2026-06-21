@@ -312,6 +312,23 @@ def main() -> int:
             "readiness_crosswalk: missing required checker globs",
         )
 
+        checker_advertisement_drift = temp_root / "checker-advertisement-drift"
+        copy_fixture(source, checker_advertisement_drift)
+        checker_path = checker_advertisement_drift / "scripts" / "source_readiness.py"
+        checker_path.write_text(
+            checker_path.read_text(encoding="utf-8").replace(
+                "maybe_emit_qualification_criteria(__file__)",
+                "False",
+            ),
+            encoding="utf-8",
+        )
+        assert_result(
+            "checker advertisement drift is rejected",
+            run_validator(validator, checker_advertisement_drift),
+            False,
+            "checker advertisement failed: scripts/source_readiness.py",
+        )
+
         frozen_draft = temp_root / "frozen-draft"
         copy_fixture(source, frozen_draft)
 

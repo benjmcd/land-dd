@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-eqp2-2-change-impact.md`.
+Latest completed plan: `2026-06-21-eqp2-3-p0-auto-evidence.md`.
 
-Current routing plan: `2026-06-21-eqp2-3-p0-auto-evidence.md`.
+Current routing plan: `2026-06-21-eqp2-4-checker-parity.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -140,6 +140,14 @@ the artifact, status link, backlog rows, no-PASS status, no CI `continue-on-erro
 no pytest xfail suppression, and fixture-boundary signals. It does not create a
 P0 result artifact, unfreeze owner decisions, claim sealed acceptance, capture
 fixtures, approve sources, run connectors, or start Bologna runtime/report work.
+
+`EQP2-4` makes existing readiness/authority checkers advertise their mapped
+crosswalk criterion IDs through an opt-in machine-readable flag, makes the
+qualification validator prove crosswalk-to-checker advertisement parity, and makes
+status derivation consume the checker-advertised criterion IDs. It is additive
+reporting only: no checker gate behavior, qualification status, owner decision,
+source authority, Bologna authority, DB/API/auth/report semantics, or hosted
+boundary changes.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

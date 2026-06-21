@@ -19,6 +19,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from validate_qualification import GATE_TO_STATUS_KEY  # noqa: E402
+from qualification_checker_advertisement import (  # noqa: E402
+    ADVERTISEMENT_FLAG,
+    SCHEMA_VERSION as ADVERTISEMENT_SCHEMA_VERSION,
+)
 
 ALLOWED_DERIVED_STATUSES = {"BLOCKED", "NOT_RUN"}
 KNOWN_MISSING_RUNTIME = {
@@ -45,6 +49,7 @@ class CheckerResult(NamedTuple):
     returncode: int
     stdout: str
     stderr: str
+    advertised_criterion_ids: tuple[str, ...] = ()
 
 
 StatusKey = tuple[str, str]
@@ -125,6 +130,22 @@ def checker_entries_by_path(crosswalk: dict[str, Any]) -> dict[str, list[dict[st
     return entries_by_path
 
 
+def advertised_criterion_ids_for_checker(
+    crosswalk: dict[str, Any],
+    path_text: str,
+) -> tuple[str, ...]:
+    entries = checker_entries_by_path(crosswalk).get(path_text) or []
+    return tuple(
+        sorted(
+            {
+                str(criterion_id)
+                for entry in entries
+                for criterion_id in (entry.get("criterion_ids") or [])
+            },
+        ),
+    )
+
+
 def repo_relative_path(root: Path, path_text: str) -> Path:
     path = Path(path_text)
     if path.is_absolute():
@@ -155,6 +176,12 @@ def run_checker(
     allow_runtime_checkers: bool = False,
 ) -> CheckerResult:
     repo_relative_path(root, path_text)
+    advertised_criterion_ids = run_checker_advertisement(
+        root=root,
+        path_text=path_text,
+        python_command=python_command,
+        timeout_seconds=timeout_seconds,
+    )
     env = os.environ.copy()
     if not allow_runtime_checkers:
         for key in RUNTIME_ENV_KEYS.get(path_text, ()):
@@ -177,13 +204,58 @@ def run_checker(
                 timeout_output(exc.stderr)
                 + f"\nchecker timed out after {timeout_seconds}s"
             ),
+            advertised_criterion_ids=advertised_criterion_ids,
         )
     return CheckerResult(
         path=path_text,
         returncode=completed.returncode,
         stdout=completed.stdout,
         stderr=completed.stderr,
+        advertised_criterion_ids=advertised_criterion_ids,
     )
+
+
+def run_checker_advertisement(
+    root: Path,
+    path_text: str,
+    python_command: str,
+    timeout_seconds: int,
+) -> tuple[str, ...]:
+    repo_relative_path(root, path_text)
+    try:
+        completed = subprocess.run(
+            [python_command, path_text, ADVERTISEMENT_FLAG],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise QualificationStatusError(
+            f"checker criterion advertisement timed out: {path_text}: "
+            f"{timeout_output(exc.stdout)} {timeout_output(exc.stderr)}",
+        ) from exc
+    if completed.returncode != 0:
+        raise QualificationStatusError(
+            f"checker criterion advertisement failed: {path_text}: "
+            f"{completed.stdout} {completed.stderr}",
+        )
+    try:
+        payload = yaml.safe_load(completed.stdout)
+    except yaml.YAMLError as exc:
+        raise QualificationStatusError(
+            f"checker criterion advertisement is not valid JSON/YAML: {path_text}",
+        ) from exc
+    if not isinstance(payload, dict) or payload.get("schema_version") != ADVERTISEMENT_SCHEMA_VERSION:
+        raise QualificationStatusError(f"checker criterion advertisement schema mismatch: {path_text}")
+    if payload.get("checker_path") != path_text:
+        raise QualificationStatusError(f"checker criterion advertisement path mismatch: {path_text}")
+    criterion_ids = payload.get("criterion_ids")
+    if not isinstance(criterion_ids, list) or not all(isinstance(item, str) for item in criterion_ids):
+        raise QualificationStatusError(f"checker criterion advertisement IDs invalid: {path_text}")
+    if not criterion_ids:
+        raise QualificationStatusError(f"checker criterion advertisement is empty: {path_text}")
+    return tuple(sorted(set(criterion_ids)))
 
 
 def run_checker_inventory(
@@ -245,18 +317,18 @@ def derive_statuses(
         derived[("qualifications", "p0")] = "BLOCKED"
 
     catalog_map = catalog_by_id(catalog)
-    entries_by_path = checker_entries_by_path(crosswalk)
     for path in unique_checker_paths(crosswalk):
         result = checker_results.get(path)
         if result is None:
             raise QualificationStatusError(f"missing checker result: {path}")
         repo_relative_path(root, path)
+        if not result.advertised_criterion_ids:
+            raise QualificationStatusError(f"missing checker criterion advertisement: {path}")
         if result.returncode == 0 or checker_is_known_not_run(result):
             continue
-        for entry in entries_by_path.get(path, []):
-            for criterion_id in entry.get("criterion_ids") or []:
-                for status_key in criterion_status_keys(status, catalog_map, criterion_id):
-                    derived[status_key] = "BLOCKED"
+        for criterion_id in result.advertised_criterion_ids:
+            for status_key in criterion_status_keys(status, catalog_map, criterion_id):
+                derived[status_key] = "BLOCKED"
     return derived
 
 

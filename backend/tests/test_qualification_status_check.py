@@ -48,6 +48,10 @@ def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[s
             returncode=0,
             stdout="ok",
             stderr="",
+            advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+                crosswalk,
+                path,
+            ),
         )
         for path in module.unique_checker_paths(crosswalk)
     }
@@ -56,12 +60,20 @@ def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[s
         returncode=2,
         stdout="",
         stderr="usage: package_manifest_check.py [-h] manifest",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/package_manifest_check.py",
+        ),
     )
     results["scripts/spatial_query_plan_runtime_check.py"] = module.CheckerResult(
         path="scripts/spatial_query_plan_runtime_check.py",
         returncode=1,
         stdout="missing required --db-url or DATABASE_URL_SYNC",
         stderr="",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/spatial_query_plan_runtime_check.py",
+        ),
     )
     return results
 
@@ -114,6 +126,10 @@ def test_unexpected_checker_failure_blocks_mapped_statuses() -> None:
         returncode=1,
         stdout="unexpected source readiness failure",
         stderr="",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/source_readiness.py",
+        ),
     )
 
     derived = module.derive_statuses(
@@ -179,6 +195,11 @@ def test_timeout_output_is_normalized(monkeypatch: Any) -> None:
             stderr=b"partial stderr",
         )
 
+    monkeypatch.setattr(
+        module,
+        "run_checker_advertisement",
+        lambda *args, **kwargs: ("Q1-012",),
+    )
     monkeypatch.setattr(module.subprocess, "run", raise_timeout)
 
     result = module.run_checker(
@@ -192,3 +213,30 @@ def test_timeout_output_is_normalized(monkeypatch: Any) -> None:
     assert result.stdout == "partial stdout"
     assert "partial stderr" in result.stderr
     assert "checker timed out after 1s" in result.stderr
+
+
+def test_missing_checker_advertisement_fails_closed() -> None:
+    module = _load_script()
+    status, targets, catalog, crosswalk = _controls()
+    checker_results = _successful_results(module, crosswalk)
+    checker_results["scripts/source_readiness.py"] = module.CheckerResult(
+        path="scripts/source_readiness.py",
+        returncode=1,
+        stdout="unexpected source readiness failure",
+        stderr="",
+        advertised_criterion_ids=(),
+    )
+
+    try:
+        module.derive_statuses(
+            root=REPO_ROOT,
+            status=status,
+            targets=targets,
+            catalog=catalog,
+            crosswalk=crosswalk,
+            checker_results=checker_results,
+        )
+    except module.QualificationStatusError as exc:
+        assert "missing checker criterion advertisement: scripts/source_readiness.py" in str(exc)
+    else:
+        raise AssertionError("missing checker advertisement should fail closed")

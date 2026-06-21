@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 import importlib
 import sys
 from pathlib import Path
@@ -285,4 +286,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from pathlib import Path as _QualificationPath
+    import sys as _qualification_sys
+    _qualification_sys.path.insert(0, str(_QualificationPath(__file__).resolve().parent))
+    from qualification_checker_advertisement import maybe_emit_qualification_criteria
+
+    maybe_emit_qualification_criteria(__file__)
     raise SystemExit(main())
