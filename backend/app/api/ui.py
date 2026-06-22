@@ -438,8 +438,11 @@ def _raw_collect(
 ) -> tuple[list[object], str | None]:
     try:
         return list(collector()), None
-    except Exception as exc:  # noqa: BLE001 - inventory must fail closed per section
-        return [], safe_error_message(str(exc)) or "not available from current service"
+    except Exception:  # noqa: BLE001 - inventory must fail closed per section
+        # Render a generic message; never expose filesystem paths or exc details
+        # to the user-facing surface (safe_error_message already redacts paths,
+        # but a generic label is more robust and avoids leaking any error text).
+        return [], "collector unavailable"
 
 
 def _raw_count(collector: Callable[[], Sized]) -> str:
@@ -453,6 +456,10 @@ def _raw_inventory_summary(services: ApiServices) -> str:
     values = (
         ("sources", _raw_count(lambda: services.source_service.list_all())),
         ("areas", _raw_count(lambda: services.area_service.list_all())),
+        # len(list_all()) is used here because no count() method exists on these
+        # repos.  The full list is materialised, which is accurate but not optimal
+        # for large tables.  TODO: add evidence_repo.count() and claim_repo.count()
+        # (SELECT COUNT(*)) to avoid full-table materialisation on the home route.
         ("evidence", _raw_count(lambda: services.evidence_service.list_all())),
         ("claims", _raw_count(lambda: services.claim_service.list_all())),
         (
@@ -636,24 +643,28 @@ def _report_run_rows(records: list[object], unavailable: str | None) -> str:
 
 
 def _report_claim_total(report: ReportRunContract) -> int:
-    return (
-        len(report.claims)
-        + len(report.unknowns)
-        + len(report.red_flags)
-        + len(report.advisory_claims)
-    )
+    # report.unknowns / red_flags / advisory_claims are filtered subsets of
+    # report.claims — adding them together would double-count.  Use only the
+    # canonical claims list, which already contains every evaluated claim.
+    return len(report.claims)
 
 
 def _report_contract_links(report: ReportRunContract) -> str:
     report_run_id = report.report_run_id
-    return _report_list_action_links(
-        [
-            (f"/ui/report-runs/{report_run_id}", "detail"),
-            (f"/report-runs/{report_run_id}/dossier?download=1", "dossier"),
-            (f"/report-runs/{report_run_id}/artifact", "json"),
-            (f"/ui/report-runs/{report_run_id}/lineage", "lineage"),
-        ]
-    )
+    detail_href = f"/ui/report-runs/{report_run_id}"
+    # Dossier, artifact, and lineage surfaces are approval-gated (return 409
+    # until approved).  Mirror the gating logic used in the report-list page
+    # and only render those links when the report is approved.
+    if report.review_status == ReportReviewStatus.APPROVED:
+        return _report_list_action_links(
+            [
+                (detail_href, "detail"),
+                (f"/report-runs/{report_run_id}/dossier?download=1", "dossier"),
+                (f"/report-runs/{report_run_id}/artifact", "json"),
+                (f"{detail_href}/lineage", "lineage"),
+            ]
+        )
+    return _report_list_action_links([(detail_href, "detail")])
 
 
 def _report_job_rows(records: list[object], unavailable: str | None) -> str:
