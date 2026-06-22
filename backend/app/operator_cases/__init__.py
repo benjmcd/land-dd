@@ -39,7 +39,7 @@ from app.connectors.flood_fixture import FixtureConnectorProtocol
 from app.connectors.result import ConnectorResult
 from app.connectors.retrieval_provenance import SourceRetrievalProvenancePort
 from app.domain.area_contracts import AreaContract
-from app.domain.enums import IntentCode
+from app.domain.enums import IntentCode, JobStatus
 from app.domain.evidence_contracts import EvidenceContract
 from app.domain.report_contracts import ReportRunContract
 from app.domain.source_contracts import (
@@ -52,6 +52,19 @@ from app.domain.source_contracts import (
 _SOURCE_ID = UUID("55555555-5555-4555-8555-555555555555")
 _DATASET_ID = UUID("11111111-2222-4333-8444-555555555555")
 _DATASET_VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
+# The report-service writes sentinel/not-evaluated evidence under this source ID
+# during create_report_run (for domains that were not evaluated by any connector).
+# This is an internal infrastructure source, not a live or manual one, so it is
+# part of the fixture-only report contract and must not trigger the F3 foreign-
+# evidence guard on retry.
+_NOT_EVALUATED_SENTINEL_SOURCE_ID = UUID("00000000-0000-4000-8000-0000000007d0")
+
+# All source IDs that are written as part of the fixture-only route's normal
+# operation (connector fixtures + report-service sentinels).  Evidence from any
+# other source is considered "foreign" and causes F3 to fail closed.
+_FIXTURE_ROUTE_SOURCE_IDS: frozenset[UUID] = frozenset(
+    {_SOURCE_ID, _NOT_EVALUATED_SENTINEL_SOURCE_ID}
+)
 
 _CONNECTORS: dict[
     str,
@@ -164,6 +177,20 @@ class UnsupportedSelectedCountyAoiError(ValueError):
     """Raised when a generic AOI cannot be mapped to selected-county support scope."""
 
 
+class SupportedAoiAreaNotFoundError(UnsupportedSelectedCountyAoiError):
+    """Raised when the caller-supplied area_id cannot be resolved for this workspace.
+
+    Intentionally opaque: both "does not exist" and "exists in another workspace"
+    raise this with the same message so callers cannot distinguish the two cases
+    (prevents cross-workspace UUID enumeration / IDOR).  The API layer maps this
+    to 404 rather than 422.
+    """
+
+
+# Internal alias so in-module raise sites are concise.
+_AoiNotFoundError = SupportedAoiAreaNotFoundError
+
+
 @dataclass(frozen=True)
 class _SelectedCountyConnectorResult:
     retrieval_run: SourceRetrievalRunContract
@@ -193,12 +220,10 @@ def create_supported_aoi_report(
     requested_by: UUID | None = None,
 ) -> SupportedSelectedCountyAoiReportResult:
     area = services.area_service.get(area_id)
-    if area is None:
-        raise UnsupportedSelectedCountyAoiError(
-            f"generic AOI area '{area_id}' is not registered",
-        )
-    if workspace_id is not None and area.workspace_id != workspace_id:
-        raise ValueError("generic supported AOI belongs to a different workspace")
+    if area is None or (workspace_id is not None and area.workspace_id != workspace_id):
+        # Return the same indistinguishable error for both "does not exist" and
+        # "exists in a different workspace" to prevent cross-workspace UUID enumeration.
+        raise _AoiNotFoundError("area not found")
 
     county = _classify_selected_county_area(area)
     if county is None:
@@ -211,6 +236,32 @@ def create_supported_aoi_report(
         raise UnsupportedSelectedCountyAoiError(
             "generic AOI is inside selected county bounds but does not match a "
             "recorded generic AOI fixture profile",
+        )
+
+    # Finding 4: enforce that the caller's intent_code matches the profile's intent.
+    # The fixture set was built for a specific intent; approving it under a different
+    # intent would produce a mislabeled report.
+    if intent_code.value != profile.intent:
+        raise ValueError(
+            f"intent_code '{intent_code.value}' is not supported for this AOI; "
+            f"supported intent for this profile is '{profile.intent}'",
+        )
+
+    # Finding 3 (narrowed): fail closed only when the area carries evidence from a
+    # source OTHER than this route's fixture source.  Foreign (live/manual) evidence
+    # would produce a mislabeled fixture_only report, so we reject.  Evidence that
+    # is already from this fixture source means this is a legitimate retry — we
+    # proceed; _ingest_connector_fixtures is idempotent and F2 skips re-approval for
+    # already-SUCCEEDED queue items, so the route produces a fresh approved report.
+    foreign_evidence = [
+        e
+        for e in services.evidence_service.list_by_area(area.area_id)
+        if e.source_id not in _FIXTURE_ROUTE_SOURCE_IDS
+    ]
+    if foreign_evidence:
+        raise ValueError(
+            "area already has existing evidence from a non-fixture source; "
+            "fixture-only report cannot be created on an area with prior evidence",
         )
 
     _ensure_fixture_provenance(
@@ -490,7 +541,17 @@ def _ingest_connector_fixtures(
             workspace_id=workspace_id,
             requested_by=requested_by,
         )
-        if handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA:
+        # Finding 2: on a retry the queue item already exists and may already be
+        # SUCCEEDED.  Calling approve_for_connector_qa on a SUCCEEDED item raises
+        # "cannot be approved".  Skip the approve call only when the item has already
+        # SUCCEEDED — its approval is still valid.  For FAILED/CANCELLED items we do
+        # NOT skip: those are error states and the approve call should surface its
+        # error rather than silently yielding an "approved" report over a failed item.
+        _already_succeeded = queued.status == JobStatus.SUCCEEDED
+        if (
+            handoff.disposition == ConnectorReviewDisposition.READY_FOR_CONNECTOR_QA
+            and not _already_succeeded
+        ):
             services.connector_review_queue.approve_for_connector_qa(
                 queued.job_id,
                 reviewer_id=reviewer_id,
@@ -740,6 +801,7 @@ __all__ = [
     "SelectedCountyReportResult",
     "SupportedSelectedCountyAoiReportResult",
     "UnsupportedSelectedCountyAoiError",
+    "SupportedAoiAreaNotFoundError",
     "UnsupportedSelectedCountyCaseError",
     "create_supported_aoi_report",
     "create_selected_county_report",
