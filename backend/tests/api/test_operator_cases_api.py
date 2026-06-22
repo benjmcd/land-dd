@@ -391,6 +391,94 @@ def test_supported_aoi_report_create_uses_existing_area_without_case_id() -> Non
     assert artifact_response.json()["area_id"] == area_id
 
 
+def test_supported_aoi_report_create_returns_404_for_cross_workspace_area_id() -> None:
+    """An area_id that exists in workspace B must return 404 when called from
+    workspace A — not 422 with a message that confirms the UUID exists elsewhere
+    (that would be an IDOR / cross-workspace enumeration vulnerability).
+    """
+    other_workspace_id = UUID("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee")
+    caller_workspace_id = UUID("ffffffff-ffff-4fff-8fff-ffffffffffff")
+
+    client = TestClient(create_app())
+
+    # Register an area in other_workspace by posting through the API with that
+    # workspace header, then call supported-aoi from caller_workspace.
+    area_response = client.post(
+        "/areas",
+        headers=_auth_headers(workspace_id=other_workspace_id),
+        json={
+            "label": "operator-upload-buncombe-cross-ws",
+            "geom_geojson": _golden_geometry("bun_slope.geojson"),
+            "geom_source": "operator-upload://bun_slope.geojson",
+        },
+    )
+    assert area_response.status_code == 201
+    area_id = area_response.json()["area_id"]
+
+    response = client.post(
+        "/operator-cases/supported-aoi/report",
+        headers=_auth_headers(workspace_id=caller_workspace_id),
+        json={"area_id": area_id, "intent_code": "rural_land_purchase"},
+    )
+
+    assert response.status_code == 404, (
+        f"expected 404, got {response.status_code}: {response.text}"
+    )
+    # Crucially, the body must NOT contain the area_id or any confirmation of existence.
+    assert "area not found" in response.json()["detail"]
+    assert area_id not in response.text
+
+
+def test_supported_aoi_report_create_retry_returns_201_not_422() -> None:
+    """A second identical POST to /operator-cases/supported-aoi/report for the
+    same area_id must return 201 (valid approved fixture-only report), NOT 422.
+
+    This is the route-level end-to-end proof that F3 (narrowed to foreign-source
+    evidence only) + F2 (SUCCEEDED-only skip) compose correctly: run 1 succeeds,
+    leaves fixture evidence, run 2 proceeds through the same path idempotently.
+    """
+    client = TestClient(create_app())
+
+    area_response = client.post(
+        "/areas",
+        headers=_auth_headers(),
+        json={
+            "label": "operator-upload-buncombe-route-retry",
+            "geom_geojson": _golden_geometry("bun_slope.geojson"),
+            "geom_source": "operator-upload://bun_slope.geojson",
+        },
+    )
+    assert area_response.status_code == 201
+    area_id = area_response.json()["area_id"]
+
+    payload = {"area_id": area_id, "intent_code": "rural_land_purchase"}
+
+    # RUN 1 — must succeed.
+    first = client.post(
+        "/operator-cases/supported-aoi/report",
+        headers=_auth_headers(),
+        json=payload,
+    )
+    assert first.status_code == 201, f"run 1 failed: {first.status_code} {first.text}"
+    first_body = first.json()
+    assert first_body["area_id"] == area_id
+    assert first_body.get("evidence_count", 0) > 0
+
+    # RUN 2 (identical) — must also return 201, NOT 422.
+    second = client.post(
+        "/operator-cases/supported-aoi/report",
+        headers=_auth_headers(),
+        json=payload,
+    )
+    assert second.status_code == 201, (
+        f"retry (run 2) got {second.status_code}, expected 201: {second.text}"
+    )
+    second_body = second.json()
+    assert second_body["area_id"] == area_id
+    # A fresh approved report is returned; evidence_count reflects the fixture pool.
+    assert second_body.get("evidence_count", 0) >= 0
+
+
 def test_supported_aoi_report_create_fails_closed_for_unprofiled_area() -> None:
     client = TestClient(create_app())
     area_response = client.post(

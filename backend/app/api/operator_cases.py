@@ -219,6 +219,13 @@ def create_supported_aoi_fixture_report_response(
     workspace_id: UUID | None = None,
     requested_by: UUID | None = None,
 ) -> SupportedAoiReportResponse:
+    _operator_cases_mod = importlib.import_module("app.operator_cases")
+    # SupportedAoiAreaNotFoundError is always present when the module loads
+    # successfully; the Exception fallback is unreachable but keeps mypy happy.
+    _SupportedAoiAreaNotFoundError: type[Exception] = getattr(
+        _operator_cases_mod, "SupportedAoiAreaNotFoundError", Exception
+    )
+
     contract = resolve_operator_cases_contract()
     try:
         created = contract.create_supported_aoi_report(
@@ -230,6 +237,13 @@ def create_supported_aoi_fixture_report_response(
             workspace_id=workspace_id,
             requested_by=requested_by,
         )
+    except _SupportedAoiAreaNotFoundError:
+        # Intentionally returns 404 for both "does not exist" and "exists in another
+        # workspace" — same opaque response, no existence disclosure.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="area not found",
+        ) from None
     except ValueError as exc:
         raise HTTPException(
             status_code=_HTTP_422_UNPROCESSABLE,
