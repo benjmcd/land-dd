@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-bologna-authority-record-contract.md`.
+Latest completed plan: `2026-06-21-bologna-authority-record-validation.md`.
 
-Current routing plan: `2026-06-21-bologna-authority-record-validation.md`.
+Current routing plan: `2026-06-21-bologna-source-authority-record-contract.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -166,13 +166,23 @@ empty, and this does not approve sources, select an AOI, change source rights, c
 corpus, capture fixtures, seed the DB, prove a report, approve DS-017, unfreeze owner
 decisions, or claim hosted/Level 10 authority.
 
-`BAR-001` is the current authority-first slice. It extends the pilot-scope authority
+`BAR-001` extended the pilot-scope authority
 checker so a complete future authority record shape can be validated in test isolation
 while partial records and records requesting downstream unlocks fail closed. The
 committed `current_authority_records` list remains empty; this does not approve
 sources, select an AOI, change source rights, create a corpus, capture fixtures, seed
 the DB, prove a report, approve DS-017, unfreeze owner decisions, or claim
 hosted/Level 10 authority.
+
+`BSA-REC` is the current authority-first slice. It adds a machine-checked
+`source_authority_record_contract` to the blocked Bologna source-authority intake guard
+so future cited per-source authority evidence can be validated for candidate evidence
+slots, source-rights decision coverage, terms/version/retrieval/CRS/attribution/caveat
+and storage/export/failure policies, and no downstream unlock requests. The committed
+`current_source_authority_records` list remains empty; this does not approve sources,
+select an AOI, change source rights, create a corpus, capture fixtures, seed the DB,
+prove a report, approve DS-017, unfreeze owner decisions, or claim hosted/Level 10
+authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

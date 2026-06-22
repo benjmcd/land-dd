@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna source-authority record contract
+
+- Started clean worktree `worktrees/bol-sa` on `codex/bol-src-auth-contract` from live
+  `origin/main` at `e511aa28fc265c8c1f2cdeb25cbce6553709a37c` after PR #140 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-source-authority-record-contract.md` for the next
+  authority-first Bologna slice.
+- Added `source_authority_record_contract` to
+  `config/bologna_source_authority_intake.yaml` and extended
+  `scripts/bologna_source_authority_intake_check.py` so future per-source authority
+  records can be validated for exact fields, upstream scope-authority links, known
+  candidate/cadastral target, full source-rights decision coverage, per-candidate
+  evidence slots, terms/version/retrieval/CRS/attribution/caveat/storage/export/failure
+  policy fields, unique targets, and no downstream unlock requests.
+- Added source-authority intake tests proving a complete hypothetical candidate-source
+  record shape passes, missing evidence slots fail closed, downstream-unlock requests
+  fail closed, and the committed source-authority record list remains empty.
+- Preserved boundaries: `current_source_authority_records` remains empty, `BSA-001`
+  remains blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
 ## 2026-06-21 Bologna authority record validation
 
 - Started clean worktree `worktrees/bol-rec` on `codex/bol-record-gate` from live

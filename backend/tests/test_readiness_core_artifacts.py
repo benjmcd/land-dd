@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-21-bologna-authority-record-validation.md"
+        == "plans/2026-06-21-bologna-source-authority-record-contract.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -69,6 +69,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-AUTH-SYNC" in readiness.checkpoint.completed_task_ids
     assert "BAP-001" in readiness.checkpoint.completed_task_ids
     assert "BAR-001" in readiness.checkpoint.completed_task_ids
+    assert "BSA-REC" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -95,6 +96,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert any(task.task_id == "BOL-AUTH-SYNC" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BAP-001" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BAR-001" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BSA-REC" for task in readiness.task_queue.completed_tasks)
     assert readiness.gate_matrix.status_counts["BLOCKED"] >= 1
     assert "L10-SEC-010" in readiness.gate_matrix.blocked_gate_ids
     assert any("verify.ps1" in command for command in readiness.validation.commands)

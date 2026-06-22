@@ -67,7 +67,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert (
         task_queue["active_plan"]
-        == "plans/2026-06-21-bologna-authority-record-validation.md"
+        == "plans/2026-06-21-bologna-source-authority-record-contract.md"
     )
     assert tasks["EQ-BOL"]["status"] == "done"
     assert tasks["EQ-BOL"]["depends_on"] == ["EQ-1"]
@@ -108,5 +108,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BAP-001"]["status"] == "done"
     assert tasks["BAR-001"]["depends_on"] == ["BAP-001"]
     assert tasks["BAR-001"]["status"] == "done"
-    assert tasks["EQ-5"]["depends_on"] == ["BAR-001"]
+    assert tasks["BSA-REC"]["depends_on"] == ["BAR-001"]
+    assert tasks["BSA-REC"]["status"] == "done"
+    assert tasks["EQ-5"]["depends_on"] == ["BSA-REC"]
     assert tasks["BSA-001"]["status"] == "blocked"
