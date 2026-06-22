@@ -1,37 +1,40 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna authority record validation)
+## Current checkpoint (2026-06-21 Bologna source-authority record contract)
 
 Live `origin/main` contains the completed EQ Phase 2 control-plane operationalization
 through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, the post-EQP2
 Bologna authority routing sync through PR #138 at
 `604f7c2739095d9cc543b675ed3b84e619cda54d`, and the Bologna authority-record contract
-through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`. The current lane is
-the second authority-record slice for the prioritized Bologna recorded-source path:
-make the pilot-scope authority checker validate a complete future authority record in
-test isolation while preserving the missing authority boundary.
+through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`, plus the Bologna
+authority-record validation through PR #140 at
+`e511aa28fc265c8c1f2cdeb25cbce6553709a37c`. The current lane is the next
+authority-record slice for the prioritized Bologna recorded-source path: make the
+source-authority intake checker validate a complete future per-source authority record
+shape in test isolation while preserving the missing authority boundary.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-bologna-authority-record-validation.md`.
+  `plans/2026-06-21-bologna-source-authority-record-contract.md`.
 - **Latest repo-local test hardening**:
-  `backend/tests/test_bologna_pilot_scope_authority_artifacts.py` now asserts that a
-  complete hypothetical authority record shape is accepted in memory, partial records
-  fail closed, records requesting downstream unlocks fail closed, the committed
-  authority-record list remains empty, and coverage drift still fails closed.
+  `backend/tests/test_bologna_source_authority_intake_artifacts.py` now asserts that
+  the source-authority intake has a `source_authority_record_contract`, a complete
+  hypothetical candidate-source authority record shape is accepted in memory, missing
+  candidate evidence slots fail closed, records requesting downstream unlocks fail
+  closed, and the committed source-authority record list remains empty.
   `backend/tests/test_readiness_core_artifacts.py` and
   `backend/tests/test_qualification_parameterization_backlog_artifacts.py` now assert
-  that the active plan is this authority-record validation slice, `BOL-AUTH-SYNC`,
-  `BAP-001`, and `BAR-001` are done, `EQ-5` depends on `BAR-001`, and `BSA-001`
-  remains blocked.
+  that the active plan is this source-authority record contract, `BOL-AUTH-SYNC`,
+  `BAP-001`, `BAR-001`, and `BSA-REC` are done, `EQ-5` depends on `BSA-REC`, and
+  `BSA-001` remains blocked.
 - **Current task state**: `BSR-001`, post-BSR routing, `BSG-001`, `PAI-001`,
   `SRP-001`, `RSR-001`, `PR114-SYNC`, `BRC-001`, `PR116-SYNC`, `AUTH-HANDOFF`,
   `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
   `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`, and
-  `BOL-AUTH-SYNC`, `BAP-001`, and `BAR-001` are done in the current routing model.
-  `BSA-001` remains blocked until product/AOI/source-review authority is cited in
+  `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, and `BSA-REC` are done in the current routing
+  model. `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
-  `config/bologna_source_rights.yaml`. `EQ-5` remains queued behind `BAR-001` as a
+  `config/bologna_source_rights.yaml`. `EQ-5` remains queued behind `BSA-REC` as a
   repo-local fallback if external Bologna authority remains absent, and `EQ-R` remains an
   independent residual-reconciliation correction.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
@@ -41,11 +44,13 @@ test isolation while preserving the missing authority boundary.
   an empty `current_authority_records` list and all scope decision rows still have no
   authority references. The checker can now validate a complete future authority record
   shape in test isolation, require complete first-gate coverage if records become
-  non-empty, and reject records requesting downstream unlocks. This is validation
-  readiness only. `config/bologna_source_authority_intake.yaml` remains
-  `blocked_no_authority`; `config/bologna_source_rights.yaml` keeps candidates in
-  pending review; and `config/bologna_recorded_source_corpus.yaml` remains
-  `blocked_no_authority`.
+  non-empty, and reject records requesting downstream unlocks.
+  `config/bologna_source_authority_intake.yaml` remains `blocked_no_authority`; it now
+  has an empty `current_source_authority_records` list and a validated
+  `source_authority_record_contract` for future cited per-source authority evidence.
+  This is validation readiness only. `config/bologna_source_rights.yaml` keeps
+  candidates in pending review; and `config/bologna_recorded_source_corpus.yaml`
+  remains `blocked_no_authority`.
 - **Immediate next pursuit**: cite real product/AOI/source-review authority for the
   first Bologna gate in the authority-record format before any source-authority,
   source-rights, corpus, or report work. If authority is not available, keep `BSA-001`

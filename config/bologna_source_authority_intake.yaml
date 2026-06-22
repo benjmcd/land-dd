@@ -152,6 +152,69 @@ cadastral_authority_review:
   authority_references: []
   decision_updates_allowed: false
 
+source_authority_record_contract:
+  contract_state: ready_for_external_source_authority_evidence
+  current_source_authority_records: []
+  required_record_fields:
+    - source_authority_record_id
+    - authority_type
+    - candidate_id
+    - scope_authority_record_ids
+    - authority_reference
+    - decision_owner
+    - decision_date
+    - effective_date
+    - rights_decision_ids
+    - evidence_slot_values
+    - source_terms_summary
+    - source_version_or_publication_date
+    - retrieval_metadata_policy
+    - cache_export_ai_raw_data_decisions
+    - crs_precision_policy
+    - attribution_text
+    - caveats
+    - storage_export_boundaries
+    - source_failure_policy
+    - downstream_unlocks_requested
+    - supersedes_source_authority_record_ids
+  allowed_authority_types:
+    - candidate_source_terms_review
+    - cadastral_source_terms_review
+  required_rights_decision_coverage:
+    - terms_reference
+    - terms_effective_date
+    - source_version_or_publication_date
+    - update_cadence
+    - license_status
+    - commercial_use_status
+    - redistribution_status
+    - cache_allowed
+    - export_allowed
+    - raw_data_allowed
+    - ai_use_allowed
+    - attribution_required
+    - retrieval_metadata_policy
+    - source_failure_policy
+    - no_data_policy
+    - caveat_policy
+    - crs_precision_policy
+    - field_allowlist
+    - field_denylist
+    - fixture_capture_policy
+    - report_use_policy
+  coverage_policy: per_record_all_required_rights_decisions
+  evidence_slot_policy: per_candidate_required_evidence
+  decision_update_policy: disabled_until_complete_cited_source_authority
+  no_overclaim_controls:
+    no_source_approval_by_source_authority_record: true
+    no_source_rights_change_by_source_authority_record: true
+    no_source_registry_promotion_by_source_authority_record: true
+    no_fixture_capture_by_source_authority_record: true
+    no_runtime_report_use_by_source_authority_record: true
+    no_db_seed_by_source_authority_record: true
+    no_legal_buildability_title_or_value_claim: true
+    no_level_10_or_hosted_claim: true
+
 promotion_blockers:
   - authorized_one_aoi_scope
   - exact_source_selection

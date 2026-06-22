@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +61,55 @@ EXPECTED_REQUIRED_DECISIONS = {
     "no_overclaim_review",
     "review_owner",
 }
+EXPECTED_SOURCE_AUTHORITY_RECORD_FIELDS = {
+    "source_authority_record_id",
+    "authority_type",
+    "candidate_id",
+    "scope_authority_record_ids",
+    "authority_reference",
+    "decision_owner",
+    "decision_date",
+    "effective_date",
+    "rights_decision_ids",
+    "evidence_slot_values",
+    "source_terms_summary",
+    "source_version_or_publication_date",
+    "retrieval_metadata_policy",
+    "cache_export_ai_raw_data_decisions",
+    "crs_precision_policy",
+    "attribution_text",
+    "caveats",
+    "storage_export_boundaries",
+    "source_failure_policy",
+    "downstream_unlocks_requested",
+    "supersedes_source_authority_record_ids",
+}
+EXPECTED_AUTHORITY_TYPES = {
+    "candidate_source_terms_review",
+    "cadastral_source_terms_review",
+}
+EXPECTED_CACHE_EXPORT_AI_RAW_DATA_DECISIONS = {
+    "cache_allowed",
+    "export_allowed",
+    "raw_data_allowed",
+    "ai_use_allowed",
+}
+EXPECTED_STORAGE_EXPORT_BOUNDARIES = {
+    "cache_boundary",
+    "export_boundary",
+    "raw_data_boundary",
+    "report_boundary",
+}
+EXPECTED_NO_OVERCLAIM_CONTROLS = {
+    "no_source_approval_by_source_authority_record",
+    "no_source_rights_change_by_source_authority_record",
+    "no_source_registry_promotion_by_source_authority_record",
+    "no_fixture_capture_by_source_authority_record",
+    "no_runtime_report_use_by_source_authority_record",
+    "no_db_seed_by_source_authority_record",
+    "no_legal_buildability_title_or_value_claim",
+    "no_level_10_or_hosted_claim",
+}
 REQUIRED_FILES = (
     CONFIG_PATH,
     RUNBOOK_PATH,
@@ -76,6 +126,8 @@ RUNBOOK_PHRASES = (
     "validate-only",
     "does not approve sources",
     "source-rights matrix",
+    "source_authority_record_contract",
+    "ready_for_external_source_authority_evidence",
     "authority_state",
     "decision_updates_allowed",
 )
@@ -98,10 +150,25 @@ def require_non_empty_list(value: Any, message: str) -> list[Any]:
     return value
 
 
+def require_list(value: Any, message: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise SystemExit(message)
+    return value
+
+
 def require_text(value: Any, message: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise SystemExit(message)
     return value.strip()
+
+
+def require_iso_date(value: Any, message: str) -> str:
+    text = require_text(value, message)
+    try:
+        date.fromisoformat(text)
+    except ValueError as exc:
+        raise SystemExit(message) from exc
+    return text
 
 
 def normalize_path(path_text: str) -> str:
@@ -122,6 +189,25 @@ def read_text(path_text: str) -> str:
 
 def load_yaml(path_text: str) -> dict[str, Any]:
     return require_mapping(yaml.safe_load(read_text(path_text)), f"{path_text} must be a mapping")
+
+
+def list_set(value: Any, message: str) -> set[str]:
+    return {str(item) for item in require_non_empty_list(value, message)}
+
+
+def require_text_list(value: Any, message: str, *, allow_empty: bool = False) -> list[str]:
+    items = require_list(value, message)
+    if not allow_empty and not items:
+        raise SystemExit(message)
+    return [require_text(item, message) for item in items]
+
+
+def require_text_mapping_keys(value: Any, expected_keys: set[str], message: str) -> dict[str, Any]:
+    mapping = require_mapping(value, message)
+    require(set(mapping) == expected_keys, message)
+    for raw_value in mapping.values():
+        require_text(raw_value, message)
+    return mapping
 
 
 def validate_required_files() -> None:
@@ -158,6 +244,14 @@ def rights_cadastral_gap() -> dict[str, Any]:
         "cadastral gap state changed",
     )
     return gap
+
+
+def rights_required_decisions() -> set[str]:
+    rights = load_yaml(RIGHTS_PATH)
+    return list_set(
+        rights.get("required_rights_decisions"),
+        "source-rights required decisions missing",
+    )
 
 
 def rights_promotion_blockers() -> set[str]:
@@ -256,6 +350,190 @@ def validate_cadastral_review(payload: dict[str, Any]) -> None:
     )
 
 
+def required_evidence_slots_for_record(
+    record_id: str,
+    authority_type: str,
+    candidate_id: str,
+    source_rights_reviews: dict[str, dict[str, Any]],
+) -> set[str]:
+    if authority_type == "candidate_source_terms_review":
+        require(
+            candidate_id in source_rights_reviews,
+            f"{record_id} candidate missing from source-rights matrix",
+        )
+        return list_set(
+            source_rights_reviews[candidate_id].get("required_evidence"),
+            f"{record_id} required evidence missing",
+        )
+    require(
+        candidate_id == "cadastral_gap",
+        f"{record_id} cadastral record must target cadastral_gap",
+    )
+    return list_set(
+        rights_cadastral_gap().get("required_evidence"),
+        f"{record_id} cadastral required evidence missing",
+    )
+
+
+def validate_source_authority_record(
+    record: dict[str, Any],
+    source_rights_reviews: dict[str, dict[str, Any]],
+) -> tuple[str, str]:
+    require(
+        set(record) == EXPECTED_SOURCE_AUTHORITY_RECORD_FIELDS,
+        "source authority record fields drifted",
+    )
+    record_id = require_text(
+        record.get("source_authority_record_id"),
+        "source authority record id missing",
+    )
+    authority_type = require_text(record.get("authority_type"), f"{record_id} type missing")
+    require(authority_type in EXPECTED_AUTHORITY_TYPES, f"{record_id} type is not allowed")
+    candidate_id = require_text(record.get("candidate_id"), f"{record_id} candidate id missing")
+    require_text_list(
+        record.get("scope_authority_record_ids"),
+        f"{record_id} scope authority links missing",
+    )
+    require_text(record.get("authority_reference"), f"{record_id} authority reference missing")
+    require_text(record.get("decision_owner"), f"{record_id} decision owner missing")
+    require_iso_date(record.get("decision_date"), f"{record_id} decision date must be ISO")
+    require_iso_date(record.get("effective_date"), f"{record_id} effective date must be ISO")
+    require(
+        list_set(record.get("rights_decision_ids"), f"{record_id} rights decisions missing")
+        == rights_required_decisions(),
+        f"{record_id} rights decision coverage drifted",
+    )
+    required_slots = required_evidence_slots_for_record(
+        record_id,
+        authority_type,
+        candidate_id,
+        source_rights_reviews,
+    )
+    slot_values = require_mapping(
+        record.get("evidence_slot_values"),
+        f"{record_id} evidence slot values missing",
+    )
+    require(set(slot_values) == required_slots, f"{record_id} evidence slot values drifted")
+    for slot_value in slot_values.values():
+        require_text(slot_value, f"{record_id} evidence slot value missing")
+    require_text(record.get("source_terms_summary"), f"{record_id} source terms missing")
+    require_text(
+        record.get("source_version_or_publication_date"),
+        f"{record_id} source version or publication date missing",
+    )
+    require_text(
+        record.get("retrieval_metadata_policy"),
+        f"{record_id} retrieval metadata policy missing",
+    )
+    require_text_mapping_keys(
+        record.get("cache_export_ai_raw_data_decisions"),
+        EXPECTED_CACHE_EXPORT_AI_RAW_DATA_DECISIONS,
+        f"{record_id} cache/export/AI/raw-data decisions drifted",
+    )
+    require_text(record.get("crs_precision_policy"), f"{record_id} CRS policy missing")
+    require_text(record.get("attribution_text"), f"{record_id} attribution missing")
+    require_text_list(record.get("caveats"), f"{record_id} caveats missing")
+    require_text_mapping_keys(
+        record.get("storage_export_boundaries"),
+        EXPECTED_STORAGE_EXPORT_BOUNDARIES,
+        f"{record_id} storage/export boundaries drifted",
+    )
+    require_text(record.get("source_failure_policy"), f"{record_id} failure policy missing")
+    require(
+        require_list(
+            record.get("downstream_unlocks_requested"),
+            f"{record_id} downstream unlock requests missing",
+        )
+        == [],
+        f"{record_id} must not request downstream unlocks",
+    )
+    require_text_list(
+        record.get("supersedes_source_authority_record_ids"),
+        f"{record_id} superseded source authority record ids must be text",
+        allow_empty=True,
+    )
+    return record_id, candidate_id
+
+
+def validate_source_authority_records(contract: dict[str, Any]) -> None:
+    records = require_list(
+        contract.get("current_source_authority_records"),
+        "source authority records must be a list",
+    )
+    if not records:
+        return
+
+    source_rights_reviews = rights_reviews_by_candidate()
+    record_ids: set[str] = set()
+    record_targets: set[str] = set()
+    for raw_record in records:
+        record = require_mapping(raw_record, "each source authority record must be a mapping")
+        record_id, candidate_id = validate_source_authority_record(record, source_rights_reviews)
+        require(record_id not in record_ids, f"duplicate source authority record id: {record_id}")
+        record_ids.add(record_id)
+        record_targets.add(candidate_id)
+    require(
+        len(record_targets) == len(records),
+        "source authority record candidate targets must be unique",
+    )
+
+
+def validate_source_authority_record_contract(payload: dict[str, Any]) -> None:
+    contract = require_mapping(
+        payload.get("source_authority_record_contract"),
+        "source authority record contract missing",
+    )
+    require(
+        contract.get("contract_state") == "ready_for_external_source_authority_evidence",
+        "source authority record contract state changed",
+    )
+    require(
+        list_set(
+            contract.get("required_record_fields"),
+            "source authority record fields missing",
+        )
+        == EXPECTED_SOURCE_AUTHORITY_RECORD_FIELDS,
+        "source authority record fields drifted",
+    )
+    require(
+        list_set(contract.get("allowed_authority_types"), "source authority types missing")
+        == EXPECTED_AUTHORITY_TYPES,
+        "source authority types drifted",
+    )
+    require(
+        list_set(
+            contract.get("required_rights_decision_coverage"),
+            "source authority rights coverage missing",
+        )
+        == rights_required_decisions(),
+        "source authority rights decision coverage drifted",
+    )
+    require(
+        contract.get("coverage_policy") == "per_record_all_required_rights_decisions",
+        "source authority coverage policy changed",
+    )
+    require(
+        contract.get("evidence_slot_policy") == "per_candidate_required_evidence",
+        "source authority evidence-slot policy changed",
+    )
+    require(
+        contract.get("decision_update_policy")
+        == "disabled_until_complete_cited_source_authority",
+        "source authority decision update policy changed",
+    )
+    controls = require_mapping(
+        contract.get("no_overclaim_controls"),
+        "source authority no-overclaim controls missing",
+    )
+    require(
+        set(controls) == EXPECTED_NO_OVERCLAIM_CONTROLS,
+        "source authority no-overclaim controls drifted",
+    )
+    for control_id, enabled in controls.items():
+        require(enabled is True, f"{control_id} no-overclaim control disabled")
+    validate_source_authority_records(contract)
+
+
 def validate_preflight_references() -> None:
     preflight = load_yaml(PREFLIGHT_PATH)
     gates = require_non_empty_list(preflight.get("preflight_gates"), "preflight gates missing")
@@ -324,6 +602,7 @@ def validate_catalog() -> None:
     }
     require(intake_ids == set(source_rights_reviews), "authority review candidate set mismatch")
     validate_cadastral_review(payload)
+    validate_source_authority_record_contract(payload)
     require(
         {
             str(item)
