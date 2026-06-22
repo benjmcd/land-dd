@@ -95,6 +95,32 @@ def test_checklist_parser_covers_checked_and_unchecked_items(
     }
 
 
+def test_checklist_parser_covers_unordered_and_ordered_checkbox_markers(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+
+    monkeypatch.setattr(
+        validator,
+        "read_text",
+        lambda _path: "\n".join(
+            (
+                "* [ ] Star marker item",
+                "+ [x] Plus marker item",
+                "1. [ ] Ordered marker item",
+                "2. [X] Ordered complete item",
+            ),
+        ),
+    )
+
+    assert validator.checklist_item_ids("sample.md") == {
+        "star_marker_item",
+        "plus_marker_item",
+        "ordered_marker_item",
+        "ordered_complete_item",
+    }
+
+
 def test_checklist_parser_fails_closed_on_unsupported_checkbox_marker(
     monkeypatch: Any,
 ) -> None:
@@ -108,6 +134,71 @@ def test_checklist_parser_fails_closed_on_unsupported_checkbox_marker(
 
     with pytest.raises(SystemExit, match="unsupported checkbox marker"):
         validator.checklist_item_ids("sample.md")
+
+
+def test_checklist_dry_run_validator_rejects_repo_root_escape(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    validator = cast(Any, _load_validator())
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (tmp_path / "outside.md").write_text("not repo evidence\n", encoding="utf-8")
+    monkeypatch.setattr(validator, "ROOT", repo_root)
+
+    with pytest.raises(SystemExit, match="outside repository root"):
+        validator.require_existing("../outside.md")
+
+
+def test_checklist_dry_run_validator_rejects_empty_evidence_path(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    jurisdiction = next(
+        checklist
+        for checklist in catalog["checklists"]
+        if checklist["id"] == "jurisdiction_readiness"
+    )
+    jurisdiction["dry_run"][0]["evidence"][0] = ""
+
+    def fake_read_text(path: str) -> str:
+        if path == "config/checklist_dry_run.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="artifact path missing"):
+        validator.validate_catalog()
+
+
+def test_checklist_dry_run_validator_rejects_directory_blocker_authority(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    jurisdiction = next(
+        checklist
+        for checklist in catalog["checklists"]
+        if checklist["id"] == "jurisdiction_readiness"
+    )
+    blocked = next(
+        item
+        for item in jurisdiction["dry_run"]
+        if item["status"] == "blocked_external_authority"
+    )
+    blocked["blocker_authority"][0] = "docs"
+
+    def fake_read_text(path: str) -> str:
+        if path == "config/checklist_dry_run.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="must be a file"):
+        validator.validate_catalog()
 
 
 def test_checklist_dry_run_validator_requires_wrappers() -> None:
@@ -246,6 +337,56 @@ def test_checklist_dry_run_validator_fails_closed_for_stale_assertion(
     monkeypatch.setattr(validator, "read_text", fake_read_text)
 
     with pytest.raises(SystemExit, match="assertion missing text"):
+        validator.validate_catalog()
+
+
+def test_checklist_dry_run_validator_rejects_empty_contains_assertion(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    rulepack = next(
+        checklist
+        for checklist in catalog["checklists"]
+        if checklist["id"] == "rulepack_readiness"
+    )
+    confirmed = next(item for item in rulepack["dry_run"] if item["status"] == "repo_confirmed")
+    confirmed["evidence_assertions"][0]["contains"] = ""
+
+    def fake_read_text(path: str) -> str:
+        if path == "config/checklist_dry_run.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="contains must be non-empty"):
+        validator.validate_catalog()
+
+
+def test_checklist_dry_run_validator_rejects_empty_regex_assertion(
+    monkeypatch: Any,
+) -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    rulepack = next(
+        checklist
+        for checklist in catalog["checklists"]
+        if checklist["id"] == "rulepack_readiness"
+    )
+    confirmed = next(item for item in rulepack["dry_run"] if item["status"] == "repo_confirmed")
+    assertion = confirmed["evidence_assertions"][0]
+    assertion.pop("contains")
+    assertion["regex"] = " "
+
+    def fake_read_text(path: str) -> str:
+        if path == "config/checklist_dry_run.yaml":
+            return cast(str, yaml.safe_dump(catalog))
+        return (REPO_ROOT / path).read_text(encoding="utf-8")
+
+    monkeypatch.setattr(validator, "read_text", fake_read_text)
+
+    with pytest.raises(SystemExit, match="regex must be non-empty"):
         validator.validate_catalog()
 
 

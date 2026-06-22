@@ -4,7 +4,7 @@ Active implementation plans live here. Keep them executable and narrow.
 
 Latest completed plan: `2026-06-21-hcv-1-qualification-validator.md`.
 
-Current routing plan: `2026-06-21-hcv-1-qualification-validator.md`.
+Current routing plan: `2026-06-21-hcv-2-checker-hardening.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -193,6 +193,13 @@ export rights, P0 blocked-record validation with result_path, and PASS reviewer
 metadata. HCV-2, HCV-3, and HCV-4 remain queued follow-ons. This does not promote any
 qualification gate, unfreeze owner decisions, approve Bologna/source/DS-017/hosted
 authority, change DB/API/UI/report semantics, or claim Level 10 authority.
+
+`HCV-2` hardens the checker surfaces that HCV-1 now depends on: checklist dry-run
+assertions and path confinement, release-package manifest duplicate/secret detection,
+selected-county private-MVP connector/provenance bindings, and Bologna pilot-scope
+PowerShell wrapper exit-code propagation. It is fix-only and does not add Bologna
+scaffolding, promote qualification status, unfreeze owner decisions, or change DB/API/
+UI/report/runtime behavior.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

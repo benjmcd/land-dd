@@ -256,6 +256,59 @@ def test_private_mvp_validator_rejects_source_provenance_connector_mismatch() ->
     assert "chatham_parcels_live" in str(exc_info.value)
 
 
+def test_private_mvp_validator_rejects_cross_county_connector_swap() -> None:
+    validator = _load_validator_module()
+    catalog = copy.deepcopy(validator.load_catalog())
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        catalog,
+    )
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(catalog)
+    catalog["selected_county_source_provenance_scope"]["counties"]["buncombe_nc"][
+        "sources"
+    ]["DS-010"]["connector_names"] = ["chatham_parcels_live"]
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-010"]["connector_names"] = ["buncombe_parcels_live"]
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_provenance_scope_catalog(
+            catalog,
+            selected_county_scope,
+            manifest_scope,
+        )
+
+    assert "buncombe_nc.sources.DS-010.connector_names" in str(exc_info.value)
+
+
+def test_private_mvp_validator_rejects_wrong_source_provenance_expectation_class() -> None:
+    validator = _load_validator_module()
+    catalog = copy.deepcopy(validator.load_catalog())
+    selected_county_scope = validator.validate_selected_county_source_scope_catalog(
+        catalog,
+    )
+    manifest_scope = validator.validate_selected_county_manifest_scope_catalog(catalog)
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-011"]["dataset_expectation"] = "county_source_dataset"
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-011"]["version_expectation"] = "source_version_or_access_date"
+    catalog["selected_county_source_provenance_scope"]["counties"]["chatham_nc"][
+        "sources"
+    ]["DS-011"]["retrieval_expectation"] = "connector_retrieval_metadata"
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator.validate_selected_county_source_provenance_scope_catalog(
+            catalog,
+            selected_county_scope,
+            manifest_scope,
+        )
+
+    assert "chatham_nc.sources.DS-011 provenance expectations mismatch" in str(
+        exc_info.value,
+    )
+
+
 def test_buncombe_ds023_source_provenance_remains_out_of_scope(
     readiness: dict[str, Any],
 ) -> None:

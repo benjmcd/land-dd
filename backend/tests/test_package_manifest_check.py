@@ -135,6 +135,15 @@ def _make_package(
     return manifest_path
 
 
+def _refresh_zip_hash(manifest_path: Path, zip_path: Path) -> None:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["zip_sha256"] = _sha256(zip_path.read_bytes())
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _expect_manifest_error(
     checker: ModuleType,
     manifest_path: Path,
@@ -181,6 +190,18 @@ def test_package_manifest_checker_rejects_undeclared_zip_entries(tmp_path: Path)
     _expect_manifest_error(checker, manifest_path, tmp_path, "undeclared entries")
 
 
+def test_package_manifest_checker_rejects_duplicate_zip_entries(tmp_path: Path) -> None:
+    checker = _load_checker()
+    manifest_path = _make_package(tmp_path)
+    zip_path = tmp_path / "local_artifacts" / "releases" / "land-diligence-test.zip"
+    with zipfile.ZipFile(zip_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
+        with pytest.warns(UserWarning, match="Duplicate name"):
+            archive.writestr("README.md", b"# package\n")
+    _refresh_zip_hash(manifest_path, zip_path)
+
+    _expect_manifest_error(checker, manifest_path, tmp_path, "duplicate ZIP entries")
+
+
 def test_package_manifest_checker_rejects_excluded_paths(tmp_path: Path) -> None:
     checker = _load_checker()
     manifest_path = _make_package(
@@ -189,6 +210,34 @@ def test_package_manifest_checker_rejects_excluded_paths(tmp_path: Path) -> None
     )
 
     _expect_manifest_error(checker, manifest_path, tmp_path, "outside package boundary")
+
+
+@pytest.mark.parametrize(
+    "secret_path",
+    (
+        "docs/private-key.pem",
+        "docs/service-account.key",
+        "config/prod.yaml",
+    ),
+)
+def test_package_manifest_checker_rejects_common_secret_paths(
+    tmp_path: Path,
+    secret_path: str,
+) -> None:
+    checker = _load_checker()
+    manifest_path = _make_package(tmp_path, files={secret_path: b"secret\n"})
+    if secret_path.startswith("config/"):
+        config_path = tmp_path / "config" / "release_package.yaml"
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        config["include_paths"].append("config")
+        config_path.write_text(yaml.safe_dump(config, sort_keys=True), encoding="utf-8")
+
+    _expect_manifest_error(
+        checker,
+        manifest_path,
+        tmp_path,
+        "forbidden local state or secret path",
+    )
 
 
 def test_package_manifest_checker_rejects_overconfident_limits(tmp_path: Path) -> None:

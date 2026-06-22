@@ -334,7 +334,7 @@ checklists:
             contains: claim.verification_task is not None
       - item_id: test_cases_cover_conflicting_evidence_and_stale_evidence_scenarios
         status: missing_repo_evidence
-        evidence: [backend/tests/claims_engine, backend/tests/reports/test_report_regression.py]
+        evidence: [backend/tests/claims_engine/test_rule_engine.py, backend/tests/reports/test_report_regression.py]
         blocker_authority: [docs/checklists/rulepack_readiness.md]
         next_action: Add candidate/new-intent conflict and stale-evidence fixtures before approval.
       - item_id: applies_to_country_and_applies_to_geography_scope_fields_set_in_ruleset_yaml

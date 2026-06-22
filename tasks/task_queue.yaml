@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-hcv-1-qualification-validator.md
+active_plan: plans/2026-06-21-hcv-2-checker-hardening.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -52,10 +52,14 @@ routing_note: >
   `604f7c2739095d9cc543b675ed3b84e619cda54d`, BAP-001 Bologna authority record
   contract merged through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`,
   BAR-001 merged through PR #140, BSA-REC merged through PR #141, the HCV handoff
-  merged through PR #142, raw UI product fixes merged through PR #143, and the
+  merged through PR #142, raw UI product fixes merged through PR #143, the
   supported-AOI operator-case hardening merged through PR #145 at
-  `816a4dd39d174d0b3689837a489879031e49113d`. Current local lane: HCV-1
-  qualification validator hardening. Bologna implementation is stopped
+  `816a4dd39d174d0b3689837a489879031e49113d`, and HCV-1 qualification validator
+  hardening merged through PR #144 at
+  `79bd89cf0dc441606429ca6ca5d23ba6d7ad32a4`, and fail-closed readiness-parser
+  hardening merged through PR #146 at `b5f6727bd5ab6b9264812e9943a24924eec54b29`.
+  Current local lane: HCV-2 checker robustness and security hardening. Bologna
+  implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -2238,14 +2242,46 @@ tasks:
 
   - id: HCV-2
     title: Checker robustness and security hardening
-    status: queued
+    status: active
     depends_on: [HCV-1]
     lane: coordinator
-    spec: plans/2026-06-21-harden-control-plane.md#hcv-2--checker-robustness--security
+    spec: plans/2026-06-21-hcv-2-checker-hardening.md
     notes: >
       Fix checklist dry-run path/assertion handling, package manifest duplicate/secret
       detection, private-MVP county/provenance bindings, and the Bologna pilot-scope
       PowerShell wrapper exit-code check. Fix-only; no new Bologna scaffolding.
+    files:
+      - plans/2026-06-21-hcv-2-checker-hardening.md
+      - backend/tests/test_checklist_dry_run_artifacts.py
+      - backend/tests/test_package_manifest_check.py
+      - backend/tests/test_private_mvp_readiness.py
+      - backend/tests/test_bologna_pilot_scope_authority_artifacts.py
+      - scripts/checklist_dry_run_check.py
+      - scripts/package_manifest_check.py
+      - scripts/private_mvp_readiness_check.py
+      - scripts/run_bologna_pilot_scope_authority_check.ps1
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 -m pytest -q backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+      - py -3.12 scripts\checklist_dry_run_check.py
+      - py -3.12 scripts\private_mvp_readiness_check.py
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - .\scripts\run_bologna_pilot_scope_authority_check.ps1
+      - py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Checklist dry-run rejects empty assertions and repo-root path escapes while recognizing supported checkbox marker forms
+      - Package manifest validation rejects duplicate ZIP entries and common secret/prod-config path patterns
+      - Private-MVP readiness validates county-specific connector assignments and source-bound provenance expectation classes
+      - Bologna pilot-scope PowerShell wrapper propagates Python validator failures
+      - Committed qualification status remains P0 BLOCKED and non-P0 NOT_RUN
+      - No Bologna scaffolding, DB, API, UI, report semantic, source-rights, source registry, fixture, hosted, DS-017, or Level 10 authority is introduced
 
   - id: HCV-3
     title: Readiness crosswalk CI-gate completeness

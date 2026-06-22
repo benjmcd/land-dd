@@ -234,6 +234,8 @@ def test_bologna_pilot_scope_authority_script_and_wrappers_are_validate_only() -
     for script in (ps1, sh):
         assert "bologna_pilot_scope_authority_check.py" in script
         assert "Bologna pilot scope authority check: ok" in script
+    assert "$LASTEXITCODE" in ps1
+    assert "Bologna pilot scope authority check failed" in ps1
     assert "New-Item" not in ps1
     assert "Remove-Item" not in ps1
     assert "mkdir" not in sh

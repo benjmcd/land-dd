@@ -1,16 +1,16 @@
 # Project State
 
-## Current checkpoint (2026-06-21 HCV-1 qualification validator hardening)
+## Current checkpoint (2026-06-21 HCV-2 checker robustness and security hardening)
 
-Live `origin/main` is `816a4dd39d174d0b3689837a489879031e49113d`, which keeps the
-PR #142 harden-control-plane handoff and includes the later PR #143 and PR #145
-merges. The current lane is HCV-1: harden the
-empirical-qualification validator and result schema against the verified PR #126/#127
-review findings while keeping the empirical-qualification framework honestly
-blocked.
+Live `origin/main` is `b5f6727bd5ab6b9264812e9943a24924eec54b29`, including the
+PR #146 fail-closed readiness-parser hardening merge after the PR #144 HCV-1 merge.
+The current lane is HCV-2: harden checker robustness and security across the checklist
+dry-run validator, release-package manifest validator, private-MVP readiness validator,
+and Bologna pilot-scope PowerShell wrapper while keeping the empirical-qualification
+framework honestly blocked.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-hcv-1-qualification-validator.md`.
+  `plans/2026-06-21-hcv-2-checker-hardening.md`.
 - **Latest repo-local test hardening**:
   `scripts/selftest_qualification_validator.py` now includes fail-closed mutations for
   expired PASS gates, status gate/result `gate_id` mismatch, result scope/version
@@ -20,11 +20,16 @@ blocked.
   coverage, conditional source rights without enforcement controls, and RAW_EXPORT
   without export rights. `schemas/qualification/qualification_result.schema.json`
   requires PASS reviewer metadata with an independent reviewer.
+- **Current HCV-2 checker hardening**: focused tests now cover checklist empty
+  assertions, repo-root path escapes, empty/directory evidence references,
+  unordered/ordered checklist markers, duplicate ZIP entries, common secret/prod-config
+  package paths, selected-county connector swaps, source-bound provenance expectation
+  classes, and Bologna PowerShell `$LASTEXITCODE` propagation.
 - **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
   `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, and
-  `HCV-1` are done in the current routing model. `HCV-2`, `HCV-3`, and `HCV-4` are
-  the next queued harden-control-plane lanes. `BSA-001` remains blocked until
+  `HCV-1` are done in the current routing model. `HCV-2` is active; `HCV-3` and
+  `HCV-4` remain queued harden-control-plane lanes. `BSA-001` remains blocked until
   product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -33,15 +38,16 @@ blocked.
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights authority blocker is external. No new Bologna authority
-  packet, source-rights row, corpus, fixture, DB seed, runtime/report proof, or source
-  registry promotion is introduced by HCV-1.
-- **Immediate next pursuit**: HCV-2 checker robustness/security after HCV-1 merges and
-  post-merge proof passes.
+  product/AOI/source-rights authority blocker is external. HCV-2 is fix-only and
+  introduces no new Bologna authority packet, source-rights row, corpus, fixture, DB
+  seed, runtime/report proof, or source registry promotion.
+- **Immediate next pursuit**: complete HCV-2 with red/green checker tests, focused
+  validators, full verification, PR review/merge, and post-merge proof; then proceed
+  to HCV-3 crosswalk completeness.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,
-  report/API/UI/schema change outside the qualification result schema, auth change,
+  report/API/UI/schema change, auth change,
   report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted
   identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
   new jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation
