@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-bologna-source-authority-record-contract.md
+active_plan: plans/2026-06-21-hcv-1-qualification-validator.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -49,13 +49,15 @@ routing_note: >
   `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`, and EQP2-4 checker advertisement
   parity merged through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, and
   BOL-AUTH-SYNC merged through PR #138 at
-  `604f7c2739095d9cc543b675ed3b84e619cda54d`, and BAP-001 Bologna authority record
-  contract merged through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`.
-  Latest local lane: BSA-REC Bologna source-authority record contract. EQ Phase 2 is
-  complete; the next substantive Bologna pursuit is still the existing BSA-001
-  source-authority intake, but it remains
-  blocked until explicit product/AOI/source-review authority is cited in the
-  pilot-scope/source-authority/source-rights packets. Do not
+  `604f7c2739095d9cc543b675ed3b84e619cda54d`, BAP-001 Bologna authority record
+  contract merged through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`,
+  BAR-001 merged through PR #140, BSA-REC merged through PR #141, the HCV handoff
+  merged through PR #142, raw UI product fixes merged through PR #143, and the
+  supported-AOI operator-case hardening merged through PR #145 at
+  `816a4dd39d174d0b3689837a489879031e49113d`. Current local lane: HCV-1
+  qualification validator hardening. Bologna implementation is stopped
+  while BSA-001 remains blocked until explicit product/AOI/source-review authority is
+  cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2196,10 +2198,80 @@ tasks:
       - BSA-001 remains blocked until cited product/AOI/source-review authority exists
       - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
 
+  - id: HCV-1
+    title: Qualification validator correctness hardening
+    status: done
+    depends_on: [BSA-REC]
+    lane: coordinator
+    spec: plans/2026-06-21-hcv-1-qualification-validator.md
+    notes: >
+      Harden the empirical-qualification validator and qualification result schema
+      against the verified PR #126/#127 findings. This adds fail-closed checks for
+      expired PASS gates, status/result gate mismatch, scope/version identity drift,
+      per-criterion evidence references, frozen domain profile completeness and
+      modality/channel scope, source coverage, conditional rights enforcement,
+      RAW_EXPORT export rights, P0 blocked-record validation with result_path, and
+      PASS reviewer metadata. It does not promote any qualification gate or unblock
+      owner/source/AOI/Bologna/hosted authority.
+    files:
+      - plans/2026-06-21-hcv-1-qualification-validator.md
+      - scripts/validate_qualification.py
+      - scripts/selftest_qualification_validator.py
+      - schemas/qualification/qualification_result.schema.json
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Every HCV-1 finding has a fail-closed selftest or schema regression
+      - The committed qualification status remains P0 BLOCKED and non-P0 NOT_RUN
+      - Bologna implementation remains stopped and BSA-001 remains externally blocked
+      - No DB, API, UI, report semantic, source-rights, source registry, fixture, hosted, DS-017, or Level 10 authority is introduced
+
+  - id: HCV-2
+    title: Checker robustness and security hardening
+    status: queued
+    depends_on: [HCV-1]
+    lane: coordinator
+    spec: plans/2026-06-21-harden-control-plane.md#hcv-2--checker-robustness--security
+    notes: >
+      Fix checklist dry-run path/assertion handling, package manifest duplicate/secret
+      detection, private-MVP county/provenance bindings, and the Bologna pilot-scope
+      PowerShell wrapper exit-code check. Fix-only; no new Bologna scaffolding.
+
+  - id: HCV-3
+    title: Readiness crosswalk CI-gate completeness
+    status: queued
+    depends_on: [HCV-2]
+    lane: coordinator
+    spec: plans/2026-06-21-harden-control-plane.md#hcv-3--crosswalk-completeness-orphaned-ci-gates
+    notes: >
+      Map the orphaned provenance, security-scan, and backup/restore CI gates into the
+      qualification readiness crosswalk and make future unmapped CI gates fail closed.
+
+  - id: HCV-4
+    title: Status derivation and config consistency
+    status: queued
+    depends_on: [HCV-3]
+    lane: coordinator
+    spec: plans/2026-06-21-harden-control-plane.md#hcv-4--status-derivation--config-consistency
+    notes: >
+      Align qualification status derivation with the validator's full P0 blocker set,
+      reconcile DS-002 rights vocabulary with production usage-rights fields, and drop
+      stale active routing entries.
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [BSA-REC]
+    depends_on: [HCV-4]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >

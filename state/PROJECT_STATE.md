@@ -1,6 +1,54 @@
 # Project State
 
-## Current checkpoint (2026-06-21 Bologna source-authority record contract)
+## Current checkpoint (2026-06-21 HCV-1 qualification validator hardening)
+
+Live `origin/main` is `816a4dd39d174d0b3689837a489879031e49113d`, which keeps the
+PR #142 harden-control-plane handoff and includes the later PR #143 and PR #145
+merges. The current lane is HCV-1: harden the
+empirical-qualification validator and result schema against the verified PR #126/#127
+review findings while keeping the empirical-qualification framework honestly
+blocked.
+
+- **Current implementation plan**:
+  `plans/2026-06-21-hcv-1-qualification-validator.md`.
+- **Latest repo-local test hardening**:
+  `scripts/selftest_qualification_validator.py` now includes fail-closed mutations for
+  expired PASS gates, status gate/result `gate_id` mismatch, result scope/version
+  identity mismatch, unresolved per-criterion evidence references, P0 blocked-record
+  validation when `result_path` is present, missing PASS reviewer metadata, frozen
+  domain modality/channel drift, unresolved frozen domain fields, out-of-scope source
+  coverage, conditional source rights without enforcement controls, and RAW_EXPORT
+  without export rights. `schemas/qualification/qualification_result.schema.json`
+  requires PASS reviewer metadata with an independent reviewer.
+- **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
+  `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
+  `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, and
+  `HCV-1` are done in the current routing model. `HCV-2`, `HCV-3`, and `HCV-4` are
+  the next queued harden-control-plane lanes. `BSA-001` remains blocked until
+  product/AOI/source-review authority is cited in
+  `config/bologna_pilot_scope_authority.yaml`,
+  `config/bologna_source_authority_intake.yaml`, and
+  `config/bologna_source_rights.yaml`.
+- **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
+  qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
+  `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
+- **Bologna authority boundary**: Bologna implementation remains stopped because the
+  product/AOI/source-rights authority blocker is external. No new Bologna authority
+  packet, source-rights row, corpus, fixture, DB seed, runtime/report proof, or source
+  registry promotion is introduced by HCV-1.
+- **Immediate next pursuit**: HCV-2 checker robustness/security after HCV-1 merges and
+  post-merge proof passes.
+- **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
+  Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
+  approval, source registry promotion, recorded fixture, connector, DB seed,
+  report/API/UI/schema change outside the qualification result schema, auth change,
+  report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted
+  identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
+  new jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation
+  semantics, multi-geography framework implementation, report semantic overclaim, or
+  Level 10 completion claim.
+
+## Previous checkpoint (2026-06-21 Bologna source-authority record contract)
 
 Live `origin/main` contains the completed EQ Phase 2 control-plane operationalization
 through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, the post-EQP2

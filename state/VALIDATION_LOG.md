@@ -2,6 +2,77 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 HCV-1 Qualification Validator Hardening
+
+**Scope:** Harden the empirical-qualification validator and result schema against the
+verified PR #126/#127 HCV-1 findings. This does not promote any qualification gate to
+`PASS`, unfreeze owner decisions, approve source/AOI/Bologna/DS-017/hosted authority,
+change DB/API/UI/report semantics, create a corpus, capture fixtures, seed the DB, or
+claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m py_compile .\scripts\validate_qualification.py .\scripts\selftest_qualification_validator.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red selftest failed first because current main accepted an expired PASS gate.
+- After implementation, the qualification selftest passed all HCV-1 fail-closed cases:
+  expired PASS, gate mismatch, identity mismatch, broken per-criterion evidence,
+  blocked P0 with result path, missing PASS reviewer metadata, frozen-domain scope and
+  unresolved-field drift, source coverage drift, conditional rights without enforcement,
+  and RAW_EXPORT without export rights.
+- Structural qualification validation passed with `P0` still blocked and readiness
+  warnings preserved.
+- Initial status checking failed because the HCV active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 context; the plan was corrected and
+  the status checker then passed with `passed=27 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused routing artifact tests passed (`7 passed`).
+- Focused ruff passed, `git diff --check` passed, and no tracked deletions were
+  reported.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE` was
+  not set.
+- Initial PR #144 CI failed in `qualification-selftest`, `verify`, and `db-verify`
+  because the P0 blocked-record selftest used a Windows-specific outside-repo path
+  (`C:/outside-repo.md`). The selftest was corrected to use the temporary fixture's
+  parent directory so POSIX and Windows both exercise the same repo-locality failure.
+- After the platform-independent selftest correction,
+  `py -3.12 scripts\selftest_qualification_validator.py` passed again locally.
+- Final local `.\scripts\verify.ps1` passed after the selftest correction. DB smoke was
+  still skipped because `RUN_DB_SMOKE` was not set.
+- PR #144 review then identified six remaining fail-closed gaps. Added selftest cases
+  and validator/schema fixes for repo-local-only PASS evidence, non-string PASS expiry
+  values, independent reproduction metadata, frozen `spatial_temporal_tolerances`,
+  selected-source coverage for every target domain, and conditional commercial-use
+  rights enforcement. `py -3.12 scripts\selftest_qualification_validator.py` passed
+  with those review-response cases included.
+- Focused compile/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed after the review-response fixes, and final local `.\scripts\verify.ps1`
+  passed again. DB smoke was skipped locally because `RUN_DB_SMOKE` was not set.
+- After PR #145 advanced `origin/main` to
+  `816a4dd39d174d0b3689837a489879031e49113d`, HCV-1 was rebased cleanly and focused
+  compile/selftest/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed again with no tracked deletions.
+- Final local `.\scripts\verify.ps1` passed on the PR #145 base. DB smoke was skipped
+  locally because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** HCV-2 through HCV-4 remain queued. HCV-1 hardens the validator and
+schema only; it does not resolve P0 blockers, create qualification results, approve
+Bologna/source/DS-017/hosted authority, or prove Level 10 readiness.
+
 ## 2026-06-21 Bologna Source Authority Record Contract
 
 **Scope:** Add a machine-checked source-authority record contract to the blocked Bologna

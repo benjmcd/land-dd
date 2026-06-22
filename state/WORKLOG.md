@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 HCV-1 qualification validator hardening
+
+- Started clean worktree `worktrees/hcv1`; reconciled the PR #142 HCV handoff, the
+  later PR #143 and PR #145 merges, and the open PR #126/#127 review threads against
+  live `origin/main@816a4dd39d174d0b3689837a489879031e49113d`.
+- Added `plans/2026-06-21-hcv-1-qualification-validator.md` and routed the current
+  control-plane lane to HCV-1, with HCV-2, HCV-3, and HCV-4 queued after it.
+- Extended `scripts/selftest_qualification_validator.py` with fail-closed cases for
+  expired PASS gates, mismatched status/result gates, mismatched result scope/version
+  identity, broken per-criterion evidence references, P0 blocked records with
+  `result_path`, missing PASS reviewer metadata, frozen-domain modality/channel drift,
+  unresolved frozen-domain fields, source coverage drift, conditional rights without
+  enforcement controls, and RAW_EXPORT without export rights.
+- Hardened `scripts/validate_qualification.py` and
+  `schemas/qualification/qualification_result.schema.json` for those cases while
+  preserving the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` status.
+- Addressed PR #144 review findings by requiring repo-local PASS evidence,
+  type-safe PASS expiry validation, independent reproduction metadata, frozen
+  spatial/temporal domain tolerances, aggregate selected-source coverage for every
+  target domain, and conditional commercial-use enforcement.
+- Preserved boundaries: no qualification `PASS`, owner-decision unfreeze,
+  source/AOI/Bologna/DS-017/hosted authority, DB/API/UI/report semantic change, source
+  registry promotion, fixture capture, corpus, DB seed, runtime/report proof, or
+  Level 10 claim is introduced.
+
 ## 2026-06-21 Bologna source-authority record contract
 
 - Started clean worktree `worktrees/bol-sa` on `codex/bol-src-auth-contract` from live
