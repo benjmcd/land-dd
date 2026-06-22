@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -120,6 +121,7 @@ RUNBOOK_PHRASES = (
     "does not approve Italy/EU/local sources",
     "scope_decision_requests",
     "authority_record_contract",
+    "complete-record-only",
     "ready_for_external_authority_evidence",
     "authority_state",
     "decision_updates_allowed",
@@ -145,10 +147,25 @@ def require_non_empty_list(value: Any, message: str) -> list[Any]:
     return value
 
 
+def require_list(value: Any, message: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise SystemExit(message)
+    return value
+
+
 def require_text(value: Any, message: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise SystemExit(message)
     return value.strip()
+
+
+def require_iso_date(value: Any, message: str) -> str:
+    text = require_text(value, message)
+    try:
+        date.fromisoformat(text)
+    except ValueError as exc:
+        raise SystemExit(message) from exc
+    return text
 
 
 def normalize_path(path_text: str) -> str:
@@ -173,6 +190,13 @@ def load_yaml(path_text: str) -> dict[str, Any]:
 
 def list_set(value: Any, message: str) -> set[str]:
     return {str(item) for item in require_non_empty_list(value, message)}
+
+
+def require_text_list(value: Any, message: str, *, allow_empty: bool = False) -> list[str]:
+    items = require_list(value, message)
+    if not allow_empty and not items:
+        raise SystemExit(message)
+    return [require_text(item, message) for item in items]
 
 
 def validate_scope_decision_requests(payload: dict[str, Any]) -> None:
@@ -220,6 +244,79 @@ def validate_scope_decision_requests(payload: dict[str, Any]) -> None:
     )
 
 
+def validate_authority_record(record: dict[str, Any]) -> tuple[str, set[str]]:
+    require(
+        set(record) == EXPECTED_AUTHORITY_RECORD_FIELDS,
+        "authority record fields drifted",
+    )
+    record_id = require_text(
+        record.get("authority_record_id"),
+        "authority record id missing",
+    )
+    authority_type = require_text(
+        record.get("authority_type"),
+        f"{record_id} authority type missing",
+    )
+    require(
+        authority_type in EXPECTED_AUTHORITY_TYPES,
+        f"{record_id} authority type is not allowed",
+    )
+    require_text(record.get("authority_reference"), f"{record_id} authority reference missing")
+    require_text(record.get("decision_owner"), f"{record_id} decision owner missing")
+    require_iso_date(record.get("decision_date"), f"{record_id} decision date must be ISO")
+    require_iso_date(record.get("effective_date"), f"{record_id} effective date must be ISO")
+    scope_decision_ids = list_set(
+        record.get("scope_decision_ids"),
+        f"{record_id} scope decision ids missing",
+    )
+    unknown_decisions = scope_decision_ids - EXPECTED_SCOPE_DECISIONS
+    require(
+        not unknown_decisions,
+        f"{record_id} unknown scope decisions: {sorted(unknown_decisions)}",
+    )
+    require_text(record.get("decision_summary"), f"{record_id} decision summary missing")
+    require_text(record.get("evidence_summary"), f"{record_id} evidence summary missing")
+    require_text_list(record.get("cited_artifacts"), f"{record_id} cited artifacts missing")
+    require(
+        require_list(
+            record.get("downstream_unlocks_requested"),
+            f"{record_id} downstream unlock requests missing",
+        )
+        == [],
+        f"{record_id} must not request downstream unlocks",
+    )
+    require_text_list(record.get("caveats"), f"{record_id} caveats missing")
+    require_text_list(record.get("stop_conditions"), f"{record_id} stop conditions missing")
+    require_text_list(
+        record.get("supersedes_authority_record_ids"),
+        f"{record_id} superseded authority record ids must be text",
+        allow_empty=True,
+    )
+    return record_id, scope_decision_ids
+
+
+def validate_authority_records(contract: dict[str, Any]) -> None:
+    records = require_list(
+        contract.get("current_authority_records"),
+        "authority records must be a list",
+    )
+    if not records:
+        return
+
+    record_ids: set[str] = set()
+    covered_scope_decisions: set[str] = set()
+    for raw_record in records:
+        record = require_mapping(raw_record, "each authority record must be a mapping")
+        record_id, scope_decision_ids = validate_authority_record(record)
+        require(record_id not in record_ids, f"duplicate authority record id: {record_id}")
+        record_ids.add(record_id)
+        covered_scope_decisions.update(scope_decision_ids)
+    require(
+        covered_scope_decisions == EXPECTED_SCOPE_DECISIONS,
+        "authority records must cover all required scope decisions",
+    )
+
+
 def validate_authority_record_contract(payload: dict[str, Any]) -> None:
     contract = require_mapping(
         payload.get("authority_record_contract"),
@@ -228,10 +325,6 @@ def validate_authority_record_contract(payload: dict[str, Any]) -> None:
     require(
         contract.get("contract_state") == "ready_for_external_authority_evidence",
         "authority record contract state changed",
-    )
-    require(
-        contract.get("current_authority_records") == [],
-        "authority records must remain empty until cited authority exists",
     )
     require(
         list_set(contract.get("required_record_fields"), "authority record fields missing")
@@ -269,6 +362,7 @@ def validate_authority_record_contract(payload: dict[str, Any]) -> None:
     )
     for control_id, enabled in controls.items():
         require(enabled is True, f"{control_id} no-overclaim control disabled")
+    validate_authority_records(contract)
 
 
 def validate_required_files() -> None:
