@@ -123,7 +123,9 @@ def test_ui_source_provenance_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise SourceProvenanceError("test source provenance failure")
+        raise SourceProvenanceError(
+            "LEAK_SENTINEL drift at /workspace/registers/data_source_registry.csv field Domain"
+        )
 
     monkeypatch.setattr(ui_module, "load_source_provenance", _raise_loader)
     client = TestClient(create_app())
@@ -131,8 +133,10 @@ def test_ui_source_provenance_route_returns_503_when_loader_fails(
     response = client.get("/ui/source-provenance")
 
     assert response.status_code == 503
-    assert "Source provenance unavailable from repo-owned artifacts" in response.text
-    assert "test source provenance failure" in response.text
+    assert "Source provenance could not be verified from repo-owned artifacts" in response.text
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 

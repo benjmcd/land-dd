@@ -2088,10 +2088,11 @@ def _supported_aoi_fixture_markup(
 def ui_source_provenance() -> str | HTMLResponse:
     try:
         readiness = load_source_provenance()
-    except SourceProvenanceError as exc:
+    except SourceProvenanceError:
         return error_page(
             "Source Provenance Unavailable",
-            f"Source provenance unavailable from repo-owned artifacts: {exc}",
+            "Source provenance could not be verified from repo-owned artifacts. "
+            "Review the source registry and readiness catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2107,10 +2108,11 @@ def ui_source_provenance() -> str | HTMLResponse:
 def ui_security_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_security_guardrails()
-    except SecurityGuardrailsError as exc:
+    except SecurityGuardrailsError:
         return error_page(
             "Security Guardrails Unavailable",
-            f"Security guardrails unavailable from repo-owned artifacts: {exc}",
+            "Security guardrails could not be verified from repo-owned artifacts. "
+            "Review the access-control catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2126,10 +2128,11 @@ def ui_security_guardrails() -> str | HTMLResponse:
 def ui_operations_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_operations_guardrails()
-    except OperationsGuardrailsError as exc:
+    except OperationsGuardrailsError:
         return error_page(
             "Operations Guardrails Unavailable",
-            f"Operations guardrails unavailable from repo-owned artifacts: {exc}",
+            "Operations guardrails could not be verified from repo-owned artifacts. "
+            "Review the alerting, retention, and cost catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
