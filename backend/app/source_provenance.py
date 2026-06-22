@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pydantic import ValidationError as _PydanticValidationError
 
 from app.domain.source_contracts import SourceContract
 from app.source_registry.readiness import SourceReadinessRecord, build_readiness_records
@@ -114,10 +115,16 @@ def parse_source_provenance(
         EXPECTED_SCHEMA,
         "private MVP readiness schema_version",
     )
-    readiness_records = build_readiness_records(
-        [_row_to_source(row) for row in registry_rows if row.get("MVP Priority") == "Must"],
-        as_of=as_of,
-    )
+    # SP-1: wrap row conversion + build to surface column/schema errors as fail-closed error
+    try:
+        readiness_records = build_readiness_records(
+            [_row_to_source(row) for row in registry_rows if row.get("MVP Priority") == "Must"],
+            as_of=as_of,
+        )
+    except (KeyError, ValueError, TypeError, _PydanticValidationError) as exc:
+        raise SourceProvenanceError(
+            f"registry row conversion failed (catalog drift or dropped column): {exc}"
+        ) from exc
     record_by_source_id = {record.source_registry_id: record for record in readiness_records}
     ds017 = _ds017_blocker(record_by_source_id)
     must_blocked = tuple(

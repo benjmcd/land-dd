@@ -43,6 +43,31 @@ REQUIRED_ROUTE_SCOPES = {
     "report:approve",
     "source:manage",
 }
+REQUIRED_ROLE_IDS = {
+    "operator",
+    "platform_admin",
+    "read_only",
+    "reviewer",
+    "workspace_admin",
+}
+REQUIRED_ROUTE_SCOPE_MAPPING_IDS = {
+    "approved_connector_report_runs",
+    "connector_review_decisions",
+    "fixture_connector_runs",
+    "live_connector_job_reads",
+    "live_connector_runs",
+    "operations_api_reads",
+    "report_approval",
+    "report_retry",
+    "selected_county_report_runs",
+    "source_registry_mutation",
+    "ui_connector_resume_report",
+    "ui_connector_review_decisions",
+    "ui_operations_reads",
+    "ui_report_approval",
+    "ui_report_retry",
+    "ui_selected_county_report_runs",
+}
 
 
 class SecurityGuardrailsError(RuntimeError):
@@ -186,6 +211,55 @@ def parse_security_guardrails(
         "identity role mappings missing",
     )
 
+    # SG-1: validate required role ids and each role's scope set
+    missing_roles = REQUIRED_ROLE_IDS - set(str(k) for k in role_mappings)
+    if missing_roles:
+        raise SecurityGuardrailsError(
+            f"identity role mappings missing required roles: {sorted(missing_roles)}"
+        )
+    for role_id in REQUIRED_ROLE_IDS:
+        role_entry = _require_mapping(
+            role_mappings.get(role_id),
+            f"identity role mapping for {role_id} must be a mapping",
+        )
+        scopes_raw = role_entry.get("scopes")
+        if not isinstance(scopes_raw, list) or not scopes_raw:
+            raise SecurityGuardrailsError(
+                f"identity role {role_id} scopes missing or empty"
+            )
+        role_scopes = {str(s) for s in scopes_raw}
+        unknown = role_scopes - REQUIRED_ROUTE_SCOPES
+        if unknown:
+            raise SecurityGuardrailsError(
+                f"identity role {role_id} has unknown scopes: {sorted(unknown)}"
+            )
+
+    # SG-3: validate required mapping ids at the id level (not just route_scope coverage)
+    route_scope_mappings_raw = _require_list(
+        identity_contract.get("route_scope_mappings"),
+        "route scope mappings missing",
+    )
+    actual_mapping_ids = set()
+    for item in route_scope_mappings_raw:
+        payload = _require_mapping(item, "route scope mapping must be a mapping")
+        mapping_id = _require_text(payload.get("id"), "route scope mapping id missing")
+        actual_mapping_ids.add(mapping_id)
+    missing_mapping_ids = REQUIRED_ROUTE_SCOPE_MAPPING_IDS - actual_mapping_ids
+    if missing_mapping_ids:
+        raise SecurityGuardrailsError(
+            f"route scope mapping ids missing: {sorted(missing_mapping_ids)}"
+        )
+
+    # SG-4: validate_only_catalog must be True in both contracts
+    if secret_limits.get("validate_only_catalog") is not True:
+        raise SecurityGuardrailsError(
+            "secret_management_contract.limits.validate_only_catalog must be True"
+        )
+    if identity_limits.get("validate_only_catalog") is not True:
+        raise SecurityGuardrailsError(
+            "identity_rbac_contract.limits.validate_only_catalog must be True"
+        )
+
     return SecurityGuardrailsReadiness(
         schema_version=schema_version,
         operator_runbook=operator_runbook,
@@ -283,7 +357,14 @@ def _runtime_ref_ids(value: Any) -> tuple[str, ...]:
     refs = []
     for item in _require_list(value, "runtime refs missing"):
         payload = _require_mapping(item, "runtime ref must be a mapping")
-        refs.append(_require_text(payload.get("id"), "runtime ref id missing"))
+        ref_id = _require_text(payload.get("id"), "runtime ref id missing")
+        # SG-2: each ref must carry non-empty required_when, format, rotation
+        for field in ("required_when", "format", "rotation"):
+            _require_text(
+                payload.get(field),
+                f"runtime ref {ref_id} missing or empty field: {field}",
+            )
+        refs.append(ref_id)
     return tuple(sorted(refs))
 
 
