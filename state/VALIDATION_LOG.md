@@ -45,6 +45,14 @@ git diff --name-only --diff-filter=D
   reported.
 - Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE` was
   not set.
+- Initial PR #144 CI failed in `qualification-selftest`, `verify`, and `db-verify`
+  because the P0 blocked-record selftest used a Windows-specific outside-repo path
+  (`C:/outside-repo.md`). The selftest was corrected to use the temporary fixture's
+  parent directory so POSIX and Windows both exercise the same repo-locality failure.
+- After the platform-independent selftest correction,
+  `py -3.12 scripts\selftest_qualification_validator.py` passed again locally.
+- Final local `.\scripts\verify.ps1` passed after the selftest correction. DB smoke was
+  still skipped because `RUN_DB_SMOKE` was not set.
 
 **Residual risk:** HCV-2 through HCV-4 remain queued. HCV-1 hardens the validator and
 schema only; it does not resolve P0 blockers, create qualification results, approve

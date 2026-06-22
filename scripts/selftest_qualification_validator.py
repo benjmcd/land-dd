@@ -735,7 +735,7 @@ def main() -> int:
             value["qualifications"]["p0"]["status"] = "BLOCKED"
             value["qualifications"]["p0"]["result_path"] = "p0-blocked-result.json"
             value["qualifications"]["p0"]["blocker_references"] = [
-                "C:/outside-repo.md"
+                str(blocked_with_result.parent / "outside-repo.md")
             ]
 
         mutate_yaml(
