@@ -81,6 +81,25 @@ BLOCKED_OR_DISABLED_COST_STATUSES = {
     "disabled_until_metered",
     "blocked_until_reviewed",
 }
+# These two sets pin the fail-closed UI parser STRICTER than the CI gate checkers
+# (data_retention_check.py / cost_monitoring_check.py only require presence + blocked
+# status, not specific ids). That is intentional: this page must refuse to render
+# "checked" proof if a required blocker disappears or a paid/unmetered cost category
+# silently unblocks. A deliberate owner unblock (e.g. `llm` -> monitored after metering
+# lands) must update both the catalog AND these constants; the
+# `*_constant_matches_catalog` tripwire tests turn any divergence into a loud failure.
+# Follow-up (non-blocking): promote these sets into the CI gate checkers so catalog,
+# parser, and gate become co-authoritative.
+REQUIRED_RETENTION_BLOCKER_IDS = {
+    "automated_deletion",
+    "hosted_log_retention",
+}
+MUST_BE_BLOCKED_COST_CATEGORY_IDS = {
+    "llm",
+    "maps",
+    "geocoding",
+    "data_vendors",
+}
 REQUIRED_STATIC_FILES = (
     EXPECTED_ALERTING_RUNBOOK,
     EXPECTED_INCIDENT_RUNBOOK,
@@ -407,6 +426,13 @@ def _parse_retention_catalog(
             raise OperationsGuardrailsError("retention blocker must remain blocked")
         blocker_ids.append(blocker_id)
 
+    # OG-1: assert required specific blocker ids are present
+    missing_blocker_ids = REQUIRED_RETENTION_BLOCKER_IDS - set(blocker_ids)
+    if missing_blocker_ids:
+        raise OperationsGuardrailsError(
+            f"required retention blocker ids missing: {sorted(missing_blocker_ids)}"
+        )
+
     return {
         "schema_version": schema,
         "classes": tuple(sorted(classes, key=lambda item: item.class_id)),
@@ -453,6 +479,13 @@ def _parse_cost_catalog(payload: dict[str, Any], root: Path) -> dict[str, Any]:
         category = _require_mapping(item, "cost category must be a mapping")
         category_id = _require_text(category.get("id"), "cost category id missing")
         status = _require_text(category.get("status"), f"{category_id} status missing")
+        # OG-2: certain categories must remain in a blocked/disabled status
+        if category_id in MUST_BE_BLOCKED_COST_CATEGORY_IDS:
+            if status not in BLOCKED_OR_DISABLED_COST_STATUSES:
+                raise OperationsGuardrailsError(
+                    f"cost category {category_id} must remain blocked or disabled"
+                    f" (current status: {status!r})"
+                )
         source_paths = _require_text_tuple(
             category.get("source_of_truth"),
             f"{category_id} source_of_truth missing",
