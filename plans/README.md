@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-post-eqp2-bologna-authority-sync.md`.
+Latest completed plan: `2026-06-21-bologna-authority-record-contract.md`.
 
-Current routing plan: `2026-06-21-bologna-authority-record-contract.md`.
+Current routing plan: `2026-06-21-bologna-authority-record-validation.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -64,7 +64,7 @@ keeping all authority references empty and downstream source/corpus updates disa
 `BPS-001` merged through PR #121 at
 `df96c21f9445fc5cb915d2b06ec0b2eb6c731f2f`.
 
-`BPS-REQ-001` is the current Bologna pursuit. It adds structured
+`BPS-REQ-001` added structured
 `scope_decision_requests` rows inside the existing pilot-scope authority packet so the
 missing external evidence is actionable without approving a source, selecting an AOI,
 capturing fixtures, changing source rights, or starting runtime work.
@@ -157,13 +157,22 @@ source-rights packets. This sync does not approve sources, select an AOI, change
 source rights, create a corpus, capture fixtures, seed the DB, prove a report, approve
 DS-017, unfreeze owner decisions, or claim hosted/Level 10 authority.
 
-`BAP-001` is the current authority-first slice. It adds a machine-checked
+`BAP-001` added a machine-checked
 `authority_record_contract` to `config/bologna_pilot_scope_authority.yaml` so future
 product/AOI/scope authority can be recorded with required fields, full scope-decision
-coverage, and no-overclaim controls. `current_authority_records` remains empty, and
-this does not approve sources, select an AOI, change source rights, create a corpus,
-capture fixtures, seed the DB, prove a report, approve DS-017, unfreeze owner
+coverage, and no-overclaim controls. It merged through PR #139 at
+`d356cfdf20ead6ee11573cfffc502d7c21769012`. `current_authority_records` remains
+empty, and this does not approve sources, select an AOI, change source rights, create a
+corpus, capture fixtures, seed the DB, prove a report, approve DS-017, unfreeze owner
 decisions, or claim hosted/Level 10 authority.
+
+`BAR-001` is the current authority-first slice. It extends the pilot-scope authority
+checker so a complete future authority record shape can be validated in test isolation
+while partial records and records requesting downstream unlocks fail closed. The
+committed `current_authority_records` list remains empty; this does not approve
+sources, select an AOI, change source rights, create a corpus, capture fixtures, seed
+the DB, prove a report, approve DS-017, unfreeze owner decisions, or claim
+hosted/Level 10 authority.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

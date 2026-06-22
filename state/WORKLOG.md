@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 Bologna authority record validation
+
+- Started clean worktree `worktrees/bol-rec` on `codex/bol-record-gate` from live
+  `origin/main` at `d356cfdf20ead6ee11573cfffc502d7c21769012` after PR #139 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-authority-record-validation.md` for the next
+  authority-first Bologna slice.
+- Extended `scripts/bologna_pilot_scope_authority_check.py` so
+  `authority_record_contract.current_authority_records` can be validated when a future
+  complete authority record is provided in test isolation. The validator now checks
+  exact record fields, allowed authority type, ISO decision/effective dates, cited
+  artifacts, caveats, stop conditions, complete first-gate coverage, duplicate record
+  IDs, and no downstream unlock requests.
+- Added pilot-scope authority tests proving a complete hypothetical authority record
+  shape passes, partial records fail closed, downstream-unlock requests fail closed,
+  and the committed authority-record list remains empty.
+- Preserved boundaries: `current_authority_records` remains empty, `BSA-001` remains
+  blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
 ## 2026-06-21 Bologna authority record contract
 
 - Started clean worktree `worktrees/bol-auth` on `codex/bol-auth-packet` from live

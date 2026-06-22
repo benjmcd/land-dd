@@ -39,7 +39,10 @@ authority has been granted. It defines required record fields such as
 `supersedes_authority_record_ids`.
 
 The contract is ready for external evidence, but `current_authority_records` remains
-empty. A pilot-scope authority record must cover all required scope decisions before
+empty in the committed packet. The checker uses a complete-record-only policy for any
+future non-empty record list: together, the records must cover all required scope
+decisions, cite artifacts, carry caveats and stop conditions, and request no downstream
+unlocks. A pilot-scope authority record must cover all required scope decisions before
 any decision update is allowed. The record itself must not approve sources, change
 source rights, authorize fixture capture, authorize report/runtime use, seed the
 database, assert legal/title/buildability/value conclusions, or claim hosted/Level 10

@@ -35,6 +35,31 @@ def _catalog() -> dict[str, Any]:
     return cast(dict[str, Any], catalog)
 
 
+def _complete_authority_record(validator: Any) -> dict[str, Any]:
+    return {
+        "authority_record_id": "hypothetical-bologna-scope-record",
+        "authority_type": "product_decision",
+        "authority_reference": "external-authority://bologna-pilot-scope-decision",
+        "decision_owner": "product-owner-or-decision-forum",
+        "decision_date": "2026-06-21",
+        "effective_date": "2026-06-21",
+        "scope_decision_ids": sorted(validator.EXPECTED_SCOPE_DECISIONS),
+        "decision_summary": "Hypothetical complete first-gate Bologna scope authority.",
+        "evidence_summary": "All required first-gate decisions are cited together.",
+        "cited_artifacts": [
+            "external-authority://bologna-pilot-scope-decision",
+        ],
+        "downstream_unlocks_requested": [],
+        "caveats": [
+            "Test-only record shape; not committed authority.",
+        ],
+        "stop_conditions": [
+            "Stop if cited external authority is absent or superseded.",
+        ],
+        "supersedes_authority_record_ids": [],
+    }
+
+
 def test_bologna_pilot_scope_authority_is_validate_only_and_blocked() -> None:
     validator = cast(Any, _load_validator())
     catalog = _catalog()
@@ -90,6 +115,38 @@ def test_bologna_pilot_scope_authority_record_contract_is_present_and_blocked() 
     assert contract["coverage_policy"] == "all_required_scope_decisions"
     assert contract["decision_update_policy"] == "disabled_until_complete_cited_record"
     assert all(value is True for value in contract["no_overclaim_controls"].values())
+
+
+def test_bologna_pilot_scope_authority_record_validator_accepts_complete_record_shape() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    catalog["authority_record_contract"]["current_authority_records"] = [
+        _complete_authority_record(validator),
+    ]
+
+    validator.validate_authority_record_contract(catalog)
+
+
+def test_bologna_pilot_scope_authority_record_validator_fails_on_partial_record() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    record = _complete_authority_record(validator)
+    del record["authority_reference"]
+    catalog["authority_record_contract"]["current_authority_records"] = [record]
+
+    with pytest.raises(SystemExit, match="authority record fields drifted"):
+        validator.validate_authority_record_contract(catalog)
+
+
+def test_bologna_pilot_scope_authority_record_validator_fails_on_downstream_unlock() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    record = _complete_authority_record(validator)
+    record["downstream_unlocks_requested"] = ["bologna_source_authority_intake"]
+    catalog["authority_record_contract"]["current_authority_records"] = [record]
+
+    with pytest.raises(SystemExit, match="must not request downstream unlocks"):
+        validator.validate_authority_record_contract(catalog)
 
 
 def test_bologna_pilot_scope_authority_record_contract_fails_if_coverage_drifts(
