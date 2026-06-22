@@ -7,7 +7,7 @@ Happy-path is covered by a single test that uses the real catalog.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import yaml
@@ -25,7 +25,7 @@ CATALOG_PATH = REPO_ROOT / "config" / "access_control.yaml"
 
 
 def _load_catalog() -> dict[str, Any]:
-    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8")))
 
 
 # ---------------------------------------------------------------------------

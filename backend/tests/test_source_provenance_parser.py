@@ -6,7 +6,7 @@ SourceProvenanceError (fail-closed 503) rather than an unhandled 500.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -20,7 +20,7 @@ REGISTRY_PATH = REPO_ROOT / "registers" / "data_source_registry.csv"
 
 
 def _load_catalog() -> dict[str, Any]:
-    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8")))
 
 
 def _load_registry_rows() -> list[dict[str, str]]:

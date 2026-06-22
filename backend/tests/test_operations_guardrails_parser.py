@@ -7,7 +7,7 @@ Happy-path is covered by a single test that uses the real catalogs.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import yaml
@@ -23,21 +23,21 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load_alert_catalog() -> dict[str, Any]:
-    return yaml.safe_load(
+    return cast(dict[str, Any], yaml.safe_load(
         (REPO_ROOT / "config" / "ops_alert_rules.yaml").read_text(encoding="utf-8")
-    )
+    ))
 
 
 def _load_retention_catalog() -> dict[str, Any]:
-    return yaml.safe_load(
+    return cast(dict[str, Any], yaml.safe_load(
         (REPO_ROOT / "config" / "data_retention.yaml").read_text(encoding="utf-8")
-    )
+    ))
 
 
 def _load_cost_catalog() -> dict[str, Any]:
-    return yaml.safe_load(
+    return cast(dict[str, Any], yaml.safe_load(
         (REPO_ROOT / "config" / "ops_cost_monitoring.yaml").read_text(encoding="utf-8")
-    )
+    ))
 
 
 # ---------------------------------------------------------------------------
