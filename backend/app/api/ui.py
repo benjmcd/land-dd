@@ -2088,10 +2088,11 @@ def _supported_aoi_fixture_markup(
 def ui_source_provenance() -> str | HTMLResponse:
     try:
         readiness = load_source_provenance()
-    except SourceProvenanceError as exc:
+    except SourceProvenanceError:
         return error_page(
             "Source Provenance Unavailable",
-            f"Source provenance unavailable from repo-owned artifacts: {exc}",
+            "Source provenance could not be verified from repo-owned artifacts. "
+            "Review the source registry and readiness catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2107,10 +2108,11 @@ def ui_source_provenance() -> str | HTMLResponse:
 def ui_security_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_security_guardrails()
-    except SecurityGuardrailsError as exc:
+    except SecurityGuardrailsError:
         return error_page(
             "Security Guardrails Unavailable",
-            f"Security guardrails unavailable from repo-owned artifacts: {exc}",
+            "Security guardrails could not be verified from repo-owned artifacts. "
+            "Review the access-control catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2126,10 +2128,11 @@ def ui_security_guardrails() -> str | HTMLResponse:
 def ui_operations_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_operations_guardrails()
-    except OperationsGuardrailsError as exc:
+    except OperationsGuardrailsError:
         return error_page(
             "Operations Guardrails Unavailable",
-            f"Operations guardrails unavailable from repo-owned artifacts: {exc}",
+            "Operations guardrails could not be verified from repo-owned artifacts. "
+            "Review the alerting, retention, and cost catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2145,10 +2148,11 @@ def ui_operations_guardrails() -> str | HTMLResponse:
 def ui_performance_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_performance_guardrails()
-    except PerformanceGuardrailsError as exc:
+    except PerformanceGuardrailsError:
         return error_page(
             "Performance Guardrails Unavailable",
-            f"Performance guardrails unavailable from repo-owned artifacts: {exc}",
+            "Performance guardrails could not be verified from repo-owned artifacts. "
+            "Review the performance baseline and review catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2164,10 +2168,11 @@ def ui_performance_guardrails() -> str | HTMLResponse:
 def ui_observability_readiness() -> str | HTMLResponse:
     try:
         readiness = load_observability_readiness()
-    except ObservabilityReadinessError as exc:
+    except ObservabilityReadinessError:
         return error_page(
             "Observability Readiness Unavailable",
-            f"Observability readiness unavailable from repo-owned artifacts: {exc}",
+            "Observability readiness could not be verified from repo-owned artifacts. "
+            "Review the alerting and dashboard catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2183,13 +2188,11 @@ def ui_observability_readiness() -> str | HTMLResponse:
 def ui_deployment_readiness() -> str | HTMLResponse:
     try:
         readiness = load_deployment_readiness()
-    except DeploymentReadinessError as exc:
+    except DeploymentReadinessError:
         return error_page(
             "Deployment Readiness Unavailable",
-            (
-                "Deployment readiness unavailable from repo-owned deployment-path "
-                f"artifacts: {exc}"
-            ),
+            "Deployment readiness could not be verified from repo-owned deployment-path "
+            "artifacts. Review the image, runtime, and attestation catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,

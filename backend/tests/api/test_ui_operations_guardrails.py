@@ -162,7 +162,9 @@ def test_ui_operations_guardrails_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise OperationsGuardrailsError("test operations guardrails failure")
+        raise OperationsGuardrailsError(
+            "LEAK_SENTINEL drift at /workspace/config/data_retention.yaml field retention_blockers"
+        )
 
     monkeypatch.setattr(ui_module, "load_operations_guardrails", _raise_loader)
     client = TestClient(create_app())
@@ -170,8 +172,10 @@ def test_ui_operations_guardrails_route_returns_503_when_loader_fails(
     response = client.get("/ui/operations-guardrails")
 
     assert response.status_code == 503
-    assert "Operations guardrails unavailable from repo-owned artifacts" in response.text
-    assert "test operations guardrails failure" in response.text
+    assert "Operations guardrails could not be verified from repo-owned artifacts" in response.text
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 
