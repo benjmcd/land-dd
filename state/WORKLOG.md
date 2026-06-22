@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-22 HCV-4 status/config consistency
+
+- Started clean worktree `worktrees/hcv4` on `codex/hcv4-status-config` from live
+  `origin/main@d9e16db` after HCV-3 merged through PR #148 and detached post-merge
+  proof passed.
+- Read the agent inbox, current worktree list, active goal, HCV-4 plan, status checker,
+  structural validator, DS-002 source-quality profile, source-rights schema, production
+  usage-rights helper, task queue, project state, plan index, and focused tests.
+- Baseline focused qualification/status/routing tests, structural validation,
+  qualification status checking, and qualification selftest passed before HCV-4 red
+  tests were added.
+- Added red coverage for P0 remaining `BLOCKED` when target/candidate identity is
+  locally resolved but non-target parameterization blockers remain, DS-002 using
+  production usage-rights vocabulary instead of `CONDITIONAL`, and routing from
+  completed HCV-3 to active HCV-4.
+- Implemented HCV-4 status derivation across unresolved targets/candidate identity,
+  domain/source profile blockers, scope/version fields, ruleset versions, target
+  bindings, criterion contracts, and judgment rubrics; updated DS-002 rights to
+  production vocabulary while preserving condition enforcement; and routed current
+  state to active HCV-4.
+- Focused backend tests, direct qualification status/structural validators,
+  readiness-matrix checking, qualification selftest, focused ruff/mypy, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-21 HCV-3 crosswalk CI gate completeness
 
 - Started clean worktree `worktrees/hcv3` on `codex/hcv3-crosswalk-gates` from live

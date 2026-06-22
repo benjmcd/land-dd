@@ -320,6 +320,42 @@ def main() -> int:
             "qualifications.p0 expected BLOCKED but found NOT_RUN",
         )
 
+        non_target_parameterization_drift = temp_root / "non-target-parameterization-drift"
+        copy_fixture(source, non_target_parameterization_drift)
+
+        def resolve_target_and_candidate(value):
+            value["status"] = "FROZEN"
+            value["frozen_at"] = "2026-06-22T00:00:00Z"
+            value["approved_by"] = ["test-owner"]
+
+        def drift_p0_not_run_with_candidate(value):
+            value["qualifications"]["p0"]["status"] = "NOT_RUN"
+            value["candidate"].update(
+                {
+                    "commit": "0" * 40,
+                    "artifact_digest": "sha256:" + "1" * 64,
+                    "protocol_version": "qualification_protocol_v3",
+                    "targets_version": "0.1.0-test",
+                    "vocabulary_version": "qualification_vocabulary_v3",
+                    "criteria_catalog_digest": "sha256:" + "2" * 64,
+                }
+            )
+
+        mutate_yaml(
+            control_paths(non_target_parameterization_drift)["targets"],
+            resolve_target_and_candidate,
+        )
+        mutate_yaml(
+            control_paths(non_target_parameterization_drift)["status"],
+            drift_p0_not_run_with_candidate,
+        )
+        assert_result(
+            "P0 remains blocked with non-target parameterization unresolved",
+            run_status_checker(status_checker, non_target_parameterization_drift),
+            False,
+            "qualifications.p0 expected BLOCKED but found NOT_RUN",
+        )
+
         blocked_without_refs = temp_root / "blocked-without-refs"
         copy_fixture(source, blocked_without_refs)
 

@@ -1,40 +1,32 @@
 # Project State
 
-## Current checkpoint (2026-06-21 HCV-3 crosswalk CI gate completeness)
+## Current checkpoint (2026-06-22 HCV-4 status/config consistency)
 
-Live `origin/main` is `e124db6ce002d472ad800dac6ac4af1633c746b4`, including PR #149
-guardrail error-redaction hardening on top of PR #147 HCV-2 checker hardening. The
-current lane is HCV-3: map readiness/release CI wrapper gates into the
-empirical-qualification readiness crosswalk and make future unmapped CI gate wrappers
-fail closed while keeping the empirical-qualification framework honestly blocked.
+Live `origin/main` is `d9e16db199dee185bc05602112df010d40b4c711`, including PR #148
+HCV-3 readiness crosswalk CI-gate completeness after PR #149 guardrail error-redaction
+hardening. The current lane is HCV-4: align derived qualification status with the
+validator's full P0 blocker set, reconcile the DS-002 source-quality profile rights
+vocabulary with production usage fields, and move current routing from completed HCV-3
+to active HCV-4.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-hcv-3-crosswalk-ci-gates.md`.
+  `plans/2026-06-22-hcv-4-status-config-consistency.md`.
 - **Latest repo-local test hardening**:
-  `scripts/selftest_qualification_validator.py` now includes fail-closed mutations for
-  expired PASS gates, status gate/result `gate_id` mismatch, result scope/version
-  identity mismatch, unresolved per-criterion evidence references, P0 blocked-record
-  validation when `result_path` is present, missing PASS reviewer metadata, frozen
-  domain modality/channel drift, unresolved frozen domain fields, out-of-scope source
-  coverage, conditional source rights without enforcement controls, and RAW_EXPORT
-  without export rights. `schemas/qualification/qualification_result.schema.json`
-  requires PASS reviewer metadata with an independent reviewer.
-- **Current HCV-2 checker hardening**: focused tests now cover checklist empty
-  assertions, repo-root path escapes, empty/directory evidence references,
-  unordered/ordered checklist markers, duplicate ZIP entries, common secret/prod-config
-  package paths, selected-county connector swaps, source-bound provenance expectation
-  classes, and Bologna PowerShell `$LASTEXITCODE` propagation.
-- **Current HCV-3 crosswalk hardening**: map CI/release wrapper gate paths separately
-  from Python checker paths so shell/PowerShell wrappers are not treated as
-  advertisement-capable checkers. The target orphaned gates are dependency provenance,
-  security scan, backup/restore, and the release-readiness proof-wrapper inventory, with
-  future CI or release proof wrapper additions failing closed if unmapped.
+  `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
+  candidate identity are locally resolved but domain profiles, source bindings,
+  scope/version fields, ruleset versions, target bindings, criterion contracts, or
+  judgment rubrics remain unresolved. `scripts/selftest_qualification_validator.py`
+  includes the same fail-closed mutation.
+- **Current config consistency hardening**: DS-002 keeps `status: APPROVED`, but its
+  rights values now use production source-registry vocabulary
+  (`restricted` / `approved-with-restrictions`) while preserving enforced
+  rights-condition controls. The schema and validator still treat restricted rights as
+  condition-bearing.
 - **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
-  `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, and
-  `HCV-1` and `HCV-2` are done in the current routing model. `HCV-3` is active;
-  `HCV-4` remains queued. `BSA-001` remains blocked until
-  product/AOI/source-review authority is cited in
+  `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`,
+  `HCV-2`, and `HCV-3` are done in the current routing model. `HCV-4` is active.
+  `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
   `config/bologna_source_rights.yaml`.
@@ -42,16 +34,18 @@ fail closed while keeping the empirical-qualification framework honestly blocked
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights authority blocker is external. HCV-3 is fix-only and
-  introduces no new Bologna authority packet, source-rights row, corpus, fixture, DB
-  seed, runtime/report proof, or source registry promotion.
-- **Immediate next pursuit**: complete HCV-3 with red/green crosswalk gate-path tests,
+  product/AOI/source-rights authority blocker is external. HCV-4 is fix-only and
+  introduces no owner freeze, Bologna authority packet, source-rights approval beyond
+  the existing DS-002 profile, corpus, fixture, DB seed, runtime/report proof, or
+  source registry promotion.
+- **Immediate next pursuit**: complete HCV-4 with red/green status/config/routing tests,
   validator/selftest updates, focused/full verification, PR review/merge, and
-  post-merge proof; then proceed to HCV-4 status/config consistency.
-- **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
-  Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
-  approval, source registry promotion, recorded fixture, connector, DB seed,
-  report/API/UI/schema change, auth change,
+  post-merge proof. After HCV-4 is merged, start the owner-authorized qualification
+  parameterization freeze cascade from the agent inbox.
+- **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze in
+  HCV-4, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
+  source approval beyond DS-002's existing profile, source registry promotion,
+  recorded fixture, connector, DB seed, report/API/UI/schema change, auth change,
   report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted
   identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,
   new jurisdiction, EU/Italy rulepack, production traffic proof, ranking/recommendation

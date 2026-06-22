@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-21-hcv-3-crosswalk-ci-gates.md"
+        == "plans/2026-06-22-hcv-4-status-config-consistency.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -72,6 +72,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BSA-REC" in readiness.checkpoint.completed_task_ids
     assert "HCV-1" in readiness.checkpoint.completed_task_ids
     assert "HCV-2" in readiness.checkpoint.completed_task_ids
+    assert "HCV-3" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -101,6 +102,12 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert any(task.task_id == "BSA-REC" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "HCV-1" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "HCV-2" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-3" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-4" for task in readiness.task_queue.active_tasks)
+    assert not any(
+        task.task_id in {"REC-001", "BPS-001"}
+        for task in readiness.task_queue.active_tasks
+    )
     assert readiness.gate_matrix.status_counts["BLOCKED"] >= 1
     assert "L10-SEC-010" in readiness.gate_matrix.blocked_gate_ids
     assert any("verify.ps1" in command for command in readiness.validation.commands)

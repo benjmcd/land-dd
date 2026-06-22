@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
+active_plan: plans/2026-06-22-hcv-4-status-config-consistency.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -61,8 +61,10 @@ routing_note: >
   HCV-2 checker robustness and security hardening merged through PR #147 at
   `ba75f4729bcece9e29003938aef7c1038dc605ea`, and guardrail error-redaction
   hardening merged through PR #149 at
-  `e124db6ce002d472ad800dac6ac4af1633c746b4`. Current local lane: HCV-3 readiness
-  crosswalk CI-gate completeness. Bologna
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`, and HCV-3 readiness crosswalk
+  CI-gate completeness merged through PR #148 at
+  `d9e16db199dee185bc05602112df010d40b4c711`. Current local lane: HCV-4 status
+  derivation and config consistency. Bologna
   implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
@@ -2289,7 +2291,7 @@ tasks:
 
   - id: HCV-3
     title: Readiness crosswalk CI-gate completeness
-    status: active
+    status: done
     depends_on: [HCV-2]
     lane: coordinator
     spec: plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
@@ -2311,10 +2313,10 @@ tasks:
 
   - id: HCV-4
     title: Status derivation and config consistency
-    status: queued
+    status: active
     depends_on: [HCV-3]
     lane: coordinator
-    spec: plans/2026-06-21-harden-control-plane.md#hcv-4--status-derivation--config-consistency
+    spec: plans/2026-06-22-hcv-4-status-config-consistency.md
     notes: >
       Align qualification status derivation with the validator's full P0 blocker set,
       reconcile DS-002 rights vocabulary with production usage-rights fields, and drop
