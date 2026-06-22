@@ -67,7 +67,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert (
         task_queue["active_plan"]
-        == "plans/2026-06-21-hcv-2-checker-hardening.md"
+        == "plans/2026-06-21-hcv-3-crosswalk-ci-gates.md"
     )
     assert tasks["EQ-BOL"]["status"] == "done"
     assert tasks["EQ-BOL"]["depends_on"] == ["EQ-1"]
@@ -113,9 +113,9 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["HCV-1"]["depends_on"] == ["BSA-REC"]
     assert tasks["HCV-1"]["status"] == "done"
     assert tasks["HCV-2"]["depends_on"] == ["HCV-1"]
-    assert tasks["HCV-2"]["status"] == "active"
+    assert tasks["HCV-2"]["status"] == "done"
     assert tasks["HCV-3"]["depends_on"] == ["HCV-2"]
-    assert tasks["HCV-3"]["status"] == "queued"
+    assert tasks["HCV-3"]["status"] == "active"
     assert tasks["HCV-4"]["depends_on"] == ["HCV-3"]
     assert tasks["HCV-4"]["status"] == "queued"
     assert tasks["EQ-5"]["depends_on"] == ["HCV-4"]

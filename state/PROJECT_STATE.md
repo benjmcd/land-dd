@@ -1,16 +1,15 @@
 # Project State
 
-## Current checkpoint (2026-06-21 HCV-2 checker robustness and security hardening)
+## Current checkpoint (2026-06-21 HCV-3 crosswalk CI gate completeness)
 
-Live `origin/main` is `b5f6727bd5ab6b9264812e9943a24924eec54b29`, including the
-PR #146 fail-closed readiness-parser hardening merge after the PR #144 HCV-1 merge.
-The current lane is HCV-2: harden checker robustness and security across the checklist
-dry-run validator, release-package manifest validator, private-MVP readiness validator,
-and Bologna pilot-scope PowerShell wrapper while keeping the empirical-qualification
-framework honestly blocked.
+Live `origin/main` is `e124db6ce002d472ad800dac6ac4af1633c746b4`, including PR #149
+guardrail error-redaction hardening on top of PR #147 HCV-2 checker hardening. The
+current lane is HCV-3: map readiness/release CI wrapper gates into the
+empirical-qualification readiness crosswalk and make future unmapped CI gate wrappers
+fail closed while keeping the empirical-qualification framework honestly blocked.
 
 - **Current implementation plan**:
-  `plans/2026-06-21-hcv-2-checker-hardening.md`.
+  `plans/2026-06-21-hcv-3-crosswalk-ci-gates.md`.
 - **Latest repo-local test hardening**:
   `scripts/selftest_qualification_validator.py` now includes fail-closed mutations for
   expired PASS gates, status gate/result `gate_id` mismatch, result scope/version
@@ -25,11 +24,16 @@ framework honestly blocked.
   unordered/ordered checklist markers, duplicate ZIP entries, common secret/prod-config
   package paths, selected-county connector swaps, source-bound provenance expectation
   classes, and Bologna PowerShell `$LASTEXITCODE` propagation.
+- **Current HCV-3 crosswalk hardening**: map CI/release wrapper gate paths separately
+  from Python checker paths so shell/PowerShell wrappers are not treated as
+  advertisement-capable checkers. The target orphaned gates are dependency provenance,
+  security scan, backup/restore, and the release-readiness proof-wrapper inventory, with
+  future CI or release proof wrapper additions failing closed if unmapped.
 - **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
   `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, and
-  `HCV-1` are done in the current routing model. `HCV-2` is active; `HCV-3` and
-  `HCV-4` remain queued harden-control-plane lanes. `BSA-001` remains blocked until
+  `HCV-1` and `HCV-2` are done in the current routing model. `HCV-3` is active;
+  `HCV-4` remains queued. `BSA-001` remains blocked until
   product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -38,12 +42,12 @@ framework honestly blocked.
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights authority blocker is external. HCV-2 is fix-only and
+  product/AOI/source-rights authority blocker is external. HCV-3 is fix-only and
   introduces no new Bologna authority packet, source-rights row, corpus, fixture, DB
   seed, runtime/report proof, or source registry promotion.
-- **Immediate next pursuit**: complete HCV-2 with red/green checker tests, focused
-  validators, full verification, PR review/merge, and post-merge proof; then proceed
-  to HCV-3 crosswalk completeness.
+- **Immediate next pursuit**: complete HCV-3 with red/green crosswalk gate-path tests,
+  validator/selftest updates, focused/full verification, PR review/merge, and
+  post-merge proof; then proceed to HCV-4 status/config consistency.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection, source
   approval, source registry promotion, recorded fixture, connector, DB seed,

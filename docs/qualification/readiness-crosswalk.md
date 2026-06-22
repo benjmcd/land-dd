@@ -22,6 +22,7 @@ This document is the human-readable companion to `config/qualification/readiness
 | `access_control` | static_guardrail | `S-003`, `S-004`, `S-010`, `S-011` | Guards auth, tenancy, and data-boundary assumptions. |
 | `threat_proxy_audit` | static_guardrail | `S-015`, `S-024`, `R-003`, `Q2-017` | Guards against proxy or ranking surfaces becoming steering signals. |
 | `data_retention` | static_guardrail | `DB-016`, `S-011`, `S-014`, `G-014` | Guards retention and privacy lifecycle boundaries. |
+| `deployment_smoke` | deployment_gate | `O-001`, `O-002`, `O-019` | Exercises release-runtime health without claiming hosted authority. |
 | `hosted_deployment` | deployment_gate | `O-001`, `O-002`, `O-003`, `O-019`, `S-013` | Blocks hosted deployment until operational prerequisites are present. |
 | `image_publication` | deployment_gate | `O-001`, `S-006`, `G-020` | Guards image-publication and container provenance. |
 | `release_package` | deployment_gate | `O-001`, `G-010`, `G-016`, `M-014` | Guards release artifacts and package manifests. |
@@ -32,6 +33,8 @@ This document is the human-readable companion to `config/qualification/readiness
 | `spatial_query_plan` | static_guardrail | `DB-006`, `DB-007`, `Q1-013`, `Q3-013` | Guards geometry, CRS, and spatial-query assumptions. |
 | `container_scan` | deployment_gate | `S-006`, `O-001` | Feeds container supply-chain deployment checks. |
 | `supply_chain` | deployment_gate | `S-006`, `S-023`, `G-020` | Guards dependency and artifact provenance. |
+| `security_scan` | deployment_gate | `S-006`, `S-023` | Routes static security-scan CI results into dependency and vulnerability criteria. |
+| `backup_restore` | deployment_gate | `DB-012`, `DB-019`, `O-005` | Records backup/restore release proof as recovery gate evidence. |
 | `incident_rollback` | static_guardrail | `O-014`, `O-015`, `S-017`, `F-007` | Guards incident-response and rollback readiness. |
 
 ## Gaps
@@ -47,4 +50,4 @@ The crosswalk records the main criterion groups that have no existing readiness 
 
 ## Orphans
 
-There are no known active readiness, authority, release, source, security, operations, or spatial gate surfaces without a mapped qualification home. The validator derives the expected inventory from the globs in `readiness_crosswalk.yaml` and fails closed if a newly added surface is not mapped or intentionally excluded.
+There are no known active readiness, authority, release, source, security, operations, or spatial gate surfaces without a mapped qualification home. The validator derives the expected inventory from the globs and CI/release gate paths in `readiness_crosswalk.yaml` and fails closed if a newly added surface or CI gate wrapper is not mapped or intentionally excluded.

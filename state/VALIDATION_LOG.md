@@ -2,6 +2,87 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 HCV-3 Crosswalk CI Gate Completeness
+
+**Scope:** Map readiness/release CI wrapper gates into the qualification readiness
+crosswalk and make future unmapped CI wrapper gates fail closed. This does not promote
+any qualification gate to `PASS`, unfreeze owner decisions, approve
+source/AOI/Bologna/DS-017/hosted authority, change DB/API/UI/report semantics, run
+backup/restore proof, seed the DB, or claim Level 10 authority.
+
+**Commands run so far:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_readiness_crosswalk.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_readiness_crosswalk.py
+py -3.12 -m mypy scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_readiness_crosswalk.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused crosswalk tests passed before HCV-3 red tests were added.
+- HCV-3 planning/routing was updated from live `origin/main@ba75f47` after HCV-2
+  merged and post-merge proof preserved `BLOCKED=1 NOT_RUN=20`.
+- Initial selftest after routing failed because the new HCV-3 plan omitted the
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 context needed by status derivation.
+  The plan was corrected; `py -3.12 scripts\qualification_status_check.py --root .`
+  then passed with `BLOCKED=1 NOT_RUN=20`.
+- Red focused crosswalk tests failed because no `gate_paths` mapped
+  `run_provenance_check.sh`, `run_security_scan.sh`, or
+  `run_backup_restore_check.ps1`.
+- Red qualification selftest failed because removing `scripts/run_security_scan.sh`
+  from a copied crosswalk did not produce `readiness_crosswalk: missing gate inventory
+  paths`.
+- After implementation, focused crosswalk tests passed and
+  `py -3.12 scripts\selftest_qualification_validator.py` passed all 35 selftest cases.
+- Structural qualification validation passed, status checking still derived
+  `BLOCKED=1 NOT_RUN=20`, readiness-matrix checking passed, focused ruff/mypy passed,
+  `git diff --check` passed, and the no-deletion check reported no tracked deletions.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed only because two
+  routing tests still expected HCV-2 as the active plan. Those assertions were updated
+  for HCV-3.
+- Focused routing tests then passed (`7 passed`), and final full
+  `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy over `366` source files. DB smoke was
+  skipped because `RUN_DB_SMOKE=1` was not set.
+- Separate review found a high-severity gap in the first HCV-3 implementation: the
+  validator derived CI workflow gates and the backup/restore release proof, but not the
+  rest of `config/release_readiness.yaml.required_checks[*].proof`. The validator and
+  focused artifact test now derive repo-local release proof wrappers from that
+  release-readiness inventory, the crosswalk maps those wrappers, and selftest removes
+  `scripts/run_incident_rollback_check.ps1` to prove release-proof drift fails closed.
+- Review-response validation passed:
+  `py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z`,
+  `py -3.12 scripts\qualification_status_check.py --root .` (`BLOCKED=1 NOT_RUN=20`),
+  `py -3.12 scripts\readiness_matrix_check.py`,
+  `py -3.12 scripts\selftest_qualification_validator.py` (36 selftest cases),
+  focused backend tests from `backend\` (`11 passed`), focused ruff, focused mypy,
+  `git diff --check`, and `git diff --name-only --diff-filter=D`.
+- Final review-response `.\scripts\verify.ps1` passed: workspace validation,
+  qualification selftest, structural qualification validation, qualification status
+  (`BLOCKED=1 NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and
+  mypy over `366` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not
+  set.
+- Live `origin/main` advanced to PR #149 at
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`; HCV-3 rebased cleanly to commit
+  `f615bb9`. Post-rebase focused validation passed: structural qualification
+  validation, qualification selftest, status checking (`BLOCKED=1 NOT_RUN=20`),
+  readiness-matrix checking, focused backend tests (`11 passed`), focused ruff, focused
+  mypy, `git diff --check origin/main..HEAD`, and
+  `git diff --name-only --diff-filter=D origin/main..HEAD`.
+
+**Residual risk:** HCV-3 implementation is in progress. HCV-4 remains queued; this
+lane does not resolve P0 blockers or approve Bologna, source, DS-017, hosted, or Level
+10 authority.
+
 ## 2026-06-21 HCV-2 Checker Robustness And Security Hardening
 
 **Scope:** Harden HCV-2 checker surfaces for checklist dry-run assertions/path

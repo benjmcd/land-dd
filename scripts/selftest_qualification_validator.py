@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -186,7 +187,7 @@ def complete_gate_result(
                 "stratum": None,
             }
         ]
-    result = {
+    result: dict[str, Any] = {
         "schema_version": "qualification_result_v3",
         "gate_id": gate,
         "status": status,
@@ -436,6 +437,50 @@ def main() -> int:
             run_validator(validator, crosswalk_missing_glob),
             False,
             "readiness_crosswalk: missing required checker globs",
+        )
+
+        crosswalk_missing_gate = temp_root / "crosswalk-missing-gate"
+        copy_fixture(source, crosswalk_missing_gate)
+
+        def remove_required_crosswalk_gate(value):
+            for entry in value["entries"]:
+                gate_paths = entry.get("gate_paths") or []
+                if "scripts/run_security_scan.sh" in gate_paths:
+                    gate_paths.remove("scripts/run_security_scan.sh")
+                    entry["gate_paths"] = gate_paths
+                    return
+
+        mutate_yaml(
+            control_paths(crosswalk_missing_gate)["readiness_crosswalk"],
+            remove_required_crosswalk_gate,
+        )
+        assert_result(
+            "readiness crosswalk CI gate inventory must cover workflow gates",
+            run_validator(validator, crosswalk_missing_gate),
+            False,
+            "readiness_crosswalk: missing gate inventory paths",
+        )
+
+        crosswalk_missing_release_gate = temp_root / "crosswalk-missing-release-gate"
+        copy_fixture(source, crosswalk_missing_release_gate)
+
+        def remove_required_crosswalk_release_gate(value):
+            for entry in value["entries"]:
+                gate_paths = entry.get("gate_paths") or []
+                if "scripts/run_incident_rollback_check.ps1" in gate_paths:
+                    gate_paths.remove("scripts/run_incident_rollback_check.ps1")
+                    entry["gate_paths"] = gate_paths
+                    return
+
+        mutate_yaml(
+            control_paths(crosswalk_missing_release_gate)["readiness_crosswalk"],
+            remove_required_crosswalk_release_gate,
+        )
+        assert_result(
+            "readiness crosswalk release gate inventory must cover release proofs",
+            run_validator(validator, crosswalk_missing_release_gate),
+            False,
+            "readiness_crosswalk: missing gate inventory paths",
         )
 
         checker_advertisement_drift = temp_root / "checker-advertisement-drift"
@@ -864,7 +909,7 @@ def main() -> int:
             "'independent_reproducer' is a required property",
         )
 
-        profile_targets = {
+        profile_targets: dict[str, Any] = {
             "scope": {
                 "qualified_domains": ["zoning"],
                 "source_profile_ids": ["DS-X"],
@@ -878,7 +923,7 @@ def main() -> int:
             }
         }
         profile_status = {"qualifications": {"p0": {"status": "PASS"}}}
-        valid_source_profile = {
+        valid_source_profile: dict[str, Any] = {
             "status": "APPROVED",
             "approved_use_profiles": ["BOUNDED_USER_VALIDATED"],
             "coverage": {"geographies": ["NC"], "domains": ["zoning"]},
