@@ -52,8 +52,9 @@ routing_note: >
   `604f7c2739095d9cc543b675ed3b84e619cda54d`, BAP-001 Bologna authority record
   contract merged through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`,
   BAR-001 merged through PR #140, BSA-REC merged through PR #141, the HCV handoff
-  merged through PR #142, and raw UI product fixes merged through PR #143 at
-  `fbff6182053bf2aeb3dd83336725c90d787c5284`. Current local lane: HCV-1
+  merged through PR #142, raw UI product fixes merged through PR #143, and the
+  supported-AOI operator-case hardening merged through PR #145 at
+  `816a4dd39d174d0b3689837a489879031e49113d`. Current local lane: HCV-1
   qualification validator hardening. Bologna implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not

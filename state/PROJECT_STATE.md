@@ -2,9 +2,9 @@
 
 ## Current checkpoint (2026-06-21 HCV-1 qualification validator hardening)
 
-Live `origin/main` is `fbff6182053bf2aeb3dd83336725c90d787c5284`, which keeps the
-PR #142 harden-control-plane handoff and includes the later PR #143 merge. The current
-lane is HCV-1: harden the
+Live `origin/main` is `816a4dd39d174d0b3689837a489879031e49113d`, which keeps the
+PR #142 harden-control-plane handoff and includes the later PR #143 and PR #145
+merges. The current lane is HCV-1: harden the
 empirical-qualification validator and result schema against the verified PR #126/#127
 review findings while keeping the empirical-qualification framework honestly
 blocked.

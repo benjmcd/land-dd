@@ -5,8 +5,8 @@ Append concise entries. Do not rely on chat history.
 ## 2026-06-21 HCV-1 qualification validator hardening
 
 - Started clean worktree `worktrees/hcv1`; reconciled the PR #142 HCV handoff, the
-  later PR #143 merge, and the open PR #126/#127 review threads against live
-  `origin/main@fbff6182053bf2aeb3dd83336725c90d787c5284`.
+  later PR #143 and PR #145 merges, and the open PR #126/#127 review threads against
+  live `origin/main@816a4dd39d174d0b3689837a489879031e49113d`.
 - Added `plans/2026-06-21-hcv-1-qualification-validator.md` and routed the current
   control-plane lane to HCV-1, with HCV-2, HCV-3, and HCV-4 queued after it.
 - Extended `scripts/selftest_qualification_validator.py` with fail-closed cases for

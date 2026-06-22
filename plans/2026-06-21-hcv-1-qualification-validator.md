@@ -10,8 +10,9 @@ Harden `scripts/validate_qualification.py` and the qualification result schema a
 - No file deletion.
 
 ## Current state
-- Live authority is `origin/main@fbff6182053bf2aeb3dd83336725c90d787c5284`
-  after reconciling the PR #142 HCV handoff with the later PR #143 merge.
+- Live authority is `origin/main@816a4dd39d174d0b3689837a489879031e49113d`
+  after reconciling the PR #142 HCV handoff with the later PR #143 and PR #145
+  merges.
 - Baseline `py -3.12 scripts\validate_qualification.py --root .` passes structurally and reports blocked readiness warnings.
 - The active plan must keep citing `state/LEVEL_9_10_GATE_MATRIX.md` and explicit Level 9/10 context so the readiness-matrix checker does not treat HCV routing as detached from the release gate map.
 - PR #126 review threads are still open and map to current missing checks:
@@ -69,6 +70,6 @@ Use validator-level fail-closed checks instead of changing qualification data:
 
 ## Progress log
 - 2026-06-21: Created clean worktree `worktrees/hcv1`, then rebased it to
-  `origin/main@fbff618` after PR #143 merged; reconciled PR #126/#127 review
+  `origin/main@816a4dd` after PR #145 merged; reconciled PR #126/#127 review
   threads and baseline validator state.
 - 2026-06-21: Added HCV-1 selftest mutations, hardened the validator/schema, updated routing/state, and ran focused checks plus full `.\scripts\verify.ps1` successfully. DB smoke was skipped by default because `RUN_DB_SMOKE` was not set.

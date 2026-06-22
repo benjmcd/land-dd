@@ -62,6 +62,12 @@ git diff --name-only --diff-filter=D
 - Focused compile/validation/status/change-impact/artifact-test/ruff/diff checks
   passed after the review-response fixes, and final local `.\scripts\verify.ps1`
   passed again. DB smoke was skipped locally because `RUN_DB_SMOKE` was not set.
+- After PR #145 advanced `origin/main` to
+  `816a4dd39d174d0b3689837a489879031e49113d`, HCV-1 was rebased cleanly and focused
+  compile/selftest/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed again with no tracked deletions.
+- Final local `.\scripts\verify.ps1` passed on the PR #145 base. DB smoke was skipped
+  locally because `RUN_DB_SMOKE` was not set.
 
 **Residual risk:** HCV-2 through HCV-4 remain queued. HCV-1 hardens the validator and
 schema only; it does not resolve P0 blockers, create qualification results, approve
