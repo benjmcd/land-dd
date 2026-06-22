@@ -2,6 +2,59 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 HCV-3 crosswalk CI gate completeness
+
+- Started clean worktree `worktrees/hcv3` on `codex/hcv3-crosswalk-gates` from live
+  `origin/main@ba75f47` after HCV-2 merged through PR #147 and detached post-merge
+  proof passed.
+- Read startup routing, architecture, ADR 0004, the HCV control-plane plan, HCV-2
+  closeout state, `config/qualification/readiness_crosswalk.yaml`,
+  `schemas/qualification/readiness_crosswalk.schema.json`,
+  `scripts/validate_qualification.py`, `scripts/selftest_qualification_validator.py`,
+  `.github/workflows/ci.yml`, `config/release_readiness.yaml`, and focused crosswalk
+  tests.
+- Confirmed baseline `py -3.12 -m pytest -q
+  backend\tests\test_qualification_readiness_crosswalk.py` passed before adding HCV-3
+  red tests.
+- Added `plans/2026-06-21-hcv-3-crosswalk-ci-gates.md` and routed current state to
+  HCV-3 while keeping HCV-4 queued, P0 BLOCKED, non-P0 NOT_RUN, and Bologna externally
+  blocked.
+- Added red tests for missing CI/release gate-path mappings and validator enforcement.
+  The artifact test failed on unmapped `run_provenance_check.sh`,
+  `run_security_scan.sh`, and `run_backup_restore_check.ps1`; the selftest failed
+  when removing `run_security_scan.sh` did not invalidate the crosswalk.
+- Added optional `gate_paths` to the readiness-crosswalk schema, mapped current CI
+  wrapper gates plus the backup/restore release proof, and made
+  `scripts/validate_qualification.py` derive expected gates from CI while excluding
+  qualification-control-plane self-check wrappers. Focused crosswalk tests and
+  qualification selftest now pass.
+- Structural validation, qualification status, readiness-matrix checking, focused
+  ruff/mypy, diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1`
+  passed. Initial full verify failed only on stale HCV-2 active-plan assertions in
+  routing tests; those assertions now expect HCV-3 active. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+- Separate review found the first HCV-3 implementation only derived CI workflow gates
+  plus the backup/restore release proof, so other release-readiness proof wrappers
+  could drift unmapped. Updated `scripts/validate_qualification.py` and the focused
+  crosswalk test to derive repo-local release proof wrappers from
+  `config/release_readiness.yaml.required_checks[*].proof`, mapped those wrappers in
+  the crosswalk, and added a selftest mutation that removes
+  `scripts/run_incident_rollback_check.ps1`.
+- Review-response validation passed: structural qualification validation, status
+  checking (`BLOCKED=1 NOT_RUN=20`), readiness-matrix checking, qualification selftest,
+  focused crosswalk/routing tests, focused ruff/mypy, diff hygiene, and no tracked
+  deletions all passed before the final full verify rerun.
+- Final review-response `.\scripts\verify.ps1` passed with workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  backend tests, ruff, and mypy over `366` source files. DB smoke was skipped by
+  default.
+- Live `origin/main` then advanced to PR #149
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`. Rebased HCV-3 cleanly onto that live
+  head; focused structural validation, qualification selftest, status checking
+  (`BLOCKED=1 NOT_RUN=20`), readiness-matrix checking, focused backend tests, focused
+  ruff/mypy, diff hygiene, and no tracked deletions passed before the final full
+  verify rerun.
+
 ## 2026-06-21 HCV-2 checker robustness and security hardening
 
 - Started clean worktree `worktrees/hcv2` on

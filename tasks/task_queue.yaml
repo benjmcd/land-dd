@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-hcv-2-checker-hardening.md
+active_plan: plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -58,7 +58,11 @@ routing_note: >
   hardening merged through PR #144 at
   `79bd89cf0dc441606429ca6ca5d23ba6d7ad32a4`, and fail-closed readiness-parser
   hardening merged through PR #146 at `b5f6727bd5ab6b9264812e9943a24924eec54b29`.
-  Current local lane: HCV-2 checker robustness and security hardening. Bologna
+  HCV-2 checker robustness and security hardening merged through PR #147 at
+  `ba75f4729bcece9e29003938aef7c1038dc605ea`, and guardrail error-redaction
+  hardening merged through PR #149 at
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`. Current local lane: HCV-3 readiness
+  crosswalk CI-gate completeness. Bologna
   implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
@@ -2242,7 +2246,7 @@ tasks:
 
   - id: HCV-2
     title: Checker robustness and security hardening
-    status: active
+    status: done
     depends_on: [HCV-1]
     lane: coordinator
     spec: plans/2026-06-21-hcv-2-checker-hardening.md
@@ -2285,13 +2289,25 @@ tasks:
 
   - id: HCV-3
     title: Readiness crosswalk CI-gate completeness
-    status: queued
+    status: active
     depends_on: [HCV-2]
     lane: coordinator
-    spec: plans/2026-06-21-harden-control-plane.md#hcv-3--crosswalk-completeness-orphaned-ci-gates
+    spec: plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
     notes: >
       Map the orphaned provenance, security-scan, and backup/restore CI gates into the
       qualification readiness crosswalk and make future unmapped CI gates fail closed.
+    files:
+      - plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
+      - schemas/qualification/readiness_crosswalk.schema.json
+      - config/qualification/readiness_crosswalk.yaml
+      - scripts/validate_qualification.py
+      - scripts/selftest_qualification_validator.py
+      - backend/tests/test_qualification_readiness_crosswalk.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
 
   - id: HCV-4
     title: Status derivation and config consistency

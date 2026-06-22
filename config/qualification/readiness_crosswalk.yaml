@@ -59,6 +59,9 @@ entries:
   - config/release_readiness.yaml
   checker_paths:
   - scripts/release_readiness_check.py
+  gate_paths:
+  - scripts/run_release_readiness_check.ps1
+  - scripts/run_release_readiness_check.sh
   criterion_ids:
   - G-002
   - G-016
@@ -97,6 +100,8 @@ entries:
   - config/source_entitlements.yaml
   checker_paths:
   - scripts/source_entitlement_check.py
+  gate_paths:
+  - scripts/run_source_entitlement_check.ps1
   criterion_ids:
   - Q1-012
   - S-016
@@ -110,6 +115,8 @@ entries:
   - config/production_authority_intake.yaml
   checker_paths:
   - scripts/production_authority_intake_check.py
+  gate_paths:
+  - scripts/run_production_authority_intake_check.ps1
   criterion_ids:
   - G-021
   - O-020
@@ -136,6 +143,8 @@ entries:
   - config/bologna_pilot_scope_authority.yaml
   checker_paths:
   - scripts/bologna_pilot_scope_authority_check.py
+  gate_paths:
+  - scripts/run_bologna_pilot_scope_authority_check.ps1
   criterion_ids:
   - P0-001
   - R-001
@@ -188,6 +197,8 @@ entries:
   - config/bologna_recorded_source_corpus.yaml
   checker_paths:
   - scripts/bologna_recorded_source_corpus_check.py
+  gate_paths:
+  - scripts/run_bologna_recorded_source_corpus_check.ps1
   criterion_ids:
   - Q1-003
   - Q1-033
@@ -201,6 +212,8 @@ entries:
   - config/checklist_dry_run.yaml
   checker_paths:
   - scripts/checklist_dry_run_check.py
+  gate_paths:
+  - scripts/run_checklist_dry_run_check.ps1
   criterion_ids:
   - Q3-011
   - Q3-015
@@ -214,6 +227,9 @@ entries:
   - config/access_control.yaml
   checker_paths:
   - scripts/access_control_check.py
+  gate_paths:
+  - scripts/run_access_control_check.ps1
+  - scripts/run_access_control_check.sh
   criterion_ids:
   - S-003
   - S-004
@@ -227,6 +243,8 @@ entries:
   - config/threat_proxy_audit.yaml
   checker_paths:
   - scripts/threat_proxy_audit_check.py
+  gate_paths:
+  - scripts/run_threat_proxy_audit_check.ps1
   criterion_ids:
   - S-015
   - S-024
@@ -240,6 +258,8 @@ entries:
   - config/data_retention.yaml
   checker_paths:
   - scripts/data_retention_check.py
+  gate_paths:
+  - scripts/run_data_retention_check.ps1
   criterion_ids:
   - DB-016
   - S-011
@@ -247,12 +267,27 @@ entries:
   - G-014
   evidence_role: static_guardrail
   notes: Data-retention policy supports reproducibility, privacy, and lifecycle boundaries.
+- surface_id: deployment_smoke
+  surface_type: operations
+  config_paths: []
+  checker_paths: []
+  gate_paths:
+  - scripts/run_deployment_smoke.ps1
+  criterion_ids:
+  - O-001
+  - O-002
+  - O-019
+  evidence_role: deployment_gate
+  notes: Deployment smoke proof exercises release-runtime health without claiming hosted authority.
 - surface_id: hosted_deployment
   surface_type: operations
   config_paths:
   - config/hosted_deployment.yaml
   checker_paths:
   - scripts/hosted_deployment_check.py
+  gate_paths:
+  - scripts/run_hosted_deployment_check.ps1
+  - scripts/run_hosted_deployment_check.sh
   criterion_ids:
   - O-001
   - O-002
@@ -267,6 +302,9 @@ entries:
   - config/image_publication.yaml
   checker_paths:
   - scripts/image_publication_check.py
+  gate_paths:
+  - scripts/run_image_publication_check.ps1
+  - scripts/run_image_publication_check.sh
   criterion_ids:
   - O-001
   - S-006
@@ -280,6 +318,10 @@ entries:
   checker_paths:
   - scripts/release_package_check.py
   - scripts/package_manifest_check.py
+  gate_paths:
+  - scripts/run_release_package_check.ps1
+  - scripts/run_release_package_check.sh
+  - scripts/run_package_manifest_check.sh
   criterion_ids:
   - O-001
   - G-010
@@ -293,6 +335,8 @@ entries:
   - config/observability_readiness.yaml
   checker_paths:
   - scripts/observability_readiness_check.py
+  gate_paths:
+  - scripts/run_observability_readiness_check.ps1
   criterion_ids:
   - O-012
   - O-013
@@ -306,6 +350,8 @@ entries:
   - config/ops_alert_rules.yaml
   checker_paths:
   - scripts/alert_rules_check.py
+  gate_paths:
+  - scripts/run_alert_rules_check.ps1
   criterion_ids:
   - O-013
   - O-014
@@ -319,6 +365,8 @@ entries:
   - config/ops_cost_monitoring.yaml
   checker_paths:
   - scripts/cost_monitoring_check.py
+  gate_paths:
+  - scripts/run_cost_monitoring_check.ps1
   criterion_ids:
   - E-001
   - E-004
@@ -332,6 +380,8 @@ entries:
   - config/performance_baseline.yaml
   checker_paths:
   - scripts/performance_baseline_check.py
+  gate_paths:
+  - scripts/run_load_test.ps1
   criterion_ids:
   - O-008
   - Q1-029
@@ -358,6 +408,9 @@ entries:
   config_paths: []
   checker_paths:
   - scripts/container_scan_check.py
+  gate_paths:
+  - scripts/run_container_scan_check.ps1
+  - scripts/run_container_scan_check.sh
   criterion_ids:
   - S-006
   - O-001
@@ -368,17 +421,48 @@ entries:
   config_paths: []
   checker_paths:
   - scripts/supply_chain_check.py
+  gate_paths:
+  - scripts/run_provenance_check.ps1
+  - scripts/run_provenance_check.sh
+  - scripts/run_supply_chain_check.ps1
+  - scripts/run_supply_chain_check.sh
   criterion_ids:
   - S-006
   - S-023
   - G-020
   evidence_role: deployment_gate
   notes: Supply-chain checks guard dependencies and publication provenance.
+- surface_id: security_scan
+  surface_type: security
+  config_paths: []
+  checker_paths: []
+  gate_paths:
+  - scripts/run_security_scan.ps1
+  - scripts/run_security_scan.sh
+  criterion_ids:
+  - S-006
+  - S-023
+  evidence_role: deployment_gate
+  notes: Security scan CI gate routes static vulnerability findings into security criteria.
+- surface_id: backup_restore
+  surface_type: operations
+  config_paths: []
+  checker_paths: []
+  gate_paths:
+  - scripts/run_backup_restore_check.ps1
+  criterion_ids:
+  - DB-012
+  - DB-019
+  - O-005
+  evidence_role: deployment_gate
+  notes: Backup/restore gate records release recovery proof without claiming hosted readiness.
 - surface_id: incident_rollback
   surface_type: operations
   config_paths: []
   checker_paths:
   - scripts/incident_rollback_check.py
+  gate_paths:
+  - scripts/run_incident_rollback_check.ps1
   criterion_ids:
   - O-014
   - O-015

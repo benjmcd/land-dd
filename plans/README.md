@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-hcv-1-qualification-validator.md`.
+Latest completed plan: `2026-06-21-hcv-2-checker-hardening.md`.
 
-Current routing plan: `2026-06-21-hcv-2-checker-hardening.md`.
+Current routing plan: `2026-06-21-hcv-3-crosswalk-ci-gates.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -200,6 +200,11 @@ selected-county private-MVP connector/provenance bindings, and Bologna pilot-sco
 PowerShell wrapper exit-code propagation. It is fix-only and does not add Bologna
 scaffolding, promote qualification status, unfreeze owner decisions, or change DB/API/
 UI/report/runtime behavior.
+
+`HCV-3` maps readiness/release CI wrapper gates into the qualification readiness
+crosswalk without treating shell/PowerShell wrappers as Python checker-advertisement
+scripts. It makes future unmapped CI gate wrappers fail closed while preserving
+`P0 = BLOCKED`, non-P0 `NOT_RUN`, and all owner/source/AOI/Bologna/hosted blockers.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

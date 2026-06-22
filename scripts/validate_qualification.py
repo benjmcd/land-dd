@@ -102,6 +102,15 @@ REQUIRED_READINESS_CHECKER_GLOBS = {
     "scripts/*entitlement*_check.py",
     "scripts/bologna_*_check.py",
 }
+QUALIFICATION_CONTROL_GATE_PATHS = {
+    "scripts/run_qualification_selftest.sh",
+    "scripts/run_qualification_validate.sh",
+    "scripts/run_qualification_status_check.sh",
+    "scripts/run_qualification_change_impact_check.sh",
+    "scripts/run_qualification_p0_evidence_check.sh",
+}
+CI_GATE_COMMAND_RE = re.compile(r"\./(scripts/run_[A-Za-z0-9_]+\.sh)")
+RELEASE_GATE_PROOF_RE = re.compile(r"^scripts/run_[A-Za-z0-9_]+\.(?:ps1|sh)$")
 
 
 def load_yaml(path: Path) -> Any:
@@ -368,6 +377,41 @@ def repo_relative_file_paths(root: Path, patterns: Iterable[str]) -> set[str]:
     return paths
 
 
+def workflow_gate_paths(root: Path, errors: list[str]) -> set[str]:
+    workflow_path = root / ".github" / "workflows" / "ci.yml"
+    if not workflow_path.is_file():
+        errors.append("readiness_crosswalk: CI workflow missing: .github/workflows/ci.yml")
+        return set()
+    workflow = workflow_path.read_text(encoding="utf-8")
+    return {
+        match.group(1)
+        for match in CI_GATE_COMMAND_RE.finditer(workflow)
+    } - QUALIFICATION_CONTROL_GATE_PATHS
+
+
+def release_readiness_gate_paths(root: Path, errors: list[str]) -> set[str]:
+    release_path = root / "config" / "release_readiness.yaml"
+    if not release_path.is_file():
+        errors.append("readiness_crosswalk: release readiness missing: config/release_readiness.yaml")
+        return set()
+    payload = load_yaml(release_path)
+    if not isinstance(payload, dict):
+        errors.append("readiness_crosswalk: release readiness must be a mapping")
+        return set()
+    checks = payload.get("required_checks")
+    if not isinstance(checks, list):
+        errors.append("readiness_crosswalk: release readiness required_checks missing")
+        return set()
+    gates: set[str] = set()
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        proof = check.get("proof")
+        if isinstance(proof, str) and RELEASE_GATE_PROOF_RE.match(proof):
+            gates.add(proof)
+    return gates
+
+
 def validate_repo_local_paths(
     root: Path,
     label: str,
@@ -468,6 +512,7 @@ def validate_readiness_crosswalk(
     excluded = set(inventory.get("intentional_exclusions") or [])
     declared_configs: set[str] = set()
     declared_checkers: set[str] = set()
+    declared_gates: set[str] = set()
 
     for entry in entries:
         label = f"readiness_crosswalk.{entry.get('surface_id')}"
@@ -483,6 +528,12 @@ def validate_readiness_crosswalk(
             root,
             f"{label}.checker_paths",
             entry.get("checker_paths") or [],
+            errors,
+        )
+        declared_gates |= validate_repo_local_paths(
+            root,
+            f"{label}.gate_paths",
+            entry.get("gate_paths") or [],
             errors,
         )
 
@@ -504,8 +555,14 @@ def validate_readiness_crosswalk(
         errors.append(
             f"readiness_crosswalk: missing checker inventory paths: {missing_checkers}"
         )
+    expected_gates = workflow_gate_paths(root, errors) | release_readiness_gate_paths(root, errors)
+    missing_gates = sorted(expected_gates - declared_gates - excluded)
+    if missing_gates:
+        errors.append(
+            f"readiness_crosswalk: missing gate inventory paths: {missing_gates}"
+        )
 
-    unused_exclusions = sorted(excluded - expected_configs - expected_checkers)
+    unused_exclusions = sorted(excluded - expected_configs - expected_checkers - expected_gates)
     if unused_exclusions:
         errors.append(
             f"readiness_crosswalk: intentional exclusions are not in inventory: {unused_exclusions}"
