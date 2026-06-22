@@ -18,6 +18,10 @@ Append concise entries. Do not rely on chat history.
 - Hardened `scripts/validate_qualification.py` and
   `schemas/qualification/qualification_result.schema.json` for those cases while
   preserving the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` status.
+- Addressed PR #144 review findings by requiring repo-local PASS evidence,
+  type-safe PASS expiry validation, independent reproduction metadata, frozen
+  spatial/temporal domain tolerances, aggregate selected-source coverage for every
+  target domain, and conditional commercial-use enforcement.
 - Preserved boundaries: no qualification `PASS`, owner-decision unfreeze,
   source/AOI/Bologna/DS-017/hosted authority, DB/API/UI/report semantic change, source
   registry promotion, fixture capture, corpus, DB seed, runtime/report proof, or

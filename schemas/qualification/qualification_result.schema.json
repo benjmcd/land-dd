@@ -133,6 +133,36 @@
         "additionalProperties": false
       }
     },
+    "independent_reproducer": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "id",
+        "reproduction_report",
+        "completed_at",
+        "independent"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reproduction_report": {
+          "type": "string",
+          "minLength": 1
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "independent": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "criterion_results": {
       "type": "array",
       "items": {
@@ -346,7 +376,8 @@
           "expires_at",
           "evidence_path",
           "criteria_catalog_digest",
-          "reviewers"
+          "reviewers",
+          "independent_reproducer"
         ],
         "properties": {
           "completed_at": {
@@ -387,6 +418,17 @@
                 }
               }
             }
+          },
+          "independent_reproducer": {
+            "type": "object",
+            "properties": {
+              "independent": {
+                "const": true
+              }
+            },
+            "required": [
+              "independent"
+            ]
           }
         }
       }

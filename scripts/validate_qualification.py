@@ -175,11 +175,14 @@ def resolve_local_reference(root: Path, reference: str | None) -> Path | None:
 
 
 def parse_datetime_utc(
-    value: str | None,
+    value: Any,
     label: str,
     errors: list[str],
 ) -> datetime | None:
     if value is None:
+        return None
+    if not isinstance(value, str):
+        errors.append(f"{label}: expires_at must be a date-time string")
         return None
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -215,6 +218,7 @@ def validate_evidence_reference(
         errors.append(f"{label}: criterion evidence reference is empty")
         return
     if "://" in reference:
+        errors.append(f"{label}: criterion evidence must be repo-local: {reference}")
         return
     evidence_path = resolve_local_reference(root, reference)
     if evidence_path is None:
@@ -1246,6 +1250,7 @@ def validate_domain_and_source_profiles(
                 "severity_rubric",
                 "confidence_rubric",
                 "source_requirements",
+                "spatial_temporal_tolerances",
                 "unknown_states",
                 "metrics",
                 "owner",
@@ -1270,6 +1275,8 @@ def validate_domain_and_source_profiles(
     selected_product_profile = scope.get("product_scope_profile")
     commercial = bool(scope.get("commercial_profile_enabled"))
     ai_enabled = bool(scope.get("ai_llm_enabled_for_decision_relevant_output"))
+    source_domain_coverage: set[str] = set()
+    source_domain_wildcard = False
 
     for source_id in sorted(required_sources):
         profile = source_profiles.get(source_id)
@@ -1285,6 +1292,13 @@ def validate_domain_and_source_profiles(
         coverage = profile.get("coverage") or {}
         coverage_geographies = set(coverage.get("geographies") or [])
         coverage_domains = set(coverage.get("domains") or [])
+        if "*" in coverage_domains or "GLOBAL" in coverage_domains:
+            source_domain_wildcard = True
+            source_domain_coverage.update(required_domains)
+        else:
+            for domain_id in required_domains:
+                if coverage_covers({domain_id}, coverage_domains):
+                    source_domain_coverage.add(domain_id)
         if not coverage_covers(set(scope.get("geographies") or []), coverage_geographies):
             errors.append(
                 f"source profile {source_id}: coverage.geographies does not cover target scope"
@@ -1295,8 +1309,18 @@ def validate_domain_and_source_profiles(
             )
         rights = profile.get("rights", {})
         operations = set(profile.get("enabled_operations", []))
+        rights_conditions = profile.get("rights_conditions") or {}
+        conditions_enforced_by = profile.get("conditions_enforced_by") or []
         if commercial and rights.get("commercial_use") in {"UNKNOWN", "PROHIBITED"}:
             errors.append(f"source profile {source_id}: commercial use is not permitted")
+        if commercial and rights.get("commercial_use") == "CONDITIONAL":
+            validate_conditional_right(
+                source_id,
+                "commercial_use",
+                rights_conditions,
+                conditions_enforced_by,
+                errors,
+            )
         right_by_operation = {
             "CACHE": ("cache",),
             "RETAIN_HISTORY": ("retain",),
@@ -1305,8 +1329,6 @@ def validate_domain_and_source_profiles(
             "DISPLAY": ("redistribute",),
             "AI_PROCESS": ("ai_use",),
         }
-        rights_conditions = profile.get("rights_conditions") or {}
-        conditions_enforced_by = profile.get("conditions_enforced_by") or []
         for operation, right_names in right_by_operation.items():
             if operation not in operations:
                 continue
@@ -1330,6 +1352,13 @@ def validate_domain_and_source_profiles(
             and rights.get("ai_use") in {"UNKNOWN", "PROHIBITED"}
         ):
             errors.append(f"source profile {source_id}: AI processing is not permitted")
+
+    if not source_domain_wildcard and not coverage_covers(required_domains, source_domain_coverage):
+        missing_domains = sorted(required_domains - source_domain_coverage)
+        errors.append(
+            "selected source profiles do not cover target domains: "
+            f"{missing_domains}"
+        )
 
 
 def validate_scope_versioning(

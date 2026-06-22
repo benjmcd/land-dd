@@ -53,6 +53,15 @@ git diff --name-only --diff-filter=D
   `py -3.12 scripts\selftest_qualification_validator.py` passed again locally.
 - Final local `.\scripts\verify.ps1` passed after the selftest correction. DB smoke was
   still skipped because `RUN_DB_SMOKE` was not set.
+- PR #144 review then identified six remaining fail-closed gaps. Added selftest cases
+  and validator/schema fixes for repo-local-only PASS evidence, non-string PASS expiry
+  values, independent reproduction metadata, frozen `spatial_temporal_tolerances`,
+  selected-source coverage for every target domain, and conditional commercial-use
+  rights enforcement. `py -3.12 scripts\selftest_qualification_validator.py` passed
+  with those review-response cases included.
+- Focused compile/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed after the review-response fixes, and final local `.\scripts\verify.ps1`
+  passed again. DB smoke was skipped locally because `RUN_DB_SMOKE` was not set.
 
 **Residual risk:** HCV-2 through HCV-4 remain queued. HCV-1 hardens the validator and
 schema only; it does not resolve P0 blockers, create qualification results, approve

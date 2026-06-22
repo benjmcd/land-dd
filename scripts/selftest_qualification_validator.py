@@ -145,6 +145,7 @@ def complete_gate_result(
     status: str = "PASS",
     evidence_ref: str | None = None,
     include_reviewers: bool = True,
+    include_reproducer: bool = True,
     overrides: dict | None = None,
 ) -> dict:
     targets = yaml.safe_load(control_paths(root)["targets"].read_text(encoding="utf-8"))
@@ -217,6 +218,13 @@ def complete_gate_result(
                 "independent": True,
             }
         ]
+    if include_reproducer:
+        result["independent_reproducer"] = {
+            "id": "independent-reproducer",
+            "reproduction_report": "docs/qualification/README.md",
+            "completed_at": "2026-06-21T00:02:00Z",
+            "independent": True,
+        }
     if overrides:
         result.update(overrides)
     return result
@@ -723,6 +731,61 @@ def main() -> int:
             "criterion evidence does not exist",
         )
 
+        remote_criterion_evidence = temp_root / "remote-criterion-evidence"
+        copy_fixture(source, remote_criterion_evidence)
+        write_result(
+            remote_criterion_evidence,
+            "remote-evidence-pass.json",
+            complete_gate_result(
+                validator,
+                remote_criterion_evidence,
+                "DQ",
+                evidence_ref="https://example.invalid/evidence.md",
+            ),
+        )
+
+        def reference_remote_criterion_evidence(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "remote-evidence-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(
+            control_paths(remote_criterion_evidence)["status"],
+            reference_remote_criterion_evidence,
+        )
+        assert_result(
+            "PASS criterion evidence must be repo-local",
+            run_validator(validator, remote_criterion_evidence),
+            False,
+            "criterion evidence must be repo-local",
+        )
+
+        malformed_expiry = temp_root / "malformed-expiry"
+        copy_fixture(source, malformed_expiry)
+        write_result(
+            malformed_expiry,
+            "malformed-expiry-pass.json",
+            complete_gate_result(
+                validator,
+                malformed_expiry,
+                "DQ",
+                overrides={"expires_at": 123},
+            ),
+        )
+
+        def reference_malformed_expiry(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "malformed-expiry-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(malformed_expiry)["status"], reference_malformed_expiry)
+        assert_result(
+            "malformed PASS expiry fails closed without crashing",
+            run_validator(validator, malformed_expiry),
+            False,
+            "expires_at must be a date-time string",
+        )
+
         blocked_with_result = temp_root / "blocked-with-result"
         copy_fixture(source, blocked_with_result)
         write_result(
@@ -775,6 +838,32 @@ def main() -> int:
             "'reviewers' is a required property",
         )
 
+        pass_without_reproducer = temp_root / "pass-without-reproducer"
+        copy_fixture(source, pass_without_reproducer)
+        write_result(
+            pass_without_reproducer,
+            "unreproduced-pass.json",
+            complete_gate_result(
+                validator,
+                pass_without_reproducer,
+                "DQ",
+                include_reproducer=False,
+            ),
+        )
+
+        def reference_unreproduced_pass(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "unreproduced-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(pass_without_reproducer)["status"], reference_unreproduced_pass)
+        assert_result(
+            "PASS result requires independent reproduction metadata",
+            run_validator(validator, pass_without_reproducer),
+            False,
+            "'independent_reproducer' is a required property",
+        )
+
         profile_targets = {
             "scope": {
                 "qualified_domains": ["zoning"],
@@ -806,6 +895,27 @@ def main() -> int:
             "enabled_operations": ["INGEST"],
             "conditions_enforced_by": ["not-required"],
         }
+
+        def frozen_domain_profile(domain_id: str) -> dict:
+            return {
+                "status": "FROZEN",
+                "scope": profile_targets["scope"],
+                "reference_hierarchy": [{"rank": 1, "type": "official"}],
+                "issue_taxonomy": [{"id": domain_id}],
+                "severity_rubric": [{"level": "high"}],
+                "confidence_rubric": [{"band": "supported"}],
+                "source_requirements": [{"source_id": "DS-X"}],
+                "spatial_temporal_tolerances": [{"id": "default"}],
+                "unknown_states": ["UNKNOWN"],
+                "metrics": [{"id": "domain_recall"}],
+                "owner": "product",
+                "reviewers": ["reviewer"],
+                "expires_at": "2099-01-01T00:00:00Z",
+                "frozen_at": "2026-06-21T00:00:00Z",
+                "approved_by": ["approver"],
+                "invalidation_triggers": ["source change"],
+                "field_surveillance_plan": "docs/qualification/README.md",
+            }
 
         errors: list[str] = []
         validator.validate_domain_and_source_profiles(
@@ -870,6 +980,23 @@ def main() -> int:
         )
 
         errors = []
+        tolerance_unresolved = frozen_domain_profile("zoning")
+        tolerance_unresolved["spatial_temporal_tolerances"] = {}
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {"zoning": tolerance_unresolved},
+            {"DS-X": valid_source_profile},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "frozen domain profiles must freeze spatial temporal tolerances",
+            errors,
+            "spatial_temporal_tolerances",
+        )
+
+        errors = []
         outside_coverage = {
             **valid_source_profile,
             "coverage": {"geographies": ["WA"], "domains": ["flood"]},
@@ -895,6 +1022,30 @@ def main() -> int:
             "source profile coverage must cover target scope",
             errors,
             "coverage.geographies does not cover target scope",
+        )
+
+        errors = []
+        multi_domain_targets = {
+            "scope": {
+                **profile_targets["scope"],
+                "qualified_domains": ["zoning", "flood"],
+            }
+        }
+        validator.validate_domain_and_source_profiles(
+            multi_domain_targets,
+            profile_status,
+            {
+                "zoning": frozen_domain_profile("zoning"),
+                "flood": frozen_domain_profile("flood"),
+            },
+            {"DS-X": valid_source_profile},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "selected sources must cover every target domain",
+            errors,
+            "selected source profiles do not cover target domains",
         )
 
         errors = []
@@ -926,6 +1077,37 @@ def main() -> int:
             "conditional source rights require enforcement controls",
             errors,
             "conditional cache right lacks enforcement controls",
+        )
+
+        errors = []
+        conditional_commercial_source = {
+            **valid_source_profile,
+            "rights": {
+                **valid_source_profile["rights"],
+                "commercial_use": "CONDITIONAL",
+            },
+            "enabled_operations": ["INGEST"],
+            "rights_conditions": {},
+            "conditions_enforced_by": [],
+        }
+        commercial_targets = {
+            "scope": {
+                **profile_targets["scope"],
+                "commercial_profile_enabled": True,
+            }
+        }
+        validator.validate_domain_and_source_profiles(
+            commercial_targets,
+            profile_status,
+            {"zoning": frozen_domain_profile("zoning")},
+            {"DS-X": conditional_commercial_source},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "conditional commercial use requires enforcement controls",
+            errors,
+            "conditional commercial_use right lacks enforcement controls",
         )
 
         errors = []
