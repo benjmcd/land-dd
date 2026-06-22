@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-22 HCV-4 Status/Config Consistency
+
+**Scope:** Align qualification status derivation with the validator's unresolved P0
+parameterization blocker families, reconcile the approved DS-002 source-quality profile
+with production usage-rights vocabulary, and route current work from completed HCV-3 to
+active HCV-4. This does not promote any qualification gate to `PASS`, unfreeze owner
+decisions, bind new sources, approve Bologna/DS-017/hosted authority, change DB/API/UI/
+report semantics, create a corpus, capture fixtures, seed the DB, or claim Level 10
+authority.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_status_check.py::test_p0_stays_blocked_when_non_target_parameterization_is_unresolved
+py -3.12 -m pytest -q backend\tests\test_qualification_honest_blocked_status.py::test_active_source_profile_is_real_ds002_and_maps_production_usage_fields
+py -3.12 -m pytest -q backend\tests\test_qualification_parameterization_backlog_artifacts.py::test_task_queue_reflects_bologna_first_backlog_and_blocked_followons backend\tests\test_readiness_core_artifacts.py::test_project_readiness_app_model_loads_current_control_plane
+cd backend; py -3.12 -m pytest -q tests\test_qualification_status_check.py tests\test_qualification_honest_blocked_status.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_honest_blocked_status.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_honest_blocked_status.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused tests, structural qualification validation, qualification status
+  checking, and qualification selftest passed before HCV-4 red tests were added.
+- Red status-derivation test failed because `derive_statuses(...)` did not accept the
+  HCV-4 blocker inputs (`rubrics`, `domain_profiles`, `source_profiles`).
+- Red DS-002 profile test failed because rights values still used `CONDITIONAL` instead
+  of production source-registry vocabulary.
+- Red routing tests failed because the active plan still pointed to HCV-3 and HCV-4 was
+  queued.
+- Current implementation results: focused backend tests passed (`18 passed`); direct
+  status checking passed with `BLOCKED=1 NOT_RUN=20`; structural qualification
+  validation passed with the expected blocked-readiness warnings; readiness-matrix
+  checking passed; qualification selftest passed after a longer timeout; focused ruff
+  passed; focused mypy passed with `MYPYPATH=backend`; diff hygiene passed; no tracked
+  deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+- GitHub checks, merge, and detached post-merge proof remain required.
+
+**Residual risk:** HCV-4 is not complete until focused/full validation, separate review,
+GitHub checks, merge, and detached post-merge proof pass. P0 must remain `BLOCKED`; all
+non-P0 statuses must remain `NOT_RUN`.
+
 ## 2026-06-21 HCV-3 Crosswalk CI Gate Completeness
 
 **Scope:** Map readiness/release CI wrapper gates into the qualification readiness

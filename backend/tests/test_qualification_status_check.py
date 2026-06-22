@@ -15,6 +15,9 @@ STATUS_PATH = REPO_ROOT / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml"
 TARGETS_PATH = REPO_ROOT / "config" / "qualification" / "qualification_targets.yaml"
 CATALOG_PATH = REPO_ROOT / "config" / "qualification" / "criterion_catalog.yaml"
 CROSSWALK_PATH = REPO_ROOT / "config" / "qualification" / "readiness_crosswalk.yaml"
+RUBRICS_PATH = REPO_ROOT / "config" / "qualification" / "judgment_rubrics.yaml"
+DOMAIN_PROFILES_DIR = REPO_ROOT / "config" / "qualification" / "domain_profiles"
+SOURCE_PROFILES_DIR = REPO_ROOT / "config" / "qualification" / "source_profiles"
 
 
 def _load_script() -> ModuleType:
@@ -38,6 +41,27 @@ def _controls() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[st
         _yaml(TARGETS_PATH),
         _yaml(CATALOG_PATH),
         _yaml(CROSSWALK_PATH),
+    )
+
+
+def _profile_map(directory: Path, key_field: str) -> dict[str, dict[str, Any]]:
+    profiles: dict[str, dict[str, Any]] = {}
+    for path in directory.glob("*.yaml"):
+        payload = _yaml(path)
+        profiles[payload[key_field]] = payload
+    return profiles
+
+
+def _fill_candidate_identity(status: dict[str, Any]) -> None:
+    status["candidate"].update(
+        {
+            "commit": "0" * 40,
+            "artifact_digest": "sha256:" + "1" * 64,
+            "protocol_version": "qualification_protocol_v3",
+            "targets_version": "0.1.0-test",
+            "vocabulary_version": "qualification_vocabulary_v3",
+            "criteria_catalog_digest": "sha256:" + "2" * 64,
+        }
     )
 
 
@@ -114,6 +138,34 @@ def test_p0_drift_to_not_run_is_rejected() -> None:
     )
     errors = module.compare_committed_statuses(drifted, derived)
 
+    assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
+
+
+def test_p0_stays_blocked_when_non_target_parameterization_is_unresolved() -> None:
+    module = _load_script()
+    status, targets, catalog, crosswalk = _controls()
+    drifted_status = deepcopy(status)
+    drifted_targets = deepcopy(targets)
+    drifted_status["qualifications"]["p0"]["status"] = "NOT_RUN"
+    _fill_candidate_identity(drifted_status)
+    drifted_targets["status"] = "FROZEN"
+    drifted_targets["frozen_at"] = "2026-06-22T00:00:00Z"
+    drifted_targets["approved_by"] = ["test-owner"]
+
+    derived = module.derive_statuses(
+        root=REPO_ROOT,
+        status=drifted_status,
+        targets=drifted_targets,
+        catalog=catalog,
+        crosswalk=crosswalk,
+        checker_results=_successful_results(module, crosswalk),
+        rubrics=_yaml(RUBRICS_PATH),
+        domain_profiles=_profile_map(DOMAIN_PROFILES_DIR, "domain_id"),
+        source_profiles=_profile_map(SOURCE_PROFILES_DIR, "source_id"),
+    )
+    errors = module.compare_committed_statuses(drifted_status, derived)
+
+    assert derived[("qualifications", "p0")] == "BLOCKED"
     assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
 
 

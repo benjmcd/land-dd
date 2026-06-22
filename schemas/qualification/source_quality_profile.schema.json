@@ -2,6 +2,35 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/schemas/source-quality-profile-v3.json",
   "title": "Source Quality Profile V3",
+  "$defs": {
+    "rightStatus": {
+      "enum": [
+        "ALLOWED",
+        "PROHIBITED",
+        "UNKNOWN",
+        "CONDITIONAL",
+        "yes",
+        "allowed",
+        "approved",
+        "approved-with-restrictions",
+        "restricted",
+        "unknown",
+        "prohibited"
+      ]
+    },
+    "approvedRightStatus": {
+      "enum": [
+        "ALLOWED",
+        "PROHIBITED",
+        "CONDITIONAL",
+        "yes",
+        "allowed",
+        "approved",
+        "approved-with-restrictions",
+        "restricted"
+      ]
+    }
+  },
   "type": "object",
   "required": [
     "schema_version",
@@ -66,60 +95,25 @@
       ],
       "properties": {
         "commercial_use": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "cache": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "retain": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "redistribute": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "export": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "raw_data": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "ai_use": {
-          "enum": [
-            "ALLOWED",
-            "PROHIBITED",
-            "UNKNOWN",
-            "CONDITIONAL"
-          ]
+          "$ref": "#/$defs/rightStatus"
         },
         "attribution": {
           "type": "string"
@@ -304,53 +298,25 @@
           "rights": {
             "properties": {
               "commercial_use": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "cache": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "retain": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "redistribute": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "export": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "raw_data": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               },
               "ai_use": {
-                "enum": [
-                  "ALLOWED",
-                  "PROHIBITED",
-                  "CONDITIONAL"
-                ]
+                "$ref": "#/$defs/approvedRightStatus"
               }
             }
           }

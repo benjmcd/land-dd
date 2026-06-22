@@ -1214,6 +1214,24 @@ def validate_conditional_right(
         )
 
 
+def normalized_right_value(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip().lower().replace("_", "-")
+
+
+def right_blocks_use(value: Any) -> bool:
+    return normalized_right_value(value) in {"unknown", "prohibited"}
+
+
+def right_requires_conditions(value: Any) -> bool:
+    return normalized_right_value(value) in {
+        "conditional",
+        "restricted",
+        "approved-with-restrictions",
+    }
+
+
 def validate_domain_and_source_profiles(
     targets: dict[str, Any],
     status: dict[str, Any],
@@ -1368,9 +1386,9 @@ def validate_domain_and_source_profiles(
         operations = set(profile.get("enabled_operations", []))
         rights_conditions = profile.get("rights_conditions") or {}
         conditions_enforced_by = profile.get("conditions_enforced_by") or []
-        if commercial and rights.get("commercial_use") in {"UNKNOWN", "PROHIBITED"}:
+        if commercial and right_blocks_use(rights.get("commercial_use")):
             errors.append(f"source profile {source_id}: commercial use is not permitted")
-        if commercial and rights.get("commercial_use") == "CONDITIONAL":
+        if commercial and right_requires_conditions(rights.get("commercial_use")):
             validate_conditional_right(
                 source_id,
                 "commercial_use",
@@ -1391,11 +1409,11 @@ def validate_domain_and_source_profiles(
                 continue
             for right_name in right_names:
                 right_value = rights.get(right_name)
-                if right_value in {"UNKNOWN", "PROHIBITED"}:
+                if right_blocks_use(right_value):
                     errors.append(
                         f"source profile {source_id}: operation {operation} conflicts with {right_name} right"
                     )
-                if right_value == "CONDITIONAL":
+                if right_requires_conditions(right_value):
                     validate_conditional_right(
                         source_id,
                         right_name,
@@ -1406,7 +1424,7 @@ def validate_domain_and_source_profiles(
         if (
             ai_enabled
             and "AI_PROCESS" in operations
-            and rights.get("ai_use") in {"UNKNOWN", "PROHIBITED"}
+            and right_blocks_use(rights.get("ai_use"))
         ):
             errors.append(f"source profile {source_id}: AI processing is not permitted")
 
