@@ -56,24 +56,26 @@ def main() -> None:
     seed_fixture_source(client, reviewer_headers)
     seed_fixture_area(client, identity_headers)
 
+    # POST /connector-runs requires reviewer scope — pass combined headers.
+    connector_headers = {**identity_headers, **reviewer_headers}
     connector_results = [
         run_connector(
             client,
             "fixture_flood_static",
             "flood_success",
-            identity_headers,
+            connector_headers,
         ),
         run_connector(
             client,
             "fixture_zoning_static",
             "zoning_allowed",
-            identity_headers,
+            connector_headers,
         ),
         run_connector(
             client,
             "fixture_access_static",
             "access_no_road",
-            identity_headers,
+            connector_headers,
         ),
     ]
     created = sum(_int_field(result, "evidence_created") for result in connector_results)
@@ -121,7 +123,7 @@ def main() -> None:
         client,
         "fixture_access_static",
         "access_failure",
-        identity_headers,
+        connector_headers,
     )
     queue_item = client.request(
         "GET",
