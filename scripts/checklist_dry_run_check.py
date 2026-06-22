@@ -48,6 +48,8 @@ EXPECTED_LIMITS = {
     "claims_legal_review": False,
     "claims_hosted_production_ready": False,
 }
+CHECKBOX_PREFIX_RE = re.compile(r"^(?:[-*+]|\d+[.)]) \[")
+CHECKBOX_ITEM_RE = re.compile(r"^(?:[-*+]|\d+[.)]) \[[ xX]\] (?P<item>.+)$")
 
 
 def require(condition: bool, message: str) -> None:
@@ -77,16 +79,41 @@ def normalize_path(path_text: str) -> str:
     return path_text.replace("\\", "/")
 
 
-def require_existing(path_text: str) -> None:
+def resolve_repo_path(path_text: str) -> Path:
     normalized = normalize_path(path_text)
+    path = Path(normalized)
     require(
-        (ROOT / normalized).exists(),
+        not path.is_absolute(),
+        f"referenced checklist dry-run artifact path must be repo-relative: {normalized}",
+    )
+    root = ROOT.resolve()
+    resolved = (root / path).resolve()
+    require(
+        resolved == root or resolved.is_relative_to(root),
+        f"referenced checklist dry-run artifact outside repository root: {normalized}",
+    )
+    return resolved
+
+
+def require_existing(path_text: Any) -> None:
+    path_value = require_text(
+        path_text,
+        "referenced checklist dry-run artifact path missing",
+    )
+    normalized = normalize_path(path_value)
+    resolved = resolve_repo_path(normalized)
+    require(
+        resolved.exists(),
         f"referenced checklist dry-run artifact missing: {normalized}",
+    )
+    require(
+        resolved.is_file(),
+        f"referenced checklist dry-run artifact must be a file: {normalized}",
     )
 
 
 def read_text(path_text: str) -> str:
-    return (ROOT / normalize_path(path_text)).read_text(encoding="utf-8")
+    return resolve_repo_path(path_text).read_text(encoding="utf-8")
 
 
 def slugify(text: str) -> str:
@@ -98,9 +125,9 @@ def checklist_item_ids(path_text: str) -> set[str]:
     ids: set[str] = set()
     for line in read_text(path_text).splitlines():
         stripped = line.strip()
-        if stripped.startswith("- [") and not re.match(r"^- \[[ xX]\] .+", stripped):
+        if CHECKBOX_PREFIX_RE.match(stripped) and CHECKBOX_ITEM_RE.match(stripped) is None:
             raise SystemExit(f"unsupported checkbox marker in {path_text}: {stripped}")
-        match = re.match(r"^- \[[ xX]\] (?P<item>.+)$", stripped)
+        match = CHECKBOX_ITEM_RE.match(stripped)
         if match is None:
             continue
         item = match.group("item").strip()
@@ -165,8 +192,16 @@ def validate_evidence_assertions(raw_assertions: Any, item_id: str) -> None:
             f"{item_id} assertion must provide exactly one of contains or regex",
         )
         if isinstance(contains, str):
+            require(
+                bool(contains.strip()),
+                f"{item_id} assertion contains must be non-empty",
+            )
             require(contains in text, f"{item_id} assertion missing text: {contains}")
         if isinstance(regex, str):
+            require(
+                bool(regex.strip()),
+                f"{item_id} assertion regex must be non-empty",
+            )
             require(
                 re.search(regex, text, flags=re.MULTILINE) is not None,
                 f"{item_id} assertion regex did not match: {regex}",

@@ -2,6 +2,46 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-21 HCV-2 checker robustness and security hardening
+
+- Started clean worktree `worktrees/hcv2` on
+  `codex/hcv2-checker-hardening` from live `origin/main@79bd89c`, preserving the
+  dirty root checkout as scratch only.
+- Read `README.md`, `MANIFEST.md`, `state/PROJECT_STATE.md`, `.agent/PLANS.md`,
+  `docs/ARCHITECTURE.md`, ADR 0004, `LANE_OWNERSHIP.md`, the HCV control-plane plan,
+  the HCV-1 plan, and the four HCV-2 checker/test surfaces.
+- Confirmed focused HCV-2 baseline tests passed before adding red tests:
+  `backend\tests\test_checklist_dry_run_artifacts.py`,
+  `backend\tests\test_package_manifest_check.py`,
+  `backend\tests\test_private_mvp_readiness.py`, and
+  `backend\tests\test_bologna_pilot_scope_authority_artifacts.py`.
+- Added `plans/2026-06-21-hcv-2-checker-hardening.md` and routed current state to
+  HCV-2 while keeping HCV-3/HCV-4 queued, P0 BLOCKED, and Bologna externally blocked.
+- Added red tests for checklist marker/path/assertion hardening, package duplicate and
+  secret-path detection, private-MVP county/provenance binding, and Bologna wrapper
+  exit-code propagation; the red run failed on those intended missing checks.
+- Hardened `scripts/checklist_dry_run_check.py`, `scripts/package_manifest_check.py`,
+  `scripts/private_mvp_readiness_check.py`, and
+  `scripts/run_bologna_pilot_scope_authority_check.ps1`; focused HCV-2 tests,
+  wrappers/checkers, qualification status, readiness-matrix check, qualification
+  selftest, focused ruff, and focused mypy now pass.
+- First full `.\scripts\verify.ps1` failed on stale HCV-1 active-plan assertions in
+  routing tests; updated those assertions for HCV-2. Focused routing tests and final
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- After PR #146 advanced live `origin/main` to
+  `b5f6727bd5ab6b9264812e9943a24924eec54b29`, rebased HCV-2 cleanly. Focused HCV-2
+  tests and changed wrapper/status/selftest/readiness checks passed again with
+  `BLOCKED=1 NOT_RUN=20`; final full verification is being rerun on the rebased head.
+- Separate review found `scripts/checklist_dry_run_check.py` still accepted empty and
+  directory evidence paths. Hardened evidence/blocker authority validation to require
+  non-empty repo-local files, replaced the committed directory evidence citation with a
+  concrete file path, and added focused regression tests. Checklist-focused pytest and
+  wrapper validation passed after the fix.
+- Focused HCV-2 tests, wrapper/status/selftest/readiness checks, focused ruff/mypy,
+  diff hygiene, no-deletion check, and full `.\scripts\verify.ps1` passed on the
+  review-response head. Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was
+  skipped by default.
+
 ## 2026-06-21 HCV-1 qualification validator hardening
 
 - Started clean worktree `worktrees/hcv1`; reconciled the PR #142 HCV handoff, the

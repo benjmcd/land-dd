@@ -119,9 +119,15 @@ def boundary_includes_path(
 
 
 def is_forbidden_secret_or_state_path(path: PurePosixPath) -> bool:
+    path_parts = tuple(part.lower() for part in path.parts)
+    path_name = path.name.lower()
     if path.name == ".env":
         return True
     if path.name.startswith(".env.") and path.name != ".env.example":
+        return True
+    if path.suffix.lower() in {".pem", ".key"}:
+        return True
+    if path_parts[:1] == ("config",) and path_name.startswith("prod."):
         return True
     return any(part in {".git", "local_artifacts", "agent-inbox"} for part in path.parts)
 
@@ -198,7 +204,15 @@ def validate_manifest(manifest_path: Path, root: Path = ROOT) -> dict[str, Any]:
         records[path_text] = record
 
     with zipfile.ZipFile(zip_path) as archive:
-        names = {info.filename for info in archive.infolist() if not info.is_dir()}
+        file_names = [info.filename for info in archive.infolist() if not info.is_dir()]
+        duplicate_names = sorted(
+            {name for name in file_names if file_names.count(name) > 1},
+        )
+        require(
+            not duplicate_names,
+            f"ZIP contains duplicate ZIP entries: {duplicate_names}",
+        )
+        names = set(file_names)
         allowed_names = set(records) | {manifest_name}
         extra_names = sorted(names - allowed_names)
         missing_names = sorted(allowed_names - names)

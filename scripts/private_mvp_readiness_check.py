@@ -125,6 +125,77 @@ EXPECTED_SOURCE_PROVENANCE_ENUMS = {
     ),
 }
 OUT_OF_SCOPE_PROVENANCE_EXPECTATION = "not_required_out_of_scope"
+EXPECTED_SELECTED_COUNTY_PROVENANCE_BINDINGS: dict[str, dict[str, dict[str, Any]]] = {
+    "buncombe_nc": {
+        "DS-010": {
+            "connector_names": ("buncombe_parcels_live",),
+            "dataset_expectation": "county_source_dataset",
+            "version_expectation": "source_version_or_access_date",
+            "retrieval_expectation": "connector_retrieval_metadata",
+            "out_of_scope": False,
+        },
+        "DS-011": {
+            "connector_names": ("county_assessor_not_evaluated",),
+            "dataset_expectation": "not_evaluated_sentinel",
+            "version_expectation": "static_sentinel_version",
+            "retrieval_expectation": "source_failure_metadata",
+            "out_of_scope": False,
+        },
+        "DS-023": {
+            "connector_names": (),
+            "dataset_expectation": OUT_OF_SCOPE_PROVENANCE_EXPECTATION,
+            "version_expectation": OUT_OF_SCOPE_PROVENANCE_EXPECTATION,
+            "retrieval_expectation": OUT_OF_SCOPE_PROVENANCE_EXPECTATION,
+            "out_of_scope": True,
+        },
+    },
+    "chatham_nc": {
+        "DS-010": {
+            "connector_names": ("chatham_parcels_live",),
+            "dataset_expectation": "county_source_dataset",
+            "version_expectation": "source_version_or_access_date",
+            "retrieval_expectation": "connector_retrieval_metadata",
+            "out_of_scope": False,
+        },
+        "DS-011": {
+            "connector_names": ("county_assessor_not_evaluated",),
+            "dataset_expectation": "not_evaluated_sentinel",
+            "version_expectation": "static_sentinel_version",
+            "retrieval_expectation": "source_failure_metadata",
+            "out_of_scope": False,
+        },
+        "DS-023": {
+            "connector_names": ("chatham_zoning_udo_recorded",),
+            "dataset_expectation": "recorded_fixture_dataset",
+            "version_expectation": "recorded_fixture_version",
+            "retrieval_expectation": "fixture_retrieval_metadata",
+            "out_of_scope": False,
+        },
+    },
+    "brunswick_nc": {
+        "DS-010": {
+            "connector_names": ("brunswick_parcels_live",),
+            "dataset_expectation": "county_source_dataset",
+            "version_expectation": "source_version_or_access_date",
+            "retrieval_expectation": "connector_retrieval_metadata",
+            "out_of_scope": False,
+        },
+        "DS-011": {
+            "connector_names": ("county_assessor_not_evaluated",),
+            "dataset_expectation": "not_evaluated_sentinel",
+            "version_expectation": "static_sentinel_version",
+            "retrieval_expectation": "source_failure_metadata",
+            "out_of_scope": False,
+        },
+        "DS-023": {
+            "connector_names": ("brunswick_zoning_udo_recorded",),
+            "dataset_expectation": "recorded_fixture_dataset",
+            "version_expectation": "recorded_fixture_version",
+            "retrieval_expectation": "fixture_retrieval_metadata",
+            "out_of_scope": False,
+        },
+    },
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -171,6 +242,82 @@ def require_text_tuple(value: Any, message: str) -> tuple[str, ...]:
         if not isinstance(item, str) or not item.strip():
             raise SystemExit(f"{message} item {index} must be non-empty text")
     return value
+
+
+def validate_expected_county_source_provenance_binding(
+    county_key: str,
+    source_id: str,
+    connector_names: tuple[str, ...],
+    dataset_expectation: str,
+    version_expectation: str,
+    retrieval_expectation: str,
+    out_of_scope: bool,
+) -> None:
+    expected_county = require_mapping(
+        EXPECTED_SELECTED_COUNTY_PROVENANCE_BINDINGS.get(county_key),
+        f"selected_county_source_provenance_scope.counties.{county_key} expectation missing",
+    )
+    expected = require_mapping(
+        expected_county.get(source_id),
+        (
+            "selected_county_source_provenance_scope.counties."
+            f"{county_key}.sources.{source_id} expectation missing"
+        ),
+    )
+    expected_connector_names = require_text_tuple(
+        expected.get("connector_names"),
+        (
+            "selected_county_source_provenance_scope.counties."
+            f"{county_key}.sources.{source_id}.connector_names expectation invalid"
+        ),
+    )
+    require(
+        connector_names == expected_connector_names,
+        (
+            f"selected_county_source_provenance_scope {source_id} connector_names "
+            f"mismatch at {county_key}.sources.{source_id}.connector_names; "
+            f"expected={list(expected_connector_names)}, got={list(connector_names)}"
+        ),
+    )
+    actual_expectations = {
+        "dataset_expectation": dataset_expectation,
+        "version_expectation": version_expectation,
+        "retrieval_expectation": retrieval_expectation,
+    }
+    expected_expectations = {
+        key: require_text(
+            expected.get(key),
+            (
+                "selected_county_source_provenance_scope.counties."
+                f"{county_key}.sources.{source_id}.{key} expectation invalid"
+            ),
+        )
+        for key in actual_expectations
+    }
+    require(
+        actual_expectations == expected_expectations,
+        (
+            "selected_county_source_provenance_scope.counties."
+            f"{county_key}.sources.{source_id} provenance expectations mismatch; "
+            f"expected={expected_expectations}, got={actual_expectations}"
+        ),
+    )
+    expected_out_of_scope = expected.get("out_of_scope")
+    require(
+        isinstance(expected_out_of_scope, bool),
+        (
+            "selected_county_source_provenance_scope.counties."
+            f"{county_key}.sources.{source_id}.out_of_scope expectation invalid"
+        ),
+    )
+    require(
+        out_of_scope is expected_out_of_scope,
+        (
+            "selected_county_source_provenance_scope.counties."
+            f"{county_key}.sources.{source_id}.out_of_scope mismatch; "
+            f"expected={expected_out_of_scope}, got={out_of_scope}"
+        ),
+    )
 
 
 def require_file(path_text: str) -> None:
@@ -605,6 +752,15 @@ def validate_selected_county_source_provenance_scope_catalog(
                 ),
             )
             out_of_scope = bool(out_of_scope_value)
+            validate_expected_county_source_provenance_binding(
+                county_key,
+                source_id,
+                connector_names,
+                dataset_expectation,
+                version_expectation,
+                retrieval_expectation,
+                out_of_scope,
+            )
             if out_of_scope:
                 require(
                     not connector_names,

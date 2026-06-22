@@ -2,6 +2,90 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-21 HCV-2 Checker Robustness And Security Hardening
+
+**Scope:** Harden HCV-2 checker surfaces for checklist dry-run assertions/path
+confinement, release-package manifest duplicate/secret detection, selected-county
+private-MVP connector/provenance binding, and Bologna pilot-scope PowerShell exit-code
+propagation. This does not promote any qualification gate to `PASS`, unfreeze owner
+decisions, approve source/AOI/Bologna/DS-017/hosted authority, change DB/API/UI/report
+semantics, create a corpus, capture fixtures, seed the DB, or claim Level 10
+authority.
+
+**Commands run so far:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+py -3.12 scripts\checklist_dry_run_check.py
+py -3.12 scripts\private_mvp_readiness_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+.\scripts\run_checklist_dry_run_check.ps1
+.\scripts\run_private_mvp_readiness_check.ps1
+.\scripts\run_bologna_pilot_scope_authority_check.ps1
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\checklist_dry_run_check.py scripts\package_manifest_check.py scripts\private_mvp_readiness_check.py backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+py -3.12 -m mypy scripts\checklist_dry_run_check.py scripts\package_manifest_check.py scripts\private_mvp_readiness_check.py backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused HCV-2 tests passed before red tests were added.
+- The red test run failed on the intended missing checks: unsupported unordered/ordered
+  checklist markers, path traversal not rejected, empty `contains` / `regex`
+  assertions accepted, duplicate ZIP entries collapsed, `*.pem` / `*.key` /
+  `config/prod.*` package paths accepted, cross-county connector swaps accepted,
+  wrong source provenance expectation classes accepted, and missing PowerShell
+  `$LASTEXITCODE` guard.
+- After implementation, the focused HCV-2 tests passed cleanly.
+- Changed wrappers/checkers passed, including checklist dry-run, private-MVP
+  readiness, Bologna pilot-scope authority, and the Bologna PowerShell wrapper.
+- Structural qualification validation passed with the same blocked-readiness warnings
+  preserved.
+- Initial qualification status/selftest failed because the new active HCV-2 plan did
+  not preserve the readiness-matrix `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10
+  context. The plan was corrected, and status checking then passed with
+  `passed=27 not_run=2 unexpected_failed=0` and derived statuses
+  `BLOCKED=1 NOT_RUN=20`.
+- `py -3.12 scripts\selftest_qualification_validator.py` passed all 34 selftest
+  cases after the active-plan correction.
+- Focused ruff and mypy passed for all touched scripts/tests.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed only because
+  two routing tests still expected HCV-1 as the active plan. Those assertions were
+  updated to the HCV-2 active plan.
+- After correcting those routing assertions, focused routing tests passed (`7 passed`)
+  and final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status, change-impact,
+  P0 auto-evidence, backend tests, ruff, and mypy over `363` source files. DB smoke was
+  skipped because `RUN_DB_SMOKE=1` was not set.
+- After PR #146 advanced live `origin/main` to
+  `b5f6727bd5ab6b9264812e9943a24924eec54b29`, HCV-2 rebased cleanly. On the rebased
+  head, focused HCV-2 tests passed again, changed wrappers/checkers passed again,
+  structural qualification validation passed, status checking still derived
+  `BLOCKED=1 NOT_RUN=20`, qualification selftest passed all 34 cases, and
+  readiness-matrix checking passed. Full `.\scripts\verify.ps1` is being rerun before
+  force-push/PR merge.
+- Separate review then identified one medium checklist gap: empty paths and directories
+  could still pass as evidence/blocker artifacts through `require_existing()`. The
+  helper now requires a non-empty repo-local file, the committed dry-run catalog no
+  longer cites the `backend/tests/claims_engine` directory, and focused checklist
+  pytest plus `.\scripts\run_checklist_dry_run_check.ps1` passed after the review
+  response.
+- After the review response, the full focused HCV-2 suite passed, changed
+  wrappers/checkers passed, structural qualification validation passed, status checking
+  still derived `BLOCKED=1 NOT_RUN=20`, qualification selftest passed all 34 cases,
+  readiness-matrix checking passed, focused ruff/mypy passed, `git diff --check`
+  passed, the no-deletion check reported no tracked deletions, and final full
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** DB smoke was not run locally because `RUN_DB_SMOKE=1` was not set.
+HCV-3 and HCV-4 remain queued; HCV-2 does not resolve P0 blockers or approve Bologna,
+source, DS-017, hosted, or Level 10 authority.
+
 ## 2026-06-21 HCV-1 Qualification Validator Hardening
 
 **Scope:** Harden the empirical-qualification validator and result schema against the
