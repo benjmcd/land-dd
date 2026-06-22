@@ -345,7 +345,8 @@
           "completed_at",
           "expires_at",
           "evidence_path",
-          "criteria_catalog_digest"
+          "criteria_catalog_digest",
+          "reviewers"
         ],
         "properties": {
           "completed_at": {
@@ -369,6 +370,20 @@
                     "PASS",
                     "N/A"
                   ]
+                }
+              }
+            }
+          },
+          "reviewers": {
+            "minItems": 1,
+            "contains": {
+              "type": "object",
+              "required": [
+                "independent"
+              ],
+              "properties": {
+                "independent": {
+                  "const": true
                 }
               }
             }

@@ -6,6 +6,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import shutil
 import sys
 import tempfile
@@ -119,6 +120,123 @@ def control_paths(root: Path) -> dict[str, Path]:
         "readiness_crosswalk": root / "readiness_crosswalk.yaml",
         "evidence": root / "README.md",
     }
+
+
+def catalog_map(root: Path) -> dict[str, dict]:
+    return {
+        item["criterion_id"]: item
+        for item in yaml.safe_load(
+            control_paths(root)["catalog"].read_text(encoding="utf-8")
+        )["criteria"]
+    }
+
+
+def catalog_digest(root: Path) -> str:
+    return __import__("hashlib").sha256(
+        control_paths(root)["catalog"].read_bytes()
+    ).hexdigest()
+
+
+def complete_gate_result(
+    validator,
+    root: Path,
+    gate: str,
+    *,
+    status: str = "PASS",
+    evidence_ref: str | None = None,
+    include_reviewers: bool = True,
+    overrides: dict | None = None,
+) -> dict:
+    targets = yaml.safe_load(control_paths(root)["targets"].read_text(encoding="utf-8"))
+    catalog = catalog_map(root)
+    evidence_ref = evidence_ref or str(
+        control_paths(root)["evidence"].relative_to(root)
+    )
+    expected = sorted(validator.expected_criteria_for_gate(gate, catalog, targets))
+    if status == "PASS":
+        rows = [
+            {
+                "criterion_id": cid,
+                "result": "PASS",
+                "requirement_class": catalog[cid]["requirement_class"],
+                "evidence": [evidence_ref],
+                "rationale": None,
+                "approver": None,
+                "expires_at": None,
+                "metric_value": None,
+                "threshold_value": None,
+                "stratum": None,
+            }
+            for cid in expected
+        ]
+    else:
+        cid = expected[0]
+        rows = [
+            {
+                "criterion_id": cid,
+                "result": status,
+                "requirement_class": catalog[cid]["requirement_class"],
+                "evidence": [evidence_ref],
+                "rationale": f"Intentional {status.lower()} row.",
+                "approver": None,
+                "expires_at": None,
+                "metric_value": None,
+                "threshold_value": None,
+                "stratum": None,
+            }
+        ]
+    result = {
+        "schema_version": "qualification_result_v3",
+        "gate_id": gate,
+        "status": status,
+        "selected_product_scope_profile": "BOUNDED_USER_VALIDATED",
+        "selected_deployment_profile": "LOCAL_SINGLE_USER",
+        "candidate_commit": "1" * 40,
+        "candidate_tag": None,
+        "artifact_digest": "sha256:" + "1" * 64,
+        "protocol_version": "selftest-protocol",
+        "targets_version": "selftest-targets",
+        "vocabulary_version": "qualification_vocabulary_v3",
+        "criteria_catalog_digest": "sha256:" + catalog_digest(root),
+        "started_at": "2026-06-21T00:00:00Z",
+        "completed_at": "2026-06-21T00:01:00Z",
+        "expires_at": "2099-01-01T00:00:00Z",
+        "evidence_path": evidence_ref,
+        "criterion_results": rows,
+        "summary_metrics": {},
+        "accepted_residual_risks": [],
+        "invalidation_reason": None,
+    }
+    if include_reviewers:
+        result["reviewers"] = [
+            {
+                "id": "independent-reviewer",
+                "role": "qualification reviewer",
+                "competency_record": "docs/qualification/README.md",
+                "conflict_disclosed": False,
+                "independent": True,
+            }
+        ]
+    if overrides:
+        result.update(overrides)
+    return result
+
+
+def write_result(root: Path, relative_path: str, result: dict) -> None:
+    (root / relative_path).write_text(
+        json.dumps(result, indent=2),
+        encoding="utf-8",
+    )
+
+
+def assert_direct_validation_error(name: str, errors: list[str], expected_text: str) -> None:
+    output = "\n".join(errors)
+    if expected_text not in output:
+        print(f"FAIL: {name}")
+        print(f"missing expected text: {expected_text!r}")
+        print(output)
+        raise SystemExit(1)
+    print(f"PASS: {name}")
 
 
 def assert_result(
@@ -488,6 +606,355 @@ def main() -> int:
             run_validator(validator, incomplete_pass),
             False,
             "PASS omits applicable criteria",
+        )
+
+        expired_pass = temp_root / "expired-pass"
+        copy_fixture(source, expired_pass)
+        write_result(
+            expired_pass,
+            "dq-pass.json",
+            complete_gate_result(
+                validator,
+                expired_pass,
+                "DQ",
+                overrides={"expires_at": "2000-01-01T00:00:00Z"},
+            ),
+        )
+
+        def reference_expired_pass(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "dq-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2000-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(expired_pass)["status"], reference_expired_pass)
+        assert_result(
+            "expired PASS gate is rejected",
+            run_validator(validator, expired_pass),
+            False,
+            "expired PASS",
+        )
+
+        mismatched_gate = temp_root / "mismatched-gate"
+        copy_fixture(source, mismatched_gate)
+        write_result(
+            mismatched_gate,
+            "wrong-gate-pass.json",
+            complete_gate_result(validator, mismatched_gate, "IR"),
+        )
+
+        def reference_wrong_gate(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "wrong-gate-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(mismatched_gate)["status"], reference_wrong_gate)
+        assert_result(
+            "result gate_id must match status gate",
+            run_validator(validator, mismatched_gate),
+            False,
+            "gate_id IR does not match status gate DQ",
+        )
+
+        mismatched_identity = temp_root / "mismatched-identity"
+        copy_fixture(source, mismatched_identity)
+        write_result(
+            mismatched_identity,
+            "identity-mismatch.json",
+            complete_gate_result(
+                validator,
+                mismatched_identity,
+                "DQ",
+                overrides={
+                    "selected_product_scope_profile": "OTHER_PROFILE",
+                    "protocol_version": "wrong-protocol",
+                    "targets_version": "wrong-targets",
+                },
+            ),
+        )
+
+        def reference_identity_mismatch(value):
+            value["candidate"]["protocol_version"] = "selftest-protocol"
+            value["candidate"]["targets_version"] = "selftest-targets"
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "identity-mismatch.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(mismatched_identity)["status"], reference_identity_mismatch)
+        assert_result(
+            "result identity must match active scope and candidate versions",
+            run_validator(validator, mismatched_identity),
+            False,
+            "selected product-scope profile differs from status",
+        )
+
+        broken_criterion_evidence = temp_root / "broken-criterion-evidence"
+        copy_fixture(source, broken_criterion_evidence)
+        write_result(
+            broken_criterion_evidence,
+            "broken-evidence-pass.json",
+            complete_gate_result(
+                validator,
+                broken_criterion_evidence,
+                "DQ",
+                evidence_ref="missing-evidence.md",
+                overrides={
+                    "evidence_path": str(
+                        control_paths(broken_criterion_evidence)["evidence"].relative_to(
+                            broken_criterion_evidence
+                        )
+                    )
+                },
+            ),
+        )
+
+        def reference_broken_criterion_evidence(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "broken-evidence-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(
+            control_paths(broken_criterion_evidence)["status"],
+            reference_broken_criterion_evidence,
+        )
+        assert_result(
+            "PASS criterion evidence references must resolve",
+            run_validator(validator, broken_criterion_evidence),
+            False,
+            "criterion evidence does not exist",
+        )
+
+        blocked_with_result = temp_root / "blocked-with-result"
+        copy_fixture(source, blocked_with_result)
+        write_result(
+            blocked_with_result,
+            "p0-blocked-result.json",
+            complete_gate_result(validator, blocked_with_result, "P0", status="BLOCKED"),
+        )
+
+        def reference_blocked_with_bad_reference(value):
+            value["qualifications"]["p0"]["status"] = "BLOCKED"
+            value["qualifications"]["p0"]["result_path"] = "p0-blocked-result.json"
+            value["qualifications"]["p0"]["blocker_references"] = [
+                "C:/outside-repo.md"
+            ]
+
+        mutate_yaml(
+            control_paths(blocked_with_result)["status"],
+            reference_blocked_with_bad_reference,
+        )
+        assert_result(
+            "P0 blocked record is validated even with result_path",
+            run_validator(validator, blocked_with_result),
+            False,
+            "blocker reference must be repo-local",
+        )
+
+        pass_without_reviewers = temp_root / "pass-without-reviewers"
+        copy_fixture(source, pass_without_reviewers)
+        write_result(
+            pass_without_reviewers,
+            "unreviewed-pass.json",
+            complete_gate_result(
+                validator,
+                pass_without_reviewers,
+                "DQ",
+                include_reviewers=False,
+            ),
+        )
+
+        def reference_unreviewed_pass(value):
+            value["overlays"]["data_quality"]["status"] = "PASS"
+            value["overlays"]["data_quality"]["result_path"] = "unreviewed-pass.json"
+            value["overlays"]["data_quality"]["expires_at"] = "2099-01-01T00:00:00Z"
+
+        mutate_yaml(control_paths(pass_without_reviewers)["status"], reference_unreviewed_pass)
+        assert_result(
+            "PASS result requires reviewer metadata",
+            run_validator(validator, pass_without_reviewers),
+            False,
+            "'reviewers' is a required property",
+        )
+
+        profile_targets = {
+            "scope": {
+                "qualified_domains": ["zoning"],
+                "source_profile_ids": ["DS-X"],
+                "geographies": ["NC"],
+                "intents": ["homestead"],
+                "input_modalities": ["single_parcel_aoi", "multi_parcel_aoi"],
+                "output_channels": ["api_json", "exported_report"],
+                "product_scope_profile": "BOUNDED_USER_VALIDATED",
+                "commercial_profile_enabled": False,
+                "ai_llm_enabled_for_decision_relevant_output": False,
+            }
+        }
+        profile_status = {"qualifications": {"p0": {"status": "PASS"}}}
+        valid_source_profile = {
+            "status": "APPROVED",
+            "approved_use_profiles": ["BOUNDED_USER_VALIDATED"],
+            "coverage": {"geographies": ["NC"], "domains": ["zoning"]},
+            "rights": {
+                "commercial_use": "ALLOWED",
+                "cache": "ALLOWED",
+                "retain": "ALLOWED",
+                "redistribute": "ALLOWED",
+                "export": "ALLOWED",
+                "raw_data": "ALLOWED",
+                "ai_use": "ALLOWED",
+            },
+            "rights_conditions": {},
+            "enabled_operations": ["INGEST"],
+            "conditions_enforced_by": ["not-required"],
+        }
+
+        errors: list[str] = []
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {
+                "zoning": {
+                    "status": "FROZEN",
+                    "scope": {
+                        "geographies": ["NC"],
+                        "intents": ["homestead"],
+                        "input_modalities": ["single_parcel_aoi"],
+                        "output_channels": ["api_json"],
+                    },
+                    "issue_taxonomy": [{"id": "zoning"}],
+                    "severity_rubric": [{"level": "high"}],
+                    "confidence_rubric": [{"band": "supported"}],
+                    "source_requirements": [{"source_id": "DS-X"}],
+                    "owner": "product",
+                    "reviewers": ["reviewer"],
+                }
+            },
+            {"DS-X": valid_source_profile},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "domain profiles must match modalities and channels",
+            errors,
+            "input_modalities do not exactly match frozen target scope",
+        )
+
+        errors = []
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {
+                "zoning": {
+                    "status": "FROZEN",
+                    "scope": {
+                        "geographies": ["NC"],
+                        "intents": ["homestead"],
+                        "input_modalities": ["single_parcel_aoi", "multi_parcel_aoi"],
+                        "output_channels": ["api_json", "exported_report"],
+                    },
+                    "issue_taxonomy": [{"id": "TBD"}],
+                    "severity_rubric": [{"level": "high"}],
+                    "confidence_rubric": [{"band": "supported"}],
+                    "source_requirements": [{"source_id": "DS-X"}],
+                    "owner": "product",
+                    "reviewers": ["reviewer"],
+                }
+            },
+            {"DS-X": valid_source_profile},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "frozen domain profiles cannot retain unresolved fields",
+            errors,
+            "unresolved frozen profile fields",
+        )
+
+        errors = []
+        outside_coverage = {
+            **valid_source_profile,
+            "coverage": {"geographies": ["WA"], "domains": ["flood"]},
+        }
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {"zoning": {
+                "status": "FROZEN",
+                "scope": profile_targets["scope"],
+                "issue_taxonomy": [{"id": "zoning"}],
+                "severity_rubric": [{"level": "high"}],
+                "confidence_rubric": [{"band": "supported"}],
+                "source_requirements": [{"source_id": "DS-X"}],
+                "owner": "product",
+                "reviewers": ["reviewer"],
+            }},
+            {"DS-X": outside_coverage},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "source profile coverage must cover target scope",
+            errors,
+            "coverage.geographies does not cover target scope",
+        )
+
+        errors = []
+        conditional_source = {
+            **valid_source_profile,
+            "rights": {**valid_source_profile["rights"], "cache": "CONDITIONAL"},
+            "enabled_operations": ["CACHE"],
+            "rights_conditions": {},
+            "conditions_enforced_by": [],
+        }
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {"zoning": {
+                "status": "FROZEN",
+                "scope": profile_targets["scope"],
+                "issue_taxonomy": [{"id": "zoning"}],
+                "severity_rubric": [{"level": "high"}],
+                "confidence_rubric": [{"band": "supported"}],
+                "source_requirements": [{"source_id": "DS-X"}],
+                "owner": "product",
+                "reviewers": ["reviewer"],
+            }},
+            {"DS-X": conditional_source},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "conditional source rights require enforcement controls",
+            errors,
+            "conditional cache right lacks enforcement controls",
+        )
+
+        errors = []
+        raw_without_export = {
+            **valid_source_profile,
+            "rights": {**valid_source_profile["rights"], "export": "PROHIBITED"},
+            "enabled_operations": ["RAW_EXPORT"],
+        }
+        validator.validate_domain_and_source_profiles(
+            profile_targets,
+            profile_status,
+            {"zoning": {
+                "status": "FROZEN",
+                "scope": profile_targets["scope"],
+                "issue_taxonomy": [{"id": "zoning"}],
+                "severity_rubric": [{"level": "high"}],
+                "confidence_rubric": [{"band": "supported"}],
+                "source_requirements": [{"source_id": "DS-X"}],
+                "owner": "product",
+                "reviewers": ["reviewer"],
+            }},
+            {"DS-X": raw_without_export},
+            errors,
+            [],
+        )
+        assert_direct_validation_error(
+            "RAW_EXPORT also requires export right",
+            errors,
+            "operation RAW_EXPORT conflicts with export right",
         )
 
         false_p0 = temp_root / "false-p0"

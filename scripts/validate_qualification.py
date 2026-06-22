@@ -23,6 +23,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -64,6 +65,7 @@ GATE_TO_STATUS_KEY = {
     "FIN": "financial_modeling",
     "AI": "ai_llm",
 }
+STATUS_KEY_TO_GATE = {value: key for key, value in GATE_TO_STATUS_KEY.items()}
 
 CLASSIFICATION_REQUIRED_GATES = {
     "L9-R": set(),
@@ -170,6 +172,60 @@ def resolve_local_reference(root: Path, reference: str | None) -> Path | None:
         return None
     candidate = Path(path_text)
     return candidate if candidate.is_absolute() else (root / candidate).resolve()
+
+
+def parse_datetime_utc(
+    value: str | None,
+    label: str,
+    errors: list[str],
+) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        errors.append(f"{label}: invalid date-time {value!r}")
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def validate_unexpired_pass(
+    expires_at: str | None,
+    label: str,
+    now_utc: datetime,
+    errors: list[str],
+) -> None:
+    expires = parse_datetime_utc(expires_at, f"{label}.expires_at", errors)
+    if expires is None:
+        errors.append(f"{label}: PASS has no expires_at")
+        return
+    if expires <= now_utc:
+        errors.append(f"{label}: expired PASS at {expires_at}")
+
+
+def validate_evidence_reference(
+    root: Path,
+    label: str,
+    reference: str | None,
+    errors: list[str],
+) -> None:
+    if not isinstance(reference, str) or not reference.strip():
+        errors.append(f"{label}: criterion evidence reference is empty")
+        return
+    if "://" in reference:
+        return
+    evidence_path = resolve_local_reference(root, reference)
+    if evidence_path is None:
+        return
+    try:
+        evidence_path.relative_to(root.resolve())
+    except ValueError:
+        errors.append(f"{label}: criterion evidence escapes repo: {reference}")
+        return
+    if not evidence_path.exists():
+        errors.append(f"{label}: criterion evidence does not exist: {reference}")
 
 
 def inherited_profile(
@@ -627,6 +683,8 @@ def validate_result(
     catalog_map: dict[str, dict[str, Any]],
     targets: dict[str, Any],
     status: dict[str, Any],
+    expected_gate: str,
+    now_utc: datetime,
     errors: list[str],
 ) -> dict[str, Any] | None:
     if not result_path.exists():
@@ -645,10 +703,20 @@ def validate_result(
         errors.append(f"{result_path}: duplicate criterion IDs")
 
     gate = result.get("gate_id")
+    if gate != expected_gate:
+        errors.append(
+            f"{result_path}: gate_id {gate} does not match status gate {expected_gate}"
+        )
     expected = expected_criteria_for_gate(gate, catalog_map, targets)
     present = set(ids)
 
     if result.get("status") == "PASS":
+        validate_unexpired_pass(
+            result.get("expires_at"),
+            f"{result_path}: result",
+            now_utc,
+            errors,
+        )
         missing = sorted(expected - present)
         if missing:
             errors.append(f"{result_path}: PASS omits applicable criteria: {missing}")
@@ -676,21 +744,56 @@ def validate_result(
             errors.append(f"{result_path}: inapplicable criterion {cid} must be omitted or N/A")
         if row.get("result") not in CRITERION_RESULTS:
             errors.append(f"{result_path}: invalid criterion result for {cid}")
+        if result.get("status") == "PASS" and row.get("result") == "PASS":
+            for evidence_ref in row.get("evidence") or []:
+                validate_evidence_reference(
+                    root,
+                    f"{result_path}: {cid}",
+                    evidence_ref,
+                    errors,
+                )
 
     candidate = status.get("candidate", {})
+    if result.get("selected_product_scope_profile") != status.get(
+        "selected_product_scope_profile"
+    ):
+        errors.append(f"{result_path}: selected product-scope profile differs from status")
+    if result.get("selected_deployment_profile") != status.get(
+        "selected_deployment_profile"
+    ):
+        errors.append(f"{result_path}: selected deployment profile differs from status")
     if candidate.get("commit") and result.get("candidate_commit") != candidate.get("commit"):
         errors.append(f"{result_path}: candidate commit differs from status")
-    if candidate.get("artifact_digest") and result.get("artifact_digest") != candidate.get("artifact_digest"):
+    if candidate.get("tag") and result.get("candidate_tag") != candidate.get("tag"):
+        errors.append(f"{result_path}: candidate tag differs from status")
+    if candidate.get("artifact_digest") and result.get("artifact_digest") != candidate.get(
+        "artifact_digest"
+    ):
         errors.append(f"{result_path}: artifact digest differs from status")
+    if candidate.get("protocol_version") and result.get("protocol_version") != candidate.get(
+        "protocol_version"
+    ):
+        errors.append(f"{result_path}: protocol version differs from status")
+    if candidate.get("targets_version") and result.get("targets_version") != candidate.get(
+        "targets_version"
+    ):
+        errors.append(f"{result_path}: targets version differs from status")
+    if candidate.get("vocabulary_version") and result.get(
+        "vocabulary_version"
+    ) != candidate.get("vocabulary_version"):
+        errors.append(f"{result_path}: vocabulary version differs from status")
     if candidate.get("criteria_catalog_digest"):
         if result.get("criteria_catalog_digest") != candidate.get("criteria_catalog_digest"):
             errors.append(f"{result_path}: criterion catalog digest differs from status")
 
     evidence_ref = result.get("evidence_path")
     if result.get("status") == "PASS" and evidence_ref:
-        evidence_path = resolve_local_reference(root, evidence_ref)
-        if evidence_path is not None and not evidence_path.exists():
-            errors.append(f"{result_path}: evidence_path does not exist: {evidence_path}")
+        validate_evidence_reference(
+            root,
+            f"{result_path}: evidence_path",
+            evidence_ref,
+            errors,
+        )
 
     return result
 
@@ -889,6 +992,7 @@ def validate_result_records(
     targets: dict[str, Any],
     catalog_map: dict[str, dict[str, Any]],
     result_schema_path: Path,
+    now_utc: datetime,
     errors: list[str],
 ) -> None:
     root = root.resolve()
@@ -897,6 +1001,20 @@ def validate_result_records(
             current_status = record.get("status")
             if current_status not in {"PASS", "FAIL", "BLOCKED"}:
                 continue
+            expected_gate = STATUS_KEY_TO_GATE.get(name, name.upper())
+            if current_status == "PASS":
+                validate_unexpired_pass(
+                    record.get("expires_at"),
+                    f"status: {section}.{name}",
+                    now_utc,
+                    errors,
+                )
+            if (
+                current_status == "BLOCKED"
+                and section == "qualifications"
+                and name == "p0"
+            ):
+                validate_blocked_record(root, section, name, record, errors)
             result_ref = record.get("result_path")
             if not result_ref:
                 if (
@@ -904,7 +1022,6 @@ def validate_result_records(
                     and section == "qualifications"
                     and name == "p0"
                 ):
-                    validate_blocked_record(root, section, name, record, errors)
                     continue
                 errors.append(
                     f"status: {section}.{name} is {current_status} but has no result_path"
@@ -915,7 +1032,7 @@ def validate_result_records(
                 result_path = (root / result_path).resolve()
             result = validate_result(
                 root, result_path, result_schema_path,
-                catalog_map, targets, status, errors
+                catalog_map, targets, status, expected_gate, now_utc, errors
             )
             if result and result.get("status") != current_status:
                 errors.append(
@@ -986,6 +1103,56 @@ def load_profile_directory(
     return profiles
 
 
+def coverage_covers(required: set[str], coverage: set[str]) -> bool:
+    if not required:
+        return True
+    if not coverage:
+        return False
+    if "*" in coverage or "GLOBAL" in coverage:
+        return True
+    for item in required:
+        if item in coverage:
+            continue
+        if any(item.startswith(f"{covered}-") for covered in coverage):
+            continue
+        return False
+    return True
+
+
+def coverage_overlaps(required: set[str], coverage: set[str]) -> bool:
+    if not required:
+        return True
+    if not coverage:
+        return False
+    if "*" in coverage or "GLOBAL" in coverage:
+        return True
+    for item in required:
+        if item in coverage:
+            return True
+        if any(item.startswith(f"{covered}-") for covered in coverage):
+            return True
+    return False
+
+
+def validate_conditional_right(
+    source_id: str,
+    right_name: str,
+    rights_conditions: dict[str, Any],
+    conditions_enforced_by: list[str],
+    errors: list[str],
+) -> None:
+    if not conditions_enforced_by or unresolved(conditions_enforced_by):
+        errors.append(
+            f"source profile {source_id}: conditional {right_name} right "
+            "lacks enforcement controls"
+        )
+    if not rights_conditions or unresolved(rights_conditions):
+        errors.append(
+            f"source profile {source_id}: conditional {right_name} right "
+            "lacks recorded rights conditions"
+        )
+
+
 def validate_domain_and_source_profiles(
     targets: dict[str, Any],
     status: dict[str, Any],
@@ -1054,13 +1221,47 @@ def validate_domain_and_source_profiles(
             continue
         if profile.get("status") != "FROZEN":
             errors.append(f"status: P0 PASS while domain profile {domain_id} is not FROZEN")
-        if profile.get("scope", {}).get("geographies") != scope.get("geographies"):
+        profile_scope = profile.get("scope", {})
+        if profile_scope.get("geographies") != scope.get("geographies"):
             errors.append(
                 f"domain profile {domain_id}: geographies do not exactly match frozen target scope"
             )
-        if profile.get("scope", {}).get("intents") != scope.get("intents"):
+        if profile_scope.get("intents") != scope.get("intents"):
             errors.append(
                 f"domain profile {domain_id}: intents do not exactly match frozen target scope"
+            )
+        if profile_scope.get("input_modalities") != scope.get("input_modalities"):
+            errors.append(
+                f"domain profile {domain_id}: input_modalities do not exactly match frozen target scope"
+            )
+        if profile_scope.get("output_channels") != scope.get("output_channels"):
+            errors.append(
+                f"domain profile {domain_id}: output_channels do not exactly match frozen target scope"
+            )
+        unresolved_profile_fields = [
+            field
+            for field in [
+                "reference_hierarchy",
+                "issue_taxonomy",
+                "severity_rubric",
+                "confidence_rubric",
+                "source_requirements",
+                "unknown_states",
+                "metrics",
+                "owner",
+                "reviewers",
+                "expires_at",
+                "frozen_at",
+                "approved_by",
+                "invalidation_triggers",
+                "field_surveillance_plan",
+            ]
+            if unresolved(profile.get(field))
+        ]
+        if unresolved_profile_fields:
+            errors.append(
+                f"domain profile {domain_id}: unresolved frozen profile fields "
+                f"{unresolved_profile_fields}"
             )
         source_requirements = profile.get("source_requirements") or []
         if unresolved(source_requirements):
@@ -1081,24 +1282,53 @@ def validate_domain_and_source_profiles(
             errors.append(
                 f"source profile {source_id}: selected product profile is not approved"
             )
+        coverage = profile.get("coverage") or {}
+        coverage_geographies = set(coverage.get("geographies") or [])
+        coverage_domains = set(coverage.get("domains") or [])
+        if not coverage_covers(set(scope.get("geographies") or []), coverage_geographies):
+            errors.append(
+                f"source profile {source_id}: coverage.geographies does not cover target scope"
+            )
+        if not coverage_overlaps(required_domains, coverage_domains):
+            errors.append(
+                f"source profile {source_id}: coverage.domains does not overlap target domains"
+            )
         rights = profile.get("rights", {})
         operations = set(profile.get("enabled_operations", []))
         if commercial and rights.get("commercial_use") in {"UNKNOWN", "PROHIBITED"}:
             errors.append(f"source profile {source_id}: commercial use is not permitted")
         right_by_operation = {
-            "CACHE": "cache",
-            "RETAIN_HISTORY": "retain",
-            "RAW_EXPORT": "raw_data",
-            "DERIVED_EXPORT": "export",
-            "DISPLAY": "redistribute",
-            "AI_PROCESS": "ai_use",
+            "CACHE": ("cache",),
+            "RETAIN_HISTORY": ("retain",),
+            "RAW_EXPORT": ("raw_data", "export"),
+            "DERIVED_EXPORT": ("export",),
+            "DISPLAY": ("redistribute",),
+            "AI_PROCESS": ("ai_use",),
         }
-        for operation, right_name in right_by_operation.items():
-            if operation in operations and rights.get(right_name) in {"UNKNOWN", "PROHIBITED"}:
-                errors.append(
-                    f"source profile {source_id}: operation {operation} conflicts with {right_name} right"
-                )
-        if ai_enabled and "AI_PROCESS" in operations and rights.get("ai_use") in {"UNKNOWN", "PROHIBITED"}:
+        rights_conditions = profile.get("rights_conditions") or {}
+        conditions_enforced_by = profile.get("conditions_enforced_by") or []
+        for operation, right_names in right_by_operation.items():
+            if operation not in operations:
+                continue
+            for right_name in right_names:
+                right_value = rights.get(right_name)
+                if right_value in {"UNKNOWN", "PROHIBITED"}:
+                    errors.append(
+                        f"source profile {source_id}: operation {operation} conflicts with {right_name} right"
+                    )
+                if right_value == "CONDITIONAL":
+                    validate_conditional_right(
+                        source_id,
+                        right_name,
+                        rights_conditions,
+                        conditions_enforced_by,
+                        errors,
+                    )
+        if (
+            ai_enabled
+            and "AI_PROCESS" in operations
+            and rights.get("ai_use") in {"UNKNOWN", "PROHIBITED"}
+        ):
             errors.append(f"source profile {source_id}: AI processing is not permitted")
 
 
@@ -1144,7 +1374,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rubrics", type=Path)
     parser.add_argument("--domain-profiles-dir", type=Path)
     parser.add_argument("--source-profiles-dir", type=Path)
+    parser.add_argument(
+        "--now",
+        help="ISO-8601 UTC timestamp used for deterministic PASS expiry checks.",
+    )
     args = parser.parse_args(argv)
+    clock_errors: list[str] = []
+    now_utc = (
+        parse_datetime_utc(args.now, "--now", clock_errors)
+        if args.now
+        else datetime.now(timezone.utc)
+    )
+    if clock_errors or now_utc is None:
+        for error in clock_errors:
+            print(f"FAIL: {error}")
+        return 1
 
     root = args.root.resolve()
     if args.layout == "auto":
@@ -1323,7 +1567,13 @@ def main(argv: list[str] | None = None) -> int:
         targets, status, profiles, catalog_map, rubrics, errors
     )
     validate_result_records(
-        root, status, targets, catalog_map, required_files["result_schema"], errors
+        root,
+        status,
+        targets,
+        catalog_map,
+        required_files["result_schema"],
+        now_utc,
+        errors,
     )
     validate_domain_and_source_profiles(
         targets, status, domain_profiles, source_profiles, errors, warnings
