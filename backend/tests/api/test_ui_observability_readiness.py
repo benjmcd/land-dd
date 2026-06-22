@@ -119,7 +119,9 @@ def test_ui_observability_readiness_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise ObservabilityReadinessError("test observability readiness failure")
+        raise ObservabilityReadinessError(
+            "LEAK_SENTINEL drift at /workspace/config/observability.yaml field alert_routes"
+        )
 
     monkeypatch.setattr(ui_module, "load_observability_readiness", _raise_loader)
     client = TestClient(create_app())
@@ -127,8 +129,13 @@ def test_ui_observability_readiness_route_returns_503_when_loader_fails(
     response = client.get("/ui/observability-readiness")
 
     assert response.status_code == 503
-    assert "Observability readiness unavailable from repo-owned artifacts" in response.text
-    assert "test observability readiness failure" in response.text
+    assert (
+        "Observability readiness could not be verified from repo-owned artifacts"
+        in response.text
+    )
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 
