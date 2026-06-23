@@ -2,6 +2,70 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 ODP-BOL-001 Owner-Answer Packet
+
+**Scope:** Add a validate-only ODP-BOL-001 owner-answer packet that makes the next
+external Bologna product/AOI/scope response machine-checkable. This does not record
+owner authority, select an AOI, approve sources, change source rights, create a
+recorded corpus, capture fixtures, seed the DB, prove a report, change report/API/UI
+semantics, approve hosted/Level 10 authority, or change qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_answer_packet_check.py
+.\scripts\run_bologna_odp1_owner_answer_packet_check.ps1
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 -m ruff check scripts\bologna_odp1_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp1_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New packet checker, PowerShell wrapper, owner-answer intake checker, and ODP1
+  response-gate checker passed.
+- EQ-5 backlog checker passed after project-state wording was corrected so its
+  fail-closed exact-fragment check could see
+  `EQ-5 qualification parameterization backlog check`.
+- Focused packet/intake/ODP1/readiness/backlog tests passed (`32 passed`).
+- Qualification status initially failed because the new checker was crosswalk-mapped
+  but did not advertise criterion IDs. The checker entrypoint was updated to use the
+  standard `--qualification-criteria-json` advertisement hook, and status then passed:
+  `passed=34 not_run=2 unexpected_failed=0`, derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the existing blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Focused ruff passed. Focused mypy first found a boolean predicate type issue in the
+  updated backlog checker and backend import-path noise when run from repo root; the
+  predicate was fixed, and mypy passed with `PYTHONPATH`/`MYPYPATH` set to `backend`.
+- Change-impact passed as advisory over 17 changed paths, mapping the new
+  `bologna_odp1_owner_answer_packet` surface to `P0-001`, `G-021`, `R-005`, and
+  `Q3-029`, plus the existing qualification-backlog surface.
+- Diff hygiene and no-deletion checks passed.
+- First full `.\scripts\verify.ps1` attempt timed out at the 5-minute tool limit
+  before a result was available. A later full rerun passed in 576 seconds: workspace
+  validation, qualification selftest, qualification structural validation,
+  qualification status, default change-impact, P0 auto-evidence, qualification
+  parameterization backlog, backend tests, backend ruff, and backend mypy all passed.
+  DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This packet makes the next owner response exact and checkable, but
+it cannot create authority. Bologna remains externally blocked until cited owner
+authority exists for `ODP-BOL-001` product/AOI/scope, followed in sequence by
+`ODP-BOL-002` source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004`
+DB-backed report proof. P0 remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
 ## 2026-06-23 EQ-R Residual Reconciliation Closeout
 
 **Scope:** Close EQ-R by refreshing `state/residual-reconciliation.md` to live main

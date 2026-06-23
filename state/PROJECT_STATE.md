@@ -1,26 +1,28 @@
 # Project State
 
-## Current checkpoint (2026-06-23 EQ-R residual reconciliation closeout)
+## Current checkpoint (2026-06-23 ODP-BOL-001 owner-answer packet)
 
-Live `origin/main` is `74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, including
-EQ-5 qualification parameterization backlog check after PR #159,
-BOL-POST-ODP4-AUTH after PR #158, and PR #157 BOL-ODP4-GATE DB-backed Bologna
-report proof response gate after PR #156 BOL-ODP3-GATE
+Live `origin/main` is `b5ed59e7143773f306ab216865df0133ca7b0451`, including
+EQ-R residual reconciliation closeout after PR #160, EQ-5 qualification parameterization backlog check
+after PR #159, BOL-POST-ODP4-AUTH after PR #158, PR #157
+BOL-ODP4-GATE DB-backed Bologna report proof response gate after PR #156, and
+BOL-ODP3-GATE
 ODP-BOL-003 recorded-source corpus response gate, PR #155 BOL-ODP2-GATE
 ODP-BOL-002 source-rights response gate, PR #154 BOL-ODP1-GATE ODP-BOL-001
 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer intake, PR #152
 OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1 authorized
 scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
 HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
-hardening. The current branch closes EQ-R by refreshing residual-reconciliation
-authority and explicitly recording the remaining deferred dirty-root candidates as
-blocked candidate evidence. The validate-only response-gate scaffold for
+hardening. The current branch adds a validate-only ODP-BOL-001 owner-answer packet so
+the next external product/AOI/scope authority response is explicit and
+machine-checkable. It does not record owner authority, select an AOI, approve sources,
+or unlock source/corpus/report work. The validate-only response-gate scaffold for
 `ODP-BOL-001` through `ODP-BOL-004` is complete, and no DB-backed Bologna report proof
 work may proceed until cited owner authority exists for product/AOI/scope, source
 rights, recorded corpus, and report proof in that order.
 
 - **Current implementation plan**:
-  `plans/2026-06-23-eqr-residual-closeout.md`.
+  `plans/2026-06-23-odp1-owner-answer-packet.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -45,6 +47,12 @@ rights, recorded corpus, and report proof in that order.
   product/AOI/scope owner answer, keeps owner-answer and authority references empty,
   and keeps every outcome from unlocking source, corpus, fixture, DB, report, hosted,
   or Level 10 work.
+- **Current ODP-BOL-001 owner-answer packet boundary**:
+  `config/bologna_odp1_owner_answer_packet.yaml` is validate-only. It gives the owner
+  a checked response template, pilot-scope authority-record template, required
+  scope-decision checklist, allowed outcome policy, and downstream blocker list while
+  keeping `current_owner_answers`, `current_authority_records`, owner-answer
+  references, authority-record references, and downstream updates empty.
 - **Current ODP-BOL-002 source-rights response boundary**:
   `config/bologna_odp2_source_rights_response_gate.yaml` is validate-only. It targets
   only the source-authority/source-rights owner answer, keeps `ODP-BOL-001` as the
@@ -84,6 +92,8 @@ rights, recorded corpus, and report proof in that order.
   `state/residual-reconciliation.md` now distinguishes zero remaining
   `STILL_DIVERGENT` product candidates from 17 explicitly listed
   `DEFER_STILL_BLOCKED` paths that remain decaying candidate evidence only.
+  `BOL-ODP1-PACKET` is done as a validate-only owner-answer packet for the first
+  Bologna authority step.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and

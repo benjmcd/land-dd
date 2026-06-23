@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 ODP-BOL-001 owner-answer packet
+
+- Continued from live `origin/main@b5ed59e7143773f306ab216865df0133ca7b0451` in
+  clean worktree `worktrees/odp1-packet` on `codex/odp1-packet`, leaving the dirty
+  root checkout untouched.
+- Reconciled current routing after EQ-R/PR #160 and chose the narrowest Bologna-first
+  repo-local bridge still allowed without external authority: a validate-only
+  owner-answer packet for `ODP-BOL-001` product/AOI/scope authority.
+- Added `config/bologna_odp1_owner_answer_packet.yaml`, a checker, Windows/POSIX
+  wrappers, a runbook, focused artifact tests, manifest/crosswalk/backlog routing, and
+  task/project/plan routing updates.
+- Preserved the authority boundary: no owner answer, pilot-scope authority record, AOI
+  selection, source approval, source-rights change, recorded corpus, fixture capture,
+  DB seed, DB-backed report proof, downstream update, hosted authority, Level 10 claim,
+  or qualification PASS was introduced.
+- Validation so far confirms the packet stays aligned to the owner-answer intake,
+  ODP1 response gate, and pilot-scope authority contract while qualification status
+  remains `BLOCKED=1 NOT_RUN=20`.
+
 ## 2026-06-23 EQ-R residual reconciliation closeout
 
 - Started clean worktree `worktrees/eqr-close` on `codex/eqr-close` from live

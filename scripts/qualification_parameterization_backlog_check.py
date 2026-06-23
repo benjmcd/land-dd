@@ -21,6 +21,7 @@ BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
 OWNER_INTAKE_PATH = "config/bologna_owner_answer_intake.yaml"
+ODP1_OWNER_ANSWER_PACKET_PATH = "config/bologna_odp1_owner_answer_packet.yaml"
 QUALIFICATION_STATUS_PATH = "state/EMPIRICAL_QUALIFICATION_STATUS.yaml"
 QUALIFICATION_TARGETS_PATH = "config/qualification/qualification_targets.yaml"
 SOURCE_PROFILE_PATH = "config/qualification/source_profiles/source_quality_profile.ds-002.yaml"
@@ -180,6 +181,8 @@ def validate_backlog(backlog: str, errors: list[str]) -> None:
             "No AOI selection, source approval, fixture capture",
             "Owner decision consequence map: `state/owner-decision-packet.md`",
             "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`",
+            "ODP-BOL-001 owner-answer packet:",
+            "`config/bologna_odp1_owner_answer_packet.yaml`",
             "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
             "## Owner Decision Blockers",
             "Active gates | 12 | BLOCKED (external/owner authority)",
@@ -309,6 +312,74 @@ def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
             )
 
 
+def validate_odp1_owner_answer_packet(packet: dict[str, Any], errors: list[str]) -> None:
+    require(
+        packet.get("status") == "ready_for_external_owner_response",
+        "ODP-BOL-001 owner answer packet status drifted",
+        errors,
+    )
+    approvals = require_mapping(packet.get("approvals"), "ODP1 packet approvals", errors)
+    for key in (
+        "owner_answer_recorded",
+        "pilot_scope_authority_recorded",
+        "product_aoi_scope_authorized",
+        "downstream_authority_updates_allowed",
+    ):
+        require(approvals.get(key) is False, f"ODP1 packet approvals.{key} must be false", errors)
+
+    limits = require_mapping(packet.get("limits"), "ODP1 packet limits", errors)
+    require(limits.get("validate_only_answer_packet") is True, "ODP1 packet must be validate-only", errors)
+    for key in (
+        "records_owner_answer",
+        "records_pilot_scope_authority",
+        "selects_bologna_aoi",
+        "approves_sources",
+        "changes_source_rights",
+        "creates_recorded_fixtures",
+        "creates_source_failure_fixtures",
+        "mutates_database",
+        "creates_report_artifacts",
+        "changes_report_semantics",
+        "claims_level_10",
+    ):
+        require(limits.get(key) is False, f"ODP1 packet limits.{key} must be false", errors)
+
+    body = require_mapping(packet.get("packet"), "ODP1 packet body", errors)
+    require(body.get("odp_id") == "ODP-BOL-001", "ODP1 packet ODP id drifted", errors)
+    require(
+        body.get("current_owner_answer_references") == [],
+        "ODP1 packet owner answer references must remain empty",
+        errors,
+    )
+    require(
+        body.get("current_authority_record_references") == [],
+        "ODP1 packet authority record references must remain empty",
+        errors,
+    )
+    owner_template = require_mapping(body.get("owner_answer_template"), "ODP1 owner template", errors)
+    require(
+        owner_template.get("downstream_unlocks_requested") == [],
+        "ODP1 owner answer template must not request downstream unlocks",
+        errors,
+    )
+    authority_template = require_mapping(
+        body.get("pilot_scope_authority_record_template"),
+        "ODP1 authority template",
+        errors,
+    )
+    require(
+        authority_template.get("downstream_unlocks_requested") == [],
+        "ODP1 authority template must not request downstream unlocks",
+        errors,
+    )
+    policy = require_mapping(packet.get("submission_policy"), "ODP1 packet submission policy", errors)
+    require(
+        policy.get("downstream_updates_allowed_by_packet") is False,
+        "ODP1 packet must not allow downstream updates",
+        errors,
+    )
+
+
 def validate_qualification_status(status: dict[str, Any], errors: list[str]) -> None:
     candidate = require_mapping(status.get("candidate"), "qualification status candidate", errors)
     for key, value in candidate.items():
@@ -384,7 +455,11 @@ def validate_source_profile(profile: dict[str, Any], errors: list[str]) -> None:
     require_mapping(profile.get("authority"), "DS-002 authority", errors)
     require_mapping(profile.get("rights"), "DS-002 rights", errors)
     controls = profile.get("conditions_enforced_by")
-    require(isinstance(controls, list) and controls, "DS-002 enforcement controls must be non-empty", errors)
+    require(
+        isinstance(controls, list) and len(controls) > 0,
+        "DS-002 enforcement controls must be non-empty",
+        errors,
+    )
 
 
 def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str]) -> None:
@@ -442,9 +517,14 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (".github/workflows/ci.yml", "Validate qualification parameterization backlog"),
         ("scripts/run_qualification_parameterization_backlog_check.ps1", "qualification_parameterization_backlog_check.py"),
         ("scripts/run_qualification_parameterization_backlog_check.sh", "qualification_parameterization_backlog_check.py"),
+        ("scripts/run_bologna_odp1_owner_answer_packet_check.ps1", "bologna_odp1_owner_answer_packet_check.py"),
+        ("scripts/run_bologna_odp1_owner_answer_packet_check.sh", "bologna_odp1_owner_answer_packet_check.py"),
         ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
+        ("MANIFEST.md", "config/bologna_odp1_owner_answer_packet.yaml"),
         ("plans/README.md", EXPECTED_EQ5_PLAN),
         ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
+        (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
+        ("docs/runbooks/bologna_odp1_owner_answer_packet.md", "does not record owner authority"),
         (EXPECTED_EQ5_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
@@ -458,6 +538,7 @@ def validate(root: Path) -> list[str]:
     validate_owner_packet(read_text(root, OWNER_PACKET_PATH), errors)
     validate_owner_decisions(read_text(root, OWNER_DECISIONS_PATH), errors)
     validate_owner_intake(load_yaml(root, OWNER_INTAKE_PATH), errors)
+    validate_odp1_owner_answer_packet(load_yaml(root, ODP1_OWNER_ANSWER_PACKET_PATH), errors)
     validate_qualification_status(load_yaml(root, QUALIFICATION_STATUS_PATH), errors)
     validate_targets(load_yaml(root, QUALIFICATION_TARGETS_PATH), errors)
     validate_source_profile(load_yaml(root, SOURCE_PROFILE_PATH), errors)
