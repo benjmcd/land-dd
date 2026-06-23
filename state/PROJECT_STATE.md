@@ -1,17 +1,18 @@
 # Project State
 
-## Current checkpoint (2026-06-22 owner decision consequence packet)
+## Current checkpoint (2026-06-23 Bologna owner-answer intake)
 
-Live `origin/main` is `cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10`, including PR #151
-QFREEZE-1 authorized scope/source freeze after PR #150 HCV-4 status derivation and
-config consistency, PR #148 HCV-3 readiness crosswalk CI-gate completeness, and PR #149
-guardrail error-redaction hardening. The current lane is OWNER-DEC-1: add a
-decision-request-only owner packet that maps remaining qualification and Bologna choices
-to consequences, downstream gates, required evidence, and reversal costs without
-authorizing any new freeze or runtime work.
+Live `origin/main` is `a6f5ac7a1accbce67dfbeadc02bd10cd6514085a`, including PR #152
+OWNER-DEC-1 owner decision consequence packet after PR #151 QFREEZE-1 authorized
+scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
+HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
+hardening. The current lane is BOL-ODP-1: add a validate-only owner-answer intake for
+`ODP-BOL-001` through `ODP-BOL-004` that cross-checks future Bologna product/AOI,
+source-rights, recorded-corpus, and DB-backed report-proof answers against the existing
+authority packets without recording authority or unlocking work.
 
 - **Current implementation plan**:
-  `plans/2026-06-22-owner-decision-packet.md`.
+  `plans/2026-06-23-bologna-owner-answer-intake.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -28,6 +29,9 @@ authorizing any new freeze or runtime work.
   non-authorizing consequence map. It is not an owner-decision ledger and cannot by
   itself freeze targets, rubrics, domains, sources, Bologna AOI/source/corpus/report
   work, DS-017, hosted authority, or Level 10 claims.
+- **Current owner-answer intake boundary**: `config/bologna_owner_answer_intake.yaml`
+  is validate-only. It keeps `current_owner_answers` empty, maps each ODP-BOL thread to
+  existing Bologna authority contracts, and keeps every downstream update disabled.
 - **Current config consistency hardening**: DS-002 keeps `status: APPROVED`, and its
   rights values use production source-registry vocabulary
   (`restricted` / `approved-with-restrictions`) while preserving enforced
@@ -36,8 +40,8 @@ authorizing any new freeze or runtime work.
 - **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
   `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`,
-  `HCV-2`, `HCV-3`, `HCV-4`, and `QFREEZE-1` are done in the current routing model.
-  `OWNER-DEC-1` is active.
+  `HCV-2`, `HCV-3`, `HCV-4`, `QFREEZE-1`, and `OWNER-DEC-1` are done in the current
+  routing model. `BOL-ODP-1` is active.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -49,19 +53,16 @@ authorizing any new freeze or runtime work.
   values; it does not authorize domain-profile rubrics, criterion-contract pass rules,
   additional source approvals, or P0 `PASS`.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights authority blocker is external. OWNER-DEC-1 may describe the
-  Bologna decision sequence, but it introduces no Bologna authority packet,
+  product/AOI/source-rights authority blocker is external. BOL-ODP-1 may validate the
+  shape of future owner answers, but it introduces no Bologna authority packet,
   source-rights approval beyond DS-002, corpus, fixture, DB seed, runtime/report proof,
   or source registry promotion.
-- **Immediate next pursuit**: complete OWNER-DEC-1 with focused packet/routing tests,
-  qualification validator/status checks, full verification, PR review/merge, and
-  detached post-merge proof. The packet should make the remaining owner-decision
-  milestone explicit: domain profiles, DQ/Q1/Q2/M target thresholds, criterion
-  contracts, judgment rubrics, source approvals beyond DS-002, P0 protocol authority,
-  conditional profile decisions, and the prioritized Bologna product/AOI/source-rights/
-  corpus/report sequence.
+- **Immediate next pursuit**: complete BOL-ODP-1 with focused owner-answer intake,
+  Bologna, routing, qualification, readiness, and full verification checks. After that,
+  the next substantive progress still requires real owner authority for ODP-BOL-001
+  before any BSA-001/source-rights/corpus/report-proof work can change.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze in
-  OWNER-DEC-1, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
+  BOL-ODP-1, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
   source approval beyond DS-002's existing profile and selected binding, source registry promotion,
   recorded fixture, connector, DB seed, report/API/UI/schema change, auth change,
   report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted

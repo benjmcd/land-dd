@@ -206,6 +206,21 @@ entries:
   - Q3-020
   evidence_role: authority_blocker
   notes: Recorded-source corpus metadata can support later reports but is not itself a report-result pass.
+- surface_id: bologna_owner_answer_intake
+  surface_type: authority
+  config_paths:
+  - config/bologna_owner_answer_intake.yaml
+  checker_paths:
+  - scripts/bologna_owner_answer_intake_check.py
+  gate_paths:
+  - scripts/run_bologna_owner_answer_intake_check.ps1
+  criterion_ids:
+  - P0-001
+  - G-021
+  - R-005
+  - Q3-029
+  evidence_role: authority_blocker
+  notes: Owner-answer intake maps ODP-BOL decision threads to existing Bologna authority packets without recording authority or unlocking downstream work.
 - surface_id: checklist_dry_run
   surface_type: jurisdiction
   config_paths:

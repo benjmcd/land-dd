@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-22-owner-decision-packet.md
+active_plan: plans/2026-06-23-bologna-owner-answer-intake.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -67,8 +67,9 @@ routing_note: >
   consistency merged through PR #150 at
   `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`, and QFREEZE-1 authorized scope/source
   freeze merged through PR #151 at `cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10`.
-  Current local lane: OWNER-DEC-1 owner decision consequence packet. Bologna
-  implementation is stopped
+  OWNER-DEC-1 owner decision consequence packet merged through PR #152 at
+  `a6f5ac7a1accbce67dfbeadc02bd10cd6514085a`. Current local lane: BOL-ODP-1
+  Bologna owner-answer intake. Bologna implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -2344,7 +2345,7 @@ tasks:
 
   - id: OWNER-DEC-1
     title: Owner decision consequence packet
-    status: active
+    status: done
     depends_on: [QFREEZE-1]
     lane: coordinator
     spec: plans/2026-06-22-owner-decision-packet.md
@@ -2360,10 +2361,28 @@ tasks:
       - QFREEZE-1 is done and OWNER-DEC-1 is the only active task
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
+  - id: BOL-ODP-1
+    title: Bologna owner-answer intake
+    status: active
+    depends_on: [OWNER-DEC-1]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-owner-answer-intake.md
+    notes: >
+      Add a validate-only owner-answer intake for ODP-BOL-001 through ODP-BOL-004
+      that cross-checks product/AOI, source-rights, recorded-corpus, and DB-backed
+      report-proof questions against existing Bologna authority packets. This records
+      no owner answers, grants no authority, and keeps all downstream updates blocked.
+    acceptance:
+      - config/bologna_owner_answer_intake.yaml validates against the existing Bologna authority and corpus contracts
+      - ODP-BOL-001 through ODP-BOL-004 remain missing_owner_answer with empty owner_answer_references
+      - The checker is mapped into the qualification readiness crosswalk
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [OWNER-DEC-1]
+    depends_on: [BOL-ODP-1]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >

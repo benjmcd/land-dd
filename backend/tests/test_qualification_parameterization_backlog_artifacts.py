@@ -152,17 +152,17 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
 
     assert "Owner decision consequence map: `state/owner-decision-packet.md`" in backlog
     assert "decision-request-only artifact" in backlog
+    assert "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`" in backlog
+    assert "keeps all ODP-BOL owner answers missing" in backlog
 
 
 def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> None:
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert (
-        task_queue["active_plan"] == "plans/2026-06-22-owner-decision-packet.md"
-    )
+    assert task_queue["active_plan"] == "plans/2026-06-23-bologna-owner-answer-intake.md"
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["OWNER-DEC-1"]
+    assert active_ids == ["BOL-ODP-1"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -217,10 +217,16 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["QFREEZE-1"]["depends_on"] == ["HCV-4"]
     assert tasks["QFREEZE-1"]["status"] == "done"
     assert tasks["OWNER-DEC-1"]["depends_on"] == ["QFREEZE-1"]
-    assert tasks["OWNER-DEC-1"]["status"] == "active"
+    assert tasks["OWNER-DEC-1"]["status"] == "done"
     assert tasks["OWNER-DEC-1"]["spec"] == (
         "plans/2026-06-22-owner-decision-packet.md"
     )
     assert "does not authorize any additional freeze" in tasks["OWNER-DEC-1"]["notes"]
-    assert tasks["EQ-5"]["depends_on"] == ["OWNER-DEC-1"]
+    assert tasks["BOL-ODP-1"]["depends_on"] == ["OWNER-DEC-1"]
+    assert tasks["BOL-ODP-1"]["status"] == "active"
+    assert tasks["BOL-ODP-1"]["spec"] == (
+        "plans/2026-06-23-bologna-owner-answer-intake.md"
+    )
+    assert "keeps all downstream updates blocked" in tasks["BOL-ODP-1"]["notes"]
+    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP-1"]
     assert tasks["BSA-001"]["status"] == "blocked"

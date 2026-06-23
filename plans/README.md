@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-22-qfreeze-1-authorized-scope-source.md`.
+Latest completed plan: `2026-06-22-owner-decision-packet.md`.
 
-Current routing plan: `2026-06-22-owner-decision-packet.md`.
+Current routing plan: `2026-06-23-bologna-owner-answer-intake.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -226,6 +226,14 @@ rubrics, source approvals beyond DS-002, and Bologna authority remain blocked.
 domain, target/contract, rubric, source, P0 protocol, conditional-profile, Bologna,
 DS-017, hosted, and Level 10 decisions. It does not freeze additional values, approve
 sources, select a Bologna AOI, create a corpus, run a DB-backed report, or change
+qualification status.
+
+`BOL-ODP-1` is the current Bologna-first follow-on after OWNER-DEC-1. It adds
+`config/bologna_owner_answer_intake.yaml` plus a validate-only checker so future
+ODP-BOL-001 through ODP-BOL-004 owner answers have a machine-checkable shape tied to
+the existing Bologna pilot-scope, source-authority, source-rights, recorded-corpus,
+evidence, and report-run contracts. It does not record owner authority, select an AOI,
+approve sources, capture fixtures, seed the DB, prove a report, or change
 qualification status.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,

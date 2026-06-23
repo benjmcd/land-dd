@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 BOL-ODP-1 Bologna owner-answer intake
+
+- Started clean worktree `worktrees/bol-owner` on `codex/bologna-owner-intake` from
+  live `origin/main@a6f5ac7a1accbce67dfbeadc02bd10cd6514085a` after PR #152 merged
+  and no conflicting Bologna owner-answer branch/worktree existed.
+- Re-read startup routing, the merged owner decision packet, Bologna pilot-scope,
+  source-authority, source-rights, recorded-corpus contracts, focused tests, and
+  qualification status before editing.
+- Baseline Bologna validators, backend-cwd focused Bologna/routing tests, qualification
+  status, and structural qualification validation passed. A root-cwd focused pytest run
+  failed on the known `app` import command-shape issue and was rerun from `backend`.
+- Added `config/bologna_owner_answer_intake.yaml`, checker, wrappers, runbook, and
+  focused tests so ODP-BOL-001 through ODP-BOL-004 owner answers have a validate-only
+  machine-readable shape tied to existing Bologna contracts.
+- Mapped the new checker into the qualification readiness crosswalk, routed
+  OWNER-DEC-1 to done and BOL-ODP-1 to active, and preserved all authority blockers.
+- Focused owner-answer/Bologna validators and tests, readiness-matrix checking,
+  qualification status, structural qualification validation, focused ruff/mypy, and
+  qualification selftest passed. Status derivation remained `BLOCKED=1 NOT_RUN=20`.
+- First full verification exposed a readiness-crosswalk doc parity gap for the new
+  mapped surface. Added the `bologna_owner_answer_intake` doc row and reran the focused
+  crosswalk/owner-answer tests plus qualification validation/status successfully.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed.
+  Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-22 OWNER-DEC-1 owner decision consequence packet
 
 - Started clean worktree `worktrees/owner-packet` on
