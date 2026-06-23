@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-eq5-parameterization-backlog-check.md
+active_plan: plans/2026-06-23-eqr-residual-closeout.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -73,12 +73,15 @@ routing_note: >
   BOL-ODP1-GATE ODP-BOL-001 owner-response gate merged through PR #154 at
   `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, and BOL-ODP2-GATE ODP-BOL-002
   source-rights response gate merged through PR #155 at
-  `fa0f67aedff19ec31981ba1dacaa5315f843f021`, and BOL-ODP3-GATE ODP-BOL-003
+  `fa0f67aedff19ec31981ba1dacaa5315f843f021`, BOL-ODP3-GATE ODP-BOL-003
   recorded-source corpus response gate merged through PR #156 at
-  `9d06cdeb79999c235b66c1589e972bfae5a55976`. Current local lane: BOL-ODP4-GATE
-  ODP-BOL-004 DB-backed report proof response gate. Bologna implementation is stopped
-  while BSA-001 remains blocked until explicit product/AOI/source-review authority is
-  cited in the pilot-scope/source-authority/source-rights packets. Do not
+  `9d06cdeb79999c235b66c1589e972bfae5a55976`, BOL-ODP4-GATE DB-backed report proof
+  response gate merged through PR #157, BOL-POST-ODP4-AUTH merged through PR #158,
+  and EQ-5 qualification parameterization backlog checking merged through PR #159 at
+  `74af6f5a26594e80efed0fb4cfa9015e7e9e135d`. Current local lane: EQ-R residual
+  reconciliation closeout. Bologna implementation is stopped while BSA-001 remains
+  blocked until explicit product/AOI/source-review authority is cited in the
+  pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2509,15 +2512,15 @@ tasks:
 
   - id: EQ-R
     title: Residual reconciliation falsehood correction
-    status: queued
+    status: done
     depends_on: [BPS-REQ-001]
     lane: coordinator
-    spec: plans/2026-06-21-empirical-qualification-adoption.md#lane-r--correct-the-residual-reconciliation-falsehood-parallel-independent
+    spec: plans/2026-06-23-eqr-residual-closeout.md
     notes: >
-      Correct the false STILL_DIVERGENT: none residual claim by either extracting the
-      stranded guardrail-readiness UI files to a fresh defer branch off current main or
-      explicitly recording them as decaying DEFER work with file list, gates, and decay
-      warning.
+      Corrected the residual falsehood by explicitly recording the stranded
+      guardrail-readiness UI files as decaying DEFER work with file list, gate
+      families, and decay warning in state/residual-reconciliation.md. This did not
+      create a defer branch and did not promote any deferred product slice.
     acceptance:
       - state/residual-reconciliation.md no longer claims no divergent deferred files
       - Stranded files are either extracted to a defer branch or explicitly listed as decaying DEFER work

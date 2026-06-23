@@ -16,7 +16,7 @@ except ImportError as exc:
     ) from exc
 
 
-EXPECTED_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -387,8 +387,21 @@ def validate_source_profile(profile: dict[str, Any], errors: list[str]) -> None:
     require(isinstance(controls, list) and controls, "DS-002 enforcement controls must be non-empty", errors)
 
 
-def validate_task_queue(task_queue: dict[str, Any], errors: list[str]) -> None:
-    require(task_queue.get("active_plan") == EXPECTED_PLAN, "task queue active_plan drifted", errors)
+def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str]) -> None:
+    active_plan = task_queue.get("active_plan")
+    require(
+        isinstance(active_plan, str)
+        and active_plan.startswith("plans/")
+        and active_plan.endswith(".md"),
+        "task queue active_plan must point to a plan file",
+        errors,
+    )
+    if isinstance(active_plan, str):
+        require(
+            repo_relative_path(root, active_plan).is_file(),
+            f"task queue active_plan file missing: {active_plan}",
+            errors,
+        )
     tasks = task_queue.get("tasks")
     if not isinstance(tasks, list) or not tasks:
         errors.append("task queue tasks must be a non-empty list")
@@ -408,7 +421,7 @@ def validate_task_queue(task_queue: dict[str, Any], errors: list[str]) -> None:
             require(task.get("status") == "done", f"{task_id} must be done", errors)
     eq5 = by_id.get("EQ-5") or {}
     require(eq5.get("depends_on") == ["BOL-POST-ODP4-AUTH"], "EQ-5 dependency drifted", errors)
-    require(eq5.get("spec") == EXPECTED_PLAN, "EQ-5 spec must point to the active EQ-5 plan", errors)
+    require(eq5.get("spec") == EXPECTED_EQ5_PLAN, "EQ-5 spec must point to the EQ-5 plan", errors)
 
     for task_id in EXPECTED_BLOCKED_TASKS:
         task = by_id.get(task_id)
@@ -430,9 +443,9 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("scripts/run_qualification_parameterization_backlog_check.ps1", "qualification_parameterization_backlog_check.py"),
         ("scripts/run_qualification_parameterization_backlog_check.sh", "qualification_parameterization_backlog_check.py"),
         ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
-        ("plans/README.md", EXPECTED_PLAN),
+        ("plans/README.md", EXPECTED_EQ5_PLAN),
         ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
-        (EXPECTED_PLAN, "## Decision log"),
+        (EXPECTED_EQ5_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -448,7 +461,7 @@ def validate(root: Path) -> list[str]:
     validate_qualification_status(load_yaml(root, QUALIFICATION_STATUS_PATH), errors)
     validate_targets(load_yaml(root, QUALIFICATION_TARGETS_PATH), errors)
     validate_source_profile(load_yaml(root, SOURCE_PROFILE_PATH), errors)
-    validate_task_queue(load_yaml(root, TASK_QUEUE_PATH), errors)
+    validate_task_queue(root, load_yaml(root, TASK_QUEUE_PATH), errors)
     validate_repo_controls(root, errors)
     return errors
 
@@ -487,7 +500,7 @@ def main(argv: list[str] | None = None) -> int:
                     "selected_source_profile_ids": list(EXPECTED_SELECTED_SOURCE_PROFILE_IDS),
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
-                    "active_plan": EXPECTED_PLAN,
+                    "eq5_plan": EXPECTED_EQ5_PLAN,
                 },
                 indent=2,
                 sort_keys=True,

@@ -1,23 +1,26 @@
 # Project State
 
-## Current checkpoint (2026-06-23 EQ-5 qualification parameterization backlog check)
+## Current checkpoint (2026-06-23 EQ-R residual reconciliation closeout)
 
-Live `origin/main` is `87071712d8ed87cd51360b72b4e1f94be9636648`, including
-BOL-POST-ODP4-AUTH after PR #158 and PR #157 BOL-ODP4-GATE DB-backed Bologna report
-proof response gate after PR #156 BOL-ODP3-GATE ODP-BOL-003 recorded-source corpus
-response gate, PR #155 BOL-ODP2-GATE ODP-BOL-002 source-rights response gate, PR #154
-BOL-ODP1-GATE ODP-BOL-001 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer
-intake, PR #152 OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1
-authorized scope/source freeze, PR #150 HCV-4 status derivation and config consistency,
-PR #148 HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail
-error-redaction hardening. The current branch adds the EQ-5 qualification
-parameterization backlog check after BOL-POST-ODP4-AUTH. The validate-only response-gate
-scaffold for `ODP-BOL-001` through `ODP-BOL-004` is complete, and no DB-backed Bologna
-report proof work may proceed until cited owner authority exists for product/AOI/scope,
-source rights, recorded corpus, and report proof in that order.
+Live `origin/main` is `74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, including
+EQ-5 qualification parameterization backlog check after PR #159,
+BOL-POST-ODP4-AUTH after PR #158, and PR #157 BOL-ODP4-GATE DB-backed Bologna
+report proof response gate after PR #156 BOL-ODP3-GATE
+ODP-BOL-003 recorded-source corpus response gate, PR #155 BOL-ODP2-GATE
+ODP-BOL-002 source-rights response gate, PR #154 BOL-ODP1-GATE ODP-BOL-001
+owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer intake, PR #152
+OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1 authorized
+scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
+HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
+hardening. The current branch closes EQ-R by refreshing residual-reconciliation
+authority and explicitly recording the remaining deferred dirty-root candidates as
+blocked candidate evidence. The validate-only response-gate scaffold for
+`ODP-BOL-001` through `ODP-BOL-004` is complete, and no DB-backed Bologna report proof
+work may proceed until cited owner authority exists for product/AOI/scope, source
+rights, recorded corpus, and report proof in that order.
 
 - **Current implementation plan**:
-  `plans/2026-06-23-eq5-parameterization-backlog-check.md`.
+  `plans/2026-06-23-eqr-residual-closeout.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -77,11 +80,20 @@ source rights, recorded corpus, and report proof in that order.
   consistency proof: `scripts/qualification_parameterization_backlog_check.py` reconciles
   the backlog, owner packet, owner ledger, owner-answer intake, qualification
   targets/status, DS-002 selected source profile, task routing, and verification wiring
-  without resolving any owner/source/Bologna/hosted/P0 blocker.
+  without resolving any owner/source/Bologna/hosted/P0 blocker. `EQ-R` is also done:
+  `state/residual-reconciliation.md` now distinguishes zero remaining
+  `STILL_DIVERGENT` product candidates from 17 explicitly listed
+  `DEFER_STILL_BLOCKED` paths that remain decaying candidate evidence only.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
   `config/bologna_source_rights.yaml`.
+- **Current residual-reconciliation boundary**: the 17 deferred dirty-root candidate
+  files listed in `state/residual-reconciliation.md` are not extracted, promoted, or
+  copied forward by EQ-R. Any future use requires a fresh current-main worktree,
+  focused plan, tests, validation, PR review, and merge. No deferred file becomes live
+  product authority, source authority, Bologna authority, release authority, hosted
+  authority, report/API/DB behavior, qualification status, or `PASS`.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
   globally `DRAFT`, and no source/AOI/Bologna/hosted/DS-017 decision is unfrozen. The
