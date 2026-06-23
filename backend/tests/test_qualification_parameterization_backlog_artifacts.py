@@ -7,6 +7,7 @@ yaml = cast(Any, __import__("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKLOG_PATH = REPO_ROOT / "state" / "QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
+OWNER_DECISIONS_PATH = REPO_ROOT / "state" / "owner-decisions.md"
 
 
 def _yaml(path: Path) -> dict[str, Any]:
@@ -24,10 +25,10 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
         "BLOCKED (external/owner authority)",
         "Active gates | 12",
         "Active DRAFT criterion contracts | 60",
-        "Active DRAFT/unresolved target bindings | 51",
+        "Active DRAFT/unresolved target bindings | 49",
         "Active DRAFT judgment rubrics | 16",
         "Qualified-domain profiles still DRAFT | 8",
-        "Approved source profiles selected | 0",
+        "Approved source profiles selected | 1",
         "ruleset_versions",
     ):
         assert phrase in backlog
@@ -37,6 +38,53 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
 
     for criterion_id in ("P0-014", "P0-017", "P0-025", "Q2-030", "DQ-022", "W-011"):
         assert f"`{criterion_id}`" in backlog
+
+
+def test_owner_authorized_freeze_disposition_is_recorded() -> None:
+    backlog = BACKLOG_PATH.read_text(encoding="utf-8")
+
+    for phrase in (
+        "## Controlled Owner Disposition - 2026-06-22",
+        "owner=benjmcd",
+        "authority=owner directive 2026-06-22",
+        "authority_file=state/owner-decisions.md",
+        "rationale=conservative defaults matching operational reality",
+        "reversal=requires a new owner decision + full requalification",
+        "`scope.product_scope_profile` | `BOUNDED_USER_VALIDATED` | FROZEN_TARGET",
+        "`scope.deployment_profile` | `LOCAL_SINGLE_USER` | FROZEN_TARGET",
+        "`scope.windows_native_required` | `true` | FROZEN_TARGET",
+        "`scope.source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE",
+        "`criterion_bindings.W-003` | frozen | FROZEN_TARGET",
+        "`criterion_bindings.W-011` | frozen | FROZEN_TARGET",
+    ):
+        assert phrase in backlog
+
+    for blocked_phrase in (
+        "DQ/Q1/Q2/M target thresholds remain blocked",
+        "domain profiles remain blocked",
+        "criterion contracts and judgment rubrics remain blocked",
+        "P0 remains BLOCKED",
+    ):
+        assert blocked_phrase in backlog
+
+
+def test_owner_authorized_freeze_has_branch_local_authority_record() -> None:
+    decisions = OWNER_DECISIONS_PATH.read_text(encoding="utf-8")
+
+    for phrase in (
+        "## 2026-06-22 QFREEZE-1 Qualification Freeze",
+        "repo-local authority ledger",
+        "owner=benjmcd",
+        "authority=owner directive 2026-06-22",
+        "rationale=conservative defaults matching operational reality",
+        "reversal=requires a new owner decision + full requalification",
+        "`scope.source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE",
+        "`criterion_bindings.W-003` | frozen | FROZEN_TARGET",
+        "`criterion_bindings.W-011` | frozen | FROZEN_TARGET",
+        "no source approvals beyond DS-002",
+        "no P0 `PASS`",
+    ):
+        assert phrase in decisions
 
 
 def test_qualification_backlog_covers_bologna_scope_and_corpus_decisions() -> None:
@@ -67,10 +115,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
 
     assert (
         task_queue["active_plan"]
-        == "plans/2026-06-22-hcv-4-status-config-consistency.md"
+        == "plans/2026-06-22-qfreeze-1-authorized-scope-source.md"
     )
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["HCV-4"]
+    assert active_ids == ["QFREEZE-1"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -121,6 +169,8 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["HCV-3"]["depends_on"] == ["HCV-2"]
     assert tasks["HCV-3"]["status"] == "done"
     assert tasks["HCV-4"]["depends_on"] == ["HCV-3"]
-    assert tasks["HCV-4"]["status"] == "active"
-    assert tasks["EQ-5"]["depends_on"] == ["HCV-4"]
+    assert tasks["HCV-4"]["status"] == "done"
+    assert tasks["QFREEZE-1"]["depends_on"] == ["HCV-4"]
+    assert tasks["QFREEZE-1"]["status"] == "active"
+    assert tasks["EQ-5"]["depends_on"] == ["QFREEZE-1"]
     assert tasks["BSA-001"]["status"] == "blocked"

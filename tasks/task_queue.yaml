@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-22-hcv-4-status-config-consistency.md
+active_plan: plans/2026-06-22-qfreeze-1-authorized-scope-source.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -63,8 +63,10 @@ routing_note: >
   hardening merged through PR #149 at
   `e124db6ce002d472ad800dac6ac4af1633c746b4`, and HCV-3 readiness crosswalk
   CI-gate completeness merged through PR #148 at
-  `d9e16db199dee185bc05602112df010d40b4c711`. Current local lane: HCV-4 status
-  derivation and config consistency. Bologna
+  `d9e16db199dee185bc05602112df010d40b4c711`, and HCV-4 status derivation and config
+  consistency merged through PR #150 at
+  `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`. Current local lane: QFREEZE-1 first
+  owner-authorized qualification parameterization freeze slice. Bologna
   implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
@@ -2313,7 +2315,7 @@ tasks:
 
   - id: HCV-4
     title: Status derivation and config consistency
-    status: active
+    status: done
     depends_on: [HCV-3]
     lane: coordinator
     spec: plans/2026-06-22-hcv-4-status-config-consistency.md
@@ -2322,10 +2324,27 @@ tasks:
       reconcile DS-002 rights vocabulary with production usage-rights fields, and drop
       stale active routing entries.
 
+  - id: QFREEZE-1
+    title: Authorized scope, source, and Windows target freeze
+    status: active
+    depends_on: [HCV-4]
+    lane: coordinator
+    spec: plans/2026-06-22-qfreeze-1-authorized-scope-source.md
+    notes: >
+      Record the 2026-06-22 owner disposition, bind DS-002, freeze the explicitly
+      authorized scope/version/source fields, and freeze only W-003/W-011 target
+      bindings while P0 remains BLOCKED and every non-P0 status remains NOT_RUN.
+    acceptance:
+      - Owner decision record cites owner=benjmcd, authority=owner directive 2026-06-22, rationale, and reversal
+      - DS-002 is the only selected approved source profile
+      - W-003 and W-011 target bindings are frozen with controlled evidence notes
+      - DQ/Q1/Q2/M bindings, domain profiles, criterion contracts, and judgment rubrics remain blocked
+      - Qualification status remains capped to BLOCKED and NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [HCV-4]
+    depends_on: [QFREEZE-1]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >
