@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 BOL-POST-ODP4-AUTH post-ODP4 authority routing
+
+- Started clean worktree `worktrees/qpf-ds002` on `codex/qpf-ds002` from live
+  `origin/main@a1d6c7dcf90133ad2cf382357f6b202f852c0f5b` after PR #157 merged and no
+  conflicting post-ODP4 routing branch/worktree existed.
+- Re-read the stale dirty-root inbox as candidate context only, then reconciled live
+  `origin/main`, open PRs, startup routing, QFREEZE-1 owner disposition, owner-answer
+  intake, ODP4 gate, qualification targets, DS-002 source profile, and task routing.
+- Confirmed QFREEZE-1 is already represented on live `main`: DS-002 is selected,
+  owner-authorized scope/version fields are frozen, W-003/W-011 are frozen, P0 remains
+  `BLOCKED`, and non-P0 statuses remain `NOT_RUN`.
+- Baseline ODP4 gate, owner-answer intake, qualification status, and structural
+  qualification validation passed before edits.
+- Added `plans/2026-06-23-post-odp4-authority-routing.md` and updated state/task/plan
+  routing so BOL-ODP4-GATE is treated as complete and the next substantive Bologna
+  work is explicitly external-authority dependent.
+- Preserved the non-authorization boundary: no owner answer, AOI selection, source
+  approval, source-rights change, recorded corpus, fixture capture, DB seed, report
+  artifact, API/report semantic change, hosted authority, Level 10 claim, or
+  qualification PASS is introduced.
+- Post-edit ODP4 gate, owner-answer intake, qualification status, structural
+  qualification validation, focused routing artifact tests, qualification selftest,
+  readiness-matrix check, explicit change-impact check, focused ruff, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation
+  remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB report proof response gate
 
 - Started clean worktree `worktrees/bol-odp4` on `codex/bol-odp4-gate` from live

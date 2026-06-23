@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-bologna-odp3-corpus-response-gate.md`.
+Latest completed plan: `2026-06-23-bologna-odp4-db-report-proof-response-gate.md`.
 
-Current routing plan: `2026-06-23-bologna-odp4-db-report-proof-response-gate.md`.
+Current routing plan: `2026-06-23-post-odp4-authority-routing.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -265,7 +265,7 @@ owner answers, corpus authority records, recorded corpus references, downstream 
 fixture capture, DB seed, report proof, hosted authority, Level 10 authority, and
 qualification status blocked.
 
-`BOL-ODP4-GATE` is the current follow-on after BOL-ODP3-GATE. It adds
+`BOL-ODP4-GATE` is the completed follow-on after BOL-ODP3-GATE. It adds
 `config/bologna_odp4_db_report_proof_response_gate.yaml` plus a validate-only checker
 for the next external owner answer, `ODP-BOL-004` DB-backed Bologna report proof
 authority. It aligns required owner-answer and report-proof fields with the
@@ -274,6 +274,14 @@ schemas. It keeps `ODP-BOL-001`, `ODP-BOL-002`, and `ODP-BOL-003` as missing
 prerequisites and keeps owner answers, report-proof authority records, DB report-run
 references, report artifacts, downstream updates, DB seed, API/report changes, hosted
 authority, Level 10 authority, and qualification status blocked.
+
+`BOL-POST-ODP4-AUTH` is the current routing boundary after BOL-ODP4-GATE. It does not
+add another Bologna gate. The response-gate scaffold for `ODP-BOL-001` through
+`ODP-BOL-004` is complete; the next substantive Bologna step requires cited external
+owner authority in sequence: product/AOI/scope, source authority and rights,
+recorded-source corpus, then one DB-backed report proof. If that authority does not
+arrive, the only repo-local path is non-authorizing EQ-5-style backlog maintenance for
+domains, targets/contracts, rubrics, source profiles, and P0 protocol blockers.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
+        == "plans/2026-06-23-post-odp4-authority-routing.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -80,6 +80,8 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-ODP1-GATE" in readiness.checkpoint.completed_task_ids
     assert "BOL-ODP2-GATE" in readiness.checkpoint.completed_task_ids
     assert "BOL-ODP3-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP4-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-POST-ODP4-AUTH" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -116,7 +118,12 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert any(task.task_id == "BOL-ODP-1" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BOL-ODP2-GATE" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BOL-ODP3-GATE" for task in readiness.task_queue.completed_tasks)
-    assert any(task.task_id == "BOL-ODP4-GATE" for task in readiness.task_queue.active_tasks)
+    assert any(task.task_id == "BOL-ODP4-GATE" for task in readiness.task_queue.completed_tasks)
+    assert any(
+        task.task_id == "BOL-POST-ODP4-AUTH"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert not readiness.task_queue.active_tasks
     assert not any(
         task.task_id
         in {
@@ -129,6 +136,8 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
             "BOL-ODP1-GATE",
             "BOL-ODP2-GATE",
             "BOL-ODP3-GATE",
+            "BOL-ODP4-GATE",
+            "BOL-POST-ODP4-AUTH",
         }
         for task in readiness.task_queue.active_tasks
     )

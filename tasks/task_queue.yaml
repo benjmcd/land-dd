@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md
+active_plan: plans/2026-06-23-post-odp4-authority-routing.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -2448,7 +2448,7 @@ tasks:
 
   - id: BOL-ODP4-GATE
     title: Bologna ODP-BOL-004 DB report proof response gate
-    status: active
+    status: done
     depends_on: [BOL-ODP3-GATE]
     lane: coordinator
     spec: plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md
@@ -2468,10 +2468,31 @@ tasks:
       - No DB seed, DB report run, report artifact, API surface, hosted authority, or Level 10 authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
+  - id: BOL-POST-ODP4-AUTH
+    title: Post-ODP4 Bologna authority routing
+    status: done
+    depends_on: [BOL-ODP4-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-post-odp4-authority-routing.md
+    notes: >
+      Record that the ODP-BOL-001 through ODP-BOL-004 validate-only response-gate
+      scaffold is complete and that no DB-backed Bologna report proof can proceed
+      until cited owner authority exists in sequence: product/AOI/scope, source
+      authority and rights, recorded-source corpus, then one DB-backed report proof.
+      This routing update adds no new gate, records no owner answer, and does not
+      authorize AOI selection, source approval, corpus capture, DB seed, report
+      artifact, API/report semantic change, hosted authority, Level 10 claim, or
+      qualification PASS.
+    acceptance:
+      - Project state and plan routing mark BOL-ODP4-GATE complete
+      - Next substantive Bologna work is external-authority dependent
+      - EQ-5-style backlog maintenance remains the repo-local fallback if no Bologna authority arrives
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [BOL-ODP4-GATE]
+    depends_on: [BOL-POST-ODP4-AUTH]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >

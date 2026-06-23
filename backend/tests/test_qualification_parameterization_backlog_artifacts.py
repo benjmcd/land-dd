@@ -173,10 +173,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
     assert task_queue["active_plan"] == (
-        "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
+        "plans/2026-06-23-post-odp4-authority-routing.md"
     )
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["BOL-ODP4-GATE"]
+    assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -263,12 +263,20 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
         tasks["BOL-ODP3-GATE"]["notes"]
     )
     assert tasks["BOL-ODP4-GATE"]["depends_on"] == ["BOL-ODP3-GATE"]
-    assert tasks["BOL-ODP4-GATE"]["status"] == "active"
+    assert tasks["BOL-ODP4-GATE"]["status"] == "done"
     assert tasks["BOL-ODP4-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
     )
     assert "ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 as" in (
         tasks["BOL-ODP4-GATE"]["notes"]
     )
-    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP4-GATE"]
+    assert tasks["BOL-POST-ODP4-AUTH"]["depends_on"] == ["BOL-ODP4-GATE"]
+    assert tasks["BOL-POST-ODP4-AUTH"]["status"] == "done"
+    assert tasks["BOL-POST-ODP4-AUTH"]["spec"] == (
+        "plans/2026-06-23-post-odp4-authority-routing.md"
+    )
+    assert "no DB-backed Bologna report proof can proceed" in (
+        tasks["BOL-POST-ODP4-AUTH"]["notes"]
+    )
+    assert tasks["EQ-5"]["depends_on"] == ["BOL-POST-ODP4-AUTH"]
     assert tasks["BSA-001"]["status"] == "blocked"
