@@ -2,6 +2,72 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB Report Proof Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-004 DB-backed Bologna report proof response gate
+and route BOL-ODP3-GATE to done / BOL-ODP4-GATE to active. This does not record owner
+answers, report-proof authority, corpus authority, source-authority records,
+source-rights approvals, DB report runs, DB seeds, report artifacts, API changes,
+runtime artifacts, DS-017 approval, qualification status changes, hosted authority, or
+Level 10 claims.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+.\scripts\run_bologna_odp4_db_report_proof_response_gate_check.ps1
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\qualification_p0_evidence_check.py
+py -3.12 scripts\qualification_change_impact_check.py --changed-path <changed path> [...]
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_odp4_db_report_proof_response_gate_check.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 -m mypy scripts\bologna_odp4_db_report_proof_response_gate_check.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline ODP3 gate, owner-answer intake, qualification status, and focused
+  Bologna/routing tests passed before edits.
+- New ODP-BOL-004 DB report proof response gate checker and wrapper passed.
+- Existing ODP3 and owner-answer intake checkers still passed.
+- Focused ODP4/ODP3/owner-answer/routing tests passed (`32 passed`).
+- First qualification-status run failed because `Q1-018` and `Q2-020` in the ODP4
+  crosswalk caused governance/maintainability overlay status drift. The crosswalk was
+  narrowed to authority/report-lineage criteria; caveat/artifact requirements remain in
+  the ODP4 config, checker, runbook, and tests.
+- Structural qualification validation passed with expected blocked-readiness warnings.
+- Qualification status passed with `BLOCKED=1 NOT_RUN=20` and `passed=32`.
+- Readiness-matrix checking passed after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Direct qualification-checker advertisement passed for
+  `scripts/bologna_odp4_db_report_proof_response_gate_check.py` with `P0-001`,
+  `Q1-003`, `Q1-033`, `DQ-018`, `Q3-020`, `R-005`, and `Q3-029`.
+- Explicit change-impact checking over the changed and untracked paths passed and mapped
+  the new config/checker to `bologna_odp4_db_report_proof_response_gate`.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy. DB smoke
+  was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP4-GATE is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. `ODP-BOL-001`, `ODP-BOL-002`,
+`ODP-BOL-003`, and `ODP-BOL-004` still have no owner answers or authority records;
+recorded corpus, fixtures, DB-backed report proof, BSA-001, hosted authority, and Level
+10 remain blocked. DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1`
+was not set.
+
 ## 2026-06-23 BOL-ODP3-GATE Bologna ODP-BOL-003 Corpus Response Gate
 
 **Scope:** Add a validate-only ODP-BOL-003 recorded-source corpus response gate and

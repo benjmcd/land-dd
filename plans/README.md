@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-bologna-odp2-source-rights-response-gate.md`.
+Latest completed plan: `2026-06-23-bologna-odp3-corpus-response-gate.md`.
 
-Current routing plan: `2026-06-23-bologna-odp3-corpus-response-gate.md`.
+Current routing plan: `2026-06-23-bologna-odp4-db-report-proof-response-gate.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -254,7 +254,7 @@ keeps `ODP-BOL-001` as the missing prerequisite and keeps owner answers,
 source-authority records, source-rights approval references, downstream updates,
 source/corpus/report work, and qualification status blocked.
 
-`BOL-ODP3-GATE` is the current follow-on after BOL-ODP2-GATE. It adds
+`BOL-ODP3-GATE` is the completed follow-on after BOL-ODP2-GATE. It adds
 `config/bologna_odp3_corpus_response_gate.yaml` plus a validate-only checker for the
 next external owner answer, `ODP-BOL-003` recorded-source corpus authority. It aligns
 the required owner-answer fields with the owner-answer intake and the required corpus
@@ -264,6 +264,16 @@ contract. It keeps `ODP-BOL-001` and `ODP-BOL-002` as missing prerequisites and 
 owner answers, corpus authority records, recorded corpus references, downstream updates,
 fixture capture, DB seed, report proof, hosted authority, Level 10 authority, and
 qualification status blocked.
+
+`BOL-ODP4-GATE` is the current follow-on after BOL-ODP3-GATE. It adds
+`config/bologna_odp4_db_report_proof_response_gate.yaml` plus a validate-only checker
+for the next external owner answer, `ODP-BOL-004` DB-backed Bologna report proof
+authority. It aligns required owner-answer and report-proof fields with the
+owner-answer intake and required report-run, evidence, and claim fields with the JSON
+schemas. It keeps `ODP-BOL-001`, `ODP-BOL-002`, and `ODP-BOL-003` as missing
+prerequisites and keeps owner answers, report-proof authority records, DB report-run
+references, report artifacts, downstream updates, DB seed, API/report changes, hosted
+authority, Level 10 authority, and qualification status blocked.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

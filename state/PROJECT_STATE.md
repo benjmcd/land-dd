@@ -1,20 +1,21 @@
 # Project State
 
-## Current checkpoint (2026-06-23 Bologna ODP-BOL-003 corpus response gate)
+## Current checkpoint (2026-06-23 Bologna ODP-BOL-004 DB report proof response gate)
 
-Live `origin/main` is `fa0f67aedff19ec31981ba1dacaa5315f843f021`, including PR #155
-BOL-ODP2-GATE ODP-BOL-002 source-rights response gate after PR #154 BOL-ODP1-GATE
+Live `origin/main` is `9d06cdeb79999c235b66c1589e972bfae5a55976`, including PR #156
+BOL-ODP3-GATE ODP-BOL-003 recorded-source corpus response gate after PR #155
+BOL-ODP2-GATE ODP-BOL-002 source-rights response gate, PR #154 BOL-ODP1-GATE
 ODP-BOL-001 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer intake, PR #152
 OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1 authorized
 scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
 HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
-hardening. The current lane is BOL-ODP3-GATE: add a validate-only recorded-source
-corpus response gate for `ODP-BOL-003` that cross-checks the next required Bologna
-corpus owner answer against the owner-answer intake, ODP-BOL-002 gate, and
-recorded-source corpus contract without recording authority or unlocking work.
+hardening. The current lane is BOL-ODP4-GATE: add a validate-only DB-backed Bologna
+report proof response gate for `ODP-BOL-004` that cross-checks the next required
+Bologna report-proof owner answer against the owner-answer intake, ODP-BOL-003 gate,
+and report/evidence/claim schemas without recording authority or unlocking work.
 
 - **Current implementation plan**:
-  `plans/2026-06-23-bologna-odp3-corpus-response-gate.md`.
+  `plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -51,6 +52,13 @@ recorded-source corpus contract without recording authority or unlocking work.
   prerequisites, keeps owner-answer/corpus-authority/recorded-corpus references empty,
   and keeps every outcome from unlocking fixture capture, source-failure fixtures, DB
   seed, report proof, hosted authority, or Level 10 work.
+- **Current ODP-BOL-004 DB report proof response boundary**:
+  `config/bologna_odp4_db_report_proof_response_gate.yaml` is validate-only. It targets
+  only the DB-backed Bologna report proof owner answer, keeps `ODP-BOL-001`,
+  `ODP-BOL-002`, and `ODP-BOL-003` as missing prerequisites, keeps
+  owner-answer/report-proof-authority/DB-report-run/report-artifact references empty,
+  and keeps every outcome from unlocking DB seed, DB report run, report artifacts, API
+  surface changes, report semantics changes, hosted authority, or Level 10 work.
 - **Current config consistency hardening**: DS-002 keeps `status: APPROVED`, and its
   rights values use production source-registry vocabulary
   (`restricted` / `approved-with-restrictions`) while preserving enforced
@@ -60,8 +68,8 @@ recorded-source corpus contract without recording authority or unlocking work.
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
   `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`,
   `HCV-2`, `HCV-3`, `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, and `BOL-ODP-1` are done in
-  the current routing model. `BOL-ODP1-GATE` and `BOL-ODP2-GATE` are also done.
-  `BOL-ODP3-GATE` is active.
+  the current routing model. `BOL-ODP1-GATE`, `BOL-ODP2-GATE`, and `BOL-ODP3-GATE` are
+  also done. `BOL-ODP4-GATE` is active.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -73,18 +81,19 @@ recorded-source corpus contract without recording authority or unlocking work.
   values; it does not authorize domain-profile rubrics, criterion-contract pass rules,
   additional source approvals, or P0 `PASS`.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights/corpus authority blocker is external. BOL-ODP3-GATE may
-  validate the shape and consequences of the next `ODP-BOL-003` owner response, but it
-  keeps `ODP-BOL-001` and `ODP-BOL-002` missing and introduces no Bologna authority
-  packet, AOI selection, source-rights approval beyond DS-002, recorded corpus, fixture,
-  source-failure fixture, DB seed, runtime/report proof, or source registry promotion.
-- **Immediate next pursuit**: complete BOL-ODP3-GATE with focused recorded-source corpus
-  response gate, Bologna, routing, qualification, readiness, and full verification
-  checks. After that, substantive progress still requires real owner authority for
-  `ODP-BOL-001`, `ODP-BOL-002`, and then `ODP-BOL-003` before any recorded corpus or
-  DB-backed report proof work can change.
+  product/AOI/source-rights/corpus/report-proof authority blocker is external.
+  BOL-ODP4-GATE may validate the shape and consequences of the next `ODP-BOL-004`
+  owner response, but it keeps `ODP-BOL-001`, `ODP-BOL-002`, and `ODP-BOL-003` missing
+  and introduces no Bologna authority packet, AOI selection, source-rights approval
+  beyond DS-002, recorded corpus, fixture, source-failure fixture, DB seed, DB report
+  run, runtime/report artifact, API surface, or source registry promotion.
+- **Immediate next pursuit**: complete BOL-ODP4-GATE with focused DB-backed Bologna
+  report proof response gate, Bologna, routing, qualification, readiness, and full
+  verification checks. After that, substantive progress still requires real owner
+  authority for `ODP-BOL-001`, `ODP-BOL-002`, `ODP-BOL-003`, and then `ODP-BOL-004`
+  before any actual DB-backed report proof work can change.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze in
-  BOL-ODP3-GATE, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
+  BOL-ODP4-GATE, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
   source approval beyond DS-002's existing profile and selected binding, source registry promotion,
   recorded fixture, connector, DB seed, report/API/UI/schema change, auth change,
   report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted

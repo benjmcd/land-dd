@@ -163,6 +163,9 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
     assert "ODP-BOL-003 recorded-source corpus response gate:" in backlog
     assert "`config/bologna_odp3_corpus_response_gate.yaml`" in backlog
     assert "Bologna recorded-source corpus answer blocked" in backlog
+    assert "ODP-BOL-004 DB-backed report proof response gate:" in backlog
+    assert "`config/bologna_odp4_db_report_proof_response_gate.yaml`" in backlog
+    assert "Bologna DB-backed report proof answer blocked" in backlog
 
 
 def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> None:
@@ -170,10 +173,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
     assert task_queue["active_plan"] == (
-        "plans/2026-06-23-bologna-odp3-corpus-response-gate.md"
+        "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
     )
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["BOL-ODP3-GATE"]
+    assert active_ids == ["BOL-ODP4-GATE"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -252,12 +255,20 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     )
     assert "ODP-BOL-001 as the missing" in tasks["BOL-ODP2-GATE"]["notes"]
     assert tasks["BOL-ODP3-GATE"]["depends_on"] == ["BOL-ODP2-GATE"]
-    assert tasks["BOL-ODP3-GATE"]["status"] == "active"
+    assert tasks["BOL-ODP3-GATE"]["status"] == "done"
     assert tasks["BOL-ODP3-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp3-corpus-response-gate.md"
     )
     assert "ODP-BOL-001 and ODP-BOL-002 as missing prerequisites" in (
         tasks["BOL-ODP3-GATE"]["notes"]
     )
-    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP3-GATE"]
+    assert tasks["BOL-ODP4-GATE"]["depends_on"] == ["BOL-ODP3-GATE"]
+    assert tasks["BOL-ODP4-GATE"]["status"] == "active"
+    assert tasks["BOL-ODP4-GATE"]["spec"] == (
+        "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
+    )
+    assert "ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 as" in (
+        tasks["BOL-ODP4-GATE"]["notes"]
+    )
+    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP4-GATE"]
     assert tasks["BSA-001"]["status"] == "blocked"

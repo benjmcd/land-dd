@@ -271,6 +271,24 @@ entries:
   - Q3-029
   evidence_role: authority_blocker
   notes: ODP-BOL-003 corpus response gate checks recorded-source corpus answer completeness while preserving missing ODP-BOL-001/002 prerequisites and all corpus/runtime/report blockers.
+- surface_id: bologna_odp4_db_report_proof_response_gate
+  surface_type: authority
+  config_paths:
+  - config/bologna_odp4_db_report_proof_response_gate.yaml
+  checker_paths:
+  - scripts/bologna_odp4_db_report_proof_response_gate_check.py
+  gate_paths:
+  - scripts/run_bologna_odp4_db_report_proof_response_gate_check.ps1
+  criterion_ids:
+  - P0-001
+  - Q1-003
+  - Q1-033
+  - DQ-018
+  - Q3-020
+  - R-005
+  - Q3-029
+  evidence_role: authority_blocker
+  notes: ODP-BOL-004 DB report proof response gate checks report-proof answer completeness while preserving missing ODP-BOL-001/002/003 prerequisites and all DB/report/API blockers.
 - surface_id: checklist_dry_run
   surface_type: jurisdiction
   config_paths:
