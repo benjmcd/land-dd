@@ -2,6 +2,58 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-22 OWNER-DEC-1 Owner Decision Consequence Packet
+
+**Scope:** Add a non-authorizing owner decision packet and route QFREEZE-1 to done /
+OWNER-DEC-1 to active. This does not freeze additional targets, rubrics, domain
+profiles, source profiles, Bologna AOI/source/corpus/report authority, P0 protocol,
+DS-017, hosted authority, runtime proof, or Level 10 status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+cd backend; py -3.12 -m pytest -q tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-22T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial root-cwd focused pytest failed because `backend/tests/test_readiness_core_artifacts.py`
+  imports `app.*`; this was a command-shape issue, not a product failure.
+- Backend-cwd focused pytest passed (`9 passed`) before edits.
+- Baseline qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural qualification validation passed with expected blocked-readiness
+  warnings for template-only domain profiles, draft qualification targets, 96 draft
+  criterion contracts, and 19 draft judgment rubrics.
+- Packet and routing tests were updated to require `state/owner-decision-packet.md`,
+  non-authorizing packet language, QFREEZE-1 done, and OWNER-DEC-1 active.
+- Focused packet/routing tests passed (`10 passed`) after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Readiness-matrix checking passed.
+- Direct qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the expected blocked-readiness
+  warnings.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest initially exceeded a 124 second command timeout, then
+  passed when rerun with a longer timeout.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** OWNER-DEC-1 is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. P0 must remain `BLOCKED`; all
+non-P0 statuses must remain `NOT_RUN`.
+
 ## 2026-06-22 QFREEZE-1 Authorized Scope/Source Freeze
 
 **Scope:** Record the 2026-06-22 owner-authorized conservative defaults, bind DS-002,

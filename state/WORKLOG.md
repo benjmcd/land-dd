@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-22 OWNER-DEC-1 owner decision consequence packet
+
+- Started clean worktree `worktrees/owner-packet` on
+  `codex/owner-decision-packet` from live
+  `origin/main@cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10` after confirming QFREEZE-1
+  merged through PR #151 and no owner-packet branch/worktree collision existed.
+- Re-read startup routing, QFREEZE-1 plan/output, owner decision ledger,
+  qualification backlog, task queue, project state, plan index, focused tests, and
+  qualification status artifacts before editing.
+- Baseline qualification status and structural validators passed with `BLOCKED=1
+  NOT_RUN=20` and the expected blocked-readiness warnings. The first focused pytest
+  command was intentionally rerun from `backend` after a root-cwd import failure for
+  `app`; the backend-cwd focused tests then passed.
+- Added a non-authorizing `state/owner-decision-packet.md` that maps remaining domain,
+  target/contract, rubric, source, P0 protocol, conditional-profile, Bologna, DS-017,
+  hosted, and Level 10 owner decisions to consequences, downstream gates, evidence
+  needs, and reversal costs.
+- Routed QFREEZE-1 to done and OWNER-DEC-1 to active while preserving P0 `BLOCKED`,
+  non-P0 `NOT_RUN`, DS-002-only source selection, and blocked Bologna/hosted/DS-017
+  authority.
+- Focused packet/routing tests, readiness-matrix checking, direct qualification status,
+  structural qualification validation, focused ruff/mypy, qualification selftest, diff
+  hygiene, no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation
+  remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-22 QFREEZE-1 authorized scope/source freeze
 
 - Started clean worktree `worktrees/qfreeze1` on `codex/qfreeze-cascade-1` from live
