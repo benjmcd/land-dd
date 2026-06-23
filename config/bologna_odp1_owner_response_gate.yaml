@@ -1,0 +1,254 @@
+schema_version: bologna_odp1_owner_response_gate_v1
+operator_runbook: docs/runbooks/bologna_odp1_owner_response_gate.md
+status: blocked_missing_odp_bol_001_owner_answer
+validation: scripts/run_bologna_odp1_owner_response_gate_check.ps1
+
+authority:
+  - state/owner-decision-packet.md
+  - config/bologna_owner_answer_intake.yaml
+  - config/bologna_pilot_scope_authority.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+
+approvals:
+  owner_answer_recorded: false
+  product_aoi_scope_authorized: false
+  pilot_scope_authority_recorded: false
+  bsa001_unblocked: false
+  source_authority_updates_allowed: false
+  source_rights_updates_allowed: false
+  recorded_corpus_allowed: false
+  db_report_proof_allowed: false
+
+limits:
+  validate_only_response_gate: true
+  records_owner_answer: false
+  records_pilot_scope_authority: false
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  creates_report_artifacts: false
+  changes_report_semantics: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+  claims_level_10: false
+
+odp_bol_001_gate:
+  odp_id: ODP-BOL-001
+  title: Bologna product and AOI authority
+  status: missing_owner_answer
+  source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
+  source_pilot_scope_packet: config/bologna_pilot_scope_authority.yaml
+  current_owner_answer_references: []
+  current_authority_record_references: []
+  required_owner_answer_fields:
+    - owner_answer_id
+    - odp_id
+    - answer_type
+    - decision_owner
+    - decision_date
+    - authority_reference
+    - answer_summary
+    - cited_artifacts
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_owner_answer_ids
+  required_authority_record_fields:
+    - authority_record_id
+    - authority_type
+    - authority_reference
+    - decision_owner
+    - decision_date
+    - effective_date
+    - scope_decision_ids
+    - decision_summary
+    - evidence_summary
+    - cited_artifacts
+    - downstream_unlocks_requested
+    - caveats
+    - stop_conditions
+    - supersedes_authority_record_ids
+  required_scope_decisions:
+    - product_authorizes_bologna_pilot_reference
+    - one_aoi_geometry_or_named_boundary
+    - intended_operator_and_use_case
+    - pilot_non_goals_and_exclusions
+    - stop_conditions_and_reversion_plan
+    - jurisdiction_boundary_review
+    - evidence_only_or_rulepack_scope
+    - ds017_treatment_for_pilot
+    - candidate_source_selection_policy
+    - fixture_capture_boundary
+    - report_runtime_boundary
+    - no_overclaim_review_owner
+  response_acceptance:
+    - owner answer cites external owner authority, not repo-local inference
+    - every required scope decision has cited evidence
+    - pilot-scope authority record covers every required scope decision
+    - owner answer and authority record request no downstream unlocks
+    - no source, source-rights, corpus, fixture, DB, or report artifact changes are bundled into the response
+  still_blocked_after_valid_response:
+    - ODP-BOL-002 per-source source authority and rights
+    - ODP-BOL-003 recorded-source corpus
+    - ODP-BOL-004 DB-backed Bologna report proof
+    - DS-017 vendor/license/cost decision unless separately authorized
+    - hosted platform and Level 10 production authority
+
+decision_requirements:
+  - decision_id: product_authorizes_bologna_pilot_reference
+    owner_question: Is a Bologna recorded-source pilot authorized at all?
+    must_cite:
+      - approving product owner or decision forum
+      - decision date or effective date
+      - cited ticket, ADR, or signed decision record
+    consequence_if_missing: No Bologna pilot preparation may proceed beyond blocked catalogs.
+
+  - decision_id: one_aoi_geometry_or_named_boundary
+    owner_question: What exact one-AOI geometry, named boundary, or boundary source is authorized?
+    must_cite:
+      - municipal or parcel-locality boundary reference
+      - CRS or coordinate reference policy
+      - explicit exclusion of broader Bologna or Italy coverage claims
+    consequence_if_missing: Source selection, fixture corpus scope, and report subject identity remain blocked.
+
+  - decision_id: intended_operator_and_use_case
+    owner_question: Who is the intended pilot operator and what is the intended use case?
+    must_cite:
+      - operator role or owner
+      - use case and audience
+      - confirmation that output remains screening/evidence-led
+    consequence_if_missing: Report language, artifact handling, and review workflow assumptions remain blocked.
+
+  - decision_id: pilot_non_goals_and_exclusions
+    owner_question: Which legal, title, access, buildability, valuation, investment, live-vendor, and hosted-production claims are excluded?
+    must_cite:
+      - excluded legal, title, access, buildability, valuation, and investment claims
+      - excluded live-vendor and hosted-production behavior
+      - local professional-review boundary
+    consequence_if_missing: Caveat language, no-overclaim checks, and report semantics remain blocked.
+
+  - decision_id: stop_conditions_and_reversion_plan
+    owner_question: What conditions stop the pilot and how are partial or superseded artifacts handled?
+    must_cite:
+      - conditions that halt source review or fixture capture
+      - owner for stopping the pilot
+      - reversion or archive plan for superseded pilot artifacts
+    consequence_if_missing: Partial authority, source failures, and stale evidence handling remain blocked.
+
+  - decision_id: jurisdiction_boundary_review
+    owner_question: What country, region, municipality, cadastral, CRS, and local-professional boundaries govern the pilot?
+    must_cite:
+      - country, region, municipality, cadastral, and CRS boundaries
+      - legal-interpretation and local professional-review limits
+      - applicability of jurisdiction and rulepack checklists
+    consequence_if_missing: Jurisdiction checklist and rulepack/evidence-only review remain blocked.
+
+  - decision_id: evidence_only_or_rulepack_scope
+    owner_question: Is the pilot evidence-only, a constrained locality dossier, or a new rulepack effort?
+    must_cite:
+      - selected scope category
+      - prohibited reuse of the US homestead rulepack outside documented geography
+      - owner for rulepack or evidence-only review
+    consequence_if_missing: Claim generation, unknown handling, and report semantics remain blocked.
+
+  - decision_id: ds017_treatment_for_pilot
+    owner_question: Is DS-017 approved, deferred, removed, or substituted for this Bologna pilot?
+    must_cite:
+      - approve, defer, remove, or substitute decision
+      - vendor/license/cost status if approval is proposed
+      - confirmation that DS-017 is not approved by Bologna inference
+    consequence_if_missing: Source-readiness and paid/commercial data assumptions remain blocked.
+
+  - decision_id: candidate_source_selection_policy
+    owner_question: Which candidate source IDs or categories may enter source-authority review?
+    must_cite:
+      - allowed candidate IDs or source categories
+      - owner for exact source selection
+      - required per-source rights review before promotion
+    consequence_if_missing: Bologna source-authority intake and source-rights rows remain blocked.
+
+  - decision_id: fixture_capture_boundary
+    owner_question: What recorded fixture and source-failure fixture capture boundary is authorized?
+    must_cite:
+      - allowed fixture capture method
+      - raw retention, cache, export, and attribution limits
+      - source-failure fixture policy
+    consequence_if_missing: Recorded-source corpus manifests and committed fixtures remain blocked.
+
+  - decision_id: report_runtime_boundary
+    owner_question: What local runtime, report artifact, storage, export, lineage, and caveat proof boundary is authorized?
+    must_cite:
+      - local versus hosted runtime boundary
+      - artifact storage/export limits
+      - required lineage and caveat proof
+    consequence_if_missing: DB-backed report/API/runtime proof remains blocked after any future corpus approval.
+
+  - decision_id: no_overclaim_review_owner
+    owner_question: Who owns no-overclaim and caveat review before fixture, report, or source promotion?
+    must_cite:
+      - reviewer or decision owner
+      - required caveat and prohibited-claim checklist
+      - review timing before fixture, report, or source promotion
+    consequence_if_missing: Report wording, caveats, and multi-geography generalization remain blocked.
+
+outcome_matrix:
+  - answer_type: approve_with_cited_authority
+    expected_effect: A later slice may record the cited owner answer and pilot-scope authority record.
+    downstream_updates_allowed: false
+    still_disallowed:
+      - source approval
+      - source-rights approval
+      - recorded fixture or source-failure fixture capture
+      - DB seed or report artifact
+      - source registry promotion
+      - hosted or Level 10 claim
+
+  - answer_type: keep_blocked
+    expected_effect: Bologna product/AOI/scope remains blocked with an explicit owner answer.
+    downstream_updates_allowed: false
+    still_disallowed:
+      - source approval
+      - source-rights approval
+      - recorded corpus
+      - DB-backed report proof
+
+  - answer_type: approve_review_only
+    expected_effect: A later slice may record review-only scope but still must not authorize source/corpus/report use.
+    downstream_updates_allowed: false
+    still_disallowed:
+      - runtime use
+      - report use
+      - fixture capture
+      - source registry promotion
+
+  - answer_type: exclude_or_defer
+    expected_effect: Bologna remains deferred or out of current scope until a new owner decision supersedes it.
+    downstream_updates_allowed: false
+    still_disallowed:
+      - source approval
+      - recorded corpus
+      - report artifact
+      - multi-geography framework claim
+
+no_overclaim_controls:
+  no_authority_by_response_gate: true
+  no_aoi_selection_by_response_gate: true
+  no_source_approval_by_response_gate: true
+  no_source_rights_change_by_response_gate: true
+  no_fixture_capture_by_response_gate: true
+  no_report_runtime_use_by_response_gate: true
+  no_db_seed_by_response_gate: true
+  no_legal_buildability_title_or_value_claim: true
+  no_level_10_or_hosted_claim: true

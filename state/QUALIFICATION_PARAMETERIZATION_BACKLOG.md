@@ -23,6 +23,11 @@ Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`. That int
 validate-only and keeps all ODP-BOL owner answers missing until cited external
 authority exists.
 
+ODP-BOL-001 owner-response gate:
+`config/bologna_odp1_owner_response_gate.yaml`. That gate is validate-only and keeps
+the Bologna product/AOI/scope answer missing until cited external owner authority
+exists.
+
 ## Sources
 
 - Read-only framework input:
@@ -33,6 +38,7 @@ authority exists.
 - Bologna source-authority intake: `config/bologna_source_authority_intake.yaml`.
 - Bologna recorded-source corpus: `config/bologna_recorded_source_corpus.yaml`.
 - Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`.
+- ODP-BOL-001 owner-response gate: `config/bologna_odp1_owner_response_gate.yaml`.
 
 ## Selected Scope
 
