@@ -2,6 +2,68 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 BOL-ODP-1 Bologna Owner-Answer Intake
+
+**Scope:** Add a validate-only Bologna owner-answer intake for ODP-BOL-001 through
+ODP-BOL-004 and route OWNER-DEC-1 to done / BOL-ODP-1 to active. This does not record
+owner answers, grant source/AOI/corpus/report authority, capture fixtures, seed the DB,
+create runtime/report artifacts, approve DS-017, change qualification status, or claim
+hosted/Level 10 authority.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+.\scripts\run_bologna_owner_answer_intake_check.ps1
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+cd backend; py -3.12 -m pytest -q tests\test_bologna_owner_answer_intake_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_bologna_source_authority_intake_artifacts.py tests\test_bologna_source_rights_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-23T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_owner_answer_intake_check.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_owner_answer_intake_check.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline direct Bologna validators passed.
+- Baseline backend-cwd focused Bologna/routing tests passed (`53 passed`). The root-cwd
+  version failed on `app` import and was rerun from `backend`.
+- Baseline qualification status passed with `BLOCKED=1 NOT_RUN=20`; structural
+  qualification validation passed with expected blocked-readiness warnings.
+- New owner-answer intake checker and wrapper passed.
+- Existing Bologna validators still passed.
+- Focused owner-answer/Bologna/routing tests passed (`60 passed`).
+- Initial qualification status failed because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, readiness-matrix passed,
+  and qualification status passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- First full `.\scripts\verify.ps1` failed in backend tests because
+  `docs/qualification/readiness-crosswalk.md` did not list the new
+  `bologna_owner_answer_intake` mapped surface. Added the doc row and reran the failed
+  crosswalk test with owner-answer tests; focused tests passed (`8 passed`).
+- Structural qualification validation and qualification status remained passing after
+  the doc fix, with status `BLOCKED=1 NOT_RUN=20`.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `367` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP-1 is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. Every ODP-BOL owner answer
+remains missing; BSA-001 remains blocked. DB smoke was not run in this pass because
+`RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-22 OWNER-DEC-1 Owner Decision Consequence Packet
 
 **Scope:** Add a non-authorizing owner decision packet and route QFREEZE-1 to done /

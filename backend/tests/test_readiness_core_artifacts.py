@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-22-owner-decision-packet.md"
+        == "plans/2026-06-23-bologna-owner-answer-intake.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -75,6 +75,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "HCV-3" in readiness.checkpoint.completed_task_ids
     assert "HCV-4" in readiness.checkpoint.completed_task_ids
     assert "QFREEZE-1" in readiness.checkpoint.completed_task_ids
+    assert "OWNER-DEC-1" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -107,9 +108,10 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert any(task.task_id == "HCV-3" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "HCV-4" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "QFREEZE-1" for task in readiness.task_queue.completed_tasks)
-    assert any(task.task_id == "OWNER-DEC-1" for task in readiness.task_queue.active_tasks)
+    assert any(task.task_id == "OWNER-DEC-1" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-ODP-1" for task in readiness.task_queue.active_tasks)
     assert not any(
-        task.task_id in {"REC-001", "BPS-001", "HCV-4", "QFREEZE-1"}
+        task.task_id in {"REC-001", "BPS-001", "HCV-4", "QFREEZE-1", "OWNER-DEC-1"}
         for task in readiness.task_queue.active_tasks
     )
     assert readiness.gate_matrix.status_counts["BLOCKED"] >= 1

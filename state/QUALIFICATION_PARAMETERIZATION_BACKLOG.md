@@ -19,6 +19,10 @@ decision-request-only artifact; it does not authorize any target freeze, rubric 
 domain profile freeze, source approval, Bologna AOI/source/corpus/report work,
 qualification PASS, hosted authority, or Level 10 claim.
 
+Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`. That intake is
+validate-only and keeps all ODP-BOL owner answers missing until cited external
+authority exists.
+
 ## Sources
 
 - Read-only framework input:
@@ -28,6 +32,7 @@ qualification PASS, hosted authority, or Level 10 claim.
 - Bologna source-rights matrix: `config/bologna_source_rights.yaml`.
 - Bologna source-authority intake: `config/bologna_source_authority_intake.yaml`.
 - Bologna recorded-source corpus: `config/bologna_recorded_source_corpus.yaml`.
+- Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`.
 
 ## Selected Scope
 

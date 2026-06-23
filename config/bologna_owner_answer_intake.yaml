@@ -1,0 +1,242 @@
+schema_version: bologna_owner_answer_intake_v1
+operator_runbook: docs/runbooks/bologna_owner_answer_intake.md
+status: blocked_missing_owner_answers
+validation: scripts/run_bologna_owner_answer_intake_check.ps1
+
+authority:
+  - state/owner-decision-packet.md
+  - config/bologna_pilot_scope_authority.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - schemas/report_run_schema.json
+  - schemas/evidence_schema.json
+  - state/LEVEL_9_10_GATE_MATRIX.md
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+
+approvals:
+  owner_answers_complete: false
+  product_aoi_scope_answered: false
+  source_authority_rights_answered: false
+  recorded_corpus_answered: false
+  db_report_proof_answered: false
+  downstream_authority_updates_allowed: false
+
+limits:
+  validate_only_intake: true
+  records_owner_authority: false
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  creates_report_artifacts: false
+  changes_report_semantics: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_level_10: false
+
+owner_answer_contract:
+  contract_state: ready_for_external_owner_answers
+  current_owner_answers: []
+  required_record_fields:
+    - owner_answer_id
+    - odp_id
+    - answer_type
+    - decision_owner
+    - decision_date
+    - authority_reference
+    - answer_summary
+    - cited_artifacts
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_owner_answer_ids
+  allowed_answer_types:
+    - approve_with_cited_authority
+    - keep_blocked
+    - approve_review_only
+    - exclude_or_defer
+  response_update_policy: disabled_until_complete_cited_authority
+  no_overclaim_controls:
+    no_authority_by_answer_intake: true
+    no_source_approval_by_answer_intake: true
+    no_aoi_selection_by_answer_intake: true
+    no_source_rights_change_by_answer_intake: true
+    no_fixture_capture_by_answer_intake: true
+    no_report_runtime_use_by_answer_intake: true
+    no_db_seed_by_answer_intake: true
+    no_legal_buildability_title_or_value_claim: true
+    no_level_10_or_hosted_claim: true
+
+bologna_decision_threads:
+  - odp_id: ODP-BOL-001
+    title: Bologna product and AOI authority
+    sequence: 1
+    status: missing_owner_answer
+    source_packets:
+      - state/owner-decision-packet.md
+      - config/bologna_pilot_scope_authority.yaml
+    prerequisite_odp_ids: []
+    required_decisions:
+      - candidate_source_selection_policy
+      - ds017_treatment_for_pilot
+      - evidence_only_or_rulepack_scope
+      - fixture_capture_boundary
+      - intended_operator_and_use_case
+      - jurisdiction_boundary_review
+      - no_overclaim_review_owner
+      - one_aoi_geometry_or_named_boundary
+      - pilot_non_goals_and_exclusions
+      - product_authorizes_bologna_pilot_reference
+      - report_runtime_boundary
+      - stop_conditions_and_reversion_plan
+    owner_answer_references: []
+    downstream_updates_allowed: false
+    downstream_blocked_targets:
+      - config/bologna_source_authority_intake.yaml
+      - config/bologna_source_rights.yaml
+      - config/bologna_recorded_source_corpus.yaml
+
+  - odp_id: ODP-BOL-002
+    title: Bologna source authority and rights
+    sequence: 2
+    status: missing_owner_answer
+    source_packets:
+      - state/owner-decision-packet.md
+      - config/bologna_source_authority_intake.yaml
+      - config/bologna_source_rights.yaml
+    prerequisite_odp_ids:
+      - ODP-BOL-001
+    required_rights_decisions:
+      - ai_use_allowed
+      - attribution_required
+      - cache_allowed
+      - caveat_policy
+      - commercial_use_status
+      - crs_precision_policy
+      - export_allowed
+      - field_allowlist
+      - field_denylist
+      - fixture_capture_policy
+      - license_status
+      - no_data_policy
+      - raw_data_allowed
+      - redistribution_status
+      - report_use_policy
+      - retrieval_metadata_policy
+      - source_failure_policy
+      - source_version_or_publication_date
+      - terms_effective_date
+      - terms_reference
+      - update_cadence
+    candidate_review_ids:
+      - arpae_cartographic_portal
+      - cadastral_gap
+      - comune_bologna_open_data_pug_constraints
+      - comune_bologna_pug_webgis
+      - rer_crs_reference
+      - rer_geoportale_catalog_services
+      - rer_geoportale_dbtr_altimetry
+    owner_answer_references: []
+    downstream_updates_allowed: false
+    downstream_blocked_targets:
+      - config/bologna_source_rights.yaml
+      - config/bologna_recorded_source_corpus.yaml
+
+  - odp_id: ODP-BOL-003
+    title: Bologna recorded-source corpus
+    sequence: 3
+    status: missing_owner_answer
+    source_packets:
+      - state/owner-decision-packet.md
+      - config/bologna_recorded_source_corpus.yaml
+    prerequisite_odp_ids:
+      - ODP-BOL-001
+      - ODP-BOL-002
+    required_corpus_decisions:
+      - attribution_policy
+      - caveat_policy
+      - completed_per_source_rights_review
+      - crs_precision_policy
+      - exact_source_selection
+      - field_allowlist
+      - field_denylist
+      - no_data_policy
+      - no_overclaim_review
+      - one_aoi_scope
+      - raw_data_export_policy
+      - recorded_fixture_scope
+      - report_use_policy
+      - retrieval_metadata_policy
+      - review_owner
+      - source_contract_fields_complete
+      - source_failure_policy
+      - source_registry_row_review
+      - source_version_policy
+    required_manifest_fields:
+      - attribution_text
+      - caveat_policy
+      - corpus_id
+      - crs_and_precision
+      - field_allowlist
+      - field_denylist
+      - fixture_file_manifest
+      - manifest_schema_version
+      - no_data_policy
+      - no_overclaim_review
+      - one_aoi_authority_reference
+      - report_use_policy
+      - retrieval_metadata
+      - review_owner
+      - source_authority_references
+      - source_contract_references
+      - source_failure_fixture_manifest
+      - source_versions
+    owner_answer_references: []
+    downstream_updates_allowed: false
+    downstream_blocked_targets:
+      - config/bologna_recorded_source_corpus.yaml
+
+  - odp_id: ODP-BOL-004
+    title: DB-backed Bologna report proof
+    sequence: 4
+    status: missing_owner_answer
+    source_packets:
+      - state/owner-decision-packet.md
+      - schemas/report_run_schema.json
+      - schemas/evidence_schema.json
+    prerequisite_odp_ids:
+      - ODP-BOL-001
+      - ODP-BOL-002
+      - ODP-BOL-003
+    required_report_proof_fields:
+      - one_local_db_report_run_id
+      - approved_corpus_reference
+      - evidence_ledger_rows
+      - claim_evidence_links
+      - unknowns_list
+      - caveats_list
+      - artifact_manifest
+      - source_lineage
+      - report_use_policy
+      - no_overclaim_review
+      - storage_export_boundaries
+    owner_answer_references: []
+    downstream_updates_allowed: false
+    downstream_blocked_targets:
+      - db/migrations
+      - db/seeds
+      - backend/app/reports
+      - backend/app/api
+
+unlock_policy:
+  - ODP-BOL-001 must have cited owner authority before source-authority or source-rights rows can change.
+  - ODP-BOL-002 must have cited per-source rights authority before a recorded corpus can be approved.
+  - ODP-BOL-003 must have cited corpus authority before any fixture, source-failure fixture, DB seed, or report proof can be produced.
+  - ODP-BOL-004 must have cited report-proof authority before any DB-backed Bologna report artifact can be claimed.
+  - This intake never unlocks downstream work by itself.
