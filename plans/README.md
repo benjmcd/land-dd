@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-bologna-owner-answer-intake.md`.
+Latest completed plan: `2026-06-23-bologna-odp1-owner-response-gate.md`.
 
-Current routing plan: `2026-06-23-bologna-odp1-owner-response-gate.md`.
+Current routing plan: `2026-06-23-bologna-odp2-source-rights-response-gate.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -243,6 +243,16 @@ required owner-answer fields with the owner-answer intake and the required
 scope/authority-record fields with the pilot-scope authority packet. It keeps owner
 answers, authority records, downstream updates, source/corpus/report work, and
 qualification status blocked.
+
+`BOL-ODP2-GATE` is the current follow-on after BOL-ODP1-GATE. It adds
+`config/bologna_odp2_source_rights_response_gate.yaml` plus a validate-only checker for
+the next external owner answer, `ODP-BOL-002` source authority and rights. It aligns
+the required owner-answer fields with the owner-answer intake, required
+source-authority record fields and candidate evidence slots with the source-authority
+intake, and required rights decisions/candidate IDs with the source-rights matrix. It
+keeps `ODP-BOL-001` as the missing prerequisite and keeps owner answers,
+source-authority records, source-rights approval references, downstream updates,
+source/corpus/report work, and qualification status blocked.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
