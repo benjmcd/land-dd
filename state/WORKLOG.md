@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 BOL-ODP3-GATE Bologna ODP-BOL-003 corpus response gate
+
+- Started clean worktree `worktrees/bol-odp3` on `codex/bol-odp3-gate` from live
+  `origin/main@fa0f67aedff19ec31981ba1dacaa5315f843f021` after PR #155 merged and no
+  conflicting ODP-BOL-003 corpus-response branch/worktree existed.
+- Re-read startup routing, the completed ODP2 gate, owner-answer intake, recorded-source
+  corpus contract, source-authority/source-rights packets, focused tests, and
+  qualification status before editing.
+- Baseline ODP2 gate, owner-answer intake, recorded-source corpus checker,
+  qualification status, and focused Bologna/routing tests passed.
+- Added `config/bologna_odp3_corpus_response_gate.yaml`, checker, wrappers, runbook,
+  focused tests, manifest/crosswalk entries, and routing/state updates so the next
+  `ODP-BOL-003` owner answer has a validate-only recorded-source corpus completeness
+  gate.
+- Routed BOL-ODP2-GATE to done and BOL-ODP3-GATE to active while preserving empty owner
+  answers, empty corpus authority and recorded-corpus references, disabled downstream
+  updates, blocked fixtures/source-failure fixtures/DB/report proof, `P0` `BLOCKED`,
+  and non-P0 `NOT_RUN`.
+- New gate checker/wrapper, existing ODP2/owner-answer/corpus checkers, focused tests,
+  structural qualification validation, qualification status, readiness-matrix checking,
+  direct checker advertisement, explicit change-impact with untracked paths, focused
+  ruff/mypy, and qualification selftest passed.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed. Status
+  derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-23 BOL-ODP1-GATE Bologna ODP-BOL-001 owner-response gate
 
 - Started clean worktree `worktrees/bol-odp1` on `codex/bol-odp1-close` from live

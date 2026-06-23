@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-bologna-odp2-source-rights-response-gate.md
+active_plan: plans/2026-06-23-bologna-odp3-corpus-response-gate.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -71,8 +71,10 @@ routing_note: >
   `a6f5ac7a1accbce67dfbeadc02bd10cd6514085a`, and BOL-ODP-1 Bologna owner-answer
   intake merged through PR #153 at `f2c815028e5a17044079de492f254546cacedfeb`, and
   BOL-ODP1-GATE ODP-BOL-001 owner-response gate merged through PR #154 at
-  `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`. Current local lane: BOL-ODP2-GATE
-  ODP-BOL-002 source-rights response gate. Bologna implementation is stopped
+  `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, and BOL-ODP2-GATE ODP-BOL-002
+  source-rights response gate merged through PR #155 at
+  `fa0f67aedff19ec31981ba1dacaa5315f843f021`. Current local lane: BOL-ODP3-GATE
+  ODP-BOL-003 recorded-source corpus response gate. Bologna implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -2403,7 +2405,7 @@ tasks:
 
   - id: BOL-ODP2-GATE
     title: Bologna ODP-BOL-002 source-rights response gate
-    status: active
+    status: done
     depends_on: [BOL-ODP1-GATE]
     lane: coordinator
     spec: plans/2026-06-23-bologna-odp2-source-rights-response-gate.md
@@ -2421,10 +2423,31 @@ tasks:
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
+  - id: BOL-ODP3-GATE
+    title: Bologna ODP-BOL-003 recorded-source corpus response gate
+    status: active
+    depends_on: [BOL-ODP2-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp3-corpus-response-gate.md
+    notes: >
+      Add a validate-only gate for the next recorded-source corpus owner answer,
+      ODP-BOL-003. The gate cross-checks required owner-answer fields, corpus
+      decisions, manifest fields, selected candidate evidence, source-failure policy,
+      CRS, attribution, caveats, storage/export limits, and no-overclaim review while
+      keeping ODP-BOL-001 and ODP-BOL-002 as missing prerequisites and keeping corpus
+      authority records, recorded corpus references, fixtures, DB seeds, report proof,
+      and every downstream update empty or disabled.
+    acceptance:
+      - config/bologna_odp3_corpus_response_gate.yaml validates against the owner-answer intake, ODP-BOL-002 gate, and recorded-source corpus contract
+      - ODP-BOL-001 and ODP-BOL-002 remain missing_owner_answer and ODP-BOL-003 remains blocked until cited owner/corpus authority exists
+      - The checker is mapped into the qualification readiness crosswalk
+      - No fixture, source-failure fixture, DB seed, report proof, hosted authority, or Level 10 authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [BOL-ODP2-GATE]
+    depends_on: [BOL-ODP3-GATE]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >
