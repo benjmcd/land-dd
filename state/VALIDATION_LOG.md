@@ -2,6 +2,63 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 BOL-POST-ODP4-AUTH Post-ODP4 Bologna Authority Routing
+
+**Scope:** Mark the merged `BOL-ODP4-GATE` response gate complete in routing/state and
+record that the next substantive Bologna work requires external owner authority for
+`ODP-BOL-001`, `ODP-BOL-002`, `ODP-BOL-003`, and then `ODP-BOL-004`. This does not
+record owner answers, approve a Bologna AOI, approve sources, change source rights,
+create a recorded corpus, capture fixtures, seed the DB, create report artifacts,
+change API/report semantics, change qualification status, approve hosted authority, or
+claim Level 10.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline ODP4 gate passed before edits.
+- Baseline owner-answer intake passed before edits.
+- Baseline qualification status passed with `passed=32 not_run=2 unexpected_failed=0`
+  and derived `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural qualification validation passed with expected blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Post-edit ODP4 gate and owner-answer intake passed.
+- Post-edit qualification status passed with `passed=32 not_run=2 unexpected_failed=0`
+  and derived `BLOCKED=1 NOT_RUN=20`.
+- Post-edit structural qualification validation passed with the same expected
+  blocked-readiness warnings.
+- Focused ODP4/owner-answer/routing artifact tests passed (`25 passed`).
+- Qualification validator selftest passed.
+- Readiness-matrix checking passed.
+- Explicit change-impact checking over the eight changed paths passed as advisory,
+  with one expected domain/rubric review group from the backlog artifact test path and
+  no crosswalk-surface drift.
+- Focused ruff passed after wrapping one long assertion line.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** The Bologna DB-backed report proof remains externally blocked. The
+response-gate scaffold is complete, but `current_owner_answers` and authority records
+remain empty; no DB-backed Bologna report proof can be claimed until owner authority is
+cited and recorded in the required sequence.
+
 ## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB Report Proof Response Gate
 
 **Scope:** Add a validate-only ODP-BOL-004 DB-backed Bologna report proof response gate
