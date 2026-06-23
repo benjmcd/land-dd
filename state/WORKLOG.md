@@ -2,6 +2,27 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 EQ-R residual reconciliation closeout
+
+- Started clean worktree `worktrees/eqr-close` on `codex/eqr-close` from live
+  `origin/main@74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, leaving the dirty root
+  checkout untouched.
+- Reconciled live repo state after EQ-5: only Dependabot PR #95 remained open, EQ-5
+  was merged through PR #159, and the stale agent inbox did not override current
+  main/task routing.
+- Chose the narrow EQ-R closeout path: update residual-reconciliation authority,
+  explicitly record the 17 deferred dirty-root paths as decaying
+  `DEFER_STILL_BLOCKED` candidate evidence, and avoid extracting or promoting any
+  deferred product slice.
+- Adjusted the EQ-5 backlog checker so it still validates EQ-5's own task/spec and
+  blocked authority boundary, while allowing current routing to move to later plan
+  files that exist in `plans/`.
+- Updated focused artifact tests for residual closeout, readiness-core routing, and
+  qualification-backlog routing.
+- Preserved all existing blockers: no owner answer, Bologna AOI/source/corpus/report
+  authority, source approval beyond DS-002, fixture, DB seed, report/API/UI/runtime
+  proof, hosted authority, Level 10 claim, or qualification PASS was introduced.
+
 ## 2026-06-23 EQ-5 qualification parameterization backlog check
 
 - Started clean worktree `worktrees/eq5-audit` on `codex/eq5-audit` from live

@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+        == "plans/2026-06-23-eqr-residual-closeout.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -83,6 +83,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-ODP4-GATE" in readiness.checkpoint.completed_task_ids
     assert "BOL-POST-ODP4-AUTH" in readiness.checkpoint.completed_task_ids
     assert "EQ-5" in readiness.checkpoint.completed_task_ids
+    assert "EQ-R" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -125,6 +126,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
         for task in readiness.task_queue.completed_tasks
     )
     assert any(task.task_id == "EQ-5" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "EQ-R" for task in readiness.task_queue.completed_tasks)
     assert not readiness.task_queue.active_tasks
     assert not any(
         task.task_id
@@ -141,6 +143,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
             "BOL-ODP4-GATE",
             "BOL-POST-ODP4-AUTH",
             "EQ-5",
+            "EQ-R",
         }
         for task in readiness.task_queue.active_tasks
     )

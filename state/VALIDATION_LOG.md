@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 EQ-R Residual Reconciliation Closeout
+
+**Scope:** Close EQ-R by refreshing `state/residual-reconciliation.md` to live main
+`74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, explicitly recording the 17 remaining
+dirty-root candidate files as `DEFER_STILL_BLOCKED`, and routing EQ-R to done without
+extracting or promoting any deferred product slice. This does not change
+Bologna/source/report/API/DB/runtime behavior, qualification status, hosted authority,
+or any owner/source/AOI decision.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_residual_reconciliation_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path backend/tests/test_qualification_parameterization_backlog_artifacts.py --changed-path backend/tests/test_readiness_core_artifacts.py --changed-path backend/tests/test_residual_reconciliation_artifacts.py --changed-path plans/2026-06-23-eqr-residual-closeout.md --changed-path plans/README.md --changed-path scripts/qualification_parameterization_backlog_check.py --changed-path state/PROJECT_STATE.md --changed-path state/VALIDATION_LOG.md --changed-path state/WORKLOG.md --changed-path state/residual-reconciliation.md --changed-path tasks/task_queue.yaml
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_residual_reconciliation_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline EQ-5 checker, readiness matrix, and focused readiness/backlog tests passed
+  before edits.
+- New focused tests first failed only on the intended stale residual SHA, stale active
+  plan, and queued EQ-R routing assertions.
+- Post-edit focused residual/readiness/backlog tests passed (`13 passed`).
+- EQ-5 backlog checker passed after it was narrowed to validate the EQ-5 task/spec and
+  blocked authority boundary without pinning the current active plan forever.
+- Readiness matrix passed after the EQ-R plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md` and preserved Level 9/10 authority context.
+- Qualification status passed with `passed=33 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with expected blocked-readiness warnings
+  for template domain profiles, draft targets, draft contracts, and draft judgment
+  rubrics.
+- Change-impact passed as advisory over 11 changed paths; the mapped surface remained
+  `qualification_parameterization_backlog` with criteria `P0-001`, `P0-014`,
+  `P0-017`, `P0-025`, and `G-021`.
+- Ruff, diff hygiene, and no-deletion checks passed.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** EQ-R is a control-plane closeout only. The 17 deferred dirty-root
+paths remain decaying candidate evidence, not live product authority. Future use of
+any deferred file requires a fresh current-main worktree, focused plan, tests, and
+validation. Bologna remains externally blocked until cited owner authority exists for
+ODP-BOL-001 product/AOI/scope, then ODP-BOL-002 source rights, then ODP-BOL-003
+recorded corpus, then ODP-BOL-004 DB-backed report proof. P0 remains `BLOCKED`; all
+non-P0 statuses remain `NOT_RUN`.
+
 ## 2026-06-23 EQ-5 Qualification Parameterization Backlog Check
 
 **Scope:** Add a validate-only EQ-5 consistency checker for the qualification

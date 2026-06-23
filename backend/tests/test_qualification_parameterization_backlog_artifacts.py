@@ -14,10 +14,12 @@ OWNER_DECISIONS_PATH = REPO_ROOT / "state" / "owner-decisions.md"
 OWNER_PACKET_PATH = REPO_ROOT / "state" / "owner-decision-packet.md"
 BACKLOG_CHECK_SCRIPT = REPO_ROOT / "scripts" / "qualification_parameterization_backlog_check.py"
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+EXPECTED_EQR_PLAN = "plans/2026-06-23-eqr-residual-closeout.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
     EXPECTED_EQ5_PLAN,
+    EXPECTED_EQR_PLAN,
     "plans/README.md",
     "scripts/qualification_parameterization_backlog_check.py",
     "scripts/run_qualification_parameterization_backlog_check.ps1",
@@ -236,9 +238,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == (
-        EXPECTED_EQ5_PLAN
-    )
+    assert task_queue["active_plan"] == EXPECTED_EQR_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
@@ -346,6 +346,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["EQ-5"]["status"] == "done"
     assert tasks["EQ-5"]["spec"] == EXPECTED_EQ5_PLAN
     assert "validate-only consistency checker" in tasks["EQ-5"]["notes"]
+    assert tasks["EQ-R"]["depends_on"] == ["BPS-REQ-001"]
+    assert tasks["EQ-R"]["status"] == "done"
+    assert tasks["EQ-R"]["spec"] == EXPECTED_EQR_PLAN
+    assert "decaying DEFER" in tasks["EQ-R"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
 
 
