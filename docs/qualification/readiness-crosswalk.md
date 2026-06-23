@@ -20,6 +20,7 @@ This document is the human-readable companion to `config/qualification/readiness
 | `bologna_recorded_source_corpus` | authority_blocker | `Q1-003`, `Q1-033`, `DQ-018`, `Q3-020` | Records corpus metadata needed for later report lineage. |
 | `bologna_owner_answer_intake` | authority_blocker | `P0-001`, `G-021`, `R-005`, `Q3-029` | Maps owner-answer questions to Bologna authority packets without recording authority. |
 | `bologna_odp1_owner_response_gate` | authority_blocker | `P0-001`, `G-021`, `R-005`, `Q3-029` | Checks ODP-BOL-001 owner-response completeness without recording authority. |
+| `bologna_odp2_source_rights_response_gate` | authority_blocker | `P0-001`, `Q1-012`, `Q3-006`, `S-016`, `R-005`, `Q3-029` | Checks ODP-BOL-002 source-authority/source-rights response completeness while preserving the missing ODP-BOL-001 prerequisite. |
 | `checklist_dry_run` | static_guardrail | `Q3-011`, `Q3-015`, `R-001`, `R-009` | Guards jurisdiction terminology and rulepack isolation. |
 | `access_control` | static_guardrail | `S-003`, `S-004`, `S-010`, `S-011` | Guards auth, tenancy, and data-boundary assumptions. |
 | `threat_proxy_audit` | static_guardrail | `S-015`, `S-024`, `R-003`, `Q2-017` | Guards against proxy or ranking surfaces becoming steering signals. |

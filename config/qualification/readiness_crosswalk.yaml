@@ -236,6 +236,23 @@ entries:
   - Q3-029
   evidence_role: authority_blocker
   notes: ODP-BOL-001 owner-response gate checks product/AOI answer completeness without recording owner authority or unlocking downstream work.
+- surface_id: bologna_odp2_source_rights_response_gate
+  surface_type: authority
+  config_paths:
+  - config/bologna_odp2_source_rights_response_gate.yaml
+  checker_paths:
+  - scripts/bologna_odp2_source_rights_response_gate_check.py
+  gate_paths:
+  - scripts/run_bologna_odp2_source_rights_response_gate_check.ps1
+  criterion_ids:
+  - P0-001
+  - Q1-012
+  - Q3-006
+  - S-016
+  - R-005
+  - Q3-029
+  evidence_role: authority_blocker
+  notes: ODP-BOL-002 source-rights response gate checks source-authority and source-rights answer completeness while preserving the missing ODP-BOL-001 prerequisite.
 - surface_id: checklist_dry_run
   surface_type: jurisdiction
   config_paths:

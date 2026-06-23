@@ -15420,6 +15420,88 @@ git diff --name-only --diff-filter=D
 - Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
   image-publication, alerting, production workload, and Level 10 authority remain
   unavailable.
+
+---
+
+## 2026-06-23 - Bologna ODP-BOL-002 Final Verification
+
+**Additional commands/checks run:**
+
+```powershell
+cd backend; ruff check ..\scripts\bologna_odp2_source_rights_response_gate_check.py .\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py .\tests\test_qualification_parameterization_backlog_artifacts.py .\tests\test_readiness_core_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\bologna_odp2_source_rights_response_gate_check.py .\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py .\tests\test_qualification_parameterization_backlog_artifacts.py .\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused ruff passed.
+- Focused mypy passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Final default `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status
+  (`passed=30 not_run=2 unexpected_failed=0`, `BLOCKED=1 NOT_RUN=20`), change-impact,
+  P0 auto-evidence, backend tests, ruff, and mypy all passed. DB smoke was skipped by
+  default.
+
+**Residual risk:**
+
+- Bologna remains externally blocked on cited ODP-BOL-001 product/AOI authority and
+  ODP-BOL-002 per-source rights authority before any source approval, corpus, fixture,
+  DB seed, or report proof can proceed.
+- DB smoke was not run locally because `RUN_DB_SMOKE=1` was not set.
+
+---
+
+## 2026-06-23 - Bologna ODP-BOL-002 Source-Rights Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-002 source-authority/source-rights response
+gate. This is owner-response readiness only; it does not approve sources, select a
+Bologna AOI, promote source registry rows, commit fixtures, run connectors, change
+source readiness, approve DS-017, create a recorded corpus, prove a DB-backed report,
+create hosted authority, or claim Level 10 completion.
+
+**Commands/checks run so far:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+.\scripts\run_bologna_odp2_source_rights_response_gate_check.ps1
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+```
+
+**Results so far:**
+
+- Baseline Bologna/intake/source-rights validators passed before edits, qualification
+  remained `BLOCKED=1 NOT_RUN=20`, and focused baseline tests passed.
+- New ODP2 checker and PowerShell wrapper passed.
+- Focused ODP2 tests passed (`7 passed`).
+- Combined affected Bologna/routing tests passed (`52 passed`).
+- Initial broader qualification/status run failed because the active ODP2 plan did not
+  cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected.
+- Qualification structural validation passed after the fix.
+- Qualification status passed after the fix:
+  `passed=30 not_run=2 unexpected_failed=0`, derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Readiness matrix check passed after the plan citation fix.
+- Qualification selftest passed.
+
+**Residual risk before final verification:**
+
+- Focused ruff/mypy, diff hygiene, no-deletion check, and full `.\scripts\verify.ps1`
+  still need to run.
 - DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
 - DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.
 

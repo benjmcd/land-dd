@@ -157,15 +157,20 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
     assert "ODP-BOL-001 owner-response gate:" in backlog
     assert "`config/bologna_odp1_owner_response_gate.yaml`" in backlog
     assert "Bologna product/AOI/scope answer missing" in backlog
+    assert "ODP-BOL-002 source-rights response gate:" in backlog
+    assert "`config/bologna_odp2_source_rights_response_gate.yaml`" in backlog
+    assert "Bologna source-authority/source-rights answer blocked" in backlog
 
 
 def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> None:
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == "plans/2026-06-23-bologna-odp1-owner-response-gate.md"
+    assert task_queue["active_plan"] == (
+        "plans/2026-06-23-bologna-odp2-source-rights-response-gate.md"
+    )
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["BOL-ODP1-GATE"]
+    assert active_ids == ["BOL-ODP2-GATE"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -232,10 +237,16 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     )
     assert "keeps all downstream updates blocked" in tasks["BOL-ODP-1"]["notes"]
     assert tasks["BOL-ODP1-GATE"]["depends_on"] == ["BOL-ODP-1"]
-    assert tasks["BOL-ODP1-GATE"]["status"] == "active"
+    assert tasks["BOL-ODP1-GATE"]["status"] == "done"
     assert tasks["BOL-ODP1-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp1-owner-response-gate.md"
     )
     assert "keeping owner answers, authority records" in tasks["BOL-ODP1-GATE"]["notes"]
-    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP1-GATE"]
+    assert tasks["BOL-ODP2-GATE"]["depends_on"] == ["BOL-ODP1-GATE"]
+    assert tasks["BOL-ODP2-GATE"]["status"] == "active"
+    assert tasks["BOL-ODP2-GATE"]["spec"] == (
+        "plans/2026-06-23-bologna-odp2-source-rights-response-gate.md"
+    )
+    assert "ODP-BOL-001 as the missing" in tasks["BOL-ODP2-GATE"]["notes"]
+    assert tasks["EQ-5"]["depends_on"] == ["BOL-ODP2-GATE"]
     assert tasks["BSA-001"]["status"] == "blocked"

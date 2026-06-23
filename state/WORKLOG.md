@@ -5045,6 +5045,42 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   approval, hosted authority, rulepack approval, multi-geography framework
   implementation, or Level 10 completion claim.
 
+## 2026-06-23 Bologna ODP-BOL-002 final verification
+
+- Focused ruff and mypy passed for the new ODP2 checker and touched tests.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- Final default `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy all passed. DB smoke was skipped by
+  default.
+
+## 2026-06-23 Bologna ODP-BOL-002 source-rights response gate
+
+- Continued from live `origin/main` in clean `worktrees/bol-odp2` on
+  `codex/bol-odp2-gate` after confirming main was
+  `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, the root checkout was dirty scratch,
+  and the only open PR was unrelated Dependabot #95.
+- Added `plans/2026-06-23-bologna-odp2-source-rights-response-gate.md` to scope this
+  pass to a validate-only ODP-BOL-002 response gate, not source approval or corpus work.
+- Added `config/bologna_odp2_source_rights_response_gate.yaml`,
+  `docs/runbooks/bologna_odp2_source_rights_response_gate.md`,
+  `scripts/bologna_odp2_source_rights_response_gate_check.py`, and Windows/POSIX
+  wrappers. The checker validates owner-answer fields, the missing ODP-BOL-001
+  prerequisite, source-authority record fields, candidate evidence slots, source-rights
+  decisions, candidate review IDs including the cadastral gap, false approval flags,
+  empty references, and no downstream unlocks.
+- Added focused ODP2 artifact tests and mapped the checker into the qualification
+  readiness crosswalk. The first broader validation caught that the active plan did not
+  cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected and the
+  readiness/qualification checks passed.
+- Updated manifest, plan index, project state, backlog, and task routing so
+  `BOL-ODP1-GATE` is done and `BOL-ODP2-GATE` is active.
+- Preserved the boundaries: no owner answer, source authority record, source-rights
+  approval, AOI selection, source registry promotion, recorded corpus, fixture capture,
+  DB seed, connector, runtime/report proof, DS-017 approval, hosted authority,
+  qualification PASS, multi-geography framework, or Level 10 claim.
+
 ## 2026-06-20 Bologna source-rights matrix BSR-001
 
 - Continued from live `origin/main` in clean `worktrees/bol-rights` on
