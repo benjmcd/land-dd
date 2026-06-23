@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-eqr-residual-closeout.md`.
+Latest completed plan: `2026-06-23-odp1-owner-answer-packet.md`.
 
-Current routing plan: `plans/2026-06-23-eqr-residual-closeout.md`.
+Current routing plan: `plans/2026-06-23-odp1-owner-answer-packet.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -301,6 +301,15 @@ zero after the focused rework slices, explicitly lists the 17
 deferred file becomes live product authority, source authority, Bologna authority,
 release authority, hosted authority, report/API/DB behavior, qualification status, or
 `PASS`.
+
+`BOL-ODP1-PACKET` adds a validate-only owner-answer packet for the first Bologna owner
+decision path, `ODP-BOL-001`. It gives the owner a machine-checked response template,
+pilot-scope authority-record template, required product/AOI/scope checklist, allowed
+outcomes, and downstream blocker list aligned to the existing intake, ODP1 gate, and
+pilot-scope authority packet. It keeps owner answers, authority records, AOI/source
+approval, source-rights changes, recorded corpus work, fixture capture, DB seed,
+report proof, downstream updates, qualification status, hosted authority, and Level 10
+claims blocked.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

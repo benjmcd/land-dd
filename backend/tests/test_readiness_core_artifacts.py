@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-23-eqr-residual-closeout.md"
+        == "plans/2026-06-23-odp1-owner-answer-packet.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -84,6 +84,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-POST-ODP4-AUTH" in readiness.checkpoint.completed_task_ids
     assert "EQ-5" in readiness.checkpoint.completed_task_ids
     assert "EQ-R" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP1-PACKET" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -127,6 +128,10 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     )
     assert any(task.task_id == "EQ-5" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "EQ-R" for task in readiness.task_queue.completed_tasks)
+    assert any(
+        task.task_id == "BOL-ODP1-PACKET"
+        for task in readiness.task_queue.completed_tasks
+    )
     assert not readiness.task_queue.active_tasks
     assert not any(
         task.task_id
@@ -144,6 +149,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
             "BOL-POST-ODP4-AUTH",
             "EQ-5",
             "EQ-R",
+            "BOL-ODP1-PACKET",
         }
         for task in readiness.task_queue.active_tasks
     )

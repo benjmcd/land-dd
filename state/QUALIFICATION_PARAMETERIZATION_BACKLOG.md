@@ -33,6 +33,11 @@ ODP-BOL-001 owner-response gate:
 the Bologna product/AOI/scope answer missing until cited external owner authority
 exists.
 
+ODP-BOL-001 owner-answer packet:
+`config/bologna_odp1_owner_answer_packet.yaml`. That packet is validate-only and gives
+the owner a checkable product/AOI/scope response template without recording owner
+authority, selecting an AOI, approving sources, or unlocking downstream work.
+
 ODP-BOL-002 source-rights response gate:
 `config/bologna_odp2_source_rights_response_gate.yaml`. That gate is validate-only and
 keeps the Bologna source-authority/source-rights answer blocked behind missing
@@ -60,6 +65,8 @@ ODP-BOL-003 corpus authority, and missing cited report-proof authority.
 - Bologna source-authority intake: `config/bologna_source_authority_intake.yaml`.
 - Bologna recorded-source corpus: `config/bologna_recorded_source_corpus.yaml`.
 - Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`.
+- ODP-BOL-001 owner-answer packet:
+  `config/bologna_odp1_owner_answer_packet.yaml`.
 - ODP-BOL-001 owner-response gate: `config/bologna_odp1_owner_response_gate.yaml`.
 - ODP-BOL-002 source-rights response gate: `config/bologna_odp2_source_rights_response_gate.yaml`.
 - ODP-BOL-003 recorded-source corpus response gate: `config/bologna_odp3_corpus_response_gate.yaml`.

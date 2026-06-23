@@ -15,12 +15,19 @@ OWNER_PACKET_PATH = REPO_ROOT / "state" / "owner-decision-packet.md"
 BACKLOG_CHECK_SCRIPT = REPO_ROOT / "scripts" / "qualification_parameterization_backlog_check.py"
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_EQR_PLAN = "plans/2026-06-23-eqr-residual-closeout.md"
+EXPECTED_ODP1_PACKET_PLAN = "plans/2026-06-23-odp1-owner-answer-packet.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
     EXPECTED_EQ5_PLAN,
     EXPECTED_EQR_PLAN,
+    EXPECTED_ODP1_PACKET_PLAN,
     "plans/README.md",
+    "config/bologna_odp1_owner_answer_packet.yaml",
+    "docs/runbooks/bologna_odp1_owner_answer_packet.md",
+    "scripts/bologna_odp1_owner_answer_packet_check.py",
+    "scripts/run_bologna_odp1_owner_answer_packet_check.ps1",
+    "scripts/run_bologna_odp1_owner_answer_packet_check.sh",
     "scripts/qualification_parameterization_backlog_check.py",
     "scripts/run_qualification_parameterization_backlog_check.ps1",
     "scripts/run_qualification_parameterization_backlog_check.sh",
@@ -81,6 +88,8 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
         "Approved source profiles selected | 1",
         "ruleset_versions",
         "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
+        "ODP-BOL-001 owner-answer packet:",
+        "`config/bologna_odp1_owner_answer_packet.yaml`",
         "## Owner Decision Blockers",
     ):
         assert phrase in backlog
@@ -220,6 +229,8 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
     assert "decision-request-only artifact" in backlog
     assert "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`" in backlog
     assert "keeps all ODP-BOL owner answers missing" in backlog
+    assert "ODP-BOL-001 owner-answer packet:" in backlog
+    assert "`config/bologna_odp1_owner_answer_packet.yaml`" in backlog
     assert "ODP-BOL-001 owner-response gate:" in backlog
     assert "`config/bologna_odp1_owner_response_gate.yaml`" in backlog
     assert "Bologna product/AOI/scope answer missing" in backlog
@@ -238,7 +249,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_EQR_PLAN
+    assert task_queue["active_plan"] == EXPECTED_ODP1_PACKET_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
@@ -350,6 +361,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["EQ-R"]["status"] == "done"
     assert tasks["EQ-R"]["spec"] == EXPECTED_EQR_PLAN
     assert "decaying DEFER" in tasks["EQ-R"]["notes"]
+    assert tasks["BOL-ODP1-PACKET"]["depends_on"] == ["EQ-R", "BOL-ODP1-GATE"]
+    assert tasks["BOL-ODP1-PACKET"]["status"] == "done"
+    assert tasks["BOL-ODP1-PACKET"]["spec"] == EXPECTED_ODP1_PACKET_PLAN
+    assert "owner-answer packet" in tasks["BOL-ODP1-PACKET"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
 
 

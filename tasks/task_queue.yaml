@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-eqr-residual-closeout.md
+active_plan: plans/2026-06-23-odp1-owner-answer-packet.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -77,11 +77,12 @@ routing_note: >
   recorded-source corpus response gate merged through PR #156 at
   `9d06cdeb79999c235b66c1589e972bfae5a55976`, BOL-ODP4-GATE DB-backed report proof
   response gate merged through PR #157, BOL-POST-ODP4-AUTH merged through PR #158,
-  and EQ-5 qualification parameterization backlog checking merged through PR #159 at
-  `74af6f5a26594e80efed0fb4cfa9015e7e9e135d`. Current local lane: EQ-R residual
-  reconciliation closeout. Bologna implementation is stopped while BSA-001 remains
-  blocked until explicit product/AOI/source-review authority is cited in the
-  pilot-scope/source-authority/source-rights packets. Do not
+  EQ-5 qualification parameterization backlog checking merged through PR #159, and
+  EQ-R residual reconciliation closeout merged through PR #160 at
+  `b5ed59e7143773f306ab216865df0133ca7b0451`. Current local lane:
+  BOL-ODP1-PACKET ODP-BOL-001 owner-answer packet. Bologna implementation is stopped
+  while BSA-001 remains blocked until explicit product/AOI/source-review authority is
+  cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2525,6 +2526,23 @@ tasks:
       - state/residual-reconciliation.md no longer claims no divergent deferred files
       - Stranded files are either extracted to a defer branch or explicitly listed as decaying DEFER work
       - No deferred product slice is promoted to PASS
+
+  - id: BOL-ODP1-PACKET
+    title: Bologna ODP-BOL-001 owner-answer packet
+    status: done
+    depends_on: [EQ-R, BOL-ODP1-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-odp1-owner-answer-packet.md
+    notes: >
+      Added a validate-only owner-answer packet for ODP-BOL-001 product/AOI/scope
+      authority. The packet gives the owner a machine-checkable response and
+      pilot-scope authority-record template while keeping current owner answers,
+      current authority records, downstream updates, source/corpus/report work, and
+      qualification status blocked.
+    acceptance:
+      - config/bologna_odp1_owner_answer_packet.yaml aligns to the owner-answer intake, ODP1 response gate, and pilot-scope authority contract
+      - scripts/bologna_odp1_owner_answer_packet_check.py fails closed if required decisions, allowed outcomes, templates, or downstream blockers drift
+      - No owner answer, AOI selection, source approval, source-rights change, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
 
   # --- Completed ---
   - id: T000
