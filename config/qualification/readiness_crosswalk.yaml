@@ -289,6 +289,25 @@ entries:
   - Q3-029
   evidence_role: authority_blocker
   notes: ODP-BOL-004 DB report proof response gate checks report-proof answer completeness while preserving missing ODP-BOL-001/002/003 prerequisites and all DB/report/API blockers.
+- surface_id: qualification_parameterization_backlog
+  surface_type: authority
+  config_paths:
+  - config/bologna_owner_answer_intake.yaml
+  - config/qualification/qualification_targets.yaml
+  - config/qualification/source_profiles/source_quality_profile.ds-002.yaml
+  checker_paths:
+  - scripts/qualification_parameterization_backlog_check.py
+  gate_paths:
+  - scripts/run_qualification_parameterization_backlog_check.ps1
+  - scripts/run_qualification_parameterization_backlog_check.sh
+  criterion_ids:
+  - P0-001
+  - P0-014
+  - P0-017
+  - P0-025
+  - G-021
+  evidence_role: authority_blocker
+  notes: EQ-5 backlog check validates owner-decision and parameterization blockers without resolving them.
 - surface_id: checklist_dry_run
   surface_type: jurisdiction
   config_paths:

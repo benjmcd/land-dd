@@ -23,6 +23,7 @@ This document is the human-readable companion to `config/qualification/readiness
 | `bologna_odp2_source_rights_response_gate` | authority_blocker | `P0-001`, `Q1-012`, `Q3-006`, `S-016`, `R-005`, `Q3-029` | Checks ODP-BOL-002 source-authority/source-rights response completeness while preserving the missing ODP-BOL-001 prerequisite. |
 | `bologna_odp3_corpus_response_gate` | authority_blocker | `P0-001`, `Q1-003`, `Q1-033`, `DQ-018`, `Q3-020`, `R-005`, `Q3-029` | Checks ODP-BOL-003 recorded-source corpus response completeness while preserving missing ODP-BOL-001/002 prerequisites and all corpus/runtime/report blockers. |
 | `bologna_odp4_db_report_proof_response_gate` | authority_blocker | `P0-001`, `Q1-003`, `Q1-033`, `DQ-018`, `Q3-020`, `R-005`, `Q3-029` | Checks ODP-BOL-004 DB report proof response completeness while preserving missing ODP-BOL-001/002/003 prerequisites and all DB/report/API blockers. |
+| `qualification_parameterization_backlog` | authority_blocker | `P0-001`, `P0-014`, `P0-017`, `P0-025`, `G-021` | Checks owner-decision and parameterization blocker consistency without resolving those blockers. |
 | `checklist_dry_run` | static_guardrail | `Q3-011`, `Q3-015`, `R-001`, `R-009` | Guards jurisdiction terminology and rulepack isolation. |
 | `access_control` | static_guardrail | `S-003`, `S-004`, `S-010`, `S-011` | Guards auth, tenancy, and data-boundary assumptions. |
 | `threat_proxy_audit` | static_guardrail | `S-015`, `S-024`, `R-003`, `Q2-017` | Guards against proxy or ranking surfaces becoming steering signals. |

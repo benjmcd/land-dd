@@ -1,22 +1,23 @@
 # Project State
 
-## Current checkpoint (2026-06-23 post-ODP4 Bologna authority routing)
+## Current checkpoint (2026-06-23 EQ-5 qualification parameterization backlog check)
 
-Live `origin/main` is `a1d6c7dcf90133ad2cf382357f6b202f852c0f5b`, including PR #157
-BOL-ODP4-GATE DB-backed Bologna report proof response gate after PR #156
-BOL-ODP3-GATE ODP-BOL-003 recorded-source corpus response gate, PR #155
-BOL-ODP2-GATE ODP-BOL-002 source-rights response gate, PR #154 BOL-ODP1-GATE
-ODP-BOL-001 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer intake, PR #152
-OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1 authorized
-scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
-HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
-hardening. The current routing boundary is BOL-POST-ODP4-AUTH: the validate-only
-response-gate scaffold for `ODP-BOL-001` through `ODP-BOL-004` is complete, and no
-DB-backed Bologna report proof work may proceed until cited owner authority exists for
-product/AOI/scope, source rights, recorded corpus, and report proof in that order.
+Live `origin/main` is `87071712d8ed87cd51360b72b4e1f94be9636648`, including
+BOL-POST-ODP4-AUTH after PR #158 and PR #157 BOL-ODP4-GATE DB-backed Bologna report
+proof response gate after PR #156 BOL-ODP3-GATE ODP-BOL-003 recorded-source corpus
+response gate, PR #155 BOL-ODP2-GATE ODP-BOL-002 source-rights response gate, PR #154
+BOL-ODP1-GATE ODP-BOL-001 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer
+intake, PR #152 OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1
+authorized scope/source freeze, PR #150 HCV-4 status derivation and config consistency,
+PR #148 HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail
+error-redaction hardening. The current branch adds the EQ-5 qualification
+parameterization backlog check after BOL-POST-ODP4-AUTH. The validate-only response-gate
+scaffold for `ODP-BOL-001` through `ODP-BOL-004` is complete, and no DB-backed Bologna
+report proof work may proceed until cited owner authority exists for product/AOI/scope,
+source rights, recorded corpus, and report proof in that order.
 
 - **Current implementation plan**:
-  `plans/2026-06-23-post-odp4-authority-routing.md`.
+  `plans/2026-06-23-eq5-parameterization-backlog-check.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -72,7 +73,11 @@ product/AOI/scope, source rights, recorded corpus, and report proof in that orde
   the current routing model. `BOL-ODP1-GATE`, `BOL-ODP2-GATE`, and `BOL-ODP3-GATE` are
   also done. `BOL-ODP4-GATE` is also done. `BOL-POST-ODP4-AUTH` is the current routing
   boundary and records that the next substantive Bologna work is external-authority
-  dependent, not repo-local implementation.
+  dependent, not repo-local implementation. `EQ-5` is done as a validate-only backlog
+  consistency proof: `scripts/qualification_parameterization_backlog_check.py` reconciles
+  the backlog, owner packet, owner ledger, owner-answer intake, qualification
+  targets/status, DS-002 selected source profile, task routing, and verification wiring
+  without resolving any owner/source/Bologna/hosted/P0 blocker.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -93,9 +98,9 @@ product/AOI/scope, source rights, recorded corpus, and report proof in that orde
 - **Immediate next pursuit**: obtain or record real owner authority for `ODP-BOL-001`
   product/AOI/scope first. Only after that can `ODP-BOL-002` source rights,
   `ODP-BOL-003` recorded corpus, and `ODP-BOL-004` DB-backed report proof proceed. If
-  no Bologna authority arrives, the repo-local fallback is non-authorizing EQ-5-style
-  backlog maintenance for domain profiles, target/contract values, judgment rubrics,
-  additional source profiles, and P0 protocol blockers.
+  no Bologna authority arrives, the repo-local fallback is continued non-authorizing
+  parameterization maintenance for domain profiles, target/contract values, judgment
+  rubrics, additional source profiles, and P0 protocol blockers.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze,
   Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
   source approval beyond DS-002's existing profile and selected binding, source registry promotion,

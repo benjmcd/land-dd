@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-post-odp4-authority-routing.md
+active_plan: plans/2026-06-23-eq5-parameterization-backlog-check.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -1351,11 +1351,11 @@ tasks:
     lane: coordinator
     spec: plans/2026-06-20-post-bsr-roadmap.md
     notes: >
-      Fill the Bologna source-rights matrix only from explicit product/AOI/source-review
-      authority for exact candidate sources. Until that authority exists, record the
-      blocker and do not approve sources, promote source registry rows, capture fixtures,
-      run connectors, implement a Bologna rulepack, or generalize multi-geography
-      contracts.
+      BLOCKED external/owner authority: fill the Bologna source-rights matrix only
+      from explicit product/AOI/source-review authority for exact candidate sources.
+      Until that authority exists, record the blocker and do not approve sources,
+      promote source registry rows, capture fixtures, run connectors, implement a
+      Bologna rulepack, or generalize multi-geography contracts.
     validation:
       - py -3.12 .\scripts\bologna_source_rights_check.py
       - py -3.12 .\scripts\bologna_preflight_check.py
@@ -2491,17 +2491,20 @@ tasks:
 
   - id: EQ-5
     title: Empirical qualification parameterization backlog
-    status: queued
+    status: done
     depends_on: [BOL-POST-ODP4-AUTH]
     lane: coordinator
-    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
+    spec: plans/2026-06-23-eq5-parameterization-backlog-check.md
     notes: >
-      Track all frozen-decision blockers, one selected approved source profile, unfrozen
-      domain profiles, judgment rubrics, and target bindings as BLOCKED external/owner
-      authority items with the gates they unblock.
+      Added a validate-only consistency checker for the parameterization backlog,
+      owner-decision packet, owner-decision ledger, Bologna owner-answer intake,
+      qualification targets/status, DS-002 selected source profile, task routing, and
+      verification wiring. This proves the blocked-state boundary without resolving
+      any external/owner authority blocker.
     acceptance:
       - Backlog lists every owner-decision blocker with gate mapping
       - Task queue parses and reflects blocked follow-ons
+      - scripts/qualification_parameterization_backlog_check.py fails closed if owner answers or downstream unlocks appear without a plan update
       - No blocker is resolved or unblocked by repo-local inference
 
   - id: EQ-R

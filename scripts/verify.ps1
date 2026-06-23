@@ -158,6 +158,11 @@ Invoke-PythonCommand `
     -Label 'qualification P0 auto evidence' `
     -Arguments @('scripts/qualification_p0_evidence_check.py', '--root', '.')
 
+Write-Host '== qualification parameterization backlog =='
+Invoke-PythonCommand `
+    -Label 'qualification parameterization backlog' `
+    -Arguments @('scripts/qualification_parameterization_backlog_check.py', '--root', '.')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')
