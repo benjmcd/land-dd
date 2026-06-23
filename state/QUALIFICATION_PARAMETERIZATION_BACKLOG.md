@@ -39,6 +39,12 @@ Bologna recorded-source corpus answer blocked behind missing ODP-BOL-001 product
 authority, missing ODP-BOL-002 source-rights authority, and missing cited corpus
 authority.
 
+ODP-BOL-004 DB-backed report proof response gate:
+`config/bologna_odp4_db_report_proof_response_gate.yaml`. That gate is validate-only and
+keeps the Bologna DB-backed report proof answer blocked behind missing ODP-BOL-001
+product/AOI authority, missing ODP-BOL-002 source-rights authority, missing
+ODP-BOL-003 corpus authority, and missing cited report-proof authority.
+
 ## Sources
 
 - Read-only framework input:
@@ -52,6 +58,7 @@ authority.
 - ODP-BOL-001 owner-response gate: `config/bologna_odp1_owner_response_gate.yaml`.
 - ODP-BOL-002 source-rights response gate: `config/bologna_odp2_source_rights_response_gate.yaml`.
 - ODP-BOL-003 recorded-source corpus response gate: `config/bologna_odp3_corpus_response_gate.yaml`.
+- ODP-BOL-004 DB-backed report proof response gate: `config/bologna_odp4_db_report_proof_response_gate.yaml`.
 
 ## Selected Scope
 

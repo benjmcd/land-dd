@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-bologna-odp3-corpus-response-gate.md
+active_plan: plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -73,8 +73,10 @@ routing_note: >
   BOL-ODP1-GATE ODP-BOL-001 owner-response gate merged through PR #154 at
   `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, and BOL-ODP2-GATE ODP-BOL-002
   source-rights response gate merged through PR #155 at
-  `fa0f67aedff19ec31981ba1dacaa5315f843f021`. Current local lane: BOL-ODP3-GATE
-  ODP-BOL-003 recorded-source corpus response gate. Bologna implementation is stopped
+  `fa0f67aedff19ec31981ba1dacaa5315f843f021`, and BOL-ODP3-GATE ODP-BOL-003
+  recorded-source corpus response gate merged through PR #156 at
+  `9d06cdeb79999c235b66c1589e972bfae5a55976`. Current local lane: BOL-ODP4-GATE
+  ODP-BOL-004 DB-backed report proof response gate. Bologna implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -2425,7 +2427,7 @@ tasks:
 
   - id: BOL-ODP3-GATE
     title: Bologna ODP-BOL-003 recorded-source corpus response gate
-    status: active
+    status: done
     depends_on: [BOL-ODP2-GATE]
     lane: coordinator
     spec: plans/2026-06-23-bologna-odp3-corpus-response-gate.md
@@ -2444,10 +2446,32 @@ tasks:
       - No fixture, source-failure fixture, DB seed, report proof, hosted authority, or Level 10 authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
+  - id: BOL-ODP4-GATE
+    title: Bologna ODP-BOL-004 DB report proof response gate
+    status: active
+    depends_on: [BOL-ODP3-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md
+    notes: >
+      Add a validate-only gate for the next DB-backed Bologna report proof owner
+      answer, ODP-BOL-004. The gate cross-checks required owner-answer fields,
+      report-proof fields, report-run contract fields, evidence contract fields, claim
+      contract fields, artifact/lineage/caveat/storage/export boundaries, and
+      no-overclaim review while keeping ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 as
+      missing prerequisites and keeping report-proof authority records, DB report-run
+      references, report artifacts, DB seeds, API/report changes, and every downstream
+      update empty or disabled.
+    acceptance:
+      - config/bologna_odp4_db_report_proof_response_gate.yaml validates against the owner-answer intake, ODP-BOL-003 gate, and report/evidence/claim schemas
+      - ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 remain missing_owner_answer and ODP-BOL-004 remains blocked until cited report-proof authority exists
+      - The checker is mapped into the qualification readiness crosswalk
+      - No DB seed, DB report run, report artifact, API surface, hosted authority, or Level 10 authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [BOL-ODP3-GATE]
+    depends_on: [BOL-ODP4-GATE]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >

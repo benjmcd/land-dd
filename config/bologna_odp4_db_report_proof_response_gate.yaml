@@ -1,0 +1,328 @@
+schema_version: bologna_odp4_db_report_proof_response_gate_v1
+operator_runbook: docs/runbooks/bologna_odp4_db_report_proof_response_gate.md
+status: blocked_until_odp_bol_001_odp_bol_002_odp_bol_003_and_missing_odp_bol_004_owner_answer
+validation: scripts/run_bologna_odp4_db_report_proof_response_gate_check.ps1
+
+authority:
+  - state/owner-decision-packet.md
+  - config/bologna_owner_answer_intake.yaml
+  - config/bologna_odp3_corpus_response_gate.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - schemas/report_run_schema.json
+  - schemas/evidence_schema.json
+  - schemas/claim_schema.json
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+
+approvals:
+  owner_answer_recorded: false
+  report_proof_authority_recorded: false
+  db_report_proof_approved: false
+  db_seed_allowed: false
+  db_report_run_allowed: false
+  runtime_use_allowed: false
+  report_artifact_allowed: false
+  api_surface_allowed: false
+  report_semantics_change_allowed: false
+  downstream_authority_updates_allowed: false
+
+limits:
+  validate_only_response_gate: true
+  records_owner_answer: false
+  records_report_proof_authority: false
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  approves_recorded_corpus: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_db_seed: false
+  creates_db_report_run: false
+  creates_runtime_artifacts: false
+  creates_report_artifacts: false
+  changes_report_semantics: false
+  changes_api_surface: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_cadastral_authority: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+  claims_level_10: false
+
+odp_bol_004_gate:
+  odp_id: ODP-BOL-004
+  title: DB-backed Bologna report proof
+  status: blocked_until_odp_bol_001_odp_bol_002_and_odp_bol_003
+  source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
+  source_odp3_gate: config/bologna_odp3_corpus_response_gate.yaml
+  source_report_run_schema: schemas/report_run_schema.json
+  source_evidence_schema: schemas/evidence_schema.json
+  source_claim_schema: schemas/claim_schema.json
+  prerequisite_odp_ids:
+    - ODP-BOL-001
+    - ODP-BOL-002
+    - ODP-BOL-003
+  prerequisite_status: missing_owner_answers
+  current_owner_answer_references: []
+  current_report_proof_authority_references: []
+  current_db_report_run_references: []
+  current_report_artifact_references: []
+  required_owner_answer_fields:
+    - owner_answer_id
+    - odp_id
+    - answer_type
+    - decision_owner
+    - decision_date
+    - authority_reference
+    - answer_summary
+    - cited_artifacts
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_owner_answer_ids
+  required_report_proof_fields:
+    - one_local_db_report_run_id
+    - approved_corpus_reference
+    - evidence_ledger_rows
+    - claim_evidence_links
+    - unknowns_list
+    - caveats_list
+    - artifact_manifest
+    - source_lineage
+    - report_use_policy
+    - no_overclaim_review
+    - storage_export_boundaries
+  required_report_run_contract_fields:
+    - report_run_id
+    - workspace_id
+    - requested_by
+    - area_id
+    - intent_code
+    - idempotency_key
+    - status
+    - review_status
+    - reviewed_by
+    - reviewed_at
+    - review_actions
+    - source_manifest
+    - assumptions
+    - caveats
+    - evidence
+    - claims
+    - unknowns
+    - red_flags
+    - advisory_claims
+    - verification_tasks
+    - artifact_metadata
+    - started_at
+    - finished_at
+    - output_uri
+  required_evidence_contract_fields:
+    - evidence_id
+    - area_id
+    - evidence_type
+    - evidence_code
+    - domain
+    - observation
+    - observed_value
+    - source_id
+    - dataset_version_id
+    - source_ingest_run_id
+    - method_code
+    - method_version
+    - confidence
+    - caveat
+    - is_negative_evidence
+    - is_source_failure
+    - superseded_by
+    - source_date
+    - observed_at
+    - geometry_geojson
+    - geometry_srid
+    - spatial_precision_meters
+  required_claim_contract_fields:
+    - claim_id
+    - area_id
+    - claim_code
+    - domain
+    - assertion
+    - user_safe_language
+    - severity
+    - confidence
+    - evidence_ids
+    - rule_code
+    - ruleset_id
+    - ruleset_version
+    - verification_required
+    - verification_task
+  response_acceptance:
+    - ODP-BOL-001 has cited product, one-AOI, jurisdiction, runtime, and no-overclaim authority first.
+    - ODP-BOL-002 has cited per-source source-authority and source-rights authority first.
+    - ODP-BOL-003 has cited recorded-source corpus authority first.
+    - owner answer cites external report-proof authority, not repo-local inference.
+    - response covers every required report-proof field.
+    - response cites the report-run, evidence, and claim contracts used by the proof.
+    - response preserves evidence ledger rows, claim-evidence links, unknowns, caveats, artifacts, source lineage, report-use policy, and storage/export boundaries.
+    - owner answer requests no downstream unlocks in this gate.
+    - no DB seed, DB report run, runtime artifact, report artifact, API surface, hosted, or Level 10 artifact changes are bundled into the response.
+  still_blocked_after_valid_response:
+    - recording the ODP-BOL-004 owner answer in a later authority slice
+    - DB seed and DB report run until report-proof authority is recorded separately
+    - report/API/runtime artifacts until separately authorized
+    - DS-017 vendor/license/cost decision unless separately authorized
+    - hosted platform and Level 10 production authority
+
+report_proof_requirements:
+  - field_id: one_local_db_report_run_id
+    owner_question: What exact local DB-backed report run proves the Bologna pilot report?
+    must_cite: [report_run_id, database environment, run timestamp, reproducibility boundary]
+    consequence_if_missing: DB-backed report proof remains unverifiable.
+  - field_id: approved_corpus_reference
+    owner_question: Which ODP-BOL-003 recorded-source corpus authority supports this report proof?
+    must_cite: [recorded corpus authority reference, corpus manifest reference, source version scope]
+    consequence_if_missing: Report proof remains blocked behind corpus authority.
+  - field_id: evidence_ledger_rows
+    owner_question: Which stored evidence rows support the report proof?
+    must_cite: [evidence row identifiers, source references, retrieval metadata, caveats]
+    consequence_if_missing: Claims cannot be traced to stored evidence.
+  - field_id: claim_evidence_links
+    owner_question: How does each material claim cite stored evidence?
+    must_cite: [claim identifiers, evidence identifiers, rule or method references]
+    consequence_if_missing: No evidence, no claim remains unenforced for the proof.
+  - field_id: unknowns_list
+    owner_question: Which unknowns and no-data outcomes are preserved in the report proof?
+    must_cite: [unknown claim rows, no-data vocabulary, verification tasks]
+    consequence_if_missing: Unknowns may be overstated as clear findings.
+  - field_id: caveats_list
+    owner_question: Which source, method, jurisdiction, and report caveats accompany the proof?
+    must_cite: [caveat text, source caveats, prohibited-claim checklist]
+    consequence_if_missing: Report proof may imply legal/title/access/buildability/value conclusions.
+  - field_id: artifact_manifest
+    owner_question: Which report artifacts are in scope, and what are their hashes or storage references?
+    must_cite: [machine JSON, human-readable artifact, artifact hash or URI, retention rule]
+    consequence_if_missing: Artifact handoff and reproducibility remain blocked.
+  - field_id: source_lineage
+    owner_question: How is source lineage preserved from source version through evidence row to claim?
+    must_cite: [source IDs, dataset versions, retrieval metadata, source ingest run IDs]
+    consequence_if_missing: Report attribution and replay remain blocked.
+  - field_id: report_use_policy
+    owner_question: What report-use boundary applies to this DB-backed proof?
+    must_cite: [evidence-only or rulepack boundary, report-use permission, downstream prohibition]
+    consequence_if_missing: Runtime/report publication remains blocked.
+  - field_id: no_overclaim_review
+    owner_question: Who confirms the report proof avoids legal/title/access/buildability/value overclaims?
+    must_cite: [review owner, prohibited-claim checklist, caveat placement]
+    consequence_if_missing: Report proof cannot be claimed as reviewed.
+  - field_id: storage_export_boundaries
+    owner_question: What storage, retention, raw export, and normalized export limits apply?
+    must_cite: [storage scope, export rights, retention policy, source-license restrictions]
+    consequence_if_missing: DB/report artifact export remains blocked.
+
+schema_contract_requirements:
+  report_run_contract:
+    schema_path: schemas/report_run_schema.json
+    required_fields_source: required
+    required_fields:
+      - report_run_id
+      - workspace_id
+      - requested_by
+      - area_id
+      - intent_code
+      - idempotency_key
+      - status
+      - review_status
+      - reviewed_by
+      - reviewed_at
+      - review_actions
+      - source_manifest
+      - assumptions
+      - caveats
+      - evidence
+      - claims
+      - unknowns
+      - red_flags
+      - advisory_claims
+      - verification_tasks
+      - artifact_metadata
+      - started_at
+      - finished_at
+      - output_uri
+  evidence_contract:
+    schema_path: schemas/evidence_schema.json
+    required_fields_source: required
+    required_fields:
+      - evidence_id
+      - area_id
+      - evidence_type
+      - evidence_code
+      - domain
+      - observation
+      - observed_value
+      - source_id
+      - dataset_version_id
+      - source_ingest_run_id
+      - method_code
+      - method_version
+      - confidence
+      - caveat
+      - is_negative_evidence
+      - is_source_failure
+      - superseded_by
+      - source_date
+      - observed_at
+      - geometry_geojson
+      - geometry_srid
+      - spatial_precision_meters
+  claim_contract:
+    schema_path: schemas/claim_schema.json
+    required_fields_source: required
+    required_fields:
+      - claim_id
+      - area_id
+      - claim_code
+      - domain
+      - assertion
+      - user_safe_language
+      - severity
+      - confidence
+      - evidence_ids
+      - rule_code
+      - ruleset_id
+      - ruleset_version
+      - verification_required
+      - verification_task
+
+outcome_matrix:
+  - answer_type: approve_with_cited_authority
+    expected_effect: A later slice may record the cited ODP-BOL-004 owner answer after ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 are also cited.
+    downstream_updates_allowed: false
+    still_disallowed: [DB seed, DB report run, report artifact, API surface, hosted or Level 10 claim]
+  - answer_type: keep_blocked
+    expected_effect: Bologna DB-backed report proof remains blocked with an explicit owner answer.
+    downstream_updates_allowed: false
+    still_disallowed: [DB-backed report proof, report artifact, API surface]
+  - answer_type: approve_review_only
+    expected_effect: A later slice may record review-only report-proof posture but still must not authorize DB mutation, runtime, report, API, or hosted use.
+    downstream_updates_allowed: false
+    still_disallowed: [DB seed, runtime use, report use, API surface]
+  - answer_type: exclude_or_defer
+    expected_effect: Bologna DB-backed report proof remains deferred or out of current scope until a new owner decision supersedes it.
+    downstream_updates_allowed: false
+    still_disallowed: [DB-backed report artifact, multi-geography framework claim, hosted proof]
+
+no_overclaim_controls:
+  no_authority_by_response_gate: true
+  no_report_proof_authority_record_by_response_gate: true
+  no_owner_answer_record_by_response_gate: true
+  no_corpus_authority_record_by_response_gate: true
+  no_db_seed_by_response_gate: true
+  no_db_report_run_by_response_gate: true
+  no_report_artifact_by_response_gate: true
+  no_api_surface_by_response_gate: true
+  no_report_semantics_change_by_response_gate: true
+  no_runtime_use_by_response_gate: true
+  no_legal_buildability_title_or_value_claim: true
+  no_level_10_or_hosted_claim: true

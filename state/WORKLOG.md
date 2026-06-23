@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB report proof response gate
+
+- Started clean worktree `worktrees/bol-odp4` on `codex/bol-odp4-gate` from live
+  `origin/main@9d06cdeb79999c235b66c1589e972bfae5a55976` after PR #156 merged and no
+  conflicting ODP-BOL-004 report-proof branch/worktree existed.
+- Re-read startup routing, the completed ODP3 gate, owner-answer intake, report-run,
+  evidence, and claim schemas, focused tests, and qualification status before editing.
+- Baseline ODP3 gate, owner-answer intake, qualification status, and focused
+  Bologna/routing tests passed.
+- Added `config/bologna_odp4_db_report_proof_response_gate.yaml`, checker, wrappers,
+  runbook, focused tests, manifest/crosswalk entries, and routing/state updates so the
+  next `ODP-BOL-004` owner answer has a validate-only DB-backed report proof
+  completeness gate.
+- Routed BOL-ODP3-GATE to done and BOL-ODP4-GATE to active while preserving empty owner
+  answers, empty report-proof authority, DB-report-run, and report-artifact references,
+  disabled downstream updates, blocked DB seed/API/report artifacts, `P0` `BLOCKED`,
+  and non-P0 `NOT_RUN`.
+- First qualification-status run exposed an over-broad crosswalk mapping for
+  caveat/artifact criteria; narrowed ODP4 to authority/report-lineage criteria and kept
+  caveat/artifact requirements in the gate contract.
+- New gate checker/wrapper, existing ODP3/owner-answer checkers, focused tests,
+  structural qualification validation, qualification status, readiness-matrix checking,
+  direct checker advertisement, explicit change-impact with untracked paths, focused
+  ruff/mypy, and qualification selftest passed.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed. Status
+  derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-23 BOL-ODP3-GATE Bologna ODP-BOL-003 corpus response gate
 
 - Started clean worktree `worktrees/bol-odp3` on `codex/bol-odp3-gate` from live
