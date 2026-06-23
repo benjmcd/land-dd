@@ -1,0 +1,513 @@
+#!/usr/bin/env python3
+"""Validate the EQ-5 qualification parameterization backlog boundary."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+try:
+    import yaml
+except ImportError as exc:
+    raise SystemExit(
+        "Missing dev dependency. Install PyYAML before running qualification backlog checks."
+    ) from exc
+
+
+EXPECTED_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
+OWNER_DECISIONS_PATH = "state/owner-decisions.md"
+OWNER_PACKET_PATH = "state/owner-decision-packet.md"
+OWNER_INTAKE_PATH = "config/bologna_owner_answer_intake.yaml"
+QUALIFICATION_STATUS_PATH = "state/EMPIRICAL_QUALIFICATION_STATUS.yaml"
+QUALIFICATION_TARGETS_PATH = "config/qualification/qualification_targets.yaml"
+SOURCE_PROFILE_PATH = "config/qualification/source_profiles/source_quality_profile.ds-002.yaml"
+TASK_QUEUE_PATH = "tasks/task_queue.yaml"
+
+EXPECTED_OWNER_DECISION_IDS = (
+    "ODP-DOM-001",
+    "ODP-TGT-001",
+    "ODP-RUB-001",
+    "ODP-SRC-001",
+    "ODP-PRO-001",
+    "ODP-CON-001",
+    "ODP-BOL-001",
+    "ODP-BOL-002",
+    "ODP-BOL-003",
+    "ODP-BOL-004",
+    "ODP-HOST-001",
+)
+EXPECTED_BOL_THREADS = ("ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003", "ODP-BOL-004")
+EXPECTED_SELECTED_SOURCE_PROFILE_IDS = ("DS-002",)
+EXPECTED_FROZEN_BINDINGS = ("W-003", "W-011")
+EXPECTED_DONE_TASKS = (
+    "BOL-ODP4-GATE",
+    "BOL-POST-ODP4-AUTH",
+    "EQ-5",
+)
+EXPECTED_BLOCKED_TASKS = (
+    "EQ-BLOCK-TARGETS",
+    "EQ-BLOCK-RUBRICS",
+    "EQ-BLOCK-DOMAINS",
+    "EQ-BLOCK-SOURCES",
+    "EQ-BLOCK-SCOPE-VERSIONS",
+    "EQ-BLOCK-BOLOGNA-SCOPE",
+    "EQ-BLOCK-BOLOGNA-SOURCE-RIGHTS",
+    "EQ-BLOCK-BOLOGNA-CORPUS",
+    "EQ-BLOCK-BOLOGNA-REPORT",
+    "BSA-001",
+)
+EXPECTED_SCOPE_VALUES = {
+    "product_scope_profile": "BOUNDED_USER_VALIDATED",
+    "deployment_profile": "LOCAL_SINGLE_USER",
+    "windows_native_required": True,
+    "candidate_generation_enabled": False,
+    "financial_modeling_enabled": False,
+    "ai_llm_enabled_for_decision_relevant_output": False,
+    "commercial_profile_enabled": False,
+    "international_operation_enabled": False,
+    "regulated_high_stakes_use_enabled": False,
+    "report_contract_version": "report_run_contract_v1",
+    "api_contract_version": "0.1.0",
+    "normalization_schema_version": "0.1.0-alpha",
+    "geometry_pipeline_version": "0.1.0-alpha",
+    "source_snapshot_policy": "HASHED_RETRIEVAL_MANIFEST_PER_SOURCE",
+    "data_as_of_policy": "SOURCE_DATA_AS_OF_AND_RETRIEVAL_TIMESTAMP_WITH_FRESHNESS_CAVEATS",
+}
+EXPECTED_INTAKE_FALSE_APPROVALS = (
+    "owner_answers_complete",
+    "product_aoi_scope_answered",
+    "source_authority_rights_answered",
+    "recorded_corpus_answered",
+    "db_report_proof_answered",
+    "downstream_authority_updates_allowed",
+)
+EXPECTED_INTAKE_FALSE_LIMITS = (
+    "records_owner_authority",
+    "selects_bologna_aoi",
+    "approves_sources",
+    "changes_source_rights",
+    "creates_recorded_fixtures",
+    "creates_source_failure_fixtures",
+    "runs_live_connectors",
+    "mutates_database",
+    "creates_runtime_artifacts",
+    "creates_report_artifacts",
+    "changes_report_semantics",
+    "changes_source_readiness",
+    "approves_ds017",
+    "claims_legal_review",
+    "claims_hosted_production_ready",
+    "claims_level_10",
+)
+
+
+class QualificationParameterizationBacklogError(RuntimeError):
+    """Raised when backlog control-plane inputs cannot be read safely."""
+
+
+def repo_relative_path(root: Path, path_text: str) -> Path:
+    normalized = path_text.replace("\\", "/")
+    path = PurePosixPath(normalized)
+    if normalized.startswith("/") or ":" in normalized or ".." in path.parts:
+        raise QualificationParameterizationBacklogError(
+            f"path must be repo-relative: {path_text}"
+        )
+    absolute = (root / Path(*path.parts)).resolve()
+    try:
+        absolute.relative_to(root.resolve())
+    except ValueError as exc:
+        raise QualificationParameterizationBacklogError(
+            f"path escapes repo: {path_text}"
+        ) from exc
+    return absolute
+
+
+def read_text(root: Path, path_text: str) -> str:
+    path = repo_relative_path(root, path_text)
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise QualificationParameterizationBacklogError(
+            f"required text file missing: {path_text}"
+        ) from exc
+
+
+def load_yaml(root: Path, path_text: str) -> dict[str, Any]:
+    path = repo_relative_path(root, path_text)
+    try:
+        payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise QualificationParameterizationBacklogError(
+            f"required YAML file missing: {path_text}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise QualificationParameterizationBacklogError(f"YAML object required: {path_text}")
+    return payload
+
+
+def require(condition: bool, message: str, errors: list[str]) -> None:
+    if not condition:
+        errors.append(message)
+
+
+def require_fragments(
+    text: str,
+    path_text: str,
+    fragments: tuple[str, ...],
+    errors: list[str],
+) -> None:
+    for fragment in fragments:
+        if fragment not in text:
+            errors.append(f"{path_text} missing expected fragment: {fragment}")
+
+
+def require_mapping(value: Any, name: str, errors: list[str]) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        errors.append(f"{name} must be a mapping")
+        return {}
+    return value
+
+
+def validate_backlog(backlog: str, errors: list[str]) -> None:
+    require_fragments(
+        backlog,
+        BACKLOG_PATH,
+        (
+            "Status: `P0 = BLOCKED`",
+            "No AOI selection, source approval, fixture capture",
+            "Owner decision consequence map: `state/owner-decision-packet.md`",
+            "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`",
+            "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
+            "## Owner Decision Blockers",
+            "Active gates | 12 | BLOCKED (external/owner authority)",
+            "Active DRAFT criterion contracts | 60 | BLOCKED (external/owner authority)",
+            "Active DRAFT/unresolved target bindings | 49 | BLOCKED (external/owner authority)",
+            "Active DRAFT judgment rubrics | 16 | BLOCKED (external/owner authority)",
+            "Qualified-domain profiles still DRAFT | 8 | BLOCKED (external/owner authority)",
+            "Approved source profiles selected | 1 | DS-002 only; remaining selections blocked",
+            "## Controlled Owner Disposition - 2026-06-22",
+            "## Bologna Priority Blockers",
+        ),
+        errors,
+    )
+    for decision_id in EXPECTED_OWNER_DECISION_IDS:
+        require(f"`{decision_id}`" in backlog, f"backlog missing owner decision {decision_id}", errors)
+    for source_id in EXPECTED_SELECTED_SOURCE_PROFILE_IDS:
+        require(f"`{source_id}`" in backlog, f"backlog missing selected source {source_id}", errors)
+
+
+def validate_owner_packet(packet: str, errors: list[str]) -> None:
+    require_fragments(
+        packet,
+        OWNER_PACKET_PATH,
+        (
+            "Status: `decision-request-only`",
+            "not an authority ledger",
+            "does not freeze or approve anything by itself",
+            "Bologna has no approved AOI",
+            "This packet does not authorize:",
+            "source approvals beyond DS-002",
+            "fixture capture or source-failure fixtures",
+            "DB seed, connector, report/API/UI/runtime proof",
+        ),
+        errors,
+    )
+    for decision_id in EXPECTED_OWNER_DECISION_IDS:
+        require(f"### {decision_id} " in packet, f"owner packet missing {decision_id}", errors)
+
+
+def validate_owner_decisions(decisions: str, errors: list[str]) -> None:
+    require_fragments(
+        decisions,
+        OWNER_DECISIONS_PATH,
+        (
+            "## 2026-06-22 QFREEZE-1 Qualification Freeze",
+            "repo-local authority ledger",
+            "owner=benjmcd",
+            "authority=owner directive 2026-06-22",
+            "rationale=conservative defaults matching operational reality",
+            "reversal=requires a new owner decision + full requalification",
+            "`scope.source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE",
+            "`criterion_bindings.W-003` | frozen | FROZEN_TARGET",
+            "`criterion_bindings.W-011` | frozen | FROZEN_TARGET",
+            "no P0 `PASS`",
+            "no source approvals beyond DS-002",
+            "no Bologna AOI/source authority",
+            "no DB seed",
+            "no report/API/UI/runtime proof",
+            "no hosted authority",
+        ),
+        errors,
+    )
+
+
+def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
+    require(intake.get("status") == "blocked_missing_owner_answers", "owner intake status drifted", errors)
+
+    approvals = require_mapping(intake.get("approvals"), "owner intake approvals", errors)
+    for key in EXPECTED_INTAKE_FALSE_APPROVALS:
+        require(approvals.get(key) is False, f"owner intake approvals.{key} must be false", errors)
+
+    limits = require_mapping(intake.get("limits"), "owner intake limits", errors)
+    require(limits.get("validate_only_intake") is True, "owner intake must remain validate-only", errors)
+    for key in EXPECTED_INTAKE_FALSE_LIMITS:
+        require(limits.get(key) is False, f"owner intake limits.{key} must be false", errors)
+
+    contract = require_mapping(
+        intake.get("owner_answer_contract"),
+        "owner intake owner_answer_contract",
+        errors,
+    )
+    require(
+        contract.get("contract_state") == "ready_for_external_owner_answers",
+        "owner answer contract state drifted",
+        errors,
+    )
+    require(
+        contract.get("current_owner_answers") == [],
+        "owner intake current_owner_answers must remain empty",
+        errors,
+    )
+    require(
+        contract.get("response_update_policy") == "disabled_until_complete_cited_authority",
+        "owner answer response update policy drifted",
+        errors,
+    )
+
+    controls = require_mapping(
+        contract.get("no_overclaim_controls"),
+        "owner intake no_overclaim_controls",
+        errors,
+    )
+    for key, value in controls.items():
+        require(value is True, f"owner intake no-overclaim control {key} must remain true", errors)
+
+    threads = intake.get("bologna_decision_threads")
+    if not isinstance(threads, list) or not threads:
+        errors.append("owner intake bologna_decision_threads must be a non-empty list")
+        return
+    seen_threads = tuple(str(thread.get("odp_id")) for thread in threads if isinstance(thread, dict))
+    require(seen_threads == EXPECTED_BOL_THREADS, "owner intake Bologna ODP sequence drifted", errors)
+    for index, thread in enumerate(threads, start=1):
+        if not isinstance(thread, dict):
+            errors.append("owner intake Bologna thread must be a mapping")
+            continue
+        odp_id = str(thread.get("odp_id"))
+        require(thread.get("sequence") == index, f"{odp_id} sequence drifted", errors)
+        require(thread.get("status") == "missing_owner_answer", f"{odp_id} status must remain missing", errors)
+        require(thread.get("owner_answer_references") == [], f"{odp_id} owner answers must remain empty", errors)
+        require(thread.get("downstream_updates_allowed") is False, f"{odp_id} downstream updates must be false", errors)
+        if index > 1:
+            expected_prereqs = list(EXPECTED_BOL_THREADS[: index - 1])
+            require(
+                thread.get("prerequisite_odp_ids") == expected_prereqs,
+                f"{odp_id} prerequisite sequence drifted",
+                errors,
+            )
+
+
+def validate_qualification_status(status: dict[str, Any], errors: list[str]) -> None:
+    candidate = require_mapping(status.get("candidate"), "qualification status candidate", errors)
+    for key, value in candidate.items():
+        require(value is None, f"qualification candidate.{key} must remain null", errors)
+
+    qualifications = require_mapping(status.get("qualifications"), "qualification statuses", errors)
+    p0 = require_mapping(qualifications.get("p0"), "qualification p0 status", errors)
+    require(p0.get("status") == "BLOCKED", "P0 must remain BLOCKED", errors)
+    require(p0.get("result_path") is None, "P0 result_path must remain null", errors)
+    require(
+        BACKLOG_PATH in (p0.get("blocker_references") or []),
+        "P0 blocker references must include the parameterization backlog",
+        errors,
+    )
+    for name, record in qualifications.items():
+        if name == "p0":
+            continue
+        if isinstance(record, dict):
+            require(record.get("status") == "NOT_RUN", f"qualification {name} must remain NOT_RUN", errors)
+            require(record.get("result_path") is None, f"qualification {name} result_path must remain null", errors)
+
+    for section_name in ("overlays", "conditional_overlays"):
+        section = require_mapping(status.get(section_name), f"qualification {section_name}", errors)
+        for name, record in section.items():
+            if not isinstance(record, dict):
+                errors.append(f"{section_name}.{name} must be a mapping")
+                continue
+            require(record.get("status") == "NOT_RUN", f"{section_name}.{name} must remain NOT_RUN", errors)
+            require(record.get("result_path") is None, f"{section_name}.{name} result_path must remain null", errors)
+            if section_name == "conditional_overlays":
+                require(record.get("applicable") is False, f"{section_name}.{name} must remain not applicable", errors)
+
+
+def validate_targets(targets: dict[str, Any], errors: list[str]) -> None:
+    require(targets.get("status") == "DRAFT", "qualification targets must remain globally DRAFT", errors)
+    require(targets.get("frozen_at") is None, "qualification targets frozen_at must remain null", errors)
+    require(targets.get("approved_by") == [], "qualification targets approved_by must remain empty", errors)
+
+    scope = require_mapping(targets.get("scope"), "qualification target scope", errors)
+    for key, expected in EXPECTED_SCOPE_VALUES.items():
+        require(scope.get(key) == expected, f"scope.{key} drifted", errors)
+    require(
+        tuple(scope.get("source_profile_ids") or []) == EXPECTED_SELECTED_SOURCE_PROFILE_IDS,
+        "scope.source_profile_ids must remain DS-002 only",
+        errors,
+    )
+    require(
+        scope.get("ruleset_versions") == {"homestead_mvp_v0_1": "0.1"},
+        "scope.ruleset_versions drifted",
+        errors,
+    )
+
+    bindings = require_mapping(targets.get("criterion_bindings"), "criterion_bindings", errors)
+    frozen_bindings = tuple(
+        criterion_id
+        for criterion_id, record in bindings.items()
+        if isinstance(record, dict) and record.get("status") == "FROZEN"
+    )
+    require(frozen_bindings == EXPECTED_FROZEN_BINDINGS, "only W-003 and W-011 may be frozen", errors)
+    for criterion_id, record in bindings.items():
+        if isinstance(record, dict):
+            require(record.get("status") != "PASS", f"{criterion_id} must not be PASS", errors)
+
+
+def validate_source_profile(profile: dict[str, Any], errors: list[str]) -> None:
+    require(profile.get("source_id") == "DS-002", "source profile source_id must remain DS-002", errors)
+    require(profile.get("status") == "APPROVED", "DS-002 source profile must remain APPROVED", errors)
+    require(
+        profile.get("approved_use_profiles") == ["BOUNDED_USER_VALIDATED"],
+        "DS-002 approved use profile drifted",
+        errors,
+    )
+    require_mapping(profile.get("authority"), "DS-002 authority", errors)
+    require_mapping(profile.get("rights"), "DS-002 rights", errors)
+    controls = profile.get("conditions_enforced_by")
+    require(isinstance(controls, list) and controls, "DS-002 enforcement controls must be non-empty", errors)
+
+
+def validate_task_queue(task_queue: dict[str, Any], errors: list[str]) -> None:
+    require(task_queue.get("active_plan") == EXPECTED_PLAN, "task queue active_plan drifted", errors)
+    tasks = task_queue.get("tasks")
+    if not isinstance(tasks, list) or not tasks:
+        errors.append("task queue tasks must be a non-empty list")
+        return
+    by_id = {
+        str(task.get("id")): task
+        for task in tasks
+        if isinstance(task, dict) and task.get("id")
+    }
+    active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
+    require(active_ids == [], f"task queue must have no active tasks, found {active_ids}", errors)
+
+    for task_id in EXPECTED_DONE_TASKS:
+        task = by_id.get(task_id)
+        require(task is not None, f"task queue missing {task_id}", errors)
+        if task is not None:
+            require(task.get("status") == "done", f"{task_id} must be done", errors)
+    eq5 = by_id.get("EQ-5") or {}
+    require(eq5.get("depends_on") == ["BOL-POST-ODP4-AUTH"], "EQ-5 dependency drifted", errors)
+    require(eq5.get("spec") == EXPECTED_PLAN, "EQ-5 spec must point to the active EQ-5 plan", errors)
+
+    for task_id in EXPECTED_BLOCKED_TASKS:
+        task = by_id.get(task_id)
+        require(task is not None, f"task queue missing blocked task {task_id}", errors)
+        if task is not None:
+            require(task.get("status") == "blocked", f"{task_id} must remain blocked", errors)
+            require(
+                "external/owner authority" in str(task.get("notes") or ""),
+                f"{task_id} notes must cite external/owner authority",
+                errors,
+            )
+
+
+def validate_repo_controls(root: Path, errors: list[str]) -> None:
+    controls = (
+        ("scripts/verify.ps1", "qualification_parameterization_backlog_check.py"),
+        ("scripts/verify.sh", "qualification_parameterization_backlog_check.py"),
+        (".github/workflows/ci.yml", "Validate qualification parameterization backlog"),
+        ("scripts/run_qualification_parameterization_backlog_check.ps1", "qualification_parameterization_backlog_check.py"),
+        ("scripts/run_qualification_parameterization_backlog_check.sh", "qualification_parameterization_backlog_check.py"),
+        ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
+        ("plans/README.md", EXPECTED_PLAN),
+        ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
+        (EXPECTED_PLAN, "## Decision log"),
+    )
+    for path_text, fragment in controls:
+        text = read_text(root, path_text)
+        require(fragment in text, f"{path_text} missing expected fragment: {fragment}", errors)
+
+
+def validate(root: Path) -> list[str]:
+    errors: list[str] = []
+    validate_backlog(read_text(root, BACKLOG_PATH), errors)
+    validate_owner_packet(read_text(root, OWNER_PACKET_PATH), errors)
+    validate_owner_decisions(read_text(root, OWNER_DECISIONS_PATH), errors)
+    validate_owner_intake(load_yaml(root, OWNER_INTAKE_PATH), errors)
+    validate_qualification_status(load_yaml(root, QUALIFICATION_STATUS_PATH), errors)
+    validate_targets(load_yaml(root, QUALIFICATION_TARGETS_PATH), errors)
+    validate_source_profile(load_yaml(root, SOURCE_PROFILE_PATH), errors)
+    validate_task_queue(load_yaml(root, TASK_QUEUE_PATH), errors)
+    validate_repo_controls(root, errors)
+    return errors
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate the EQ-5 owner-decision parameterization backlog boundary.",
+    )
+    parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    args = parser.parse_args(argv)
+
+    root = args.root.resolve()
+    try:
+        errors = validate(root)
+    except QualificationParameterizationBacklogError as exc:
+        print(f"FAIL: {exc}")
+        print("qualification parameterization backlog check: FAIL")
+        return 1
+
+    if errors:
+        if args.json_output:
+            print(json.dumps({"ok": False, "errors": errors}, indent=2, sort_keys=True))
+        else:
+            for error in errors:
+                print(f"FAIL: {error}")
+            print("qualification parameterization backlog check: FAIL")
+        return 1
+
+    if args.json_output:
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "owner_decision_ids": list(EXPECTED_OWNER_DECISION_IDS),
+                    "selected_source_profile_ids": list(EXPECTED_SELECTED_SOURCE_PROFILE_IDS),
+                    "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
+                    "bologna_threads": list(EXPECTED_BOL_THREADS),
+                    "active_plan": EXPECTED_PLAN,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    else:
+        print(f"owner decision blockers: {len(EXPECTED_OWNER_DECISION_IDS)}")
+        print(f"selected source profiles: {', '.join(EXPECTED_SELECTED_SOURCE_PROFILE_IDS)}")
+        print(f"frozen criterion bindings: {', '.join(EXPECTED_FROZEN_BINDINGS)}")
+        print("P0 status: BLOCKED")
+        print("qualification parameterization backlog check: ok")
+    return 0
+
+
+if __name__ == "__main__":
+    from pathlib import Path as _QualificationPath
+    import sys as _qualification_sys
+
+    _qualification_sys.path.insert(0, str(_QualificationPath(__file__).resolve().parent))
+    from qualification_checker_advertisement import maybe_emit_qualification_criteria
+
+    maybe_emit_qualification_criteria(__file__)
+    raise SystemExit(main())

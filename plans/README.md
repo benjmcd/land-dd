@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-bologna-odp4-db-report-proof-response-gate.md`.
+Latest completed plan: `2026-06-23-post-odp4-authority-routing.md`.
 
-Current routing plan: `2026-06-23-post-odp4-authority-routing.md`.
+Current routing plan: `plans/2026-06-23-eq5-parameterization-backlog-check.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -282,6 +282,15 @@ owner authority in sequence: product/AOI/scope, source authority and rights,
 recorded-source corpus, then one DB-backed report proof. If that authority does not
 arrive, the only repo-local path is non-authorizing EQ-5-style backlog maintenance for
 domains, targets/contracts, rubrics, source profiles, and P0 protocol blockers.
+
+`EQ-5` adds `scripts/qualification_parameterization_backlog_check.py`, a validate-only
+consistency checker for the qualification parameterization backlog, owner-decision
+packet, owner-decision ledger, Bologna owner-answer intake, qualification status,
+qualification targets, DS-002 selected source profile, task routing, and verification
+wiring. It marks the backlog tracking milestone complete without resolving any
+external/owner authority blocker, qualification result, Bologna authority step, source
+approval beyond DS-002, fixture, DB seed, report artifact, API/report change, hosted
+authority, or Level 10 claim.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

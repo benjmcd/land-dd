@@ -2,6 +2,31 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 EQ-5 qualification parameterization backlog check
+
+- Started clean worktree `worktrees/eq5-audit` on `codex/eq5-audit` from live
+  `origin/main@87071712d8ed87cd51360b72b4e1f94be9636648`, leaving the dirty stale root
+  checkout untouched.
+- Re-read the agent inbox and current routing state. The inbox was stale on commit/order
+  details but aligned with the live authority boundary: no more Bologna scaffolding or
+  implementation until cited owner authority exists.
+- Chose the unblocked EQ-5 path: add an executable validate-only consistency checker
+  rather than another Bologna gate or any DB-backed Bologna report work. This preserves
+  BOL-POST-ODP4-AUTH and treats Bologna as externally blocked.
+- Added `scripts/qualification_parameterization_backlog_check.py`, shell/PowerShell
+  wrappers, verify/CI wiring, readiness-crosswalk mapping, focused tests, and
+  fail-closed coverage for injected owner answers.
+- Updated `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md` with an explicit
+  owner-decision blocker table covering ODP-DOM/TGT/RUB/SRC/PRO/CON, ODP-BOL-001
+  through ODP-BOL-004, and ODP-HOST-001.
+- Routed `EQ-5` to done as blocked-state consistency proof only. No owner answer,
+  Bologna AOI/source/corpus/report authority, source approval beyond DS-002, fixture,
+  DB seed, report/API/UI/runtime proof, hosted authority, Level 10 claim, or
+  qualification PASS was introduced.
+- Verification caught two integration issues during the pass: the new shell wrapper was
+  missing from the readiness crosswalk, and the readiness-core app-model test still
+  expected the previous active plan. Both were fixed before final verification.
+
 ## 2026-06-23 BOL-POST-ODP4-AUTH post-ODP4 authority routing
 
 - Started clean worktree `worktrees/qpf-ds002` on `codex/qpf-ds002` from live

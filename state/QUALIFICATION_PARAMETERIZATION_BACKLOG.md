@@ -23,6 +23,11 @@ Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`. That int
 validate-only and keeps all ODP-BOL owner answers missing until cited external
 authority exists.
 
+EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`.
+That checker is validate-only and fails closed if the backlog, owner packet, owner
+decision ledger, owner-answer intake, qualification targets/status, selected source
+profile, task queue, or verification wiring drift from this blocked-state boundary.
+
 ODP-BOL-001 owner-response gate:
 `config/bologna_odp1_owner_response_gate.yaml`. That gate is validate-only and keeps
 the Bologna product/AOI/scope answer missing until cited external owner authority
@@ -188,6 +193,27 @@ The owner-authorized scope/version fields are frozen in
 
 P0 remains BLOCKED because DQ/Q1/Q2/M target thresholds remain blocked, domain profiles
 remain blocked, and criterion contracts and judgment rubrics remain blocked.
+
+## Owner Decision Blockers
+
+Every owner-decision blocker remains unresolved unless a cited owner decision or
+review artifact records one of the controlled dispositions below. These rows map the
+decision packet to the gate or authority area it can unblock; the backlog itself does
+not grant authority.
+
+| Decision ID | Blocked area | Gate or downstream effect |
+|---|---|---|
+| `ODP-DOM-001` | Domain profile freeze | Blocks P0/Q1/DQ/R domain-profile claims. |
+| `ODP-TGT-001` | Active targets and criterion contracts | Blocks P0 and all downstream qualification results. |
+| `ODP-RUB-001` | Judgment rubrics | Blocks P0/Q1/Q2/A/DQ/M/R rubric-dependent criteria. |
+| `ODP-SRC-001` | Selected source profile set | Blocks source expansion beyond `DS-002`. |
+| `ODP-PRO-001` | Candidate and evidence protocol | Blocks sealed cases, reviewer protocol, and run evidence. |
+| `ODP-CON-001` | Conditional profiles | Blocks AI, candidate-generation, financial, economics, hosted, and expansion profiles. |
+| `ODP-BOL-001` | Bologna product and AOI authority | Blocks Bologna source authority, corpus, DB proof, and implementation. |
+| `ODP-BOL-002` | Bologna source authority and rights | Blocks Bologna recorded corpus and report-use authority. |
+| `ODP-BOL-003` | Bologna recorded-source corpus | Blocks fixture capture, source-failure fixtures, DB seed, and report proof. |
+| `ODP-BOL-004` | DB-backed Bologna report proof | Blocks Bologna DB report run, artifacts, API/report changes, and lineage claims. |
+| `ODP-HOST-001` | DS-017, hosted, and Level 10 authority | Blocks DS-017, hosted production, hosted observability, and Level 10 claims. |
 
 ## Controlled Owner Disposition - 2026-06-22
 

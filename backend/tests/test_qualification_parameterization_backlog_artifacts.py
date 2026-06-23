@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -9,12 +12,56 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKLOG_PATH = REPO_ROOT / "state" / "QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = REPO_ROOT / "state" / "owner-decisions.md"
 OWNER_PACKET_PATH = REPO_ROOT / "state" / "owner-decision-packet.md"
+BACKLOG_CHECK_SCRIPT = REPO_ROOT / "scripts" / "qualification_parameterization_backlog_check.py"
+EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+BACKLOG_CHECK_INPUTS = (
+    ".github/workflows/ci.yml",
+    "MANIFEST.md",
+    EXPECTED_EQ5_PLAN,
+    "plans/README.md",
+    "scripts/qualification_parameterization_backlog_check.py",
+    "scripts/run_qualification_parameterization_backlog_check.ps1",
+    "scripts/run_qualification_parameterization_backlog_check.sh",
+    "scripts/verify.ps1",
+    "scripts/verify.sh",
+    "state/EMPIRICAL_QUALIFICATION_STATUS.yaml",
+    "state/PROJECT_STATE.md",
+    "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
+    "state/owner-decisions.md",
+    "state/owner-decision-packet.md",
+    "config/bologna_owner_answer_intake.yaml",
+    "config/qualification/qualification_targets.yaml",
+    "config/qualification/source_profiles/source_quality_profile.ds-002.yaml",
+    "tasks/task_queue.yaml",
+)
 
 
 def _yaml(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert isinstance(payload, dict)
     return cast(dict[str, Any], payload)
+
+
+def _copy_required_backlog_check_inputs(root: Path) -> None:
+    for relative_path in BACKLOG_CHECK_INPUTS:
+        source = REPO_ROOT / relative_path
+        target = root / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+
+def _run_backlog_check(root: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(BACKLOG_CHECK_SCRIPT),
+            "--root",
+            str(root),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
@@ -31,6 +78,8 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
         "Qualified-domain profiles still DRAFT | 8",
         "Approved source profiles selected | 1",
         "ruleset_versions",
+        "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
+        "## Owner Decision Blockers",
     ):
         assert phrase in backlog
 
@@ -39,6 +88,21 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
 
     for criterion_id in ("P0-014", "P0-017", "P0-025", "Q2-030", "DQ-022", "W-011"):
         assert f"`{criterion_id}`" in backlog
+
+    for decision_id in (
+        "ODP-DOM-001",
+        "ODP-TGT-001",
+        "ODP-RUB-001",
+        "ODP-SRC-001",
+        "ODP-PRO-001",
+        "ODP-CON-001",
+        "ODP-BOL-001",
+        "ODP-BOL-002",
+        "ODP-BOL-003",
+        "ODP-BOL-004",
+        "ODP-HOST-001",
+    ):
+        assert f"`{decision_id}`" in backlog
 
 
 def test_owner_authorized_freeze_disposition_is_recorded() -> None:
@@ -173,7 +237,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
     assert task_queue["active_plan"] == (
-        "plans/2026-06-23-post-odp4-authority-routing.md"
+        EXPECTED_EQ5_PLAN
     )
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
@@ -279,4 +343,44 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
         tasks["BOL-POST-ODP4-AUTH"]["notes"]
     )
     assert tasks["EQ-5"]["depends_on"] == ["BOL-POST-ODP4-AUTH"]
+    assert tasks["EQ-5"]["status"] == "done"
+    assert tasks["EQ-5"]["spec"] == EXPECTED_EQ5_PLAN
+    assert "validate-only consistency checker" in tasks["EQ-5"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
+
+
+def test_qualification_parameterization_backlog_checker_passes() -> None:
+    result = _run_backlog_check(REPO_ROOT)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "qualification parameterization backlog check: ok" in result.stdout
+
+
+def test_qualification_parameterization_backlog_checker_fails_closed_on_owner_answer(
+    tmp_path: Path,
+) -> None:
+    _copy_required_backlog_check_inputs(tmp_path)
+    intake_path = tmp_path / "config" / "bologna_owner_answer_intake.yaml"
+    intake = _yaml(intake_path)
+    contract = intake["owner_answer_contract"]
+    contract["current_owner_answers"] = [
+        {
+            "owner_answer_id": "TEST-ANSWER",
+            "odp_id": "ODP-BOL-001",
+            "answer_type": "approve_with_cited_authority",
+            "decision_owner": "test",
+            "decision_date": "2026-06-23",
+            "authority_reference": "test-only",
+            "answer_summary": "test-only",
+            "cited_artifacts": [],
+            "caveats": [],
+            "downstream_unlocks_requested": [],
+            "supersedes_owner_answer_ids": [],
+        }
+    ]
+    intake_path.write_text(yaml.safe_dump(intake, sort_keys=False), encoding="utf-8")
+
+    result = _run_backlog_check(tmp_path)
+
+    assert result.returncode == 1
+    assert "current_owner_answers must remain empty" in result.stdout

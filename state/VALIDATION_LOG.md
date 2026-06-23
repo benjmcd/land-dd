@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 EQ-5 Qualification Parameterization Backlog Check
+
+**Scope:** Add a validate-only EQ-5 consistency checker for the qualification
+parameterization backlog, owner-decision packet, owner-decision ledger, Bologna
+owner-answer intake, qualification status, qualification targets, selected DS-002 source
+profile, task routing, and verification wiring. This does not resolve any
+external/owner authority blocker or change Bologna/source/report/API/DB/runtime
+behavior.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+.\scripts\run_qualification_parameterization_backlog_check.ps1
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New EQ-5 checker passed with 11 owner-decision blockers, DS-002 as the only selected
+  source profile, W-003/W-011 as the only frozen criterion bindings, and P0 `BLOCKED`.
+- PowerShell wrapper passed.
+- Checker advertisement passed for `G-021`, `P0-001`, `P0-014`, `P0-017`, and
+  `P0-025`.
+- Structural qualification validation first failed because the new shell wrapper was not
+  mapped in `readiness_crosswalk.yaml`; after adding the crosswalk entry and companion
+  doc row, structural validation passed.
+- Readiness matrix and qualification status first reflected the active-plan citation
+  omission; after adding the Level 9/10 gate matrix citation to the EQ-5 plan, readiness
+  matrix passed and status derivation returned `BLOCKED=1 NOT_RUN=20`.
+- Focused backlog tests passed, including the fail-closed injected owner-answer case.
+- Focused readiness-core plus backlog tests passed (`12 passed`) after updating the
+  app-model expectation to the EQ-5 active plan and completed task.
+- Ruff passed for the new checker and touched focused tests.
+- Change-impact passed as advisory over 15 changed paths; the mapped surface is
+  `qualification_parameterization_backlog` with criteria `P0-001`, `P0-014`,
+  `P0-017`, `P0-025`, and `G-021`.
+- Full `.\scripts\verify.ps1` passed after the focused readiness-core assertion was
+  corrected. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** EQ-5 is complete only as a blocked-state consistency control.
+Bologna remains externally blocked until cited owner authority exists for ODP-BOL-001
+product/AOI/scope, then ODP-BOL-002 source rights, then ODP-BOL-003 recorded corpus,
+then ODP-BOL-004 DB-backed report proof. P0 remains `BLOCKED`; all non-P0 statuses
+remain `NOT_RUN`.
+
 ## 2026-06-23 BOL-POST-ODP4-AUTH Post-ODP4 Bologna Authority Routing
 
 **Scope:** Mark the merged `BOL-ODP4-GATE` response gate complete in routing/state and
