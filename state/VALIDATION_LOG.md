@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 BOL-ODP1-GATE Bologna ODP-BOL-001 Owner-Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-001 owner-response gate and route BOL-ODP-1
+to done / BOL-ODP1-GATE to active. This does not record owner answers, pilot-scope
+authority, AOI selection, source approval, source-rights changes, corpus approval,
+fixture capture, DB seed, report/runtime artifacts, DS-017 approval, qualification
+status changes, hosted authority, or Level 10 claims.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+.\scripts\run_bologna_odp1_owner_response_gate_check.ps1
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+cd backend; py -3.12 -m pytest -q tests\test_bologna_odp1_owner_response_gate_artifacts.py tests\test_bologna_owner_answer_intake_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-23T12:00:00Z
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 -m ruff check scripts\bologna_odp1_owner_response_gate_check.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp1_owner_response_gate_check.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline owner-answer intake checker, pilot-scope authority checker, qualification
+  status, and focused Bologna/routing tests passed before edits.
+- New ODP-BOL-001 owner-response gate checker and wrapper passed.
+- Owner-answer intake and pilot-scope authority checkers still passed.
+- First focused test run failed only on a brittle backlog assertion that crossed a
+  Markdown line wrap; the assertion was narrowed to stable terms.
+- Focused ODP-BOL-001/owner-answer/pilot-scope/routing tests passed (`37 passed`).
+- Structural qualification validation passed with expected blocked-readiness warnings.
+- Qualification status passed with `BLOCKED=1 NOT_RUN=20`.
+- Readiness-matrix checking passed.
+- Direct qualification-checker advertisement passed for
+  `scripts/bologna_odp1_owner_response_gate_check.py`.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `368` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP1-GATE is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. `ODP-BOL-001` still has no owner
+answer or authority record; BSA-001 remains blocked. DB smoke was not run locally in
+this pass because `RUN_DB_SMOKE=1` was not set.
+
 ## 2026-06-23 BOL-ODP-1 Bologna Owner-Answer Intake
 
 **Scope:** Add a validate-only Bologna owner-answer intake for ODP-BOL-001 through

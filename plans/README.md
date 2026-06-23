@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-22-owner-decision-packet.md`.
+Latest completed plan: `2026-06-23-bologna-owner-answer-intake.md`.
 
-Current routing plan: `2026-06-23-bologna-owner-answer-intake.md`.
+Current routing plan: `2026-06-23-bologna-odp1-owner-response-gate.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -228,13 +228,21 @@ DS-017, hosted, and Level 10 decisions. It does not freeze additional values, ap
 sources, select a Bologna AOI, create a corpus, run a DB-backed report, or change
 qualification status.
 
-`BOL-ODP-1` is the current Bologna-first follow-on after OWNER-DEC-1. It adds
+`BOL-ODP-1` is the completed Bologna-first follow-on after OWNER-DEC-1. It adds
 `config/bologna_owner_answer_intake.yaml` plus a validate-only checker so future
 ODP-BOL-001 through ODP-BOL-004 owner answers have a machine-checkable shape tied to
 the existing Bologna pilot-scope, source-authority, source-rights, recorded-corpus,
 evidence, and report-run contracts. It does not record owner authority, select an AOI,
 approve sources, capture fixtures, seed the DB, prove a report, or change
 qualification status.
+
+`BOL-ODP1-GATE` is the current follow-on after BOL-ODP-1. It adds
+`config/bologna_odp1_owner_response_gate.yaml` plus a validate-only checker for the
+next external owner answer, `ODP-BOL-001` product/AOI/scope authority. It aligns the
+required owner-answer fields with the owner-answer intake and the required
+scope/authority-record fields with the pilot-scope authority packet. It keeps owner
+answers, authority records, downstream updates, source/corpus/report work, and
+qualification status blocked.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

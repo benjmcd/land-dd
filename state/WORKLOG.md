@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 BOL-ODP1-GATE Bologna ODP-BOL-001 owner-response gate
+
+- Started clean worktree `worktrees/bol-odp1` on `codex/bol-odp1-close` from live
+  `origin/main@f2c815028e5a17044079de492f254546cacedfeb` after PR #153 merged and no
+  conflicting ODP-BOL-001 owner-response branch/worktree existed.
+- Re-read startup routing, the completed owner-answer intake, pilot-scope authority
+  packet, owner decision packet, focused tests, and qualification status before editing.
+- Baseline owner-answer intake checker, pilot-scope authority checker, qualification
+  status, and focused Bologna/routing tests passed.
+- Added `config/bologna_odp1_owner_response_gate.yaml`, checker, wrappers, runbook,
+  focused tests, manifest/crosswalk entries, and routing/state updates so the next
+  `ODP-BOL-001` owner answer has a validate-only completeness gate.
+- Routed BOL-ODP-1 to done and BOL-ODP1-GATE to active while preserving empty owner
+  answers, empty pilot-scope authority records, disabled downstream updates, blocked
+  BSA-001, `P0` `BLOCKED`, and non-P0 `NOT_RUN`.
+- New gate checker/wrapper, existing owner-answer and pilot-scope checkers, focused
+  tests, structural qualification validation, qualification status, readiness-matrix
+  checking, direct checker advertisement, focused ruff/mypy, and qualification selftest
+  passed. The first focused test run exposed one line-wrap-sensitive backlog assertion,
+  which was corrected.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed.
+  Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
 ## 2026-06-23 BOL-ODP-1 Bologna owner-answer intake
 
 - Started clean worktree `worktrees/bol-owner` on `codex/bologna-owner-intake` from
