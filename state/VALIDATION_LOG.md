@@ -2,6 +2,77 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-22 QFREEZE-1 Authorized Scope/Source Freeze
+
+**Scope:** Record the 2026-06-22 owner-authorized conservative defaults, bind DS-002,
+freeze the explicitly authorized scope/version/source fields, and freeze only W-003 and
+W-011 target bindings. This does not promote P0 or any W gate to `PASS`, freeze
+domain-profile rubrics, freeze DQ/Q1/Q2/M thresholds, approve sources beyond DS-002,
+approve Bologna/DS-017/hosted authority, change DB/API/UI/report semantics, capture
+fixtures, create a corpus, seed the DB, or claim Level 10 authority.
+
+**Commands for this gate:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_qualification_status_check.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-22T12:00:00Z
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check backend\tests\test_qualification_status_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_qualification_status_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural validation passed with blocked-readiness warnings for
+  template-only domains, empty source bindings, unresolved scope/version fields,
+  unresolved `ruleset_versions`, draft targets, draft criterion contracts, and draft
+  judgment rubrics.
+- Baseline focused backend qualification/routing tests passed (`15 passed`) before red
+  QFREEZE-1 tests were added.
+- Red focused tests failed on the expected missing DS-002 binding, missing owner
+  disposition, old blocker counts, HCV-4 active routing, and HCV-4 project-state
+  checkpoint.
+- Focused backend tests passed (`17 passed`).
+- Direct qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed; warnings remain for template-only domain
+  profiles, draft qualification targets, 96 draft criterion contracts, and 19 draft
+  judgment rubrics.
+- Readiness-matrix checking passed after the active QFREEZE-1 plan cited the Level 9/10
+  gate matrix.
+- Qualification validator selftest passed all cases.
+- Focused ruff passed and focused mypy passed with `MYPYPATH=backend`.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+- Independent review requested changes for four issues: QFREEZE owner authority needed a
+  branch-local decision record, P0 blocker references should preserve the generated
+  blocker source, W-011 evidence needed Docker Desktop rather than Docker CLI versioning,
+  and the frozen-binding test should prove the full frozen set.
+- Review response added `state/owner-decisions.md`, restored
+  `docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md` as a P0 blocker reference,
+  updated W-011 evidence to Docker Desktop `4.61.0`, and asserted exactly W-003/W-011
+  are frozen.
+- Review-response focused backend tests passed (`21 passed`); direct qualification
+  status checking still passed with `BLOCKED=1 NOT_RUN=20`; structural qualification
+  validation passed; readiness-matrix checking passed.
+- Post-review focused ruff/mypy, diff hygiene, and no-deletion check passed.
+- Final post-review `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `366` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** QFREEZE-1 is not complete until separate review, GitHub checks,
+merge, detached post-merge proof, and worktree cleanup pass. P0 must remain `BLOCKED`;
+all non-P0 statuses must remain `NOT_RUN`.
+
 ## 2026-06-22 HCV-4 Status/Config Consistency
 
 **Scope:** Align qualification status derivation with the validator's unresolved P0

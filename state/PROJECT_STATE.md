@@ -1,50 +1,60 @@
 # Project State
 
-## Current checkpoint (2026-06-22 HCV-4 status/config consistency)
+## Current checkpoint (2026-06-22 QFREEZE-1 authorized scope/source freeze)
 
-Live `origin/main` is `d9e16db199dee185bc05602112df010d40b4c711`, including PR #148
-HCV-3 readiness crosswalk CI-gate completeness after PR #149 guardrail error-redaction
-hardening. The current lane is HCV-4: align derived qualification status with the
-validator's full P0 blocker set, reconcile the DS-002 source-quality profile rights
-vocabulary with production usage fields, and move current routing from completed HCV-3
-to active HCV-4.
+Live `origin/main` is `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`, including PR #150
+HCV-4 status derivation and config consistency after PR #148 HCV-3 readiness crosswalk
+CI-gate completeness and PR #149 guardrail error-redaction hardening. The current lane
+is QFREEZE-1: record the 2026-06-22 owner-authorized conservative defaults, bind DS-002,
+freeze the explicitly authorized scope/version/source fields, and freeze only W-003 and
+W-011 target bindings while preserving the qualification blocker boundary.
 
 - **Current implementation plan**:
-  `plans/2026-06-22-hcv-4-status-config-consistency.md`.
-- **Latest repo-local test hardening**:
+  `plans/2026-06-22-qfreeze-1-authorized-scope-source.md`.
+- **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
   scope/version fields, ruleset versions, target bindings, criterion contracts, or
   judgment rubrics remain unresolved. `scripts/selftest_qualification_validator.py`
   includes the same fail-closed mutation.
-- **Current config consistency hardening**: DS-002 keeps `status: APPROVED`, but its
-  rights values now use production source-registry vocabulary
+- **Current freeze boundary**: the owner disposition cites owner=benjmcd, authority
+  `owner directive 2026-06-22`, rationale `conservative defaults matching operational
+  reality`, and reversal `requires a new owner decision + full requalification`. The
+  only selected approved source profile is `DS-002`; the frozen scope/version fields
+  reference existing report/API/ruleset values and alpha normalization/geometry labels;
+  W-003 and W-011 target bindings are frozen with local Windows evidence notes.
+- **Current config consistency hardening**: DS-002 keeps `status: APPROVED`, and its
+  rights values use production source-registry vocabulary
   (`restricted` / `approved-with-restrictions`) while preserving enforced
-  rights-condition controls. The schema and validator still treat restricted rights as
-  condition-bearing.
+  rights-condition controls. Binding DS-002 into `scope.source_profile_ids` does not
+  approve any additional source.
 - **Current task state**: `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
   `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
   `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`,
-  `HCV-2`, and `HCV-3` are done in the current routing model. `HCV-4` is active.
+  `HCV-2`, `HCV-3`, and `HCV-4` are done in the current routing model. `QFREEZE-1` is
+  active.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
   `config/bologna_source_rights.yaml`.
 - **Empirical qualification boundary**: `P0` remains `BLOCKED`, all other
   qualifications/overlays remain `NOT_RUN`, `candidate.*` remains null, targets remain
-  `DRAFT`, and no owner/source/AOI/Bologna/hosted/DS-017 decision is unfrozen.
+  globally `DRAFT`, and no source/AOI/Bologna/hosted/DS-017 decision is unfrozen. The
+  QFREEZE-1 owner disposition freezes only the listed scope/version/source and W target
+  values; it does not authorize domain-profile rubrics, criterion-contract pass rules,
+  additional source approvals, or P0 `PASS`.
 - **Bologna authority boundary**: Bologna implementation remains stopped because the
-  product/AOI/source-rights authority blocker is external. HCV-4 is fix-only and
-  introduces no owner freeze, Bologna authority packet, source-rights approval beyond
-  the existing DS-002 profile, corpus, fixture, DB seed, runtime/report proof, or
-  source registry promotion.
-- **Immediate next pursuit**: complete HCV-4 with red/green status/config/routing tests,
-  validator/selftest updates, focused/full verification, PR review/merge, and
-  post-merge proof. After HCV-4 is merged, start the owner-authorized qualification
-  parameterization freeze cascade from the agent inbox.
+  product/AOI/source-rights authority blocker is external. QFREEZE-1 introduces no
+  Bologna authority packet, source-rights approval beyond DS-002, corpus, fixture, DB
+  seed, runtime/report proof, or source registry promotion.
+- **Immediate next pursuit**: complete QFREEZE-1 with focused backlog/status/routing
+  tests, qualification validator/selftest checks, full verification, PR review/merge,
+  and detached post-merge proof. The next owner-decision milestone remains the blocked
+  set: domain profiles, DQ/Q1/Q2/M target thresholds, criterion contracts, judgment
+  rubrics, and source approvals beyond DS-002.
 - **Known boundaries to preserve**: no qualification `PASS`, owner-decision unfreeze in
-  HCV-4, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
-  source approval beyond DS-002's existing profile, source registry promotion,
+  QFREEZE-1, Q3 expansion target, AI/CG/FIN/E target or rubric, Bologna AOI selection,
+  source approval beyond DS-002's existing profile and selected binding, source registry promotion,
   recorded fixture, connector, DB seed, report/API/UI/schema change, auth change,
   report semantic change, DS-017 approval, vendor selection, hosted deployment, hosted
   identity/RBAC, hosted observability/log retention/alerting, hosted object-store proof,

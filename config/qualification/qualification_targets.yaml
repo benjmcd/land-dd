@@ -53,17 +53,19 @@ scope:
   user_facing_workflow_enabled: true
   international_operation_enabled: false
   regulated_high_stakes_use_enabled: false
-  source_profile_ids: []
-  ruleset_versions: {}
-  report_contract_version: null
-  api_contract_version: null
-  normalization_schema_version: null
-  geometry_pipeline_version: null
+  source_profile_ids:
+  - DS-002
+  ruleset_versions:
+    homestead_mvp_v0_1: '0.1'
+  report_contract_version: report_run_contract_v1
+  api_contract_version: 0.1.0
+  normalization_schema_version: 0.1.0-alpha
+  geometry_pipeline_version: 0.1.0-alpha
   supported_locales:
   - en-US
   canonical_timezone: UTC
-  source_snapshot_policy: null
-  data_as_of_policy: null
+  source_snapshot_policy: HASHED_RETRIEVAL_MANIFEST_PER_SOURCE
+  data_as_of_policy: SOURCE_DATA_AS_OF_AND_RETRIEVAL_TIMESTAMP_WITH_FRESHNESS_CAVEATS
 protocol:
   acceptance_case_storage: external_restricted_vault
   confidence_level: 0.95
@@ -206,15 +208,20 @@ unit_economics:
   minimum_measured_value_metric: null
 criterion_overrides: {}
 windows_native:
-  supported_windows_versions: []
-  supported_powershell_versions: []
-  supported_python_versions: []
-  supported_docker_desktop_versions: []
+  supported_windows_versions:
+  - Windows 11 (>=22H2)
+  supported_powershell_versions:
+  - '5.1'
+  - 7.x
+  supported_python_versions:
+  - '3.12'
+  supported_docker_desktop_versions:
+  - 4.x
   canonical_shell: PowerShell
   wsl_or_git_bash_required: false
   path_with_spaces_required: true
   unicode_path_required: true
-  long_path_policy: null
+  long_path_policy: ENABLED
   case_collision_failures_maximum: 0
   line_ending_policy: null
   administrator_privileges_required: false
@@ -653,15 +660,17 @@ criterion_bindings:
     references:
     - ai_llm.minimum_cases_per_domain_language_risk_confidence_stratum
   W-003:
-    status: DRAFT
+    status: FROZEN
     references:
     - windows_native.path_with_spaces_required
     - windows_native.unicode_path_required
     - windows_native.long_path_policy
+    rationale: owner directive 2026-06-22 authorized Windows-native long-path policy ENABLED; evidence note records path-with-spaces and Unicode smoke boundary without claiming W gate PASS.
   W-011:
-    status: DRAFT
+    status: FROZEN
     references:
     - windows_native.supported_windows_versions
     - windows_native.supported_powershell_versions
     - windows_native.supported_python_versions
     - windows_native.supported_docker_desktop_versions
+    rationale: owner directive 2026-06-22 authorized the supported Windows/PowerShell/Python/Docker Desktop version matrix and upgrade-policy note without claiming W gate PASS.

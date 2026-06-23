@@ -4,11 +4,13 @@ Status: `P0 = BLOCKED`
 
 This file is a visibility register for the empirical-qualification adoption path. It
 does not land the qualification validator, catalog, status schema, source profiles, or
-CI selftest. It does not approve Bologna, DS-017, hosted authority, source rights, or
-any owner decision.
+CI selftest. It records only the owner-authorized dispositions explicitly cited below.
+It does not approve Bologna, DS-017, hosted authority, source rights beyond DS-002, or
+any qualification `PASS`.
 
-Every row below is `BLOCKED (external/owner authority)` until a cited decision record,
-review artifact, or approved source profile exists.
+Rows remain `BLOCKED (external/owner authority)` until a cited decision record, review
+artifact, or approved source profile exists. Resolved rows are recorded only in the
+controlled owner disposition table below.
 
 No AOI selection, source approval, fixture capture, runtime/report use, or source registry promotion is authorized by this backlog.
 
@@ -26,9 +28,10 @@ No AOI selection, source approval, fixture capture, runtime/report use, or sourc
 
 | Field | Value | Status |
 |---|---|---|
-| `product_scope_profile` | `BOUNDED_USER_VALIDATED` | BLOCKED (external/owner authority) |
-| `deployment_profile` | `LOCAL_SINGLE_USER` | BLOCKED (external/owner authority) |
-| `windows_native_required` | `true` | BLOCKED (external/owner authority) |
+| `product_scope_profile` | `BOUNDED_USER_VALIDATED` | FROZEN_TARGET |
+| `deployment_profile` | `LOCAL_SINGLE_USER` | FROZEN_TARGET |
+| `windows_native_required` | `true` | FROZEN_TARGET |
+| `source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE |
 | `candidate_generation_enabled` | `false` | profile disabled unless owner activates |
 | `financial_modeling_enabled` | `false` | profile disabled unless owner activates |
 | `ai_llm_enabled_for_decision_relevant_output` | `false` | profile disabled unless owner activates |
@@ -40,11 +43,11 @@ No AOI selection, source approval, fixture capture, runtime/report use, or sourc
 |---|---:|---|
 | Active gates | 12 | BLOCKED (external/owner authority) |
 | Active DRAFT criterion contracts | 60 | BLOCKED (external/owner authority) |
-| Active DRAFT/unresolved target bindings | 51 | BLOCKED (external/owner authority) |
+| Active DRAFT/unresolved target bindings | 49 | BLOCKED (external/owner authority) |
 | Active DRAFT judgment rubrics | 16 | BLOCKED (external/owner authority) |
 | Qualified-domain profiles still DRAFT | 8 | BLOCKED (external/owner authority) |
-| Approved source profiles selected | 0 | BLOCKED (external/owner authority) |
-| Unresolved scope/version fields | 6 plus `ruleset_versions` | BLOCKED (external/owner authority) |
+| Approved source profiles selected | 1 | DS-002 only; remaining selections blocked |
+| Unresolved scope/version fields | 0 owner-authorized fields; other thresholds remain blocked | P0 still BLOCKED |
 | Inactive/conditional DRAFT contracts | 36 | excluded unless owner activates profile |
 
 ## P0 Repo-Local Auto-Evidence
@@ -100,12 +103,13 @@ Every target binding below must become frozen with resolved values before P0 can
 | `M` | `M-005`, `M-007`, `M-009` |
 | `G` | `G-007` |
 | `R` | `R-008` |
-| `W` | `W-003`, `W-011` |
+| `W` | none; `W-003` and `W-011` target bindings are frozen but W remains `NOT_RUN` until a future qualification result is produced |
 
 Unresolved reference families include practical-effect thresholds, Q1/Q2 calibration
 targets, runtime and memory budgets, data-quality thresholds, database latency and
 capacity budgets, security quota profile, accessibility supported matrix, regulatory
-change-monitoring frequency, Windows tool matrix, and `ruleset_versions`.
+change-monitoring frequency, criterion contracts, judgment rubrics, and domain-profile
+rubrics. `ruleset_versions` is now frozen for `homestead_mvp_v0_1` only.
 
 ## Judgment Rubric Blockers
 
@@ -127,7 +131,9 @@ metrics, reviewers, and surveillance plan:
 
 ## Source Profile Blockers
 
-Approved selected source profiles: `0`.
+Approved selected source profiles: `1`.
+
+Selected approved source profiles: `DS-002` only.
 
 Before P0 can pass, the exact source set must be selected and each selected source must
 have an approved source-quality profile covering authority, rights, commercial/cache/
@@ -137,11 +143,46 @@ controls.
 
 ## Scope And Version Blockers
 
-These fields remain unresolved and block P0 until frozen:
+The owner-authorized scope/version fields are frozen in
+`config/qualification/qualification_targets.yaml`:
 
 `report_contract_version`, `api_contract_version`, `normalization_schema_version`,
 `geometry_pipeline_version`, `source_snapshot_policy`, `data_as_of_policy`,
 `ruleset_versions`.
+
+P0 remains BLOCKED because DQ/Q1/Q2/M target thresholds remain blocked, domain profiles
+remain blocked, and criterion contracts and judgment rubrics remain blocked.
+
+## Controlled Owner Disposition - 2026-06-22
+
+owner=benjmcd
+authority=owner directive 2026-06-22
+authority_file=state/owner-decisions.md
+rationale=conservative defaults matching operational reality
+reversal=requires a new owner decision + full requalification
+
+| Field path | Frozen value | Disposition | Boundary |
+|---|---|---|---|
+| `scope.product_scope_profile` | `BOUNDED_USER_VALIDATED` | FROZEN_TARGET | Scope label only; no qualification PASS. |
+| `scope.deployment_profile` | `LOCAL_SINGLE_USER` | FROZEN_TARGET | Local deployment scope only; no hosted authority. |
+| `scope.windows_native_required` | `true` | FROZEN_TARGET | Windows-native target only; W gate remains NOT_RUN. |
+| `scope.source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE | DS-002 only; no DS-001/003/004/009/012/013/017 binding. |
+| `scope.report_contract_version` | `report_run_contract_v1` | FROZEN_TARGET | References existing report contract; no schema edit. |
+| `scope.api_contract_version` | `0.1.0` | FROZEN_TARGET | References existing OpenAPI version; no API surface edit. |
+| `scope.ruleset_versions.homestead_mvp_v0_1` | `0.1` | FROZEN_TARGET | Existing homestead MVP ruleset only. |
+| `scope.normalization_schema_version` | `0.1.0-alpha` | FROZEN_TARGET | Pre-release label; no production-stability claim. |
+| `scope.geometry_pipeline_version` | `0.1.0-alpha` | FROZEN_TARGET | Pre-release label; no surveyed-boundary claim. |
+| `scope.source_snapshot_policy` | `HASHED_RETRIEVAL_MANIFEST_PER_SOURCE` | FROZEN_TARGET | Retrieval policy only; no fixture capture. |
+| `scope.data_as_of_policy` | `SOURCE_DATA_AS_OF_AND_RETRIEVAL_TIMESTAMP_WITH_FRESHNESS_CAVEATS` | FROZEN_TARGET | Caveat policy only; no freshness PASS. |
+| `criterion_bindings.W-003` | frozen | FROZEN_TARGET | Long-path target frozen; controlled smoke evidence recorded separately. |
+| `criterion_bindings.W-011` | frozen | FROZEN_TARGET | Version matrix target frozen; upgrade policy recorded separately. |
+
+Remaining blockers:
+
+- DQ/Q1/Q2/M target thresholds remain blocked.
+- domain profiles remain blocked.
+- criterion contracts and judgment rubrics remain blocked.
+- P0 remains BLOCKED.
 
 ## Bologna Priority Blockers
 

@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-21-hcv-3-crosswalk-ci-gates.md`.
+Latest completed plan: `2026-06-22-hcv-4-status-config-consistency.md`.
 
-Current routing plan: `2026-06-22-hcv-4-status-config-consistency.md`.
+Current routing plan: `2026-06-22-qfreeze-1-authorized-scope-source.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -190,7 +190,7 @@ selftest coverage for expired PASS gates, status/result gate mismatch, scope/ver
 identity drift, per-criterion evidence references, frozen domain completeness and
 modality/channel scope, source coverage, conditional rights enforcement, RAW_EXPORT
 export rights, P0 blocked-record validation with result_path, and PASS reviewer
-metadata. HCV-2 and HCV-3 are now complete, and HCV-4 is the active follow-on.
+metadata. HCV-2, HCV-3, and HCV-4 are now complete. QFREEZE-1 is the active follow-on.
 This does not promote any
 qualification gate, unfreeze owner decisions, approve Bologna/source/DS-017/hosted
 authority, change DB/API/UI/report semantics, or claim Level 10 authority.
@@ -213,6 +213,13 @@ to production source-registry rights vocabulary while preserving condition enfor
 and routes current work from completed HCV-3 to active HCV-4. It does not freeze owner
 decisions, bind new sources, promote P0, start Bologna implementation, or change
 DB/API/UI/report semantics.
+
+`QFREEZE-1` records the owner directive from 2026-06-22, binds DS-002 as the only
+selected source profile, freezes the explicitly authorized scope/version/source fields,
+and freezes only W-003/W-011 target bindings with Windows evidence notes. The target
+registry remains globally DRAFT, P0 remains BLOCKED, every non-P0 status remains
+NOT_RUN, and DQ/Q1/Q2/M thresholds, domain profiles, criterion contracts, judgment
+rubrics, source approvals beyond DS-002, and Bologna authority remain blocked.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

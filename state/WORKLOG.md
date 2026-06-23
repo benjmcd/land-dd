@@ -2,6 +2,34 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-22 QFREEZE-1 authorized scope/source freeze
+
+- Started clean worktree `worktrees/qfreeze1` on `codex/qfreeze-cascade-1` from live
+  `origin/main@6f49c7a` after HCV-4 merged through PR #150 and detached proof passed.
+- Re-read the inbox handoff, current worktree list, active goal, startup routing,
+  architecture/ADR context, qualification target registry, backlog, task queue, project
+  state, and focused tests before editing.
+- Baseline qualification status checking, structural validation, and focused
+  qualification/routing tests passed before QFREEZE-1 red tests were added. Baseline
+  status stayed `BLOCKED=1 NOT_RUN=20`.
+- Added red coverage for the owner-authorized partial freeze, DS-002 binding,
+  W-003/W-011 frozen target bindings, controlled owner-disposition ledger, active
+  QFREEZE-1 routing, and the continued `P0 BLOCKED` / non-P0 `NOT_RUN` status cap.
+- Applied the narrow target/backlog/routing slice: DS-002 is the only selected source
+  profile, owner-authorized scope/version fields are populated, W-003/W-011 target
+  bindings are frozen, and DQ/Q1/Q2/M/domain/contract/rubric blockers remain visible.
+- Focused backend tests, direct qualification status/structural validators,
+  readiness-matrix checking, qualification selftest, focused ruff/mypy, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+- Independent review requested changes for owner-authority provenance, blocker-reference
+  preservation, Docker Desktop evidence, and exhaustive frozen-binding test coverage.
+  Added `state/owner-decisions.md`, restored the generated blocker reference in P0
+  status, corrected W-011 evidence to Docker Desktop `4.61.0`, and asserted the full
+  frozen-binding set is exactly W-003/W-011.
+- Final post-review full `.\scripts\verify.ps1` passed with qualification status
+  `BLOCKED=1 NOT_RUN=20`; DB smoke remained skipped by default.
+
 ## 2026-06-22 HCV-4 status/config consistency
 
 - Started clean worktree `worktrees/hcv4` on `codex/hcv4-status-config` from live
