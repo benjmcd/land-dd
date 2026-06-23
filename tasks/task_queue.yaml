@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-22-qfreeze-1-authorized-scope-source.md
+active_plan: plans/2026-06-22-owner-decision-packet.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -65,8 +65,9 @@ routing_note: >
   CI-gate completeness merged through PR #148 at
   `d9e16db199dee185bc05602112df010d40b4c711`, and HCV-4 status derivation and config
   consistency merged through PR #150 at
-  `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`. Current local lane: QFREEZE-1 first
-  owner-authorized qualification parameterization freeze slice. Bologna
+  `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`, and QFREEZE-1 authorized scope/source
+  freeze merged through PR #151 at `cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10`.
+  Current local lane: OWNER-DEC-1 owner decision consequence packet. Bologna
   implementation is stopped
   while BSA-001 remains blocked until explicit product/AOI/source-review authority is
   cited in the pilot-scope/source-authority/source-rights packets. Do not
@@ -2326,7 +2327,7 @@ tasks:
 
   - id: QFREEZE-1
     title: Authorized scope, source, and Windows target freeze
-    status: active
+    status: done
     depends_on: [HCV-4]
     lane: coordinator
     spec: plans/2026-06-22-qfreeze-1-authorized-scope-source.md
@@ -2341,14 +2342,32 @@ tasks:
       - DQ/Q1/Q2/M bindings, domain profiles, criterion contracts, and judgment rubrics remain blocked
       - Qualification status remains capped to BLOCKED and NOT_RUN
 
+  - id: OWNER-DEC-1
+    title: Owner decision consequence packet
+    status: active
+    depends_on: [QFREEZE-1]
+    lane: coordinator
+    spec: plans/2026-06-22-owner-decision-packet.md
+    notes: >
+      Add a decision-request-only packet that maps remaining owner-driven
+      qualification and Bologna choices to consequences, downstream gates, required
+      evidence, and reversal costs. It does not authorize any additional freeze,
+      source approval, Bologna AOI/source/corpus/report work, runtime proof,
+      qualification PASS, hosted authority, DS-017 approval, or Level 10 claim.
+    acceptance:
+      - state/owner-decision-packet.md covers domain, target/contract, rubric, source, P0 protocol, conditional-profile, Bologna, hosted, DS-017, and Level 10 decisions
+      - Packet states it is not an authority ledger and does not authorize downstream work
+      - QFREEZE-1 is done and OWNER-DEC-1 is the only active task
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
   - id: EQ-5
     title: Empirical qualification parameterization backlog
     status: queued
-    depends_on: [QFREEZE-1]
+    depends_on: [OWNER-DEC-1]
     lane: coordinator
     spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
     notes: >
-      Track all frozen-decision blockers, zero approved source profiles, unfrozen
+      Track all frozen-decision blockers, one selected approved source profile, unfrozen
       domain profiles, judgment rubrics, and target bindings as BLOCKED external/owner
       authority items with the gates they unblock.
     acceptance:

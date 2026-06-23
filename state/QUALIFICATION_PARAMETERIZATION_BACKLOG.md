@@ -14,6 +14,11 @@ controlled owner disposition table below.
 
 No AOI selection, source approval, fixture capture, runtime/report use, or source registry promotion is authorized by this backlog.
 
+Owner decision consequence map: `state/owner-decision-packet.md`. That packet is a
+decision-request-only artifact; it does not authorize any target freeze, rubric freeze,
+domain profile freeze, source approval, Bologna AOI/source/corpus/report work,
+qualification PASS, hosted authority, or Level 10 claim.
+
 ## Sources
 
 - Read-only framework input:
