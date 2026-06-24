@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-23 Post-ODP1 packet authority routing
+
+- Started clean worktree `worktrees/post-odp1` on `codex/post-odp1-routing` from
+  live `origin/main@6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, leaving the dirty root
+  checkout untouched.
+- Reconciled live PR and inbox state after PR #161. No ODP-BOL-001 product/AOI/scope
+  owner authority was present; the local inbox only carried the older QFREEZE-1/DS-002
+  owner authorization already represented in live main.
+- Chose a routing-only sync: mark the ODP-BOL-001 owner-answer packet as merged and
+  complete, and keep the next substantive Bologna step externally blocked on cited
+  owner authority for `ODP-BOL-001`.
+- Updated `state/PROJECT_STATE.md`, `tasks/task_queue.yaml`, `plans/README.md`, and
+  routing tests without changing any owner-answer, authority-record, source, corpus,
+  fixture, DB, report, hosted, Level 10, or qualification status.
+
 ## 2026-06-23 ODP-BOL-001 owner-answer packet
 
 - Continued from live `origin/main@b5ed59e7143773f306ab216865df0133ca7b0451` in

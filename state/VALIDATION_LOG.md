@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-23 Post-ODP1 Packet Authority Routing
+
+**Scope:** Route current state after PR #161 so the ODP-BOL-001 owner-answer packet is
+treated as merged and complete, while preserving the external-owner-authority blocker
+for Bologna product/AOI/scope. This does not record owner authority, select an AOI,
+approve sources, change source rights, create a recorded corpus, capture fixtures,
+seed the DB, prove a report, change API/UI/report semantics, approve hosted/Level 10
+authority, or change qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_parameterization_backlog_check.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline backlog checker, readiness matrix, and focused routing tests passed before
+  edits.
+- First focused post-edit pass caught two routing issues: the exact
+  `EQ-5 qualification parameterization backlog check` fragment was split across a
+  newline, and the active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`.
+  Both were corrected.
+- Focused backlog checker and readiness matrix passed after the fixes.
+- Focused readiness/backlog/ODP1 packet tests passed (`19 passed`).
+- Qualification status passed with `passed=34 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the existing blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Focused ruff and mypy passed.
+- Explicit changed-path qualification impact passed as advisory over 9 changed paths.
+- Diff hygiene and no-deletion checks passed.
+- Full `.\scripts\verify.ps1` passed in 557 seconds: workspace validation,
+  qualification selftest, qualification structural validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped
+  because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is routing cleanup only. The next substantive Bologna step
+still requires cited owner authority for `ODP-BOL-001` product/AOI/scope. P0 remains
+`BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
 ## 2026-06-23 ODP-BOL-001 Owner-Answer Packet
 
 **Scope:** Add a validate-only ODP-BOL-001 owner-answer packet that makes the next

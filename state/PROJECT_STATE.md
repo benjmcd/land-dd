@@ -1,28 +1,28 @@
 # Project State
 
-## Current checkpoint (2026-06-23 ODP-BOL-001 owner-answer packet)
+## Current checkpoint (2026-06-23 post-ODP1 packet authority routing)
 
-Live `origin/main` is `b5ed59e7143773f306ab216865df0133ca7b0451`, including
-EQ-R residual reconciliation closeout after PR #160, EQ-5 qualification parameterization backlog check
-after PR #159, BOL-POST-ODP4-AUTH after PR #158, PR #157
-BOL-ODP4-GATE DB-backed Bologna report proof response gate after PR #156, and
-BOL-ODP3-GATE
+Live `origin/main` is `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, including
+BOL-ODP1-PACKET ODP-BOL-001 owner-answer packet after PR #161, EQ-R residual
+reconciliation closeout after PR #160, EQ-5 qualification parameterization backlog check
+after PR #159, BOL-POST-ODP4-AUTH after PR #158, PR #157 BOL-ODP4-GATE
+DB-backed Bologna report proof response gate after PR #156, BOL-ODP3-GATE
 ODP-BOL-003 recorded-source corpus response gate, PR #155 BOL-ODP2-GATE
 ODP-BOL-002 source-rights response gate, PR #154 BOL-ODP1-GATE ODP-BOL-001
 owner-response gate, PR #153 BOL-ODP-1 Bologna owner-answer intake, PR #152
 OWNER-DEC-1 owner decision consequence packet, PR #151 QFREEZE-1 authorized
 scope/source freeze, PR #150 HCV-4 status derivation and config consistency, PR #148
 HCV-3 readiness crosswalk CI-gate completeness, and PR #149 guardrail error-redaction
-hardening. The current branch adds a validate-only ODP-BOL-001 owner-answer packet so
-the next external product/AOI/scope authority response is explicit and
-machine-checkable. It does not record owner authority, select an AOI, approve sources,
-or unlock source/corpus/report work. The validate-only response-gate scaffold for
+hardening. The ODP-BOL-001 owner-answer packet is now merged and complete; it makes
+the next external product/AOI/scope authority response explicit and machine-checkable
+without recording owner authority, selecting an AOI, approving sources, or unlocking
+source/corpus/report work. The validate-only response-gate scaffold for
 `ODP-BOL-001` through `ODP-BOL-004` is complete, and no DB-backed Bologna report proof
 work may proceed until cited owner authority exists for product/AOI/scope, source
 rights, recorded corpus, and report proof in that order.
 
 - **Current implementation plan**:
-  `plans/2026-06-23-odp1-owner-answer-packet.md`.
+  `plans/2026-06-23-post-odp1-packet-routing.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -93,7 +93,9 @@ rights, recorded corpus, and report proof in that order.
   `STILL_DIVERGENT` product candidates from 17 explicitly listed
   `DEFER_STILL_BLOCKED` paths that remain decaying candidate evidence only.
   `BOL-ODP1-PACKET` is done as a validate-only owner-answer packet for the first
-  Bologna authority step.
+  Bologna authority step. `BOL-POST-ODP1-PACKET` is done as a routing-only sync after
+  PR #161; it records that the packet is complete and the next substantive Bologna
+  step remains external owner authority for `ODP-BOL-001`.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and

@@ -16,12 +16,14 @@ BACKLOG_CHECK_SCRIPT = REPO_ROOT / "scripts" / "qualification_parameterization_b
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_EQR_PLAN = "plans/2026-06-23-eqr-residual-closeout.md"
 EXPECTED_ODP1_PACKET_PLAN = "plans/2026-06-23-odp1-owner-answer-packet.md"
+EXPECTED_POST_ODP1_PACKET_PLAN = "plans/2026-06-23-post-odp1-packet-routing.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
     EXPECTED_EQ5_PLAN,
     EXPECTED_EQR_PLAN,
     EXPECTED_ODP1_PACKET_PLAN,
+    EXPECTED_POST_ODP1_PACKET_PLAN,
     "plans/README.md",
     "config/bologna_odp1_owner_answer_packet.yaml",
     "docs/runbooks/bologna_odp1_owner_answer_packet.md",
@@ -249,7 +251,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_ODP1_PACKET_PLAN
+    assert task_queue["active_plan"] == EXPECTED_POST_ODP1_PACKET_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
@@ -365,6 +367,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-ODP1-PACKET"]["status"] == "done"
     assert tasks["BOL-ODP1-PACKET"]["spec"] == EXPECTED_ODP1_PACKET_PLAN
     assert "owner-answer packet" in tasks["BOL-ODP1-PACKET"]["notes"]
+    assert tasks["BOL-POST-ODP1-PACKET"]["depends_on"] == ["BOL-ODP1-PACKET"]
+    assert tasks["BOL-POST-ODP1-PACKET"]["status"] == "done"
+    assert tasks["BOL-POST-ODP1-PACKET"]["spec"] == EXPECTED_POST_ODP1_PACKET_PLAN
+    assert "PR #161" in tasks["BOL-POST-ODP1-PACKET"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
 
 
