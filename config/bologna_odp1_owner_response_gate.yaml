@@ -1,6 +1,6 @@
 schema_version: bologna_odp1_owner_response_gate_v1
 operator_runbook: docs/runbooks/bologna_odp1_owner_response_gate.md
-status: blocked_missing_odp_bol_001_owner_answer
+status: blocked_review_only_scope_pursuit_answered
 validation: scripts/run_bologna_odp1_owner_response_gate_check.ps1
 
 authority:
@@ -14,7 +14,7 @@ authority:
   - state/LEVEL_9_10_GATE_MATRIX.md
 
 approvals:
-  owner_answer_recorded: false
+  owner_answer_recorded: true
   product_aoi_scope_authorized: false
   pilot_scope_authority_recorded: false
   bsa001_unblocked: false
@@ -48,10 +48,11 @@ limits:
 odp_bol_001_gate:
   odp_id: ODP-BOL-001
   title: Bologna product and AOI authority
-  status: missing_owner_answer
+  status: review_only_scope_pursuit_answered
   source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
   source_pilot_scope_packet: config/bologna_pilot_scope_authority.yaml
-  current_owner_answer_references: []
+  current_owner_answer_references:
+    - odp-bol-001-scope-pursuit-2026-06-26
   current_authority_record_references: []
   required_owner_answer_fields:
     - owner_answer_id

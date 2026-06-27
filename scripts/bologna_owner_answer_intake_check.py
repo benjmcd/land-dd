@@ -18,7 +18,7 @@ CORPUS_PATH = "config/bologna_recorded_source_corpus.yaml"
 
 EXPECTED_APPROVALS = {
     "owner_answers_complete": False,
-    "product_aoi_scope_answered": False,
+    "product_aoi_scope_answered": True,
     "source_authority_rights_answered": False,
     "recorded_corpus_answered": False,
     "db_report_proof_answered": False,
@@ -50,6 +50,19 @@ EXPECTED_ODP_SEQUENCE = {
     "ODP-BOL-004": 4,
 }
 EXPECTED_ODP_IDS = set(EXPECTED_ODP_SEQUENCE)
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
+EXPECTED_ODP_STATUS = {
+    "ODP-BOL-001": "review_only_scope_pursuit_answered",
+    "ODP-BOL-002": "missing_owner_answer",
+    "ODP-BOL-003": "missing_owner_answer",
+    "ODP-BOL-004": "missing_owner_answer",
+}
+EXPECTED_OWNER_ANSWER_REFERENCES = {
+    "ODP-BOL-001": [ODP1_OWNER_ANSWER_ID],
+    "ODP-BOL-002": [],
+    "ODP-BOL-003": [],
+    "ODP-BOL-004": [],
+}
 EXPECTED_REPORT_PROOF_FIELDS = {
     "one_local_db_report_run_id",
     "approved_corpus_reference",
@@ -111,8 +124,9 @@ REQUIRED_FILES = (
 RUNBOOK_PHRASES = (
     "bologna_owner_answer_intake_v1",
     "validate-only",
-    "does not record owner authority",
+    "records one review-only owner answer",
     "ODP-BOL-001",
+    ODP1_OWNER_ANSWER_ID,
     "ODP-BOL-004",
     "downstream_updates_allowed",
     "current_owner_answers",
@@ -302,28 +316,39 @@ def validate_owner_answer_contract(payload: dict[str, Any]) -> None:
     for control_id, enabled in controls.items():
         require(enabled is True, f"{control_id} no-overclaim control disabled")
 
-    seen_answer_ids: set[str] = set()
+    answers_by_id: dict[str, dict[str, Any]] = {}
     for raw_answer in require_list(
         contract.get("current_owner_answers"),
         "current owner answers must be a list",
     ):
         answer = require_mapping(raw_answer, "each owner answer must be a mapping")
         answer_id = validate_owner_answer_record(answer)
-        require(answer_id not in seen_answer_ids, f"duplicate owner answer id: {answer_id}")
-        seen_answer_ids.add(answer_id)
+        require(answer_id not in answers_by_id, f"duplicate owner answer id: {answer_id}")
+        answers_by_id[answer_id] = answer
+
+    require(
+        set(answers_by_id) == {ODP1_OWNER_ANSWER_ID},
+        "current_owner_answers must contain only the recorded ODP-BOL-001 review-only answer",
+    )
+    odp1_answer = answers_by_id[ODP1_OWNER_ANSWER_ID]
+    require(odp1_answer.get("odp_id") == "ODP-BOL-001", "ODP1 owner answer id mismatch")
+    require(
+        odp1_answer.get("answer_type") == "approve_review_only",
+        "ODP1 owner answer must remain review-only",
+    )
 
 
 def validate_thread_common(thread: dict[str, Any]) -> str:
     odp_id = require_text(thread.get("odp_id"), "ODP id missing")
     require(odp_id in EXPECTED_ODP_IDS, f"unexpected ODP id {odp_id}")
     require(thread.get("sequence") == EXPECTED_ODP_SEQUENCE[odp_id], f"{odp_id} sequence drifted")
-    require(thread.get("status") == "missing_owner_answer", f"{odp_id} status changed")
+    require(thread.get("status") == EXPECTED_ODP_STATUS[odp_id], f"{odp_id} status changed")
     require_text(thread.get("title"), f"{odp_id} title missing")
     for path_text in require_non_empty_list(thread.get("source_packets"), f"{odp_id} packets missing"):
         require(isinstance(path_text, str), f"{odp_id} source packet paths must be strings")
         require_existing(path_text)
     require(
-        thread.get("owner_answer_references") == [],
+        thread.get("owner_answer_references") == EXPECTED_OWNER_ANSWER_REFERENCES[odp_id],
         f"{odp_id} owner answer references changed",
     )
     require(
@@ -399,7 +424,7 @@ def validate_catalog() -> dict[str, Any]:
     payload = load_yaml(CONFIG_PATH)
     require(payload.get("schema_version") == "bologna_owner_answer_intake_v1", "schema")
     require(payload.get("operator_runbook") == RUNBOOK_PATH, "runbook mismatch")
-    require(payload.get("status") == "blocked_missing_owner_answers", "status changed")
+    require(payload.get("status") == "blocked_review_only_scope_pursuit", "status changed")
     require(
         payload.get("validation") == "scripts/run_bologna_owner_answer_intake_check.ps1",
         "validation wrapper mismatch",

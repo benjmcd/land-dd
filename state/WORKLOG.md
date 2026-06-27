@@ -2,6 +2,26 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-26 Bologna scope-pursuit owner answer
+
+- Started clean worktree `worktrees/bol-scope` on `codex/bol-scope` from live
+  `origin/main@828053d1b5e62845dc736551871e13f1ae89f0c4`, leaving the dirty root
+  checkout untouched.
+- Treated the owner directive "pursue Bologna scope" as sufficient for exactly one
+  `ODP-BOL-001` `approve_review_only` owner answer, but insufficient for a complete
+  pilot-scope authority record.
+- Updated the owner-answer intake, ODP1 response gate, ODP1 answer packet, downstream
+  ODP2/ODP3/ODP4 response gates, runbooks, backlog, project state, manifest, plan
+  index, task routing, and focused artifact tests to distinguish review-only scope
+  pursuit from cited authority.
+- Preserved the authority boundary: `config/bologna_pilot_scope_authority.yaml`
+  current authority records remain empty; no AOI, source approval, source-rights
+  approval, corpus, fixture, DB seed, DB report proof, DS-017 approval, hosted
+  authority, Level 10 claim, or qualification PASS was introduced.
+- Focused Bologna/backlog/readiness checks passed, change-impact reported advisory
+  Bologna/qualification surfaces, focused ruff/mypy passed, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-06-23 Post-ODP1 packet authority routing
 
 - Started clean worktree `worktrees/post-odp1` on `codex/post-odp1-routing` from

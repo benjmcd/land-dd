@@ -1,6 +1,6 @@
 schema_version: bologna_odp2_source_rights_response_gate_v1
 operator_runbook: docs/runbooks/bologna_odp2_source_rights_response_gate.md
-status: blocked_until_odp_bol_001_and_missing_odp_bol_002_owner_answer
+status: blocked_until_odp_bol_001_authority_and_missing_odp_bol_002_owner_answer
 validation: scripts/run_bologna_odp2_source_rights_response_gate_check.ps1
 
 authority:
@@ -48,14 +48,14 @@ limits:
 odp_bol_002_gate:
   odp_id: ODP-BOL-002
   title: Bologna source authority and rights
-  status: blocked_until_odp_bol_001
+  status: blocked_until_odp_bol_001_authority
   source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
   source_odp1_gate: config/bologna_odp1_owner_response_gate.yaml
   source_source_authority_packet: config/bologna_source_authority_intake.yaml
   source_rights_packet: config/bologna_source_rights.yaml
   prerequisite_odp_ids:
     - ODP-BOL-001
-  prerequisite_status: missing_owner_answer
+  prerequisite_status: missing_pilot_scope_authority
   current_owner_answer_references: []
   current_source_authority_record_references: []
   current_source_rights_approval_references: []

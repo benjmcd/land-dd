@@ -11,6 +11,7 @@ yaml = cast(Any, __import__("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPO_ROOT / "config" / "bologna_odp1_owner_response_gate.yaml"
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
 
 
 def _load_validator() -> ModuleType:
@@ -38,11 +39,16 @@ def test_odp1_owner_response_gate_is_validate_only_and_blocked() -> None:
 
     assert catalog["schema_version"] == "bologna_odp1_owner_response_gate_v1"
     assert catalog["operator_runbook"] == "docs/runbooks/bologna_odp1_owner_response_gate.md"
-    assert catalog["status"] == "blocked_missing_odp_bol_001_owner_answer"
+    assert catalog["status"] == "blocked_review_only_scope_pursuit_answered"
     assert catalog["validation"] == "scripts/run_bologna_odp1_owner_response_gate_check.ps1"
     assert catalog["approvals"] == validator.EXPECTED_APPROVALS
     assert catalog["limits"] == validator.EXPECTED_LIMITS
-    assert all(value is False for value in catalog["approvals"].values())
+    assert catalog["approvals"]["owner_answer_recorded"] is True
+    assert all(
+        value is False
+        for key, value in catalog["approvals"].items()
+        if key != "owner_answer_recorded"
+    )
 
 
 def test_odp1_owner_response_gate_aligns_with_source_contracts() -> None:
@@ -51,8 +57,8 @@ def test_odp1_owner_response_gate_aligns_with_source_contracts() -> None:
     gate = catalog["odp_bol_001_gate"]
 
     assert gate["odp_id"] == validator.ODP_ID
-    assert gate["status"] == "missing_owner_answer"
-    assert gate["current_owner_answer_references"] == []
+    assert gate["status"] == "review_only_scope_pursuit_answered"
+    assert gate["current_owner_answer_references"] == [ODP1_OWNER_ANSWER_ID]
     assert gate["current_authority_record_references"] == []
     assert set(gate["required_owner_answer_fields"]) == validator.owner_answer_fields()
     assert set(gate["required_authority_record_fields"]) == (
@@ -120,7 +126,8 @@ def test_odp1_owner_response_gate_runbook_preserves_boundary() -> None:
     for phrase in (
         "bologna_odp1_owner_response_gate_v1",
         "validate-only",
-        "does not record owner authority",
+        "review-only scope pursuit",
+        ODP1_OWNER_ANSWER_ID,
         "ODP-BOL-001",
         "current_owner_answer_references",
         "current_authority_record_references",

@@ -1,6 +1,6 @@
 schema_version: bologna_owner_answer_intake_v1
 operator_runbook: docs/runbooks/bologna_owner_answer_intake.md
-status: blocked_missing_owner_answers
+status: blocked_review_only_scope_pursuit
 validation: scripts/run_bologna_owner_answer_intake_check.ps1
 
 authority:
@@ -16,7 +16,7 @@ authority:
 
 approvals:
   owner_answers_complete: false
-  product_aoi_scope_answered: false
+  product_aoi_scope_answered: true
   source_authority_rights_answered: false
   recorded_corpus_answered: false
   db_report_proof_answered: false
@@ -43,7 +43,25 @@ limits:
 
 owner_answer_contract:
   contract_state: ready_for_external_owner_answers
-  current_owner_answers: []
+  current_owner_answers:
+    - owner_answer_id: odp-bol-001-scope-pursuit-2026-06-26
+      odp_id: ODP-BOL-001
+      answer_type: approve_review_only
+      decision_owner: benjmcd
+      decision_date: "2026-06-26"
+      authority_reference: "owner directive 2026-06-26: pursue Bologna scope"
+      answer_summary: >
+        Owner directed the project to pursue Bologna scope as a review-only
+        ODP-BOL-001 outcome. This records scope pursuit only and does not supply a
+        complete pilot-scope authority record, exact AOI, source rights, corpus, DB
+        report proof, hosted authority, Level 10 authority, or qualification PASS.
+      cited_artifacts:
+        - "Codex thread owner directive 2026-06-26: pursue Bologna scope"
+      caveats:
+        - "Review-only scope pursuit does not select a Bologna AOI or boundary."
+        - "A later pilot-scope authority record must cover all 12 ODP-BOL-001 scope decisions before source, corpus, fixture, DB, or report work can proceed."
+      downstream_unlocks_requested: []
+      supersedes_owner_answer_ids: []
   required_record_fields:
     - owner_answer_id
     - odp_id
@@ -77,7 +95,7 @@ bologna_decision_threads:
   - odp_id: ODP-BOL-001
     title: Bologna product and AOI authority
     sequence: 1
-    status: missing_owner_answer
+    status: review_only_scope_pursuit_answered
     source_packets:
       - state/owner-decision-packet.md
       - config/bologna_pilot_scope_authority.yaml
@@ -95,7 +113,8 @@ bologna_decision_threads:
       - product_authorizes_bologna_pilot_reference
       - report_runtime_boundary
       - stop_conditions_and_reversion_plan
-    owner_answer_references: []
+    owner_answer_references:
+      - odp-bol-001-scope-pursuit-2026-06-26
     downstream_updates_allowed: false
     downstream_blocked_targets:
       - config/bologna_source_authority_intake.yaml

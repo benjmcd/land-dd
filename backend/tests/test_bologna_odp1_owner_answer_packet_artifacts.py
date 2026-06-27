@@ -14,6 +14,7 @@ yaml = cast(Any, __import__("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPO_ROOT / "config" / "bologna_odp1_owner_answer_packet.yaml"
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
 
 
 def _load_validator() -> ModuleType:
@@ -43,11 +44,16 @@ def test_odp1_owner_answer_packet_is_validate_only_and_blocked() -> None:
     assert packet["operator_runbook"] == (
         "docs/runbooks/bologna_odp1_owner_answer_packet.md"
     )
-    assert packet["status"] == "ready_for_external_owner_response"
+    assert packet["status"] == "review_only_scope_pursuit_recorded"
     assert packet["validation"] == "scripts/run_bologna_odp1_owner_answer_packet_check.ps1"
     assert packet["approvals"] == validator.EXPECTED_APPROVALS
     assert packet["limits"] == validator.EXPECTED_LIMITS
-    assert all(value is False for value in packet["approvals"].values())
+    assert packet["approvals"]["owner_answer_recorded"] is True
+    assert all(
+        value is False
+        for key, value in packet["approvals"].items()
+        if key != "owner_answer_recorded"
+    )
 
 
 def test_odp1_owner_answer_packet_aligns_to_gate_and_templates() -> None:
@@ -59,7 +65,7 @@ def test_odp1_owner_answer_packet_aligns_to_gate_and_templates() -> None:
     assert body["source_owner_answer_intake"] == validator.OWNER_INTAKE_PATH
     assert body["source_response_gate"] == validator.ODP1_GATE_PATH
     assert body["source_pilot_scope_authority"] == validator.PILOT_SCOPE_PATH
-    assert body["current_owner_answer_references"] == []
+    assert body["current_owner_answer_references"] == [ODP1_OWNER_ANSWER_ID]
     assert body["current_authority_record_references"] == []
     assert set(body["owner_answer_template"]) == validator.owner_answer_fields()
     assert set(body["pilot_scope_authority_record_template"]) == (
@@ -82,7 +88,7 @@ def test_odp1_owner_answer_packet_outcomes_do_not_unlock_work() -> None:
         validator.allowed_owner_answer_types()
     )
     assert all(row["downstream_updates_allowed"] is False for row in packet["outcome_policy"])
-    assert packet["submission_policy"]["current_owner_answers_must_remain_empty"] is True
+    assert packet["submission_policy"]["current_owner_answers_must_remain_empty"] is False
     assert packet["submission_policy"]["current_authority_records_must_remain_empty"] is True
     assert packet["submission_policy"]["downstream_updates_allowed_by_packet"] is False
     assert all(packet["no_overclaim_controls"].values())
@@ -141,7 +147,8 @@ def test_odp1_owner_answer_packet_runbook_preserves_boundary() -> None:
     for phrase in (
         "bologna_odp1_owner_answer_packet_v1",
         "validate-only",
-        "does not record owner authority",
+        "review-only scope pursuit",
+        ODP1_OWNER_ANSWER_ID,
         "ODP-BOL-001",
         "current_owner_answers",
         "current_authority_records",

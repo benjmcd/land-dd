@@ -2,6 +2,65 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-26 Bologna Scope-Pursuit Owner Answer
+
+**Scope:** Record the 2026-06-26 owner directive "pursue Bologna scope" as one
+review-only `ODP-BOL-001` owner answer while preserving the missing pilot-scope
+authority boundary. This does not select an AOI, approve sources or source rights,
+create a corpus, capture fixtures, seed the DB, prove a report, approve DS-017,
+change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_odp1_owner_answer_packet_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check <touched scripts and focused tests>
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy <touched scripts and focused tests>
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Bologna owner-answer intake, ODP1 response gate, ODP1 owner-answer packet,
+  ODP2/ODP3/ODP4 response gates, pilot-scope authority, and qualification backlog
+  checkers passed.
+- The first focused test run caught stale approval-flag assumptions and the
+  project-readiness parser losing the backticked `EQ-5` task token. Both were fixed.
+- Focused Bologna/backlog/readiness artifact tests passed (`54 passed`).
+- The first readiness/status pass caught a missing active-plan citation to
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, and readiness matrix,
+  qualification status, structural qualification validation, and qualification selftest
+  passed.
+- Change-impact passed as advisory over 33 changed paths, with Bologna and
+  qualification-backlog crosswalk surfaces reported.
+- Focused ruff and mypy passed for the touched scripts and focused tests.
+- Full `.\scripts\verify.ps1` passed in 577 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped
+  because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This records review-only scope pursuit only. Bologna remains blocked
+until complete cited `ODP-BOL-001` pilot-scope authority exists, followed by
+`ODP-BOL-002` source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004`
+DB-backed report proof authority. P0 remains `BLOCKED`; all non-P0 statuses remain
+`NOT_RUN`.
+
 ## 2026-06-23 Post-ODP1 Packet Authority Routing
 
 **Scope:** Route current state after PR #161 so the ODP-BOL-001 owner-answer packet is

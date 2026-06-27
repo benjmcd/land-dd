@@ -13,9 +13,11 @@ OWNER_INTAKE_PATH = "config/bologna_owner_answer_intake.yaml"
 ODP1_GATE_PATH = "config/bologna_odp1_owner_response_gate.yaml"
 PILOT_SCOPE_PATH = "config/bologna_pilot_scope_authority.yaml"
 ODP_ID = "ODP-BOL-001"
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
+ODP1_STATUS = "review_only_scope_pursuit_answered"
 
 EXPECTED_APPROVALS = {
-    "owner_answer_recorded": False,
+    "owner_answer_recorded": True,
     "pilot_scope_authority_recorded": False,
     "product_aoi_scope_authorized": False,
     "downstream_authority_updates_allowed": False,
@@ -66,8 +68,9 @@ REQUIRED_FILES = (
 RUNBOOK_PHRASES = (
     "bologna_odp1_owner_answer_packet_v1",
     "validate-only",
-    "does not record owner authority",
+    "review-only scope pursuit",
     ODP_ID,
+    ODP1_OWNER_ANSWER_ID,
     "current_owner_answers",
     "current_authority_records",
     "downstream_updates_allowed",
@@ -181,7 +184,21 @@ def validate_current_source_state() -> None:
         intake.get("owner_answer_contract"),
         "owner answer contract missing",
     )
-    require(contract.get("current_owner_answers") == [], "owner answers must remain empty")
+    owner_answers = require_list(
+        contract.get("current_owner_answers"),
+        "owner answers must be a list",
+    )
+    require(len(owner_answers) == 1, "exactly one ODP-BOL-001 owner answer must be recorded")
+    answer = require_mapping(owner_answers[0], "owner answer must be a mapping")
+    require(
+        answer.get("owner_answer_id") == ODP1_OWNER_ANSWER_ID,
+        "ODP-BOL-001 owner answer id changed",
+    )
+    require(answer.get("answer_type") == "approve_review_only", "ODP-BOL-001 answer type")
+    require(
+        answer.get("downstream_unlocks_requested") == [],
+        "ODP-BOL-001 owner answer must not request downstream unlocks",
+    )
     threads = {
         require_text(thread.get("odp_id"), "thread id missing"): thread
         for thread in require_non_empty_list(
@@ -191,8 +208,11 @@ def validate_current_source_state() -> None:
         if isinstance(thread, dict)
     }
     odp1 = require_mapping(threads.get(ODP_ID), f"{ODP_ID} thread missing")
-    require(odp1.get("status") == "missing_owner_answer", f"{ODP_ID} status changed")
-    require(odp1.get("owner_answer_references") == [], f"{ODP_ID} owner refs changed")
+    require(odp1.get("status") == ODP1_STATUS, f"{ODP_ID} status changed")
+    require(
+        odp1.get("owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+        f"{ODP_ID} owner refs changed",
+    )
     require(odp1.get("downstream_updates_allowed") is False, f"{ODP_ID} updates allowed")
 
     pilot = load_yaml(PILOT_SCOPE_PATH)
@@ -209,7 +229,10 @@ def validate_current_source_state() -> None:
         load_yaml(ODP1_GATE_PATH).get("odp_bol_001_gate"),
         "ODP1 gate missing",
     )
-    require(gate.get("current_owner_answer_references") == [], "gate owner refs changed")
+    require(
+        gate.get("current_owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+        "gate owner refs changed",
+    )
     require(gate.get("current_authority_record_references") == [], "gate authority refs changed")
 
 
@@ -219,7 +242,7 @@ def validate_packet(payload: dict[str, Any]) -> None:
         "unexpected ODP-BOL-001 answer packet schema",
     )
     require(payload.get("operator_runbook") == RUNBOOK_PATH, "runbook path drifted")
-    require(payload.get("status") == "ready_for_external_owner_response", "packet status drifted")
+    require(payload.get("status") == "review_only_scope_pursuit_recorded", "packet status drifted")
     require(
         payload.get("validation") == "scripts/run_bologna_odp1_owner_answer_packet_check.ps1",
         "validation wrapper drifted",
@@ -242,7 +265,10 @@ def validate_packet(payload: dict[str, Any]) -> None:
     require(packet.get("source_owner_answer_intake") == OWNER_INTAKE_PATH, "intake path drifted")
     require(packet.get("source_response_gate") == ODP1_GATE_PATH, "gate path drifted")
     require(packet.get("source_pilot_scope_authority") == PILOT_SCOPE_PATH, "pilot path drifted")
-    require(packet.get("current_owner_answer_references") == [], "packet owner refs must be empty")
+    require(
+        packet.get("current_owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+        "packet owner refs changed",
+    )
     require(
         packet.get("current_authority_record_references") == [],
         "packet authority refs must be empty",
@@ -337,11 +363,11 @@ def validate_submission_policy(payload: dict[str, Any]) -> None:
         policy.get("authority_record_submission_target") == PILOT_SCOPE_PATH,
         "authority record submission target drifted",
     )
-    for key in (
-        "current_owner_answers_must_remain_empty",
-        "current_authority_records_must_remain_empty",
-        "requires_later_recording_slice",
-    ):
+    require(
+        policy.get("current_owner_answers_must_remain_empty") is False,
+        "current owner answers policy must reflect the recorded review-only answer",
+    )
+    for key in ("current_authority_records_must_remain_empty", "requires_later_recording_slice"):
         require(policy.get(key) is True, f"{key} must remain true")
     require(
         policy.get("downstream_updates_allowed_by_packet") is False,

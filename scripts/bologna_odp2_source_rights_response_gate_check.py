@@ -15,6 +15,8 @@ SOURCE_AUTHORITY_PATH = "config/bologna_source_authority_intake.yaml"
 SOURCE_RIGHTS_PATH = "config/bologna_source_rights.yaml"
 ODP_ID = "ODP-BOL-002"
 PREREQUISITE_ODP_ID = "ODP-BOL-001"
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
+ODP1_STATUS = "review_only_scope_pursuit_answered"
 
 EXPECTED_APPROVALS = {
     "owner_answer_recorded": False,
@@ -247,22 +249,28 @@ def validate_source_packets_still_blocked() -> None:
         f"{PREREQUISITE_ODP_ID} thread missing",
     )
     require(
-        prerequisite.get("status") == "missing_owner_answer",
-        f"{PREREQUISITE_ODP_ID} answered before ODP2 gate",
+        prerequisite.get("status") == ODP1_STATUS,
+        f"{PREREQUISITE_ODP_ID} status changed",
     )
     require(
-        prerequisite.get("owner_answer_references") == [],
+        prerequisite.get("owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
         f"{PREREQUISITE_ODP_ID} refs changed",
     )
-    require(
-        owner_answer_contract().get("current_owner_answers") == [],
-        "owner answers must remain empty",
-    )
+    owner_answers = owner_answer_contract().get("current_owner_answers")
+    require(isinstance(owner_answers, list) and len(owner_answers) == 1, "ODP1 answer missing")
+    if isinstance(owner_answers, list) and owner_answers:
+        answer = require_mapping(owner_answers[0], "ODP1 owner answer must map")
+        require(answer.get("owner_answer_id") == ODP1_OWNER_ANSWER_ID, "ODP1 answer id")
+        require(answer.get("answer_type") == "approve_review_only", "ODP1 answer type")
+        require(answer.get("downstream_unlocks_requested") == [], "ODP1 answer unlocks")
 
     odp1 = load_yaml(ODP1_GATE_PATH)
     odp1_gate = require_mapping(odp1.get("odp_bol_001_gate"), "ODP1 gate missing")
-    require(odp1_gate.get("status") == "missing_owner_answer", "ODP1 status changed")
-    require(odp1_gate.get("current_owner_answer_references") == [], "ODP1 refs changed")
+    require(odp1_gate.get("status") == ODP1_STATUS, "ODP1 status changed")
+    require(
+        odp1_gate.get("current_owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+        "ODP1 refs changed",
+    )
     require(
         odp1_gate.get("current_authority_record_references") == [],
         "ODP1 authority refs changed",
@@ -313,7 +321,7 @@ def validate_source_packets_still_blocked() -> None:
 def validate_gate(payload: dict[str, Any]) -> None:
     gate = require_mapping(payload.get("odp_bol_002_gate"), "ODP-BOL-002 gate missing")
     require(gate.get("odp_id") == ODP_ID, "ODP-BOL-002 gate id changed")
-    require(gate.get("status") == "blocked_until_odp_bol_001", "ODP2 status drifted")
+    require(gate.get("status") == "blocked_until_odp_bol_001_authority", "ODP2 status drifted")
     require(gate.get("source_owner_answer_intake") == OWNER_INTAKE_PATH, "intake path")
     require(gate.get("source_odp1_gate") == ODP1_GATE_PATH, "ODP1 path drifted")
     require(
@@ -325,7 +333,7 @@ def validate_gate(payload: dict[str, Any]) -> None:
         gate.get("prerequisite_odp_ids") == [PREREQUISITE_ODP_ID],
         "ODP2 prerequisite list drifted",
     )
-    require(gate.get("prerequisite_status") == "missing_owner_answer", "prereq status")
+    require(gate.get("prerequisite_status") == "missing_pilot_scope_authority", "prereq status")
     require(gate.get("current_owner_answer_references") == [], "owner refs changed")
     require(
         gate.get("current_source_authority_record_references") == [],
@@ -446,7 +454,7 @@ def validate_catalog() -> dict[str, Any]:
     require(payload.get("operator_runbook") == RUNBOOK_PATH, "runbook path drifted")
     require(
         payload.get("status")
-        == "blocked_until_odp_bol_001_and_missing_odp_bol_002_owner_answer",
+        == "blocked_until_odp_bol_001_authority_and_missing_odp_bol_002_owner_answer",
         "gate status changed",
     )
     require(

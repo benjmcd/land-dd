@@ -66,7 +66,7 @@ odp_bol_004_gate:
     - ODP-BOL-001
     - ODP-BOL-002
     - ODP-BOL-003
-  prerequisite_status: missing_owner_answers
+  prerequisite_status: missing_required_authority
   current_owner_answer_references: []
   current_report_proof_authority_references: []
   current_db_report_run_references: []
