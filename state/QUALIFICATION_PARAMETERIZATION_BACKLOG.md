@@ -40,6 +40,12 @@ the owner a checkable product/AOI/scope response template. It now references the
 review-only scope-pursuit answer without recording owner authority, selecting an AOI,
 approving sources, or unlocking downstream work.
 
+ODP-BOL-001 scope-authority readiness:
+`config/bol_scope_auth.yaml`. That gate is validate-only and proves the current
+review-only answer cannot record pilot-scope authority. It requires a future
+`approve_with_cited_authority` answer and a complete pilot-scope authority record before
+any authority-recording slice can proceed.
+
 ODP-BOL-002 source-rights response gate:
 `config/bologna_odp2_source_rights_response_gate.yaml`. That gate is validate-only and
 keeps the Bologna source-authority/source-rights answer blocked behind missing
@@ -70,6 +76,7 @@ ODP-BOL-003 corpus authority, and missing cited report-proof authority.
 - ODP-BOL-001 owner-answer packet:
   `config/bologna_odp1_owner_answer_packet.yaml`.
 - ODP-BOL-001 owner-response gate: `config/bologna_odp1_owner_response_gate.yaml`.
+- ODP-BOL-001 scope-authority readiness gate: `config/bol_scope_auth.yaml`.
 - ODP-BOL-002 source-rights response gate: `config/bologna_odp2_source_rights_response_gate.yaml`.
 - ODP-BOL-003 recorded-source corpus response gate: `config/bologna_odp3_corpus_response_gate.yaml`.
 - ODP-BOL-004 DB-backed report proof response gate: `config/bologna_odp4_db_report_proof_response_gate.yaml`.

@@ -2,6 +2,58 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-27 Bologna Scope-Authority Readiness Gate
+
+**Scope:** Add a validate-only `bol_scope_auth` gate for the later cited
+`ODP-BOL-001` authority-recording slice. This proves the current owner answer remains
+review-only and does not record authority, select an AOI, approve sources or source
+rights, create a corpus, capture fixtures, seed the DB, prove a report, approve DS-017,
+change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bol_scope_auth_check.py
+.\scripts\run_bol_scope_auth_check.ps1
+py -3.12 scripts\bol_scope_auth_check.py --qualification-criteria-json
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 -m pytest backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check scripts\bol_scope_auth_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bol_scope_auth_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New scope-authority readiness checker, PowerShell wrapper, and
+  `--qualification-criteria-json` advertisement passed.
+- Focused backlog/readiness/crosswalk tests passed after updating stale active-plan
+  expectations and adding the human crosswalk row for `bol_scope_auth`.
+- Structural qualification validation passed; qualification status derived
+  `BLOCKED=1 NOT_RUN=20`; qualification selftest passed.
+- Change-impact passed as advisory for 15 touched paths, reporting
+  `qualification_parameterization_backlog` and `bol_scope_auth` crosswalk surfaces.
+- Focused ruff and mypy passed for touched scripts and focused tests.
+- First full `.\scripts\verify.ps1` run failed on the missing human crosswalk row and
+  stale readiness-core active-plan assertion. Both were fixed.
+- Second full `.\scripts\verify.ps1` passed in 581 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is readiness only. Bologna remains blocked until complete cited
+`ODP-BOL-001` pilot-scope authority exists, followed by `ODP-BOL-002` source rights,
+`ODP-BOL-003` recorded corpus, and `ODP-BOL-004` DB-backed report proof authority. P0
+remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
 ## 2026-06-26 Bologna Scope-Pursuit Owner Answer
 
 **Scope:** Record the 2026-06-26 owner directive "pursue Bologna scope" as one

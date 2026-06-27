@@ -2,6 +2,25 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-27 Bologna scope-authority readiness gate
+
+- Started clean worktree `worktrees/bol-scope-auth` on `codex/bol-scope-auth` from
+  live `origin/main@d52755b9f701efc679fcb3b1dcb41267537458fb`, leaving the dirty root
+  checkout untouched.
+- Added `config/bol_scope_auth.yaml`, a validate-only ODP-BOL-001 scope-authority
+  readiness gate, plus a checker, Windows/POSIX wrappers, runbook, focused tests, and
+  qualification crosswalk/doc routing.
+- Preserved the authority boundary: the current ODP-BOL-001 answer remains
+  `approve_review_only`; `config/bologna_pilot_scope_authority.yaml`
+  `current_authority_records` remains empty; no AOI, source approval, source-rights
+  approval, corpus, fixture, DB seed, report proof, DS-017 approval, hosted authority,
+  Level 10 claim, or qualification PASS was introduced.
+- Updated task/project/plan/backlog routing so the next real Bologna step is still a
+  complete cited `ODP-BOL-001` authority record, constrained to the owner-answer intake
+  and pilot-scope authority packet before any ODP-BOL-002/003/004 work.
+- Focused checks passed after fixing stale routing assertions, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-06-26 Bologna scope-pursuit owner answer
 
 - Started clean worktree `worktrees/bol-scope` on `codex/bol-scope` from live

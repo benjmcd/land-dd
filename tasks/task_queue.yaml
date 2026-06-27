@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-26-bologna-scope-pursuit.md
+active_plan: plans/2026-06-27-bol-scope-auth.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -83,9 +83,11 @@ routing_note: >
   ODP-BOL-001 owner-answer packet merged through PR #161 at
   `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, and BOL-SCOPE-PURSUIT records the
   2026-06-26 owner directive to pursue Bologna scope as an ODP-BOL-001
-  `approve_review_only` owner answer. Bologna implementation remains stopped while
-  BSA-001 remains blocked until complete explicit product/AOI/source-review authority is
-  cited in the pilot-scope/source-authority/source-rights packets. Do not
+  `approve_review_only` owner answer. BOL-SCOPE-AUTH adds a validate-only readiness
+  gate for a future cited ODP-BOL-001 authority-recording slice while preserving empty
+  authority records. Bologna implementation remains stopped while BSA-001 remains
+  blocked until complete explicit product/AOI/source-review authority is cited in the
+  pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2586,6 +2588,25 @@ tasks:
       - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain missing/blocking downstream authority
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-SCOPE-AUTH
+    title: Bologna ODP-BOL-001 scope-authority readiness
+    status: done
+    depends_on: [BOL-SCOPE-PURSUIT]
+    lane: coordinator
+    spec: plans/2026-06-27-bol-scope-auth.md
+    notes: >
+      Add a validate-only `bol_scope_auth` gate for the later cited ODP-BOL-001
+      authority-recording slice. The gate proves the current owner answer remains
+      `approve_review_only`, requires a future `approve_with_cited_authority` answer
+      before authority can be recorded, keeps `current_authority_records` empty, and
+      forbids bundling source, corpus, fixture, DB, report, hosted, or Level 10 work.
+    acceptance:
+      - config/bol_scope_auth.yaml validates the current review-only owner-answer state
+      - scripts/bol_scope_auth_check.py fails closed if review-only is treated as cited authority
+      - config/bologna_pilot_scope_authority.yaml current_authority_records remains empty
+      - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain separate blocked authority steps
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
 
   # --- Completed ---
   - id: T000

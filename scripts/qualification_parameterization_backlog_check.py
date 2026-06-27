@@ -18,11 +18,13 @@ except ImportError as exc:
 
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
+EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
 OWNER_INTAKE_PATH = "config/bologna_owner_answer_intake.yaml"
 ODP1_OWNER_ANSWER_PACKET_PATH = "config/bologna_odp1_owner_answer_packet.yaml"
+BOL_SCOPE_AUTH_PATH = "config/bol_scope_auth.yaml"
 QUALIFICATION_STATUS_PATH = "state/EMPIRICAL_QUALIFICATION_STATUS.yaml"
 QUALIFICATION_TARGETS_PATH = "config/qualification/qualification_targets.yaml"
 SOURCE_PROFILE_PATH = "config/qualification/source_profiles/source_quality_profile.ds-002.yaml"
@@ -51,6 +53,7 @@ EXPECTED_DONE_TASKS = (
     "BOL-ODP1-PACKET",
     "BOL-POST-ODP1-PACKET",
     "BOL-SCOPE-PURSUIT",
+    "BOL-SCOPE-AUTH",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -187,6 +190,8 @@ def validate_backlog(backlog: str, errors: list[str]) -> None:
             "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`",
             "ODP-BOL-001 owner-answer packet:",
             "`config/bologna_odp1_owner_answer_packet.yaml`",
+            "ODP-BOL-001 scope-authority readiness:",
+            "`config/bol_scope_auth.yaml`",
             "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
             "## Owner Decision Blockers",
             "Active gates | 12 | BLOCKED (external/owner authority)",
@@ -529,8 +534,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_SCOPE_PURSUIT_PLAN,
-            "task queue active_plan must point to the Bologna scope-pursuit plan",
+            active_plan == EXPECTED_BOL_SCOPE_AUTH_PLAN,
+            "task queue active_plan must point to the Bologna scope-authority readiness plan",
             errors,
         )
         require(
@@ -580,14 +585,21 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("scripts/run_qualification_parameterization_backlog_check.sh", "qualification_parameterization_backlog_check.py"),
         ("scripts/run_bologna_odp1_owner_answer_packet_check.ps1", "bologna_odp1_owner_answer_packet_check.py"),
         ("scripts/run_bologna_odp1_owner_answer_packet_check.sh", "bologna_odp1_owner_answer_packet_check.py"),
+        ("scripts/run_bol_scope_auth_check.ps1", "bol_scope_auth_check.py"),
+        ("scripts/run_bol_scope_auth_check.sh", "bol_scope_auth_check.py"),
         ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
         ("MANIFEST.md", "config/bologna_odp1_owner_answer_packet.yaml"),
+        ("MANIFEST.md", "config/bol_scope_auth.yaml"),
         ("plans/README.md", EXPECTED_SCOPE_PURSUIT_PLAN),
+        ("plans/README.md", EXPECTED_BOL_SCOPE_AUTH_PLAN),
         ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
+        (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         ("docs/runbooks/bologna_odp1_owner_answer_packet.md", "review-only scope pursuit"),
+        ("docs/runbooks/bol_scope_auth.md", "approve_with_cited_authority"),
         (EXPECTED_EQ5_PLAN, "## Decision log"),
         (EXPECTED_SCOPE_PURSUIT_PLAN, "## Decision log"),
+        (EXPECTED_BOL_SCOPE_AUTH_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
