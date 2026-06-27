@@ -14,6 +14,7 @@ yaml = cast(Any, __import__("yaml"))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPO_ROOT / "config" / "bologna_owner_answer_intake.yaml"
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
 
 
 def _load_validator() -> ModuleType:
@@ -37,18 +38,18 @@ def _yaml(path: Path) -> dict[str, Any]:
 
 def _complete_owner_answer_record() -> dict[str, Any]:
     return {
-        "owner_answer_id": "hypothetical-owner-answer",
+        "owner_answer_id": ODP1_OWNER_ANSWER_ID,
         "odp_id": "ODP-BOL-001",
-        "answer_type": "keep_blocked",
-        "decision_owner": "product-owner-or-decision-forum",
-        "decision_date": "2026-06-23",
-        "authority_reference": "external-authority://owner-answer-record",
-        "answer_summary": "Hypothetical answer record shape for validation only.",
+        "answer_type": "approve_review_only",
+        "decision_owner": "benjmcd",
+        "decision_date": "2026-06-26",
+        "authority_reference": "owner directive 2026-06-26: pursue Bologna scope",
+        "answer_summary": "Owner directed review-only Bologna scope pursuit.",
         "cited_artifacts": [
-            "external-authority://owner-answer-record",
+            "Codex thread owner directive 2026-06-26: pursue Bologna scope",
         ],
         "caveats": [
-            "Test-only record shape; not committed authority.",
+            "Review-only record; not complete pilot-scope authority.",
         ],
         "downstream_unlocks_requested": [],
         "supersedes_owner_answer_ids": [],
@@ -61,11 +62,16 @@ def test_bologna_owner_answer_intake_is_validate_only_and_blocked() -> None:
 
     assert catalog["schema_version"] == "bologna_owner_answer_intake_v1"
     assert catalog["operator_runbook"] == "docs/runbooks/bologna_owner_answer_intake.md"
-    assert catalog["status"] == "blocked_missing_owner_answers"
+    assert catalog["status"] == "blocked_review_only_scope_pursuit"
     assert catalog["validation"] == "scripts/run_bologna_owner_answer_intake_check.ps1"
     assert catalog["approvals"] == validator.EXPECTED_APPROVALS
     assert catalog["limits"] == validator.EXPECTED_LIMITS
-    assert all(value is False for value in catalog["approvals"].values())
+    assert catalog["approvals"]["product_aoi_scope_answered"] is True
+    assert all(
+        value is False
+        for key, value in catalog["approvals"].items()
+        if key != "product_aoi_scope_answered"
+    )
 
 
 def test_bologna_owner_answer_threads_align_to_existing_bologna_contracts() -> None:
@@ -94,8 +100,12 @@ def test_bologna_owner_answer_threads_align_to_existing_bologna_contracts() -> N
     )
 
     for odp_id, thread in threads.items():
-        assert thread["status"] == "missing_owner_answer"
-        assert thread["owner_answer_references"] == []
+        if odp_id == "ODP-BOL-001":
+            assert thread["status"] == "review_only_scope_pursuit_answered"
+            assert thread["owner_answer_references"] == [ODP1_OWNER_ANSWER_ID]
+        else:
+            assert thread["status"] == "missing_owner_answer"
+            assert thread["owner_answer_references"] == []
         assert thread["downstream_updates_allowed"] is False
         assert thread["sequence"] == validator.EXPECTED_ODP_SEQUENCE[odp_id]
 
@@ -161,7 +171,8 @@ def test_bologna_owner_answer_intake_runbook_preserves_boundary() -> None:
     for phrase in (
         "bologna_owner_answer_intake_v1",
         "validate-only",
-        "does not record owner authority",
+        "records one review-only owner answer",
+        ODP1_OWNER_ANSWER_ID,
         "ODP-BOL-001",
         "ODP-BOL-004",
         "downstream_updates_allowed",

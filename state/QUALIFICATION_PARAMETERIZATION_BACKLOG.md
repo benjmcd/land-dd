@@ -20,7 +20,8 @@ domain profile freeze, source approval, Bologna AOI/source/corpus/report work,
 qualification PASS, hosted authority, or Level 10 claim.
 
 Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`. That intake is
-validate-only and keeps all ODP-BOL owner answers missing until cited external
+validate-only, records one review-only `ODP-BOL-001` scope-pursuit owner answer, and
+keeps `ODP-BOL-002` through `ODP-BOL-004` owner answers missing until cited external
 authority exists.
 
 EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`.
@@ -30,13 +31,14 @@ profile, task queue, or verification wiring drift from this blocked-state bounda
 
 ODP-BOL-001 owner-response gate:
 `config/bologna_odp1_owner_response_gate.yaml`. That gate is validate-only and keeps
-the Bologna product/AOI/scope answer missing until cited external owner authority
-exists.
+the Bologna pilot-scope authority missing after the review-only scope-pursuit answer
+until cited external owner authority exists.
 
 ODP-BOL-001 owner-answer packet:
 `config/bologna_odp1_owner_answer_packet.yaml`. That packet is validate-only and gives
-the owner a checkable product/AOI/scope response template without recording owner
-authority, selecting an AOI, approving sources, or unlocking downstream work.
+the owner a checkable product/AOI/scope response template. It now references the
+review-only scope-pursuit answer without recording owner authority, selecting an AOI,
+approving sources, or unlocking downstream work.
 
 ODP-BOL-002 source-rights response gate:
 `config/bologna_odp2_source_rights_response_gate.yaml`. That gate is validate-only and
@@ -257,6 +259,9 @@ Remaining blockers:
 
 The Bologna path remains the prioritized product pursuit, but all steps below are
 blocked by external/owner authority. This backlog only makes the sequence explicit.
+The 2026-06-26 `pursue Bologna scope` directive records review-only pursuit of
+`ODP-BOL-001`; it does not record pilot-scope authority, choose an AOI, approve source
+rights, or unlock corpus/report work.
 
 ### Bologna pilot-scope authority
 

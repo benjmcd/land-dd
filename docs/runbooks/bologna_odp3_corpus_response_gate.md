@@ -9,9 +9,10 @@ seed the database, create runtime/report artifacts, approve DS-017, or claim hos
 
 Use this gate only to check that a future owner response for `ODP-BOL-003` is complete
 enough to be recorded in a later authority slice. The current committed state must keep
-`ODP-BOL-001` and `ODP-BOL-002` missing, `current_owner_answer_references`,
-`current_corpus_authority_references`, and `current_recorded_corpus_references` empty,
-and every `downstream_updates_allowed` value false.
+`ODP-BOL-001` pilot-scope authority missing after the review-only scope-pursuit answer
+and keep `ODP-BOL-002` missing, `current_owner_answer_references`,
+`current_corpus_authority_references`, and `current_recorded_corpus_references` empty.
+Every `downstream_updates_allowed` value must remain false.
 
 Run:
 

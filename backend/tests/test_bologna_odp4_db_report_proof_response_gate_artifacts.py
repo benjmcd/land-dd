@@ -63,7 +63,7 @@ def test_odp4_db_report_proof_response_gate_aligns_with_contracts() -> None:
     assert gate["odp_id"] == validator.ODP_ID
     assert gate["status"] == "blocked_until_odp_bol_001_odp_bol_002_and_odp_bol_003"
     assert gate["prerequisite_odp_ids"] == validator.PREREQUISITE_ODP_IDS
-    assert gate["prerequisite_status"] == "missing_owner_answers"
+    assert gate["prerequisite_status"] == "missing_required_authority"
     assert gate["current_owner_answer_references"] == []
     assert gate["current_report_proof_authority_references"] == []
     assert gate["current_db_report_run_references"] == []

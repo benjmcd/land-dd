@@ -17,6 +17,7 @@ EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_EQR_PLAN = "plans/2026-06-23-eqr-residual-closeout.md"
 EXPECTED_ODP1_PACKET_PLAN = "plans/2026-06-23-odp1-owner-answer-packet.md"
 EXPECTED_POST_ODP1_PACKET_PLAN = "plans/2026-06-23-post-odp1-packet-routing.md"
+EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
@@ -24,6 +25,7 @@ BACKLOG_CHECK_INPUTS = (
     EXPECTED_EQR_PLAN,
     EXPECTED_ODP1_PACKET_PLAN,
     EXPECTED_POST_ODP1_PACKET_PLAN,
+    EXPECTED_SCOPE_PURSUIT_PLAN,
     "plans/README.md",
     "config/bologna_odp1_owner_answer_packet.yaml",
     "docs/runbooks/bologna_odp1_owner_answer_packet.md",
@@ -230,12 +232,13 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
     assert "Owner decision consequence map: `state/owner-decision-packet.md`" in backlog
     assert "decision-request-only artifact" in backlog
     assert "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`" in backlog
-    assert "keeps all ODP-BOL owner answers missing" in backlog
+    assert "records one review-only `ODP-BOL-001` scope-pursuit owner answer" in backlog
+    assert "keeps `ODP-BOL-002` through `ODP-BOL-004` owner answers missing" in backlog
     assert "ODP-BOL-001 owner-answer packet:" in backlog
     assert "`config/bologna_odp1_owner_answer_packet.yaml`" in backlog
     assert "ODP-BOL-001 owner-response gate:" in backlog
     assert "`config/bologna_odp1_owner_response_gate.yaml`" in backlog
-    assert "Bologna product/AOI/scope answer missing" in backlog
+    assert "Bologna pilot-scope authority missing" in backlog
     assert "ODP-BOL-002 source-rights response gate:" in backlog
     assert "`config/bologna_odp2_source_rights_response_gate.yaml`" in backlog
     assert "Bologna source-authority/source-rights answer blocked" in backlog
@@ -251,7 +254,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_POST_ODP1_PACKET_PLAN
+    assert task_queue["active_plan"] == EXPECTED_SCOPE_PURSUIT_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
@@ -330,13 +333,13 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-ODP2-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp2-source-rights-response-gate.md"
     )
-    assert "ODP-BOL-001 as the missing" in tasks["BOL-ODP2-GATE"]["notes"]
+    assert "ODP-BOL-001 authority as the" in tasks["BOL-ODP2-GATE"]["notes"]
     assert tasks["BOL-ODP3-GATE"]["depends_on"] == ["BOL-ODP2-GATE"]
     assert tasks["BOL-ODP3-GATE"]["status"] == "done"
     assert tasks["BOL-ODP3-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp3-corpus-response-gate.md"
     )
-    assert "ODP-BOL-001 and ODP-BOL-002 as missing prerequisites" in (
+    assert "ODP-BOL-001 authority and ODP-BOL-002 as unresolved prerequisites" in (
         tasks["BOL-ODP3-GATE"]["notes"]
     )
     assert tasks["BOL-ODP4-GATE"]["depends_on"] == ["BOL-ODP3-GATE"]
@@ -344,7 +347,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-ODP4-GATE"]["spec"] == (
         "plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md"
     )
-    assert "ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 as" in (
+    assert "ODP-BOL-001 authority, ODP-BOL-002, and" in (
         tasks["BOL-ODP4-GATE"]["notes"]
     )
     assert tasks["BOL-POST-ODP4-AUTH"]["depends_on"] == ["BOL-ODP4-GATE"]
@@ -371,6 +374,10 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-POST-ODP1-PACKET"]["status"] == "done"
     assert tasks["BOL-POST-ODP1-PACKET"]["spec"] == EXPECTED_POST_ODP1_PACKET_PLAN
     assert "PR #161" in tasks["BOL-POST-ODP1-PACKET"]["notes"]
+    assert tasks["BOL-SCOPE-PURSUIT"]["depends_on"] == ["BOL-POST-ODP1-PACKET"]
+    assert tasks["BOL-SCOPE-PURSUIT"]["status"] == "done"
+    assert tasks["BOL-SCOPE-PURSUIT"]["spec"] == EXPECTED_SCOPE_PURSUIT_PLAN
+    assert "approve_review_only" in tasks["BOL-SCOPE-PURSUIT"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
 
 
@@ -388,7 +395,7 @@ def test_qualification_parameterization_backlog_checker_fails_closed_on_owner_an
     intake_path = tmp_path / "config" / "bologna_owner_answer_intake.yaml"
     intake = _yaml(intake_path)
     contract = intake["owner_answer_contract"]
-    contract["current_owner_answers"] = [
+    contract["current_owner_answers"].append(
         {
             "owner_answer_id": "TEST-ANSWER",
             "odp_id": "ODP-BOL-001",
@@ -402,10 +409,12 @@ def test_qualification_parameterization_backlog_checker_fails_closed_on_owner_an
             "downstream_unlocks_requested": [],
             "supersedes_owner_answer_ids": [],
         }
-    ]
+    )
     intake_path.write_text(yaml.safe_dump(intake, sort_keys=False), encoding="utf-8")
 
     result = _run_backlog_check(tmp_path)
 
     assert result.returncode == 1
-    assert "current_owner_answers must remain empty" in result.stdout
+    assert "current_owner_answers must contain exactly one review-only ODP1 answer" in (
+        result.stdout
+    )

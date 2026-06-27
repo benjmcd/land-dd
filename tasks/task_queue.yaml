@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-post-odp1-packet-routing.md
+active_plan: plans/2026-06-26-bologna-scope-pursuit.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -81,11 +81,11 @@ routing_note: >
   residual reconciliation closeout merged through PR #160 at
   `b5ed59e7143773f306ab216865df0133ca7b0451`, and BOL-ODP1-PACKET
   ODP-BOL-001 owner-answer packet merged through PR #161 at
-  `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`. Current local lane:
-  BOL-POST-ODP1-PACKET routing sync after the ODP-BOL-001 packet. Bologna
-  implementation is stopped while BSA-001 remains blocked until explicit
-  product/AOI/source-review authority is cited in the
-  pilot-scope/source-authority/source-rights packets. Do not
+  `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, and BOL-SCOPE-PURSUIT records the
+  2026-06-26 owner directive to pursue Bologna scope as an ODP-BOL-001
+  `approve_review_only` owner answer. Bologna implementation remains stopped while
+  BSA-001 remains blocked until complete explicit product/AOI/source-review authority is
+  cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2385,10 +2385,12 @@ tasks:
       Add a validate-only owner-answer intake for ODP-BOL-001 through ODP-BOL-004
       that cross-checks product/AOI, source-rights, recorded-corpus, and DB-backed
       report-proof questions against existing Bologna authority packets. This records
-      no owner answers, grants no authority, and keeps all downstream updates blocked.
+      initially records no owner answers, grants no authority, and keeps all downstream
+      updates blocked. Current routing may later record review-only answers without
+      converting them into authority.
     acceptance:
       - config/bologna_owner_answer_intake.yaml validates against the existing Bologna authority and corpus contracts
-      - ODP-BOL-001 through ODP-BOL-004 remain missing_owner_answer with empty owner_answer_references
+      - At this slice boundary, ODP-BOL-001 through ODP-BOL-004 remain missing_owner_answer with empty owner_answer_references
       - The checker is mapped into the qualification readiness crosswalk
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
@@ -2407,7 +2409,7 @@ tasks:
       records, and every downstream update empty or disabled.
     acceptance:
       - config/bologna_odp1_owner_response_gate.yaml validates against the owner-answer intake and pilot-scope authority packet
-      - ODP-BOL-001 remains missing_owner_answer with empty owner and authority references
+      - At this slice boundary, ODP-BOL-001 remains missing_owner_answer with empty owner and authority references
       - The checker is mapped into the qualification readiness crosswalk
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
@@ -2422,12 +2424,12 @@ tasks:
       Add a validate-only gate for the next source-authority/source-rights owner
       answer, ODP-BOL-002. The gate cross-checks required owner-answer fields,
       source-authority record fields, candidate evidence slots, source-rights
-      decisions, and candidate review IDs while keeping ODP-BOL-001 as the missing
+      decisions, and candidate review IDs while keeping ODP-BOL-001 authority as the
       prerequisite and keeping source authority records, source-rights approval
       references, and every downstream update empty or disabled.
     acceptance:
       - config/bologna_odp2_source_rights_response_gate.yaml validates against the owner-answer intake, ODP-BOL-001 gate, source-authority intake, and source-rights matrix
-      - ODP-BOL-001 remains missing_owner_answer and ODP-BOL-002 remains blocked until cited owner/source authority exists
+      - ODP-BOL-001 authority remains missing and ODP-BOL-002 remains blocked until cited owner/source authority exists
       - The checker is mapped into the qualification readiness crosswalk
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
@@ -2443,12 +2445,12 @@ tasks:
       ODP-BOL-003. The gate cross-checks required owner-answer fields, corpus
       decisions, manifest fields, selected candidate evidence, source-failure policy,
       CRS, attribution, caveats, storage/export limits, and no-overclaim review while
-      keeping ODP-BOL-001 and ODP-BOL-002 as missing prerequisites and keeping corpus
-      authority records, recorded corpus references, fixtures, DB seeds, report proof,
-      and every downstream update empty or disabled.
+      keeping ODP-BOL-001 authority and ODP-BOL-002 as unresolved prerequisites and
+      keeping corpus authority records, recorded corpus references, fixtures, DB seeds,
+      report proof, and every downstream update empty or disabled.
     acceptance:
       - config/bologna_odp3_corpus_response_gate.yaml validates against the owner-answer intake, ODP-BOL-002 gate, and recorded-source corpus contract
-      - ODP-BOL-001 and ODP-BOL-002 remain missing_owner_answer and ODP-BOL-003 remains blocked until cited owner/corpus authority exists
+      - ODP-BOL-001 authority and ODP-BOL-002 remain unresolved and ODP-BOL-003 remains blocked until cited owner/corpus authority exists
       - The checker is mapped into the qualification readiness crosswalk
       - No fixture, source-failure fixture, DB seed, report proof, hosted authority, or Level 10 authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
@@ -2464,13 +2466,13 @@ tasks:
       answer, ODP-BOL-004. The gate cross-checks required owner-answer fields,
       report-proof fields, report-run contract fields, evidence contract fields, claim
       contract fields, artifact/lineage/caveat/storage/export boundaries, and
-      no-overclaim review while keeping ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 as
-      missing prerequisites and keeping report-proof authority records, DB report-run
+      no-overclaim review while keeping ODP-BOL-001 authority, ODP-BOL-002, and
+      ODP-BOL-003 as unresolved prerequisites and keeping report-proof authority records, DB report-run
       references, report artifacts, DB seeds, API/report changes, and every downstream
       update empty or disabled.
     acceptance:
       - config/bologna_odp4_db_report_proof_response_gate.yaml validates against the owner-answer intake, ODP-BOL-003 gate, and report/evidence/claim schemas
-      - ODP-BOL-001, ODP-BOL-002, and ODP-BOL-003 remain missing_owner_answer and ODP-BOL-004 remains blocked until cited report-proof authority exists
+      - ODP-BOL-001 authority, ODP-BOL-002, and ODP-BOL-003 remain unresolved and ODP-BOL-004 remains blocked until cited report-proof authority exists
       - The checker is mapped into the qualification readiness crosswalk
       - No DB seed, DB report run, report artifact, API surface, hosted authority, or Level 10 authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
@@ -2560,7 +2562,28 @@ tasks:
       rights, corpus, fixture, DB, or report proof work.
     acceptance:
       - BOL-ODP1-PACKET is complete and merged through PR #161
-      - ODP-BOL-001 remains missing_owner_answer with empty owner and authority references
+      - ODP-BOL-001 has a later review-only owner answer, but authority references remain empty
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-SCOPE-PURSUIT
+    title: Bologna ODP-BOL-001 review-only scope pursuit
+    status: done
+    depends_on: [BOL-POST-ODP1-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-26-bologna-scope-pursuit.md
+    notes: >
+      Record owner directive 2026-06-26 "pursue Bologna scope" as an
+      `approve_review_only` ODP-BOL-001 owner answer. This records scope pursuit only:
+      it does not record a pilot-scope authority record, select an AOI, approve
+      sources, change source rights, create a corpus, capture fixtures, seed DB, prove a
+      report, approve DS-017, unfreeze qualification, or claim hosted/Level 10
+      authority. BSA-001 remains blocked until complete cited product/AOI/source-review
+      authority exists.
+    acceptance:
+      - config/bologna_owner_answer_intake.yaml contains exactly one ODP-BOL-001 approve_review_only owner answer
+      - config/bologna_pilot_scope_authority.yaml current_authority_records remains empty
+      - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain missing/blocking downstream authority
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 

@@ -17,6 +17,7 @@ except ImportError as exc:
 
 
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
+EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -43,11 +44,13 @@ EXPECTED_OWNER_DECISION_IDS = (
 EXPECTED_BOL_THREADS = ("ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003", "ODP-BOL-004")
 EXPECTED_SELECTED_SOURCE_PROFILE_IDS = ("DS-002",)
 EXPECTED_FROZEN_BINDINGS = ("W-003", "W-011")
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
 EXPECTED_DONE_TASKS = (
     "BOL-ODP4-GATE",
     "BOL-POST-ODP4-AUTH",
     "BOL-ODP1-PACKET",
     "BOL-POST-ODP1-PACKET",
+    "BOL-SCOPE-PURSUIT",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -81,7 +84,6 @@ EXPECTED_SCOPE_VALUES = {
 }
 EXPECTED_INTAKE_FALSE_APPROVALS = (
     "owner_answers_complete",
-    "product_aoi_scope_answered",
     "source_authority_rights_answered",
     "recorded_corpus_answered",
     "db_report_proof_answered",
@@ -250,9 +252,18 @@ def validate_owner_decisions(decisions: str, errors: list[str]) -> None:
 
 
 def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
-    require(intake.get("status") == "blocked_missing_owner_answers", "owner intake status drifted", errors)
+    require(
+        intake.get("status") == "blocked_review_only_scope_pursuit",
+        "owner intake status drifted",
+        errors,
+    )
 
     approvals = require_mapping(intake.get("approvals"), "owner intake approvals", errors)
+    require(
+        approvals.get("product_aoi_scope_answered") is True,
+        "owner intake approvals.product_aoi_scope_answered must reflect the review-only answer",
+        errors,
+    )
     for key in EXPECTED_INTAKE_FALSE_APPROVALS:
         require(approvals.get(key) is False, f"owner intake approvals.{key} must be false", errors)
 
@@ -271,11 +282,30 @@ def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
         "owner answer contract state drifted",
         errors,
     )
+    owner_answers = contract.get("current_owner_answers")
     require(
-        contract.get("current_owner_answers") == [],
-        "owner intake current_owner_answers must remain empty",
+        isinstance(owner_answers, list) and len(owner_answers) == 1,
+        "owner intake current_owner_answers must contain exactly one review-only ODP1 answer",
         errors,
     )
+    if isinstance(owner_answers, list) and owner_answers:
+        answer = require_mapping(owner_answers[0], "ODP1 owner answer", errors)
+        require(
+            answer.get("owner_answer_id") == ODP1_OWNER_ANSWER_ID,
+            "ODP1 owner answer id drifted",
+            errors,
+        )
+        require(answer.get("odp_id") == "ODP-BOL-001", "ODP1 owner answer ODP id drifted", errors)
+        require(
+            answer.get("answer_type") == "approve_review_only",
+            "ODP1 owner answer must remain review-only",
+            errors,
+        )
+        require(
+            answer.get("downstream_unlocks_requested") == [],
+            "ODP1 owner answer must not request downstream unlocks",
+            errors,
+        )
     require(
         contract.get("response_update_policy") == "disabled_until_complete_cited_authority",
         "owner answer response update policy drifted",
@@ -302,8 +332,28 @@ def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
             continue
         odp_id = str(thread.get("odp_id"))
         require(thread.get("sequence") == index, f"{odp_id} sequence drifted", errors)
-        require(thread.get("status") == "missing_owner_answer", f"{odp_id} status must remain missing", errors)
-        require(thread.get("owner_answer_references") == [], f"{odp_id} owner answers must remain empty", errors)
+        if odp_id == "ODP-BOL-001":
+            require(
+                thread.get("status") == "review_only_scope_pursuit_answered",
+                f"{odp_id} status drifted",
+                errors,
+            )
+            require(
+                thread.get("owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+                f"{odp_id} owner answer reference drifted",
+                errors,
+            )
+        else:
+            require(
+                thread.get("status") == "missing_owner_answer",
+                f"{odp_id} status must remain missing",
+                errors,
+            )
+            require(
+                thread.get("owner_answer_references") == [],
+                f"{odp_id} owner answers must remain empty",
+                errors,
+            )
         require(thread.get("downstream_updates_allowed") is False, f"{odp_id} downstream updates must be false", errors)
         if index > 1:
             expected_prereqs = list(EXPECTED_BOL_THREADS[: index - 1])
@@ -316,13 +366,17 @@ def validate_owner_intake(intake: dict[str, Any], errors: list[str]) -> None:
 
 def validate_odp1_owner_answer_packet(packet: dict[str, Any], errors: list[str]) -> None:
     require(
-        packet.get("status") == "ready_for_external_owner_response",
+        packet.get("status") == "review_only_scope_pursuit_recorded",
         "ODP-BOL-001 owner answer packet status drifted",
         errors,
     )
     approvals = require_mapping(packet.get("approvals"), "ODP1 packet approvals", errors)
+    require(
+        approvals.get("owner_answer_recorded") is True,
+        "ODP1 packet must record the review-only owner answer",
+        errors,
+    )
     for key in (
-        "owner_answer_recorded",
         "pilot_scope_authority_recorded",
         "product_aoi_scope_authorized",
         "downstream_authority_updates_allowed",
@@ -349,8 +403,8 @@ def validate_odp1_owner_answer_packet(packet: dict[str, Any], errors: list[str])
     body = require_mapping(packet.get("packet"), "ODP1 packet body", errors)
     require(body.get("odp_id") == "ODP-BOL-001", "ODP1 packet ODP id drifted", errors)
     require(
-        body.get("current_owner_answer_references") == [],
-        "ODP1 packet owner answer references must remain empty",
+        body.get("current_owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+        "ODP1 packet owner answer reference drifted",
         errors,
     )
     require(
@@ -475,6 +529,11 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
+            active_plan == EXPECTED_SCOPE_PURSUIT_PLAN,
+            "task queue active_plan must point to the Bologna scope-pursuit plan",
+            errors,
+        )
+        require(
             repo_relative_path(root, active_plan).is_file(),
             f"task queue active_plan file missing: {active_plan}",
             errors,
@@ -523,11 +582,12 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("scripts/run_bologna_odp1_owner_answer_packet_check.sh", "bologna_odp1_owner_answer_packet_check.py"),
         ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
         ("MANIFEST.md", "config/bologna_odp1_owner_answer_packet.yaml"),
-        ("plans/README.md", EXPECTED_EQ5_PLAN),
+        ("plans/README.md", EXPECTED_SCOPE_PURSUIT_PLAN),
         ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
-        ("docs/runbooks/bologna_odp1_owner_answer_packet.md", "does not record owner authority"),
+        ("docs/runbooks/bologna_odp1_owner_answer_packet.md", "review-only scope pursuit"),
         (EXPECTED_EQ5_PLAN, "## Decision log"),
+        (EXPECTED_SCOPE_PURSUIT_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)

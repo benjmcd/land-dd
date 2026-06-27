@@ -1,6 +1,6 @@
 schema_version: bologna_odp1_owner_answer_packet_v1
 operator_runbook: docs/runbooks/bologna_odp1_owner_answer_packet.md
-status: ready_for_external_owner_response
+status: review_only_scope_pursuit_recorded
 validation: scripts/run_bologna_odp1_owner_answer_packet_check.ps1
 
 authority:
@@ -12,7 +12,7 @@ authority:
   - state/PRODUCTION_AUTHORITY_PACKET.md
 
 approvals:
-  owner_answer_recorded: false
+  owner_answer_recorded: true
   pilot_scope_authority_recorded: false
   product_aoi_scope_authorized: false
   downstream_authority_updates_allowed: false
@@ -44,7 +44,8 @@ packet:
   source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
   source_response_gate: config/bologna_odp1_owner_response_gate.yaml
   source_pilot_scope_authority: config/bologna_pilot_scope_authority.yaml
-  current_owner_answer_references: []
+  current_owner_answer_references:
+    - odp-bol-001-scope-pursuit-2026-06-26
   current_authority_record_references: []
   owner_answer_template:
     owner_answer_id: OWNER_TO_PROVIDE
@@ -237,7 +238,7 @@ downstream_blocked_targets:
 submission_policy:
   owner_answer_submission_target: config/bologna_owner_answer_intake.yaml
   authority_record_submission_target: config/bologna_pilot_scope_authority.yaml
-  current_owner_answers_must_remain_empty: true
+  current_owner_answers_must_remain_empty: false
   current_authority_records_must_remain_empty: true
   downstream_updates_allowed_by_packet: false
   requires_later_recording_slice: true

@@ -45,7 +45,7 @@ def test_odp2_source_rights_response_gate_is_validate_only_and_blocked() -> None
         "docs/runbooks/bologna_odp2_source_rights_response_gate.md"
     )
     assert catalog["status"] == (
-        "blocked_until_odp_bol_001_and_missing_odp_bol_002_owner_answer"
+        "blocked_until_odp_bol_001_authority_and_missing_odp_bol_002_owner_answer"
     )
     assert catalog["validation"] == (
         "scripts/run_bologna_odp2_source_rights_response_gate_check.ps1"
@@ -61,9 +61,9 @@ def test_odp2_source_rights_response_gate_aligns_with_source_contracts() -> None
     gate = catalog["odp_bol_002_gate"]
 
     assert gate["odp_id"] == validator.ODP_ID
-    assert gate["status"] == "blocked_until_odp_bol_001"
+    assert gate["status"] == "blocked_until_odp_bol_001_authority"
     assert gate["prerequisite_odp_ids"] == [validator.PREREQUISITE_ODP_ID]
-    assert gate["prerequisite_status"] == "missing_owner_answer"
+    assert gate["prerequisite_status"] == "missing_pilot_scope_authority"
     assert gate["current_owner_answer_references"] == []
     assert gate["current_source_authority_record_references"] == []
     assert gate["current_source_rights_approval_references"] == []

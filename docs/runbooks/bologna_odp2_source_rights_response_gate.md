@@ -9,8 +9,8 @@ hosted/Level 10 authority.
 
 Use this gate only to check that a future owner response for `ODP-BOL-002` is complete
 enough to be recorded in a later authority slice. The current committed state must keep
-`ODP-BOL-001` missing, `current_owner_answer_references`,
-`current_source_authority_record_references`, and
+`ODP-BOL-001` pilot-scope authority missing after the review-only scope-pursuit answer,
+`current_owner_answer_references`, `current_source_authority_record_references`, and
 `current_source_rights_approval_references` empty, and every
 `downstream_updates_allowed` value false.
 

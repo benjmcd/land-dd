@@ -6,10 +6,11 @@ This runbook is validate-only. It does not record owner authority, select a Bolo
 AOI, approve sources, change source rights, capture fixtures, seed the database, create
 runtime/report artifacts, approve DS-017, or claim hosted/Level 10 authority.
 
-Use this gate only to check that the next owner response for `ODP-BOL-001` is complete
-enough to be recorded in a later authority slice. The current committed state must keep
-`current_owner_answer_references` and `current_authority_record_references` empty, and
-every `downstream_updates_allowed` value false.
+Use this gate only to check the owner response for `ODP-BOL-001`. The current committed
+state records review-only scope pursuit through
+`odp-bol-001-scope-pursuit-2026-06-26` in `current_owner_answer_references`, but keeps
+`current_authority_record_references` empty and every `downstream_updates_allowed`
+value false. This is not complete pilot-scope authority.
 
 Run:
 
@@ -34,6 +35,7 @@ The gate aligns the owner response with these required scope decisions from
 - `no_overclaim_review_owner`
 
 A future owner response may choose `approve_with_cited_authority`, `keep_blocked`,
-`approve_review_only`, or `exclude_or_defer`. None of those outcomes authorizes
-source approval, source-rights approval, recorded corpus work, fixture capture, DB
-mutation, report proof, hosted deployment, or Level 10 claims in this gate.
+`approve_review_only`, or `exclude_or_defer`. The current response is
+`approve_review_only`. None of those outcomes authorizes source approval, source-rights
+approval, recorded corpus work, fixture capture, DB mutation, report proof, hosted
+deployment, or Level 10 claims in this gate.

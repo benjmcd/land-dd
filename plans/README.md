@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-post-odp1-packet-routing.md`.
+Latest completed plan: `2026-06-26-bologna-scope-pursuit.md`.
 
-Current routing plan: `plans/2026-06-23-post-odp1-packet-routing.md`.
+Current routing plan: `plans/2026-06-26-bologna-scope-pursuit.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -317,6 +317,13 @@ external-authority stop condition: real cited owner authority for product/AOI/sc
 required before `ODP-BOL-002` source-rights work, recorded-source corpus work, fixture
 capture, DB seed, report proof, source registry promotion, hosted authority,
 qualification PASS, or Level 10 claims can proceed.
+
+`BOL-SCOPE-PURSUIT` records the 2026-06-26 owner directive to pursue Bologna scope as a
+single `approve_review_only` `ODP-BOL-001` owner answer. It does not record
+pilot-scope authority, select an AOI, approve sources or source rights, create a
+recorded-source corpus, capture fixtures, seed the DB, prove a report, approve DS-017,
+unfreeze qualification, or claim hosted/Level 10 authority. The next substantive
+Bologna step is a complete cited `ODP-BOL-001` pilot-scope authority record.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

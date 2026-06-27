@@ -18,6 +18,8 @@ EVIDENCE_SCHEMA_PATH = "schemas/evidence_schema.json"
 CLAIM_SCHEMA_PATH = "schemas/claim_schema.json"
 ODP_ID = "ODP-BOL-004"
 PREREQUISITE_ODP_IDS = ["ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003"]
+ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
+ODP1_STATUS = "review_only_scope_pursuit_answered"
 
 EXPECTED_APPROVALS = {
     "owner_answer_recorded": False,
@@ -224,8 +226,15 @@ def validate_owner_threads_still_blocked() -> None:
     threads = _owner_threads()
     for odp_id in (*PREREQUISITE_ODP_IDS, ODP_ID):
         thread = require_mapping(threads.get(odp_id), f"{odp_id} thread missing")
-        require(thread.get("status") == "missing_owner_answer", f"{odp_id} changed")
-        require(thread.get("owner_answer_references") == [], f"{odp_id} refs changed")
+        if odp_id == "ODP-BOL-001":
+            require(thread.get("status") == ODP1_STATUS, f"{odp_id} changed")
+            require(
+                thread.get("owner_answer_references") == [ODP1_OWNER_ANSWER_ID],
+                f"{odp_id} refs changed",
+            )
+        else:
+            require(thread.get("status") == "missing_owner_answer", f"{odp_id} changed")
+            require(thread.get("owner_answer_references") == [], f"{odp_id} refs changed")
         require(thread.get("downstream_updates_allowed") is False, f"{odp_id} unlocked")
     thread = threads[ODP_ID]
     require(
@@ -249,10 +258,13 @@ def validate_owner_threads_still_blocked() -> None:
         },
         "ODP4 owner-thread report proof fields drifted",
     )
-    require(
-        owner_answer_contract().get("current_owner_answers") == [],
-        "owner answers must remain empty",
-    )
+    owner_answers = owner_answer_contract().get("current_owner_answers")
+    require(isinstance(owner_answers, list) and len(owner_answers) == 1, "ODP1 answer missing")
+    if isinstance(owner_answers, list) and owner_answers:
+        answer = require_mapping(owner_answers[0], "ODP1 owner answer must map")
+        require(answer.get("owner_answer_id") == ODP1_OWNER_ANSWER_ID, "ODP1 answer id")
+        require(answer.get("answer_type") == "approve_review_only", "ODP1 answer type")
+        require(answer.get("downstream_unlocks_requested") == [], "ODP1 answer unlocks")
 
 
 def validate_existing_packets_still_blocked() -> None:
@@ -261,6 +273,10 @@ def validate_existing_packets_still_blocked() -> None:
     require(
         odp3_gate.get("status") == "blocked_until_odp_bol_001_and_odp_bol_002",
         "ODP3 status changed",
+    )
+    require(
+        odp3_gate.get("prerequisite_status") == "missing_required_authority",
+        "ODP3 prerequisite status changed",
     )
     require(odp3_gate.get("current_owner_answer_references") == [], "ODP3 refs changed")
     require(
@@ -293,7 +309,7 @@ def validate_gate(payload: dict[str, Any]) -> None:
         gate.get("prerequisite_odp_ids") == PREREQUISITE_ODP_IDS,
         "ODP4 prerequisite list drifted",
     )
-    require(gate.get("prerequisite_status") == "missing_owner_answers", "prereq status")
+    require(gate.get("prerequisite_status") == "missing_required_authority", "prereq status")
     require(gate.get("current_owner_answer_references") == [], "owner refs changed")
     require(
         gate.get("current_report_proof_authority_references") == [],

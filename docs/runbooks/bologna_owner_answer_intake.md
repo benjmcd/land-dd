@@ -5,11 +5,14 @@ needed before the prioritized Bologna recorded-source path can proceed. It maps
 `ODP-BOL-001` through `ODP-BOL-004` to the existing pilot-scope, source-authority,
 source-rights, recorded-corpus, evidence, and report-run contracts.
 
-This does not record owner authority, select a Bologna AOI, approve Italy/EU/local
-sources, change source rights, promote source registry rows, capture fixtures, create
-source-failure fixtures, run connectors, mutate the database, create runtime artifacts,
-create report artifacts, approve DS-017, claim legal review, claim hosted production
-readiness, or claim Level 10.
+This records one review-only owner answer,
+`odp-bol-001-scope-pursuit-2026-06-26`, for `ODP-BOL-001`. That answer records the
+owner directive to pursue Bologna scope, but it is not a complete pilot-scope authority
+record and does not select a Bologna AOI, approve Italy/EU/local sources, change source
+rights, promote source registry rows, capture fixtures, create source-failure fixtures,
+run connectors, mutate the database, create runtime artifacts, create report artifacts,
+approve DS-017, claim legal review, claim hosted production readiness, or claim Level
+10.
 
 ## Use
 
@@ -34,10 +37,11 @@ threads with the existing Bologna authority contracts:
 
 ## Owner Answer Contract
 
-`owner_answer_contract` defines the shape for future cited owner answers. The committed
-`current_owner_answers` list remains empty until external authority exists. A future
-answer record must name its `odp_id`, answer type, decision owner, decision date,
-authority reference, cited artifacts, caveats, and supersession links.
+`owner_answer_contract` defines the shape for cited owner answers. The committed
+`current_owner_answers` list contains the single review-only ODP-BOL-001 scope-pursuit
+answer. A later full authority answer still must name its `odp_id`, answer type,
+decision owner, decision date, authority reference, cited artifacts, caveats, and
+supersession links.
 
 The intake does not unlock downstream work by itself. Even a complete answer record
 must not request downstream unlocks here. Downstream changes still require the specific
@@ -46,6 +50,7 @@ rights, corpus, and report proof.
 
 ## Boundary
 
-Use this file to prepare owner answers, not to infer them. If evidence is missing, the
-correct outcome is to keep the affected decision thread blocked. The repo remains at
-`P0 = BLOCKED`; Bologna remains stopped until cited authority exists.
+Use this file to record owner answers, not to infer missing scope evidence from them.
+If authority evidence is missing, the affected downstream decision remains blocked. The
+repo remains at `P0 = BLOCKED`; Bologna source, corpus, fixture, DB, report, hosted,
+and Level 10 work remain stopped until complete cited authority exists.

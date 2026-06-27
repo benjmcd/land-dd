@@ -58,7 +58,7 @@ odp_bol_003_gate:
   prerequisite_odp_ids:
     - ODP-BOL-001
     - ODP-BOL-002
-  prerequisite_status: missing_owner_answers
+  prerequisite_status: missing_required_authority
   current_owner_answer_references: []
   current_corpus_authority_references: []
   current_recorded_corpus_references: []
