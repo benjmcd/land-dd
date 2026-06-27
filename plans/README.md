@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-27-bol-scope-auth.md`.
+Latest completed plan: `2026-06-27-odp2-owner-answer-packet.md`.
 
-Current routing plan: `plans/2026-06-27-bol-scope-auth.md`.
+Current routing plan: `plans/2026-06-27-odp2-owner-answer-packet.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -326,12 +326,23 @@ recorded-source corpus, capture fixtures, seed the DB, prove a report, approve D
 unfreeze qualification, or claim hosted/Level 10 authority. The next substantive
 Bologna step is a complete cited `ODP-BOL-001` pilot-scope authority record.
 
-`BOL-SCOPE-AUTH` adds `config/bol_scope_auth.yaml`, a validate-only readiness gate for
-the later cited ODP-BOL-001 authority-recording slice. It proves the current owner
-answer remains `approve_review_only`, requires a future
+`BOL-SCOPE-AUTH` (`plans/2026-06-27-bol-scope-auth.md`) adds
+`config/bol_scope_auth.yaml`, a validate-only readiness gate for the later cited
+ODP-BOL-001 authority-recording slice. It proves the current owner answer remains
+`approve_review_only`, requires a future
 `approve_with_cited_authority` answer before authority can be recorded, keeps
 `current_authority_records` empty, and forbids bundling source, corpus, fixture, DB,
 report, hosted, or Level 10 work.
+
+`BOL-ODP2-PACKET` (`plans/2026-06-27-odp2-owner-answer-packet.md`) adds
+`config/bologna_odp2_owner_answer_packet.yaml`, a validate-only owner-facing packet for
+the later ODP-BOL-002 source-authority/source-rights answer. It gives the owner a
+checked owner-answer template, source-authority record template, candidate evidence
+checklist, rights-decision checklist, allowed outcomes, and downstream blocker list
+aligned to the ODP2 response gate, source-authority intake, and source-rights matrix.
+It keeps ODP-BOL-001 authority missing, all ODP2/source-rights references empty, and no
+source approval, source-rights mutation, corpus, fixture, DB seed, report proof,
+hosted authority, Level 10 claim, or qualification PASS is introduced.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and

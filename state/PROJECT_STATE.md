@@ -1,24 +1,25 @@
 # Project State
 
-## Current checkpoint (2026-06-27 Bologna scope-authority readiness gate)
+## Current checkpoint (2026-06-27 ODP-BOL-002 owner-answer packet)
 
 This branch starts from live `origin/main`
-`d52755b9f701efc679fcb3b1dcb41267537458fb`, after the scope-pursuit owner-answer
+`16566ea88ba8e4930ef476c48f558c5c076bb2ee`, after the scope-authority readiness
 checkpoint. The 2026-06-26 owner directive, `pursue Bologna scope`, is recorded
 as one review-only `ODP-BOL-001` owner answer. That answer expresses scope-pursuit
 intent only; it does not record pilot-scope authority, select an AOI, approve sources
 or source rights, authorize a recorded corpus, capture fixtures, seed the DB, prove a
 report, approve DS-017, unfreeze qualification, or claim hosted/Level 10 authority.
-This branch adds a validate-only scope-authority readiness gate for the later cited
-ODP-BOL-001 authority-recording slice. It proves the current review-only answer cannot
-be treated as cited authority and keeps no-source/no-corpus/no-report boundaries in
-force. The validate-only response-gate scaffold for `ODP-BOL-001` through
-`ODP-BOL-004` remains complete, and no DB-backed Bologna report proof work may proceed
-until cited owner authority exists for product/AOI/scope, source rights, recorded
-corpus, and report proof in that order.
+This branch adds a validate-only owner-facing ODP-BOL-002 source-authority/source-rights
+packet. The packet gives the owner a checked source-rights response template, candidate
+evidence checklist, rights-decision checklist, and source-authority record template
+aligned to the existing ODP-BOL-002 gate, source-authority intake, and source-rights
+matrix. It does not record ODP-BOL-002 authority, approve source rights, or bypass the
+missing ODP-BOL-001 cited pilot-scope authority prerequisite. No DB-backed Bologna
+report proof work may proceed until cited owner authority exists for product/AOI/scope,
+source rights, recorded corpus, and report proof in that order.
 
 - **Current implementation plan**:
-  `plans/2026-06-27-bol-scope-auth.md`.
+  `plans/2026-06-27-odp2-owner-answer-packet.md`.
 - **Latest repo-local test hardening inherited from HCV-4**:
   `scripts/qualification_status_check.py` must keep P0 `BLOCKED` when targets and
   candidate identity are locally resolved but domain profiles, source bindings,
@@ -63,6 +64,13 @@ corpus, and report proof in that order.
   as the missing prerequisite, keeps owner-answer/source-authority/source-rights
   references empty, and keeps every outcome from unlocking source registry promotion,
   corpus, fixture, DB, report, hosted, or Level 10 work.
+- **Current ODP-BOL-002 owner-answer packet boundary**:
+  `config/bologna_odp2_owner_answer_packet.yaml` is validate-only. It gives the owner
+  a checked source-rights response template, source-authority record template,
+  candidate-review checklist, rights-decision checklist, outcome policy, and downstream
+  blocker list. It keeps ODP-BOL-001 authority missing, `current_owner_answer_references`,
+  `current_source_authority_record_references`, `current_source_rights_approval_references`,
+  and `current_source_authority_records` empty, and every downstream update disabled.
 - **Current ODP-BOL-003 recorded-source corpus response boundary**:
   `config/bologna_odp3_corpus_response_gate.yaml` is validate-only. It targets only the
   recorded-source corpus owner answer, keeps `ODP-BOL-001` authority and `ODP-BOL-002`
@@ -104,7 +112,8 @@ corpus, and report proof in that order.
   as a narrow owner-answer update: it records the owner directive to pursue Bologna
   scope as review-only, without creating pilot-scope authority or unlocking downstream
   work. `BOL-SCOPE-AUTH` is done as a validate-only scope-authority readiness gate for
-  the later cited-authority recording slice.
+  the later cited-authority recording slice. `BOL-ODP2-PACKET` is done as a validate-only
+  owner-answer packet for the later ODP-BOL-002 source-authority/source-rights response.
   `BSA-001` remains blocked until product/AOI/source-review authority is cited in
   `config/bologna_pilot_scope_authority.yaml`,
   `config/bologna_source_authority_intake.yaml`, and
@@ -127,10 +136,11 @@ corpus, and report proof in that order.
   `ODP-BOL-001` now has one review-only answer, but
   `config/bologna_pilot_scope_authority.yaml` still has no current authority record.
   `config/bol_scope_auth.yaml` now proves that the review-only answer cannot satisfy
-  the future cited-authority recording requirement;
-  `ODP-BOL-002`, `ODP-BOL-003`, and `ODP-BOL-004` remain missing. This branch
-  introduces no Bologna authority record, AOI selection, source-rights approval beyond
-  DS-002, recorded corpus, fixture, source-failure fixture, DB seed, DB report run,
+  the future cited-authority recording requirement. `config/bologna_odp2_owner_answer_packet.yaml`
+  now makes the later source-rights owner decision executable without recording it.
+  `ODP-BOL-002`, `ODP-BOL-003`, and `ODP-BOL-004` remain missing. This branch introduces
+  no Bologna authority record, AOI selection, source-rights approval beyond DS-002,
+  recorded corpus, fixture, source-failure fixture, DB seed, DB report run,
   runtime/report artifact, API surface, or source registry promotion.
 - **Immediate next pursuit**: obtain or record complete cited owner authority for
   `ODP-BOL-001` product/AOI/scope first, using `config/bol_scope_auth.yaml` to keep the

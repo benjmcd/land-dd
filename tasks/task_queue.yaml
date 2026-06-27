@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-27-bol-scope-auth.md
+active_plan: plans/2026-06-27-odp2-owner-answer-packet.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -85,7 +85,9 @@ routing_note: >
   2026-06-26 owner directive to pursue Bologna scope as an ODP-BOL-001
   `approve_review_only` owner answer. BOL-SCOPE-AUTH adds a validate-only readiness
   gate for a future cited ODP-BOL-001 authority-recording slice while preserving empty
-  authority records. Bologna implementation remains stopped while BSA-001 remains
+  authority records. BOL-ODP2-PACKET adds a validate-only owner-facing packet for the
+  later ODP-BOL-002 source-authority/source-rights answer while preserving missing
+  ODP-BOL-001 authority and empty source-rights references. Bologna implementation remains stopped while BSA-001 remains
   blocked until complete explicit product/AOI/source-review authority is cited in the
   pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
@@ -2607,6 +2609,24 @@ tasks:
       - config/bologna_pilot_scope_authority.yaml current_authority_records remains empty
       - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain separate blocked authority steps
       - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+
+  - id: BOL-ODP2-PACKET
+    title: Bologna ODP-BOL-002 owner-answer packet
+    status: done
+    depends_on: [BOL-SCOPE-AUTH, BOL-ODP2-GATE]
+    lane: coordinator
+    spec: plans/2026-06-27-odp2-owner-answer-packet.md
+    notes: >
+      Add a validate-only owner-answer packet for ODP-BOL-002 source authority and
+      rights. The packet gives the owner a machine-checkable source-rights response and
+      source-authority record template while keeping ODP-BOL-001 authority missing,
+      current ODP-BOL-002 owner answers empty, source-authority records empty,
+      source-rights approval references empty, downstream updates disabled, and
+      source/corpus/report work blocked.
+    acceptance:
+      - config/bologna_odp2_owner_answer_packet.yaml aligns to the owner-answer intake, ODP2 response gate, source-authority contract, and source-rights matrix
+      - scripts/bologna_odp2_owner_answer_packet_check.py fails closed if required candidates, rights decisions, templates, outcomes, or downstream blockers drift
+      - No owner answer, source authority, source-rights approval, source registry promotion, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
 
   # --- Completed ---
   - id: T000
