@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-27 ODP-BOL-002 owner-answer packet
+
+- Started clean worktree `worktrees/bol-rights` on `codex/bol-rights` from live
+  `origin/main@16566ea88ba8e4930ef476c48f558c5c076bb2ee`, leaving the dirty root
+  checkout untouched.
+- Baseline `bologna_source_rights_check.py` and
+  `bologna_odp2_source_rights_response_gate_check.py` passed before edits.
+- Added `config/bologna_odp2_owner_answer_packet.yaml`, a validate-only owner-facing
+  packet for the later ODP-BOL-002 source-authority/source-rights answer, plus checker,
+  wrappers, runbook, and focused artifact tests.
+- Preserved the authority boundary: ODP-BOL-001 cited pilot-scope authority remains
+  missing, ODP-BOL-002 owner-answer references remain empty, source-authority records
+  remain empty, source-rights approval references remain empty, and no source approval,
+  source-rights change, corpus, fixture, DB seed, report proof, hosted authority,
+  Level 10 claim, or qualification PASS was introduced.
+- Updated manifest, qualification crosswalks, task/project/plan/backlog routing, and
+  backlog/readiness tests so the new packet is governed as an intentional authority
+  blocker surface.
+- Focused packet/Bologna/backlog/readiness/qualification checks passed, focused ruff
+  and mypy passed, and full `.\scripts\verify.ps1` passed. DB smoke was skipped by
+  default.
+
 ## 2026-06-27 Bologna scope-authority readiness gate
 
 - Started clean worktree `worktrees/bol-scope-auth` on `codex/bol-scope-auth` from

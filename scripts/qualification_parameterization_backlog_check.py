@@ -19,12 +19,14 @@ except ImportError as exc:
 EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
+EXPECTED_ODP2_PACKET_PLAN = "plans/2026-06-27-odp2-owner-answer-packet.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
 OWNER_INTAKE_PATH = "config/bologna_owner_answer_intake.yaml"
 ODP1_OWNER_ANSWER_PACKET_PATH = "config/bologna_odp1_owner_answer_packet.yaml"
 BOL_SCOPE_AUTH_PATH = "config/bol_scope_auth.yaml"
+ODP2_OWNER_ANSWER_PACKET_PATH = "config/bologna_odp2_owner_answer_packet.yaml"
 QUALIFICATION_STATUS_PATH = "state/EMPIRICAL_QUALIFICATION_STATUS.yaml"
 QUALIFICATION_TARGETS_PATH = "config/qualification/qualification_targets.yaml"
 SOURCE_PROFILE_PATH = "config/qualification/source_profiles/source_quality_profile.ds-002.yaml"
@@ -54,6 +56,7 @@ EXPECTED_DONE_TASKS = (
     "BOL-POST-ODP1-PACKET",
     "BOL-SCOPE-PURSUIT",
     "BOL-SCOPE-AUTH",
+    "BOL-ODP2-PACKET",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -192,6 +195,8 @@ def validate_backlog(backlog: str, errors: list[str]) -> None:
             "`config/bologna_odp1_owner_answer_packet.yaml`",
             "ODP-BOL-001 scope-authority readiness:",
             "`config/bol_scope_auth.yaml`",
+            "ODP-BOL-002 owner-answer packet:",
+            "`config/bologna_odp2_owner_answer_packet.yaml`",
             "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
             "## Owner Decision Blockers",
             "Active gates | 12 | BLOCKED (external/owner authority)",
@@ -441,6 +446,85 @@ def validate_odp1_owner_answer_packet(packet: dict[str, Any], errors: list[str])
     )
 
 
+def validate_odp2_owner_answer_packet(packet: dict[str, Any], errors: list[str]) -> None:
+    require(
+        packet.get("status")
+        == "blocked_until_odp_bol_001_authority_and_missing_odp_bol_002_owner_answer",
+        "ODP-BOL-002 owner-answer packet status drifted",
+        errors,
+    )
+    approvals = require_mapping(packet.get("approvals"), "ODP2 packet approvals", errors)
+    for key in (
+        "owner_answer_recorded",
+        "source_authority_recorded",
+        "source_rights_approved",
+        "downstream_authority_updates_allowed",
+    ):
+        require(approvals.get(key) is False, f"ODP2 packet approvals.{key} must be false", errors)
+
+    limits = require_mapping(packet.get("limits"), "ODP2 packet limits", errors)
+    require(limits.get("validate_only_answer_packet") is True, "ODP2 packet must be validate-only", errors)
+    for key in (
+        "records_owner_answer",
+        "records_source_authority",
+        "approves_sources",
+        "changes_source_rights",
+        "promotes_source_registry",
+        "creates_recorded_fixtures",
+        "creates_source_failure_fixtures",
+        "mutates_database",
+        "creates_report_artifacts",
+        "changes_report_semantics",
+        "claims_level_10",
+    ):
+        require(limits.get(key) is False, f"ODP2 packet limits.{key} must be false", errors)
+
+    body = require_mapping(packet.get("packet"), "ODP2 packet body", errors)
+    require(body.get("odp_id") == "ODP-BOL-002", "ODP2 packet ODP id drifted", errors)
+    require(
+        body.get("current_owner_answer_references") == [],
+        "ODP2 packet owner answer references must remain empty",
+        errors,
+    )
+    require(
+        body.get("current_source_authority_record_references") == [],
+        "ODP2 packet source authority references must remain empty",
+        errors,
+    )
+    require(
+        body.get("current_source_rights_approval_references") == [],
+        "ODP2 packet source-rights references must remain empty",
+        errors,
+    )
+    owner_template = require_mapping(body.get("owner_answer_template"), "ODP2 owner template", errors)
+    require(
+        owner_template.get("downstream_unlocks_requested") == [],
+        "ODP2 owner answer template must not request downstream unlocks",
+        errors,
+    )
+    authority_template = require_mapping(
+        body.get("source_authority_record_template"),
+        "ODP2 source authority template",
+        errors,
+    )
+    require(
+        authority_template.get("downstream_unlocks_requested") == [],
+        "ODP2 source authority template must not request downstream unlocks",
+        errors,
+    )
+    policy = require_mapping(packet.get("submission_policy"), "ODP2 packet submission policy", errors)
+    require(
+        policy.get("requires_odp_bol_001_cited_authority_first") is True,
+        "ODP2 packet must preserve the ODP-BOL-001 prerequisite",
+        errors,
+    )
+    require(
+        policy.get("downstream_updates_allowed_by_packet") is False,
+        "ODP2 packet must not allow downstream updates",
+        errors,
+    )
+
+
 def validate_qualification_status(status: dict[str, Any], errors: list[str]) -> None:
     candidate = require_mapping(status.get("candidate"), "qualification status candidate", errors)
     for key, value in candidate.items():
@@ -534,8 +618,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_BOL_SCOPE_AUTH_PLAN,
-            "task queue active_plan must point to the Bologna scope-authority readiness plan",
+            active_plan == EXPECTED_ODP2_PACKET_PLAN,
+            "task queue active_plan must point to the ODP-BOL-002 owner-answer packet plan",
             errors,
         )
         require(
@@ -587,19 +671,26 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("scripts/run_bologna_odp1_owner_answer_packet_check.sh", "bologna_odp1_owner_answer_packet_check.py"),
         ("scripts/run_bol_scope_auth_check.ps1", "bol_scope_auth_check.py"),
         ("scripts/run_bol_scope_auth_check.sh", "bol_scope_auth_check.py"),
+        ("scripts/run_bologna_odp2_owner_answer_packet_check.ps1", "bologna_odp2_owner_answer_packet_check.py"),
+        ("scripts/run_bologna_odp2_owner_answer_packet_check.sh", "bologna_odp2_owner_answer_packet_check.py"),
         ("MANIFEST.md", "scripts/qualification_parameterization_backlog_check.py"),
         ("MANIFEST.md", "config/bologna_odp1_owner_answer_packet.yaml"),
         ("MANIFEST.md", "config/bol_scope_auth.yaml"),
+        ("MANIFEST.md", "config/bologna_odp2_owner_answer_packet.yaml"),
         ("plans/README.md", EXPECTED_SCOPE_PURSUIT_PLAN),
         ("plans/README.md", EXPECTED_BOL_SCOPE_AUTH_PLAN),
+        ("plans/README.md", EXPECTED_ODP2_PACKET_PLAN),
         ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
+        (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
         ("docs/runbooks/bologna_odp1_owner_answer_packet.md", "review-only scope pursuit"),
         ("docs/runbooks/bol_scope_auth.md", "approve_with_cited_authority"),
+        ("docs/runbooks/bologna_odp2_owner_answer_packet.md", "missing_pilot_scope_authority"),
         (EXPECTED_EQ5_PLAN, "## Decision log"),
         (EXPECTED_SCOPE_PURSUIT_PLAN, "## Decision log"),
         (EXPECTED_BOL_SCOPE_AUTH_PLAN, "## Decision log"),
+        (EXPECTED_ODP2_PACKET_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -613,6 +704,7 @@ def validate(root: Path) -> list[str]:
     validate_owner_decisions(read_text(root, OWNER_DECISIONS_PATH), errors)
     validate_owner_intake(load_yaml(root, OWNER_INTAKE_PATH), errors)
     validate_odp1_owner_answer_packet(load_yaml(root, ODP1_OWNER_ANSWER_PACKET_PATH), errors)
+    validate_odp2_owner_answer_packet(load_yaml(root, ODP2_OWNER_ANSWER_PACKET_PATH), errors)
     validate_qualification_status(load_yaml(root, QUALIFICATION_STATUS_PATH), errors)
     validate_targets(load_yaml(root, QUALIFICATION_TARGETS_PATH), errors)
     validate_source_profile(load_yaml(root, SOURCE_PROFILE_PATH), errors)

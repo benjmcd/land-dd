@@ -2,6 +2,65 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-27 ODP-BOL-002 Owner-Answer Packet
+
+**Scope:** Add a validate-only ODP-BOL-002 owner-answer packet for later Bologna
+source-authority/source-rights approval. This gives the owner a checked response
+template, source-authority record template, candidate evidence checklist, and
+rights-decision checklist, but does not record authority, approve sources, change
+source rights, create a corpus, capture fixtures, seed the DB, prove a report, approve
+DS-017, change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp2_owner_answer_packet_check.py
+.\scripts\run_bologna_odp2_owner_answer_packet_check.ps1
+py -3.12 scripts\bologna_odp2_owner_answer_packet_check.py --qualification-criteria-json
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_qualification_readiness_crosswalk.py::test_readiness_crosswalk_doc_lists_surfaces_gaps_and_orphans backend\tests\test_readiness_core_artifacts.py::test_project_readiness_app_model_loads_current_control_plane -q
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_odp2_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp2_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline source-rights and ODP-BOL-002 response-gate checks passed before edits.
+- New packet checker, PowerShell wrapper, and `--qualification-criteria-json`
+  advertisement passed.
+- Backlog checker initially failed because `plans/README.md` no longer contained the
+  exact previous `plans/2026-06-27-bol-scope-auth.md` fragment. The plan index was
+  corrected, and the backlog checker then passed.
+- Focused packet/backlog/crosswalk/readiness tests passed (`18 passed`), and the
+  combined Bologna/backlog/readiness artifact suite passed (`64 passed`).
+- Structural qualification validation passed; qualification status derived
+  `BLOCKED=1 NOT_RUN=20`; readiness matrix and qualification selftest passed.
+- Change-impact passed as advisory for 18 touched paths, reporting
+  `qualification_parameterization_backlog` and `bologna_odp2_owner_answer_packet`
+  crosswalk surfaces.
+- Focused ruff and mypy passed for touched scripts and tests.
+- Full `.\scripts\verify.ps1` passed in 543.9 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is an owner-answer packet only. Bologna remains blocked until
+complete cited `ODP-BOL-001` pilot-scope authority exists, followed by `ODP-BOL-002`
+source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004` DB-backed report proof
+authority. P0 remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
 ## 2026-06-27 Bologna Scope-Authority Readiness Gate
 
 **Scope:** Add a validate-only `bol_scope_auth` gate for the later cited

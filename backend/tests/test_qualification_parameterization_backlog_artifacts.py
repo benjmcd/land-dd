@@ -19,6 +19,7 @@ EXPECTED_ODP1_PACKET_PLAN = "plans/2026-06-23-odp1-owner-answer-packet.md"
 EXPECTED_POST_ODP1_PACKET_PLAN = "plans/2026-06-23-post-odp1-packet-routing.md"
 EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
+EXPECTED_ODP2_PACKET_PLAN = "plans/2026-06-27-odp2-owner-answer-packet.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
@@ -28,17 +29,23 @@ BACKLOG_CHECK_INPUTS = (
     EXPECTED_POST_ODP1_PACKET_PLAN,
     EXPECTED_SCOPE_PURSUIT_PLAN,
     EXPECTED_BOL_SCOPE_AUTH_PLAN,
+    EXPECTED_ODP2_PACKET_PLAN,
     "plans/README.md",
     "config/bologna_odp1_owner_answer_packet.yaml",
     "config/bol_scope_auth.yaml",
+    "config/bologna_odp2_owner_answer_packet.yaml",
     "docs/runbooks/bologna_odp1_owner_answer_packet.md",
     "docs/runbooks/bol_scope_auth.md",
+    "docs/runbooks/bologna_odp2_owner_answer_packet.md",
     "scripts/bologna_odp1_owner_answer_packet_check.py",
     "scripts/bol_scope_auth_check.py",
+    "scripts/bologna_odp2_owner_answer_packet_check.py",
     "scripts/run_bologna_odp1_owner_answer_packet_check.ps1",
     "scripts/run_bologna_odp1_owner_answer_packet_check.sh",
     "scripts/run_bol_scope_auth_check.ps1",
     "scripts/run_bol_scope_auth_check.sh",
+    "scripts/run_bologna_odp2_owner_answer_packet_check.ps1",
+    "scripts/run_bologna_odp2_owner_answer_packet_check.sh",
     "scripts/qualification_parameterization_backlog_check.py",
     "scripts/run_qualification_parameterization_backlog_check.ps1",
     "scripts/run_qualification_parameterization_backlog_check.sh",
@@ -103,6 +110,8 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
         "`config/bologna_odp1_owner_answer_packet.yaml`",
         "ODP-BOL-001 scope-authority readiness:",
         "`config/bol_scope_auth.yaml`",
+        "ODP-BOL-002 owner-answer packet:",
+        "`config/bologna_odp2_owner_answer_packet.yaml`",
         "## Owner Decision Blockers",
     ):
         assert phrase in backlog
@@ -252,6 +261,8 @@ def test_owner_decision_packet_records_consequences_without_authority() -> None:
     assert "Bologna pilot-scope authority missing" in backlog
     assert "ODP-BOL-002 source-rights response gate:" in backlog
     assert "`config/bologna_odp2_source_rights_response_gate.yaml`" in backlog
+    assert "ODP-BOL-002 owner-answer packet:" in backlog
+    assert "`config/bologna_odp2_owner_answer_packet.yaml`" in backlog
     assert "Bologna source-authority/source-rights answer blocked" in backlog
     assert "ODP-BOL-003 recorded-source corpus response gate:" in backlog
     assert "`config/bologna_odp3_corpus_response_gate.yaml`" in backlog
@@ -265,7 +276,7 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_BOL_SCOPE_AUTH_PLAN
+    assert task_queue["active_plan"] == EXPECTED_ODP2_PACKET_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
     assert active_ids == []
     assert tasks["REC-001"]["status"] == "done"
@@ -389,6 +400,14 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-SCOPE-PURSUIT"]["status"] == "done"
     assert tasks["BOL-SCOPE-PURSUIT"]["spec"] == EXPECTED_SCOPE_PURSUIT_PLAN
     assert "approve_review_only" in tasks["BOL-SCOPE-PURSUIT"]["notes"]
+    assert tasks["BOL-SCOPE-AUTH"]["depends_on"] == ["BOL-SCOPE-PURSUIT"]
+    assert tasks["BOL-SCOPE-AUTH"]["status"] == "done"
+    assert tasks["BOL-SCOPE-AUTH"]["spec"] == EXPECTED_BOL_SCOPE_AUTH_PLAN
+    assert "approve_with_cited_authority" in tasks["BOL-SCOPE-AUTH"]["notes"]
+    assert tasks["BOL-ODP2-PACKET"]["depends_on"] == ["BOL-SCOPE-AUTH", "BOL-ODP2-GATE"]
+    assert tasks["BOL-ODP2-PACKET"]["status"] == "done"
+    assert tasks["BOL-ODP2-PACKET"]["spec"] == EXPECTED_ODP2_PACKET_PLAN
+    assert "source-rights response" in tasks["BOL-ODP2-PACKET"]["notes"]
     assert tasks["BSA-001"]["status"] == "blocked"
 
 
