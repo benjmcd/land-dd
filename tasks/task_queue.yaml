@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-23-odp1-owner-answer-packet.md
+active_plan: plans/2026-06-23-post-odp1-packet-routing.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -77,12 +77,15 @@ routing_note: >
   recorded-source corpus response gate merged through PR #156 at
   `9d06cdeb79999c235b66c1589e972bfae5a55976`, BOL-ODP4-GATE DB-backed report proof
   response gate merged through PR #157, BOL-POST-ODP4-AUTH merged through PR #158,
-  EQ-5 qualification parameterization backlog checking merged through PR #159, and
-  EQ-R residual reconciliation closeout merged through PR #160 at
-  `b5ed59e7143773f306ab216865df0133ca7b0451`. Current local lane:
-  BOL-ODP1-PACKET ODP-BOL-001 owner-answer packet. Bologna implementation is stopped
-  while BSA-001 remains blocked until explicit product/AOI/source-review authority is
-  cited in the pilot-scope/source-authority/source-rights packets. Do not
+  EQ-5 qualification parameterization backlog checking merged through PR #159, EQ-R
+  residual reconciliation closeout merged through PR #160 at
+  `b5ed59e7143773f306ab216865df0133ca7b0451`, and BOL-ODP1-PACKET
+  ODP-BOL-001 owner-answer packet merged through PR #161 at
+  `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`. Current local lane:
+  BOL-POST-ODP1-PACKET routing sync after the ODP-BOL-001 packet. Bologna
+  implementation is stopped while BSA-001 remains blocked until explicit
+  product/AOI/source-review authority is cited in the
+  pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2543,6 +2546,23 @@ tasks:
       - config/bologna_odp1_owner_answer_packet.yaml aligns to the owner-answer intake, ODP1 response gate, and pilot-scope authority contract
       - scripts/bologna_odp1_owner_answer_packet_check.py fails closed if required decisions, allowed outcomes, templates, or downstream blockers drift
       - No owner answer, AOI selection, source approval, source-rights change, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
+
+  - id: BOL-POST-ODP1-PACKET
+    title: Post-ODP1 packet authority routing
+    status: done
+    depends_on: [BOL-ODP1-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-23-post-odp1-packet-routing.md
+    notes: >
+      Route live state after PR #161 so the completed ODP-BOL-001 owner-answer packet
+      is not treated as current branch work. The next substantive Bologna step remains
+      real cited owner authority for ODP-BOL-001 product/AOI/scope before source
+      rights, corpus, fixture, DB, or report proof work.
+    acceptance:
+      - BOL-ODP1-PACKET is complete and merged through PR #161
+      - ODP-BOL-001 remains missing_owner_answer with empty owner and authority references
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
   # --- Completed ---
   - id: T000

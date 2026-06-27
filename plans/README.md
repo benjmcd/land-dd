@@ -2,9 +2,9 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-23-odp1-owner-answer-packet.md`.
+Latest completed plan: `2026-06-23-post-odp1-packet-routing.md`.
 
-Current routing plan: `plans/2026-06-23-odp1-owner-answer-packet.md`.
+Current routing plan: `plans/2026-06-23-post-odp1-packet-routing.md`.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only
@@ -310,6 +310,13 @@ pilot-scope authority packet. It keeps owner answers, authority records, AOI/sou
 approval, source-rights changes, recorded corpus work, fixture capture, DB seed,
 report proof, downstream updates, qualification status, hosted authority, and Level 10
 claims blocked.
+
+`BOL-POST-ODP1-PACKET` is the current routing-only sync after PR #161. It records that
+the ODP-BOL-001 owner-answer packet is merged and complete, while preserving the same
+external-authority stop condition: real cited owner authority for product/AOI/scope is
+required before `ODP-BOL-002` source-rights work, recorded-source corpus work, fixture
+capture, DB seed, report proof, source registry promotion, hosted authority,
+qualification PASS, or Level 10 claims can proceed.
 
 Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 `state/reconciliation-slices.md`, `state/r023-review.md`, and
