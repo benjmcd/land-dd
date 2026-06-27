@@ -1,0 +1,151 @@
+schema_version: bol_scope_auth_v1
+operator_runbook: docs/runbooks/bol_scope_auth.md
+status: blocked_review_only_owner_answer
+validation: scripts/run_bol_scope_auth_check.ps1
+
+authority:
+  - state/owner-decision-packet.md
+  - config/bologna_owner_answer_intake.yaml
+  - config/bologna_odp1_owner_response_gate.yaml
+  - config/bologna_odp1_owner_answer_packet.yaml
+  - config/bologna_pilot_scope_authority.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+
+approvals:
+  owner_answer_is_cited_authority: false
+  pilot_scope_authority_record_ready: false
+  product_aoi_scope_authorized: false
+  source_authority_updates_allowed: false
+  source_rights_updates_allowed: false
+  recorded_corpus_allowed: false
+  db_report_proof_allowed: false
+
+limits:
+  validate_only_promotion_readiness: true
+  records_owner_answer: false
+  records_pilot_scope_authority: false
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  creates_report_artifacts: false
+  changes_report_semantics: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_level_10: false
+
+promotion_readiness:
+  odp_id: ODP-BOL-001
+  title: Bologna product and AOI authority promotion readiness
+  sequence: 1
+  readiness_state: blocked_current_answer_review_only
+  current_owner_answer_references:
+    - odp-bol-001-scope-pursuit-2026-06-26
+  current_authority_record_references: []
+  current_owner_answer_type: approve_review_only
+  required_next_owner_answer_type: approve_with_cited_authority
+  owner_answer_submission_target: config/bologna_owner_answer_intake.yaml
+  authority_record_submission_target: config/bologna_pilot_scope_authority.yaml
+  required_owner_answer_fields:
+    - owner_answer_id
+    - odp_id
+    - answer_type
+    - decision_owner
+    - decision_date
+    - authority_reference
+    - answer_summary
+    - cited_artifacts
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_owner_answer_ids
+  required_authority_record_fields:
+    - authority_record_id
+    - authority_type
+    - authority_reference
+    - decision_owner
+    - decision_date
+    - effective_date
+    - scope_decision_ids
+    - decision_summary
+    - evidence_summary
+    - cited_artifacts
+    - downstream_unlocks_requested
+    - caveats
+    - stop_conditions
+    - supersedes_authority_record_ids
+  required_scope_decisions:
+    - product_authorizes_bologna_pilot_reference
+    - one_aoi_geometry_or_named_boundary
+    - intended_operator_and_use_case
+    - pilot_non_goals_and_exclusions
+    - stop_conditions_and_reversion_plan
+    - jurisdiction_boundary_review
+    - evidence_only_or_rulepack_scope
+    - ds017_treatment_for_pilot
+    - candidate_source_selection_policy
+    - fixture_capture_boundary
+    - report_runtime_boundary
+    - no_overclaim_review_owner
+  future_authority_record_requirements:
+    coverage_policy: all_required_scope_decisions
+    downstream_unlocks_requested_must_be_empty: true
+    cited_artifacts_required: true
+    caveats_required: true
+    stop_conditions_required: true
+    supersedes_ids_may_be_empty: true
+
+eligible_when:
+  - owner answer has answer_type approve_with_cited_authority
+  - owner answer cites external owner authority, not repo-local inference
+  - pilot-scope authority record covers every required scope decision
+  - authority record cites artifacts, caveats, and stop conditions
+  - authority record requests no downstream unlocks
+  - source, source-rights, corpus, fixture, DB, report, hosted, and Level 10 work are not bundled
+
+allowed_future_authority_targets:
+  - config/bologna_owner_answer_intake.yaml
+  - config/bologna_pilot_scope_authority.yaml
+  - config/bol_scope_auth.yaml
+
+forbidden_bundled_targets:
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - db/migrations
+  - db/seeds
+  - backend/app/api
+  - backend/app/reports
+  - backend/app/connectors
+
+downstream_after_valid_scope_authority:
+  - id: ODP-BOL-002
+    status: still_requires_separate_source_authority_and_rights
+    update_allowed_by_this_gate: false
+  - id: ODP-BOL-003
+    status: still_requires_recorded_source_corpus_authority
+    update_allowed_by_this_gate: false
+  - id: ODP-BOL-004
+    status: still_requires_db_report_proof_authority
+    update_allowed_by_this_gate: false
+
+no_overclaim_controls:
+  no_authority_by_readiness_gate: true
+  no_aoi_selection_by_readiness_gate: true
+  no_source_approval_by_readiness_gate: true
+  no_source_rights_change_by_readiness_gate: true
+  no_fixture_capture_by_readiness_gate: true
+  no_report_runtime_use_by_readiness_gate: true
+  no_db_seed_by_readiness_gate: true
+  no_legal_buildability_title_or_value_claim: true
+  no_level_10_or_hosted_claim: true

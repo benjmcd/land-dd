@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-26-bologna-scope-pursuit.md"
+        == "plans/2026-06-27-bol-scope-auth.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -87,6 +87,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-ODP1-PACKET" in readiness.checkpoint.completed_task_ids
     assert "BOL-POST-ODP1-PACKET" in readiness.checkpoint.completed_task_ids
     assert "BOL-SCOPE-PURSUIT" in readiness.checkpoint.completed_task_ids
+    assert "BOL-SCOPE-AUTH" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
