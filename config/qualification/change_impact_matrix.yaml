@@ -308,6 +308,9 @@ change_classes:
     - config/bologna_*.yaml
     - docs/runbooks/bologna_*.md
     - docs/source-reviews/bologna-*.md
+    - scripts/bologna_*_check.py
+    - scripts/bologna_owner_answer_evaluator.py
+    - scripts/bol_scope_auth_check.py
     - backend/tests/**/*bologna*.py
   CANDIDATE_SEARCH_OR_RANKING:
     review:

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bologna_odp3_corpus_response_gate.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_odp3_corpus_response_gate.md"
@@ -332,6 +341,51 @@ def validate_gate(payload: dict[str, Any]) -> None:
     )
     for phrase in ("ODP-BOL-004", "fixture", "DB", "Level 10"):
         require(any(phrase in str(item) for item in blockers), f"missing blocker {phrase}")
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    corpus_manifest: Mapping[str, Any],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    gate = require_mapping(payload.get("odp_bol_003_gate"), "ODP-BOL-003 gate missing")
+    decision_coverage = (
+        corpus_manifest.get("corpus_decision_ids", [])
+        if isinstance(corpus_manifest, Mapping)
+        else []
+    )
+    required_decisions = require_non_empty_list(
+        gate.get("required_corpus_decisions"),
+        "corpus decisions missing",
+    )
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=ODP_ID,
+        required_fields=require_non_empty_list(
+            gate.get("required_owner_answer_fields"),
+            "owner fields missing",
+        ),
+        allowed_answer_types=EXPECTED_ANSWER_TYPES,
+        required_prerequisites=require_non_empty_list(
+            gate.get("prerequisite_odp_ids"),
+            "ODP3 prerequisite list missing",
+        ),
+        satisfied_prerequisites=satisfied_prerequisites,
+        required_decisions=required_decisions,
+        decision_coverage=decision_coverage,
+        companion_records=[corpus_manifest],
+        companion_required_fields=require_non_empty_list(
+            gate.get("required_manifest_fields"),
+            "manifest fields missing",
+        ),
+        companion_label="recorded_corpus_manifest",
+        still_blocked_after_acceptance=require_non_empty_list(
+            gate.get("still_blocked_after_valid_response"),
+            "post-response blockers missing",
+        ),
+    )
 
 
 def validate_candidate_corpus_requirements(payload: dict[str, Any]) -> None:

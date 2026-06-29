@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bologna_odp4_db_report_proof_response_gate.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_odp4_db_report_proof_response_gate.md"
@@ -355,6 +364,40 @@ def validate_gate(payload: dict[str, Any]) -> None:
     )
     for phrase in ("recording", "DB", "report", "Level 10"):
         require(any(phrase in str(item) for item in blockers), f"missing blocker {phrase}")
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    report_proof_record: Mapping[str, Any],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    gate = require_mapping(payload.get("odp_bol_004_gate"), "ODP-BOL-004 gate missing")
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=ODP_ID,
+        required_fields=require_non_empty_list(
+            gate.get("required_owner_answer_fields"),
+            "owner fields missing",
+        ),
+        allowed_answer_types=EXPECTED_ANSWER_TYPES,
+        required_prerequisites=require_non_empty_list(
+            gate.get("prerequisite_odp_ids"),
+            "ODP4 prerequisite list missing",
+        ),
+        satisfied_prerequisites=satisfied_prerequisites,
+        companion_records=[report_proof_record],
+        companion_required_fields=require_non_empty_list(
+            gate.get("required_report_proof_fields"),
+            "report proof fields missing",
+        ),
+        companion_label="report_proof_record",
+        still_blocked_after_acceptance=require_non_empty_list(
+            gate.get("still_blocked_after_valid_response"),
+            "post-response blockers missing",
+        ),
+    )
 
 
 def validate_report_proof_requirements(payload: dict[str, Any]) -> None:

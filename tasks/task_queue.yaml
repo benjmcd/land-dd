@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-27-odp2-owner-answer-packet.md
+active_plan: plans/2026-06-28-odgav-owner-answer-evaluation.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -87,9 +87,11 @@ routing_note: >
   gate for a future cited ODP-BOL-001 authority-recording slice while preserving empty
   authority records. BOL-ODP2-PACKET adds a validate-only owner-facing packet for the
   later ODP-BOL-002 source-authority/source-rights answer while preserving missing
-  ODP-BOL-001 authority and empty source-rights references. Bologna implementation remains stopped while BSA-001 remains
-  blocked until complete explicit product/AOI/source-review authority is cited in the
-  pilot-scope/source-authority/source-rights packets. Do not
+  ODP-BOL-001 authority and empty source-rights references. ODGAV-1 is the active
+  owner-independent validation pass for side-effect-free synthetic Bologna
+  owner-answer evaluation plus worktree reconciliation. Bologna implementation remains
+  stopped while BSA-001 remains blocked until complete explicit product/AOI/source-review
+  authority is cited in the pilot-scope/source-authority/source-rights packets. Do not
   create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
   authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
   implementation, fixture capture, production traffic proof, qualification PASS,
@@ -2627,6 +2629,25 @@ tasks:
       - config/bologna_odp2_owner_answer_packet.yaml aligns to the owner-answer intake, ODP2 response gate, source-authority contract, and source-rights matrix
       - scripts/bologna_odp2_owner_answer_packet_check.py fails closed if required candidates, rights decisions, templates, outcomes, or downstream blockers drift
       - No owner answer, source authority, source-rights approval, source registry promotion, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
+
+  - id: ODGAV-1
+    title: Bologna owner-answer gate evaluation and worktree reconciliation
+    status: active
+    depends_on: [BOL-ODP2-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-28-odgav-owner-answer-evaluation.md
+    notes: >
+      Add side-effect-free synthetic owner-answer evaluators for the owner-answer
+      intake, bol_scope_auth, and ODP-BOL-001 through ODP-BOL-004 response gates.
+      Classify all unmerged branch worktrees in
+      state/worktree-reconciliation-2026-06-28.md. This records no real authority,
+      keeps P0 blocked, and retires no worktree unless live evidence proves it clean,
+      merged, superseded, non-excluded, and safe after archive-tagging.
+    acceptance:
+      - Complete synthetic approve_with_cited_authority answers are accepted in memory for intake, bol_scope_auth, and ODP-BOL-001 through ODP-BOL-004 gates
+      - Malformed, partial, dependency-violating, and downstream-unlock-requesting answers fail closed
+      - Committed owner answers, authority records, source-rights approvals, corpus references, report proof references, and P0 status remain blocked
+      - All 47 unmerged branch worktrees are classified and no unsafe worktree removal is performed
 
   # --- Completed ---
   - id: T000

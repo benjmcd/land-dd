@@ -266,11 +266,280 @@ def assert_result(
     print(f"PASS: {name}")
 
 
+def load_script_module(source_root: Path, script_name: str):
+    path = source_root / "scripts" / script_name
+    spec = importlib.util.spec_from_file_location(f"selftest_{script_name}", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load script: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def read_yaml(root: Path, path_text: str) -> dict[str, Any]:
+    data = yaml.safe_load((root / path_text).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError(f"Expected mapping: {path_text}")
+    return data
+
+
+def synthetic_owner_answer(odp_id: str) -> dict[str, Any]:
+    slug = odp_id.lower().replace("-", "_")
+    return {
+        "owner_answer_id": f"synthetic-{slug}",
+        "odp_id": odp_id,
+        "answer_type": "approve_with_cited_authority",
+        "decision_owner": "benjmcd",
+        "decision_date": "2026-06-28",
+        "authority_reference": f"external owner authority for {odp_id}",
+        "answer_summary": f"Synthetic complete cited-authority answer for {odp_id}.",
+        "cited_artifacts": [f"external cited artifact for {odp_id}"],
+        "caveats": [f"synthetic caveat for {odp_id}"],
+        "downstream_unlocks_requested": [],
+        "supersedes_owner_answer_ids": [],
+    }
+
+
+def synthetic_record(required_fields: list[str], **overrides: Any) -> dict[str, Any]:
+    list_fields = {
+        "cited_artifacts",
+        "caveats",
+        "stop_conditions",
+        "source_versions",
+        "retrieval_metadata",
+        "fixture_file_manifest",
+        "source_failure_fixture_manifest",
+        "field_allowlist",
+        "field_denylist",
+        "evidence_ledger_rows",
+        "claim_evidence_links",
+        "unknowns_list",
+        "caveats_list",
+        "artifact_manifest",
+        "source_lineage",
+    }
+    mapping_fields = {"evidence_slot_values", "storage_export_boundaries"}
+    record: dict[str, Any] = {}
+    for field in required_fields:
+        if field.endswith("_ids"):
+            record[field] = [f"synthetic-{field}"]
+        elif field in list_fields:
+            record[field] = [f"synthetic-{field}"]
+        elif field in mapping_fields:
+            record[field] = {"synthetic": f"synthetic-{field}"}
+        elif field == "downstream_unlocks_requested":
+            record[field] = []
+        else:
+            record[field] = f"synthetic-{field}"
+    record.update(overrides)
+    return record
+
+
+def assert_evaluation(
+    name: str,
+    result: Any,
+    should_accept: bool,
+    expected_text: str | None = None,
+) -> None:
+    if result.accepted != should_accept:
+        print(f"FAIL: {name}")
+        print(f"expected accepted={should_accept}, errors={result.errors}")
+        raise SystemExit(1)
+    if expected_text and not any(expected_text in error for error in result.errors):
+        print(f"FAIL: {name}")
+        print(f"missing expected text: {expected_text!r}")
+        print(result.errors)
+        raise SystemExit(1)
+    print(f"PASS: {name}")
+
+
+def run_bologna_owner_answer_gate_selftests(source: Path) -> None:
+    intake = load_script_module(source, "bologna_owner_answer_intake_check.py")
+    intake_payload = read_yaml(source, "config/bologna_owner_answer_intake.yaml")
+    intake_threads = {
+        thread["odp_id"]: thread for thread in intake_payload["bologna_decision_threads"]
+    }
+    assert_evaluation(
+        "owner-answer intake accepts complete ODP1 cited answer",
+        intake.evaluate_synthetic_owner_answer(
+            intake_payload,
+            synthetic_owner_answer("ODP-BOL-001"),
+            decision_coverage=intake_threads["ODP-BOL-001"]["required_decisions"],
+        ),
+        True,
+    )
+    malformed = synthetic_owner_answer("ODP-BOL-001")
+    malformed.pop("authority_reference")
+    assert_evaluation(
+        "owner-answer intake rejects malformed owner answer",
+        intake.evaluate_synthetic_owner_answer(intake_payload, malformed),
+        False,
+        "missing required fields",
+    )
+
+    scope = load_script_module(source, "bol_scope_auth_check.py")
+    scope_payload = read_yaml(source, "config/bol_scope_auth.yaml")
+    scope_readiness = scope_payload["promotion_readiness"]
+    scope_authority = synthetic_record(
+        scope_readiness["required_authority_record_fields"],
+        scope_decision_ids=scope_readiness["required_scope_decisions"],
+        downstream_unlocks_requested=[],
+        supersedes_authority_record_ids=[],
+    )
+    assert_evaluation(
+        "scope authority accepts complete cited ODP1 authority",
+        scope.evaluate_synthetic_owner_answer(
+            scope_payload,
+            synthetic_owner_answer("ODP-BOL-001"),
+            scope_authority,
+        ),
+        True,
+    )
+    review_only = synthetic_owner_answer("ODP-BOL-001")
+    review_only["answer_type"] = "approve_review_only"
+    assert_evaluation(
+        "scope authority rejects review-only owner answer",
+        scope.evaluate_synthetic_owner_answer(scope_payload, review_only, scope_authority),
+        False,
+        "answer_type must be approve_with_cited_authority",
+    )
+
+    odp1 = load_script_module(source, "bologna_odp1_owner_response_gate_check.py")
+    odp1_payload = read_yaml(source, "config/bologna_odp1_owner_response_gate.yaml")
+    odp1_gate = odp1_payload["odp_bol_001_gate"]
+    odp1_authority = synthetic_record(
+        odp1_gate["required_authority_record_fields"],
+        scope_decision_ids=odp1_gate["required_scope_decisions"],
+        downstream_unlocks_requested=[],
+        supersedes_authority_record_ids=[],
+    )
+    assert_evaluation(
+        "ODP1 gate accepts complete synthetic cited authority",
+        odp1.evaluate_synthetic_owner_answer(
+            odp1_payload,
+            synthetic_owner_answer("ODP-BOL-001"),
+            odp1_authority,
+        ),
+        True,
+    )
+    partial_odp1_authority = {
+        **odp1_authority,
+        "scope_decision_ids": odp1_gate["required_scope_decisions"][:-1],
+    }
+    assert_evaluation(
+        "ODP1 gate rejects partial scope-decision coverage",
+        odp1.evaluate_synthetic_owner_answer(
+            odp1_payload,
+            synthetic_owner_answer("ODP-BOL-001"),
+            partial_odp1_authority,
+        ),
+        False,
+        "missing required decisions",
+    )
+
+    odp2 = load_script_module(source, "bologna_odp2_source_rights_response_gate_check.py")
+    odp2_payload = read_yaml(source, "config/bologna_odp2_source_rights_response_gate.yaml")
+    odp2_gate = odp2_payload["odp_bol_002_gate"]
+    source_records = [
+        synthetic_record(
+            odp2_gate["required_source_authority_record_fields"],
+            candidate_id=candidate_id,
+            rights_decision_ids=odp2_gate["required_rights_decisions"],
+            scope_authority_record_ids=["synthetic-odp1-authority"],
+            downstream_unlocks_requested=[],
+            supersedes_source_authority_record_ids=[],
+        )
+        for candidate_id in odp2_gate["candidate_review_ids"]
+    ]
+    assert_evaluation(
+        "ODP2 gate accepts complete source-authority records",
+        odp2.evaluate_synthetic_owner_answer(
+            odp2_payload,
+            synthetic_owner_answer("ODP-BOL-002"),
+            source_records,
+            satisfied_prerequisites=["ODP-BOL-001"],
+        ),
+        True,
+    )
+    assert_evaluation(
+        "ODP2 gate rejects missing ODP1 prerequisite",
+        odp2.evaluate_synthetic_owner_answer(
+            odp2_payload,
+            synthetic_owner_answer("ODP-BOL-002"),
+            source_records,
+        ),
+        False,
+        "missing satisfied prerequisites",
+    )
+
+    odp3 = load_script_module(source, "bologna_odp3_corpus_response_gate_check.py")
+    odp3_payload = read_yaml(source, "config/bologna_odp3_corpus_response_gate.yaml")
+    odp3_gate = odp3_payload["odp_bol_003_gate"]
+    corpus_manifest = synthetic_record(
+        odp3_gate["required_manifest_fields"],
+        corpus_decision_ids=odp3_gate["required_corpus_decisions"],
+    )
+    assert_evaluation(
+        "ODP3 gate accepts complete corpus manifest",
+        odp3.evaluate_synthetic_owner_answer(
+            odp3_payload,
+            synthetic_owner_answer("ODP-BOL-003"),
+            corpus_manifest,
+            satisfied_prerequisites=["ODP-BOL-001", "ODP-BOL-002"],
+        ),
+        True,
+    )
+    partial_manifest = synthetic_record(
+        odp3_gate["required_manifest_fields"][:-1],
+        corpus_decision_ids=odp3_gate["required_corpus_decisions"],
+    )
+    assert_evaluation(
+        "ODP3 gate rejects partial corpus manifest",
+        odp3.evaluate_synthetic_owner_answer(
+            odp3_payload,
+            synthetic_owner_answer("ODP-BOL-003"),
+            partial_manifest,
+            satisfied_prerequisites=["ODP-BOL-001", "ODP-BOL-002"],
+        ),
+        False,
+        "missing required fields",
+    )
+
+    odp4 = load_script_module(source, "bologna_odp4_db_report_proof_response_gate_check.py")
+    odp4_payload = read_yaml(source, "config/bologna_odp4_db_report_proof_response_gate.yaml")
+    odp4_gate = odp4_payload["odp_bol_004_gate"]
+    report_proof = synthetic_record(odp4_gate["required_report_proof_fields"])
+    assert_evaluation(
+        "ODP4 gate accepts complete DB report proof record",
+        odp4.evaluate_synthetic_owner_answer(
+            odp4_payload,
+            synthetic_owner_answer("ODP-BOL-004"),
+            report_proof,
+            satisfied_prerequisites=["ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003"],
+        ),
+        True,
+    )
+    unlock_answer = synthetic_owner_answer("ODP-BOL-004")
+    unlock_answer["downstream_unlocks_requested"] = ["backend/app/api"]
+    assert_evaluation(
+        "ODP4 gate rejects downstream unlock requests",
+        odp4.evaluate_synthetic_owner_answer(
+            odp4_payload,
+            unlock_answer,
+            report_proof,
+            satisfied_prerequisites=["ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003"],
+        ),
+        False,
+        "must not request downstream unlocks",
+    )
+
+
 def main() -> int:
     source = Path(__file__).resolve().parent.parent
     validator = load_validator(source)
     status_checker = load_status_checker(source)
     change_impact_checker = load_change_impact_checker(source)
+    run_bologna_owner_answer_gate_selftests(source)
 
     with tempfile.TemporaryDirectory(prefix="qualification-validator-") as temp:
         temp_root = Path(temp)

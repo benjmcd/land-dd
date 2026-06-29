@@ -20,6 +20,7 @@ EXPECTED_EQ5_PLAN = "plans/2026-06-23-eq5-parameterization-backlog-check.md"
 EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
 EXPECTED_ODP2_PACKET_PLAN = "plans/2026-06-27-odp2-owner-answer-packet.md"
+EXPECTED_ODGAV_PLAN = "plans/2026-06-28-odgav-owner-answer-evaluation.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -618,8 +619,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_ODP2_PACKET_PLAN,
-            "task queue active_plan must point to the ODP-BOL-002 owner-answer packet plan",
+            active_plan == EXPECTED_ODGAV_PLAN,
+            "task queue active_plan must point to the ODGAV owner-answer evaluation plan",
             errors,
         )
         require(
@@ -637,7 +638,11 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         if isinstance(task, dict) and task.get("id")
     }
     active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
-    require(active_ids == [], f"task queue must have no active tasks, found {active_ids}", errors)
+    require(
+        active_ids == ["ODGAV-1"],
+        f"task queue must have only ODGAV-1 active, found {active_ids}",
+        errors,
+    )
 
     for task_id in EXPECTED_DONE_TASKS:
         task = by_id.get(task_id)
@@ -647,6 +652,19 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     eq5 = by_id.get("EQ-5") or {}
     require(eq5.get("depends_on") == ["BOL-POST-ODP4-AUTH"], "EQ-5 dependency drifted", errors)
     require(eq5.get("spec") == EXPECTED_EQ5_PLAN, "EQ-5 spec must point to the EQ-5 plan", errors)
+    odgav = by_id.get("ODGAV-1") or {}
+    require(odgav.get("depends_on") == ["BOL-ODP2-PACKET"], "ODGAV-1 dependency drifted", errors)
+    require(odgav.get("status") == "active", "ODGAV-1 must be active", errors)
+    require(
+        odgav.get("spec") == EXPECTED_ODGAV_PLAN,
+        "ODGAV-1 spec must point to the ODGAV owner-answer evaluation plan",
+        errors,
+    )
+    require(
+        "side-effect-free synthetic owner-answer evaluators" in str(odgav.get("notes") or ""),
+        "ODGAV-1 notes must preserve owner-independent synthetic evaluator scope",
+        errors,
+    )
 
     for task_id in EXPECTED_BLOCKED_TASKS:
         task = by_id.get(task_id)
@@ -677,10 +695,12 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("MANIFEST.md", "config/bologna_odp1_owner_answer_packet.yaml"),
         ("MANIFEST.md", "config/bol_scope_auth.yaml"),
         ("MANIFEST.md", "config/bologna_odp2_owner_answer_packet.yaml"),
+        ("MANIFEST.md", "scripts/bologna_owner_answer_evaluator.py"),
         ("plans/README.md", EXPECTED_SCOPE_PURSUIT_PLAN),
         ("plans/README.md", EXPECTED_BOL_SCOPE_AUTH_PLAN),
         ("plans/README.md", EXPECTED_ODP2_PACKET_PLAN),
-        ("state/PROJECT_STATE.md", "EQ-5 qualification parameterization backlog check"),
+        ("plans/README.md", EXPECTED_ODGAV_PLAN),
+        ("state/PROJECT_STATE.md", "ODGAV owner-answer evaluation"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
@@ -691,6 +711,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (EXPECTED_SCOPE_PURSUIT_PLAN, "## Decision log"),
         (EXPECTED_BOL_SCOPE_AUTH_PLAN, "## Decision log"),
         (EXPECTED_ODP2_PACKET_PLAN, "## Decision log"),
+        (EXPECTED_ODGAV_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -748,6 +769,7 @@ def main(argv: list[str] | None = None) -> int:
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
+                    "active_plan": EXPECTED_ODGAV_PLAN,
                 },
                 indent=2,
                 sort_keys=True,

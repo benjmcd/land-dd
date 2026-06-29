@@ -3,12 +3,21 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bol_scope_auth.yaml"
 RUNBOOK_PATH = "docs/runbooks/bol_scope_auth.md"
@@ -317,6 +326,64 @@ def validate_promotion_readiness(payload: dict[str, Any]) -> None:
         )
         == EXPECTED_FUTURE_REQUIREMENTS,
         "future authority requirements changed",
+    )
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    authority_record: Mapping[str, Any],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    readiness = require_mapping(
+        payload.get("promotion_readiness"),
+        "promotion readiness missing",
+    )
+    decision_coverage = (
+        authority_record.get("scope_decision_ids", [])
+        if isinstance(authority_record, Mapping)
+        else []
+    )
+    downstream = [
+        f"{row.get('id')}: {row.get('status')}"
+        for row in require_non_empty_list(
+            payload.get("downstream_after_valid_scope_authority"),
+            "downstream status missing",
+        )
+        if isinstance(row, dict)
+    ]
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=ODP_ID,
+        required_fields=require_non_empty_list(
+            readiness.get("required_owner_answer_fields"),
+            "owner fields missing",
+        ),
+        allowed_answer_types={"approve_with_cited_authority"},
+        required_answer_type=require_text(
+            readiness.get("required_next_owner_answer_type"),
+            "required next answer type missing",
+        ),
+        required_prerequisites=(),
+        satisfied_prerequisites=satisfied_prerequisites,
+        required_decisions=require_non_empty_list(
+            readiness.get("required_scope_decisions"),
+            "scope decisions missing",
+        ),
+        decision_coverage=decision_coverage,
+        companion_records=[authority_record],
+        companion_required_fields=require_non_empty_list(
+            readiness.get("required_authority_record_fields"),
+            "authority fields missing",
+        ),
+        companion_label="pilot_scope_authority_record",
+        companion_decision_field="scope_decision_ids",
+        companion_required_decisions=require_non_empty_list(
+            readiness.get("required_scope_decisions"),
+            "scope decisions missing",
+        ),
+        still_blocked_after_acceptance=downstream,
     )
 
 
