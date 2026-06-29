@@ -22,6 +22,7 @@ EXPECTED_AUTHORITY_TITLES = {
     "Billing And Cost Authority",
     "Alerting Authority",
     "Production Workload And Retention Authority",
+    "Bologna Recorded-Source Pilot Authority",
 }
 EXPECTED_EXTERNAL_AREAS = {
     "Hosted deployment",
@@ -107,6 +108,45 @@ def test_production_authority_parser_fails_closed_when_external_table_drifts() -
         parse_production_authority(_packet_text(), split)
 
 
+def test_production_authority_preserves_wrapped_open_blocker_text() -> None:
+    load_production_authority = _helper_attr("load_production_authority")
+
+    readiness = load_production_authority(REPO_ROOT)
+
+    # The Bologna and secret/RBAC blockers wrap onto indented continuation lines
+    # in the packet; the parser must fold them so operator-facing text is whole.
+    bologna = next(
+        (blocker for blocker in readiness.open_blockers if blocker.startswith("Bologna has no")),
+        None,
+    )
+    assert bologna is not None
+    assert "DB-backed pilot proof" in bologna  # tail of a three-line wrapped bullet
+    assert any(
+        "hosted log retention remain blocked" in blocker
+        for blocker in readiness.open_blockers
+    )
+
+
+def test_production_authority_fails_closed_on_unlisted_authority_section(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if production_authority_module is None:
+        pytest.skip("app.production_authority helper is not implemented yet")
+    parse_production_authority = _helper_attr("parse_production_authority")
+    authority_error = _helper_attr("ProductionAuthorityError")
+    # Drop Bologna from the expected set while the packet still declares it as an
+    # authority section; the coverage guard must fail closed, not silently omit it.
+    reduced = tuple(
+        title
+        for title in production_authority_module.EXPECTED_AUTHORITY_TITLES
+        if title != "Bologna Recorded-Source Pilot Authority"
+    )
+    monkeypatch.setattr(production_authority_module, "EXPECTED_AUTHORITY_TITLES", reduced)
+
+    with pytest.raises(authority_error, match="authority section coverage mismatch"):
+        parse_production_authority(_packet_text(), _split_text())
+
+
 def test_ui_production_authority_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -153,6 +193,7 @@ def test_ui_production_authority_route_renders_authority_requirements() -> None:
         "Billing And Cost Authority",
         "Alerting Authority",
         "Production Workload And Retention Authority",
+        "Bologna Recorded-Source Pilot Authority",
         "DS-017 has no vendor",
         "hosted platform",
         "secret manager",

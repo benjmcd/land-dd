@@ -320,6 +320,14 @@ def _assertions_from_payload(
             raise ExpansionReadinessError(
                 f"{item_id} assertion must provide exactly one of contains or regex"
             )
+        if isinstance(contains, str) and not contains.strip():
+            raise ExpansionReadinessError(
+                f"{item_id} assertion contains must be a non-empty string"
+            )
+        if isinstance(regex, str) and not regex.strip():
+            raise ExpansionReadinessError(
+                f"{item_id} assertion regex must be a non-empty string"
+            )
         text = _read_text(root, path_text)
         if isinstance(contains, str) and contains not in text:
             raise ExpansionReadinessError(f"{item_id} assertion missing text: {contains}")

@@ -13,7 +13,9 @@ EXPECTED_AUTHORITY_TITLES = (
     "Billing And Cost Authority",
     "Alerting Authority",
     "Production Workload And Retention Authority",
+    "Bologna Recorded-Source Pilot Authority",
 )
+AUTHORITY_SECTION_LABEL = "- External decisions required:"
 EXPECTED_EXTERNAL_AREAS = {
     "Hosted deployment",
     "Secret management",
@@ -96,6 +98,7 @@ def parse_production_authority(
     requirements = tuple(
         _parse_requirement(packet_text, title) for title in EXPECTED_AUTHORITY_TITLES
     )
+    _require_authority_section_coverage(packet_text)
     external_blockers = _parse_external_blockers(split_text)
     repo_local_candidates = _parse_repo_local_candidates(split_text)
     open_blockers = _top_level_bullets(_required_section(packet_text, "Open Blockers"))
@@ -180,6 +183,28 @@ def _fail_closed_rule(text: str) -> str:
     return paragraph
 
 
+def _require_authority_section_coverage(text: str) -> None:
+    declared = {
+        match.group("title").strip()
+        for match in re.finditer(r"^## (?P<title>.+?)\s*$", text, flags=re.MULTILINE)
+        if AUTHORITY_SECTION_LABEL in _section_body(text, match.end())
+    }
+    expected = set(EXPECTED_AUTHORITY_TITLES)
+    if declared != expected:
+        missing = sorted(expected - declared)
+        extra = sorted(declared - expected)
+        raise ProductionAuthorityError(
+            "authority section coverage mismatch: "
+            f"missing={', '.join(missing) or 'none'} extra={', '.join(extra) or 'none'}"
+        )
+
+
+def _section_body(text: str, start: int) -> str:
+    next_match = re.search(r"^##\s+", text[start:], flags=re.MULTILINE)
+    end = len(text) if next_match is None else start + next_match.start()
+    return text[start:end]
+
+
 def _required_section(text: str, heading: str) -> str:
     pattern = re.compile(rf"^## {re.escape(heading)}\s*$", re.MULTILINE)
     match = pattern.search(text)
@@ -224,11 +249,23 @@ def _nested_bullets(section: str, label: str) -> tuple[str, ...]:
 
 
 def _top_level_bullets(section: str) -> tuple[str, ...]:
-    items = [
-        _normalize_text(line.removeprefix("- "))
-        for line in section.splitlines()
-        if line.startswith("- ")
-    ]
+    items: list[str] = []
+    active: str | None = None
+    for line in section.splitlines():
+        if line.startswith("- "):
+            if active is not None:
+                items.append(_normalize_text(active))
+            active = line.removeprefix("- ")
+            continue
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if active is not None:
+            # Fold a wrapped continuation line into the current bullet so
+            # multi-line blockers are not truncated on the operator view.
+            active = f"{active} {stripped}"
+    if active is not None:
+        items.append(_normalize_text(active))
     return tuple(item for item in items if item)
 
 

@@ -96,6 +96,23 @@ def test_parser_rejects_stale_repo_evidence_assertion() -> None:
     pytest.fail("fixture catalog did not contain a repo_confirmed item")
 
 
+def test_parser_rejects_empty_repo_evidence_assertion() -> None:
+    catalog = deepcopy(_catalog())
+    for checklist in _checklists(catalog):
+        for item in _dry_run_items(checklist):
+            if item["status"] == "repo_confirmed":
+                assertions = cast(list[dict[str, str]], item["evidence_assertions"])
+                # An empty assertion string would make the later containment check
+                # vacuously pass, so the parser must reject it before reading.
+                assertions[0]["contains"] = ""
+                with pytest.raises(
+                    ExpansionReadinessError, match="contains must be a non-empty string"
+                ):
+                    parse_expansion_readiness(catalog, root=REPO_ROOT)
+                return
+    pytest.fail("fixture catalog did not contain a repo_confirmed item")
+
+
 def test_ui_expansion_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
