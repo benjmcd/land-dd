@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import sys
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bologna_owner_answer_intake.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_owner_answer_intake.md"
@@ -361,6 +370,65 @@ def validate_thread_common(thread: dict[str, Any]) -> str:
     ):
         require(isinstance(path_text, str), f"{odp_id} blocked targets must be strings")
     return odp_id
+
+
+def _thread_decision_requirements(thread: Mapping[str, Any]) -> list[Any]:
+    for key in (
+        "required_decisions",
+        "required_rights_decisions",
+        "required_corpus_decisions",
+        "required_report_proof_fields",
+    ):
+        values = thread.get(key)
+        if isinstance(values, list):
+            return values
+    return []
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+    decision_coverage: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    if not isinstance(owner_answer, Mapping):
+        return OwnerAnswerEvaluation(
+            accepted=False,
+            errors=("owner_answer must be a mapping",),
+            still_blocked=(),
+        )
+    odp_id = str(owner_answer.get("odp_id", ""))
+    raw_threads = payload.get("bologna_decision_threads")
+    if not isinstance(raw_threads, list):
+        return OwnerAnswerEvaluation(
+            accepted=False,
+            errors=("Bologna decision threads missing",),
+            still_blocked=(),
+        )
+    threads = {
+        thread.get("odp_id"): thread
+        for thread in raw_threads
+        if isinstance(thread, dict)
+    }
+    thread = threads.get(odp_id)
+    if not isinstance(thread, dict):
+        return OwnerAnswerEvaluation(
+            accepted=False,
+            errors=(f"unknown ODP thread: {odp_id}",),
+            still_blocked=(),
+        )
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=odp_id,
+        required_fields=EXPECTED_OWNER_ANSWER_FIELDS,
+        allowed_answer_types=EXPECTED_ANSWER_TYPES,
+        required_prerequisites=thread.get("prerequisite_odp_ids", []),
+        satisfied_prerequisites=satisfied_prerequisites,
+        required_decisions=_thread_decision_requirements(thread),
+        decision_coverage=decision_coverage,
+        still_blocked_after_acceptance=thread.get("downstream_blocked_targets", []),
+    )
 
 
 def validate_threads(payload: dict[str, Any]) -> None:

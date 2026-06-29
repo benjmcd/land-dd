@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bologna_odp1_owner_response_gate.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_odp1_owner_response_gate.md"
@@ -262,6 +271,52 @@ def validate_gate(payload: dict[str, Any]) -> None:
     )
     for phrase in ("ODP-BOL-002", "ODP-BOL-003", "ODP-BOL-004"):
         require(any(phrase in str(item) for item in blockers), f"missing blocker: {phrase}")
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    authority_record: Mapping[str, Any],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    gate = require_mapping(payload.get("odp_bol_001_gate"), "ODP-BOL-001 gate missing")
+    decision_coverage = (
+        authority_record.get("scope_decision_ids", [])
+        if isinstance(authority_record, Mapping)
+        else []
+    )
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=ODP_ID,
+        required_fields=require_non_empty_list(
+            gate.get("required_owner_answer_fields"),
+            "gate owner fields missing",
+        ),
+        allowed_answer_types=EXPECTED_ANSWER_TYPES,
+        required_prerequisites=gate.get("prerequisite_odp_ids", []),
+        satisfied_prerequisites=satisfied_prerequisites,
+        required_decisions=require_non_empty_list(
+            gate.get("required_scope_decisions"),
+            "gate scope decisions missing",
+        ),
+        decision_coverage=decision_coverage,
+        companion_records=[authority_record],
+        companion_required_fields=require_non_empty_list(
+            gate.get("required_authority_record_fields"),
+            "gate authority fields missing",
+        ),
+        companion_label="pilot_scope_authority_record",
+        companion_decision_field="scope_decision_ids",
+        companion_required_decisions=require_non_empty_list(
+            gate.get("required_scope_decisions"),
+            "gate scope decisions missing",
+        ),
+        still_blocked_after_acceptance=require_non_empty_list(
+            gate.get("still_blocked_after_valid_response"),
+            "post-response blockers missing",
+        ),
+    )
 
 
 def validate_decision_requirements(payload: dict[str, Any]) -> None:

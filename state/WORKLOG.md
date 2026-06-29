@@ -2,6 +2,38 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-06-28 ODGAV owner-answer gate evaluation
+
+- Started clean worktree `worktrees/odgav` on `codex/odgav` from live
+  `origin/main@8b24cffc1f253c9237bce78c85cd05b99631e7cf`, leaving the dirty root
+  checkout untouched except for its pre-existing inbox edit.
+- Reconciled the overwritten inbox handoff against live repo, GitHub, and Claude
+  transcript/workflow evidence. PR #166 was open on `claude/harvest-readiness` during
+  initial reconciliation, so its worktree and Claude-owned backend app/UI/OpenAPI
+  surface stayed out of scope.
+- Rebasing later incorporated live `origin/main@78b233da21c0802267c89ac129e20db0b271b5aa`
+  after PR #166 merged. The ODGAV diff still avoids backend app/UI/OpenAPI authority
+  surfaces.
+- Added `scripts/bologna_owner_answer_evaluator.py`, a pure in-memory evaluator for
+  future Bologna owner-answer records, prerequisite coverage, decision coverage,
+  companion record coverage, and no-downstream-unlock policy.
+- Added wrapper functions in the Bologna owner-answer intake, `bol_scope_auth`, and
+  ODP-BOL-001 through ODP-BOL-004 response-gate checkers. The wrappers accept complete
+  synthetic future answers in memory and reject malformed, partial, dependency-violating,
+  or downstream-unlock-requesting inputs without recording real authority.
+- Added canonical selftests and focused pytest coverage, including a non-mutation test
+  for representative synthetic owner-answer/source-authority inputs.
+- Recorded live worktree reconciliation in
+  `state/worktree-reconciliation-2026-06-28.md`: 50 total worktrees after creating
+  `worktrees/odgav`, 47 unmerged branch worktrees classified, and zero worktrees retired
+  because none met the clean, merged, superseded, non-excluded safe-retirement rule.
+- Preserved the authority boundary: committed owner answers, authority records,
+  source-rights approvals, recorded-corpus references, report-proof references, DB state,
+  backend app/API surfaces, DS-017, Level 10, and P0 status remain unchanged.
+- Focused checker, pytest, qualification, change-impact, ruff, and mypy gates passed.
+  Full `.\scripts\verify.ps1` passed on the rebased branch in 541.3 seconds. DB smoke
+  was skipped by default.
+
 ## 2026-06-27 ODP-BOL-002 owner-answer packet
 
 - Started clean worktree `worktrees/bol-rights` on `codex/bol-rights` from live

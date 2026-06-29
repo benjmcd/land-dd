@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Mapping, Sequence
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from bologna_owner_answer_evaluator import (  # noqa: E402
+    OwnerAnswerEvaluation,
+    evaluate_owner_answer,
+)
 
 CONFIG_PATH = "config/bologna_odp2_source_rights_response_gate.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_odp2_source_rights_response_gate.md"
@@ -373,6 +382,51 @@ def validate_gate(payload: dict[str, Any]) -> None:
     )
     for phrase in ("ODP-BOL-003", "ODP-BOL-004", "BSA-001"):
         require(any(phrase in str(item) for item in blockers), f"missing blocker {phrase}")
+
+
+def evaluate_synthetic_owner_answer(
+    payload: dict[str, Any],
+    owner_answer: Mapping[str, Any],
+    source_authority_records: Sequence[Mapping[str, Any]],
+    *,
+    satisfied_prerequisites: Iterable[str] = (),
+) -> OwnerAnswerEvaluation:
+    gate = require_mapping(payload.get("odp_bol_002_gate"), "ODP-BOL-002 gate missing")
+    required_rights = require_non_empty_list(
+        gate.get("required_rights_decisions"),
+        "rights decisions missing",
+    )
+    return evaluate_owner_answer(
+        owner_answer,
+        odp_id=ODP_ID,
+        required_fields=require_non_empty_list(
+            gate.get("required_owner_answer_fields"),
+            "owner fields missing",
+        ),
+        allowed_answer_types=EXPECTED_ANSWER_TYPES,
+        required_prerequisites=require_non_empty_list(
+            gate.get("prerequisite_odp_ids"),
+            "ODP2 prerequisite list missing",
+        ),
+        satisfied_prerequisites=satisfied_prerequisites,
+        companion_records=source_authority_records,
+        companion_required_fields=require_non_empty_list(
+            gate.get("required_source_authority_record_fields"),
+            "source authority fields missing",
+        ),
+        companion_label="source_authority_record",
+        companion_decision_field="rights_decision_ids",
+        companion_required_decisions=required_rights,
+        companion_id_field="candidate_id",
+        required_companion_ids=require_non_empty_list(
+            gate.get("candidate_review_ids"),
+            "candidate ids missing",
+        ),
+        still_blocked_after_acceptance=require_non_empty_list(
+            gate.get("still_blocked_after_valid_response"),
+            "post-response blockers missing",
+        ),
+    )
 
 
 def validate_candidate_review_requirements(payload: dict[str, Any]) -> None:

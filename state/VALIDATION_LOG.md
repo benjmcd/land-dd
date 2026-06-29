@@ -2,6 +2,72 @@
 
 Record commands, results, and residual risk.
 
+## 2026-06-28 ODGAV Owner-Answer Gate Evaluation
+
+**Scope:** Add side-effect-free synthetic Bologna owner-answer evaluation for the
+owner-answer intake, `bol_scope_auth`, and ODP-BOL-001 through ODP-BOL-004 response
+gates. This proves complete future owner answers can be accepted in memory and bad
+inputs rejected, while preserving empty committed authority records, missing source
+rights, missing recorded corpus authority, missing DB report-proof authority, DB state,
+backend app/API surfaces, hosted/Level 10 blockers, and `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bol_scope_auth_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_owner_answer_gate_evaluation.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_bologna_owner_answer_gate_evaluation.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check <touched scripts and focused tests>
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy <touched scripts and focused tests>
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Bologna owner-answer intake, `bol_scope_auth`, and ODP-BOL-001 through ODP-BOL-004
+  response-gate checkers passed.
+- Focused owner-answer evaluator pytest passed (`3 passed`), including complete
+  synthetic acceptance, malformed/dependency/downstream-unlock rejection, and
+  non-mutation coverage.
+- Focused backlog/readiness/evaluator pytest passed (`15 passed`).
+- Qualification parameterization backlog check passed and now permits only `ODGAV-1`
+  as the active task.
+- Readiness matrix check passed after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Qualification selftest passed in 188.1 seconds, including the new twelve Bologna
+  owner-answer evaluator accept/reject cases.
+- Structural qualification validation passed with target status `DRAFT` and expected
+  blocked-readiness notes.
+- Qualification status check passed after rerunning with the real Python executable:
+  `passed=36 not_run=2 unexpected_failed=0`, derived `BLOCKED=1 NOT_RUN=20`.
+- Change-impact passed as advisory for seven changed Bologna checker/helper paths with
+  no unmatched paths.
+- Focused ruff and focused mypy passed for touched scripts and tests.
+- Full `.\scripts\verify.ps1` passed on the rebased
+  `origin/main@78b233da21c0802267c89ac129e20db0b271b5aa` branch in 541.3 seconds:
+  workspace validation, qualification selftest, structural qualification validation,
+  qualification status, default change-impact, P0 auto-evidence, qualification
+  parameterization backlog, backend tests, backend ruff, and backend mypy all passed.
+  DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This pass proves only owner-independent synthetic evaluation and
+worktree classification. Bologna still needs real cited owner authority in order:
+ODP-BOL-001 product/AOI/scope authority, ODP-BOL-002 source authority/source rights,
+ODP-BOL-003 recorded-source corpus, and ODP-BOL-004 DB-backed report proof. No worktree
+was retired because no unmerged worktree met the full safe-retirement rule.
+
 ## 2026-06-27 ODP-BOL-002 Owner-Answer Packet
 
 **Scope:** Add a validate-only ODP-BOL-002 owner-answer packet for later Bologna
