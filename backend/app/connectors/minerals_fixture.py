@@ -23,7 +23,8 @@ class MineralsFixtureConnectorResult:
 class StaticMineralsFixtureConnector:
     """Fixture connector for the minerals domain (BLM MLRS / USGS MRDS proxy).
 
-    Mirrors StaticFloodFixtureConnector: reads a local JSON fixture of the shape
+    Mirrors StaticZoningFixtureConnector (a source-observation domain, not a
+    spatial one): reads a local JSON fixture of the shape
     ``{"retrieval_run": {...}, "evidence": [...]}`` and enforces the connector
     contract (domain match + status<->evidence-type consistency) so a malformed
     fixture fails closed instead of producing untrusted evidence.

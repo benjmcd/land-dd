@@ -178,14 +178,24 @@ def test_buncombe_minerals_active_claims_end_to_end() -> None:
     ]
     assert len(minerals_evidence) >= 1, "Expected at least one minerals evidence record"
 
-    claim_codes = {claim.claim_code for claim in report_run.claims} | {
-        claim.claim_code for claim in report_run.advisory_claims
-    }
-    assert "MINERALS_ACTIVE_CLAIMS_001" in claim_codes, (
-        f"MINERALS_ACTIVE_CLAIMS_001 missing; got {sorted(claim_codes)}"
-    )
+    active_claims = [
+        claim
+        for claim in (*report_run.claims, *report_run.advisory_claims)
+        if claim.claim_code == "MINERALS_ACTIVE_CLAIMS_001"
+    ]
+    assert active_claims, "MINERALS_ACTIVE_CLAIMS_001 missing from claims/advisory"
 
-    _assert_no_overclaim(build_rural_land_dossier(report_run))
+    # The claim must cite the ingested minerals evidence (real evidence->claim linkage).
+    minerals_evidence_ids = {rec.evidence_id for rec in minerals_evidence}
+    assert any(
+        eid in minerals_evidence_ids for eid in active_claims[0].evidence_ids
+    ), "MINERALS_ACTIVE_CLAIMS_001 must cite the ingested minerals evidence"
+
+    dossier = build_rural_land_dossier(report_run)
+    assert "2 active" in dossier.lower(), (
+        "Active mining-claim count from observed_value must surface in the dossier"
+    )
+    _assert_no_overclaim(dossier)
 
 
 def test_buncombe_minerals_source_unavailable_end_to_end() -> None:
@@ -215,11 +225,16 @@ def test_buncombe_minerals_source_unavailable_end_to_end() -> None:
         f"MINERALS_SOURCE_UNAVAILABLE missing; got {sorted(unknown_codes)}"
     )
 
+    # Negative: the active-claims finding must NOT appear on the source-failure path.
+    claim_codes = {claim.claim_code for claim in report_run.claims} | {
+        claim.claim_code for claim in report_run.advisory_claims
+    }
+    assert "MINERALS_ACTIVE_CLAIMS_001" not in claim_codes
+
     dossier = build_rural_land_dossier(report_run)
     _assert_no_overclaim(dossier)
-    dossier_lower = dossier.lower()
-    assert (
-        "not determined" in dossier_lower
-        or "not evaluated" in dossier_lower
-        or "could not be retrieved" in dossier_lower
-    ), "Source-failure minerals must surface as an explicit unknown/caveat, not a silent pass"
+    # Failure-specific (not boilerplate): the source-failure caveat must reach the dossier,
+    # distinguishing this path from a silent "no issue found".
+    assert "recorded as a source failure" in dossier.lower(), (
+        "Minerals source failure must surface its caveat in the dossier, not a silent pass"
+    )
