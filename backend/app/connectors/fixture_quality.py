@@ -85,6 +85,10 @@ _PARCEL_FIXTURE_DOMAIN = "parcels"
 _PARCEL_FIXTURE_CONNECTOR_NAME = "fixture_parcel_static"
 _PARCEL_FIXTURE_METHOD_PREFIX = "fixture_parcel_"
 
+_MINERALS_FIXTURE_DOMAIN = "minerals"
+_MINERALS_FIXTURE_CONNECTOR_NAME = "fixture_minerals_static"
+_MINERALS_FIXTURE_METHOD_PREFIX = "fixture_minerals_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -854,6 +858,19 @@ def evaluate_parcel_fixture_quality(
     )
 
 
+def evaluate_minerals_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_MINERALS_FIXTURE_CONNECTOR_NAME,
+        domain=_MINERALS_FIXTURE_DOMAIN,
+        method_prefix=_MINERALS_FIXTURE_METHOD_PREFIX,
+        label="minerals",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
@@ -861,6 +878,7 @@ __all__ = [
     "evaluate_access_fixture_quality",
     "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",

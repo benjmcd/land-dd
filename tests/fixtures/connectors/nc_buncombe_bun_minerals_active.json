@@ -1,0 +1,42 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_minerals_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_minerals_active",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c1c2c3c4-c1c2-4c3c-8c4c-c1c2c3c4c5c6",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "MINERALS_CLAIM_SCREEN",
+      "domain": "minerals",
+      "observation": "Fixture minerals screening: federal active mining claim records intersect the query area.",
+      "observed_value": {
+        "blm_active_mining_claim_count": 2,
+        "has_blm_active_mining_claim_context": true
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_minerals_overlay",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only minerals screening for Buncombe County. Federal mining claim records may lag and do not establish mineral title. Verify mineral rights through a title search and a title attorney.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}
