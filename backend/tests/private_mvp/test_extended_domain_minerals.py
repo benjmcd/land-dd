@@ -192,8 +192,10 @@ def test_buncombe_minerals_active_claims_end_to_end() -> None:
     ), "MINERALS_ACTIVE_CLAIMS_001 must cite the ingested minerals evidence"
 
     dossier = build_rural_land_dossier(report_run)
-    assert "2 active" in dossier.lower(), (
-        "Active mining-claim count from observed_value must surface in the dossier"
+    # Section 14 (Resource / Geologic Context) BLM row must render the active-claim
+    # count — this row is keyed on the BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT evidence code.
+    assert "2 active federal mining claim record" in dossier.lower(), (
+        "Active mining-claim count must surface in the dossier Resource/Geologic section"
     )
     _assert_no_overclaim(dossier)
 
@@ -233,8 +235,8 @@ def test_buncombe_minerals_source_unavailable_end_to_end() -> None:
 
     dossier = build_rural_land_dossier(report_run)
     _assert_no_overclaim(dossier)
-    # Failure-specific (not boilerplate): the source-failure caveat must reach the dossier,
-    # distinguishing this path from a silent "no issue found".
-    assert "recorded as a source failure" in dossier.lower(), (
-        "Minerals source failure must surface its caveat in the dossier, not a silent pass"
+    # Section 14 BLM row must show the source failure (keyed on BLM_MLRS_SOURCE_FAILURE),
+    # distinguishing this path from a silent "not evaluated" / "no issue found".
+    assert "blm mlrs data unavailable" in dossier.lower(), (
+        "Minerals source failure must surface in the dossier, not a silent pass"
     )

@@ -1,8 +1,8 @@
 # Plan: Extended-domain fixture ingestion — minerals end-to-end (US MVP)
 
 Date: 2026-06-29
-Branch: `claude/us-mvp-minerals-fixture` (off origin/main @ 66846f27)
-Owner-independent US-MVP advancement. Parallel Codex lane (qualification/Bologna) is isolated.
+Working branch: short-lived US-MVP feature branch off origin/main @ 66846f27.
+Owner-independent US-MVP advancement. The parallel qualification/Bologna lane is isolated.
 
 ## Objective
 Close the verified end-to-end seam: the "extended public" connectors (minerals/geology/water/
@@ -59,10 +59,10 @@ Rule-engine logic (`backend/app/claims_engine/rule_engine.py:340-347, 621-625, 2
 - The golden-AOI `manifest.yaml` — descriptive only; the test is self-contained. Not touched.
 - No live network, no new source approval (DS-008 USGS MRDS / DS-007 BLM already approved-with-restrictions, US-wide, public).
 
-## Isolation fence (parallel Codex lane)
-CLAUDE touches ONLY: `backend/app/connectors/minerals_fixture.py`, `backend/app/connectors/__init__.py`,
+## Isolation fence (parallel qualification/Bologna lane)
+This lane touches ONLY: `backend/app/connectors/minerals_fixture.py`, `backend/app/connectors/__init__.py`,
 `backend/tests/private_mvp/test_extended_domain_minerals.py`, the 2 new fixtures, and this plan.
-No `scripts/`, `config/`, `schemas/`, or canonical state files. Disjoint from Codex's qualification/Bologna set.
+No `scripts/`, `config/`, `schemas/`, or canonical state files. Disjoint from the qualification/Bologna lane's file set.
 
 ## Acceptance criteria
 - New connector + 2 fixtures + 2 end-to-end tests; both tests pass via `py -3.12` from `backend/`.

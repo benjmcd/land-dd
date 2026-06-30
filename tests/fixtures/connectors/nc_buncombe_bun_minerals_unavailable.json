@@ -17,7 +17,7 @@
       "evidence_id": "c2c3c4c5-c2c3-4c4c-8c5c-c2c3c4c5c6c7",
       "area_id": "44444444-4444-4444-8444-444444444444",
       "evidence_type": "source_failure",
-      "evidence_code": "MINERALS_SOURCE_FAILURE",
+      "evidence_code": "BLM_MLRS_SOURCE_FAILURE",
       "domain": "minerals",
       "observation": "Fixture minerals screening: BLM MLRS / USGS MRDS source could not be retrieved.",
       "observed_value": {

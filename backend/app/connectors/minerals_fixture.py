@@ -81,11 +81,21 @@ class StaticMineralsFixtureConnector:
                 )
 
         if retrieval_run.status == SourceRetrievalStatus.SUCCEEDED:
-            if not any(
-                not evidence.is_source_failure for evidence in evidence_inputs
-            ):
+            non_failure = [
+                evidence for evidence in evidence_inputs if not evidence.is_source_failure
+            ]
+            if not non_failure:
                 raise FixtureConnectorError(
                     "successful minerals fixture must emit non-failure evidence",
+                )
+            # Minerals is a source-observation domain: fail closed on any other
+            # non-failure evidence type before the workflow records the run.
+            if not all(
+                evidence.evidence_type == EvidenceType.SOURCE_OBSERVATION
+                for evidence in non_failure
+            ):
+                raise FixtureConnectorError(
+                    "successful minerals fixture non-failure evidence must be source observations",
                 )
             return
 

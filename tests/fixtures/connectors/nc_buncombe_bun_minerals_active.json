@@ -17,7 +17,7 @@
       "evidence_id": "c1c2c3c4-c1c2-4c3c-8c4c-c1c2c3c4c5c6",
       "area_id": "44444444-4444-4444-8444-444444444444",
       "evidence_type": "source_observation",
-      "evidence_code": "MINERALS_CLAIM_SCREEN",
+      "evidence_code": "BLM_MLRS_ACTIVE_MINING_CLAIM_CONTEXT",
       "domain": "minerals",
       "observation": "Fixture minerals screening: federal active mining claim records intersect the query area.",
       "observed_value": {
