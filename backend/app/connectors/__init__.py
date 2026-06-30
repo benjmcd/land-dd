@@ -145,6 +145,7 @@ from app.connectors.fixture_quality import (
     evaluate_access_fixture_quality,
     evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_minerals_fixture_quality,
     evaluate_parcel_fixture_quality,
     evaluate_soils_fixture_quality,
     evaluate_terrain_fixture_quality,
@@ -173,6 +174,10 @@ from app.connectors.live_jobs import (
     LiveConnectorJobRecord,
     LiveConnectorJobStoreProtocol,
     SqlAlchemyLiveConnectorJobStore,
+)
+from app.connectors.minerals_fixture import (
+    MineralsFixtureConnectorResult,
+    StaticMineralsFixtureConnector,
 )
 from app.connectors.nc_geologic_map import (
     NC_GEOLOGIC_MAP_CAVEAT,
@@ -506,6 +511,8 @@ __all__ = [
     "StaticLocalFileConnector",
     "StaticLocalFileConnectorError",
     "StaticLocalFileConnectorResult",
+    "MineralsFixtureConnectorResult",
+    "StaticMineralsFixtureConnector",
     "StaticParcelFixtureConnector",
     "StaticSoilsFixtureConnector",
     "StaticTerrainFixtureConnector",
@@ -590,6 +597,7 @@ __all__ = [
     "evaluate_access_fixture_quality",
     "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",
