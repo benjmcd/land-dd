@@ -3,20 +3,20 @@
 Active implementation plans live here. Keep them executable and narrow.
 
 Latest completed plan:
-`plans/2026-07-02-water-fixture.md`.
-
-Current routing plan:
 `plans/2026-07-02-geology-fixture.md`.
 
-`GEOLOGY-FIXTURE` is the active owner-independent US-MVP fixture-ingestion pass. It
-extends the landed minerals, broadband, environmental hazard, and water pattern to
-NCGS 1985 geologic map-unit context fixture evidence for the existing Buncombe golden
-AOI, covering map-units-present, no-map-units, and source-failure paths through
-evidence ingestion, advisory claim generation, and Section 14 dossier rendering. It
-does not run live NCGS calls, approve sources, change source rights, determine
-geologic hazards, determine geotechnical suitability, determine buildability, create
-hosted authority, touch schema/API/auth/UI surfaces, unfreeze qualification, claim
-Level 10 authority, or unblock P0.
+Current routing plan:
+`plans/2026-07-02-post-geology-routing.md`.
+
+`POST-GEOLOGY-ROUTING` is the active routing-only closeout after the geology fixture
+ingestion proof merged through PR #172. It records that the named owner-independent
+US-MVP extended-domain fixture-ingestion sequence is complete through minerals,
+broadband, environmental hazard, water, and NCGS 1985 geologic map-unit context
+fixtures, and routes remaining work back to authority-dependent milestones. It does
+not add another connector, run live calls, approve sources, change source rights,
+capture Bologna fixtures, seed the DB, prove a report, create hosted authority, touch
+schema/API/auth/UI surfaces, unfreeze qualification, claim Level 10 authority, approve
+DS-017, or unblock P0.
 
 `ODGAV-1` completed the owner-independent Bologna validation pass through PR #167
 under `plans/2026-06-28-odgav-owner-answer-evaluation.md`. The minerals
@@ -25,8 +25,11 @@ extended-domain fixture-ingestion pass under
 PR #168, the broadband extended-domain fixture-ingestion pass under
 `plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md` completed through
 PR #169, and the environmental hazard fixture-ingestion pass under
-`plans/2026-07-02-env-fixture.md` completed through PR #170. The water fixture
-ingestion pass under `plans/2026-07-02-water-fixture.md` completed through PR #171.
+`plans/2026-07-02-env-fixture.md` completed through PR #170, the water fixture
+ingestion pass under `plans/2026-07-02-water-fixture.md` completed through PR #171,
+and the geology fixture-ingestion pass under `plans/2026-07-02-geology-fixture.md`
+completed through PR #172. The post-geology routing closeout is tracked under
+`plans/2026-07-02-post-geology-routing.md`.
 ODGAV does not record
 real owner authority, approve sources, create a corpus, capture Bologna fixtures,
 mutate the DB, prove a Bologna report, unfreeze qualification, or unblock P0.

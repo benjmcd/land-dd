@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-07-02-geology-fixture.md
+active_plan: plans/2026-07-02-post-geology-routing.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -95,14 +95,17 @@ routing_note: >
   completed the FCC Broadband Data Collection fixture-ingestion proof through PR #169
   at `3b2bd1897f8227ca24cb7290d8026ff3b2757356`, and ENV-FIXTURE completed the EPA
   ECHO environmental hazard fixture-ingestion proof through PR #170 at
-  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, and WATER-FIXTURE completed the USGS
+  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, WATER-FIXTURE completed the USGS
   water monitoring fixture-ingestion proof through PR #171 at
-  `6e0d63260ae395730d2a33508059bd0873a88d50`. GEOLOGY-FIXTURE is the active
-  owner-independent US-MVP lane: extend the landed fixture-ingestion pattern to NCGS
-  1985 geologic map-unit context fixture evidence on the existing Buncombe golden AOI
-  without live NCGS calls, geologic-hazard determinations, geotechnical suitability
-  conclusions, buildability conclusions, source approval, source-rights change,
-  schema/API/auth/report semantic changes, hosted authority, qualification PASS, or
+  `6e0d63260ae395730d2a33508059bd0873a88d50`, and GEOLOGY-FIXTURE completed the NCGS
+  1985 geologic map-unit context fixture-ingestion proof through PR #172 at
+  `71b9c41611ac256eee6e1dd5126779c2472c5b2b`. POST-GEOLOGY-ROUTING is the active
+  routing-only closeout: record that the named owner-independent extended-domain
+  fixture-ingestion sequence is complete and route remaining work back to cited
+  authority-dependent milestones without adding another connector, running live calls,
+  approving sources, changing source rights, capturing Bologna fixtures, seeding the
+  DB, proving reports, changing schema/API/auth/report semantics, creating hosted
+  authority, unfreezing qualification, approving DS-017, unblocking P0, or claiming
   Level 10 authority. Bologna implementation
   remains stopped while BSA-001 remains
   blocked until complete explicit product/AOI/source-review authority is cited in the
@@ -2749,7 +2752,7 @@ tasks:
 
   - id: GEOLOGY-FIXTURE
     title: Extended-domain geology fixture-ingestion proof
-    status: active
+    status: done
     depends_on: [WATER-FIXTURE]
     lane: coordinator
     spec: plans/2026-07-02-geology-fixture.md
@@ -2769,6 +2772,28 @@ tasks:
       - No-map-units fixture keeps hazards and buildability explicitly not determined
       - Source-unavailable fixture produces NC_GEOLOGIC_MAP_SOURCE_FAILURE and does not become a no-hazard, no-constraint, or buildability conclusion
       - Section 14 renders geologic context without hazard, geotechnical, buildability, mineral-resource-value, legal, value, lending, insurance, investment, or safety overclaims
+
+  - id: POST-GEOLOGY-ROUTING
+    title: Post-geology routing closeout
+    status: active
+    depends_on: [GEOLOGY-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-post-geology-routing.md
+    notes: >
+      Routing-only closeout after PR #172. Record that the named owner-independent
+      extended-domain fixture-ingestion sequence is complete through minerals,
+      broadband, environmental hazard, water, and NCGS geology, then route remaining
+      work back to authority-dependent milestones. Do not add another connector, run
+      live calls, approve sources, change source rights, capture Bologna fixtures,
+      seed the DB, prove a report, alter schema/API/auth/report semantics, unfreeze
+      qualification, unblock P0, approve DS-017, create hosted authority, or claim
+      Level 10 authority.
+    acceptance:
+      - GEOLOGY-FIXTURE is recorded as done and is not active
+      - POST-GEOLOGY-ROUTING is the only active task and points to the post-geology routing plan
+      - Plans, project state, task queue, readiness tests, and backlog checker agree on post-geology routing
+      - BSA-001, ODP-BOL-002/003/004, DS-017, hosted, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by cited external authority requirements
+      - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
 
   # --- Completed ---
   - id: T000

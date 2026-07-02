@@ -2,6 +2,60 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Post-Geology Routing Closeout
+
+**Scope:** Close the owner-independent extended-domain fixture-ingestion routing after
+the geology fixture proof merged through PR #172. This records `GEOLOGY-FIXTURE` as
+done, makes `POST-GEOLOGY-ROUTING` the only active task, and preserves the remaining
+authority-dependent blockers. It does not add a connector, run live calls, approve
+sources, change source rights, capture Bologna fixtures, seed the DB, prove a report,
+change schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 -m ruff check backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused readiness and qualification backlog artifact tests passed (`12 passed`).
+- Qualification parameterization backlog check passed with
+  `POST-GEOLOGY-ROUTING` as the only active task and `P0 status: BLOCKED`.
+- Focused ruff and focused mypy passed for the changed checker and routing tests.
+- Source readiness passed with `sources=25 ready=16 blocked=9`; DS-017 remained
+  blocked and DS-015 remained ready.
+- First readiness matrix check failed because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was updated to cite the matrix and the
+  check then passed.
+- First qualification status check failed as a consequence of the readiness matrix
+  checker failure; after the matrix citation fix it passed with
+  `passed=36 not_run=2 unexpected_failed=0` and derived statuses
+  `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest-20260702T032310593Z.log`.
+
+**Residual risk:** This closeout proves only routing/control-plane synchronization
+after the named local fixture-ingestion proofs landed. It does not prove source rights,
+live source access, production connector behavior, Bologna product/AOI/source/corpus/
+report authority, hosted deployment, Level 10, DS-017, empirical qualification PASS,
+or P0 readiness. Additional fixture lanes such as DS-020 or DS-022 require a future
+explicit routing decision rather than inference from this closeout.
+
 ## 2026-07-02 Geology Fixture Ingestion
 
 **Scope:** Add an owner-independent NCGS 1985 geologic map-unit context

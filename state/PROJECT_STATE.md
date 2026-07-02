@@ -1,30 +1,29 @@
 # Project State
 
-## Current checkpoint (2026-07-02 Post-171 geology fixture routing)
+## Current checkpoint (2026-07-02 Post-172 post-geology routing)
 
 This branch starts from live `origin/main`
-`6e0d63260ae395730d2a33508059bd0873a88d50`, after the ODGAV owner-answer gate
+`71b9c41611ac256eee6e1dd5126779c2472c5b2b`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the first extended-domain minerals
 fixture-ingestion proof merged through PR #168, the broadband fixture-ingestion proof
 merged through PR #169, the environmental hazard fixture-ingestion proof merged through
-PR #170, and the water fixture-ingestion proof merged through PR #171. The active pass
-is owner-independent US-MVP fixture ingestion only: extend the landed
-minerals/broadband/env-hazard/water pattern to NC Geological Survey 1985 geologic
-map-unit context fixture evidence on the existing Buncombe golden AOI. It does not run
-live NCGS calls, approve sources, change source rights, determine geologic hazards,
-determine geotechnical suitability, determine buildability, seed or mutate the DB
-outside the in-memory/private-MVP test path, change schema/API/auth/report semantics,
-approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/Level
-10 authority, or change `P0 = BLOCKED`.
+PR #170, the water fixture-ingestion proof merged through PR #171, and the geology
+fixture-ingestion proof merged through PR #172. The active pass is routing-only:
+record that the named owner-independent US-MVP extended-domain fixture-ingestion
+sequence is complete and route remaining work back to cited authority-dependent
+milestones. It does not add another connector, run live calls, approve sources, change
+source rights, capture Bologna fixtures, seed the DB, prove a report, change
+schema/API/auth/report semantics, approve DS-017, unfreeze qualification, record
+Bologna authority, claim hosted/Level 10 authority, or change `P0 = BLOCKED`.
 
 - **Current implementation plan**:
-  `plans/2026-07-02-geology-fixture.md`.
+  `plans/2026-07-02-post-geology-routing.md`.
 - **Known boundaries to preserve**:
-  The geology fixture-ingestion pass is a repo-local, owner-independent utility proof.
-  It must not record real owner authority, source authority, source-rights approval,
-  geologic-hazard authority, geotechnical/buildability authority, Bologna
-  recorded-corpus authority, DB-backed Bologna report-proof authority, DS-017
-  approval, hosted authority, Level 10 authority, qualification PASS, or any
+  The post-geology closeout is a repo-local routing and control-plane sync. It must not
+  record real owner authority, source authority, source-rights approval,
+  geologic-hazard authority, geotechnical/buildability authority, Bologna recorded-
+  corpus authority, DB-backed Bologna report-proof authority, DS-017 approval, hosted
+  authority, Level 10 authority, qualification PASS, owner-decision unfreeze, or any
   source/corpus/report/runtime unblock from repo-local inference.
 - **Current ODGAV boundary**:
   `scripts/bologna_owner_answer_evaluator.py` remains a pure in-memory evaluator used
@@ -32,32 +31,31 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   proves that complete synthetic future answers can be evaluated and bad inputs fail
   closed; it does not write or imply real Bologna authority.
 - **Current extended-domain boundary**:
-  The minerals fixture-ingestion proof is complete through PR #168 and proves the
-  pattern for one extended domain, and the broadband fixture-ingestion proof is
-  complete through PR #169, and the environmental hazard fixture-ingestion proof is
-  complete through PR #170, and the water fixture-ingestion proof is complete through
-  PR #171. This branch extends that pattern to NCGS 1985 geologic map-unit context
-  with local geology fixtures, connector fail-closed tests, and private-MVP
-  map-units-present/no-map-units/source-failure tests on the existing Buncombe golden
-  AOI.
+  The minerals fixture-ingestion proof is complete through PR #168, the broadband
+  fixture-ingestion proof is complete through PR #169, the environmental hazard
+  fixture-ingestion proof is complete through PR #170, the water fixture-ingestion proof
+  is complete through PR #171, and the geology fixture-ingestion proof is complete
+  through PR #172. These owner-independent proofs cover selected US-MVP extended-domain
+  fixture ingestion through evidence, claim, and dossier surfaces only; they do not
+  approve sources, run production connectors, change source rights, or prove Bologna,
+  hosted, Level 10, DS-017, or qualification readiness.
 - **Current task state**:
-  Active task is GEOLOGY-FIXTURE. Completed task lineage retained from prior
+  Active task is POST-GEOLOGY-ROUTING. Completed task lineage retained from prior
   checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`,
   `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`,
   `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`, `HCV-2`, `HCV-3`,
   `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, `BOL-ODP-1`, `BOL-ODP1-GATE`,
   `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`, `BOL-POST-ODP4-AUTH`, `EQ-5`,
   `EQ-R`, `BOL-ODP1-PACKET`, `BOL-POST-ODP1-PACKET`, `BOL-SCOPE-PURSUIT`,
-  `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`, and
-  `BROADBAND-FIXTURE`, plus `ENV-FIXTURE` and `WATER-FIXTURE`. `BSA-001` remains
-  blocked until product/AOI and source-review authority is cited. `P0` remains
-  `BLOCKED`.
-- **Immediate next pursuit**: implement and validate the geology fixture-ingestion lane
-  through branch review/merge. Acceptance proves map-units-present, no-map-units, and
-  source-failure evidence paths through local fixture ingestion, evidence-to-claim
-  linkage, Section 14 dossier rendering, and forbidden-overclaim checks while
-  preserving all Bologna, source-authority, DS-015 hazard/buildability, DS-017, hosted,
-  Level 10, and qualification blockers.
+  `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`,
+  `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, and `GEOLOGY-FIXTURE`.
+  `BSA-001` remains blocked until product/AOI and source-review authority is cited.
+  `P0` remains `BLOCKED`.
+- **Immediate next pursuit**: validate this routing-only closeout and keep the next
+  substantive work authority-dependent. The first unblocked future implementation lane
+  requires cited external owner/source authority; until then, BSA-001, ODP-BOL-002,
+  ODP-BOL-003, ODP-BOL-004, DS-017, hosted production, Level 10, qualification PASS,
+  owner-decision unfreeze, and P0 unblock remain blocked.
 
 ## Current checkpoint (2026-06-27 ODP-BOL-002 owner-answer packet)
 
