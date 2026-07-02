@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Post-geology routing closeout
+
+- Started clean worktree `worktrees/post-geology` on
+  `codex/post-geology-routing` from live
+  `origin/main@71b9c41611ac256eee6e1dd5126779c2472c5b2b`, after geology fixture
+  ingestion merged through PR #172.
+- Added `plans/2026-07-02-post-geology-routing.md` as a routing-only closeout plan.
+  It records that minerals, broadband, environmental hazard, water, and NCGS geology
+  fixture-ingestion proofs are complete, while keeping remaining work
+  authority-dependent.
+- Updated `plans/README.md`, `state/PROJECT_STATE.md`, and `tasks/task_queue.yaml` so
+  `GEOLOGY-FIXTURE` is done and `POST-GEOLOGY-ROUTING` is the only active task.
+- Updated the qualification backlog checker and readiness tests to enforce the
+  post-geology routing boundary and fail closed if geology is reactivated or the
+  routing closeout is treated as source, Bologna, hosted, Level 10, DS-017, or
+  qualification authority.
+- Preserved the authority boundary: no new connector, live source call, source
+  approval, source-rights change, fixture capture, DB seed, report proof,
+  schema/API/auth/UI/runtime change, Bologna authority, hosted authority, Level 10
+  claim, qualification PASS, owner-decision unfreeze, or P0 unblock was introduced.
+- Focused routing tests, backlog check, ruff, mypy, source readiness, readiness
+  matrix, qualification status, diff check, and full `.\scripts\verify.ps1` passed.
+  DB smoke was skipped by default.
+
 ## 2026-07-02 Geology fixture ingestion
 
 - Started clean worktree `worktrees/geology-fixture` on `codex/geology-fixture` from
