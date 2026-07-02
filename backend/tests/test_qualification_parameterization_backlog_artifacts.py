@@ -27,6 +27,7 @@ EXPECTED_BROADBAND_PLAN = (
 )
 EXPECTED_ENV_HAZARD_PLAN = "plans/2026-07-02-env-fixture.md"
 EXPECTED_WATER_PLAN = "plans/2026-07-02-water-fixture.md"
+EXPECTED_GEOLOGY_PLAN = "plans/2026-07-02-geology-fixture.md"
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
@@ -42,6 +43,7 @@ BACKLOG_CHECK_INPUTS = (
     EXPECTED_BROADBAND_PLAN,
     EXPECTED_ENV_HAZARD_PLAN,
     EXPECTED_WATER_PLAN,
+    EXPECTED_GEOLOGY_PLAN,
     "plans/README.md",
     "config/bologna_odp1_owner_answer_packet.yaml",
     "config/bol_scope_auth.yaml",
@@ -288,9 +290,9 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_WATER_PLAN
+    assert task_queue["active_plan"] == EXPECTED_GEOLOGY_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["WATER-FIXTURE"]
+    assert active_ids == ["GEOLOGY-FIXTURE"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -444,10 +446,16 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
         tasks["ENV-FIXTURE"]["notes"]
     )
     assert tasks["WATER-FIXTURE"]["depends_on"] == ["ENV-FIXTURE"]
-    assert tasks["WATER-FIXTURE"]["status"] == "active"
+    assert tasks["WATER-FIXTURE"]["status"] == "done"
     assert tasks["WATER-FIXTURE"]["spec"] == EXPECTED_WATER_PLAN
     assert "USGS water monitoring context fixture evidence" in (
         tasks["WATER-FIXTURE"]["notes"]
+    )
+    assert tasks["GEOLOGY-FIXTURE"]["depends_on"] == ["WATER-FIXTURE"]
+    assert tasks["GEOLOGY-FIXTURE"]["status"] == "active"
+    assert tasks["GEOLOGY-FIXTURE"]["spec"] == EXPECTED_GEOLOGY_PLAN
+    assert "NC Geological Survey 1985 geologic map-unit context fixture evidence" in (
+        tasks["GEOLOGY-FIXTURE"]["notes"]
     )
     assert tasks["BSA-001"]["status"] == "blocked"
 

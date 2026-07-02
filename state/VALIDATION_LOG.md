@@ -2,6 +2,67 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Geology Fixture Ingestion
+
+**Scope:** Add an owner-independent NCGS 1985 geologic map-unit context
+fixture-ingestion proof on the existing Buncombe golden AOI and preserve all existing
+authority blockers. This includes local-only fixtures, connector fail-closed
+validation, map-units-present/no-map-units/source-failure routing, advisory
+`GEOLOGY_NOT_EVALUATED` evidence linkage for non-failure geology evidence, Section 14
+dossier rendering, and forbidden-overclaim checks. It does not run live NCGS calls,
+approve sources, change source rights, determine geologic hazards, determine
+geotechnical suitability, determine buildability, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\private_mvp\test_extended_domain_geology.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\geology_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\geology_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Geology connector and private-MVP tests passed (`13 passed`).
+- Broader focused connector/private-MVP/routing pytest passed (`30 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Source readiness passed with `DS-015: ready State geological survey`; `DS-017` and
+  other unresolved sources remained blocked.
+- Qualification parameterization backlog check passed with `GEOLOGY-FIXTURE` as the
+  only active task and `P0 status: BLOCKED`.
+- Readiness matrix check passed.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- First full `.\scripts\verify.ps1` attempt timed out at the command wrapper after 300
+  seconds during backend tests; no lingering Python test process remained. The verifier
+  was rerun with a longer timeout and passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status, default
+  change-impact, P0 auto-evidence, qualification parameterization backlog, backend
+  tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest-20260702T023719398Z.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for DS-015 NCGS 1985
+geologic map-unit context evidence. The 1985 statewide map is historical and
+generalized; map-unit presence or absence does not determine parcel-scale geology,
+landslide, sinkhole, radon, subsidence, geotechnical suitability, engineering
+feasibility, buildability, mineral-resource value, title, legal status, appraisal
+value, insurability, lending suitability, or investment quality. No source approval,
+source-rights change, live connector run, DB-backed production proof, Bologna
+authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock is
+introduced.
+
 ## 2026-07-02 Water Fixture Ingestion
 
 **Scope:** Add an owner-independent USGS water monitoring context fixture-ingestion

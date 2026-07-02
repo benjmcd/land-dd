@@ -155,6 +155,7 @@ from app.connectors.fixture_quality import (
     evaluate_buildability_fixture_quality,
     evaluate_env_hazard_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_geology_fixture_quality,
     evaluate_minerals_fixture_quality,
     evaluate_parcel_fixture_quality,
     evaluate_soils_fixture_quality,
@@ -174,6 +175,10 @@ from app.connectors.flood_fixture import (
     FixtureConnectorResultProtocol,
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
+)
+from app.connectors.geology_fixture import (
+    GeologyFixtureConnectorResult,
+    StaticGeologyFixtureConnector,
 )
 from app.connectors.live_jobs import (
     LIVE_CONNECTOR_DS001_ID,
@@ -471,6 +476,7 @@ __all__ = [
     "FixtureConnectorProtocol",
     "FixtureConnectorResultProtocol",
     "FloodFixtureConnectorResult",
+    "GeologyFixtureConnectorResult",
     "AccessFixtureConnectorResult",
     "BuildabilityFixtureConnectorResult",
     "InMemoryConnectorReviewQueueRepository",
@@ -526,6 +532,7 @@ __all__ = [
     "StaticBuildabilityFixtureConnector",
     "StaticEnvHazardFixtureConnector",
     "StaticFloodFixtureConnector",
+    "StaticGeologyFixtureConnector",
     "StaticLocalFileConnector",
     "StaticLocalFileConnectorError",
     "StaticLocalFileConnectorResult",
@@ -620,6 +627,7 @@ __all__ = [
     "evaluate_buildability_fixture_quality",
     "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_geology_fixture_quality",
     "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",

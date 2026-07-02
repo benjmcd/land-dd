@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-07-02-water-fixture.md
+active_plan: plans/2026-07-02-geology-fixture.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -95,12 +95,15 @@ routing_note: >
   completed the FCC Broadband Data Collection fixture-ingestion proof through PR #169
   at `3b2bd1897f8227ca24cb7290d8026ff3b2757356`, and ENV-FIXTURE completed the EPA
   ECHO environmental hazard fixture-ingestion proof through PR #170 at
-  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`. WATER-FIXTURE is the active
-  owner-independent US-MVP lane: extend the landed fixture-ingestion pattern to USGS
-  water monitoring context fixture evidence on the existing Buncombe golden AOI
-  without live USGS calls, water-rights or well-viability conclusions, source
-  approval, source-rights change, schema/API/auth/report semantic changes, hosted
-  authority, qualification PASS, or Level 10 authority. Bologna implementation
+  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, and WATER-FIXTURE completed the USGS
+  water monitoring fixture-ingestion proof through PR #171 at
+  `6e0d63260ae395730d2a33508059bd0873a88d50`. GEOLOGY-FIXTURE is the active
+  owner-independent US-MVP lane: extend the landed fixture-ingestion pattern to NCGS
+  1985 geologic map-unit context fixture evidence on the existing Buncombe golden AOI
+  without live NCGS calls, geologic-hazard determinations, geotechnical suitability
+  conclusions, buildability conclusions, source approval, source-rights change,
+  schema/API/auth/report semantic changes, hosted authority, qualification PASS, or
+  Level 10 authority. Bologna implementation
   remains stopped while BSA-001 remains
   blocked until complete explicit product/AOI/source-review authority is cited in the
   pilot-scope/source-authority/source-rights packets. Do not create hosted deployment,
@@ -2722,7 +2725,7 @@ tasks:
 
   - id: WATER-FIXTURE
     title: Extended-domain water fixture-ingestion proof
-    status: active
+    status: done
     depends_on: [ENV-FIXTURE]
     lane: coordinator
     spec: plans/2026-07-02-water-fixture.md
@@ -2743,6 +2746,29 @@ tasks:
       - Source-unavailable fixture produces WATER_SOURCE_UNAVAILABLE_UNKNOWN and does not become a no-water-context conclusion
       - Conflicting and stale fixtures route to review-required claims, not false no-water-context conclusions
       - Section 9 renders water context without water-rights, well-yield, potable-water, legal-water-access, supply, buildability, value, lending, insurance, investment, or safety overclaims
+
+  - id: GEOLOGY-FIXTURE
+    title: Extended-domain geology fixture-ingestion proof
+    status: active
+    depends_on: [WATER-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-geology-fixture.md
+    notes: >
+      Extend the landed minerals, broadband, environmental hazard, and water
+      fixture-ingestion pattern to NC Geological Survey 1985 geologic map-unit
+      context fixture evidence on the existing Buncombe golden AOI. Cover
+      map-units-present, no-map-units, and source-failure paths through local fixture
+      ingestion, evidence-to-claim linkage, Section 14 dossier rendering, and
+      forbidden-overclaim checks. Do not run live NCGS calls, approve sources, change
+      source rights, determine geologic hazards, determine geotechnical suitability,
+      determine buildability, alter schema/API/auth/report semantics, unfreeze
+      qualification, unblock P0, or claim hosted/Level 10 authority.
+    acceptance:
+      - Static geology fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Map-units fixture produces NC_GEOLOGIC_MAP_UNIT_CONTEXT evidence and GEOLOGY_NOT_EVALUATED advisory linkage
+      - No-map-units fixture keeps hazards and buildability explicitly not determined
+      - Source-unavailable fixture produces NC_GEOLOGIC_MAP_SOURCE_FAILURE and does not become a no-hazard, no-constraint, or buildability conclusion
+      - Section 14 renders geologic context without hazard, geotechnical, buildability, mineral-resource-value, legal, value, lending, insurance, investment, or safety overclaims
 
   # --- Completed ---
   - id: T000
