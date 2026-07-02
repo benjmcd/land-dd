@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Authority Evidence Intake Routing
+
+**Scope:** Route the project after PR #173 so `POST-GEOLOGY-ROUTING` is done and
+`AUTH-EVIDENCE-INTAKE` is the only active task. This is a routing/control-plane update
+for the authority-dependent future sequence. It does not record owner answers, approve
+sources, change source rights, capture corpus or fixtures, seed the DB, prove reports,
+change schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 -m ruff check backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\source_readiness.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused readiness and qualification backlog artifact tests passed (`12 passed`).
+- Qualification parameterization backlog check passed with
+  `AUTH-EVIDENCE-INTAKE` as the only active task and `P0 status: BLOCKED`.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checks passed while preserving blocked authority state.
+- Readiness matrix check passed.
+- Qualification status check passed with `passed=36 not_run=2 unexpected_failed=0`
+  and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused ruff and focused mypy passed for the changed checker and routing tests.
+- Source readiness passed with `sources=25 ready=16 blocked=9`; DS-017 remained
+  blocked.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest.log`.
+
+**Residual risk:** This pass proves only that live routing now reflects the
+authority-dependent future sequence after PR #173. It does not prove external
+product/AOI/source/source-rights/corpus/report authority, DS-017 approval, hosted
+deployment, Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
 ## 2026-07-02 Post-Geology Routing Closeout
 
 **Scope:** Close the owner-independent extended-domain fixture-ingestion routing after

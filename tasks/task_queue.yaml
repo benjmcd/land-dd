@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-07-02-post-geology-routing.md
+active_plan: plans/2026-07-02-authority-evidence-intake.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -99,13 +99,15 @@ routing_note: >
   water monitoring fixture-ingestion proof through PR #171 at
   `6e0d63260ae395730d2a33508059bd0873a88d50`, and GEOLOGY-FIXTURE completed the NCGS
   1985 geologic map-unit context fixture-ingestion proof through PR #172 at
-  `71b9c41611ac256eee6e1dd5126779c2472c5b2b`. POST-GEOLOGY-ROUTING is the active
-  routing-only closeout: record that the named owner-independent extended-domain
-  fixture-ingestion sequence is complete and route remaining work back to cited
-  authority-dependent milestones without adding another connector, running live calls,
-  approving sources, changing source rights, capturing Bologna fixtures, seeding the
-  DB, proving reports, changing schema/API/auth/report semantics, creating hosted
-  authority, unfreezing qualification, approving DS-017, unblocking P0, or claiming
+  `71b9c41611ac256eee6e1dd5126779c2472c5b2b`, and POST-GEOLOGY-ROUTING completed the
+  post-geology closeout through PR #173 at
+  `1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`. AUTH-EVIDENCE-INTAKE is the active
+  authority-evidence posture: the next substantive work requires cited product/AOI/
+  source/source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/
+  Level 10, or empirical qualification implementation can proceed. Do not add another
+  connector, run live calls, approve sources, change source rights, capture Bologna
+  fixtures, seed the DB, prove reports, change schema/API/auth/report semantics,
+  create hosted authority, unfreeze qualification, approve DS-017, unblock P0, or claim
   Level 10 authority. Bologna implementation
   remains stopped while BSA-001 remains
   blocked until complete explicit product/AOI/source-review authority is cited in the
@@ -2775,7 +2777,7 @@ tasks:
 
   - id: POST-GEOLOGY-ROUTING
     title: Post-geology routing closeout
-    status: active
+    status: done
     depends_on: [GEOLOGY-FIXTURE]
     lane: coordinator
     spec: plans/2026-07-02-post-geology-routing.md
@@ -2793,6 +2795,28 @@ tasks:
       - POST-GEOLOGY-ROUTING is the only active task and points to the post-geology routing plan
       - Plans, project state, task queue, readiness tests, and backlog checker agree on post-geology routing
       - BSA-001, ODP-BOL-002/003/004, DS-017, hosted, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by cited external authority requirements
+      - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
+
+  - id: AUTH-EVIDENCE-INTAKE
+    title: Authority evidence intake routing
+    status: active
+    depends_on: [POST-GEOLOGY-ROUTING]
+    lane: coordinator
+    spec: plans/2026-07-02-authority-evidence-intake.md
+    notes: >
+      Authority-evidence routing posture after PR #173. The named owner-independent
+      extended-domain fixture-ingestion proofs and post-geology closeout are complete;
+      the next substantive work requires cited external owner/source authority before
+      Bologna, DS-017, hosted/Level 10, or empirical qualification implementation can
+      proceed. Do not record owner answers, approve sources, change source rights,
+      capture corpus/fixtures, seed the DB, prove a report, alter schema/API/auth/UI
+      behavior, unfreeze qualification, unblock P0, approve DS-017, create hosted
+      authority, or claim Level 10 authority from repo-local inference.
+    acceptance:
+      - POST-GEOLOGY-ROUTING is recorded as done and is not active
+      - AUTH-EVIDENCE-INTAKE is the only active task and points to the authority-evidence intake plan
+      - BSA-001 and ODP-BOL-002/003/004 remain blocked until cited product/AOI/source/source-rights/corpus/report-proof authority exists
+      - DS-017, hosted production, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by external authority requirements
       - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
 
   # --- Completed ---
