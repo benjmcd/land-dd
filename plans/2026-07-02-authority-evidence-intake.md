@@ -23,7 +23,11 @@ extended-domain fixture-ingestion sequence is complete through minerals,
 broadband, environmental hazard, water, and NCGS 1985 geologic map-unit context.
 PR #174 then made `AUTH-EVIDENCE-INTAKE` the active routing posture, and PR #175
 merged the validate-only composition guard for that posture at
-`0bfc4f395587956c520866a05423531e23270e21`.
+`0bfc4f395587956c520866a05423531e23270e21`. PR #176 synchronized current-state
+wording after that guard, PR #177 added optional reporting-only `--summary` and
+`--json` output, PR #178 linked that output from operator runbooks, and PR #179
+forwarded wrapper arguments so the same reporting modes work through the
+Windows/POSIX entrypoints without corrupting structured output.
 
 The remaining sequence is authority-dependent:
 
@@ -157,3 +161,7 @@ Pass/fail requirements:
 - 2026-07-02: Added optional summary/JSON output to the composition guard so the
   current missing authority evidence can be collected from machine-checked configs
   without creating a new runbook, generating artifacts, or changing blocker state.
+- 2026-07-02: Linked the summary/JSON output from the production authority, Bologna
+  owner-answer, and DS-017 source-entitlement runbooks, then forwarded wrapper
+  arguments so operators can use the reporting modes through the same entrypoints
+  without adding wrapper text to JSON output.

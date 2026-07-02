@@ -2,6 +2,56 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Post-PR179 Authority Evidence Support Sync
+
+**Scope:** Synchronize current-state and guard wording after PR #179 so the
+authority-evidence control plane names the landed PR #176-#179 support work while
+keeping `AUTH-EVIDENCE-INTAKE` active and blocked. This is state/plan/task/test
+alignment only. It does not record external authority, approve DS-017, approve Bologna
+sources, change source rights, capture corpus or fixtures, seed the DB, prove reports,
+change schema/API/auth/UI/runtime behavior, claim hosted or Level 10 authority,
+unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+.\scripts\run_authority_evidence_intake_check.ps1 --summary | Select-Object -First 8
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+.\scripts\run_authority_evidence_intake_check.ps1
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused checks failed because both authority-evidence validators still
+  required the old `Post-PR175 authority evidence guard` and
+  `Authority-evidence posture after PR #175` fragments. The guard expectations were
+  updated to require the PR #179 reporting-wrapper checkpoint and wrapper passthrough
+  boundary instead.
+- Direct authority-evidence guard passed.
+- PowerShell `--summary` and `--json` wrapper paths passed; JSON parsed as
+  `authority_evidence_intake_summary_v1` with active task `AUTH-EVIDENCE-INTAKE`.
+- Qualification parameterization backlog check passed with `P0 status: BLOCKED`.
+- Focused authority-evidence, qualification-backlog, and readiness tests passed
+  (`23 passed`).
+- Focused ruff and mypy passed for the changed scripts/tests.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** This only corrects repo-local current-state wording and guard
+expectations. It does not supply external product/AOI/source/source-rights/corpus/
+report authority for Bologna, DS-017 approval, hosted deployment, Level 10 readiness,
+empirical qualification PASS, or P0 readiness.
+
 ## 2026-07-02 Authority Evidence Wrapper Summary Passthrough
 
 **Scope:** Forward arguments through the authority evidence intake wrappers so the

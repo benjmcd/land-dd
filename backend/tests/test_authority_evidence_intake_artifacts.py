@@ -228,6 +228,38 @@ def test_authority_evidence_summary_is_discoverable_from_operator_runbooks() -> 
         assert "unlock" in text
 
 
+def test_authority_evidence_state_is_synced_after_wrapper_passthrough() -> None:
+    project_state = (REPO_ROOT / "state" / "PROJECT_STATE.md").read_text(
+        encoding="utf-8",
+    )
+    plan = (
+        REPO_ROOT / "plans" / "2026-07-02-authority-evidence-intake.md"
+    ).read_text(encoding="utf-8")
+    plan_index = (REPO_ROOT / "plans" / "README.md").read_text(encoding="utf-8")
+    task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
+    tasks = {task["id"]: task for task in task_queue["tasks"]}
+
+    assert "Post-PR179 authority evidence reporting wrapper" in project_state
+    assert "19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6" in project_state
+    assert "wrapper argument passthrough merged through PR #179" in project_state
+    assert "it does not record authority or change any" in project_state
+    assert "implementation surface" in project_state
+    assert "PR #179" in plan
+    assert "forwarded wrapper arguments" in plan
+    assert "through PR #179" in plan_index
+    assert "posture remains active pending external authority evidence" in plan_index
+    assert "Authority-evidence posture after PR #179" in (
+        tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    )
+    assert any(
+        "Summary/JSON output and wrapper passthrough remain reporting-only"
+        in acceptance
+        for acceptance in tasks["AUTH-EVIDENCE-INTAKE"]["acceptance"]
+    )
+    assert tasks["AUTH-EVIDENCE-INTAKE"]["status"] == "active"
+    assert tasks["BSA-001"]["status"] == "blocked"
+
+
 def validator_expected_streams() -> set[str]:
     validator = cast(Any, _load_validator())
     return set(validator.EXPECTED_PRODUCTION_STREAMS)

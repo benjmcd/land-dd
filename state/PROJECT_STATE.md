@@ -1,21 +1,20 @@
 # Project State
 
-## Current checkpoint (2026-07-02 Post-PR175 authority evidence guard)
+## Current checkpoint (2026-07-02 Post-PR179 authority evidence reporting wrapper)
 
 This branch starts from live `origin/main`
-`0bfc4f395587956c520866a05423531e23270e21`, after the ODGAV owner-answer gate
-evaluation merged through PR #167, the first extended-domain minerals
-fixture-ingestion proof merged through PR #168, the broadband fixture-ingestion proof
-merged through PR #169, the environmental hazard fixture-ingestion proof merged through
-PR #170, the water fixture-ingestion proof merged through PR #171, and the geology
-fixture-ingestion proof merged through PR #172, and the post-geology routing closeout
-merged through PR #173, and the authority evidence intake routing merged through PR
-#174, and the authority evidence intake composition guard merged through PR #175. The
-active posture is authority evidence intake: the next substantive work requires cited
-product/AOI/source/source-rights/corpus/report-proof authority before Bologna, DS-017,
-hosted/Level 10, or empirical qualification implementation can proceed. It does not
-add another connector, run live calls, approve sources, change source rights, capture
-Bologna fixtures, seed the DB, prove a report, change schema/API/auth/report semantics,
+`19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, after the ODGAV owner-answer gate
+evaluation merged through PR #167, the owner-independent extended-domain fixture
+sequence merged through PRs #168-#172, the post-geology routing closeout merged
+through PR #173, authority-evidence routing merged through PR #174, the authority
+evidence intake composition guard merged through PR #175, the post-PR175 guard-state
+sync merged through PR #176, optional authority-evidence summary/JSON output merged
+through PR #177, runbook discoverability links merged through PR #178, and wrapper argument passthrough merged through PR #179. The active posture is still authority
+evidence intake: the next substantive work requires cited product/AOI/source/
+source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
+or empirical qualification implementation can proceed. It does not add another
+connector, run live calls, approve sources, change source rights, capture Bologna
+fixtures, seed the DB, prove a report, change schema/API/auth/report semantics,
 approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/Level
 10 authority, or change `P0 = BLOCKED`.
 
@@ -35,7 +34,9 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   qualification status into one validate-only check. It runs existing specialized
   validators and fails closed on omitted authority streams, downstream unlocks,
   recorded authority, or `P0` promotion; it does not record authority or change any
-  implementation surface.
+  implementation surface. The same checker can emit reporting-only `--summary` and
+  `--json` views, and the Windows/POSIX wrappers forward those arguments without
+  appending wrapper confirmation text to structured output.
 - **Current ODGAV boundary**:
   `scripts/bologna_owner_answer_evaluator.py` remains a pure in-memory evaluator used
   by the Bologna gate checkers and canonical qualification selftest. ODGAV completion
@@ -62,7 +63,10 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`,
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until product/AOI and
-  source-review authority is cited. `P0` remains `BLOCKED`.
+  source-review authority is cited. Follow-up authority-evidence support slices through
+  PR #179 added current-state sync, reporting output, runbook links, and wrapper
+  passthrough without changing the active task or blocker state. `P0` remains
+  `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
   product/AOI/source/source-rights/corpus/report-proof authority; until then, BSA-001,
