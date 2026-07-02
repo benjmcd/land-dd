@@ -180,6 +180,21 @@ def test_authority_evidence_intake_text_summary_keeps_blocked_boundaries() -> No
     assert "authority evidence intake check: ok" in result.stdout
 
 
+def test_authority_evidence_summary_is_discoverable_from_operator_runbooks() -> None:
+    runbook_paths = (
+        REPO_ROOT / "docs" / "runbooks" / "production_authority_intake.md",
+        REPO_ROOT / "docs" / "runbooks" / "bologna_owner_answer_intake.md",
+        REPO_ROOT / "docs" / "runbooks" / "source_entitlements.md",
+    )
+
+    for path in runbook_paths:
+        text = path.read_text(encoding="utf-8")
+        assert "authority_evidence_intake_check.py --summary" in text
+        assert "Use `--json` on the same checker" in text
+        assert "reporting only" in text
+        assert "unlock" in text
+
+
 def validator_expected_streams() -> set[str]:
     validator = cast(Any, _load_validator())
     return set(validator.EXPECTED_PRODUCTION_STREAMS)

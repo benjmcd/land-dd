@@ -16,6 +16,17 @@ Run:
 .\scripts\run_production_authority_intake_check.ps1
 ```
 
+For a consolidated stdout view of the active authority-evidence posture and missing
+evidence counts across production and Bologna streams, run:
+
+```powershell
+py -3.12 .\scripts\authority_evidence_intake_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable collection tracking. These
+summary modes are reporting only; they do not replace the stream-specific checks,
+record authority, approve sources, change source rights, or unlock implementation.
+
 The checker cross-checks `config/production_authority_intake.yaml` against the existing
 authority catalogs:
 
