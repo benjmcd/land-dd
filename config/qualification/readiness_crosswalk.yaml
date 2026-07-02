@@ -124,6 +124,23 @@ entries:
   - R-005
   evidence_role: authority_blocker
   notes: Production authority intake is owner-decision evidence, not empirical proof.
+- surface_id: production_authority_evidence_references
+  surface_type: authority
+  config_paths:
+  - config/production_authority_evidence_references.yaml
+  checker_paths:
+  - scripts/production_authority_evidence_references_check.py
+  gate_paths:
+  - scripts/run_production_authority_evidence_references_check.ps1
+  - scripts/run_production_authority_evidence_references_check.sh
+  criterion_ids:
+  - P0-001
+  - G-021
+  - O-020
+  - S-005
+  - R-005
+  evidence_role: authority_blocker
+  notes: Production authority evidence references define future cited authority reference shape while keeping current references empty and non-qualifying.
 - surface_id: authority_evidence_intake
   surface_type: authority
   config_paths: []

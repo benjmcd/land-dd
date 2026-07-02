@@ -468,12 +468,15 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["AUTH-EVIDENCE-INTAKE"]["depends_on"] == ["POST-GEOLOGY-ROUTING"]
     assert tasks["AUTH-EVIDENCE-INTAKE"]["status"] == "active"
     assert tasks["AUTH-EVIDENCE-INTAKE"]["spec"] == EXPECTED_AUTH_EVIDENCE_PLAN
-    assert "Authority-evidence posture after PR #180" in (
+    assert "Authority-evidence posture after PR #181" in (
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert "summary/JSON reporting modes" in tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     assert "wrapper passthrough" in tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     assert "authority follow-on sequencing contract" in (
+        tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    )
+    assert "production authority evidence reference contract" in (
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert tasks["BSA-001"]["status"] == "blocked"

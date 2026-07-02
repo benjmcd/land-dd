@@ -15,7 +15,10 @@ PR #175. PRs #176-#179 then synchronized state, added reporting-only summary/JSO
 output, linked that output from runbooks, and forwarded wrapper arguments for those
 reporting modes. PR #180 synchronized state after wrapper support, and the current
 follow-on sequencing contract machine-checks the packet's authority-dependent
-repo-local follow-on map without unlocking work. The posture records that the
+repo-local follow-on map without unlocking work. PR #181 merged that sequencing
+contract; the current slice adds a validate-only production authority evidence
+reference contract so future cited references have a checked field shape while current
+references and downstream unlock requests remain empty. The posture records that the
 owner-independent extended-domain
 fixture-ingestion sequence and post-geology closeout are complete, and that the next
 substantive work requires cited product/AOI/source/source-rights/corpus/report-proof
@@ -41,7 +44,8 @@ authority-evidence intake posture is tracked under
 `plans/2026-07-02-authority-evidence-intake.md`; its composition guard completed
 through PR #175, and its reporting/runbook/wrapper support completed through PR #179
 while state sync completed through PR #180. The authority follow-on sequence checker
-is part of the same active posture and remains pending external authority evidence.
+completed through PR #181, and the production authority evidence reference checker is
+part of the same active posture and remains pending external authority evidence.
 ODGAV does not record
 real owner authority, approve sources, create a corpus, capture Bologna fixtures,
 mutate the DB, prove a Bologna report, unfreeze qualification, or unblock P0.

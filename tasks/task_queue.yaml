@@ -106,7 +106,9 @@ routing_note: >
   `0bfc4f395587956c520866a05423531e23270e21`, post-PR175 guard-state sync through
   PR #176, authority summary/JSON output through PR #177, authority summary runbook
   links through PR #178, and wrapper argument passthrough through PR #179 at
-  `19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`. AUTH-EVIDENCE-INTAKE is the active
+  `19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, state synchronization after wrapper
+  support through PR #180, and the authority follow-on sequencing contract through
+  PR #181 at `c38640b458c6d1da0218c34eeb6b80a02dc53143`. AUTH-EVIDENCE-INTAKE is the active
   authority-evidence posture: the next substantive work requires cited product/AOI/
   source/source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/
   Level 10, or empirical qualification implementation can proceed. Do not add another
@@ -2809,13 +2811,14 @@ tasks:
     lane: coordinator
     spec: plans/2026-07-02-authority-evidence-intake.md
     notes: >
-      Authority-evidence posture after PR #180. The named owner-independent
+      Authority-evidence posture after PR #181. The named owner-independent
       extended-domain fixture-ingestion proofs, post-geology closeout,
       authority-evidence routing, composition guard, current-state sync, summary/JSON
       reporting modes, runbook links, wrapper passthrough, and authority follow-on
-      sequencing contract are complete; the next substantive work requires cited
-      external owner/source authority before Bologna, DS-017, hosted/Level 10, or
-      empirical qualification implementation can proceed.
+      sequencing contract are complete; this slice adds the production authority
+      evidence reference contract while keeping the next substantive work dependent
+      on cited external owner/source authority before Bologna, DS-017, hosted/Level
+      10, or empirical qualification implementation can proceed.
       Do not record owner answers, approve sources, change source rights, capture
       corpus/fixtures, seed the DB, prove a report, alter schema/API/auth/UI behavior,
       unfreeze qualification, unblock P0, approve DS-017, create hosted authority, or
@@ -2827,6 +2830,7 @@ tasks:
       - DS-017, hosted production, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by external authority requirements
       - The authority-evidence intake composition guard passes and proves required production/Bologna/qualification authority streams are present, blocked, and unpromoted
       - Summary/JSON output and wrapper passthrough remain reporting-only and do not append wrapper text to JSON output
+      - The production authority evidence reference checker defines future cited-reference shape while keeping current references and downstream unlock requests empty
       - The authority follow-on sequence checker covers every production authority stream plus the packet-level workload/retention lane and keeps every follow-on lane blocked until cited authority exists
       - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
     validation:
@@ -2834,6 +2838,8 @@ tasks:
       - .\scripts\run_authority_evidence_intake_check.ps1 --summary
       - .\scripts\run_authority_evidence_intake_check.ps1 --json
       - .\scripts\run_authority_evidence_intake_check.ps1
+      - py -3.12 .\scripts\production_authority_evidence_references_check.py
+      - .\scripts\run_production_authority_evidence_references_check.ps1
       - py -3.12 .\scripts\authority_follow_on_sequence_check.py
       - .\scripts\run_authority_follow_on_sequence_check.ps1
       - .\scripts\verify.ps1

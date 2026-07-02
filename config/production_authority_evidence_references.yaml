@@ -1,0 +1,217 @@
+schema_version: production_authority_evidence_references_v1
+status: blocked_no_submitted_references
+source_intake: config/production_authority_intake.yaml
+follow_on_sequence: config/authority_follow_on_sequence.yaml
+operator_runbook: docs/runbooks/production_authority_intake.md
+validation: scripts/run_production_authority_evidence_references_check.ps1
+
+limits:
+  validate_only_reference_contract: true
+  records_authority: false
+  records_owner_answer: false
+  supplies_authority_evidence: false
+  approves_sources: false
+  changes_source_rights: false
+  changes_source_readiness: false
+  triggers_follow_on_sequence: false
+  captures_fixtures: false
+  seeds_database: false
+  proves_report: false
+  provisions_hosted_runtime: false
+  changes_schema_api_auth_ui_runtime: false
+  unfreezes_qualification: false
+  unblocks_p0: false
+  claims_level_10: false
+
+reference_contract:
+  current_evidence_references: []
+  downstream_unlocks_requested: []
+  required_reference_fields:
+    - reference_id
+    - authority_stream_id
+    - evidence_item_id
+    - authority_reference
+    - artifact_type
+    - artifact_location_or_citation
+    - decision_owner
+    - review_owner
+    - decision_date
+    - effective_date
+    - scope_summary
+    - evidence_summary
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_reference_ids
+  allowed_artifact_types:
+    - redacted_contract_reference
+    - terms_url
+    - ticket_or_adr
+    - signed_decision_record
+    - platform_console_reference
+    - registry_or_digest_reference
+    - billing_owner_record
+    - alert_route_reference
+    - source_terms_review
+  forbidden_reference_effects:
+    - source_approval
+    - source_rights_change
+    - owner_answer_recording
+    - corpus_capture
+    - fixture_capture
+    - db_seed
+    - report_proof
+    - hosted_runtime_provisioning
+    - level_10_claim
+    - qualification_pass
+    - owner_decision_unfreeze
+    - p0_unblock
+
+stream_reference_templates:
+  - authority_stream_id: ds017_source_entitlement
+    source_catalog: config/source_entitlements.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - reviewed_terms_or_redacted_contract_reference
+      - vendor_product_or_dataset_name
+      - allowed_geography_and_coverage_statement
+      - source_version_or_effective_date
+      - update_cadence_and_staleness_policy
+      - field_allowlist_and_denylist
+      - cache_ttl_or_no-cache_policy
+      - export_policy
+      - raw_data_retention_policy
+      - ai_use_policy
+      - attribution_policy
+      - entitlement_owner_and_review_owner
+      - per-report_paid_data_cost_policy
+      - connector_scope_and_failure_mode_policy
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: hosted_platform
+    source_catalog: config/hosted_deployment.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - hosted_platform_selected
+      - domain_tls_authority
+      - secrets_manager_authority
+      - database_instance_authority
+      - registry_image_digest_available
+      - hosted_billing_reconciliation
+      - hosted_alerting_route
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: secrets_manager
+    source_catalog: config/access_control.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - external_secret_manager_reference_names
+      - no_plaintext_committed_secret_values
+      - per_environment_secret_owner
+      - post_rotation_access_control_check
+      - rotation_runbook_or_ticket
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: identity_rbac
+    source_catalog: config/access_control.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - subject
+      - email
+      - display_name
+      - workspace_id
+      - user_id
+      - groups_or_roles
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: image_publication
+    source_catalog: config/image_publication.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - registry_repository_authority
+      - hosted_deployment_authority
+      - registry_image_attestation_authority
+      - signed_image_sbom_authority
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: billing_cost
+    source_catalog: config/ops_cost_monitoring.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - hosted_billing_owner
+      - approved_budget_thresholds
+      - unit_cost_policy
+      - paid_source_metering_policy
+      - vendor_spend_approval
+      - cost_overrun_alert_owner
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: hosted_observability
+    source_catalog: config/observability_readiness.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - hosted_dashboard
+      - hosted_alert_routing
+      - pager_on_call
+      - hosted_log_retention
+      - production_traffic_observability
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: bologna_recorded_source
+    source_catalog: config/bologna_source_authority_intake.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - authorized_one_aoi_scope
+      - exact_source_selection
+      - completed_per_source_rights_review
+      - source_contract_fields_complete
+      - source_registry_row_review
+      - recorded_fixture_scope
+      - crs_precision_policy
+      - rulepack_or_evidence_only_scope
+      - no_overclaim_review
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []
+
+  - authority_stream_id: bologna_pilot_scope
+    source_catalog: config/bologna_pilot_scope_authority.yaml
+    status: missing_authority_reference
+    evidence_status: missing
+    required_evidence:
+      - product_authorizes_bologna_pilot_reference
+      - one_aoi_geometry_or_named_boundary
+      - intended_operator_and_use_case
+      - pilot_non_goals_and_exclusions
+      - stop_conditions_and_reversion_plan
+      - jurisdiction_boundary_review
+      - evidence_only_or_rulepack_scope
+      - ds017_treatment_for_pilot
+      - candidate_source_selection_policy
+      - fixture_capture_boundary
+      - report_runtime_boundary
+      - no_overclaim_review_owner
+    current_authority_references: []
+    decision_updates_allowed: false
+    downstream_unlocks_requested: []

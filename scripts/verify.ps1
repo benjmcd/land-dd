@@ -168,6 +168,11 @@ Invoke-PythonCommand `
     -Label 'authority evidence intake' `
     -Arguments @('scripts/authority_evidence_intake_check.py')
 
+Write-Host '== production authority evidence references =='
+Invoke-PythonCommand `
+    -Label 'production authority evidence references' `
+    -Arguments @('scripts/production_authority_evidence_references_check.py')
+
 Write-Host '== authority follow-on sequence =='
 Invoke-PythonCommand `
     -Label 'authority follow-on sequence' `
