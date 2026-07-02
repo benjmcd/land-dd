@@ -21,6 +21,10 @@ EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
 EXPECTED_ODP2_PACKET_PLAN = "plans/2026-06-27-odp2-owner-answer-packet.md"
 EXPECTED_ODGAV_PLAN = "plans/2026-06-28-odgav-owner-answer-evaluation.md"
+EXPECTED_MINERALS_PLAN = "plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md"
+EXPECTED_BROADBAND_PLAN = (
+    "plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md"
+)
 BACKLOG_CHECK_INPUTS = (
     ".github/workflows/ci.yml",
     "MANIFEST.md",
@@ -32,6 +36,8 @@ BACKLOG_CHECK_INPUTS = (
     EXPECTED_BOL_SCOPE_AUTH_PLAN,
     EXPECTED_ODP2_PACKET_PLAN,
     EXPECTED_ODGAV_PLAN,
+    EXPECTED_MINERALS_PLAN,
+    EXPECTED_BROADBAND_PLAN,
     "plans/README.md",
     "config/bologna_odp1_owner_answer_packet.yaml",
     "config/bol_scope_auth.yaml",
@@ -278,9 +284,9 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert task_queue["active_plan"] == EXPECTED_ODGAV_PLAN
+    assert task_queue["active_plan"] == EXPECTED_BROADBAND_PLAN
     active_ids = [task["id"] for task in task_queue["tasks"] if task.get("status") == "active"]
-    assert active_ids == ["ODGAV-1"]
+    assert active_ids == ["BROADBAND-FIXTURE"]
     assert tasks["REC-001"]["status"] == "done"
     assert tasks["BPS-001"]["status"] == "done"
     assert tasks["EQ-BOL"]["status"] == "done"
@@ -411,10 +417,22 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
     assert tasks["BOL-ODP2-PACKET"]["spec"] == EXPECTED_ODP2_PACKET_PLAN
     assert "source-rights response" in tasks["BOL-ODP2-PACKET"]["notes"]
     assert tasks["ODGAV-1"]["depends_on"] == ["BOL-ODP2-PACKET"]
-    assert tasks["ODGAV-1"]["status"] == "active"
+    assert tasks["ODGAV-1"]["status"] == "done"
     assert tasks["ODGAV-1"]["spec"] == EXPECTED_ODGAV_PLAN
     assert "side-effect-free synthetic owner-answer evaluators" in tasks["ODGAV-1"]["notes"]
     assert "worktree-reconciliation-2026-06-28.md" in tasks["ODGAV-1"]["notes"]
+    assert tasks["MINERALS-FIXTURE"]["depends_on"] == ["ODGAV-1"]
+    assert tasks["MINERALS-FIXTURE"]["status"] == "done"
+    assert tasks["MINERALS-FIXTURE"]["spec"] == EXPECTED_MINERALS_PLAN
+    assert "extended-domain fixture-ingestion proof for minerals" in (
+        tasks["MINERALS-FIXTURE"]["notes"]
+    )
+    assert tasks["BROADBAND-FIXTURE"]["depends_on"] == ["MINERALS-FIXTURE"]
+    assert tasks["BROADBAND-FIXTURE"]["status"] == "active"
+    assert tasks["BROADBAND-FIXTURE"]["spec"] == EXPECTED_BROADBAND_PLAN
+    assert "FCC Broadband Data Collection fixture evidence" in (
+        tasks["BROADBAND-FIXTURE"]["notes"]
+    )
     assert tasks["BSA-001"]["status"] == "blocked"
 
 

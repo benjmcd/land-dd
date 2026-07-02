@@ -89,6 +89,10 @@ _MINERALS_FIXTURE_DOMAIN = "minerals"
 _MINERALS_FIXTURE_CONNECTOR_NAME = "fixture_minerals_static"
 _MINERALS_FIXTURE_METHOD_PREFIX = "fixture_minerals_"
 
+_BROADBAND_FIXTURE_DOMAIN = "broadband"
+_BROADBAND_FIXTURE_CONNECTOR_NAME = "fixture_broadband_static"
+_BROADBAND_FIXTURE_METHOD_PREFIX = "fixture_broadband_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -871,11 +875,25 @@ def evaluate_minerals_fixture_quality(
     )
 
 
+def evaluate_broadband_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_BROADBAND_FIXTURE_CONNECTOR_NAME,
+        domain=_BROADBAND_FIXTURE_DOMAIN,
+        method_prefix=_BROADBAND_FIXTURE_METHOD_PREFIX,
+        label="broadband",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
     "ConnectorFixtureQualityProfile",
     "evaluate_access_fixture_quality",
+    "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_minerals_fixture_quality",

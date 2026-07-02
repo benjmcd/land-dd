@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Extended-Domain Broadband Fixture Ingestion
+
+**Scope:** Reconcile post-PR #167/#168 routing, add an owner-independent broadband
+fixture-ingestion proof, and preserve the existing authority blockers. This includes
+local-only FCC Broadband Data Collection fixtures, connector fail-closed validation,
+no-provider advisory generation, source-failure unknown generation, evidence-to-claim
+linkage, Section 12 dossier rendering, and forbidden-overclaim checks. It does not run
+live FCC calls, approve sources, change source rights, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_minerals.py backend\tests\private_mvp\test_extended_domain_broadband.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\broadband_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\broadband_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Broadband connector and private-MVP tests passed (`10 passed`).
+- Broader focused connector/private-MVP/routing pytest passed (`24 passed`).
+- Focused ruff and focused mypy passed for touched implementation and test files.
+- Qualification parameterization backlog check passed with `BROADBAND-FIXTURE` as the
+  only active task.
+- Readiness matrix check passed and preserved the Level 9/10 authority context.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set.
+
+**Residual risk:** This pass proves only local fixture ingestion for broadband. FCC
+BDC coverage is provider-reported and may lag real availability; no broadband service
+guarantee, source approval, source-rights change, live connector run, DB-backed
+production proof, Bologna authority, hosted authority, Level 10 claim, qualification
+PASS, or P0 unblock is introduced. Remaining extended-domain fixture-ingestion lanes
+include water, environmental hazards, and geology.
+
 ## 2026-06-28 ODGAV Owner-Answer Gate Evaluation
 
 **Scope:** Add side-effect-free synthetic Bologna owner-answer evaluation for the

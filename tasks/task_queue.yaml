@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-28-odgav-owner-answer-evaluation.md
+active_plan: plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -87,16 +87,23 @@ routing_note: >
   gate for a future cited ODP-BOL-001 authority-recording slice while preserving empty
   authority records. BOL-ODP2-PACKET adds a validate-only owner-facing packet for the
   later ODP-BOL-002 source-authority/source-rights answer while preserving missing
-  ODP-BOL-001 authority and empty source-rights references. ODGAV-1 is the active
+  ODP-BOL-001 authority and empty source-rights references. ODGAV-1 completed the
   owner-independent validation pass for side-effect-free synthetic Bologna
-  owner-answer evaluation plus worktree reconciliation. Bologna implementation remains
-  stopped while BSA-001 remains blocked until complete explicit product/AOI/source-review
-  authority is cited in the pilot-scope/source-authority/source-rights packets. Do not
-  create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
-  authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
-  implementation, fixture capture, production traffic proof, qualification PASS,
-  owner-decision unfreeze, ranking/recommendation semantics, multi-geography framework
-  implementation, or Level 10 authority from repo-local inference alone.
+  owner-answer evaluation plus worktree reconciliation through PR #167, and
+  MINERALS-FIXTURE completed the first extended-domain fixture-ingestion proof through
+  PR #168 at `35077d25e79fb105ada87fc86a1ead6623eb5e66`. BROADBAND-FIXTURE is the
+  active owner-independent US-MVP lane: extend the minerals pattern to FCC Broadband
+  Data Collection fixture evidence on the existing Buncombe golden AOI without live
+  FCC calls, source approval, source-rights change, schema/API/auth/report semantic
+  changes, hosted authority, qualification PASS, or Level 10 authority. Bologna
+  implementation remains stopped while BSA-001 remains blocked until complete explicit
+  product/AOI/source-review authority is cited in the pilot-scope/source-authority/
+  source-rights packets. Do not create hosted deployment, hosted identity/RBAC, hosted
+  observability, source/vendor authority, new jurisdiction/rulepack/source coverage,
+  DS-017 approval, Bologna implementation, Bologna fixture capture, production traffic
+  proof, qualification PASS, owner-decision unfreeze, ranking/recommendation semantics,
+  multi-geography framework implementation, or Level 10 authority from repo-local
+  inference alone.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -2632,7 +2639,7 @@ tasks:
 
   - id: ODGAV-1
     title: Bologna owner-answer gate evaluation and worktree reconciliation
-    status: active
+    status: done
     depends_on: [BOL-ODP2-PACKET]
     lane: coordinator
     spec: plans/2026-06-28-odgav-owner-answer-evaluation.md
@@ -2648,6 +2655,45 @@ tasks:
       - Malformed, partial, dependency-violating, and downstream-unlock-requesting answers fail closed
       - Committed owner answers, authority records, source-rights approvals, corpus references, report proof references, and P0 status remain blocked
       - All 47 unmerged branch worktrees are classified and no unsafe worktree removal is performed
+
+  - id: MINERALS-FIXTURE
+    title: Extended-domain minerals fixture-ingestion proof
+    status: done
+    depends_on: [ODGAV-1]
+    lane: coordinator
+    spec: plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md
+    notes: >
+      Add the first extended-domain fixture-ingestion proof for minerals through
+      static local fixtures, evidence ingestion, claim generation, source-failure
+      handling, and dossier rendering on the existing Buncombe golden AOI. This owner-
+      independent US-MVP pass merged through PR #168 and does not approve sources,
+      change source rights, start live connectors, change schema/API/auth/report
+      semantics, unfreeze qualification, or unblock P0.
+    acceptance:
+      - Static minerals fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Active mining-claim fixture produces MINERALS_ACTIVE_CLAIMS_001 with ingested evidence linkage
+      - Source-unavailable fixture produces MINERALS_SOURCE_UNAVAILABLE and does not silently pass
+      - No Bologna authority, hosted authority, source-rights change, qualification PASS, or Level 10 claim is introduced
+
+  - id: BROADBAND-FIXTURE
+    title: Extended-domain broadband fixture-ingestion proof
+    status: active
+    depends_on: [MINERALS-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md
+    notes: >
+      Extend the landed minerals fixture-ingestion pattern to FCC Broadband Data
+      Collection fixture evidence on the existing Buncombe golden AOI. Cover the
+      no-provider path and the source-failure path through local fixture ingestion,
+      evidence-to-claim linkage, Section 12 dossier rendering, and forbidden-overclaim
+      checks. Do not run live FCC calls, approve sources, change source rights, alter
+      schema/API/auth/report semantics, unfreeze qualification, unblock P0, or claim
+      hosted/Level 10 authority.
+    acceptance:
+      - Static broadband fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - No-provider fixture produces BROADBAND_NO_ACCESS_001 with ingested evidence linkage and FCC provider-report caveats
+      - Source-unavailable fixture produces BROADBAND_SOURCE_UNAVAILABLE and does not become a no-provider conclusion
+      - Section 12 renders broadband evidence without legal, investment, access, water-rights, value, safety, or service-guarantee overclaims
 
   # --- Completed ---
   - id: T000
