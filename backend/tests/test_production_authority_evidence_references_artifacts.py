@@ -157,3 +157,107 @@ def test_production_authority_evidence_references_script_and_wrappers_are_valida
     assert "Remove-Item" not in ps1
     assert "mkdir" not in sh
     assert "rm " not in sh
+    assert "CheckerArgs.Count -eq 0" in ps1
+    assert 'if [[ "$#" -eq 0 ]]' in sh
+
+
+def test_production_authority_evidence_references_json_reports_empty_contract() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/production_authority_evidence_references_check.py",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    summary = yaml.safe_load(result.stdout)
+    assert summary["schema_version"] == "production_authority_evidence_references_summary_v1"
+    assert summary["ok"] is True
+    assert summary["contract_status"] == "blocked_no_submitted_references"
+    assert summary["source_intake"] == "config/production_authority_intake.yaml"
+    assert summary["follow_on_sequence"] == "config/authority_follow_on_sequence.yaml"
+    assert summary["current_evidence_reference_count"] == 0
+    assert summary["downstream_unlock_request_count"] == 0
+    assert summary["required_reference_field_count"] == 15
+    assert "authority_stream_id" in summary["required_reference_fields"]
+    assert "p0_unblock" in summary["forbidden_reference_effects"]
+
+    templates = {
+        template["authority_stream_id"]: template
+        for template in summary["stream_reference_templates"]
+    }
+    assert summary["stream_reference_template_count"] == 9
+    assert templates["ds017_source_entitlement"]["required_evidence_count"] == 14
+    assert templates["bologna_pilot_scope"]["required_evidence_count"] == 12
+    assert all(
+        template["current_authority_reference_count"] == 0
+        for template in templates.values()
+    )
+    assert all(
+        template["downstream_unlock_request_count"] == 0
+        for template in templates.values()
+    )
+    assert all(template["decision_updates_allowed"] is False for template in templates.values())
+
+
+def test_production_authority_evidence_references_summary_keeps_blocked_boundaries() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/production_authority_evidence_references_check.py",
+            "--summary",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "production authority evidence references summary: blocked" in result.stdout
+    assert "schema_version: production_authority_evidence_references_summary_v1" in result.stdout
+    assert "contract_status: blocked_no_submitted_references" in result.stdout
+    assert "current_evidence_references: 0" in result.stdout
+    assert "downstream_unlock_requests: 0" in result.stdout
+    assert "stream_reference_templates: 9" in result.stdout
+    assert (
+        "stream_reference_template ds017_source_entitlement: "
+        "status=missing_authority_reference"
+    ) in result.stdout
+    assert "forbidden_reference_effects:" in result.stdout
+    assert "p0_unblock" in result.stdout
+    assert "production authority evidence references check: ok" in result.stdout
+
+
+def test_production_authority_evidence_references_wrapper_forwards_summary_and_json() -> None:
+    wrapper_command = [
+        "powershell",
+        "-NoProfile",
+        "-File",
+        "scripts/run_production_authority_evidence_references_check.ps1",
+    ]
+    ps_summary = subprocess.run(
+        [*wrapper_command, "--summary"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "production authority evidence references summary: blocked" in ps_summary.stdout
+    assert "production authority evidence references: ok" not in ps_summary.stdout
+
+    ps_json = subprocess.run(
+        [*wrapper_command, "--json"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    parsed = yaml.safe_load(ps_json.stdout)
+    assert parsed["schema_version"] == "production_authority_evidence_references_summary_v1"
+    assert parsed["contract_status"] == "blocked_no_submitted_references"
+    assert "production authority evidence references: ok" not in ps_json.stdout
