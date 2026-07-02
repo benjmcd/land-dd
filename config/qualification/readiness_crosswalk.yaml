@@ -124,6 +124,22 @@ entries:
   - R-005
   evidence_role: authority_blocker
   notes: Production authority intake is owner-decision evidence, not empirical proof.
+- surface_id: authority_evidence_intake
+  surface_type: authority
+  config_paths: []
+  checker_paths:
+  - scripts/authority_evidence_intake_check.py
+  gate_paths:
+  - scripts/run_authority_evidence_intake_check.ps1
+  - scripts/run_authority_evidence_intake_check.sh
+  criterion_ids:
+  - P0-001
+  - G-021
+  - O-020
+  - S-005
+  - R-005
+  evidence_role: authority_blocker
+  notes: Authority evidence intake composes active routing, production authority streams, Bologna ODP gates, empty authority records, and P0 blocked status without recording authority or satisfying criteria.
 - surface_id: bologna_preflight
   surface_type: jurisdiction
   config_paths:

@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority evidence intake composition guard
+
+- Started clean worktree `worktrees/auth-guard` on
+  `codex/auth-evidence-guard` from live
+  `origin/main@9f184c238793534dd169ceb1462c42e4d48f6a57`, after authority
+  evidence intake routing merged through PR #174.
+- Added `scripts/authority_evidence_intake_check.py` with Windows/POSIX wrappers.
+  The guard composes the active `AUTH-EVIDENCE-INTAKE` routing state, production
+  authority streams, Bologna ODP/source/corpus/report gates, empty authority-record
+  contracts, readiness matrix, and committed `P0 = BLOCKED` status.
+- Added `backend/tests/test_authority_evidence_intake_artifacts.py` with
+  fail-closed coverage for active-plan drift, missing production authority streams,
+  downstream Bologna unlocks, and P0 promotion.
+- Mapped the new guard in the empirical-qualification readiness crosswalk as an
+  `authority_blocker` surface and updated the human-readable crosswalk. This keeps
+  it in the checker inventory without claiming any empirical criterion is passed.
+- Wired the guard into `scripts/verify.ps1` and `scripts/verify.sh`, updated the
+  manifest, active plan, project state, and active task validation list.
+- Preserved the authority boundary: no owner answer, source approval, source-rights
+  change, corpus, fixture capture, DB seed, report proof, schema/API/auth/UI/runtime
+  change, DS-017 approval, hosted authority, Level 10 claim, qualification PASS,
+  owner-decision unfreeze, or P0 unblock was introduced.
+- Focused guard tests, direct guard/wrapper runs, qualification status, structural
+  qualification validation, qualification selftest, readiness matrix, ruff, mypy, and
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Authority evidence intake routing
 
 - Started clean worktree `worktrees/post173-auth` on

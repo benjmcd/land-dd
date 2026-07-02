@@ -85,6 +85,9 @@ echo "== qualification P0 auto evidence =="
 echo "== qualification parameterization backlog =="
 "$PYTHON_BIN" scripts/qualification_parameterization_backlog_check.py --root .
 
+echo "== authority evidence intake =="
+"$PYTHON_BIN" scripts/authority_evidence_intake_check.py
+
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db migration =="
   ./scripts/db_apply_migrations.sh

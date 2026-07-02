@@ -163,6 +163,11 @@ Invoke-PythonCommand `
     -Label 'qualification parameterization backlog' `
     -Arguments @('scripts/qualification_parameterization_backlog_check.py', '--root', '.')
 
+Write-Host '== authority evidence intake =='
+Invoke-PythonCommand `
+    -Label 'authority evidence intake' `
+    -Arguments @('scripts/authority_evidence_intake_check.py')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')
