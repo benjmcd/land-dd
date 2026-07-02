@@ -4,6 +4,7 @@ import argparse
 import contextlib
 import importlib.util
 import io
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -39,6 +40,22 @@ EXPECTED_BOL_THREAD_STATUS = {
     "ODP-BOL-003": "missing_owner_answer",
     "ODP-BOL-004": "missing_owner_answer",
 }
+
+BLOCKED_IMPLEMENTATION_BOUNDARIES = (
+    "owner_answer_recording",
+    "source_approval",
+    "source_rights_change",
+    "recorded_corpus",
+    "fixture_capture",
+    "db_seed",
+    "report_proof",
+    "schema_api_auth_ui_runtime_change",
+    "ds017_approval",
+    "hosted_level_10_authority",
+    "qualification_pass",
+    "owner_decision_unfreeze",
+    "p0_unblock",
+)
 
 EXPECTED_CONFIG_STATUS = {
     "config/bologna_pilot_scope_authority.yaml": "blocked_no_pilot_scope_authority",
@@ -382,6 +399,209 @@ def run_required_validators() -> None:
         run_validator(label, path_text)
 
 
+def required_thread_fields(thread: dict[str, Any]) -> list[str]:
+    fields: list[str] = []
+    for key in (
+        "required_decisions",
+        "required_rights_decisions",
+        "required_corpus_decisions",
+        "required_manifest_fields",
+        "required_report_proof_fields",
+    ):
+        values = thread.get(key)
+        if isinstance(values, list):
+            fields.extend(str(value) for value in values)
+    return fields
+
+
+def build_summary() -> dict[str, Any]:
+    task_queue = load_yaml("tasks/task_queue.yaml")
+    production = load_yaml("config/production_authority_intake.yaml")
+    bologna = load_yaml("config/bologna_owner_answer_intake.yaml")
+    status = load_yaml("state/EMPIRICAL_QUALIFICATION_STATUS.yaml")
+    pilot_authority = load_yaml("config/bologna_pilot_scope_authority.yaml")
+    source_authority = load_yaml("config/bologna_source_authority_intake.yaml")
+    odp2_packet = load_yaml("config/bologna_odp2_owner_answer_packet.yaml")
+
+    tasks = require_list(task_queue.get("tasks"), "task queue tasks must be a list")
+    active_tasks = [
+        require_text(task.get("id"), "task id missing")
+        for task in tasks
+        if require_mapping(task, "task must be a mapping").get("status") == "active"
+    ]
+
+    production_streams = []
+    for stream in require_list(production.get("authority_streams"), "authority streams must be a list"):
+        stream_map = require_mapping(stream, "authority stream must be a mapping")
+        required_evidence = require_list(
+            stream_map.get("required_evidence"),
+            "authority stream required_evidence must be a list",
+        )
+        authority_references = require_list(
+            stream_map.get("authority_references"),
+            "authority stream authority_references must be a list",
+        )
+        production_streams.append(
+            {
+                "id": require_text(stream_map.get("id"), "authority stream id missing"),
+                "status": stream_map.get("status"),
+                "evidence_status": stream_map.get("evidence_status"),
+                "source_catalog": stream_map.get("source_catalog"),
+                "required_evidence": required_evidence,
+                "required_evidence_count": len(required_evidence),
+                "authority_reference_count": len(authority_references),
+                "decision_updates_allowed": stream_map.get("decision_updates_allowed"),
+            }
+        )
+
+    bologna_threads = []
+    for thread in require_list(bologna.get("bologna_decision_threads"), "Bologna threads missing"):
+        thread_map = require_mapping(thread, "Bologna thread must be a mapping")
+        owner_answer_references = require_list(
+            thread_map.get("owner_answer_references"),
+            "owner answer references must be a list",
+        )
+        required_fields = required_thread_fields(thread_map)
+        bologna_threads.append(
+            {
+                "odp_id": require_text(thread_map.get("odp_id"), "ODP id missing"),
+                "sequence": thread_map.get("sequence"),
+                "status": thread_map.get("status"),
+                "source_packets": thread_map.get("source_packets", []),
+                "prerequisite_odp_ids": thread_map.get("prerequisite_odp_ids", []),
+                "required_fields": required_fields,
+                "required_field_count": len(required_fields),
+                "owner_answer_reference_count": len(owner_answer_references),
+                "downstream_updates_allowed": thread_map.get("downstream_updates_allowed"),
+            }
+        )
+
+    qualifications = require_mapping(status.get("qualifications"), "qualifications missing")
+    p0 = require_mapping(qualifications.get("p0"), "P0 status missing")
+    pilot_contract = require_mapping(
+        pilot_authority.get("authority_record_contract"),
+        "pilot authority record contract missing",
+    )
+    source_contract = require_mapping(
+        source_authority.get("source_authority_record_contract"),
+        "source authority record contract missing",
+    )
+    odp2 = require_mapping(odp2_packet.get("packet"), "ODP2 packet missing")
+    return {
+        "schema_version": "authority_evidence_intake_summary_v1",
+        "ok": True,
+        "active_plan": task_queue.get("active_plan"),
+        "active_task": active_tasks[0] if len(active_tasks) == 1 else None,
+        "active_tasks": active_tasks,
+        "completed_prerequisite": EXPECTED_COMPLETED_PREREQUISITE,
+        "production_authority_status": production.get("status"),
+        "production_streams": production_streams,
+        "bologna_owner_answer_status": bologna.get("status"),
+        "bologna_threads": bologna_threads,
+        "authority_record_state": {
+            "pilot_authority_record_count": len(
+                require_list(
+                    pilot_contract.get("current_authority_records"),
+                    "pilot authority records must be a list",
+                )
+            ),
+            "source_authority_record_count": len(
+                require_list(
+                    source_contract.get("current_source_authority_records"),
+                    "source authority records must be a list",
+                )
+            ),
+            "odp2_owner_answer_reference_count": len(
+                require_list(
+                    odp2.get("current_owner_answer_references"),
+                    "ODP2 owner answer references must be a list",
+                )
+            ),
+            "odp2_source_authority_record_reference_count": len(
+                require_list(
+                    odp2.get("current_source_authority_record_references"),
+                    "ODP2 source authority record references must be a list",
+                )
+            ),
+            "odp2_source_rights_approval_reference_count": len(
+                require_list(
+                    odp2.get("current_source_rights_approval_references"),
+                    "ODP2 source rights approval references must be a list",
+                )
+            ),
+        },
+        "qualification": {
+            "p0_status": p0.get("status"),
+            "p0_result_path": p0.get("result_path"),
+            "non_p0_statuses": {
+                qualification_id: require_mapping(qualification, f"{qualification_id} status missing").get("status")
+                for qualification_id, qualification in qualifications.items()
+                if qualification_id != "p0"
+            },
+        },
+        "blocked_implementation_boundaries": list(BLOCKED_IMPLEMENTATION_BOUNDARIES),
+    }
+
+
+def format_summary(summary: dict[str, Any]) -> str:
+    production_streams = require_list(summary.get("production_streams"), "production streams missing")
+    bologna_threads = require_list(summary.get("bologna_threads"), "Bologna threads missing")
+    lines = [
+        "authority evidence intake summary: blocked",
+        f"schema_version: {summary.get('schema_version')}",
+        f"active_plan: {summary.get('active_plan')}",
+        f"active_task: {summary.get('active_task')}",
+        f"active_tasks: {', '.join(str(task) for task in summary.get('active_tasks', []))}",
+        f"completed_prerequisite: {summary.get('completed_prerequisite')}",
+        f"production_authority_status: {summary.get('production_authority_status')}",
+        f"bologna_owner_answer_status: {summary.get('bologna_owner_answer_status')}",
+        f"p0_status: {require_mapping(summary.get('qualification'), 'qualification missing').get('p0_status')}",
+        f"production_streams: {len(production_streams)}",
+    ]
+    for stream in production_streams:
+        stream_map = require_mapping(stream, "production stream must be a mapping")
+        lines.append(
+            "production_stream "
+            f"{stream_map.get('id')}: "
+            f"status={stream_map.get('status')} "
+            f"evidence_status={stream_map.get('evidence_status')} "
+            f"required_evidence={stream_map.get('required_evidence_count')} "
+            f"authority_references={stream_map.get('authority_reference_count')} "
+            f"decision_updates_allowed={stream_map.get('decision_updates_allowed')}"
+        )
+    lines.append(f"bologna_threads: {len(bologna_threads)}")
+    for thread in bologna_threads:
+        thread_map = require_mapping(thread, "Bologna thread must be a mapping")
+        lines.append(
+            "bologna_thread "
+            f"{thread_map.get('odp_id')}: "
+            f"status={thread_map.get('status')} "
+            f"required_fields={thread_map.get('required_field_count')} "
+            f"owner_answer_references={thread_map.get('owner_answer_reference_count')} "
+            f"downstream_updates_allowed={thread_map.get('downstream_updates_allowed')}"
+        )
+    authority_record_state = require_mapping(
+        summary.get("authority_record_state"),
+        "authority record state missing",
+    )
+    lines.append(
+        "authority_record_state: "
+        f"pilot={authority_record_state.get('pilot_authority_record_count')} "
+        f"source={authority_record_state.get('source_authority_record_count')} "
+        f"odp2_owner_answers={authority_record_state.get('odp2_owner_answer_reference_count')} "
+        "odp2_source_authority_refs="
+        f"{authority_record_state.get('odp2_source_authority_record_reference_count')} "
+        "odp2_source_rights_refs="
+        f"{authority_record_state.get('odp2_source_rights_approval_reference_count')}"
+    )
+    lines.append(
+        "blocked_implementation_boundaries: "
+        + ", ".join(str(boundary) for boundary in summary.get("blocked_implementation_boundaries", []))
+    )
+    lines.append("authority evidence intake check: ok")
+    return "\n".join(lines)
+
+
 def validate() -> None:
     validate_required_files()
     validate_task_routing(load_yaml("tasks/task_queue.yaml"))
@@ -399,9 +619,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Validate the active authority-evidence intake composition boundary.",
     )
-    parser.parse_args(argv)
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--json", action="store_true", dest="json_output")
+    output_group.add_argument("--summary", action="store_true", dest="summary_output")
+    args = parser.parse_args(argv)
     validate()
-    print("authority evidence intake check: ok")
+    if args.json_output:
+        print(json.dumps(build_summary(), indent=2, sort_keys=True))
+    elif args.summary_output:
+        print(format_summary(build_summary()))
+    else:
+        print("authority evidence intake check: ok")
     return 0
 
 
