@@ -1,0 +1,43 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_broadband_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T10:00:00Z",
+    "finished_at": "2026-06-06T10:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_broadband_unavailable",
+    "metrics": { "fixture_only": true, "source": "local_json", "failure_reason": "source_unavailable" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d2d3d4d5-d2d3-4d4d-8d5d-d2d3d4d5d6d7",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "BROADBAND_SOURCE_UNAVAILABLE",
+      "domain": "broadband",
+      "observation": "Fixture FCC BDC screening: broadband availability source could not be retrieved.",
+      "observed_value": {
+        "failure_reason": "source_unavailable",
+        "error_message": "FCC BDC availability source failed or returned no usable broadband records.",
+        "retryable": true
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_broadband_availability_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "FCC BDC broadband availability source could not be retrieved; recorded as a source failure, not a no-provider conclusion. Verify internet options directly with local providers.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

@@ -2,16 +2,26 @@
 
 Active implementation plans live here. Keep them executable and narrow.
 
-Latest completed plan: `2026-06-27-odp2-owner-answer-packet.md`.
+Latest completed plan:
+`plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md`.
 
-Current routing plan: `plans/2026-06-28-odgav-owner-answer-evaluation.md`.
+Current routing plan:
+`plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md`.
 
-`ODGAV-1` is the active owner-independent Bologna validation pass. It adds pure
-synthetic owner-answer evaluators for the owner-answer intake, `bol_scope_auth`, and
-ODP-BOL-001 through ODP-BOL-004 response gates, then records live worktree branch
-reconciliation. It does not record real owner authority, approve sources, create a
-corpus, capture fixtures, mutate the DB, prove a report, touch Claude-owned PR #166 UI
-surfaces, unfreeze qualification, or unblock P0.
+`BROADBAND-FIXTURE` is the active owner-independent US-MVP fixture-ingestion pass. It
+extends the landed minerals pattern to FCC Broadband Data Collection fixture evidence
+for the existing Buncombe golden AOI, covering no-provider and source-failure paths
+through evidence ingestion, claim generation, and dossier rendering. It does not run
+live FCC calls, approve sources, change source rights, create hosted authority, touch
+schema/API/auth/UI surfaces, unfreeze qualification, claim Level 10 authority, or
+unblock P0.
+
+`ODGAV-1` completed the owner-independent Bologna validation pass through PR #167
+under `plans/2026-06-28-odgav-owner-answer-evaluation.md`, and the minerals
+extended-domain fixture-ingestion pass completed through PR #168. ODGAV does not
+record real owner authority, approve sources, create a corpus, capture Bologna
+fixtures, mutate the DB, prove a Bologna report, unfreeze qualification, or unblock
+P0.
 
 `BSR-001` completed the validate-only Bologna source-rights matrix through PR #109.
 Post-BSR routing landed through PR #110, and `BSG-001` completed the validate-only

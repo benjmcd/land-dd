@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Extended-domain broadband fixture ingestion
+
+- Started clean worktree `worktrees/post168-sync` on `codex/post168-sync` from live
+  `origin/main@35077d25e79fb105ada87fc86a1ead6623eb5e66`, leaving the dirty root
+  checkout untouched except for its pre-existing inbox edits.
+- Reconciled live state after ODGAV PR #167 and minerals PR #168: ODGAV and minerals
+  are completed, while committed routing still pointed at ODGAV as active.
+- Added the active broadband fixture-ingestion plan and updated project/task/readiness
+  routing so `BROADBAND-FIXTURE` is the only active owner-independent lane and
+  `ODGAV-1` plus `MINERALS-FIXTURE` are completed predecessors.
+- Added `backend/app/connectors/broadband_fixture.py`, a local-only static fixture
+  connector for FCC Broadband Data Collection evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote paths,
+  connector/domain mismatches, empty evidence, and status/evidence-type mismatches.
+- Added `evaluate_broadband_fixture_quality`, public exports, two Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  no-provider advisory and source-failure unknown paths.
+- Preserved the authority boundary: no live FCC calls, source approval, source-rights
+  change, schema/API/auth/report semantic change, Bologna authority, hosted authority,
+  Level 10 claim, qualification PASS, or P0 unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, qualification status remained
+  `BLOCKED=1 NOT_RUN=20`, and full `.\scripts\verify.ps1` passed. DB smoke was skipped
+  by default.
+
 ## 2026-06-28 ODGAV owner-answer gate evaluation
 
 - Started clean worktree `worktrees/odgav` on `codex/odgav` from live

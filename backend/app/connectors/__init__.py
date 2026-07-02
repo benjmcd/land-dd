@@ -22,6 +22,10 @@ from app.connectors.blm_mlrs import (
     BlmMlrsConnectorError,
     BlmMlrsConnectorResult,
 )
+from app.connectors.broadband_fixture import (
+    BroadbandFixtureConnectorResult,
+    StaticBroadbandFixtureConnector,
+)
 from app.connectors.brunswick_parcels import (
     BRUNSWICK_PARCELS_CAVEAT,
     BRUNSWICK_PARCELS_CONNECTOR_NAME,
@@ -143,6 +147,7 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
     evaluate_access_fixture_quality,
+    evaluate_broadband_fixture_quality,
     evaluate_buildability_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_minerals_fixture_quality,
@@ -356,6 +361,7 @@ __all__ = [
     "BlmMlrsConnector",
     "BlmMlrsConnectorError",
     "BlmMlrsConnectorResult",
+    "BroadbandFixtureConnectorResult",
     "BRUNSWICK_ZONING_CAVEAT",
     "BRUNSWICK_ZONING_CONNECTOR_NAME",
     "BRUNSWICK_ZONING_METHOD_CODE",
@@ -506,6 +512,7 @@ __all__ = [
     "SsurgoConnectorError",
     "SsurgoConnectorResult",
     "StaticAccessFixtureConnector",
+    "StaticBroadbandFixtureConnector",
     "StaticBuildabilityFixtureConnector",
     "StaticFloodFixtureConnector",
     "StaticLocalFileConnector",
@@ -595,6 +602,7 @@ __all__ = [
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
     "evaluate_access_fixture_quality",
+    "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_minerals_fixture_quality",

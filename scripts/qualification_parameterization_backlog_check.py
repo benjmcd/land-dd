@@ -21,6 +21,10 @@ EXPECTED_SCOPE_PURSUIT_PLAN = "plans/2026-06-26-bologna-scope-pursuit.md"
 EXPECTED_BOL_SCOPE_AUTH_PLAN = "plans/2026-06-27-bol-scope-auth.md"
 EXPECTED_ODP2_PACKET_PLAN = "plans/2026-06-27-odp2-owner-answer-packet.md"
 EXPECTED_ODGAV_PLAN = "plans/2026-06-28-odgav-owner-answer-evaluation.md"
+EXPECTED_MINERALS_PLAN = "plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md"
+EXPECTED_BROADBAND_PLAN = (
+    "plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md"
+)
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -58,6 +62,8 @@ EXPECTED_DONE_TASKS = (
     "BOL-SCOPE-PURSUIT",
     "BOL-SCOPE-AUTH",
     "BOL-ODP2-PACKET",
+    "ODGAV-1",
+    "MINERALS-FIXTURE",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -619,8 +625,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_ODGAV_PLAN,
-            "task queue active_plan must point to the ODGAV owner-answer evaluation plan",
+            active_plan == EXPECTED_BROADBAND_PLAN,
+            "task queue active_plan must point to the broadband fixture-ingestion plan",
             errors,
         )
         require(
@@ -639,8 +645,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     }
     active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
     require(
-        active_ids == ["ODGAV-1"],
-        f"task queue must have only ODGAV-1 active, found {active_ids}",
+        active_ids == ["BROADBAND-FIXTURE"],
+        f"task queue must have only BROADBAND-FIXTURE active, found {active_ids}",
         errors,
     )
 
@@ -654,7 +660,7 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(eq5.get("spec") == EXPECTED_EQ5_PLAN, "EQ-5 spec must point to the EQ-5 plan", errors)
     odgav = by_id.get("ODGAV-1") or {}
     require(odgav.get("depends_on") == ["BOL-ODP2-PACKET"], "ODGAV-1 dependency drifted", errors)
-    require(odgav.get("status") == "active", "ODGAV-1 must be active", errors)
+    require(odgav.get("status") == "done", "ODGAV-1 must be done", errors)
     require(
         odgav.get("spec") == EXPECTED_ODGAV_PLAN,
         "ODGAV-1 spec must point to the ODGAV owner-answer evaluation plan",
@@ -663,6 +669,49 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "side-effect-free synthetic owner-answer evaluators" in str(odgav.get("notes") or ""),
         "ODGAV-1 notes must preserve owner-independent synthetic evaluator scope",
+        errors,
+    )
+    minerals = by_id.get("MINERALS-FIXTURE") or {}
+    require(
+        minerals.get("depends_on") == ["ODGAV-1"],
+        "MINERALS-FIXTURE dependency drifted",
+        errors,
+    )
+    require(
+        minerals.get("status") == "done",
+        "MINERALS-FIXTURE must be done",
+        errors,
+    )
+    require(
+        minerals.get("spec") == EXPECTED_MINERALS_PLAN,
+        "MINERALS-FIXTURE spec must point to the minerals fixture-ingestion plan",
+        errors,
+    )
+    require(
+        "extended-domain fixture-ingestion proof for minerals"
+        in str(minerals.get("notes") or ""),
+        "MINERALS-FIXTURE notes must preserve completed minerals fixture scope",
+        errors,
+    )
+    broadband = by_id.get("BROADBAND-FIXTURE") or {}
+    require(
+        broadband.get("depends_on") == ["MINERALS-FIXTURE"],
+        "BROADBAND-FIXTURE dependency drifted",
+        errors,
+    )
+    require(
+        broadband.get("status") == "active",
+        "BROADBAND-FIXTURE must be active",
+        errors,
+    )
+    require(
+        broadband.get("spec") == EXPECTED_BROADBAND_PLAN,
+        "BROADBAND-FIXTURE spec must point to the broadband fixture-ingestion plan",
+        errors,
+    )
+    require(
+        "FCC Broadband Data Collection fixture evidence" in str(broadband.get("notes") or ""),
+        "BROADBAND-FIXTURE notes must preserve FCC broadband fixture scope",
         errors,
     )
 
@@ -700,7 +749,9 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("plans/README.md", EXPECTED_BOL_SCOPE_AUTH_PLAN),
         ("plans/README.md", EXPECTED_ODP2_PACKET_PLAN),
         ("plans/README.md", EXPECTED_ODGAV_PLAN),
-        ("state/PROJECT_STATE.md", "ODGAV owner-answer evaluation"),
+        ("plans/README.md", EXPECTED_MINERALS_PLAN),
+        ("plans/README.md", EXPECTED_BROADBAND_PLAN),
+        ("state/PROJECT_STATE.md", "Post-168 extended-domain fixture routing"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
@@ -712,6 +763,8 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (EXPECTED_BOL_SCOPE_AUTH_PLAN, "## Decision log"),
         (EXPECTED_ODP2_PACKET_PLAN, "## Decision log"),
         (EXPECTED_ODGAV_PLAN, "## Decision log"),
+        (EXPECTED_MINERALS_PLAN, "## Acceptance criteria"),
+        (EXPECTED_BROADBAND_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -769,7 +822,7 @@ def main(argv: list[str] | None = None) -> int:
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
-                    "active_plan": EXPECTED_ODGAV_PLAN,
+                    "active_plan": EXPECTED_BROADBAND_PLAN,
                 },
                 indent=2,
                 sort_keys=True,

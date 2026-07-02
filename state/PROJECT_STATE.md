@@ -1,54 +1,54 @@
 # Project State
 
-## Current checkpoint (2026-06-28 ODGAV owner-answer evaluation)
+## Current checkpoint (2026-07-02 Post-168 extended-domain fixture routing)
 
 This branch starts from live `origin/main`
-`8b24cffc1f253c9237bce78c85cd05b99631e7cf`, after the ODP-BOL-002 owner-answer
-packet checkpoint. The active pass is owner-independent validation only: add
-side-effect-free synthetic owner-answer evaluators for the Bologna owner-answer intake,
-`bol_scope_auth`, and ODP-BOL-001 through ODP-BOL-004 response gates, then record live
-worktree reconciliation. It does not record real owner authority, change committed
-authority records, approve source rights, authorize a recorded corpus, capture
-fixtures, seed or mutate the DB, prove a DB-backed report, touch Claude-owned PR #166
-UI/API surfaces, approve DS-017, unfreeze qualification, claim hosted/Level 10
+`35077d25e79fb105ada87fc86a1ead6623eb5e66`, after the ODGAV owner-answer gate
+evaluation merged through PR #167 and the first extended-domain minerals
+fixture-ingestion proof merged through PR #168. The active pass is owner-independent
+US-MVP fixture ingestion only: extend the landed minerals pattern to FCC Broadband Data
+Collection fixture evidence on the existing Buncombe golden AOI. It does not run live
+FCC calls, approve sources, change source rights, seed or mutate the DB outside the
+in-memory/private-MVP test path, change schema/API/auth/report semantics, approve
+DS-017, unfreeze qualification, record Bologna authority, claim hosted/Level 10
 authority, or change `P0 = BLOCKED`.
 
 - **Current implementation plan**:
-  `plans/2026-06-28-odgav-owner-answer-evaluation.md`.
+  `plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md`.
 - **Known boundaries to preserve**:
-  The ODGAV pass is Bologna validation infrastructure only. It must not record real
-  owner authority, source authority, source-rights approval, recorded-corpus authority,
-  fixture authority, DB-backed report-proof authority, DS-017 approval, hosted authority,
-  Level 10 authority, qualification PASS, or any source/corpus/report/runtime unblock
-  from repo-local inference.
+  The broadband fixture-ingestion pass is a repo-local, owner-independent utility
+  proof. It must not record real owner authority, source authority, source-rights
+  approval, Bologna recorded-corpus authority, DB-backed Bologna report-proof
+  authority, DS-017 approval, hosted authority, Level 10 authority, qualification PASS,
+  or any source/corpus/report/runtime unblock from repo-local inference.
 - **Current ODGAV boundary**:
-  `scripts/bologna_owner_answer_evaluator.py` is a pure in-memory evaluator used by the
-  Bologna gate checkers and canonical qualification selftest. Complete synthetic
-  `approve_with_cited_authority` answers can be accepted only when prerequisite,
-  decision-coverage, companion-record, and no-downstream-unlock requirements are
-  supplied; malformed, partial, dependency-violating, or downstream-unlock requests fail
-  closed. This proves the future owner-answer path without writing authority.
-- **Current worktree reconciliation boundary**:
-  `state/worktree-reconciliation-2026-06-28.md` classifies all 47 unmerged branch
-  worktrees present after creating `worktrees/odgav`. No worktree is retired in this
-  pass because none met the full safe-retirement rule; PR #166 remains open and
-  Claude-owned, three unmerged worktrees are dirty, and all other branch worktrees are
-  unmerged without supersession proof.
+  `scripts/bologna_owner_answer_evaluator.py` remains a pure in-memory evaluator used
+  by the Bologna gate checkers and canonical qualification selftest. ODGAV completion
+  proves that complete synthetic future answers can be evaluated and bad inputs fail
+  closed; it does not write or imply real Bologna authority.
+- **Current extended-domain boundary**:
+  The minerals fixture-ingestion proof is complete through PR #168 and proves the
+  pattern for one extended domain. This branch extends that pattern to broadband with
+  local FCC Broadband Data Collection fixtures, connector fail-closed tests, and
+  private-MVP no-provider/source-failure tests on the existing Buncombe golden AOI.
+  Water, environmental hazards, and geology remain later lanes until this broadband
+  proof is reviewed/landed and the next fixture-ingestion plan is selected.
 - **Current task state**:
-  `ODGAV-1` is active. Completed task lineage retained from prior checkpoints includes
-  `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`, `EQ-1`, `EQ-BOL`,
-  `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`,
+  Active task is BROADBAND-FIXTURE. Completed task lineage retained from prior
+  checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`,
+  `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`,
   `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`, `HCV-2`, `HCV-3`,
   `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, `BOL-ODP-1`, `BOL-ODP1-GATE`,
-  `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`, `BOL-POST-ODP4-AUTH`,
-  `EQ-5`, `EQ-R`, `BOL-ODP1-PACKET`, `BOL-POST-ODP1-PACKET`,
-  `BOL-SCOPE-PURSUIT`, `BOL-SCOPE-AUTH`, and `BOL-ODP2-PACKET`. `BSA-001` remains
-  blocked until product/AOI and source-review authority is cited. `P0` remains
-  `BLOCKED`.
-- **Immediate next pursuit**: finish verification for the ODGAV evaluator and
-  worktree-reconciliation pass, then continue to the external-authority-dependent
-  ODP-BOL-001 cited product/AOI/scope authority path. If no authority arrives, only
-  repo-local non-authorizing parameterization and validation maintenance may proceed.
+  `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`, `BOL-POST-ODP4-AUTH`, `EQ-5`,
+  `EQ-R`, `BOL-ODP1-PACKET`, `BOL-POST-ODP1-PACKET`, `BOL-SCOPE-PURSUIT`,
+  `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, and `MINERALS-FIXTURE`.
+  `BSA-001` remains blocked until product/AOI and source-review authority is cited.
+  `P0` remains `BLOCKED`.
+- **Immediate next pursuit**: implement and validate the broadband fixture-ingestion
+  lane through branch review/merge. Acceptance proves no-provider and source-failure
+  evidence paths through local fixture ingestion, evidence-to-claim linkage, Section 12
+  dossier rendering, and forbidden-overclaim checks while preserving all Bologna,
+  source-authority, DS-017, hosted, Level 10, and qualification blockers.
 
 ## Current checkpoint (2026-06-27 ODP-BOL-002 owner-answer packet)
 

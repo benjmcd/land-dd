@@ -1,0 +1,48 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "d1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_broadband_static",
+    "status": "succeeded",
+    "started_at": "2026-06-06T10:00:00Z",
+    "finished_at": "2026-06-06T10:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_broadband_no_access",
+    "metrics": { "fixture_only": true, "source": "local_json" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "d1d2d3d4-d1d2-4d3d-8d4d-d1d2d3d4d5d6",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "FCC_BROADBAND_AVAILABILITY_SCREEN",
+      "domain": "broadband",
+      "observation": "Fixture FCC BDC screening: no fixed broadband providers are reported for the query point.",
+      "observed_value": {
+        "has_any_broadband": false,
+        "has_high_speed_broadband": false,
+        "provider_count": 0,
+        "max_download_mbps": null,
+        "max_upload_mbps": null,
+        "technology_types": [],
+        "fcc_bdc_lat": 35.601234,
+        "fcc_bdc_lon": -82.552345
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_broadband_availability_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only FCC Broadband Data Collection screening. Provider-reported coverage may lag real availability and does not guarantee service at a parcel. Verify internet options directly with local providers.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}
