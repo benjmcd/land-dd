@@ -1,0 +1,49 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "a3333333-a333-4333-8333-a33333333333",
+    "dataset_version_id": "77777777-7777-4777-8777-777777777777",
+    "connector_name": "fixture_water_static",
+    "status": "failed",
+    "started_at": "2026-06-10T10:00:00Z",
+    "finished_at": "2026-06-10T10:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_water_unavailable",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "station_count": 0,
+      "failure_reason": "usgs_water_request_error",
+      "usgs_bbox": "-82.56000000,35.59000000,-82.54000000,35.61000000"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "a3334444-a333-4444-8444-a33344444444",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "WATER_SOURCE_UNAVAILABLE",
+      "domain": "water",
+      "observation": "Fixture USGS water monitoring source could not be retrieved.",
+      "observed_value": {
+        "failure_reason": "usgs_water_request_error",
+        "error_message": "USGS water monitoring source failed or returned no usable records.",
+        "retryable": true
+      },
+      "source_id": "66666666-6666-4666-8666-666666666666",
+      "dataset_version_id": "77777777-7777-4777-8777-777777777777",
+      "method_code": "fixture_water_monitoring_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "USGS water monitoring source could not be retrieved; recorded as a source failure, not a no-water or no-issue conclusion. It does not constitute evidence of water rights, well viability, supply adequacy, legal water access, potable water, lawful hauling, or final water availability.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": "2026-06-10",
+      "observed_at": "2026-06-10T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

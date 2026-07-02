@@ -159,6 +159,7 @@ from app.connectors.fixture_quality import (
     evaluate_parcel_fixture_quality,
     evaluate_soils_fixture_quality,
     evaluate_terrain_fixture_quality,
+    evaluate_water_fixture_quality,
     evaluate_wetlands_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -339,6 +340,10 @@ from app.connectors.usgs_water_monitoring import (
     UsgsWaterConnectorError,
     UsgsWaterConnectorResult,
     UsgsWaterMonitoringConnector,
+)
+from app.connectors.water_fixture import (
+    StaticWaterFixtureConnector,
+    WaterFixtureConnectorResult,
 )
 from app.connectors.wetlands_fixture import (
     StaticWetlandsFixtureConnector,
@@ -529,6 +534,7 @@ __all__ = [
     "StaticParcelFixtureConnector",
     "StaticSoilsFixtureConnector",
     "StaticTerrainFixtureConnector",
+    "StaticWaterFixtureConnector",
     "StaticWetlandsFixtureConnector",
     "StaticZoningFixtureConnector",
     "TerrainFixtureConnectorResult",
@@ -559,6 +565,7 @@ __all__ = [
     "UsgsWaterConnectorError",
     "UsgsWaterConnectorResult",
     "UsgsWaterMonitoringConnector",
+    "WaterFixtureConnectorResult",
     "EPA_ECHO_CAVEAT",
     "EPA_ECHO_CONNECTOR_NAME",
     "EPA_ECHO_MAX_BBOX_DEGREES",
@@ -617,6 +624,7 @@ __all__ = [
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",
+    "evaluate_water_fixture_quality",
     "evaluate_wetlands_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

@@ -2,6 +2,65 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Water Fixture Ingestion
+
+**Scope:** Add an owner-independent USGS water monitoring context fixture-ingestion
+proof on the existing Buncombe golden AOI and preserve all existing authority blockers.
+This includes local-only fixtures, connector fail-closed validation, monitoring-
+stations-found/no-monitoring-stations/source-failure/conflicting/stale claim routing,
+evidence-to-claim linkage, Section 9 dossier rendering, and forbidden-overclaim checks.
+It does not run live USGS calls, approve sources, change source rights, determine water
+rights, determine well viability, alter schema/API/auth/report semantics, approve
+DS-017, record Bologna authority, unfreeze qualification, claim hosted/Level 10
+authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\water_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\water_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Water connector and private-MVP tests passed (`15 passed`) after aligning fixture
+  evidence payloads with the existing source-observation allowlist by keeping bbox
+  metadata in retrieval metrics only.
+- Broader focused connector/private-MVP/routing pytest passed (`29 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Source readiness passed with `DS-005: ready USGS Water Data APIs`; `DS-013: blocked`
+  and `DS-014: blocked` remained blocked.
+- Qualification parameterization backlog check passed with `WATER-FIXTURE` as the only
+  active task and `P0 status: BLOCKED`.
+- Readiness matrix check passed.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for DS-005 USGS water
+monitoring context evidence. Monitoring station presence or absence does not determine
+water rights, well yield or viability, legal water access, potable water, lawful
+hauling, supply adequacy, title, buildability, value, insurability, lending
+suitability, or investment quality. No DS-013/DS-014 authority, source approval,
+source-rights change, live connector run, DB-backed production proof, Bologna
+authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock is
+introduced.
+
 ## 2026-07-02 Environmental Hazard Fixture Ingestion
 
 **Scope:** Add an owner-independent EPA ECHO environmental hazard fixture-ingestion

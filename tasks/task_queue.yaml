@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-07-02-env-fixture.md
+active_plan: plans/2026-07-02-water-fixture.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -91,14 +91,17 @@ routing_note: >
   owner-independent validation pass for side-effect-free synthetic Bologna
   owner-answer evaluation plus worktree reconciliation through PR #167, and
   MINERALS-FIXTURE completed the first extended-domain fixture-ingestion proof through
-  PR #168 at `35077d25e79fb105ada87fc86a1ead6623eb5e66`, and BROADBAND-FIXTURE
+  PR #168 at `35077d25e79fb105ada87fc86a1ead6623eb5e66`, BROADBAND-FIXTURE
   completed the FCC Broadband Data Collection fixture-ingestion proof through PR #169
-  at `3b2bd1897f8227ca24cb7290d8026ff3b2757356`. ENV-FIXTURE is the active
-  owner-independent US-MVP lane: extend the landed fixture-ingestion pattern to EPA
-  ECHO environmental hazard fixture evidence on the existing Buncombe golden AOI
-  without live EPA ECHO calls, source approval, source-rights change,
-  schema/API/auth/report semantic changes, hosted authority, qualification PASS, or
-  Level 10 authority. Bologna implementation remains stopped while BSA-001 remains
+  at `3b2bd1897f8227ca24cb7290d8026ff3b2757356`, and ENV-FIXTURE completed the EPA
+  ECHO environmental hazard fixture-ingestion proof through PR #170 at
+  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`. WATER-FIXTURE is the active
+  owner-independent US-MVP lane: extend the landed fixture-ingestion pattern to USGS
+  water monitoring context fixture evidence on the existing Buncombe golden AOI
+  without live USGS calls, water-rights or well-viability conclusions, source
+  approval, source-rights change, schema/API/auth/report semantic changes, hosted
+  authority, qualification PASS, or Level 10 authority. Bologna implementation
+  remains stopped while BSA-001 remains
   blocked until complete explicit product/AOI/source-review authority is cited in the
   pilot-scope/source-authority/source-rights packets. Do not create hosted deployment,
   hosted identity/RBAC, hosted observability, source/vendor authority, new jurisdiction/
@@ -2699,7 +2702,7 @@ tasks:
 
   - id: ENV-FIXTURE
     title: Extended-domain environmental hazard fixture-ingestion proof
-    status: active
+    status: done
     depends_on: [BROADBAND-FIXTURE]
     lane: coordinator
     spec: plans/2026-07-02-env-fixture.md
@@ -2716,6 +2719,30 @@ tasks:
       - Regulated-facility fixture produces ENV_001 with ingested evidence linkage and EPA ECHO screening caveats
       - Source-unavailable fixture produces ENV_SOURCE_UNAVAILABLE_UNKNOWN and does not become a no-hazard conclusion
       - Section 11 renders env-hazard evidence without contamination, safety, liability, value, insurance, lending, investment, access, title, buildability, or water-rights overclaims
+
+  - id: WATER-FIXTURE
+    title: Extended-domain water fixture-ingestion proof
+    status: active
+    depends_on: [ENV-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-water-fixture.md
+    notes: >
+      Extend the landed minerals, broadband, and environmental hazard fixture-ingestion
+      pattern to USGS water monitoring context fixture evidence on the existing
+      Buncombe golden AOI. Cover monitoring-stations-found, no-monitoring-stations,
+      source-failure, conflicting, and stale paths through local fixture ingestion,
+      evidence-to-claim linkage, Section 9 dossier rendering, and forbidden-overclaim
+      checks. Do not run live USGS calls, approve sources, change source rights,
+      determine water rights, determine well viability, alter schema/API/auth/report
+      semantics, unfreeze qualification, unblock P0, or claim hosted/Level 10
+      authority.
+    acceptance:
+      - Static water fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Monitoring-stations-found fixture produces WATER_MONITORING_SCREEN evidence without WATER_001
+      - No-monitoring-stations fixture produces WATER_001 with ingested evidence linkage and water-rights/well caveats
+      - Source-unavailable fixture produces WATER_SOURCE_UNAVAILABLE_UNKNOWN and does not become a no-water-context conclusion
+      - Conflicting and stale fixtures route to review-required claims, not false no-water-context conclusions
+      - Section 9 renders water context without water-rights, well-yield, potable-water, legal-water-access, supply, buildability, value, lending, insurance, investment, or safety overclaims
 
   # --- Completed ---
   - id: T000
