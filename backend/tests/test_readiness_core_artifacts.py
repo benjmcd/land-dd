@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-07-02-post-geology-routing.md"
+        == "plans/2026-07-02-authority-evidence-intake.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -95,6 +95,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "ENV-FIXTURE" in readiness.checkpoint.completed_task_ids
     assert "WATER-FIXTURE" in readiness.checkpoint.completed_task_ids
     assert "GEOLOGY-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "POST-GEOLOGY-ROUTING" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -109,7 +110,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "Bologna" in readiness.checkpoint.boundary_text
     assert readiness.task_queue.active_plan == readiness.checkpoint.active_plan
     assert [task.task_id for task in readiness.task_queue.active_tasks] == [
-        "POST-GEOLOGY-ROUTING"
+        "AUTH-EVIDENCE-INTAKE"
     ]
     assert any(task.task_id == "READINESS-CORE" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BOL-PRIORITY" for task in readiness.task_queue.completed_tasks)
@@ -204,6 +205,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
             "ENV-FIXTURE",
             "WATER-FIXTURE",
             "GEOLOGY-FIXTURE",
+            "POST-GEOLOGY-ROUTING",
         }
         for task in readiness.task_queue.active_tasks
     )

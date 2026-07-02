@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority evidence intake routing
+
+- Started clean worktree `worktrees/post173-auth` on
+  `codex/post173-authority-routing` from live
+  `origin/main@1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`, after post-geology
+  routing merged through PR #173.
+- Added `plans/2026-07-02-authority-evidence-intake.md` as the current
+  authority-evidence routing posture.
+- Updated `plans/README.md`, `state/PROJECT_STATE.md`, and `tasks/task_queue.yaml` so
+  `POST-GEOLOGY-ROUTING` is completed and `AUTH-EVIDENCE-INTAKE` is the only active
+  task.
+- Updated the qualification backlog checker and readiness tests to enforce the
+  authority-evidence posture and fail closed if source/Bologna/DS-017/hosted/Level 10
+  or qualification authority is inferred from repo-local state.
+- Preserved the authority boundary: no owner answer, source approval, source-rights
+  change, corpus, fixture capture, DB seed, report proof, schema/API/auth/UI/runtime
+  change, DS-017 approval, hosted authority, Level 10 claim, qualification PASS,
+  owner-decision unfreeze, or P0 unblock was introduced.
+- Focused routing tests, backlog check, Bologna authority checks, source readiness,
+  readiness matrix, qualification status, ruff, mypy, diff checks, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Post-geology routing closeout
 
 - Started clean worktree `worktrees/post-geology` on

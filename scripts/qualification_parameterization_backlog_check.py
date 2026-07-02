@@ -29,6 +29,7 @@ EXPECTED_ENV_HAZARD_PLAN = "plans/2026-07-02-env-fixture.md"
 EXPECTED_WATER_PLAN = "plans/2026-07-02-water-fixture.md"
 EXPECTED_GEOLOGY_PLAN = "plans/2026-07-02-geology-fixture.md"
 EXPECTED_POST_GEOLOGY_PLAN = "plans/2026-07-02-post-geology-routing.md"
+EXPECTED_AUTH_EVIDENCE_PLAN = "plans/2026-07-02-authority-evidence-intake.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -72,6 +73,7 @@ EXPECTED_DONE_TASKS = (
     "ENV-FIXTURE",
     "WATER-FIXTURE",
     "GEOLOGY-FIXTURE",
+    "POST-GEOLOGY-ROUTING",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -633,8 +635,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_POST_GEOLOGY_PLAN,
-            "task queue active_plan must point to the post-geology routing plan",
+            active_plan == EXPECTED_AUTH_EVIDENCE_PLAN,
+            "task queue active_plan must point to the authority-evidence intake plan",
             errors,
         )
         require(
@@ -653,8 +655,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     }
     active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
     require(
-        active_ids == ["POST-GEOLOGY-ROUTING"],
-        f"task queue must have only POST-GEOLOGY-ROUTING active, found {active_ids}",
+        active_ids == ["AUTH-EVIDENCE-INTAKE"],
+        f"task queue must have only AUTH-EVIDENCE-INTAKE active, found {active_ids}",
         errors,
     )
 
@@ -793,8 +795,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        post_geology.get("status") == "active",
-        "POST-GEOLOGY-ROUTING must be active",
+        post_geology.get("status") == "done",
+        "POST-GEOLOGY-ROUTING must be done",
         errors,
     )
     require(
@@ -805,6 +807,28 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "Routing-only closeout after PR #172" in str(post_geology.get("notes") or ""),
         "POST-GEOLOGY-ROUTING notes must preserve routing-only closeout scope",
+        errors,
+    )
+    auth_evidence = by_id.get("AUTH-EVIDENCE-INTAKE") or {}
+    require(
+        auth_evidence.get("depends_on") == ["POST-GEOLOGY-ROUTING"],
+        "AUTH-EVIDENCE-INTAKE dependency drifted",
+        errors,
+    )
+    require(
+        auth_evidence.get("status") == "active",
+        "AUTH-EVIDENCE-INTAKE must be active",
+        errors,
+    )
+    require(
+        auth_evidence.get("spec") == EXPECTED_AUTH_EVIDENCE_PLAN,
+        "AUTH-EVIDENCE-INTAKE spec must point to the authority-evidence intake plan",
+        errors,
+    )
+    require(
+        "Authority-evidence routing posture after PR #173"
+        in str(auth_evidence.get("notes") or ""),
+        "AUTH-EVIDENCE-INTAKE notes must preserve authority-evidence routing scope",
         errors,
     )
 
@@ -848,7 +872,8 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("plans/README.md", EXPECTED_WATER_PLAN),
         ("plans/README.md", EXPECTED_GEOLOGY_PLAN),
         ("plans/README.md", EXPECTED_POST_GEOLOGY_PLAN),
-        ("state/PROJECT_STATE.md", "Post-172 post-geology routing"),
+        ("plans/README.md", EXPECTED_AUTH_EVIDENCE_PLAN),
+        ("state/PROJECT_STATE.md", "Post-173 authority evidence routing"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
@@ -866,6 +891,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (EXPECTED_WATER_PLAN, "## Decision log"),
         (EXPECTED_GEOLOGY_PLAN, "## Decision log"),
         (EXPECTED_POST_GEOLOGY_PLAN, "## Decision log"),
+        (EXPECTED_AUTH_EVIDENCE_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -923,7 +949,7 @@ def main(argv: list[str] | None = None) -> int:
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
-                    "active_plan": EXPECTED_POST_GEOLOGY_PLAN,
+                    "active_plan": EXPECTED_AUTH_EVIDENCE_PLAN,
                 },
                 indent=2,
                 sort_keys=True,
