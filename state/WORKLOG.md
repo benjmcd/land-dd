@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority evidence wrapper summary passthrough
+
+- Started clean worktree `worktrees/auth-wrap` on `codex/auth-wrapper` from live
+  `origin/main@2bc37b0f9c82b345840f51de10ebda13c6ff3fbc`, after PR #178 linked
+  authority summary/JSON output from the operator runbooks.
+- Updated the Windows and POSIX authority evidence intake wrappers to forward checker
+  arguments. The wrappers now preserve the existing no-argument `authority evidence
+  intake: ok` confirmation while avoiding wrapper-added text for `--summary` and
+  `--json`.
+- Added focused test coverage that the PowerShell wrapper forwards `--summary` and
+  `--json`, keeps summary output free of the wrapper confirmation, and emits parseable
+  JSON with the expected schema and active task.
+- Preserved the authority posture: this does not record external authority, approve
+  DS-017, approve Bologna sources, change source rights, capture corpus or fixtures,
+  seed the DB, prove reports, change schema/API/auth/UI/runtime behavior, claim
+  hosted/Level 10 authority, claim qualification `PASS`, unfreeze owner decisions, or
+  unblock P0.
+
 ## 2026-07-02 Authority evidence summary runbook links
 
 - Started clean worktree `worktrees/auth-docs` on `codex/auth-summary-docs` from live
