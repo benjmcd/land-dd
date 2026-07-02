@@ -22,6 +22,18 @@ Run:
 .\scripts\run_bologna_owner_answer_intake_check.ps1
 ```
 
+For a consolidated stdout view of the active authority-evidence posture, including the
+Bologna owner-answer thread status and empty authority-record counts, run:
+
+```powershell
+py -3.12 .\scripts\authority_evidence_intake_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable collection tracking. These
+summary modes are reporting only; they do not replace the Bologna owner-answer checks,
+record owner authority, approve sources, change source rights, or unlock downstream
+work.
+
 The checker verifies that `config/bologna_owner_answer_intake.yaml` remains blocked,
 keeps every `downstream_updates_allowed` flag false, and aligns the owner-answer
 threads with the existing Bologna authority contracts:

@@ -2,6 +2,42 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Authority Evidence Summary Runbook Links
+
+**Scope:** Add discoverability links from the production authority, Bologna
+owner-answer, and DS-017 source-entitlement runbooks to the existing authority evidence
+intake `--summary` and `--json` modes. This is documentation plus a focused artifact
+test only. It does not record authority, approve DS-017, approve sources, change
+source rights, capture corpus or fixtures, seed the DB, prove reports, change
+schema/API/auth/UI/runtime behavior, claim hosted or Level 10 authority, unfreeze
+qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+py -3.12 -m ruff check backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_authority_evidence_intake_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused authority-evidence artifact tests passed (`9 passed`), including the new
+  runbook discoverability assertion.
+- Focused ruff and mypy passed for the changed test file.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** The links only make the already-validated missing-authority summary
+easier to find from operator runbooks. They do not supply external product/AOI/source/
+source-rights/corpus/report authority for Bologna, DS-017 approval, hosted deployment,
+Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
 ## 2026-07-02 Authority Evidence Intake Summary Output
 
 **Scope:** Add optional reporting output to the existing authority evidence intake

@@ -2,6 +2,21 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority evidence summary runbook links
+
+- Started clean worktree `worktrees/auth-docs` on `codex/auth-summary-docs` from live
+  `origin/main@99f0bae433e05701fe11fe4f4ceeb607f894df06`, after PR #177 merged the
+  optional authority-evidence summary output.
+- Added reporting-only cross-references from the production authority, Bologna
+  owner-answer, and DS-017 source-entitlement runbooks to
+  `scripts\authority_evidence_intake_check.py --summary` and `--json`.
+- Preserved each stream-specific checker as the authority for its own packet. The
+  cross-references do not record authority, approve DS-017, approve Bologna sources,
+  change source rights, create artifacts, claim hosted/Level 10, claim qualification
+  PASS, or unblock P0.
+- Focused authority-evidence artifact tests, ruff, mypy, diff checks, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Authority evidence intake summary output
 
 - Started clean worktree `worktrees/auth-summary` on `codex/auth-summary` from live
