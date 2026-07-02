@@ -85,6 +85,26 @@ _PARCEL_FIXTURE_DOMAIN = "parcels"
 _PARCEL_FIXTURE_CONNECTOR_NAME = "fixture_parcel_static"
 _PARCEL_FIXTURE_METHOD_PREFIX = "fixture_parcel_"
 
+_MINERALS_FIXTURE_DOMAIN = "minerals"
+_MINERALS_FIXTURE_CONNECTOR_NAME = "fixture_minerals_static"
+_MINERALS_FIXTURE_METHOD_PREFIX = "fixture_minerals_"
+
+_BROADBAND_FIXTURE_DOMAIN = "broadband"
+_BROADBAND_FIXTURE_CONNECTOR_NAME = "fixture_broadband_static"
+_BROADBAND_FIXTURE_METHOD_PREFIX = "fixture_broadband_"
+
+_ENV_HAZARD_FIXTURE_DOMAIN = "env_hazard"
+_ENV_HAZARD_FIXTURE_CONNECTOR_NAME = "fixture_env_hazard_static"
+_ENV_HAZARD_FIXTURE_METHOD_PREFIX = "fixture_env_hazard_"
+
+_WATER_FIXTURE_DOMAIN = "water"
+_WATER_FIXTURE_CONNECTOR_NAME = "fixture_water_static"
+_WATER_FIXTURE_METHOD_PREFIX = "fixture_water_"
+
+_GEOLOGY_FIXTURE_DOMAIN = "geology"
+_GEOLOGY_FIXTURE_CONNECTOR_NAME = "fixture_geology_static"
+_GEOLOGY_FIXTURE_METHOD_PREFIX = "fixture_geology_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -854,16 +874,86 @@ def evaluate_parcel_fixture_quality(
     )
 
 
+def evaluate_minerals_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_MINERALS_FIXTURE_CONNECTOR_NAME,
+        domain=_MINERALS_FIXTURE_DOMAIN,
+        method_prefix=_MINERALS_FIXTURE_METHOD_PREFIX,
+        label="minerals",
+        require_spatial_geometry=False,
+    )
+
+
+def evaluate_broadband_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_BROADBAND_FIXTURE_CONNECTOR_NAME,
+        domain=_BROADBAND_FIXTURE_DOMAIN,
+        method_prefix=_BROADBAND_FIXTURE_METHOD_PREFIX,
+        label="broadband",
+        require_spatial_geometry=False,
+    )
+
+
+def evaluate_env_hazard_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_ENV_HAZARD_FIXTURE_CONNECTOR_NAME,
+        domain=_ENV_HAZARD_FIXTURE_DOMAIN,
+        method_prefix=_ENV_HAZARD_FIXTURE_METHOD_PREFIX,
+        label="env-hazard",
+        require_spatial_geometry=False,
+    )
+
+
+def evaluate_water_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_WATER_FIXTURE_CONNECTOR_NAME,
+        domain=_WATER_FIXTURE_DOMAIN,
+        method_prefix=_WATER_FIXTURE_METHOD_PREFIX,
+        label="water",
+        require_spatial_geometry=False,
+    )
+
+
+def evaluate_geology_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_GEOLOGY_FIXTURE_CONNECTOR_NAME,
+        domain=_GEOLOGY_FIXTURE_DOMAIN,
+        method_prefix=_GEOLOGY_FIXTURE_METHOD_PREFIX,
+        label="geology",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
     "ConnectorFixtureQualityProfile",
     "evaluate_access_fixture_quality",
+    "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
+    "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_geology_fixture_quality",
+    "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",
+    "evaluate_water_fixture_quality",
     "evaluate_wetlands_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

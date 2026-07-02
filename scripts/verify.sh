@@ -79,6 +79,21 @@ echo "== qualification status =="
 echo "== qualification change impact =="
 "$PYTHON_BIN" scripts/qualification_change_impact_check.py --root .
 
+echo "== qualification P0 auto evidence =="
+"$PYTHON_BIN" scripts/qualification_p0_evidence_check.py --root .
+
+echo "== qualification parameterization backlog =="
+"$PYTHON_BIN" scripts/qualification_parameterization_backlog_check.py --root .
+
+echo "== authority evidence intake =="
+"$PYTHON_BIN" scripts/authority_evidence_intake_check.py
+
+echo "== production authority evidence references =="
+"$PYTHON_BIN" scripts/production_authority_evidence_references_check.py
+
+echo "== authority follow-on sequence =="
+"$PYTHON_BIN" scripts/authority_follow_on_sequence_check.py
+
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then
   echo "== db migration =="
   ./scripts/db_apply_migrations.sh

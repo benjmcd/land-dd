@@ -1,0 +1,325 @@
+schema_version: bologna_odp3_corpus_response_gate_v1
+operator_runbook: docs/runbooks/bologna_odp3_corpus_response_gate.md
+status: blocked_until_odp_bol_001_odp_bol_002_and_missing_odp_bol_003_owner_answer
+validation: scripts/run_bologna_odp3_corpus_response_gate_check.ps1
+
+authority:
+  - state/owner-decision-packet.md
+  - config/bologna_owner_answer_intake.yaml
+  - config/bologna_odp2_source_rights_response_gate.yaml
+  - config/bologna_recorded_source_corpus.yaml
+  - config/bologna_source_authority_intake.yaml
+  - config/bologna_source_rights.yaml
+  - state/PRODUCTION_AUTHORITY_PACKET.md
+  - state/LEVEL_9_10_GATE_MATRIX.md
+
+approvals:
+  owner_answer_recorded: false
+  corpus_authority_recorded: false
+  recorded_corpus_approved: false
+  recorded_fixture_capture_allowed: false
+  source_failure_fixture_capture_allowed: false
+  runtime_use_allowed: false
+  report_use_allowed: false
+  db_seed_allowed: false
+  db_report_proof_allowed: false
+  downstream_authority_updates_allowed: false
+
+limits:
+  validate_only_response_gate: true
+  records_owner_answer: false
+  records_corpus_authority: false
+  selects_bologna_aoi: false
+  approves_sources: false
+  changes_source_rights: false
+  promotes_source_registry: false
+  creates_recorded_fixtures: false
+  creates_source_failure_fixtures: false
+  runs_live_connectors: false
+  mutates_database: false
+  creates_runtime_artifacts: false
+  creates_report_artifacts: false
+  changes_report_semantics: false
+  changes_source_readiness: false
+  approves_ds017: false
+  claims_cadastral_authority: false
+  claims_legal_review: false
+  claims_hosted_production_ready: false
+  claims_multi_geography_framework: false
+  claims_level_10: false
+
+odp_bol_003_gate:
+  odp_id: ODP-BOL-003
+  title: Bologna recorded-source corpus
+  status: blocked_until_odp_bol_001_and_odp_bol_002
+  source_owner_answer_intake: config/bologna_owner_answer_intake.yaml
+  source_odp2_gate: config/bologna_odp2_source_rights_response_gate.yaml
+  source_recorded_corpus_contract: config/bologna_recorded_source_corpus.yaml
+  prerequisite_odp_ids:
+    - ODP-BOL-001
+    - ODP-BOL-002
+  prerequisite_status: missing_required_authority
+  current_owner_answer_references: []
+  current_corpus_authority_references: []
+  current_recorded_corpus_references: []
+  required_owner_answer_fields:
+    - owner_answer_id
+    - odp_id
+    - answer_type
+    - decision_owner
+    - decision_date
+    - authority_reference
+    - answer_summary
+    - cited_artifacts
+    - caveats
+    - downstream_unlocks_requested
+    - supersedes_owner_answer_ids
+  required_corpus_decisions:
+    - one_aoi_scope
+    - exact_source_selection
+    - completed_per_source_rights_review
+    - source_contract_fields_complete
+    - source_registry_row_review
+    - recorded_fixture_scope
+    - retrieval_metadata_policy
+    - source_version_policy
+    - attribution_policy
+    - crs_precision_policy
+    - field_allowlist
+    - field_denylist
+    - no_data_policy
+    - source_failure_policy
+    - caveat_policy
+    - report_use_policy
+    - raw_data_export_policy
+    - review_owner
+    - no_overclaim_review
+  required_manifest_fields:
+    - manifest_schema_version
+    - corpus_id
+    - one_aoi_authority_reference
+    - source_authority_references
+    - source_contract_references
+    - source_versions
+    - retrieval_metadata
+    - fixture_file_manifest
+    - source_failure_fixture_manifest
+    - attribution_text
+    - crs_and_precision
+    - field_allowlist
+    - field_denylist
+    - no_data_policy
+    - caveat_policy
+    - report_use_policy
+    - review_owner
+    - no_overclaim_review
+  candidate_review_ids:
+    - comune_bologna_pug_webgis
+    - comune_bologna_open_data_pug_constraints
+    - rer_geoportale_dbtr_altimetry
+    - rer_geoportale_catalog_services
+    - rer_crs_reference
+    - arpae_cartographic_portal
+    - cadastral_gap
+  response_acceptance:
+    - ODP-BOL-001 has cited product, one-AOI, jurisdiction, fixture, runtime, and no-overclaim authority first.
+    - ODP-BOL-002 has cited per-source source-authority and source-rights authority first.
+    - owner answer cites external corpus authority, not repo-local inference.
+    - corpus response covers every required corpus decision and manifest field.
+    - each selected candidate source has cited manifest evidence, source versions, retrieval metadata, CRS policy, attribution, caveats, and source-failure policy.
+    - owner answer requests no downstream unlocks in this gate.
+    - no fixture, source-failure fixture, DB seed, report, hosted, or Level 10 artifact changes are bundled into the response.
+  still_blocked_after_valid_response:
+    - ODP-BOL-004 DB-backed Bologna report proof
+    - fixture capture until recorded corpus authority is recorded in a later slice
+    - DB seed and report runtime until separately authorized
+    - DS-017 vendor/license/cost decision unless separately authorized
+    - hosted platform and Level 10 production authority
+
+candidate_corpus_requirements:
+  - candidate_id: comune_bologna_pug_webgis
+    required_manifest_evidence:
+      - effective_pug_document_or_webgis_version
+      - terms_or_reuse_reference
+      - allowed_cache_export_ai_raw_data_decisions
+      - attribution_text
+      - planning_context_caveats
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: comune_bologna_open_data_pug_constraints
+    required_manifest_evidence:
+      - exact_dataset_identifier
+      - dataset_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - attribution_text
+      - environmental_or_constraint_screening_caveats
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: rer_geoportale_dbtr_altimetry
+    required_manifest_evidence:
+      - exact_layer_metadata
+      - license_and_attribution_mapping
+      - source_version_or_update_timestamp
+      - crs_and_precision_decision
+      - terrain_context_caveats
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: rer_geoportale_catalog_services
+    required_manifest_evidence:
+      - exact_layer_selection
+      - per_layer_license_and_terms_reference
+      - source_version_or_update_timestamp
+      - service_or_download_retrieval_policy
+      - layer_specific_caveats
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: rer_crs_reference
+    required_manifest_evidence:
+      - official_crs_reference
+      - transformation_policy
+      - geometry_precision_policy
+      - fixture_crs_metadata_policy
+      - reference_not_report_claim_caveat
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: arpae_cartographic_portal
+    required_manifest_evidence:
+      - exact_environmental_layer_selection
+      - layer_metadata_and_terms_reference
+      - source_version_or_update_timestamp
+      - environmental_screening_caveats
+      - no_jurisdiction_or_liability_claim_policy
+    corpus_state: blocked_no_authority
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+  - candidate_id: cadastral_gap
+    required_manifest_evidence:
+      - official_terms_reference
+      - allowed_access_method
+      - cache_export_ai_raw_data_decisions
+      - cadastral_geometry_precision_and_caveats
+      - explicit_no_owner_title_access_buildability_authority
+    corpus_state: blocked_direct_source_review_required
+    fixture_manifest_entry_allowed: false
+    source_failure_fixture_allowed: false
+    downstream_updates_allowed: false
+
+decision_requirements:
+  - decision_id: one_aoi_scope
+    owner_question: What exact one-AOI authority governs this recorded corpus?
+    must_cite: [ODP-BOL-001 authority record, AOI boundary reference, CRS or named-boundary policy]
+    consequence_if_missing: Recorded corpus manifest identity remains blocked.
+  - decision_id: exact_source_selection
+    owner_question: Which exact source candidates may enter the recorded corpus?
+    must_cite: [selected candidate IDs, exclusion list, source-selection owner]
+    consequence_if_missing: Fixture manifests and source registry review remain blocked.
+  - decision_id: completed_per_source_rights_review
+    owner_question: Which ODP-BOL-002 rights records authorize each selected source?
+    must_cite: [source-authority references, source-rights references, rights caveats]
+    consequence_if_missing: Corpus approval remains blocked.
+  - decision_id: source_contract_fields_complete
+    owner_question: Are source contract fields complete for every selected source?
+    must_cite: [source contract references, field allowlist, field denylist]
+    consequence_if_missing: Source registry promotion and fixture capture remain blocked.
+  - decision_id: source_registry_row_review
+    owner_question: Has each selected source registry row been reviewed for corpus use?
+    must_cite: [review owner, reviewed row reference, promotion boundary]
+    consequence_if_missing: Source registry promotion remains blocked.
+  - decision_id: recorded_fixture_scope
+    owner_question: What exact fixture and source-failure fixture scope is authorized?
+    must_cite: [fixture capture scope, retention rule, source-failure fixture policy]
+    consequence_if_missing: Fixture capture remains blocked.
+  - decision_id: retrieval_metadata_policy
+    owner_question: What retrieval metadata is required for every corpus source?
+    must_cite: [retrieval timestamp policy, URL or request metadata, version fields]
+    consequence_if_missing: Evidence lineage and reproducibility remain blocked.
+  - decision_id: source_version_policy
+    owner_question: How are source versions, publication dates, and data-as-of values recorded?
+    must_cite: [source version fields, update timestamp policy, stale-source caveat]
+    consequence_if_missing: Corpus reproducibility remains blocked.
+  - decision_id: attribution_policy
+    owner_question: What attribution text and placement are required for corpus artifacts?
+    must_cite: [attribution text, placement rule, source owner]
+    consequence_if_missing: Report and corpus artifact publication remain blocked.
+  - decision_id: crs_precision_policy
+    owner_question: What CRS and precision policy applies to corpus fixtures?
+    must_cite: [official CRS reference, transformation policy, precision caveat]
+    consequence_if_missing: Geometry fixture and report map use remain blocked.
+  - decision_id: field_allowlist
+    owner_question: Which fields may be stored, normalized, cited, and exported?
+    must_cite: [allowed fields, source contract references, storage purpose]
+    consequence_if_missing: Storage and export boundaries remain blocked.
+  - decision_id: field_denylist
+    owner_question: Which fields must be excluded from storage, export, or reports?
+    must_cite: [denied fields, rights or privacy rationale, enforcement boundary]
+    consequence_if_missing: Corpus capture remains blocked.
+  - decision_id: no_data_policy
+    owner_question: How should no-data and not-applicable source responses be represented?
+    must_cite: [no-data vocabulary, caveat rule, evidence treatment]
+    consequence_if_missing: Unknowns and source absence can be overstated.
+  - decision_id: source_failure_policy
+    owner_question: How are source failures captured as first-class evidence?
+    must_cite: [failure taxonomy, source-failure fixture rules, caveat text]
+    consequence_if_missing: Source failures cannot be recorded in the corpus.
+  - decision_id: caveat_policy
+    owner_question: What caveats must accompany corpus artifacts and source-derived claims?
+    must_cite: [source caveats, report caveat placement, prohibited claim list]
+    consequence_if_missing: Report wording and artifact use remain blocked.
+  - decision_id: report_use_policy
+    owner_question: What report-use boundary applies to the approved corpus?
+    must_cite: [report-use permission, evidence-only or rulepack boundary, no-overclaim reviewer]
+    consequence_if_missing: DB-backed Bologna report proof remains blocked.
+  - decision_id: raw_data_export_policy
+    owner_question: Can raw or normalized corpus data be exported, and under what limits?
+    must_cite: [raw export rule, normalized export rule, storage/export boundary]
+    consequence_if_missing: Artifact export remains blocked.
+  - decision_id: review_owner
+    owner_question: Who owns final corpus review and reversion?
+    must_cite: [review owner, approval date, reversion or supersession policy]
+    consequence_if_missing: Corpus authority cannot be recorded.
+  - decision_id: no_overclaim_review
+    owner_question: Who confirms the corpus cannot imply legal/title/access/buildability/value conclusions?
+    must_cite: [reviewer, prohibited-claim checklist, caveat text]
+    consequence_if_missing: Report proof and corpus publication remain blocked.
+
+outcome_matrix:
+  - answer_type: approve_with_cited_authority
+    expected_effect: A later slice may record the cited ODP-BOL-003 owner answer after ODP-BOL-001 and ODP-BOL-002 are also cited.
+    downstream_updates_allowed: false
+    still_disallowed: [fixture capture, source-failure fixture capture, DB seed, report artifact, hosted or Level 10 claim]
+  - answer_type: keep_blocked
+    expected_effect: Bologna recorded-source corpus remains blocked with an explicit owner answer.
+    downstream_updates_allowed: false
+    still_disallowed: [recorded corpus approval, fixture capture, DB-backed report proof]
+  - answer_type: approve_review_only
+    expected_effect: A later slice may record review-only corpus posture but still must not authorize fixture, runtime, report, or DB use.
+    downstream_updates_allowed: false
+    still_disallowed: [runtime use, report use, fixture capture, DB seed]
+  - answer_type: exclude_or_defer
+    expected_effect: Bologna recorded-source corpus remains deferred or out of current scope until a new owner decision supersedes it.
+    downstream_updates_allowed: false
+    still_disallowed: [recorded corpus, report artifact, multi-geography framework claim]
+
+no_overclaim_controls:
+  no_authority_by_response_gate: true
+  no_corpus_authority_record_by_response_gate: true
+  no_source_approval_by_response_gate: true
+  no_source_rights_change_by_response_gate: true
+  no_source_registry_promotion_by_response_gate: true
+  no_fixture_capture_by_response_gate: true
+  no_source_failure_fixture_capture_by_response_gate: true
+  no_report_runtime_use_by_response_gate: true
+  no_db_seed_by_response_gate: true
+  no_legal_buildability_title_or_value_claim: true
+  no_level_10_or_hosted_claim: true

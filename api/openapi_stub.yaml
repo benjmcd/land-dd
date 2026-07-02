@@ -3733,6 +3733,45 @@ paths:
             text/html:
               schema:
                 type: string
+  /ui/expansion:
+    get:
+      tags:
+      - ui
+      summary: Ui Expansion Readiness
+      operationId: ui_expansion_readiness_ui_expansion_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+  /ui/dossier-readiness:
+    get:
+      tags:
+      - ui
+      summary: Ui Dossier Readiness
+      operationId: ui_dossier_readiness_ui_dossier_readiness_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+  /ui/production-authority:
+    get:
+      tags:
+      - ui
+      summary: Ui Production Authority
+      operationId: ui_production_authority_ui_production_authority_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
   /ui/source-provenance:
     get:
       tags:

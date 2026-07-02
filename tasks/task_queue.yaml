@@ -1,5 +1,5 @@
 version: 2
-active_plan: plans/2026-06-21-eqp2-2-change-impact.md
+active_plan: plans/2026-07-02-authority-evidence-intake.md
 routing_note: >
   Latest completed lane: REC-001 repository-state reconciliation and selective landing
   (plans/2026-06-20-lane1-reconciliation.md). The dirty-root candidate stack remains
@@ -37,16 +37,97 @@ routing_note: >
   qualification status merged through PR #127, EQ-4 readiness crosswalk landed at
   `8dadfbffd90408fa7320cadd59b65cb7f1a5bc78`, and the EQ Phase 2 handoff merged
   through PR #129, and EQP2-1 derived qualification status merged through PR #130 at
-  `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`. Current lane: EQP2-2 executable
-  change-impact invalidation. This maps changed paths to matrix-owned change classes
-  and crosswalk-owned criterion IDs, reports review/invalidation impact advisory-only,
-  and keeps checker behavior, qualification PASS claims, P0 evidence collection,
-  checker advertisement parity, and all approval decisions blocked for later lanes. Do not
-  create hosted deployment, hosted identity/RBAC, hosted observability, source/vendor
-  authority, new jurisdiction/rulepack/source coverage, DS-017 approval, Bologna
-  implementation, fixture capture, production traffic proof, qualification PASS,
-  owner-decision unfreeze, ranking/recommendation semantics, multi-geography framework
-  implementation, or Level 10 authority from repo-local inference alone.
+  `a291d0d41eaa5b85b6ec8c80a79b33f2f7d5e670`, and EQP2-2 executable change-impact
+  invalidation merged through PR #131 at `0f0f592b9522d26afb70007281870325edd13579`,
+  error-safety redaction hardening merged through PR #132 at
+  `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`, report-run contract ADR routing
+  merged through PR #133 at `8822a1408cce54bc99fe760f3386243a29e64b0d`,
+  report-run rights optionality merged through PR #134 at
+  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, the jsonschema mypy stub fix
+  merged through PR #136 at `71c6a74eae08811d4e178b0c11365ff1e247772d`,
+  EQP2-3 blocked P0 repo-local auto-evidence merged through PR #135 at
+  `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663`, and EQP2-4 checker advertisement
+  parity merged through PR #137 at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f`, and
+  BOL-AUTH-SYNC merged through PR #138 at
+  `604f7c2739095d9cc543b675ed3b84e619cda54d`, BAP-001 Bologna authority record
+  contract merged through PR #139 at `d356cfdf20ead6ee11573cfffc502d7c21769012`,
+  BAR-001 merged through PR #140, BSA-REC merged through PR #141, the HCV handoff
+  merged through PR #142, raw UI product fixes merged through PR #143, the
+  supported-AOI operator-case hardening merged through PR #145 at
+  `816a4dd39d174d0b3689837a489879031e49113d`, and HCV-1 qualification validator
+  hardening merged through PR #144 at
+  `79bd89cf0dc441606429ca6ca5d23ba6d7ad32a4`, and fail-closed readiness-parser
+  hardening merged through PR #146 at `b5f6727bd5ab6b9264812e9943a24924eec54b29`.
+  HCV-2 checker robustness and security hardening merged through PR #147 at
+  `ba75f4729bcece9e29003938aef7c1038dc605ea`, and guardrail error-redaction
+  hardening merged through PR #149 at
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`, and HCV-3 readiness crosswalk
+  CI-gate completeness merged through PR #148 at
+  `d9e16db199dee185bc05602112df010d40b4c711`, and HCV-4 status derivation and config
+  consistency merged through PR #150 at
+  `6f49c7abc9bec4f8d2d17734609e6960cc869bc8`, and QFREEZE-1 authorized scope/source
+  freeze merged through PR #151 at `cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10`.
+  OWNER-DEC-1 owner decision consequence packet merged through PR #152 at
+  `a6f5ac7a1accbce67dfbeadc02bd10cd6514085a`, and BOL-ODP-1 Bologna owner-answer
+  intake merged through PR #153 at `f2c815028e5a17044079de492f254546cacedfeb`, and
+  BOL-ODP1-GATE ODP-BOL-001 owner-response gate merged through PR #154 at
+  `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, and BOL-ODP2-GATE ODP-BOL-002
+  source-rights response gate merged through PR #155 at
+  `fa0f67aedff19ec31981ba1dacaa5315f843f021`, BOL-ODP3-GATE ODP-BOL-003
+  recorded-source corpus response gate merged through PR #156 at
+  `9d06cdeb79999c235b66c1589e972bfae5a55976`, BOL-ODP4-GATE DB-backed report proof
+  response gate merged through PR #157, BOL-POST-ODP4-AUTH merged through PR #158,
+  EQ-5 qualification parameterization backlog checking merged through PR #159, EQ-R
+  residual reconciliation closeout merged through PR #160 at
+  `b5ed59e7143773f306ab216865df0133ca7b0451`, and BOL-ODP1-PACKET
+  ODP-BOL-001 owner-answer packet merged through PR #161 at
+  `6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, and BOL-SCOPE-PURSUIT records the
+  2026-06-26 owner directive to pursue Bologna scope as an ODP-BOL-001
+  `approve_review_only` owner answer. BOL-SCOPE-AUTH adds a validate-only readiness
+  gate for a future cited ODP-BOL-001 authority-recording slice while preserving empty
+  authority records. BOL-ODP2-PACKET adds a validate-only owner-facing packet for the
+  later ODP-BOL-002 source-authority/source-rights answer while preserving missing
+  ODP-BOL-001 authority and empty source-rights references. ODGAV-1 completed the
+  owner-independent validation pass for side-effect-free synthetic Bologna
+  owner-answer evaluation plus worktree reconciliation through PR #167, and
+  MINERALS-FIXTURE completed the first extended-domain fixture-ingestion proof through
+  PR #168 at `35077d25e79fb105ada87fc86a1ead6623eb5e66`, BROADBAND-FIXTURE
+  completed the FCC Broadband Data Collection fixture-ingestion proof through PR #169
+  at `3b2bd1897f8227ca24cb7290d8026ff3b2757356`, and ENV-FIXTURE completed the EPA
+  ECHO environmental hazard fixture-ingestion proof through PR #170 at
+  `6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, WATER-FIXTURE completed the USGS
+  water monitoring fixture-ingestion proof through PR #171 at
+  `6e0d63260ae395730d2a33508059bd0873a88d50`, and GEOLOGY-FIXTURE completed the NCGS
+  1985 geologic map-unit context fixture-ingestion proof through PR #172 at
+  `71b9c41611ac256eee6e1dd5126779c2472c5b2b`, and POST-GEOLOGY-ROUTING completed the
+  post-geology closeout through PR #173 at
+  `1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`, authority-evidence routing through
+  PR #174, and the authority evidence intake composition guard through PR #175 at
+  `0bfc4f395587956c520866a05423531e23270e21`, post-PR175 guard-state sync through
+  PR #176, authority summary/JSON output through PR #177, authority summary runbook
+  links through PR #178, and wrapper argument passthrough through PR #179 at
+  `19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, state synchronization after wrapper
+  support through PR #180, and the authority follow-on sequencing contract through
+  PR #181 at `c38640b458c6d1da0218c34eeb6b80a02dc53143`, and the production authority
+  evidence reference contract through PR #182 at
+  `b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, and reporting-only output for that
+  reference contract through PR #183 at
+  `084e844b82821066d0d10f3b04518b5d39610833`. AUTH-EVIDENCE-INTAKE is the active
+  authority-evidence posture: the next substantive work requires cited product/AOI/
+  source/source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/
+  Level 10, or empirical qualification implementation can proceed. Do not add another
+  connector, run live calls, approve sources, change source rights, capture Bologna
+  fixtures, seed the DB, prove reports, change schema/API/auth/report semantics,
+  create hosted authority, unfreeze qualification, approve DS-017, unblock P0, or claim
+  Level 10 authority. Bologna implementation
+  remains stopped while BSA-001 remains
+  blocked until complete explicit product/AOI/source-review authority is cited in the
+  pilot-scope/source-authority/source-rights packets. Do not create hosted deployment,
+  hosted identity/RBAC, hosted observability, source/vendor authority, new jurisdiction/
+  rulepack/source coverage, DS-017 approval, Bologna implementation, Bologna fixture
+  capture, production traffic proof, qualification PASS, owner-decision unfreeze,
+  ranking/recommendation semantics, multi-geography framework implementation, or Level
+  10 authority from repo-local inference alone.
 lane_plans:
   lane_a: plans/lane-a-2026-06-03-source-registry.md
   lane_b: plans/lane-b-2026-06-03-area-geometry.md
@@ -1314,11 +1395,11 @@ tasks:
     lane: coordinator
     spec: plans/2026-06-20-post-bsr-roadmap.md
     notes: >
-      Fill the Bologna source-rights matrix only from explicit product/AOI/source-review
-      authority for exact candidate sources. Until that authority exists, record the
-      blocker and do not approve sources, promote source registry rows, capture fixtures,
-      run connectors, implement a Bologna rulepack, or generalize multi-geography
-      contracts.
+      BLOCKED external/owner authority: fill the Bologna source-rights matrix only
+      from explicit product/AOI/source-review authority for exact candidate sources.
+      Until that authority exists, record the blocker and do not approve sources,
+      promote source registry rows, capture fixtures, run connectors, implement a
+      Bologna rulepack, or generalize multi-geography contracts.
     validation:
       - py -3.12 .\scripts\bologna_source_rights_check.py
       - py -3.12 .\scripts\bologna_preflight_check.py
@@ -1957,54 +2038,819 @@ tasks:
 
   - id: EQP2-3
     title: Repo-local P0 invariant evidence collection
-    status: queued
+    status: done
     depends_on: [EQP2-2]
     lane: coordinator
-    spec: plans/2026-06-21-eq-phase2-operationalize.md#eqp2-3--repo-local-evidence-collection-for-auto-verifiable-p0-invariants
+    spec: plans/2026-06-21-eqp2-3-p0-auto-evidence.md
     notes: >
-      Collect repo-local evidence for auto-verifiable P0 invariants while keeping the
-      effective P0 gate blocked by unresolved owner/freeze criteria.
+      Collected repo-local evidence pointers for P0-004, P0-005, P0-021, and P0-023
+      while keeping each row and the effective P0 gate blocked by unresolved
+      owner/freeze criteria. Evidence is linked from the blocked status file and
+      backlog rows are marked auto-evidenced; still target-blocked.
+    validation:
+      - py -3.12 -m pytest backend/tests/test_qualification_p0_auto_evidence.py backend/tests/test_qualification_spine.py -q
+      - py -3.12 scripts\qualification_p0_evidence_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - py -3.12 scripts\validate_qualification.py --root . --layout repo
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - .\scripts\verify.ps1
+    acceptance:
+      - P0 auto-evidence artifact records exactly P0-004, P0-005, P0-021, and P0-023
+      - Status links the evidence artifact while keeping P0 BLOCKED and result_path null
+      - Backlog marks each row auto-evidenced; still target-blocked
+      - Verify and qualification CI run the P0 evidence checker
+      - No gate PASS, owner-decision unfreeze, result artifact, or runtime/report use is introduced
 
   - id: EQP2-4
     title: Qualification checker advertisement parity
-    status: queued
+    status: done
     depends_on: [EQP2-3]
     lane: coordinator
-    spec: plans/2026-06-21-eq-phase2-operationalize.md#eqp2-4--subordinate-the-existing-checkers-executable-consolidation
+    spec: plans/2026-06-21-eqp2-4-checker-parity.md
     notes: >
       Extend existing readiness/authority checkers to advertise mapped criterion IDs
       and validate crosswalk-to-checker parity without changing checker gate behavior.
+      Status derivation now consumes checker-advertised criterion IDs.
+    validation:
+      - py -3.12 -m pytest backend/tests/test_qualification_checker_advertisement.py backend/tests/test_qualification_status_check.py backend/tests/test_qualification_spine.py -q
+      - py -3.12 scripts\validate_qualification.py --root . --layout repo
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Every crosswalk-mapped checker advertises its mapped criterion IDs through --qualification-criteria-json
+      - Validator fails closed on crosswalk-to-checker advertisement drift
+      - Status derivation consumes checker-advertised criterion IDs
+      - No gate PASS, owner-decision unfreeze, or checker gate-behavior change is introduced
+
+  - id: BOL-AUTH-SYNC
+    title: Post-EQP2 Bologna authority routing sync
+    status: done
+    depends_on: [EQP2-4]
+    lane: coordinator
+    spec: plans/2026-06-21-post-eqp2-bologna-authority-sync.md
+    notes: >
+      Record EQ Phase 2 as merged and post-merge verified, then route the next
+      substantive pursuit back to the blocked Bologna authority gate. BSA-001 remains
+      blocked until explicit product/AOI/source-review authority is cited; no source
+      approval, AOI selection, source-rights change, corpus, fixture capture, DB seed,
+      runtime/report proof, qualification PASS, owner-decision unfreeze, DS-017
+      approval, hosted authority, or Level 10 claim is introduced.
+    files:
+      - plans/2026-06-21-post-eqp2-bologna-authority-sync.md
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+      - backend/tests/test_readiness_core_artifacts.py
+      - backend/tests/test_qualification_parameterization_backlog_artifacts.py
+    validation:
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 scripts\bologna_source_authority_intake_check.py
+      - py -3.12 scripts\bologna_source_rights_check.py
+      - py -3.12 scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - py -3.12 scripts\qualification_p0_evidence_check.py --root .
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Active routing no longer treats EQP2-4 as pending
+      - BSA-001 remains blocked until cited product/AOI/source-review authority exists
+      - Bologna scope/source-rights/corpus/report packets remain validate-only and blocked
+      - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: BAP-001
+    title: Bologna authority record contract
+    status: done
+    depends_on: [BOL-AUTH-SYNC]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-authority-record-contract.md
+    notes: >
+      Add a machine-checked authority-record contract to the blocked Bologna
+      pilot-scope authority packet so future product/AOI/scope authority can be
+      recorded with required fields, full scope-decision coverage, and no-overclaim
+      controls. Current authority records remain empty; BSA-001 remains blocked; no
+      source approval, AOI selection, source-rights change, corpus, fixture capture,
+      DB seed, runtime/report proof, qualification PASS, owner-decision unfreeze,
+      DS-017 approval, hosted authority, or Level 10 claim is introduced.
+    files:
+      - plans/2026-06-21-bologna-authority-record-contract.md
+      - config/bologna_pilot_scope_authority.yaml
+      - scripts/bologna_pilot_scope_authority_check.py
+      - docs/runbooks/bologna_pilot_scope_authority.md
+      - backend/tests/test_bologna_pilot_scope_authority_artifacts.py
+      - backend/tests/test_readiness_core_artifacts.py
+      - backend/tests/test_qualification_parameterization_backlog_artifacts.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 scripts\bologna_source_authority_intake_check.py
+      - py -3.12 scripts\bologna_source_rights_check.py
+      - py -3.12 scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Bologna pilot-scope authority packet validates an explicit authority-record contract
+      - Current authority records remain empty and all downstream updates remain disabled
+      - BSA-001 remains blocked until cited product/AOI/source-review authority exists
+      - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: BAR-001
+    title: Bologna authority record validation
+    status: done
+    depends_on: [BAP-001]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-authority-record-validation.md
+    notes: >
+      Extend the blocked Bologna pilot-scope authority checker so it can validate a
+      complete future authority record shape in test isolation while preserving empty
+      committed authority records, missing scope authority, disabled downstream
+      unlocks, and complete first-gate coverage. This does not approve sources, select
+      an AOI, change source rights, create a corpus, capture fixtures, seed the DB,
+      prove a report, approve DS-017, unfreeze owner decisions, claim qualification
+      PASS, claim hosted authority, or claim Level 10.
+    files:
+      - plans/2026-06-21-bologna-authority-record-validation.md
+      - scripts/bologna_pilot_scope_authority_check.py
+      - docs/runbooks/bologna_pilot_scope_authority.md
+      - backend/tests/test_bologna_pilot_scope_authority_artifacts.py
+      - backend/tests/test_readiness_core_artifacts.py
+      - backend/tests/test_qualification_parameterization_backlog_artifacts.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py -q
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 scripts\bologna_source_authority_intake_check.py
+      - py -3.12 scripts\bologna_source_rights_check.py
+      - py -3.12 scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Complete future authority record shape validates only in test isolation
+      - Partial authority records and records requesting downstream unlocks fail closed
+      - Current authority records remain empty and all downstream updates remain disabled
+      - BSA-001 remains blocked until cited product/AOI/source-review authority exists
+      - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: BSA-REC
+    title: Bologna source-authority record contract
+    status: done
+    depends_on: [BAR-001]
+    lane: coordinator
+    spec: plans/2026-06-21-bologna-source-authority-record-contract.md
+    notes: >
+      Add a machine-checked source-authority record contract to the blocked Bologna
+      source-authority intake guard so future cited per-source authority evidence can
+      be validated for exact fields, upstream pilot-scope authority links, known
+      candidate/cadastral target, full rights-decision coverage, per-candidate evidence
+      slots, terms/version/retrieval/CRS/attribution/caveat/storage/export/failure
+      policies, and no downstream unlock requests. Current source-authority records
+      remain empty; BSA-001 remains blocked; no source approval, AOI selection,
+      source-rights change, corpus, fixture capture, DB seed, runtime/report proof,
+      qualification PASS, owner-decision unfreeze, DS-017 approval, hosted authority,
+      or Level 10 claim is introduced.
+    files:
+      - plans/2026-06-21-bologna-source-authority-record-contract.md
+      - config/bologna_source_authority_intake.yaml
+      - scripts/bologna_source_authority_intake_check.py
+      - docs/runbooks/bologna_source_authority_intake.md
+      - backend/tests/test_bologna_source_authority_intake_artifacts.py
+      - backend/tests/test_readiness_core_artifacts.py
+      - backend/tests/test_qualification_parameterization_backlog_artifacts.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_source_authority_intake_artifacts.py -q
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - py -3.12 scripts\bologna_source_authority_intake_check.py
+      - py -3.12 scripts\bologna_source_rights_check.py
+      - py -3.12 scripts\bologna_recorded_source_corpus_check.py
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+      - git diff --check
+      - git diff --name-only --diff-filter=D
+      - .\scripts\verify.ps1
+    acceptance:
+      - Source-authority intake validates an explicit source-authority record contract
+      - Complete future source-authority record shape validates only in test isolation
+      - Missing candidate evidence slots and records requesting downstream unlocks fail closed
+      - Current source-authority records remain empty and all downstream updates remain disabled
+      - BSA-001 remains blocked until cited product/AOI/source-review authority exists
+      - No qualification PASS, owner-decision unfreeze, source/AOI approval, fixture capture, DB seed, runtime/report proof, DS-017 approval, hosted authority, or Level 10 claim is introduced
+
+  - id: HCV-1
+    title: Qualification validator correctness hardening
+    status: done
+    depends_on: [BSA-REC]
+    lane: coordinator
+    spec: plans/2026-06-21-hcv-1-qualification-validator.md
+    notes: >
+      Harden the empirical-qualification validator and qualification result schema
+      against the verified PR #126/#127 findings. This adds fail-closed checks for
+      expired PASS gates, status/result gate mismatch, scope/version identity drift,
+      per-criterion evidence references, frozen domain profile completeness and
+      modality/channel scope, source coverage, conditional rights enforcement,
+      RAW_EXPORT export rights, P0 blocked-record validation with result_path, and
+      PASS reviewer metadata. It does not promote any qualification gate or unblock
+      owner/source/AOI/Bologna/hosted authority.
+    files:
+      - plans/2026-06-21-hcv-1-qualification-validator.md
+      - scripts/validate_qualification.py
+      - scripts/selftest_qualification_validator.py
+      - schemas/qualification/qualification_result.schema.json
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\qualification_change_impact_check.py --root .
+      - py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Every HCV-1 finding has a fail-closed selftest or schema regression
+      - The committed qualification status remains P0 BLOCKED and non-P0 NOT_RUN
+      - Bologna implementation remains stopped and BSA-001 remains externally blocked
+      - No DB, API, UI, report semantic, source-rights, source registry, fixture, hosted, DS-017, or Level 10 authority is introduced
+
+  - id: HCV-2
+    title: Checker robustness and security hardening
+    status: done
+    depends_on: [HCV-1]
+    lane: coordinator
+    spec: plans/2026-06-21-hcv-2-checker-hardening.md
+    notes: >
+      Fix checklist dry-run path/assertion handling, package manifest duplicate/secret
+      detection, private-MVP county/provenance bindings, and the Bologna pilot-scope
+      PowerShell wrapper exit-code check. Fix-only; no new Bologna scaffolding.
+    files:
+      - plans/2026-06-21-hcv-2-checker-hardening.md
+      - backend/tests/test_checklist_dry_run_artifacts.py
+      - backend/tests/test_package_manifest_check.py
+      - backend/tests/test_private_mvp_readiness.py
+      - backend/tests/test_bologna_pilot_scope_authority_artifacts.py
+      - scripts/checklist_dry_run_check.py
+      - scripts/package_manifest_check.py
+      - scripts/private_mvp_readiness_check.py
+      - scripts/run_bologna_pilot_scope_authority_check.ps1
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+    validation:
+      - py -3.12 -m pytest -q backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+      - py -3.12 scripts\checklist_dry_run_check.py
+      - py -3.12 scripts\private_mvp_readiness_check.py
+      - py -3.12 scripts\bologna_pilot_scope_authority_check.py
+      - .\scripts\run_bologna_pilot_scope_authority_check.ps1
+      - py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+      - py -3.12 scripts\qualification_status_check.py --root .
+      - py -3.12 scripts\selftest_qualification_validator.py
+      - .\scripts\verify.ps1
+    acceptance:
+      - Checklist dry-run rejects empty assertions and repo-root path escapes while recognizing supported checkbox marker forms
+      - Package manifest validation rejects duplicate ZIP entries and common secret/prod-config path patterns
+      - Private-MVP readiness validates county-specific connector assignments and source-bound provenance expectation classes
+      - Bologna pilot-scope PowerShell wrapper propagates Python validator failures
+      - Committed qualification status remains P0 BLOCKED and non-P0 NOT_RUN
+      - No Bologna scaffolding, DB, API, UI, report semantic, source-rights, source registry, fixture, hosted, DS-017, or Level 10 authority is introduced
+
+  - id: HCV-3
+    title: Readiness crosswalk CI-gate completeness
+    status: done
+    depends_on: [HCV-2]
+    lane: coordinator
+    spec: plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
+    notes: >
+      Map the orphaned provenance, security-scan, and backup/restore CI gates into the
+      qualification readiness crosswalk and make future unmapped CI gates fail closed.
+    files:
+      - plans/2026-06-21-hcv-3-crosswalk-ci-gates.md
+      - schemas/qualification/readiness_crosswalk.schema.json
+      - config/qualification/readiness_crosswalk.yaml
+      - scripts/validate_qualification.py
+      - scripts/selftest_qualification_validator.py
+      - backend/tests/test_qualification_readiness_crosswalk.py
+      - tasks/task_queue.yaml
+      - plans/README.md
+      - state/PROJECT_STATE.md
+      - state/WORKLOG.md
+      - state/VALIDATION_LOG.md
+
+  - id: HCV-4
+    title: Status derivation and config consistency
+    status: done
+    depends_on: [HCV-3]
+    lane: coordinator
+    spec: plans/2026-06-22-hcv-4-status-config-consistency.md
+    notes: >
+      Align qualification status derivation with the validator's full P0 blocker set,
+      reconcile DS-002 rights vocabulary with production usage-rights fields, and drop
+      stale active routing entries.
+
+  - id: QFREEZE-1
+    title: Authorized scope, source, and Windows target freeze
+    status: done
+    depends_on: [HCV-4]
+    lane: coordinator
+    spec: plans/2026-06-22-qfreeze-1-authorized-scope-source.md
+    notes: >
+      Record the 2026-06-22 owner disposition, bind DS-002, freeze the explicitly
+      authorized scope/version/source fields, and freeze only W-003/W-011 target
+      bindings while P0 remains BLOCKED and every non-P0 status remains NOT_RUN.
+    acceptance:
+      - Owner decision record cites owner=benjmcd, authority=owner directive 2026-06-22, rationale, and reversal
+      - DS-002 is the only selected approved source profile
+      - W-003 and W-011 target bindings are frozen with controlled evidence notes
+      - DQ/Q1/Q2/M bindings, domain profiles, criterion contracts, and judgment rubrics remain blocked
+      - Qualification status remains capped to BLOCKED and NOT_RUN
+
+  - id: OWNER-DEC-1
+    title: Owner decision consequence packet
+    status: done
+    depends_on: [QFREEZE-1]
+    lane: coordinator
+    spec: plans/2026-06-22-owner-decision-packet.md
+    notes: >
+      Add a decision-request-only packet that maps remaining owner-driven
+      qualification and Bologna choices to consequences, downstream gates, required
+      evidence, and reversal costs. It does not authorize any additional freeze,
+      source approval, Bologna AOI/source/corpus/report work, runtime proof,
+      qualification PASS, hosted authority, DS-017 approval, or Level 10 claim.
+    acceptance:
+      - state/owner-decision-packet.md covers domain, target/contract, rubric, source, P0 protocol, conditional-profile, Bologna, hosted, DS-017, and Level 10 decisions
+      - Packet states it is not an authority ledger and does not authorize downstream work
+      - QFREEZE-1 is done and OWNER-DEC-1 is the only active task
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-ODP-1
+    title: Bologna owner-answer intake
+    status: done
+    depends_on: [OWNER-DEC-1]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-owner-answer-intake.md
+    notes: >
+      Add a validate-only owner-answer intake for ODP-BOL-001 through ODP-BOL-004
+      that cross-checks product/AOI, source-rights, recorded-corpus, and DB-backed
+      report-proof questions against existing Bologna authority packets. This records
+      initially records no owner answers, grants no authority, and keeps all downstream
+      updates blocked. Current routing may later record review-only answers without
+      converting them into authority.
+    acceptance:
+      - config/bologna_owner_answer_intake.yaml validates against the existing Bologna authority and corpus contracts
+      - At this slice boundary, ODP-BOL-001 through ODP-BOL-004 remain missing_owner_answer with empty owner_answer_references
+      - The checker is mapped into the qualification readiness crosswalk
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-ODP1-GATE
+    title: Bologna ODP-BOL-001 owner-response gate
+    status: done
+    depends_on: [BOL-ODP-1]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp1-owner-response-gate.md
+    notes: >
+      Add a validate-only gate for the next external owner answer, ODP-BOL-001
+      product/AOI/scope authority. The gate cross-checks required owner-answer fields
+      against the owner-answer intake and required scope/authority-record fields
+      against the pilot-scope authority packet while keeping owner answers, authority
+      records, and every downstream update empty or disabled.
+    acceptance:
+      - config/bologna_odp1_owner_response_gate.yaml validates against the owner-answer intake and pilot-scope authority packet
+      - At this slice boundary, ODP-BOL-001 remains missing_owner_answer with empty owner and authority references
+      - The checker is mapped into the qualification readiness crosswalk
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-ODP2-GATE
+    title: Bologna ODP-BOL-002 source-rights response gate
+    status: done
+    depends_on: [BOL-ODP1-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp2-source-rights-response-gate.md
+    notes: >
+      Add a validate-only gate for the next source-authority/source-rights owner
+      answer, ODP-BOL-002. The gate cross-checks required owner-answer fields,
+      source-authority record fields, candidate evidence slots, source-rights
+      decisions, and candidate review IDs while keeping ODP-BOL-001 authority as the
+      prerequisite and keeping source authority records, source-rights approval
+      references, and every downstream update empty or disabled.
+    acceptance:
+      - config/bologna_odp2_source_rights_response_gate.yaml validates against the owner-answer intake, ODP-BOL-001 gate, source-authority intake, and source-rights matrix
+      - ODP-BOL-001 authority remains missing and ODP-BOL-002 remains blocked until cited owner/source authority exists
+      - The checker is mapped into the qualification readiness crosswalk
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-ODP3-GATE
+    title: Bologna ODP-BOL-003 recorded-source corpus response gate
+    status: done
+    depends_on: [BOL-ODP2-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp3-corpus-response-gate.md
+    notes: >
+      Add a validate-only gate for the next recorded-source corpus owner answer,
+      ODP-BOL-003. The gate cross-checks required owner-answer fields, corpus
+      decisions, manifest fields, selected candidate evidence, source-failure policy,
+      CRS, attribution, caveats, storage/export limits, and no-overclaim review while
+      keeping ODP-BOL-001 authority and ODP-BOL-002 as unresolved prerequisites and
+      keeping corpus authority records, recorded corpus references, fixtures, DB seeds,
+      report proof, and every downstream update empty or disabled.
+    acceptance:
+      - config/bologna_odp3_corpus_response_gate.yaml validates against the owner-answer intake, ODP-BOL-002 gate, and recorded-source corpus contract
+      - ODP-BOL-001 authority and ODP-BOL-002 remain unresolved and ODP-BOL-003 remains blocked until cited owner/corpus authority exists
+      - The checker is mapped into the qualification readiness crosswalk
+      - No fixture, source-failure fixture, DB seed, report proof, hosted authority, or Level 10 authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-ODP4-GATE
+    title: Bologna ODP-BOL-004 DB report proof response gate
+    status: done
+    depends_on: [BOL-ODP3-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-bologna-odp4-db-report-proof-response-gate.md
+    notes: >
+      Add a validate-only gate for the next DB-backed Bologna report proof owner
+      answer, ODP-BOL-004. The gate cross-checks required owner-answer fields,
+      report-proof fields, report-run contract fields, evidence contract fields, claim
+      contract fields, artifact/lineage/caveat/storage/export boundaries, and
+      no-overclaim review while keeping ODP-BOL-001 authority, ODP-BOL-002, and
+      ODP-BOL-003 as unresolved prerequisites and keeping report-proof authority records, DB report-run
+      references, report artifacts, DB seeds, API/report changes, and every downstream
+      update empty or disabled.
+    acceptance:
+      - config/bologna_odp4_db_report_proof_response_gate.yaml validates against the owner-answer intake, ODP-BOL-003 gate, and report/evidence/claim schemas
+      - ODP-BOL-001 authority, ODP-BOL-002, and ODP-BOL-003 remain unresolved and ODP-BOL-004 remains blocked until cited report-proof authority exists
+      - The checker is mapped into the qualification readiness crosswalk
+      - No DB seed, DB report run, report artifact, API surface, hosted authority, or Level 10 authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-POST-ODP4-AUTH
+    title: Post-ODP4 Bologna authority routing
+    status: done
+    depends_on: [BOL-ODP4-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-post-odp4-authority-routing.md
+    notes: >
+      Record that the ODP-BOL-001 through ODP-BOL-004 validate-only response-gate
+      scaffold is complete and that no DB-backed Bologna report proof can proceed
+      until cited owner authority exists in sequence: product/AOI/scope, source
+      authority and rights, recorded-source corpus, then one DB-backed report proof.
+      This routing update adds no new gate, records no owner answer, and does not
+      authorize AOI selection, source approval, corpus capture, DB seed, report
+      artifact, API/report semantic change, hosted authority, Level 10 claim, or
+      qualification PASS.
+    acceptance:
+      - Project state and plan routing mark BOL-ODP4-GATE complete
+      - Next substantive Bologna work is external-authority dependent
+      - EQ-5-style backlog maintenance remains the repo-local fallback if no Bologna authority arrives
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
 
   - id: EQ-5
     title: Empirical qualification parameterization backlog
-    status: queued
-    depends_on: [EQP2-4]
+    status: done
+    depends_on: [BOL-POST-ODP4-AUTH]
     lane: coordinator
-    spec: plans/2026-06-21-empirical-qualification-adoption.md#eq-5--parameterization-backlog-tracking-non-coding-visibility
+    spec: plans/2026-06-23-eq5-parameterization-backlog-check.md
     notes: >
-      Track all frozen-decision blockers, zero approved source profiles, unfrozen
-      domain profiles, judgment rubrics, and target bindings as BLOCKED external/owner
-      authority items with the gates they unblock.
+      Added a validate-only consistency checker for the parameterization backlog,
+      owner-decision packet, owner-decision ledger, Bologna owner-answer intake,
+      qualification targets/status, DS-002 selected source profile, task routing, and
+      verification wiring. This proves the blocked-state boundary without resolving
+      any external/owner authority blocker.
     acceptance:
       - Backlog lists every owner-decision blocker with gate mapping
       - Task queue parses and reflects blocked follow-ons
+      - scripts/qualification_parameterization_backlog_check.py fails closed if owner answers or downstream unlocks appear without a plan update
       - No blocker is resolved or unblocked by repo-local inference
 
   - id: EQ-R
     title: Residual reconciliation falsehood correction
-    status: queued
+    status: done
     depends_on: [BPS-REQ-001]
     lane: coordinator
-    spec: plans/2026-06-21-empirical-qualification-adoption.md#lane-r--correct-the-residual-reconciliation-falsehood-parallel-independent
+    spec: plans/2026-06-23-eqr-residual-closeout.md
     notes: >
-      Correct the false STILL_DIVERGENT: none residual claim by either extracting the
-      stranded guardrail-readiness UI files to a fresh defer branch off current main or
-      explicitly recording them as decaying DEFER work with file list, gates, and decay
-      warning.
+      Corrected the residual falsehood by explicitly recording the stranded
+      guardrail-readiness UI files as decaying DEFER work with file list, gate
+      families, and decay warning in state/residual-reconciliation.md. This did not
+      create a defer branch and did not promote any deferred product slice.
     acceptance:
       - state/residual-reconciliation.md no longer claims no divergent deferred files
       - Stranded files are either extracted to a defer branch or explicitly listed as decaying DEFER work
       - No deferred product slice is promoted to PASS
+
+  - id: BOL-ODP1-PACKET
+    title: Bologna ODP-BOL-001 owner-answer packet
+    status: done
+    depends_on: [EQ-R, BOL-ODP1-GATE]
+    lane: coordinator
+    spec: plans/2026-06-23-odp1-owner-answer-packet.md
+    notes: >
+      Added a validate-only owner-answer packet for ODP-BOL-001 product/AOI/scope
+      authority. The packet gives the owner a machine-checkable response and
+      pilot-scope authority-record template while keeping current owner answers,
+      current authority records, downstream updates, source/corpus/report work, and
+      qualification status blocked.
+    acceptance:
+      - config/bologna_odp1_owner_answer_packet.yaml aligns to the owner-answer intake, ODP1 response gate, and pilot-scope authority contract
+      - scripts/bologna_odp1_owner_answer_packet_check.py fails closed if required decisions, allowed outcomes, templates, or downstream blockers drift
+      - No owner answer, AOI selection, source approval, source-rights change, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
+
+  - id: BOL-POST-ODP1-PACKET
+    title: Post-ODP1 packet authority routing
+    status: done
+    depends_on: [BOL-ODP1-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-23-post-odp1-packet-routing.md
+    notes: >
+      Route live state after PR #161 so the completed ODP-BOL-001 owner-answer packet
+      is not treated as current branch work. The next substantive Bologna step remains
+      real cited owner authority for ODP-BOL-001 product/AOI/scope before source
+      rights, corpus, fixture, DB, or report proof work.
+    acceptance:
+      - BOL-ODP1-PACKET is complete and merged through PR #161
+      - ODP-BOL-001 has a later review-only owner answer, but authority references remain empty
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-SCOPE-PURSUIT
+    title: Bologna ODP-BOL-001 review-only scope pursuit
+    status: done
+    depends_on: [BOL-POST-ODP1-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-26-bologna-scope-pursuit.md
+    notes: >
+      Record owner directive 2026-06-26 "pursue Bologna scope" as an
+      `approve_review_only` ODP-BOL-001 owner answer. This records scope pursuit only:
+      it does not record a pilot-scope authority record, select an AOI, approve
+      sources, change source rights, create a corpus, capture fixtures, seed DB, prove a
+      report, approve DS-017, unfreeze qualification, or claim hosted/Level 10
+      authority. BSA-001 remains blocked until complete cited product/AOI/source-review
+      authority exists.
+    acceptance:
+      - config/bologna_owner_answer_intake.yaml contains exactly one ODP-BOL-001 approve_review_only owner answer
+      - config/bologna_pilot_scope_authority.yaml current_authority_records remains empty
+      - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain missing/blocking downstream authority
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+      - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: BOL-SCOPE-AUTH
+    title: Bologna ODP-BOL-001 scope-authority readiness
+    status: done
+    depends_on: [BOL-SCOPE-PURSUIT]
+    lane: coordinator
+    spec: plans/2026-06-27-bol-scope-auth.md
+    notes: >
+      Add a validate-only `bol_scope_auth` gate for the later cited ODP-BOL-001
+      authority-recording slice. The gate proves the current owner answer remains
+      `approve_review_only`, requires a future `approve_with_cited_authority` answer
+      before authority can be recorded, keeps `current_authority_records` empty, and
+      forbids bundling source, corpus, fixture, DB, report, hosted, or Level 10 work.
+    acceptance:
+      - config/bol_scope_auth.yaml validates the current review-only owner-answer state
+      - scripts/bol_scope_auth_check.py fails closed if review-only is treated as cited authority
+      - config/bologna_pilot_scope_authority.yaml current_authority_records remains empty
+      - ODP-BOL-002, ODP-BOL-003, and ODP-BOL-004 remain separate blocked authority steps
+      - BSA-001 remains blocked; no source/AOI/corpus/report/runtime authority is introduced
+
+  - id: BOL-ODP2-PACKET
+    title: Bologna ODP-BOL-002 owner-answer packet
+    status: done
+    depends_on: [BOL-SCOPE-AUTH, BOL-ODP2-GATE]
+    lane: coordinator
+    spec: plans/2026-06-27-odp2-owner-answer-packet.md
+    notes: >
+      Add a validate-only owner-answer packet for ODP-BOL-002 source authority and
+      rights. The packet gives the owner a machine-checkable source-rights response and
+      source-authority record template while keeping ODP-BOL-001 authority missing,
+      current ODP-BOL-002 owner answers empty, source-authority records empty,
+      source-rights approval references empty, downstream updates disabled, and
+      source/corpus/report work blocked.
+    acceptance:
+      - config/bologna_odp2_owner_answer_packet.yaml aligns to the owner-answer intake, ODP2 response gate, source-authority contract, and source-rights matrix
+      - scripts/bologna_odp2_owner_answer_packet_check.py fails closed if required candidates, rights decisions, templates, outcomes, or downstream blockers drift
+      - No owner answer, source authority, source-rights approval, source registry promotion, corpus, fixture, DB seed, report proof, hosted authority, Level 10 claim, or qualification PASS is introduced
+
+  - id: ODGAV-1
+    title: Bologna owner-answer gate evaluation and worktree reconciliation
+    status: done
+    depends_on: [BOL-ODP2-PACKET]
+    lane: coordinator
+    spec: plans/2026-06-28-odgav-owner-answer-evaluation.md
+    notes: >
+      Add side-effect-free synthetic owner-answer evaluators for the owner-answer
+      intake, bol_scope_auth, and ODP-BOL-001 through ODP-BOL-004 response gates.
+      Classify all unmerged branch worktrees in
+      state/worktree-reconciliation-2026-06-28.md. This records no real authority,
+      keeps P0 blocked, and retires no worktree unless live evidence proves it clean,
+      merged, superseded, non-excluded, and safe after archive-tagging.
+    acceptance:
+      - Complete synthetic approve_with_cited_authority answers are accepted in memory for intake, bol_scope_auth, and ODP-BOL-001 through ODP-BOL-004 gates
+      - Malformed, partial, dependency-violating, and downstream-unlock-requesting answers fail closed
+      - Committed owner answers, authority records, source-rights approvals, corpus references, report proof references, and P0 status remain blocked
+      - All 47 unmerged branch worktrees are classified and no unsafe worktree removal is performed
+
+  - id: MINERALS-FIXTURE
+    title: Extended-domain minerals fixture-ingestion proof
+    status: done
+    depends_on: [ODGAV-1]
+    lane: coordinator
+    spec: plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md
+    notes: >
+      Add the first extended-domain fixture-ingestion proof for minerals through
+      static local fixtures, evidence ingestion, claim generation, source-failure
+      handling, and dossier rendering on the existing Buncombe golden AOI. This owner-
+      independent US-MVP pass merged through PR #168 and does not approve sources,
+      change source rights, start live connectors, change schema/API/auth/report
+      semantics, unfreeze qualification, or unblock P0.
+    acceptance:
+      - Static minerals fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Active mining-claim fixture produces MINERALS_ACTIVE_CLAIMS_001 with ingested evidence linkage
+      - Source-unavailable fixture produces MINERALS_SOURCE_UNAVAILABLE and does not silently pass
+      - No Bologna authority, hosted authority, source-rights change, qualification PASS, or Level 10 claim is introduced
+
+  - id: BROADBAND-FIXTURE
+    title: Extended-domain broadband fixture-ingestion proof
+    status: done
+    depends_on: [MINERALS-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md
+    notes: >
+      Extend the landed minerals fixture-ingestion pattern to FCC Broadband Data
+      Collection fixture evidence on the existing Buncombe golden AOI. Cover the
+      no-provider path and the source-failure path through local fixture ingestion,
+      evidence-to-claim linkage, Section 12 dossier rendering, and forbidden-overclaim
+      checks. Do not run live FCC calls, approve sources, change source rights, alter
+      schema/API/auth/report semantics, unfreeze qualification, unblock P0, or claim
+      hosted/Level 10 authority.
+    acceptance:
+      - Static broadband fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - No-provider fixture produces BROADBAND_NO_ACCESS_001 with ingested evidence linkage and FCC provider-report caveats
+      - Source-unavailable fixture produces BROADBAND_SOURCE_UNAVAILABLE and does not become a no-provider conclusion
+      - Section 12 renders broadband evidence without legal, investment, access, water-rights, value, safety, or service-guarantee overclaims
+
+  - id: ENV-FIXTURE
+    title: Extended-domain environmental hazard fixture-ingestion proof
+    status: done
+    depends_on: [BROADBAND-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-env-fixture.md
+    notes: >
+      Extend the landed minerals and broadband fixture-ingestion pattern to EPA ECHO
+      environmental hazard fixture evidence on the existing Buncombe golden AOI. Cover
+      regulated-facility proximity and source-failure paths through local fixture
+      ingestion, evidence-to-claim linkage, Section 11 dossier rendering, and
+      forbidden-overclaim checks. Do not run live EPA ECHO calls, approve sources,
+      change source rights, alter schema/API/auth/report semantics, unfreeze
+      qualification, unblock P0, or claim hosted/Level 10 authority.
+    acceptance:
+      - Static env-hazard fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Regulated-facility fixture produces ENV_001 with ingested evidence linkage and EPA ECHO screening caveats
+      - Source-unavailable fixture produces ENV_SOURCE_UNAVAILABLE_UNKNOWN and does not become a no-hazard conclusion
+      - Section 11 renders env-hazard evidence without contamination, safety, liability, value, insurance, lending, investment, access, title, buildability, or water-rights overclaims
+
+  - id: WATER-FIXTURE
+    title: Extended-domain water fixture-ingestion proof
+    status: done
+    depends_on: [ENV-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-water-fixture.md
+    notes: >
+      Extend the landed minerals, broadband, and environmental hazard fixture-ingestion
+      pattern to USGS water monitoring context fixture evidence on the existing
+      Buncombe golden AOI. Cover monitoring-stations-found, no-monitoring-stations,
+      source-failure, conflicting, and stale paths through local fixture ingestion,
+      evidence-to-claim linkage, Section 9 dossier rendering, and forbidden-overclaim
+      checks. Do not run live USGS calls, approve sources, change source rights,
+      determine water rights, determine well viability, alter schema/API/auth/report
+      semantics, unfreeze qualification, unblock P0, or claim hosted/Level 10
+      authority.
+    acceptance:
+      - Static water fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Monitoring-stations-found fixture produces WATER_MONITORING_SCREEN evidence without WATER_001
+      - No-monitoring-stations fixture produces WATER_001 with ingested evidence linkage and water-rights/well caveats
+      - Source-unavailable fixture produces WATER_SOURCE_UNAVAILABLE_UNKNOWN and does not become a no-water-context conclusion
+      - Conflicting and stale fixtures route to review-required claims, not false no-water-context conclusions
+      - Section 9 renders water context without water-rights, well-yield, potable-water, legal-water-access, supply, buildability, value, lending, insurance, investment, or safety overclaims
+
+  - id: GEOLOGY-FIXTURE
+    title: Extended-domain geology fixture-ingestion proof
+    status: done
+    depends_on: [WATER-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-geology-fixture.md
+    notes: >
+      Extend the landed minerals, broadband, environmental hazard, and water
+      fixture-ingestion pattern to NC Geological Survey 1985 geologic map-unit
+      context fixture evidence on the existing Buncombe golden AOI. Cover
+      map-units-present, no-map-units, and source-failure paths through local fixture
+      ingestion, evidence-to-claim linkage, Section 14 dossier rendering, and
+      forbidden-overclaim checks. Do not run live NCGS calls, approve sources, change
+      source rights, determine geologic hazards, determine geotechnical suitability,
+      determine buildability, alter schema/API/auth/report semantics, unfreeze
+      qualification, unblock P0, or claim hosted/Level 10 authority.
+    acceptance:
+      - Static geology fixture connector loads local JSON only and validates connector/domain/status/evidence-type consistency
+      - Map-units fixture produces NC_GEOLOGIC_MAP_UNIT_CONTEXT evidence and GEOLOGY_NOT_EVALUATED advisory linkage
+      - No-map-units fixture keeps hazards and buildability explicitly not determined
+      - Source-unavailable fixture produces NC_GEOLOGIC_MAP_SOURCE_FAILURE and does not become a no-hazard, no-constraint, or buildability conclusion
+      - Section 14 renders geologic context without hazard, geotechnical, buildability, mineral-resource-value, legal, value, lending, insurance, investment, or safety overclaims
+
+  - id: POST-GEOLOGY-ROUTING
+    title: Post-geology routing closeout
+    status: done
+    depends_on: [GEOLOGY-FIXTURE]
+    lane: coordinator
+    spec: plans/2026-07-02-post-geology-routing.md
+    notes: >
+      Routing-only closeout after PR #172. Record that the named owner-independent
+      extended-domain fixture-ingestion sequence is complete through minerals,
+      broadband, environmental hazard, water, and NCGS geology, then route remaining
+      work back to authority-dependent milestones. Do not add another connector, run
+      live calls, approve sources, change source rights, capture Bologna fixtures,
+      seed the DB, prove a report, alter schema/API/auth/report semantics, unfreeze
+      qualification, unblock P0, approve DS-017, create hosted authority, or claim
+      Level 10 authority.
+    acceptance:
+      - GEOLOGY-FIXTURE is recorded as done and is not active
+      - POST-GEOLOGY-ROUTING is the only active task and points to the post-geology routing plan
+      - Plans, project state, task queue, readiness tests, and backlog checker agree on post-geology routing
+      - BSA-001, ODP-BOL-002/003/004, DS-017, hosted, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by cited external authority requirements
+      - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
+
+  - id: AUTH-EVIDENCE-INTAKE
+    title: Authority evidence intake routing
+    status: active
+    depends_on: [POST-GEOLOGY-ROUTING]
+    lane: coordinator
+    spec: plans/2026-07-02-authority-evidence-intake.md
+    notes: >
+      Authority-evidence posture after PR #183. The named owner-independent
+      extended-domain fixture-ingestion proofs, post-geology closeout,
+      authority-evidence routing, composition guard, current-state sync, summary/JSON
+      reporting modes, runbook links, wrapper passthrough, and authority follow-on
+      sequencing contract, production authority evidence reference contract, and
+      reference-contract reporting-only output are complete while keeping the next
+      substantive work dependent on cited external owner/source authority before
+      Bologna, DS-017, hosted/Level 10, or empirical qualification implementation can
+      proceed.
+      Do not record owner answers, approve sources, change source rights, capture
+      corpus/fixtures, seed the DB, prove a report, alter schema/API/auth/UI behavior,
+      unfreeze qualification, unblock P0, approve DS-017, create hosted authority, or
+      claim Level 10 authority from repo-local inference.
+    acceptance:
+      - POST-GEOLOGY-ROUTING is recorded as done and is not active
+      - AUTH-EVIDENCE-INTAKE is the only active task and points to the authority-evidence intake plan
+      - BSA-001 and ODP-BOL-002/003/004 remain blocked until cited product/AOI/source/source-rights/corpus/report-proof authority exists
+      - DS-017, hosted production, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by external authority requirements
+      - The authority-evidence intake composition guard passes and proves required production/Bologna/qualification authority streams are present, blocked, and unpromoted
+      - Summary/JSON output and wrapper passthrough remain reporting-only and do not append wrapper text to JSON output
+      - The production authority evidence reference checker defines future cited-reference shape while keeping current references and downstream unlock requests empty
+      - The production authority evidence reference checker summary/JSON output remains reporting-only and does not append wrapper text to JSON output
+      - The authority follow-on sequence checker covers every production authority stream plus the packet-level workload/retention lane and keeps every follow-on lane blocked until cited authority exists
+      - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
+    validation:
+      - py -3.12 .\scripts\authority_evidence_intake_check.py
+      - .\scripts\run_authority_evidence_intake_check.ps1 --summary
+      - .\scripts\run_authority_evidence_intake_check.ps1 --json
+      - .\scripts\run_authority_evidence_intake_check.ps1
+      - py -3.12 .\scripts\production_authority_evidence_references_check.py
+      - py -3.12 .\scripts\production_authority_evidence_references_check.py --summary
+      - py -3.12 .\scripts\production_authority_evidence_references_check.py --json
+      - .\scripts\run_production_authority_evidence_references_check.ps1
+      - py -3.12 .\scripts\authority_follow_on_sequence_check.py
+      - .\scripts\run_authority_follow_on_sequence_check.ps1
+      - .\scripts\verify.ps1
 
   # --- Completed ---
   - id: T000

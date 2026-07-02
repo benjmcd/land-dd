@@ -21,6 +21,20 @@ The checker cross-checks `config/bologna_source_authority_intake.yaml` against
 intake row must match the source-rights matrix candidate ids and required evidence
 slots. The cadastral authority row must match the separate direct-review cadastral gap.
 
+`source_authority_record_contract` is the structured format a future cited per-source
+authority packet must satisfy before any source-rights row can change. Its contract
+state is `ready_for_external_source_authority_evidence`; that means the record format
+is ready, not that any source has been approved. The committed
+`current_source_authority_records` list remains empty.
+
+Any future source-authority record must link to upstream pilot-scope authority, target
+a known candidate source or the cadastral gap, cover all required rights decisions,
+provide the required evidence slots for that source, record terms/version/retrieval
+metadata/CRS/attribution/caveats/storage-export boundaries/source-failure policy, and
+request no downstream unlocks. A record that is incomplete, uncited, or requests source
+promotion, source-rights edits, fixture capture, runtime/report use, DB seeding,
+hosted/Level 10 status, or legal/title/buildability/value claims must fail validation.
+
 ## Promotion Boundary
 
 Authority intake can unlock a later source-rights edit only when cited evidence names:

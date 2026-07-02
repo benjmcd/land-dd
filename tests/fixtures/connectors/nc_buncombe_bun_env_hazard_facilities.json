@@ -1,0 +1,48 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1",
+    "dataset_version_id": "33333333-3333-4333-8333-333333333333",
+    "connector_name": "fixture_env_hazard_static",
+    "status": "succeeded",
+    "started_at": "2026-06-07T10:00:00Z",
+    "finished_at": "2026-06-07T10:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_env_hazard_facilities",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "regulated_facility_count": 2
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e1e2e3e4-e1e2-4e3e-8e4e-e1e2e3e4e5e6",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "ENV_HAZ_FACILITY_SCREEN",
+      "domain": "env_hazard",
+      "observation": "Fixture EPA ECHO FRS screening: 2 regulated facilities are reported in proximity to the query area.",
+      "observed_value": {
+        "has_env_hazard_proximity": true,
+        "env_hazard_status": "regulated_facilities_found",
+        "regulated_facility_count": 2,
+        "epa_echo_bbox": "-82.56000000,35.59000000,-82.54000000,35.61000000"
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "33333333-3333-4333-8333-333333333333",
+      "method_code": "fixture_env_hazard_facility_screen",
+      "method_version": "0.1.0",
+      "confidence": "medium",
+      "caveat": "Fixture-only EPA ECHO facility-proximity screening. A nearby regulated facility does not prove subject-property contamination, exposure pathway, remediation status, or legal liability. A Phase I/II ESA is required for regulatory and transactional environmental due diligence.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-07",
+      "observed_at": "2026-06-07T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

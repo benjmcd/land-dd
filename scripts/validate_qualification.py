@@ -21,6 +21,9 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -36,6 +39,8 @@ except ImportError as exc:
 GATE_STATUSES = {"NOT_RUN", "RUNNING", "BLOCKED", "FAIL", "PASS", "INVALIDATED", "EXPIRED"}
 CRITERION_RESULTS = {"PASS", "FAIL", "BLOCKED", "N/A"}
 NONBLOCKING_CLASS = "DIAGNOSTIC"
+ADVERTISEMENT_FLAG = "--qualification-criteria-json"
+ADVERTISEMENT_SCHEMA_VERSION = "qualification_checker_advertisement_v1"
 
 GATE_TO_STATUS_KEY = {
     "P0": "p0",
@@ -60,6 +65,7 @@ GATE_TO_STATUS_KEY = {
     "FIN": "financial_modeling",
     "AI": "ai_llm",
 }
+STATUS_KEY_TO_GATE = {value: key for key, value in GATE_TO_STATUS_KEY.items()}
 
 CLASSIFICATION_REQUIRED_GATES = {
     "L9-R": set(),
@@ -96,6 +102,15 @@ REQUIRED_READINESS_CHECKER_GLOBS = {
     "scripts/*entitlement*_check.py",
     "scripts/bologna_*_check.py",
 }
+QUALIFICATION_CONTROL_GATE_PATHS = {
+    "scripts/run_qualification_selftest.sh",
+    "scripts/run_qualification_validate.sh",
+    "scripts/run_qualification_status_check.sh",
+    "scripts/run_qualification_change_impact_check.sh",
+    "scripts/run_qualification_p0_evidence_check.sh",
+}
+CI_GATE_COMMAND_RE = re.compile(r"\./(scripts/run_[A-Za-z0-9_]+\.sh)")
+RELEASE_GATE_PROOF_RE = re.compile(r"^scripts/run_[A-Za-z0-9_]+\.(?:ps1|sh)$")
 
 
 def load_yaml(path: Path) -> Any:
@@ -166,6 +181,64 @@ def resolve_local_reference(root: Path, reference: str | None) -> Path | None:
         return None
     candidate = Path(path_text)
     return candidate if candidate.is_absolute() else (root / candidate).resolve()
+
+
+def parse_datetime_utc(
+    value: Any,
+    label: str,
+    errors: list[str],
+) -> datetime | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        errors.append(f"{label}: expires_at must be a date-time string")
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        errors.append(f"{label}: invalid date-time {value!r}")
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def validate_unexpired_pass(
+    expires_at: str | None,
+    label: str,
+    now_utc: datetime,
+    errors: list[str],
+) -> None:
+    expires = parse_datetime_utc(expires_at, f"{label}.expires_at", errors)
+    if expires is None:
+        errors.append(f"{label}: PASS has no expires_at")
+        return
+    if expires <= now_utc:
+        errors.append(f"{label}: expired PASS at {expires_at}")
+
+
+def validate_evidence_reference(
+    root: Path,
+    label: str,
+    reference: str | None,
+    errors: list[str],
+) -> None:
+    if not isinstance(reference, str) or not reference.strip():
+        errors.append(f"{label}: criterion evidence reference is empty")
+        return
+    if "://" in reference:
+        errors.append(f"{label}: criterion evidence must be repo-local: {reference}")
+        return
+    evidence_path = resolve_local_reference(root, reference)
+    if evidence_path is None:
+        return
+    try:
+        evidence_path.relative_to(root.resolve())
+    except ValueError:
+        errors.append(f"{label}: criterion evidence escapes repo: {reference}")
+        return
+    if not evidence_path.exists():
+        errors.append(f"{label}: criterion evidence does not exist: {reference}")
 
 
 def inherited_profile(
@@ -304,6 +377,41 @@ def repo_relative_file_paths(root: Path, patterns: Iterable[str]) -> set[str]:
     return paths
 
 
+def workflow_gate_paths(root: Path, errors: list[str]) -> set[str]:
+    workflow_path = root / ".github" / "workflows" / "ci.yml"
+    if not workflow_path.is_file():
+        errors.append("readiness_crosswalk: CI workflow missing: .github/workflows/ci.yml")
+        return set()
+    workflow = workflow_path.read_text(encoding="utf-8")
+    return {
+        match.group(1)
+        for match in CI_GATE_COMMAND_RE.finditer(workflow)
+    } - QUALIFICATION_CONTROL_GATE_PATHS
+
+
+def release_readiness_gate_paths(root: Path, errors: list[str]) -> set[str]:
+    release_path = root / "config" / "release_readiness.yaml"
+    if not release_path.is_file():
+        errors.append("readiness_crosswalk: release readiness missing: config/release_readiness.yaml")
+        return set()
+    payload = load_yaml(release_path)
+    if not isinstance(payload, dict):
+        errors.append("readiness_crosswalk: release readiness must be a mapping")
+        return set()
+    checks = payload.get("required_checks")
+    if not isinstance(checks, list):
+        errors.append("readiness_crosswalk: release readiness required_checks missing")
+        return set()
+    gates: set[str] = set()
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        proof = check.get("proof")
+        if isinstance(proof, str) and RELEASE_GATE_PROOF_RE.match(proof):
+            gates.add(proof)
+    return gates
+
+
 def validate_repo_local_paths(
     root: Path,
     label: str,
@@ -404,6 +512,7 @@ def validate_readiness_crosswalk(
     excluded = set(inventory.get("intentional_exclusions") or [])
     declared_configs: set[str] = set()
     declared_checkers: set[str] = set()
+    declared_gates: set[str] = set()
 
     for entry in entries:
         label = f"readiness_crosswalk.{entry.get('surface_id')}"
@@ -419,6 +528,12 @@ def validate_readiness_crosswalk(
             root,
             f"{label}.checker_paths",
             entry.get("checker_paths") or [],
+            errors,
+        )
+        declared_gates |= validate_repo_local_paths(
+            root,
+            f"{label}.gate_paths",
+            entry.get("gate_paths") or [],
             errors,
         )
 
@@ -440,12 +555,87 @@ def validate_readiness_crosswalk(
         errors.append(
             f"readiness_crosswalk: missing checker inventory paths: {missing_checkers}"
         )
+    expected_gates = workflow_gate_paths(root, errors) | release_readiness_gate_paths(root, errors)
+    missing_gates = sorted(expected_gates - declared_gates - excluded)
+    if missing_gates:
+        errors.append(
+            f"readiness_crosswalk: missing gate inventory paths: {missing_gates}"
+        )
 
-    unused_exclusions = sorted(excluded - expected_configs - expected_checkers)
+    unused_exclusions = sorted(excluded - expected_configs - expected_checkers - expected_gates)
     if unused_exclusions:
         errors.append(
             f"readiness_crosswalk: intentional exclusions are not in inventory: {unused_exclusions}"
         )
+
+
+def expected_checker_criteria(crosswalk: dict[str, Any]) -> dict[str, set[str]]:
+    expected: dict[str, set[str]] = {}
+    for entry in crosswalk.get("entries") or []:
+        for checker_path in entry.get("checker_paths") or []:
+            expected.setdefault(checker_path, set()).update(
+                str(criterion_id) for criterion_id in (entry.get("criterion_ids") or [])
+            )
+    return expected
+
+
+def validate_checker_advertisements(
+    root: Path,
+    crosswalk: dict[str, Any],
+    errors: list[str],
+) -> None:
+    def timeout_text(value: str | bytes | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
+    for checker_path, expected_ids in sorted(expected_checker_criteria(crosswalk).items()):
+        try:
+            completed = subprocess.run(
+                [sys.executable, checker_path, ADVERTISEMENT_FLAG],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            errors.append(
+                f"checker advertisement timed out: {checker_path}: "
+                f"{timeout_text(exc.stdout)} {timeout_text(exc.stderr)}"
+            )
+            continue
+
+        if completed.returncode != 0:
+            errors.append(
+                f"checker advertisement failed: {checker_path}: "
+                f"{completed.stdout} {completed.stderr}"
+            )
+            continue
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError as exc:
+            errors.append(f"checker advertisement invalid JSON: {checker_path}: {exc}")
+            continue
+
+        advertised_ids = payload.get("criterion_ids")
+        if (
+            payload.get("schema_version") != ADVERTISEMENT_SCHEMA_VERSION
+            or payload.get("checker_path") != checker_path
+            or not isinstance(advertised_ids, list)
+            or not all(isinstance(item, str) for item in advertised_ids)
+        ):
+            errors.append(f"checker advertisement schema mismatch: {checker_path}")
+            continue
+
+        advertised_set = set(advertised_ids)
+        if advertised_set != expected_ids:
+            errors.append(
+                f"checker advertisement mismatch: {checker_path}: "
+                f"expected {sorted(expected_ids)} got {sorted(advertised_set)}"
+            )
 
 
 def validate_catalog(
@@ -554,6 +744,8 @@ def validate_result(
     catalog_map: dict[str, dict[str, Any]],
     targets: dict[str, Any],
     status: dict[str, Any],
+    expected_gate: str,
+    now_utc: datetime,
     errors: list[str],
 ) -> dict[str, Any] | None:
     if not result_path.exists():
@@ -572,10 +764,20 @@ def validate_result(
         errors.append(f"{result_path}: duplicate criterion IDs")
 
     gate = result.get("gate_id")
+    if gate != expected_gate:
+        errors.append(
+            f"{result_path}: gate_id {gate} does not match status gate {expected_gate}"
+        )
     expected = expected_criteria_for_gate(gate, catalog_map, targets)
     present = set(ids)
 
     if result.get("status") == "PASS":
+        validate_unexpired_pass(
+            result.get("expires_at"),
+            f"{result_path}: result",
+            now_utc,
+            errors,
+        )
         missing = sorted(expected - present)
         if missing:
             errors.append(f"{result_path}: PASS omits applicable criteria: {missing}")
@@ -603,21 +805,56 @@ def validate_result(
             errors.append(f"{result_path}: inapplicable criterion {cid} must be omitted or N/A")
         if row.get("result") not in CRITERION_RESULTS:
             errors.append(f"{result_path}: invalid criterion result for {cid}")
+        if result.get("status") == "PASS" and row.get("result") == "PASS":
+            for evidence_ref in row.get("evidence") or []:
+                validate_evidence_reference(
+                    root,
+                    f"{result_path}: {cid}",
+                    evidence_ref,
+                    errors,
+                )
 
     candidate = status.get("candidate", {})
+    if result.get("selected_product_scope_profile") != status.get(
+        "selected_product_scope_profile"
+    ):
+        errors.append(f"{result_path}: selected product-scope profile differs from status")
+    if result.get("selected_deployment_profile") != status.get(
+        "selected_deployment_profile"
+    ):
+        errors.append(f"{result_path}: selected deployment profile differs from status")
     if candidate.get("commit") and result.get("candidate_commit") != candidate.get("commit"):
         errors.append(f"{result_path}: candidate commit differs from status")
-    if candidate.get("artifact_digest") and result.get("artifact_digest") != candidate.get("artifact_digest"):
+    if candidate.get("tag") and result.get("candidate_tag") != candidate.get("tag"):
+        errors.append(f"{result_path}: candidate tag differs from status")
+    if candidate.get("artifact_digest") and result.get("artifact_digest") != candidate.get(
+        "artifact_digest"
+    ):
         errors.append(f"{result_path}: artifact digest differs from status")
+    if candidate.get("protocol_version") and result.get("protocol_version") != candidate.get(
+        "protocol_version"
+    ):
+        errors.append(f"{result_path}: protocol version differs from status")
+    if candidate.get("targets_version") and result.get("targets_version") != candidate.get(
+        "targets_version"
+    ):
+        errors.append(f"{result_path}: targets version differs from status")
+    if candidate.get("vocabulary_version") and result.get(
+        "vocabulary_version"
+    ) != candidate.get("vocabulary_version"):
+        errors.append(f"{result_path}: vocabulary version differs from status")
     if candidate.get("criteria_catalog_digest"):
         if result.get("criteria_catalog_digest") != candidate.get("criteria_catalog_digest"):
             errors.append(f"{result_path}: criterion catalog digest differs from status")
 
     evidence_ref = result.get("evidence_path")
     if result.get("status") == "PASS" and evidence_ref:
-        evidence_path = resolve_local_reference(root, evidence_ref)
-        if evidence_path is not None and not evidence_path.exists():
-            errors.append(f"{result_path}: evidence_path does not exist: {evidence_path}")
+        validate_evidence_reference(
+            root,
+            f"{result_path}: evidence_path",
+            evidence_ref,
+            errors,
+        )
 
     return result
 
@@ -816,6 +1053,7 @@ def validate_result_records(
     targets: dict[str, Any],
     catalog_map: dict[str, dict[str, Any]],
     result_schema_path: Path,
+    now_utc: datetime,
     errors: list[str],
 ) -> None:
     root = root.resolve()
@@ -824,6 +1062,20 @@ def validate_result_records(
             current_status = record.get("status")
             if current_status not in {"PASS", "FAIL", "BLOCKED"}:
                 continue
+            expected_gate = STATUS_KEY_TO_GATE.get(name, name.upper())
+            if current_status == "PASS":
+                validate_unexpired_pass(
+                    record.get("expires_at"),
+                    f"status: {section}.{name}",
+                    now_utc,
+                    errors,
+                )
+            if (
+                current_status == "BLOCKED"
+                and section == "qualifications"
+                and name == "p0"
+            ):
+                validate_blocked_record(root, section, name, record, errors)
             result_ref = record.get("result_path")
             if not result_ref:
                 if (
@@ -831,7 +1083,6 @@ def validate_result_records(
                     and section == "qualifications"
                     and name == "p0"
                 ):
-                    validate_blocked_record(root, section, name, record, errors)
                     continue
                 errors.append(
                     f"status: {section}.{name} is {current_status} but has no result_path"
@@ -842,7 +1093,7 @@ def validate_result_records(
                 result_path = (root / result_path).resolve()
             result = validate_result(
                 root, result_path, result_schema_path,
-                catalog_map, targets, status, errors
+                catalog_map, targets, status, expected_gate, now_utc, errors
             )
             if result and result.get("status") != current_status:
                 errors.append(
@@ -913,6 +1164,74 @@ def load_profile_directory(
     return profiles
 
 
+def coverage_covers(required: set[str], coverage: set[str]) -> bool:
+    if not required:
+        return True
+    if not coverage:
+        return False
+    if "*" in coverage or "GLOBAL" in coverage:
+        return True
+    for item in required:
+        if item in coverage:
+            continue
+        if any(item.startswith(f"{covered}-") for covered in coverage):
+            continue
+        return False
+    return True
+
+
+def coverage_overlaps(required: set[str], coverage: set[str]) -> bool:
+    if not required:
+        return True
+    if not coverage:
+        return False
+    if "*" in coverage or "GLOBAL" in coverage:
+        return True
+    for item in required:
+        if item in coverage:
+            return True
+        if any(item.startswith(f"{covered}-") for covered in coverage):
+            return True
+    return False
+
+
+def validate_conditional_right(
+    source_id: str,
+    right_name: str,
+    rights_conditions: dict[str, Any],
+    conditions_enforced_by: list[str],
+    errors: list[str],
+) -> None:
+    if not conditions_enforced_by or unresolved(conditions_enforced_by):
+        errors.append(
+            f"source profile {source_id}: conditional {right_name} right "
+            "lacks enforcement controls"
+        )
+    if not rights_conditions or unresolved(rights_conditions):
+        errors.append(
+            f"source profile {source_id}: conditional {right_name} right "
+            "lacks recorded rights conditions"
+        )
+
+
+def normalized_right_value(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip().lower().replace("_", "-")
+
+
+def right_blocks_use(value: Any) -> bool:
+    return normalized_right_value(value) in {"unknown", "prohibited"}
+
+
+def right_requires_conditions(value: Any) -> bool:
+    return normalized_right_value(value) in {
+        "conditional",
+        "restricted",
+        "approved-with-restrictions",
+    }
+
+
 def validate_domain_and_source_profiles(
     targets: dict[str, Any],
     status: dict[str, Any],
@@ -981,13 +1300,48 @@ def validate_domain_and_source_profiles(
             continue
         if profile.get("status") != "FROZEN":
             errors.append(f"status: P0 PASS while domain profile {domain_id} is not FROZEN")
-        if profile.get("scope", {}).get("geographies") != scope.get("geographies"):
+        profile_scope = profile.get("scope", {})
+        if profile_scope.get("geographies") != scope.get("geographies"):
             errors.append(
                 f"domain profile {domain_id}: geographies do not exactly match frozen target scope"
             )
-        if profile.get("scope", {}).get("intents") != scope.get("intents"):
+        if profile_scope.get("intents") != scope.get("intents"):
             errors.append(
                 f"domain profile {domain_id}: intents do not exactly match frozen target scope"
+            )
+        if profile_scope.get("input_modalities") != scope.get("input_modalities"):
+            errors.append(
+                f"domain profile {domain_id}: input_modalities do not exactly match frozen target scope"
+            )
+        if profile_scope.get("output_channels") != scope.get("output_channels"):
+            errors.append(
+                f"domain profile {domain_id}: output_channels do not exactly match frozen target scope"
+            )
+        unresolved_profile_fields = [
+            field
+            for field in [
+                "reference_hierarchy",
+                "issue_taxonomy",
+                "severity_rubric",
+                "confidence_rubric",
+                "source_requirements",
+                "spatial_temporal_tolerances",
+                "unknown_states",
+                "metrics",
+                "owner",
+                "reviewers",
+                "expires_at",
+                "frozen_at",
+                "approved_by",
+                "invalidation_triggers",
+                "field_surveillance_plan",
+            ]
+            if unresolved(profile.get(field))
+        ]
+        if unresolved_profile_fields:
+            errors.append(
+                f"domain profile {domain_id}: unresolved frozen profile fields "
+                f"{unresolved_profile_fields}"
             )
         source_requirements = profile.get("source_requirements") or []
         if unresolved(source_requirements):
@@ -996,6 +1350,8 @@ def validate_domain_and_source_profiles(
     selected_product_profile = scope.get("product_scope_profile")
     commercial = bool(scope.get("commercial_profile_enabled"))
     ai_enabled = bool(scope.get("ai_llm_enabled_for_decision_relevant_output"))
+    source_domain_coverage: set[str] = set()
+    source_domain_wildcard = False
 
     for source_id in sorted(required_sources):
         profile = source_profiles.get(source_id)
@@ -1008,25 +1364,76 @@ def validate_domain_and_source_profiles(
             errors.append(
                 f"source profile {source_id}: selected product profile is not approved"
             )
+        coverage = profile.get("coverage") or {}
+        coverage_geographies = set(coverage.get("geographies") or [])
+        coverage_domains = set(coverage.get("domains") or [])
+        if "*" in coverage_domains or "GLOBAL" in coverage_domains:
+            source_domain_wildcard = True
+            source_domain_coverage.update(required_domains)
+        else:
+            for domain_id in required_domains:
+                if coverage_covers({domain_id}, coverage_domains):
+                    source_domain_coverage.add(domain_id)
+        if not coverage_covers(set(scope.get("geographies") or []), coverage_geographies):
+            errors.append(
+                f"source profile {source_id}: coverage.geographies does not cover target scope"
+            )
+        if not coverage_overlaps(required_domains, coverage_domains):
+            errors.append(
+                f"source profile {source_id}: coverage.domains does not overlap target domains"
+            )
         rights = profile.get("rights", {})
         operations = set(profile.get("enabled_operations", []))
-        if commercial and rights.get("commercial_use") in {"UNKNOWN", "PROHIBITED"}:
+        rights_conditions = profile.get("rights_conditions") or {}
+        conditions_enforced_by = profile.get("conditions_enforced_by") or []
+        if commercial and right_blocks_use(rights.get("commercial_use")):
             errors.append(f"source profile {source_id}: commercial use is not permitted")
+        if commercial and right_requires_conditions(rights.get("commercial_use")):
+            validate_conditional_right(
+                source_id,
+                "commercial_use",
+                rights_conditions,
+                conditions_enforced_by,
+                errors,
+            )
         right_by_operation = {
-            "CACHE": "cache",
-            "RETAIN_HISTORY": "retain",
-            "RAW_EXPORT": "raw_data",
-            "DERIVED_EXPORT": "export",
-            "DISPLAY": "redistribute",
-            "AI_PROCESS": "ai_use",
+            "CACHE": ("cache",),
+            "RETAIN_HISTORY": ("retain",),
+            "RAW_EXPORT": ("raw_data", "export"),
+            "DERIVED_EXPORT": ("export",),
+            "DISPLAY": ("redistribute",),
+            "AI_PROCESS": ("ai_use",),
         }
-        for operation, right_name in right_by_operation.items():
-            if operation in operations and rights.get(right_name) in {"UNKNOWN", "PROHIBITED"}:
-                errors.append(
-                    f"source profile {source_id}: operation {operation} conflicts with {right_name} right"
-                )
-        if ai_enabled and "AI_PROCESS" in operations and rights.get("ai_use") in {"UNKNOWN", "PROHIBITED"}:
+        for operation, right_names in right_by_operation.items():
+            if operation not in operations:
+                continue
+            for right_name in right_names:
+                right_value = rights.get(right_name)
+                if right_blocks_use(right_value):
+                    errors.append(
+                        f"source profile {source_id}: operation {operation} conflicts with {right_name} right"
+                    )
+                if right_requires_conditions(right_value):
+                    validate_conditional_right(
+                        source_id,
+                        right_name,
+                        rights_conditions,
+                        conditions_enforced_by,
+                        errors,
+                    )
+        if (
+            ai_enabled
+            and "AI_PROCESS" in operations
+            and right_blocks_use(rights.get("ai_use"))
+        ):
             errors.append(f"source profile {source_id}: AI processing is not permitted")
+
+    if not source_domain_wildcard and not coverage_covers(required_domains, source_domain_coverage):
+        missing_domains = sorted(required_domains - source_domain_coverage)
+        errors.append(
+            "selected source profiles do not cover target domains: "
+            f"{missing_domains}"
+        )
 
 
 def validate_scope_versioning(
@@ -1071,7 +1478,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rubrics", type=Path)
     parser.add_argument("--domain-profiles-dir", type=Path)
     parser.add_argument("--source-profiles-dir", type=Path)
+    parser.add_argument(
+        "--now",
+        help="ISO-8601 UTC timestamp used for deterministic PASS expiry checks.",
+    )
     args = parser.parse_args(argv)
+    clock_errors: list[str] = []
+    now_utc = (
+        parse_datetime_utc(args.now, "--now", clock_errors)
+        if args.now
+        else datetime.now(timezone.utc)
+    )
+    if clock_errors or now_utc is None:
+        for error in clock_errors:
+            print(f"FAIL: {error}")
+        return 1
 
     root = args.root.resolve()
     if args.layout == "auto":
@@ -1212,6 +1633,7 @@ def main(argv: list[str] | None = None) -> int:
             set(catalog_map),
             errors,
         )
+        validate_checker_advertisements(root, readiness_crosswalk, errors)
 
     domain_profiles = load_profile_directory(
         domain_profiles_dir,
@@ -1249,7 +1671,13 @@ def main(argv: list[str] | None = None) -> int:
         targets, status, profiles, catalog_map, rubrics, errors
     )
     validate_result_records(
-        root, status, targets, catalog_map, required_files["result_schema"], errors
+        root,
+        status,
+        targets,
+        catalog_map,
+        required_files["result_schema"],
+        now_utc,
+        errors,
     )
     validate_domain_and_source_profiles(
         targets, status, domain_profiles, source_profiles, errors, warnings

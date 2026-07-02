@@ -55,6 +55,7 @@ def test_p0_is_honestly_blocked_without_result_artifact() -> None:
     assert p0["blocker_references"] == [
         "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
         "docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md",
+        "docs/qualification/P0_AUTO_EVIDENCE.yaml",
     ]
     for reference in p0["blocker_references"]:
         assert (REPO_ROOT / reference).exists(), reference
@@ -102,6 +103,19 @@ def test_active_source_profile_is_real_ds002_and_maps_production_usage_fields() 
         "ai_use_allowed": "rights.ai_use",
     }
     assert profile["rights"]["raw_data"] != "UNKNOWN"
+    assert "CONDITIONAL" not in set(profile["rights"].values())
+    assert profile["rights"] == {
+        "commercial_use": "restricted",
+        "cache": "restricted",
+        "retain": "approved-with-restrictions",
+        "redistribute": "restricted",
+        "export": "approved-with-restrictions",
+        "raw_data": "restricted",
+        "ai_use": "restricted",
+        "attribution": (
+            "Source FEMA National Flood Hazard Layer (NFHL); no FEMA endorsement implied."
+        ),
+    }
 
     assert "backend/app/source_registry/usage_rights.py" in profile["conditions_enforced_by"]
     assert "registers/license-reviews/ds-002-fema-nfhl.md" in profile[

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import re
 from pathlib import Path
 from typing import Any, cast
 
@@ -13,6 +14,7 @@ CATALOG_PATH = REPO_ROOT / "config" / "qualification" / "criterion_catalog.yaml"
 CHANGE_MATRIX_PATH = (
     REPO_ROOT / "config" / "qualification" / "change_impact_matrix.yaml"
 )
+CI_WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 REQUIRED_CONFIG_GLOBS = {
     "config/*readiness*.yaml",
     "config/*authority*.yaml",
@@ -25,6 +27,14 @@ REQUIRED_CHECKER_GLOBS = {
     "scripts/*entitlement*_check.py",
     "scripts/bologna_*_check.py",
 }
+QUALIFICATION_CONTROL_GATES = {
+    "scripts/run_qualification_selftest.sh",
+    "scripts/run_qualification_validate.sh",
+    "scripts/run_qualification_status_check.sh",
+    "scripts/run_qualification_change_impact_check.sh",
+    "scripts/run_qualification_p0_evidence_check.sh",
+}
+RELEASE_GATE_PROOF_RE = re.compile(r"^scripts/run_[A-Za-z0-9_]+\.(?:ps1|sh)$")
 
 
 def _yaml(path: Path) -> dict[str, Any]:
@@ -45,6 +55,24 @@ def _glob_paths(patterns: list[str]) -> set[str]:
             if path.is_file()
         )
     return paths
+
+
+def _ci_gate_paths() -> set[str]:
+    workflow = CI_WORKFLOW_PATH.read_text(encoding="utf-8")
+    paths = {
+        match.group(1)
+        for match in re.finditer(r"\./(scripts/run_[A-Za-z0-9_]+\.sh)", workflow)
+    }
+    return paths - QUALIFICATION_CONTROL_GATES
+
+
+def _release_gate_paths() -> set[str]:
+    release = _yaml(REPO_ROOT / "config" / "release_readiness.yaml")
+    return {
+        check["proof"]
+        for check in release["required_checks"]
+        if RELEASE_GATE_PROOF_RE.match(check["proof"])
+    }
 
 
 def test_readiness_crosswalk_covers_live_inventory_and_catalog_ids() -> None:
@@ -84,6 +112,25 @@ def test_readiness_crosswalk_covers_live_inventory_and_catalog_ids() -> None:
             "authority_blocker",
             "static_guardrail",
         }
+
+
+def test_readiness_crosswalk_maps_ci_and_release_gate_paths() -> None:
+    crosswalk = _yaml(CROSSWALK_PATH)
+    expected_gate_paths = _ci_gate_paths() | _release_gate_paths()
+    mapped_gate_paths = {
+        path
+        for entry in crosswalk["entries"]
+        for path in entry.get("gate_paths", [])
+    }
+
+    assert {
+        "scripts/run_provenance_check.sh",
+        "scripts/run_security_scan.sh",
+        "scripts/run_backup_restore_check.ps1",
+    } <= mapped_gate_paths
+    assert expected_gate_paths - mapped_gate_paths == set()
+    for gate_path in mapped_gate_paths:
+        assert (REPO_ROOT / gate_path).is_file(), gate_path
 
 
 def test_readiness_crosswalk_doc_lists_surfaces_gaps_and_orphans() -> None:

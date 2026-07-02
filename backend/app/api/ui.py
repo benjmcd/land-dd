@@ -58,6 +58,17 @@ from app.deployment_readiness import (
 from app.domain.enums import IntentCode, JobStatus, ReportReviewStatus
 from app.domain.job_health import STALE_RUNNING_THRESHOLD_SECONDS
 from app.domain.report_contracts import ReportRunContract
+from app.dossier_readiness import (
+    DossierAnchor,
+    DossierReadinessError,
+    load_dossier_readiness,
+)
+from app.expansion_readiness import (
+    ChecklistItem,
+    ChecklistSummary,
+    ExpansionReadinessError,
+    load_expansion_readiness,
+)
 from app.observability_readiness import (
     ObservabilityReadiness,
     ObservabilityReadinessError,
@@ -72,6 +83,13 @@ from app.performance_guardrails import (
     PerformanceGuardrailsError,
     PerformanceGuardrailsReadiness,
     load_performance_guardrails,
+)
+from app.production_authority import (
+    AuthorityRequirement,
+    ExternalAuthorityBlocker,
+    ProductionAuthorityError,
+    RepoLocalCandidate,
+    load_production_authority,
 )
 from app.reports.dossier import build_rural_land_dossier
 from app.reports.job_store import ReportJobRecord
@@ -438,8 +456,11 @@ def _raw_collect(
 ) -> tuple[list[object], str | None]:
     try:
         return list(collector()), None
-    except Exception as exc:  # noqa: BLE001 - inventory must fail closed per section
-        return [], safe_error_message(str(exc)) or "not available from current service"
+    except Exception:  # noqa: BLE001 - inventory must fail closed per section
+        # Render a generic message; never expose filesystem paths or exc details
+        # to the user-facing surface (safe_error_message already redacts paths,
+        # but a generic label is more robust and avoids leaking any error text).
+        return [], "collector unavailable"
 
 
 def _raw_count(collector: Callable[[], Sized]) -> str:
@@ -453,6 +474,10 @@ def _raw_inventory_summary(services: ApiServices) -> str:
     values = (
         ("sources", _raw_count(lambda: services.source_service.list_all())),
         ("areas", _raw_count(lambda: services.area_service.list_all())),
+        # len(list_all()) is used here because no count() method exists on these
+        # repos.  The full list is materialised, which is accurate but not optimal
+        # for large tables.  TODO: add evidence_repo.count() and claim_repo.count()
+        # (SELECT COUNT(*)) to avoid full-table materialisation on the home route.
         ("evidence", _raw_count(lambda: services.evidence_service.list_all())),
         ("claims", _raw_count(lambda: services.claim_service.list_all())),
         (
@@ -636,24 +661,28 @@ def _report_run_rows(records: list[object], unavailable: str | None) -> str:
 
 
 def _report_claim_total(report: ReportRunContract) -> int:
-    return (
-        len(report.claims)
-        + len(report.unknowns)
-        + len(report.red_flags)
-        + len(report.advisory_claims)
-    )
+    # report.unknowns / red_flags / advisory_claims are filtered subsets of
+    # report.claims — adding them together would double-count.  Use only the
+    # canonical claims list, which already contains every evaluated claim.
+    return len(report.claims)
 
 
 def _report_contract_links(report: ReportRunContract) -> str:
     report_run_id = report.report_run_id
-    return _report_list_action_links(
-        [
-            (f"/ui/report-runs/{report_run_id}", "detail"),
-            (f"/report-runs/{report_run_id}/dossier?download=1", "dossier"),
-            (f"/report-runs/{report_run_id}/artifact", "json"),
-            (f"/ui/report-runs/{report_run_id}/lineage", "lineage"),
-        ]
-    )
+    detail_href = f"/ui/report-runs/{report_run_id}"
+    # Dossier, artifact, and lineage surfaces are approval-gated (return 409
+    # until approved).  Mirror the gating logic used in the report-list page
+    # and only render those links when the report is approved.
+    if report.review_status == ReportReviewStatus.APPROVED:
+        return _report_list_action_links(
+            [
+                (detail_href, "detail"),
+                (f"/report-runs/{report_run_id}/dossier?download=1", "dossier"),
+                (f"/report-runs/{report_run_id}/artifact", "json"),
+                (f"{detail_href}/lineage", "lineage"),
+            ]
+        )
+    return _report_list_action_links([(detail_href, "detail")])
 
 
 def _report_job_rows(records: list[object], unavailable: str | None) -> str:
@@ -1787,6 +1816,9 @@ def _deployment_readiness_page(readiness: DeploymentReadiness) -> str:
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/">Home</a>
       <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/dossier-readiness">Dossier readiness</a>
+      <a href="/ui/expansion">Expansion readiness</a>
+      <a href="/ui/production-authority">Production authority</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
       <a href="/ui/operations-guardrails">Operations guardrails</a>
@@ -1905,6 +1937,9 @@ def ui_index(request: Request, services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/dossier-readiness">Dossier readiness</a>
+      <a href="/ui/expansion">Expansion readiness</a>
+      <a href="/ui/production-authority">Production authority</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>
@@ -2069,6 +2104,608 @@ def _supported_aoi_fixture_markup(
 </section>"""
 
 
+def _readiness_inventory_table(headers: tuple[str, ...], rows: str) -> str:
+    header_html = "".join(f"<th scope='col'>{_html.escape(header)}</th>" for header in headers)
+    return (
+        "<table class='inventory-table'>"
+        f"<thead><tr>{header_html}</tr></thead>"
+        f"<tbody>{rows}</tbody>"
+        "</table>"
+    )
+
+
+def _readiness_empty_row(column_count: int, message: str) -> str:
+    return (
+        f'<tr><td class="empty-row" colspan="{column_count}">'
+        f"{_html.escape(message)}</td></tr>"
+    )
+
+
+_READINESS_TABLE_CSS = """
+.inventory-table-wrap { border:1px solid var(--line); border-radius:6px;
+  max-width:100%; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.inventory-table { border-collapse:collapse; min-width:760px; width:100%; }
+.inventory-table th, .inventory-table td { border-bottom:1px solid var(--line);
+  overflow-wrap:anywhere; padding:0.45rem 0.55rem; text-align:left; vertical-align:top; }
+.inventory-table th { background:var(--soft); color:#334155; font-size:0.76rem;
+  text-transform:uppercase; }
+.inventory-table tr:last-child td { border-bottom:0; }
+.mono { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:0.86rem; }
+.empty-row { color:var(--muted); }
+@media (max-width: 640px) { .inventory-table { min-width:680px; } }
+"""
+
+_READINESS_NAV = """
+    <nav class="console-nav" aria-label="Operator console navigation">
+      <a href="/ui/">Home</a>
+      <a href="/ui/raw-data">Raw data inventory</a>
+      <a href="/ui/dossier-readiness">Dossier readiness</a>
+      <a href="/ui/expansion">Expansion readiness</a>
+      <a href="/ui/production-authority">Production authority</a>
+      <a href="/ui/source-provenance">Source provenance</a>
+      <a href="/ui/deployment-readiness">Deployment readiness</a>
+      <a href="/ui/operations-guardrails">Operations guardrails</a>
+      <a href="/ui/performance-guardrails">Performance guardrails</a>
+      <a href="/ui/observability-readiness">Observability readiness</a>
+      <a href="/ui/report-runs">Report runs</a>
+      <a href="/docs">API docs</a>
+    </nav>"""
+
+
+def _expansion_count_rows(status_counts: dict[str, int]) -> str:
+    rows = ""
+    for status_name, count in sorted(status_counts.items()):
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(status_name)}</td>"
+            f"<td>{_html.escape(str(count))}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(2, "No expansion readiness status counts.")
+
+
+def _expansion_checklist_rows(checklists: tuple[ChecklistSummary, ...]) -> str:
+    rows = ""
+    for checklist in checklists:
+        counts = ", ".join(
+            f"{status_name}={count}"
+            for status_name, count in sorted(checklist.status_counts.items())
+        )
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(checklist.checklist_id)}</td>"
+            f"<td>{_html.escape(checklist.source)}</td>"
+            f"<td>{_html.escape(checklist.scope)}</td>"
+            f"<td>{_html.escape(str(checklist.item_count))}</td>"
+            f"<td>{_html.escape(counts)}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(5, "No expansion readiness checklists.")
+
+
+def _expansion_item_rows(checklists: tuple[ChecklistSummary, ...]) -> str:
+    rows = ""
+    for checklist in checklists:
+        for item in checklist.items:
+            rows += _expansion_item_row(checklist, item)
+    return rows or _readiness_empty_row(6, "No expansion readiness items.")
+
+
+def _expansion_item_row(checklist: ChecklistSummary, item: ChecklistItem) -> str:
+    evidence = ", ".join(item.evidence)
+    blocker_authority = ", ".join(item.blocker_authority) or "n/a"
+    next_action = item.next_action or "repo evidence assertions passed"
+    return (
+        "<tr>"
+        f"<td class='mono'>{_html.escape(checklist.checklist_id)}</td>"
+        f"<td>{_html.escape(item.item_id.replace('_', ' '))}</td>"
+        f"<td class='mono'>{_html.escape(item.status)}</td>"
+        f"<td>{_html.escape(evidence)}</td>"
+        f"<td>{_html.escape(blocker_authority)}</td>"
+        f"<td>{_html.escape(next_action)}</td>"
+        "</tr>"
+    )
+
+
+def _expansion_bool_rows(values: dict[str, bool]) -> str:
+    rows = ""
+    for key, value in sorted(values.items()):
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(key)}</td>"
+            f"<td>{_html.escape(str(value).lower())}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(2, "No expansion readiness flags.")
+
+
+def _dossier_field_rows(fields: tuple[str, ...], expected: tuple[str, ...]) -> str:
+    expected_set = set(expected)
+    rows = ""
+    for field in fields:
+        if field not in expected_set:
+            continue
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(field)}</td>"
+            "<td>required</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(2, "No required dossier fields.")
+
+
+def _dossier_anchor_rows(anchors: tuple[DossierAnchor, ...]) -> str:
+    rows = ""
+    for anchor in anchors:
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(anchor.anchor_id)}</td>"
+            f"<td>{_html.escape(anchor.artifact_path)}</td>"
+            f"<td>{_html.escape(anchor.purpose)}</td>"
+            f"<td>{_html.escape(', '.join(anchor.anchors))}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(4, "No dossier readiness anchors.")
+
+
+def _authority_joined_items(items: tuple[str, ...]) -> str:
+    return " | ".join(items)
+
+
+def _authority_key_value_rows(values: tuple[tuple[str, str], ...]) -> str:
+    rows = ""
+    for key, value in values:
+        rows += (
+            "<tr>"
+            f"<td class='mono'>{_html.escape(key)}</td>"
+            f"<td>{_html.escape(value)}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(2, "No production authority records.")
+
+
+def _authority_summary_rows(
+    *,
+    packet_path: str,
+    split_path: str,
+    requirement_count: int,
+    external_blocker_count: int,
+    repo_local_candidate_count: int,
+    open_blocker_count: int,
+) -> str:
+    values = (
+        ("authority_packet", packet_path),
+        ("authority_split", split_path),
+        ("authority_sections", str(requirement_count)),
+        ("external_blockers", str(external_blocker_count)),
+        ("repo_local_candidates", str(repo_local_candidate_count)),
+        ("open_blockers", str(open_blocker_count)),
+    )
+    return _authority_key_value_rows(values)
+
+
+def _authority_blocker_rows(blockers: tuple[ExternalAuthorityBlocker, ...]) -> str:
+    rows = ""
+    for blocker in blockers:
+        rows += (
+            "<tr>"
+            f"<td>{_html.escape(blocker.area)}</td>"
+            f"<td>{_html.escape(blocker.required_authority)}</td>"
+            f"<td class='mono'>{_html.escape(blocker.current_authority)}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(3, "No external authority blockers.")
+
+
+def _authority_requirement_rows(requirements: tuple[AuthorityRequirement, ...]) -> str:
+    rows = ""
+    for requirement in requirements:
+        rows += (
+            "<tr>"
+            f"<td>{_html.escape(requirement.title)}</td>"
+            f"<td>{_html.escape(_authority_joined_items(requirement.decisions))}</td>"
+            f"<td>{_html.escape(_authority_joined_items(requirement.evidence))}</td>"
+            f"<td>{_html.escape(_authority_joined_items(requirement.criteria))}</td>"
+            f"<td>{_html.escape(_authority_joined_items(requirement.unlocked_lane))}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(5, "No authority requirements.")
+
+
+def _repo_local_candidate_rows(candidates: tuple[RepoLocalCandidate, ...]) -> str:
+    rows = ""
+    for candidate in candidates:
+        rows += (
+            "<tr>"
+            f"<td>{_html.escape(candidate.candidate)}</td>"
+            f"<td>{_html.escape(candidate.why_repo_local)}</td>"
+            f"<td>{_html.escape(candidate.boundary)}</td>"
+            "</tr>"
+        )
+    return rows or _readiness_empty_row(3, "No repo-local candidates.")
+
+
+def _open_blocker_rows(blockers: tuple[str, ...]) -> str:
+    rows = ""
+    for blocker in blockers:
+        rows += f"<tr><td>{_html.escape(blocker)}</td></tr>"
+    return rows or _readiness_empty_row(1, "No open production blockers.")
+
+
+@router.get("/expansion", response_class=HTMLResponse, response_model=None)
+def ui_expansion_readiness() -> str | HTMLResponse:
+    try:
+        readiness = load_expansion_readiness()
+    except ExpansionReadinessError as exc:
+        message = _html.escape(
+            safe_error_message(str(exc)) or "expansion readiness unavailable"
+        )
+        return HTMLResponse(
+            content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Expansion Readiness</title>
+<style>{_INDEX_CSS}</style>
+</head>
+<body>
+<div class="shell">
+  <main class="panel">
+    <h1>Expansion Readiness</h1>
+    <p>Expansion readiness unavailable from repo-owned checklist dry-run artifacts.</p>
+    <div class="warning">{message}</div>
+    <p><a href="/ui/">Home</a></p>
+  </main>
+</div>
+</body>
+</html>""",
+            status_code=503,
+        )
+
+    status_table = _readiness_inventory_table(
+        ("Status", "Items"),
+        _expansion_count_rows(readiness.status_counts),
+    )
+    checklist_table = _readiness_inventory_table(
+        ("Checklist", "Source", "Scope", "Items", "Status counts"),
+        _expansion_checklist_rows(readiness.checklists),
+    )
+    item_table = _readiness_inventory_table(
+        ("Checklist", "Item", "Status", "Evidence", "Blocker authority", "Next action"),
+        _expansion_item_rows(readiness.checklists),
+    )
+    approvals_table = _readiness_inventory_table(
+        ("Flag", "Value"),
+        _expansion_bool_rows(readiness.candidate.approvals),
+    )
+    limits_table = _readiness_inventory_table(
+        ("Flag", "Value"),
+        _expansion_bool_rows(readiness.limits),
+    )
+    boundary = (
+        "Local expansion-readiness view only: validate-only checklist dry run for a "
+        "hypothetical_not_selected candidate. It does not approve a new geography, "
+        "does not approve a new rulepack, does not approve a new source, does not "
+        "unblock DS-017, does not run live connectors, and does not claim hosted "
+        "production readiness, legal review, OAuth/OIDC, or full identity/RBAC."
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Expansion Readiness</title>
+<style>
+{_INDEX_CSS}
+.expansion-grid {{ display:grid; gap:1rem; }}
+{_READINESS_TABLE_CSS}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Expansion Readiness</h1>
+      <span>Validate-only checklist dry-run status for future locality/rulepack expansion</span>
+    </div>{_READINESS_NAV}
+  </div>
+</header>
+<div class="shell">
+  <main class="expansion-grid">
+    <section class="panel" aria-labelledby="expansion-title">
+      <h1 id="expansion-title">Expansion Readiness</h1>
+      <p><strong>Schema:</strong> {_html.escape(readiness.schema_version)}</p>
+      <p><strong>Status:</strong> {_html.escape(readiness.status)}</p>
+      <p><strong>Candidate:</strong>
+        <span class="mono">{_html.escape(readiness.candidate.candidate_id)}</span>
+        ({_html.escape(readiness.candidate.status)})
+      </p>
+      <p><strong>Total checklist items:</strong> {_html.escape(str(readiness.total_items))}</p>
+      <p class="warning">{_html.escape(boundary)}</p>
+      <p>{_html.escape(readiness.candidate.description)}</p>
+    </section>
+    <section class="panel" aria-labelledby="expansion-status-title">
+      <h2 id="expansion-status-title">Checklist Status Counts</h2>
+      <div class="inventory-table-wrap">{status_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="expansion-approvals-title">
+      <h2 id="expansion-approvals-title">Approval Flags</h2>
+      <div class="inventory-table-wrap">{approvals_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="expansion-limits-title">
+      <h2 id="expansion-limits-title">Validate-Only Limits</h2>
+      <div class="inventory-table-wrap">{limits_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="expansion-checklists-title">
+      <h2 id="expansion-checklists-title">Checklist Coverage</h2>
+      <div class="inventory-table-wrap">{checklist_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="expansion-items-title">
+      <h2 id="expansion-items-title">Checklist Items and Next Actions</h2>
+      <div class="inventory-table-wrap">{item_table}</div>
+    </section>
+  </main>
+</div>
+</body>
+</html>"""
+
+
+@router.get("/dossier-readiness", response_class=HTMLResponse, response_model=None)
+def ui_dossier_readiness() -> str | HTMLResponse:
+    try:
+        readiness = load_dossier_readiness()
+    except DossierReadinessError as exc:
+        message = _html.escape(
+            safe_error_message(str(exc)) or "dossier readiness unavailable"
+        )
+        return HTMLResponse(
+            content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Local Dossier Readiness</title>
+<style>{_INDEX_CSS}</style>
+</head>
+<body>
+<div class="shell">
+  <main class="panel">
+    <h1>Local Dossier Readiness</h1>
+    <p>Dossier readiness unavailable from repo-owned contract artifacts.</p>
+    <div class="warning">{message}</div>
+    <p><a href="/ui/">Home</a></p>
+  </main>
+</div>
+</body>
+</html>""",
+            status_code=503,
+        )
+
+    report_table = _readiness_inventory_table(
+        ("Report field", "Contract"),
+        _dossier_field_rows(
+            readiness.report_required_fields,
+            (
+                "evidence",
+                "claims",
+                "unknowns",
+                "caveats",
+                "source_manifest",
+                "artifact_metadata",
+            ),
+        ),
+    )
+    evidence_table = _readiness_inventory_table(
+        ("Evidence field", "Contract"),
+        _dossier_field_rows(
+            readiness.evidence_required_fields,
+            (
+                "evidence_id",
+                "source_id",
+                "source_ingest_run_id",
+                "confidence",
+                "caveat",
+            ),
+        ),
+    )
+    claim_table = _readiness_inventory_table(
+        ("Claim field", "Contract"),
+        _dossier_field_rows(
+            readiness.claim_required_fields,
+            (
+                "claim_id",
+                "evidence_ids",
+                "confidence",
+                "user_safe_language",
+                "verification_task",
+            ),
+        ),
+    )
+    anchor_table = _readiness_inventory_table(
+        ("Anchor", "Artifact", "Purpose", "Required Text"),
+        _dossier_anchor_rows(readiness.anchors),
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Local Dossier Readiness</title>
+<style>
+{_INDEX_CSS}
+.dossier-grid {{ display:grid; gap:1rem; }}
+{_READINESS_TABLE_CSS}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Local Dossier Readiness</h1>
+      <span>Report, evidence, claim, lineage, and safe-language contract anchors</span>
+    </div>{_READINESS_NAV}
+  </div>
+</header>
+<div class="shell">
+  <main class="dossier-grid">
+    <section class="panel" aria-labelledby="dossier-title">
+      <h1 id="dossier-title">Local Dossier Readiness</h1>
+      <p><strong>Report schema:</strong> {_html.escape(readiness.report_schema_path)}</p>
+      <p><strong>Evidence schema:</strong> {_html.escape(readiness.evidence_schema_path)}</p>
+      <p><strong>Claim schema:</strong> {_html.escape(readiness.claim_schema_path)}</p>
+      <p class="warning">{_html.escape(readiness.boundary)}</p>
+    </section>
+    <section class="panel" aria-labelledby="dossier-report-title">
+      <h2 id="dossier-report-title">Report Schema Contract</h2>
+      <p>Raw report fields required before a dossier can be trusted.</p>
+      <div class="inventory-table-wrap">{report_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="dossier-evidence-title">
+      <h2 id="dossier-evidence-title">Evidence Link Contract</h2>
+      <p>Evidence records carry IDs, source links, caveats, and confidence.</p>
+      <div class="inventory-table-wrap">{evidence_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="dossier-claim-title">
+      <h2 id="dossier-claim-title">Claim Link Contract</h2>
+      <p>Claim records link to evidence IDs and carry confidence plus safe language.</p>
+      <div class="inventory-table-wrap">{claim_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="dossier-anchor-title">
+      <h2 id="dossier-anchor-title">Dossier Gate Anchors</h2>
+      <p>Existing report, dossier, lineage, source-failure, unknowns, and safe-language tests
+        anchor the approved dossier gate.</p>
+      <div class="inventory-table-wrap">{anchor_table}</div>
+    </section>
+  </main>
+</div>
+</body>
+</html>"""
+
+
+@router.get("/production-authority", response_class=HTMLResponse, response_model=None)
+def ui_production_authority() -> str | HTMLResponse:
+    try:
+        authority = load_production_authority()
+    except ProductionAuthorityError as exc:
+        message = _html.escape(
+            safe_error_message(str(exc)) or "production authority unavailable"
+        )
+        return HTMLResponse(
+            content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Production Authority</title>
+<style>{_INDEX_CSS}</style>
+</head>
+<body>
+<div class="shell">
+  <main class="panel">
+    <h1>Production Authority</h1>
+    <p>Production authority unavailable from repo-owned authority artifacts.</p>
+    <div class="warning">{message}</div>
+    <p><a href="/ui/">Home</a></p>
+  </main>
+</div>
+</body>
+</html>""",
+            status_code=503,
+        )
+
+    summary_table = _readiness_inventory_table(
+        ("Field", "Value"),
+        _authority_summary_rows(
+            packet_path=authority.packet_path,
+            split_path=authority.split_path,
+            requirement_count=len(authority.requirements),
+            external_blocker_count=len(authority.external_blockers),
+            repo_local_candidate_count=len(authority.repo_local_candidates),
+            open_blocker_count=len(authority.open_blockers),
+        ),
+    )
+    blocker_table = _readiness_inventory_table(
+        ("Area", "Required Authority / Evidence", "Current Authority"),
+        _authority_blocker_rows(authority.external_blockers),
+    )
+    requirement_table = _readiness_inventory_table(
+        ("Authority", "External Decisions", "Evidence Fields", "Unblock Criteria", "Unlocked Lane"),
+        _authority_requirement_rows(authority.requirements),
+    )
+    candidate_table = _readiness_inventory_table(
+        ("Candidate", "Why Repo-Local", "Boundary"),
+        _repo_local_candidate_rows(authority.repo_local_candidates),
+    )
+    open_blocker_table = _readiness_inventory_table(
+        ("Open Blocker",),
+        _open_blocker_rows(authority.open_blockers),
+    )
+    boundary = (
+        "Local production-authority view only: decision and evidence packet display, not "
+        "production approval. It does not approve DS-017, does not select a vendor, "
+        "does not provision hosted deployment, does not write secrets, does not publish "
+        "images, does not create accounts, does not approve billing or alerting, does "
+        "not create hosted load proof, and does not mutate state. Missing authorities "
+        "include hosted platform, secret manager, IdP/OAuth/OIDC, registry repository, "
+        "billing owner, alert manager, and hosted load proof."
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Land Diligence - Production Authority</title>
+<style>
+{_INDEX_CSS}
+.authority-grid {{ display:grid; gap:1rem; }}
+{_READINESS_TABLE_CSS}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Production Authority</h1>
+      <span>External decisions and evidence required before production claims</span>
+    </div>{_READINESS_NAV}
+  </div>
+</header>
+<div class="shell">
+  <main class="authority-grid">
+    <section class="panel" aria-labelledby="authority-title">
+      <h1 id="authority-title">Production Authority Packet / Blockers</h1>
+      <p><strong>Packet:</strong> {_html.escape(authority.packet_path)}</p>
+      <p><strong>Authority split:</strong> {_html.escape(authority.split_path)}</p>
+      <p class="warning">{_html.escape(boundary)}</p>
+      <p>{_html.escape(authority.fail_closed_rule)}</p>
+    </section>
+    <section class="panel" aria-labelledby="authority-summary-title">
+      <h2 id="authority-summary-title">Authority Summary</h2>
+      <div class="inventory-table-wrap">{summary_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="open-blockers-title">
+      <h2 id="open-blockers-title">Open Production Blockers</h2>
+      <div class="inventory-table-wrap">{open_blocker_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="external-blockers-title">
+      <h2 id="external-blockers-title">External Authority Blockers</h2>
+      <div class="inventory-table-wrap">{blocker_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="authority-requirements-title">
+      <h2 id="authority-requirements-title">Authority Requirements</h2>
+      <div class="inventory-table-wrap">{requirement_table}</div>
+    </section>
+    <section class="panel" aria-labelledby="repo-local-candidates-title">
+      <h2 id="repo-local-candidates-title">Repo-Local Candidates</h2>
+      <div class="inventory-table-wrap">{candidate_table}</div>
+    </section>
+  </main>
+</div>
+</body>
+</html>"""
+
+
 @router.get(
     "/source-provenance",
     response_class=HTMLResponse,
@@ -2077,10 +2714,11 @@ def _supported_aoi_fixture_markup(
 def ui_source_provenance() -> str | HTMLResponse:
     try:
         readiness = load_source_provenance()
-    except SourceProvenanceError as exc:
+    except SourceProvenanceError:
         return error_page(
             "Source Provenance Unavailable",
-            f"Source provenance unavailable from repo-owned artifacts: {exc}",
+            "Source provenance could not be verified from repo-owned artifacts. "
+            "Review the source registry and readiness catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2096,10 +2734,11 @@ def ui_source_provenance() -> str | HTMLResponse:
 def ui_security_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_security_guardrails()
-    except SecurityGuardrailsError as exc:
+    except SecurityGuardrailsError:
         return error_page(
             "Security Guardrails Unavailable",
-            f"Security guardrails unavailable from repo-owned artifacts: {exc}",
+            "Security guardrails could not be verified from repo-owned artifacts. "
+            "Review the access-control catalog.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2115,10 +2754,11 @@ def ui_security_guardrails() -> str | HTMLResponse:
 def ui_operations_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_operations_guardrails()
-    except OperationsGuardrailsError as exc:
+    except OperationsGuardrailsError:
         return error_page(
             "Operations Guardrails Unavailable",
-            f"Operations guardrails unavailable from repo-owned artifacts: {exc}",
+            "Operations guardrails could not be verified from repo-owned artifacts. "
+            "Review the alerting, retention, and cost catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2134,10 +2774,11 @@ def ui_operations_guardrails() -> str | HTMLResponse:
 def ui_performance_guardrails() -> str | HTMLResponse:
     try:
         readiness = load_performance_guardrails()
-    except PerformanceGuardrailsError as exc:
+    except PerformanceGuardrailsError:
         return error_page(
             "Performance Guardrails Unavailable",
-            f"Performance guardrails unavailable from repo-owned artifacts: {exc}",
+            "Performance guardrails could not be verified from repo-owned artifacts. "
+            "Review the performance baseline and review catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2153,10 +2794,11 @@ def ui_performance_guardrails() -> str | HTMLResponse:
 def ui_observability_readiness() -> str | HTMLResponse:
     try:
         readiness = load_observability_readiness()
-    except ObservabilityReadinessError as exc:
+    except ObservabilityReadinessError:
         return error_page(
             "Observability Readiness Unavailable",
-            f"Observability readiness unavailable from repo-owned artifacts: {exc}",
+            "Observability readiness could not be verified from repo-owned artifacts. "
+            "Review the alerting and dashboard catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2172,13 +2814,11 @@ def ui_observability_readiness() -> str | HTMLResponse:
 def ui_deployment_readiness() -> str | HTMLResponse:
     try:
         readiness = load_deployment_readiness()
-    except DeploymentReadinessError as exc:
+    except DeploymentReadinessError:
         return error_page(
             "Deployment Readiness Unavailable",
-            (
-                "Deployment readiness unavailable from repo-owned deployment-path "
-                f"artifacts: {exc}"
-            ),
+            "Deployment readiness could not be verified from repo-owned deployment-path "
+            "artifacts. Review the image, runtime, and attestation catalogs.",
             "/ui/",
             503,
             css=_INDEX_CSS,
@@ -2292,6 +2932,9 @@ def ui_raw_data_inventory(services: ServicesDep) -> str:
     </div>
     <nav class="console-nav" aria-label="Operator console navigation">
       <a href="/ui/">Home</a>
+      <a href="/ui/dossier-readiness">Dossier readiness</a>
+      <a href="/ui/expansion">Expansion readiness</a>
+      <a href="/ui/production-authority">Production authority</a>
       <a href="/ui/source-provenance">Source provenance</a>
       <a href="/ui/deployment-readiness">Deployment readiness</a>
       <a href="/ui/security-guardrails">Security guardrails</a>

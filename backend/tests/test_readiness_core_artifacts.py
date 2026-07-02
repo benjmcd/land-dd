@@ -60,10 +60,42 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-06-21-eqp2-2-change-impact.md"
+        == "plans/2026-07-02-authority-evidence-intake.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
+    assert "EQP2-3" in readiness.checkpoint.completed_task_ids
+    assert "EQP2-4" in readiness.checkpoint.completed_task_ids
+    assert "BOL-AUTH-SYNC" in readiness.checkpoint.completed_task_ids
+    assert "BAP-001" in readiness.checkpoint.completed_task_ids
+    assert "BAR-001" in readiness.checkpoint.completed_task_ids
+    assert "BSA-REC" in readiness.checkpoint.completed_task_ids
+    assert "HCV-1" in readiness.checkpoint.completed_task_ids
+    assert "HCV-2" in readiness.checkpoint.completed_task_ids
+    assert "HCV-3" in readiness.checkpoint.completed_task_ids
+    assert "HCV-4" in readiness.checkpoint.completed_task_ids
+    assert "QFREEZE-1" in readiness.checkpoint.completed_task_ids
+    assert "OWNER-DEC-1" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP-1" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP1-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP2-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP3-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP4-GATE" in readiness.checkpoint.completed_task_ids
+    assert "BOL-POST-ODP4-AUTH" in readiness.checkpoint.completed_task_ids
+    assert "EQ-5" in readiness.checkpoint.completed_task_ids
+    assert "EQ-R" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP1-PACKET" in readiness.checkpoint.completed_task_ids
+    assert "BOL-POST-ODP1-PACKET" in readiness.checkpoint.completed_task_ids
+    assert "BOL-SCOPE-PURSUIT" in readiness.checkpoint.completed_task_ids
+    assert "BOL-SCOPE-AUTH" in readiness.checkpoint.completed_task_ids
+    assert "BOL-ODP2-PACKET" in readiness.checkpoint.completed_task_ids
+    assert "ODGAV-1" in readiness.checkpoint.completed_task_ids
+    assert "MINERALS-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "BROADBAND-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "ENV-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "WATER-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "GEOLOGY-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "POST-GEOLOGY-ROUTING" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -77,6 +109,9 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "Level 10" in readiness.checkpoint.blocked_terms
     assert "Bologna" in readiness.checkpoint.boundary_text
     assert readiness.task_queue.active_plan == readiness.checkpoint.active_plan
+    assert [task.task_id for task in readiness.task_queue.active_tasks] == [
+        "AUTH-EVIDENCE-INTAKE"
+    ]
     assert any(task.task_id == "READINESS-CORE" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BOL-PRIORITY" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BPS-001" for task in readiness.task_queue.completed_tasks)
@@ -86,6 +121,94 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert any(task.task_id == "EQ-2" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "EQ-3" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "EQ-4" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "EQP2-4" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-AUTH-SYNC" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BAP-001" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BAR-001" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BSA-REC" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-1" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-2" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-3" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "HCV-4" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "QFREEZE-1" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "OWNER-DEC-1" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-ODP-1" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-ODP2-GATE" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-ODP3-GATE" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "BOL-ODP4-GATE" for task in readiness.task_queue.completed_tasks)
+    assert any(
+        task.task_id == "BOL-POST-ODP4-AUTH"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(task.task_id == "EQ-5" for task in readiness.task_queue.completed_tasks)
+    assert any(task.task_id == "EQ-R" for task in readiness.task_queue.completed_tasks)
+    assert any(
+        task.task_id == "BOL-ODP1-PACKET"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "BOL-POST-ODP1-PACKET"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "BOL-SCOPE-PURSUIT"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "BOL-SCOPE-AUTH"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "BOL-ODP2-PACKET"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(task.task_id == "ODGAV-1" for task in readiness.task_queue.completed_tasks)
+    assert any(
+        task.task_id == "MINERALS-FIXTURE"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "BROADBAND-FIXTURE"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "ENV-FIXTURE"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert any(
+        task.task_id == "WATER-FIXTURE"
+        for task in readiness.task_queue.completed_tasks
+    )
+    assert not any(
+        task.task_id
+        in {
+            "REC-001",
+            "BPS-001",
+            "HCV-4",
+            "QFREEZE-1",
+            "OWNER-DEC-1",
+            "BOL-ODP-1",
+            "BOL-ODP1-GATE",
+            "BOL-ODP2-GATE",
+            "BOL-ODP3-GATE",
+            "BOL-ODP4-GATE",
+            "BOL-POST-ODP4-AUTH",
+            "EQ-5",
+            "EQ-R",
+            "BOL-ODP1-PACKET",
+            "BOL-POST-ODP1-PACKET",
+            "BOL-SCOPE-PURSUIT",
+            "BOL-ODP2-PACKET",
+            "ODGAV-1",
+            "MINERALS-FIXTURE",
+            "BROADBAND-FIXTURE",
+            "ENV-FIXTURE",
+            "WATER-FIXTURE",
+            "GEOLOGY-FIXTURE",
+            "POST-GEOLOGY-ROUTING",
+        }
+        for task in readiness.task_queue.active_tasks
+    )
     assert readiness.gate_matrix.status_counts["BLOCKED"] >= 1
     assert "L10-SEC-010" in readiness.gate_matrix.blocked_gate_ids
     assert any("verify.ps1" in command for command in readiness.validation.commands)

@@ -6,7 +6,7 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 
 ## Authority
 
-- **Current live main**: `7f4fa03677eee523d1bf65d94b74b720fb706893`.
+- **Current live main**: `74af6f5a26594e80efed0fb4cfa9015e7e9e135d`.
 - **Dirty-root candidate branch**: `codex/r026-raw-readiness-ui` at `c3364ea01605cef09e03da6da8551fa4d1a155e8`.
 - **Comparison source**: `git status --porcelain=v1 -uall` from the dirty root plus content comparison against the clean `res-rec` worktree at current main.
 - **Prior disposition source**: `state/reconciliation-dispositions.md`.
@@ -23,6 +23,22 @@ Residual classification of the preserved dirty-root candidate checkout after PR 
 | `DEFER_STILL_BLOCKED` | 17 | The candidate remains outside the current unblocked path, usually due to hosted/source/geography/report-semantics prerequisites. |
 | `OBSOLETE` | 34 | Historical/reference/generated candidate material; do not promote as live state. |
 | `COORDINATION_OR_GENERATED` | 2 | Agent coordination or generated/runtime state; not product work. |
+
+## EQ-R Closeout - 2026-06-23
+
+`EQ-R` closes the prior residual falsehood by distinguishing class-specific
+`STILL_DIVERGENT` from blocked deferred work. There are no remaining
+`STILL_DIVERGENT` product candidates after the focused `READINESS-CORE` and selected
+runtime-provenance rework slices, but that no-divergent shorthand must not be read as
+no residual deferred work.
+
+The 17 deferred paths below remain candidate evidence only. They are explicitly
+recorded as `DEFER_STILL_BLOCKED`, with their prior gate families preserved in the
+path table. No deferred file is promoted to `PASS`, live product authority, source
+authority, Bologna authority, release authority, hosted authority, report semantics,
+API behavior, DB state, or qualification status by this closeout. Future use of any
+listed file requires a fresh current-main worktree, a focused plan, new tests, and
+validation against the authority in force at that time.
 
 ## Focused Review Results
 

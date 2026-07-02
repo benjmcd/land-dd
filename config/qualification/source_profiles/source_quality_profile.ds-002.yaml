@@ -11,13 +11,13 @@ authority:
   review_status: approved
   license_status: approved-with-restrictions
 rights:
-  commercial_use: CONDITIONAL
-  cache: CONDITIONAL
-  retain: CONDITIONAL
-  redistribute: CONDITIONAL
-  export: CONDITIONAL
-  raw_data: CONDITIONAL
-  ai_use: CONDITIONAL
+  commercial_use: restricted
+  cache: restricted
+  retain: approved-with-restrictions
+  redistribute: restricted
+  export: approved-with-restrictions
+  raw_data: restricted
+  ai_use: restricted
   attribution: Source FEMA National Flood Hazard Layer (NFHL); no FEMA endorsement implied.
 production_usage_field_mapping:
   license_status: authority.license_status

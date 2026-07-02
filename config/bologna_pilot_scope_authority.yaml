@@ -210,6 +210,60 @@ scope_authority_review:
   authority_references: []
   decision_updates_allowed: false
 
+authority_record_contract:
+  contract_state: ready_for_external_authority_evidence
+  current_authority_records: []
+  required_record_fields:
+    - authority_record_id
+    - authority_type
+    - authority_reference
+    - decision_owner
+    - decision_date
+    - effective_date
+    - scope_decision_ids
+    - decision_summary
+    - evidence_summary
+    - cited_artifacts
+    - downstream_unlocks_requested
+    - caveats
+    - stop_conditions
+    - supersedes_authority_record_ids
+  allowed_authority_types:
+    - product_decision
+    - aoi_boundary_decision
+    - operator_use_case_decision
+    - non_goal_review
+    - jurisdiction_review
+    - scope_mode_decision
+    - ds017_treatment_decision
+    - source_selection_policy
+    - fixture_boundary_decision
+    - runtime_boundary_decision
+    - no_overclaim_review
+  required_scope_decision_coverage:
+    - product_authorizes_bologna_pilot_reference
+    - one_aoi_geometry_or_named_boundary
+    - intended_operator_and_use_case
+    - pilot_non_goals_and_exclusions
+    - stop_conditions_and_reversion_plan
+    - jurisdiction_boundary_review
+    - evidence_only_or_rulepack_scope
+    - ds017_treatment_for_pilot
+    - candidate_source_selection_policy
+    - fixture_capture_boundary
+    - report_runtime_boundary
+    - no_overclaim_review_owner
+  coverage_policy: all_required_scope_decisions
+  decision_update_policy: disabled_until_complete_cited_record
+  no_overclaim_controls:
+    no_source_approval_by_pilot_scope_record: true
+    no_source_rights_change_by_pilot_scope_record: true
+    no_fixture_capture_by_pilot_scope_record: true
+    no_runtime_report_use_by_pilot_scope_record: true
+    no_db_seed_by_pilot_scope_record: true
+    no_legal_buildability_title_or_value_claim: true
+    no_level_10_or_hosted_claim: true
+
 downstream_unlocks:
   - id: bologna_source_authority_intake
     target_catalog: config/bologna_source_authority_intake.yaml

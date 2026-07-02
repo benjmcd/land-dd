@@ -22,6 +22,10 @@ from app.connectors.blm_mlrs import (
     BlmMlrsConnectorError,
     BlmMlrsConnectorResult,
 )
+from app.connectors.broadband_fixture import (
+    BroadbandFixtureConnectorResult,
+    StaticBroadbandFixtureConnector,
+)
 from app.connectors.brunswick_parcels import (
     BRUNSWICK_PARCELS_CAVEAT,
     BRUNSWICK_PARCELS_CONNECTOR_NAME,
@@ -95,6 +99,10 @@ from app.connectors.chatham_zoning_recorded import (
     ChathamZoningConnectorResult,
     ChathamZoningRecordedConnector,
 )
+from app.connectors.env_hazard_fixture import (
+    EnvHazardFixtureConnectorResult,
+    StaticEnvHazardFixtureConnector,
+)
 from app.connectors.epa_echo import (
     EPA_ECHO_CAVEAT,
     EPA_ECHO_CONNECTOR_NAME,
@@ -143,11 +151,16 @@ from app.connectors.fixture_quality import (
     ConnectorFixtureQualityIssueCode,
     ConnectorFixtureQualityProfile,
     evaluate_access_fixture_quality,
+    evaluate_broadband_fixture_quality,
     evaluate_buildability_fixture_quality,
+    evaluate_env_hazard_fixture_quality,
     evaluate_flood_fixture_quality,
+    evaluate_geology_fixture_quality,
+    evaluate_minerals_fixture_quality,
     evaluate_parcel_fixture_quality,
     evaluate_soils_fixture_quality,
     evaluate_terrain_fixture_quality,
+    evaluate_water_fixture_quality,
     evaluate_wetlands_fixture_quality,
     evaluate_zoning_fixture_quality,
 )
@@ -163,6 +176,10 @@ from app.connectors.flood_fixture import (
     FloodFixtureConnectorResult,
     StaticFloodFixtureConnector,
 )
+from app.connectors.geology_fixture import (
+    GeologyFixtureConnectorResult,
+    StaticGeologyFixtureConnector,
+)
 from app.connectors.live_jobs import (
     LIVE_CONNECTOR_DS001_ID,
     LIVE_CONNECTOR_DS002_ID,
@@ -173,6 +190,10 @@ from app.connectors.live_jobs import (
     LiveConnectorJobRecord,
     LiveConnectorJobStoreProtocol,
     SqlAlchemyLiveConnectorJobStore,
+)
+from app.connectors.minerals_fixture import (
+    MineralsFixtureConnectorResult,
+    StaticMineralsFixtureConnector,
 )
 from app.connectors.nc_geologic_map import (
     NC_GEOLOGIC_MAP_CAVEAT,
@@ -325,6 +346,10 @@ from app.connectors.usgs_water_monitoring import (
     UsgsWaterConnectorResult,
     UsgsWaterMonitoringConnector,
 )
+from app.connectors.water_fixture import (
+    StaticWaterFixtureConnector,
+    WaterFixtureConnectorResult,
+)
 from app.connectors.wetlands_fixture import (
     StaticWetlandsFixtureConnector,
     WetlandsFixtureConnectorResult,
@@ -351,6 +376,7 @@ __all__ = [
     "BlmMlrsConnector",
     "BlmMlrsConnectorError",
     "BlmMlrsConnectorResult",
+    "BroadbandFixtureConnectorResult",
     "BRUNSWICK_ZONING_CAVEAT",
     "BRUNSWICK_ZONING_CONNECTOR_NAME",
     "BRUNSWICK_ZONING_METHOD_CODE",
@@ -450,6 +476,7 @@ __all__ = [
     "FixtureConnectorProtocol",
     "FixtureConnectorResultProtocol",
     "FloodFixtureConnectorResult",
+    "GeologyFixtureConnectorResult",
     "AccessFixtureConnectorResult",
     "BuildabilityFixtureConnectorResult",
     "InMemoryConnectorReviewQueueRepository",
@@ -501,14 +528,20 @@ __all__ = [
     "SsurgoConnectorError",
     "SsurgoConnectorResult",
     "StaticAccessFixtureConnector",
+    "StaticBroadbandFixtureConnector",
     "StaticBuildabilityFixtureConnector",
+    "StaticEnvHazardFixtureConnector",
     "StaticFloodFixtureConnector",
+    "StaticGeologyFixtureConnector",
     "StaticLocalFileConnector",
     "StaticLocalFileConnectorError",
     "StaticLocalFileConnectorResult",
+    "MineralsFixtureConnectorResult",
+    "StaticMineralsFixtureConnector",
     "StaticParcelFixtureConnector",
     "StaticSoilsFixtureConnector",
     "StaticTerrainFixtureConnector",
+    "StaticWaterFixtureConnector",
     "StaticWetlandsFixtureConnector",
     "StaticZoningFixtureConnector",
     "TerrainFixtureConnectorResult",
@@ -539,6 +572,7 @@ __all__ = [
     "UsgsWaterConnectorError",
     "UsgsWaterConnectorResult",
     "UsgsWaterMonitoringConnector",
+    "WaterFixtureConnectorResult",
     "EPA_ECHO_CAVEAT",
     "EPA_ECHO_CONNECTOR_NAME",
     "EPA_ECHO_MAX_BBOX_DEGREES",
@@ -549,6 +583,7 @@ __all__ = [
     "EpaEchoConnector",
     "EpaEchoConnectorError",
     "EpaEchoConnectorResult",
+    "EnvHazardFixtureConnectorResult",
     "FCC_BROADBAND_API_URL",
     "FCC_BROADBAND_CAVEAT",
     "FCC_BROADBAND_CONNECTOR_NAME",
@@ -588,11 +623,16 @@ __all__ = [
     "build_fixture_workflow_with_public_lane_services",
     "build_fixture_workflow_with_public_services",
     "evaluate_access_fixture_quality",
+    "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
+    "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_geology_fixture_quality",
+    "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",
+    "evaluate_water_fixture_quality",
     "evaluate_wetlands_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

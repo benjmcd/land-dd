@@ -168,7 +168,9 @@ def test_ui_performance_guardrails_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise PerformanceGuardrailsError("test performance guardrails failure")
+        raise PerformanceGuardrailsError(
+            "LEAK_SENTINEL drift at /workspace/config/performance_baseline.yaml field thresholds"
+        )
 
     monkeypatch.setattr(ui_module, "load_performance_guardrails", _raise_loader)
     client = TestClient(create_app())
@@ -176,8 +178,10 @@ def test_ui_performance_guardrails_route_returns_503_when_loader_fails(
     response = client.get("/ui/performance-guardrails")
 
     assert response.status_code == 503
-    assert "Performance guardrails unavailable from repo-owned artifacts" in response.text
-    assert "test performance guardrails failure" in response.text
+    assert "Performance guardrails could not be verified from repo-owned artifacts" in response.text
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 

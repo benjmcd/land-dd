@@ -1,0 +1,43 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "c2c2c2c2-c2c2-4c2c-8c2c-c2c2c2c2c2c2",
+    "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+    "connector_name": "fixture_minerals_static",
+    "status": "blocked",
+    "started_at": "2026-06-06T09:00:00Z",
+    "finished_at": "2026-06-06T09:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_minerals_unavailable",
+    "metrics": { "fixture_only": true, "source": "local_json", "failure_reason": "source_unavailable" }
+  },
+  "evidence": [
+    {
+      "evidence_id": "c2c3c4c5-c2c3-4c4c-8c5c-c2c3c4c5c6c7",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "BLM_MLRS_SOURCE_FAILURE",
+      "domain": "minerals",
+      "observation": "Fixture minerals screening: BLM MLRS / USGS MRDS source could not be retrieved.",
+      "observed_value": {
+        "failure_reason": "source_unavailable",
+        "error_message": "BLM MLRS / USGS MRDS request failed or returned no usable mineral records.",
+        "retryable": true
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "22222222-2222-4222-8222-222222222222",
+      "method_code": "fixture_minerals_overlay",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "Minerals source could not be retrieved; recorded as a source failure, not a clean no-issue result. Verify through title search and appropriate state or federal mineral records.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": "2026-06-06",
+      "observed_at": "2026-06-06T09:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

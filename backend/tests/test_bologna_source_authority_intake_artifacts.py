@@ -35,6 +35,49 @@ def _catalog() -> dict[str, Any]:
     return cast(dict[str, Any], catalog)
 
 
+def _complete_source_authority_record(
+    validator: Any,
+    candidate_id: str = "comune_bologna_pug_webgis",
+) -> dict[str, Any]:
+    rights_review = validator.rights_reviews_by_candidate()[candidate_id]
+    return {
+        "source_authority_record_id": "hypothetical-source-authority-record",
+        "authority_type": "candidate_source_terms_review",
+        "candidate_id": candidate_id,
+        "scope_authority_record_ids": ["hypothetical-bologna-scope-record"],
+        "authority_reference": "external-authority://bologna-source-authority-record",
+        "decision_owner": "source-review-owner-or-forum",
+        "decision_date": "2026-06-21",
+        "effective_date": "2026-06-21",
+        "rights_decision_ids": sorted(rights_review["rights_decisions"]),
+        "evidence_slot_values": {
+            slot: f"hypothetical cited evidence for {slot}"
+            for slot in rights_review["required_evidence"]
+        },
+        "source_terms_summary": "Hypothetical cited source terms summary.",
+        "source_version_or_publication_date": "2026-06-21",
+        "retrieval_metadata_policy": "Record URL, retrieval timestamp, method, and checksum.",
+        "cache_export_ai_raw_data_decisions": {
+            "cache_allowed": "decision must come from cited authority",
+            "export_allowed": "decision must come from cited authority",
+            "raw_data_allowed": "decision must come from cited authority",
+            "ai_use_allowed": "decision must come from cited authority",
+        },
+        "crs_precision_policy": "Record CRS, transformation policy, and precision caveat.",
+        "attribution_text": "Hypothetical attribution from cited authority.",
+        "caveats": ["Test-only record shape; not committed source approval."],
+        "storage_export_boundaries": {
+            "cache_boundary": "No cache boundary without cited authority.",
+            "export_boundary": "No export boundary without cited authority.",
+            "raw_data_boundary": "No raw data boundary without cited authority.",
+            "report_boundary": "No report use without later corpus/report authority.",
+        },
+        "source_failure_policy": "Record source failures as evidence.",
+        "downstream_unlocks_requested": [],
+        "supersedes_source_authority_record_ids": [],
+    }
+
+
 def test_bologna_source_authority_intake_is_validate_only_and_blocked() -> None:
     validator = cast(Any, _load_validator())
     catalog = _catalog()
@@ -48,6 +91,68 @@ def test_bologna_source_authority_intake_is_validate_only_and_blocked() -> None:
     assert catalog["approvals"] == validator.EXPECTED_APPROVALS
     assert catalog["limits"] == validator.EXPECTED_LIMITS
     assert all(value is False for value in catalog["approvals"].values())
+
+
+def test_bologna_source_authority_record_contract_is_present_and_blocked() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = _catalog()
+
+    assert "source_authority_record_contract" in catalog
+    contract = catalog["source_authority_record_contract"]
+    assert contract["contract_state"] == "ready_for_external_source_authority_evidence"
+    assert contract["current_source_authority_records"] == []
+    assert set(contract["required_record_fields"]) == (
+        validator.EXPECTED_SOURCE_AUTHORITY_RECORD_FIELDS
+    )
+    assert set(contract["allowed_authority_types"]) == validator.EXPECTED_AUTHORITY_TYPES
+    assert set(contract["required_rights_decision_coverage"]) == (
+        validator.rights_required_decisions()
+    )
+    assert contract["coverage_policy"] == "per_record_all_required_rights_decisions"
+    assert contract["evidence_slot_policy"] == "per_candidate_required_evidence"
+    assert contract["decision_update_policy"] == (
+        "disabled_until_complete_cited_source_authority"
+    )
+    assert all(value is True for value in contract["no_overclaim_controls"].values())
+
+
+def test_bologna_source_authority_record_validator_accepts_complete_candidate_record() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    validate_contract = getattr(validator, "validate_source_authority_record_contract", None)
+
+    assert validate_contract is not None
+    catalog["source_authority_record_contract"]["current_source_authority_records"] = [
+        _complete_source_authority_record(validator),
+    ]
+
+    validate_contract(catalog)
+
+
+def test_bologna_source_authority_record_validator_fails_on_missing_evidence_slot() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    validate_contract = getattr(validator, "validate_source_authority_record_contract", None)
+    record = _complete_source_authority_record(validator)
+    record["evidence_slot_values"].pop("effective_pug_document_or_webgis_version")
+    catalog["source_authority_record_contract"]["current_source_authority_records"] = [record]
+
+    assert validate_contract is not None
+    with pytest.raises(SystemExit, match="evidence slot values drifted"):
+        validate_contract(catalog)
+
+
+def test_bologna_source_authority_record_validator_fails_on_downstream_unlock() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_catalog())
+    validate_contract = getattr(validator, "validate_source_authority_record_contract", None)
+    record = _complete_source_authority_record(validator)
+    record["downstream_unlocks_requested"] = ["bologna_source_rights_matrix"]
+    catalog["source_authority_record_contract"]["current_source_authority_records"] = [record]
+
+    assert validate_contract is not None
+    with pytest.raises(SystemExit, match="must not request downstream unlocks"):
+        validate_contract(catalog)
 
 
 def test_bologna_source_authority_intake_matches_source_rights_matrix() -> None:

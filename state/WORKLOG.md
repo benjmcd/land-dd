@@ -2,6 +2,992 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Post-PR183 authority evidence state sync
+
+- Started clean worktree `worktrees/auth-sync` on `codex/auth-ref-output-sync` from
+  live `origin/main@084e844b82821066d0d10f3b04518b5d39610833`, after PR #183 merged
+  production authority evidence reference reporting output.
+- Synchronized project state, plan index, active plan, task queue wording, and focused
+  checker/test expectations so `AUTH-EVIDENCE-INTAKE` records PR #183 as merged while
+  preserving the completed broadband/env/water/geology fixture sequence and all
+  external authority blockers.
+- Preserved the authority posture: no new connector, source approval, source-rights
+  change, owner answer, authority record, corpus/fixture capture, DB seed, report
+  proof, schema/API/auth/UI/runtime change, hosted/Level 10 authority, qualification
+  `PASS`, owner-decision unfreeze, DS-017 approval, or `P0` unblock was introduced.
+
+## 2026-07-02 Production authority evidence reference output
+
+- Started clean worktree `worktrees/auth-out` on `codex/auth-ref-output` from live
+  `origin/main@b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, after PR #182 merged the
+  production authority evidence reference contract.
+- Added optional `--summary` and `--json` output to
+  `scripts/production_authority_evidence_references_check.py`. The outputs run after
+  the same validation and report required reference fields, allowed artifact types,
+  forbidden effects, and per-stream reference-template counts.
+- Updated the Windows/POSIX wrappers so no-argument validation still prints the wrapper
+  confirmation, while `--summary` and `--json` remain clean stdout-only reporting
+  modes with no appended wrapper text.
+- Updated the production authority runbook, active plan, plan index, project state,
+  task queue, and focused tests so the reference-template outputs are discoverable and
+  explicitly reporting-only.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, current
+  evidence references and downstream unlock requests remain empty, `BSA-001` remains
+  blocked, `P0` remains `BLOCKED`, and no owner/source authority, DS-017 approval,
+  Bologna source-rights/corpus/report authority, hosted/Level 10 authority, fixture
+  capture, DB seed, report proof, schema/API/auth/UI/runtime change, qualification
+  `PASS`, owner-decision unfreeze, or downstream follow-on unlock was introduced.
+
+## 2026-07-02 Production authority evidence reference contract
+
+- Started clean worktree `worktrees/auth-ref` on `codex/auth-ref` from live
+  `origin/main@c38640b458c6d1da0218c34eeb6b80a02dc53143`, after PR #181 merged the
+  authority follow-on sequence contract.
+- Added `config/production_authority_evidence_references.yaml`, a validate-only
+  contract for future cited production authority evidence references. It defines the
+  required reference fields, allowed artifact types, forbidden effects, and a blocked
+  template for every `config/production_authority_intake.yaml` stream.
+- Added `scripts/production_authority_evidence_references_check.py` plus Windows/POSIX
+  wrappers. The checker fails closed if current evidence references are recorded, a
+  stream template is omitted, required evidence drifts from production authority intake,
+  decision updates are enabled, or downstream unlocks are requested.
+- Wired the checker into the authority-evidence composition guard, canonical
+  Windows/POSIX verification, manifest, active plan, task queue, qualification
+  readiness crosswalk, and focused artifact tests.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, every current
+  evidence reference remains empty, `BSA-001` remains blocked, `P0` remains `BLOCKED`,
+  and no owner/source authority, DS-017 approval, Bologna source-rights/corpus/report
+  authority, hosted/Level 10 authority, fixture capture, DB seed, report proof,
+  schema/API/auth/UI/runtime change, qualification `PASS`, owner-decision unfreeze, or
+  downstream follow-on unlock was introduced.
+
+## 2026-07-02 Authority follow-on sequence contract
+
+- Started clean worktree `worktrees/auth-seq` on `codex/auth-seq` from live
+  `origin/main@139b28ed3644c590768bc1d5d5a82b364e0cf940`, after PR #180 merged the
+  authority-evidence state sync.
+- Added `config/authority_follow_on_sequence.yaml`, a validate-only contract for the
+  repo-local follow-on map in `state/PRODUCTION_AUTHORITY_PACKET.md`. It maps each
+  "authority received" row to blocked first repo-local actions, covers every
+  production-authority stream, and preserves the packet-level production
+  workload/retention lane.
+- Added `scripts/authority_follow_on_sequence_check.py` plus Windows/POSIX wrappers.
+  The checker fails closed if follow-on map text drifts, a production authority stream
+  is uncovered, a lane is unblocked, or a lane omits cited-authority/source-catalog/
+  checker prerequisites.
+- Wired the new check into the authority-evidence composition guard, canonical
+  Windows/POSIX verification, manifest, active plan, task queue, and focused artifact
+  tests.
+- Mapped the new config/checker in the qualification readiness crosswalk after the
+  full verifier correctly rejected unmapped readiness inventory paths.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, every
+  follow-on lane remains `blocked_waiting_for_authority`, `BSA-001` remains blocked,
+  `P0` remains `BLOCKED`, and no owner/source authority, DS-017 approval, Bologna
+  source-rights/corpus/report authority, hosted/Level 10 authority, fixture capture,
+  DB seed, report proof, schema/API/auth/UI/runtime change, qualification `PASS`, or
+  owner-decision unfreeze was introduced.
+
+## 2026-07-02 Post-PR179 authority evidence support sync
+
+- Started clean worktree `worktrees/domain-next` on `codex/domain-next` from live
+  `origin/main@19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, after PR #179 merged the
+  authority-evidence wrapper passthrough slice.
+- Synchronized the current project-state checkpoint, active authority-evidence plan,
+  plans index, and task queue so they describe the landed PR #176-#179 support work:
+  guard-state sync, summary/JSON output, runbook links, and wrapper passthrough.
+- Updated the authority-evidence and qualification-backlog guards/tests so the active
+  posture fails closed if it drifts back to the stale post-PR175 wording or omits the
+  reporting-only wrapper boundary.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, `BSA-001`
+  remains blocked, `P0` remains `BLOCKED`, and no owner/source authority, DS-017
+  approval, Bologna source-rights/corpus/report authority, hosted/Level 10 authority,
+  fixture capture, DB seed, schema/API/auth/UI/runtime change, qualification `PASS`, or
+  owner-decision unfreeze was introduced.
+
+## 2026-07-02 Authority evidence wrapper summary passthrough
+
+- Started clean worktree `worktrees/auth-wrap` on `codex/auth-wrapper` from live
+  `origin/main@2bc37b0f9c82b345840f51de10ebda13c6ff3fbc`, after PR #178 linked
+  authority summary/JSON output from the operator runbooks.
+- Updated the Windows and POSIX authority evidence intake wrappers to forward checker
+  arguments. The wrappers now preserve the existing no-argument `authority evidence
+  intake: ok` confirmation while avoiding wrapper-added text for `--summary` and
+  `--json`.
+- Added focused test coverage that the PowerShell wrapper forwards `--summary` and
+  `--json`, keeps summary output free of the wrapper confirmation, and emits parseable
+  JSON with the expected schema and active task.
+- Preserved the authority posture: this does not record external authority, approve
+  DS-017, approve Bologna sources, change source rights, capture corpus or fixtures,
+  seed the DB, prove reports, change schema/API/auth/UI/runtime behavior, claim
+  hosted/Level 10 authority, claim qualification `PASS`, unfreeze owner decisions, or
+  unblock P0.
+
+## 2026-07-02 Authority evidence summary runbook links
+
+- Started clean worktree `worktrees/auth-docs` on `codex/auth-summary-docs` from live
+  `origin/main@99f0bae433e05701fe11fe4f4ceeb607f894df06`, after PR #177 merged the
+  optional authority-evidence summary output.
+- Added reporting-only cross-references from the production authority, Bologna
+  owner-answer, and DS-017 source-entitlement runbooks to
+  `scripts\authority_evidence_intake_check.py --summary` and `--json`.
+- Preserved each stream-specific checker as the authority for its own packet. The
+  cross-references do not record authority, approve DS-017, approve Bologna sources,
+  change source rights, create artifacts, claim hosted/Level 10, claim qualification
+  PASS, or unblock P0.
+- Focused authority-evidence artifact tests, ruff, mypy, diff checks, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-07-02 Authority evidence intake summary output
+
+- Started clean worktree `worktrees/auth-summary` on `codex/auth-summary` from live
+  `origin/main@fe0eaade0fb76c1a325ec7a174892c5bc96e3b95`, after PR #176 merged the
+  post-PR175 authority guard sync.
+- Added optional `--summary` and `--json` output modes to
+  `scripts/authority_evidence_intake_check.py`. Both modes run the existing validation
+  first, then report active task, missing production authority streams, Bologna owner
+  answer thread status, P0 status, and blocked implementation boundaries from existing
+  checked config/state files.
+- Preserved default checker and wrapper behavior. The reporting modes do not create
+  files, seed runtime state, record authority, approve sources, change rights, capture
+  corpus/fixtures, seed the DB, prove a report, change schema/API/auth/UI/runtime
+  behavior, approve DS-017, claim hosted/Level 10, claim qualification PASS, unfreeze
+  owner decisions, or unblock P0.
+- Focused guard runs, summary/JSON smoke, focused tests, ruff, mypy, diff checks, and
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-07-02 Post-PR175 authority evidence guard sync
+
+- Started clean worktree `worktrees/post175-sync` on `codex/post175-sync` from live
+  `origin/main@0bfc4f395587956c520866a05423531e23270e21`, after PR #175 merged the
+  authority evidence intake composition guard.
+- Updated project state, plan index, active plan notes, task queue wording, and
+  checker/test expectations so the live control plane names the PR #175 guard instead
+  of preserving the stale post-PR173 authority-routing checkpoint text.
+- Kept `AUTH-EVIDENCE-INTAKE` active and preserved every downstream blocker: no owner
+  answer, source approval, source-rights change, corpus, fixture capture, DB seed,
+  report proof, schema/API/auth/UI/runtime change, DS-017 approval, hosted authority,
+  Level 10 claim, qualification PASS, owner-decision unfreeze, or P0 unblock was
+  introduced.
+- Focused authority-evidence, qualification-backlog, readiness, ruff, mypy, diff, and
+  full `.\scripts\verify.ps1` checks passed. DB smoke was skipped by default.
+
+## 2026-07-02 Authority evidence intake composition guard
+
+- Started clean worktree `worktrees/auth-guard` on
+  `codex/auth-evidence-guard` from live
+  `origin/main@9f184c238793534dd169ceb1462c42e4d48f6a57`, after authority
+  evidence intake routing merged through PR #174.
+- Added `scripts/authority_evidence_intake_check.py` with Windows/POSIX wrappers.
+  The guard composes the active `AUTH-EVIDENCE-INTAKE` routing state, production
+  authority streams, Bologna ODP/source/corpus/report gates, empty authority-record
+  contracts, readiness matrix, and committed `P0 = BLOCKED` status.
+- Added `backend/tests/test_authority_evidence_intake_artifacts.py` with
+  fail-closed coverage for active-plan drift, missing production authority streams,
+  downstream Bologna unlocks, and P0 promotion.
+- Mapped the new guard in the empirical-qualification readiness crosswalk as an
+  `authority_blocker` surface and updated the human-readable crosswalk. This keeps
+  it in the checker inventory without claiming any empirical criterion is passed.
+- Wired the guard into `scripts/verify.ps1` and `scripts/verify.sh`, updated the
+  manifest, active plan, project state, and active task validation list.
+- Preserved the authority boundary: no owner answer, source approval, source-rights
+  change, corpus, fixture capture, DB seed, report proof, schema/API/auth/UI/runtime
+  change, DS-017 approval, hosted authority, Level 10 claim, qualification PASS,
+  owner-decision unfreeze, or P0 unblock was introduced.
+- Focused guard tests, direct guard/wrapper runs, qualification status, structural
+  qualification validation, qualification selftest, readiness matrix, ruff, mypy, and
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-07-02 Authority evidence intake routing
+
+- Started clean worktree `worktrees/post173-auth` on
+  `codex/post173-authority-routing` from live
+  `origin/main@1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`, after post-geology
+  routing merged through PR #173.
+- Added `plans/2026-07-02-authority-evidence-intake.md` as the current
+  authority-evidence routing posture.
+- Updated `plans/README.md`, `state/PROJECT_STATE.md`, and `tasks/task_queue.yaml` so
+  `POST-GEOLOGY-ROUTING` is completed and `AUTH-EVIDENCE-INTAKE` is the only active
+  task.
+- Updated the qualification backlog checker and readiness tests to enforce the
+  authority-evidence posture and fail closed if source/Bologna/DS-017/hosted/Level 10
+  or qualification authority is inferred from repo-local state.
+- Preserved the authority boundary: no owner answer, source approval, source-rights
+  change, corpus, fixture capture, DB seed, report proof, schema/API/auth/UI/runtime
+  change, DS-017 approval, hosted authority, Level 10 claim, qualification PASS,
+  owner-decision unfreeze, or P0 unblock was introduced.
+- Focused routing tests, backlog check, Bologna authority checks, source readiness,
+  readiness matrix, qualification status, ruff, mypy, diff checks, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-07-02 Post-geology routing closeout
+
+- Started clean worktree `worktrees/post-geology` on
+  `codex/post-geology-routing` from live
+  `origin/main@71b9c41611ac256eee6e1dd5126779c2472c5b2b`, after geology fixture
+  ingestion merged through PR #172.
+- Added `plans/2026-07-02-post-geology-routing.md` as a routing-only closeout plan.
+  It records that minerals, broadband, environmental hazard, water, and NCGS geology
+  fixture-ingestion proofs are complete, while keeping remaining work
+  authority-dependent.
+- Updated `plans/README.md`, `state/PROJECT_STATE.md`, and `tasks/task_queue.yaml` so
+  `GEOLOGY-FIXTURE` is done and `POST-GEOLOGY-ROUTING` is the only active task.
+- Updated the qualification backlog checker and readiness tests to enforce the
+  post-geology routing boundary and fail closed if geology is reactivated or the
+  routing closeout is treated as source, Bologna, hosted, Level 10, DS-017, or
+  qualification authority.
+- Preserved the authority boundary: no new connector, live source call, source
+  approval, source-rights change, fixture capture, DB seed, report proof,
+  schema/API/auth/UI/runtime change, Bologna authority, hosted authority, Level 10
+  claim, qualification PASS, owner-decision unfreeze, or P0 unblock was introduced.
+- Focused routing tests, backlog check, ruff, mypy, source readiness, readiness
+  matrix, qualification status, diff check, and full `.\scripts\verify.ps1` passed.
+  DB smoke was skipped by default.
+
+## 2026-07-02 Geology fixture ingestion
+
+- Started clean worktree `worktrees/geology-fixture` on `codex/geology-fixture` from
+  live `origin/main@6e0d63260ae395730d2a33508059bd0873a88d50`, after water fixture
+  ingestion merged through PR #171.
+- Added active geology fixture-ingestion plan and updated project/task/readiness
+  routing so `WATER-FIXTURE` is completed and `GEOLOGY-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/geology_fixture.py`, a local-only static fixture
+  connector for NCGS 1985 geologic map-unit context evidence. It accepts
+  source-observation success fixtures and source-failure failed/blocked fixtures, and
+  rejects remote paths, connector/domain mismatches, empty evidence, and
+  status/evidence-type mismatches.
+- Added `evaluate_geology_fixture_quality`, public exports, three Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  map-units-present, no-map-units, and source-failure paths.
+- Preserved the authority boundary: no live NCGS calls, source approval,
+  source-rights change, geologic-hazard determination, geotechnical suitability
+  conclusion, buildability conclusion, schema/API/auth/report semantic change,
+  Bologna authority, hosted authority, Level 10 claim, qualification PASS, or P0
+  unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, source readiness retained
+  `DS-015: ready` and `DS-017: blocked`, readiness matrix passed, and qualification
+  status remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1` passed after
+  rerunning with a longer command timeout. DB smoke was skipped by default.
+
+## 2026-07-02 Water fixture ingestion
+
+- Started clean worktree `worktrees/water-fixture` on `codex/water-fixture` from live
+  `origin/main@6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, after environmental
+  hazard fixture ingestion merged through PR #170.
+- Added active water fixture-ingestion plan and updated project/task/readiness routing
+  so `ENV-FIXTURE` is completed and `WATER-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/water_fixture.py`, a local-only static fixture
+  connector for USGS water monitoring context evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote
+  paths, connector/domain mismatches, empty evidence, and status/evidence-type
+  mismatches.
+- Added `evaluate_water_fixture_quality`, public exports, five Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  monitoring-stations-found, no-monitoring-stations, source-failure, conflicting, and
+  stale paths.
+- Preserved the authority boundary: no live USGS calls, source approval,
+  source-rights change, water-rights determination, well-viability determination,
+  potable-water/supply conclusion, schema/API/auth/report semantic change, Bologna
+  authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock was
+  introduced.
+- Focused connector/private-MVP/routing checks passed, source readiness retained
+  `DS-005: ready` plus `DS-013`/`DS-014` blocked, readiness matrix passed, and
+  qualification status remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1`
+  passed. DB smoke was skipped by default.
+
+## 2026-07-02 Environmental hazard fixture ingestion
+
+- Started clean worktree `worktrees/env-fixture` on `codex/env-fixture` from live
+  `origin/main@3b2bd1897f8227ca24cb7290d8026ff3b2757356`, after broadband fixture
+  ingestion merged through PR #169.
+- Added active env-hazard fixture-ingestion plan and updated project/task/readiness
+  routing so `BROADBAND-FIXTURE` is completed and `ENV-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/env_hazard_fixture.py`, a local-only static fixture
+  connector for EPA ECHO environmental hazard evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote paths,
+  connector/domain mismatches, empty evidence, and status/evidence-type mismatches.
+- Added `evaluate_env_hazard_fixture_quality`, public exports, two Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  regulated-facility proximity and source-failure unknown paths.
+- Preserved the authority boundary: no live EPA ECHO calls, source approval,
+  source-rights change, schema/API/auth/report semantic change, contamination or
+  liability conclusion, Bologna authority, hosted authority, Level 10 claim,
+  qualification PASS, or P0 unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, readiness matrix passed after
+  the active plan cited `state/LEVEL_9_10_GATE_MATRIX.md`, and qualification status
+  remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1` passed. DB smoke was
+  skipped by default.
+
+## 2026-07-02 Extended-domain broadband fixture ingestion
+
+- Started clean worktree `worktrees/post168-sync` on `codex/post168-sync` from live
+  `origin/main@35077d25e79fb105ada87fc86a1ead6623eb5e66`, leaving the dirty root
+  checkout untouched except for its pre-existing inbox edits.
+- Reconciled live state after ODGAV PR #167 and minerals PR #168: ODGAV and minerals
+  are completed, while committed routing still pointed at ODGAV as active.
+- Added the active broadband fixture-ingestion plan and updated project/task/readiness
+  routing so `BROADBAND-FIXTURE` is the only active owner-independent lane and
+  `ODGAV-1` plus `MINERALS-FIXTURE` are completed predecessors.
+- Added `backend/app/connectors/broadband_fixture.py`, a local-only static fixture
+  connector for FCC Broadband Data Collection evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote paths,
+  connector/domain mismatches, empty evidence, and status/evidence-type mismatches.
+- Added `evaluate_broadband_fixture_quality`, public exports, two Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  no-provider advisory and source-failure unknown paths.
+- Preserved the authority boundary: no live FCC calls, source approval, source-rights
+  change, schema/API/auth/report semantic change, Bologna authority, hosted authority,
+  Level 10 claim, qualification PASS, or P0 unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, qualification status remained
+  `BLOCKED=1 NOT_RUN=20`, and full `.\scripts\verify.ps1` passed. DB smoke was skipped
+  by default.
+
+## 2026-06-28 ODGAV owner-answer gate evaluation
+
+- Started clean worktree `worktrees/odgav` on `codex/odgav` from live
+  `origin/main@8b24cffc1f253c9237bce78c85cd05b99631e7cf`, leaving the dirty root
+  checkout untouched except for its pre-existing inbox edit.
+- Reconciled the overwritten inbox handoff against live repo, GitHub, and Claude
+  transcript/workflow evidence. PR #166 was open on `claude/harvest-readiness` during
+  initial reconciliation, so its worktree and Claude-owned backend app/UI/OpenAPI
+  surface stayed out of scope.
+- Rebasing later incorporated live `origin/main@78b233da21c0802267c89ac129e20db0b271b5aa`
+  after PR #166 merged. The ODGAV diff still avoids backend app/UI/OpenAPI authority
+  surfaces.
+- Added `scripts/bologna_owner_answer_evaluator.py`, a pure in-memory evaluator for
+  future Bologna owner-answer records, prerequisite coverage, decision coverage,
+  companion record coverage, and no-downstream-unlock policy.
+- Added wrapper functions in the Bologna owner-answer intake, `bol_scope_auth`, and
+  ODP-BOL-001 through ODP-BOL-004 response-gate checkers. The wrappers accept complete
+  synthetic future answers in memory and reject malformed, partial, dependency-violating,
+  or downstream-unlock-requesting inputs without recording real authority.
+- Added canonical selftests and focused pytest coverage, including a non-mutation test
+  for representative synthetic owner-answer/source-authority inputs.
+- Recorded live worktree reconciliation in
+  `state/worktree-reconciliation-2026-06-28.md`: 50 total worktrees after creating
+  `worktrees/odgav`, 47 unmerged branch worktrees classified, and zero worktrees retired
+  because none met the clean, merged, superseded, non-excluded safe-retirement rule.
+- Preserved the authority boundary: committed owner answers, authority records,
+  source-rights approvals, recorded-corpus references, report-proof references, DB state,
+  backend app/API surfaces, DS-017, Level 10, and P0 status remain unchanged.
+- Focused checker, pytest, qualification, change-impact, ruff, and mypy gates passed.
+  Full `.\scripts\verify.ps1` passed on the rebased branch in 541.3 seconds. DB smoke
+  was skipped by default.
+
+## 2026-06-27 ODP-BOL-002 owner-answer packet
+
+- Started clean worktree `worktrees/bol-rights` on `codex/bol-rights` from live
+  `origin/main@16566ea88ba8e4930ef476c48f558c5c076bb2ee`, leaving the dirty root
+  checkout untouched.
+- Baseline `bologna_source_rights_check.py` and
+  `bologna_odp2_source_rights_response_gate_check.py` passed before edits.
+- Added `config/bologna_odp2_owner_answer_packet.yaml`, a validate-only owner-facing
+  packet for the later ODP-BOL-002 source-authority/source-rights answer, plus checker,
+  wrappers, runbook, and focused artifact tests.
+- Preserved the authority boundary: ODP-BOL-001 cited pilot-scope authority remains
+  missing, ODP-BOL-002 owner-answer references remain empty, source-authority records
+  remain empty, source-rights approval references remain empty, and no source approval,
+  source-rights change, corpus, fixture, DB seed, report proof, hosted authority,
+  Level 10 claim, or qualification PASS was introduced.
+- Updated manifest, qualification crosswalks, task/project/plan/backlog routing, and
+  backlog/readiness tests so the new packet is governed as an intentional authority
+  blocker surface.
+- Focused packet/Bologna/backlog/readiness/qualification checks passed, focused ruff
+  and mypy passed, and full `.\scripts\verify.ps1` passed. DB smoke was skipped by
+  default.
+
+## 2026-06-27 Bologna scope-authority readiness gate
+
+- Started clean worktree `worktrees/bol-scope-auth` on `codex/bol-scope-auth` from
+  live `origin/main@d52755b9f701efc679fcb3b1dcb41267537458fb`, leaving the dirty root
+  checkout untouched.
+- Added `config/bol_scope_auth.yaml`, a validate-only ODP-BOL-001 scope-authority
+  readiness gate, plus a checker, Windows/POSIX wrappers, runbook, focused tests, and
+  qualification crosswalk/doc routing.
+- Preserved the authority boundary: the current ODP-BOL-001 answer remains
+  `approve_review_only`; `config/bologna_pilot_scope_authority.yaml`
+  `current_authority_records` remains empty; no AOI, source approval, source-rights
+  approval, corpus, fixture, DB seed, report proof, DS-017 approval, hosted authority,
+  Level 10 claim, or qualification PASS was introduced.
+- Updated task/project/plan/backlog routing so the next real Bologna step is still a
+  complete cited `ODP-BOL-001` authority record, constrained to the owner-answer intake
+  and pilot-scope authority packet before any ODP-BOL-002/003/004 work.
+- Focused checks passed after fixing stale routing assertions, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-06-26 Bologna scope-pursuit owner answer
+
+- Started clean worktree `worktrees/bol-scope` on `codex/bol-scope` from live
+  `origin/main@828053d1b5e62845dc736551871e13f1ae89f0c4`, leaving the dirty root
+  checkout untouched.
+- Treated the owner directive "pursue Bologna scope" as sufficient for exactly one
+  `ODP-BOL-001` `approve_review_only` owner answer, but insufficient for a complete
+  pilot-scope authority record.
+- Updated the owner-answer intake, ODP1 response gate, ODP1 answer packet, downstream
+  ODP2/ODP3/ODP4 response gates, runbooks, backlog, project state, manifest, plan
+  index, task routing, and focused artifact tests to distinguish review-only scope
+  pursuit from cited authority.
+- Preserved the authority boundary: `config/bologna_pilot_scope_authority.yaml`
+  current authority records remain empty; no AOI, source approval, source-rights
+  approval, corpus, fixture, DB seed, DB report proof, DS-017 approval, hosted
+  authority, Level 10 claim, or qualification PASS was introduced.
+- Focused Bologna/backlog/readiness checks passed, change-impact reported advisory
+  Bologna/qualification surfaces, focused ruff/mypy passed, and full
+  `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
+## 2026-06-23 Post-ODP1 packet authority routing
+
+- Started clean worktree `worktrees/post-odp1` on `codex/post-odp1-routing` from
+  live `origin/main@6d493ee27a1b9112da1f22bcdf086ae4c95eedc7`, leaving the dirty root
+  checkout untouched.
+- Reconciled live PR and inbox state after PR #161. No ODP-BOL-001 product/AOI/scope
+  owner authority was present; the local inbox only carried the older QFREEZE-1/DS-002
+  owner authorization already represented in live main.
+- Chose a routing-only sync: mark the ODP-BOL-001 owner-answer packet as merged and
+  complete, and keep the next substantive Bologna step externally blocked on cited
+  owner authority for `ODP-BOL-001`.
+- Updated `state/PROJECT_STATE.md`, `tasks/task_queue.yaml`, `plans/README.md`, and
+  routing tests without changing any owner-answer, authority-record, source, corpus,
+  fixture, DB, report, hosted, Level 10, or qualification status.
+
+## 2026-06-23 ODP-BOL-001 owner-answer packet
+
+- Continued from live `origin/main@b5ed59e7143773f306ab216865df0133ca7b0451` in
+  clean worktree `worktrees/odp1-packet` on `codex/odp1-packet`, leaving the dirty
+  root checkout untouched.
+- Reconciled current routing after EQ-R/PR #160 and chose the narrowest Bologna-first
+  repo-local bridge still allowed without external authority: a validate-only
+  owner-answer packet for `ODP-BOL-001` product/AOI/scope authority.
+- Added `config/bologna_odp1_owner_answer_packet.yaml`, a checker, Windows/POSIX
+  wrappers, a runbook, focused artifact tests, manifest/crosswalk/backlog routing, and
+  task/project/plan routing updates.
+- Preserved the authority boundary: no owner answer, pilot-scope authority record, AOI
+  selection, source approval, source-rights change, recorded corpus, fixture capture,
+  DB seed, DB-backed report proof, downstream update, hosted authority, Level 10 claim,
+  or qualification PASS was introduced.
+- Validation so far confirms the packet stays aligned to the owner-answer intake,
+  ODP1 response gate, and pilot-scope authority contract while qualification status
+  remains `BLOCKED=1 NOT_RUN=20`.
+
+## 2026-06-23 EQ-R residual reconciliation closeout
+
+- Started clean worktree `worktrees/eqr-close` on `codex/eqr-close` from live
+  `origin/main@74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, leaving the dirty root
+  checkout untouched.
+- Reconciled live repo state after EQ-5: only Dependabot PR #95 remained open, EQ-5
+  was merged through PR #159, and the stale agent inbox did not override current
+  main/task routing.
+- Chose the narrow EQ-R closeout path: update residual-reconciliation authority,
+  explicitly record the 17 deferred dirty-root paths as decaying
+  `DEFER_STILL_BLOCKED` candidate evidence, and avoid extracting or promoting any
+  deferred product slice.
+- Adjusted the EQ-5 backlog checker so it still validates EQ-5's own task/spec and
+  blocked authority boundary, while allowing current routing to move to later plan
+  files that exist in `plans/`.
+- Updated focused artifact tests for residual closeout, readiness-core routing, and
+  qualification-backlog routing.
+- Preserved all existing blockers: no owner answer, Bologna AOI/source/corpus/report
+  authority, source approval beyond DS-002, fixture, DB seed, report/API/UI/runtime
+  proof, hosted authority, Level 10 claim, or qualification PASS was introduced.
+
+## 2026-06-23 EQ-5 qualification parameterization backlog check
+
+- Started clean worktree `worktrees/eq5-audit` on `codex/eq5-audit` from live
+  `origin/main@87071712d8ed87cd51360b72b4e1f94be9636648`, leaving the dirty stale root
+  checkout untouched.
+- Re-read the agent inbox and current routing state. The inbox was stale on commit/order
+  details but aligned with the live authority boundary: no more Bologna scaffolding or
+  implementation until cited owner authority exists.
+- Chose the unblocked EQ-5 path: add an executable validate-only consistency checker
+  rather than another Bologna gate or any DB-backed Bologna report work. This preserves
+  BOL-POST-ODP4-AUTH and treats Bologna as externally blocked.
+- Added `scripts/qualification_parameterization_backlog_check.py`, shell/PowerShell
+  wrappers, verify/CI wiring, readiness-crosswalk mapping, focused tests, and
+  fail-closed coverage for injected owner answers.
+- Updated `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md` with an explicit
+  owner-decision blocker table covering ODP-DOM/TGT/RUB/SRC/PRO/CON, ODP-BOL-001
+  through ODP-BOL-004, and ODP-HOST-001.
+- Routed `EQ-5` to done as blocked-state consistency proof only. No owner answer,
+  Bologna AOI/source/corpus/report authority, source approval beyond DS-002, fixture,
+  DB seed, report/API/UI/runtime proof, hosted authority, Level 10 claim, or
+  qualification PASS was introduced.
+- Verification caught two integration issues during the pass: the new shell wrapper was
+  missing from the readiness crosswalk, and the readiness-core app-model test still
+  expected the previous active plan. Both were fixed before final verification.
+
+## 2026-06-23 BOL-POST-ODP4-AUTH post-ODP4 authority routing
+
+- Started clean worktree `worktrees/qpf-ds002` on `codex/qpf-ds002` from live
+  `origin/main@a1d6c7dcf90133ad2cf382357f6b202f852c0f5b` after PR #157 merged and no
+  conflicting post-ODP4 routing branch/worktree existed.
+- Re-read the stale dirty-root inbox as candidate context only, then reconciled live
+  `origin/main`, open PRs, startup routing, QFREEZE-1 owner disposition, owner-answer
+  intake, ODP4 gate, qualification targets, DS-002 source profile, and task routing.
+- Confirmed QFREEZE-1 is already represented on live `main`: DS-002 is selected,
+  owner-authorized scope/version fields are frozen, W-003/W-011 are frozen, P0 remains
+  `BLOCKED`, and non-P0 statuses remain `NOT_RUN`.
+- Baseline ODP4 gate, owner-answer intake, qualification status, and structural
+  qualification validation passed before edits.
+- Added `plans/2026-06-23-post-odp4-authority-routing.md` and updated state/task/plan
+  routing so BOL-ODP4-GATE is treated as complete and the next substantive Bologna
+  work is explicitly external-authority dependent.
+- Preserved the non-authorization boundary: no owner answer, AOI selection, source
+  approval, source-rights change, recorded corpus, fixture capture, DB seed, report
+  artifact, API/report semantic change, hosted authority, Level 10 claim, or
+  qualification PASS is introduced.
+- Post-edit ODP4 gate, owner-answer intake, qualification status, structural
+  qualification validation, focused routing artifact tests, qualification selftest,
+  readiness-matrix check, explicit change-impact check, focused ruff, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation
+  remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB report proof response gate
+
+- Started clean worktree `worktrees/bol-odp4` on `codex/bol-odp4-gate` from live
+  `origin/main@9d06cdeb79999c235b66c1589e972bfae5a55976` after PR #156 merged and no
+  conflicting ODP-BOL-004 report-proof branch/worktree existed.
+- Re-read startup routing, the completed ODP3 gate, owner-answer intake, report-run,
+  evidence, and claim schemas, focused tests, and qualification status before editing.
+- Baseline ODP3 gate, owner-answer intake, qualification status, and focused
+  Bologna/routing tests passed.
+- Added `config/bologna_odp4_db_report_proof_response_gate.yaml`, checker, wrappers,
+  runbook, focused tests, manifest/crosswalk entries, and routing/state updates so the
+  next `ODP-BOL-004` owner answer has a validate-only DB-backed report proof
+  completeness gate.
+- Routed BOL-ODP3-GATE to done and BOL-ODP4-GATE to active while preserving empty owner
+  answers, empty report-proof authority, DB-report-run, and report-artifact references,
+  disabled downstream updates, blocked DB seed/API/report artifacts, `P0` `BLOCKED`,
+  and non-P0 `NOT_RUN`.
+- First qualification-status run exposed an over-broad crosswalk mapping for
+  caveat/artifact criteria; narrowed ODP4 to authority/report-lineage criteria and kept
+  caveat/artifact requirements in the gate contract.
+- New gate checker/wrapper, existing ODP3/owner-answer checkers, focused tests,
+  structural qualification validation, qualification status, readiness-matrix checking,
+  direct checker advertisement, explicit change-impact with untracked paths, focused
+  ruff/mypy, and qualification selftest passed.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed. Status
+  derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-23 BOL-ODP3-GATE Bologna ODP-BOL-003 corpus response gate
+
+- Started clean worktree `worktrees/bol-odp3` on `codex/bol-odp3-gate` from live
+  `origin/main@fa0f67aedff19ec31981ba1dacaa5315f843f021` after PR #155 merged and no
+  conflicting ODP-BOL-003 corpus-response branch/worktree existed.
+- Re-read startup routing, the completed ODP2 gate, owner-answer intake, recorded-source
+  corpus contract, source-authority/source-rights packets, focused tests, and
+  qualification status before editing.
+- Baseline ODP2 gate, owner-answer intake, recorded-source corpus checker,
+  qualification status, and focused Bologna/routing tests passed.
+- Added `config/bologna_odp3_corpus_response_gate.yaml`, checker, wrappers, runbook,
+  focused tests, manifest/crosswalk entries, and routing/state updates so the next
+  `ODP-BOL-003` owner answer has a validate-only recorded-source corpus completeness
+  gate.
+- Routed BOL-ODP2-GATE to done and BOL-ODP3-GATE to active while preserving empty owner
+  answers, empty corpus authority and recorded-corpus references, disabled downstream
+  updates, blocked fixtures/source-failure fixtures/DB/report proof, `P0` `BLOCKED`,
+  and non-P0 `NOT_RUN`.
+- New gate checker/wrapper, existing ODP2/owner-answer/corpus checkers, focused tests,
+  structural qualification validation, qualification status, readiness-matrix checking,
+  direct checker advertisement, explicit change-impact with untracked paths, focused
+  ruff/mypy, and qualification selftest passed.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed. Status
+  derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-23 BOL-ODP1-GATE Bologna ODP-BOL-001 owner-response gate
+
+- Started clean worktree `worktrees/bol-odp1` on `codex/bol-odp1-close` from live
+  `origin/main@f2c815028e5a17044079de492f254546cacedfeb` after PR #153 merged and no
+  conflicting ODP-BOL-001 owner-response branch/worktree existed.
+- Re-read startup routing, the completed owner-answer intake, pilot-scope authority
+  packet, owner decision packet, focused tests, and qualification status before editing.
+- Baseline owner-answer intake checker, pilot-scope authority checker, qualification
+  status, and focused Bologna/routing tests passed.
+- Added `config/bologna_odp1_owner_response_gate.yaml`, checker, wrappers, runbook,
+  focused tests, manifest/crosswalk entries, and routing/state updates so the next
+  `ODP-BOL-001` owner answer has a validate-only completeness gate.
+- Routed BOL-ODP-1 to done and BOL-ODP1-GATE to active while preserving empty owner
+  answers, empty pilot-scope authority records, disabled downstream updates, blocked
+  BSA-001, `P0` `BLOCKED`, and non-P0 `NOT_RUN`.
+- New gate checker/wrapper, existing owner-answer and pilot-scope checkers, focused
+  tests, structural qualification validation, qualification status, readiness-matrix
+  checking, direct checker advertisement, focused ruff/mypy, and qualification selftest
+  passed. The first focused test run exposed one line-wrap-sensitive backlog assertion,
+  which was corrected.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed.
+  Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-23 BOL-ODP-1 Bologna owner-answer intake
+
+- Started clean worktree `worktrees/bol-owner` on `codex/bologna-owner-intake` from
+  live `origin/main@a6f5ac7a1accbce67dfbeadc02bd10cd6514085a` after PR #152 merged
+  and no conflicting Bologna owner-answer branch/worktree existed.
+- Re-read startup routing, the merged owner decision packet, Bologna pilot-scope,
+  source-authority, source-rights, recorded-corpus contracts, focused tests, and
+  qualification status before editing.
+- Baseline Bologna validators, backend-cwd focused Bologna/routing tests, qualification
+  status, and structural qualification validation passed. A root-cwd focused pytest run
+  failed on the known `app` import command-shape issue and was rerun from `backend`.
+- Added `config/bologna_owner_answer_intake.yaml`, checker, wrappers, runbook, and
+  focused tests so ODP-BOL-001 through ODP-BOL-004 owner answers have a validate-only
+  machine-readable shape tied to existing Bologna contracts.
+- Mapped the new checker into the qualification readiness crosswalk, routed
+  OWNER-DEC-1 to done and BOL-ODP-1 to active, and preserved all authority blockers.
+- Focused owner-answer/Bologna validators and tests, readiness-matrix checking,
+  qualification status, structural qualification validation, focused ruff/mypy, and
+  qualification selftest passed. Status derivation remained `BLOCKED=1 NOT_RUN=20`.
+- First full verification exposed a readiness-crosswalk doc parity gap for the new
+  mapped surface. Added the `bologna_owner_answer_intake` doc row and reran the focused
+  crosswalk/owner-answer tests plus qualification validation/status successfully.
+- Diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1` passed.
+  Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-22 OWNER-DEC-1 owner decision consequence packet
+
+- Started clean worktree `worktrees/owner-packet` on
+  `codex/owner-decision-packet` from live
+  `origin/main@cc77b83b5b2bc17b5dc49a2539cb126fbde1bb10` after confirming QFREEZE-1
+  merged through PR #151 and no owner-packet branch/worktree collision existed.
+- Re-read startup routing, QFREEZE-1 plan/output, owner decision ledger,
+  qualification backlog, task queue, project state, plan index, focused tests, and
+  qualification status artifacts before editing.
+- Baseline qualification status and structural validators passed with `BLOCKED=1
+  NOT_RUN=20` and the expected blocked-readiness warnings. The first focused pytest
+  command was intentionally rerun from `backend` after a root-cwd import failure for
+  `app`; the backend-cwd focused tests then passed.
+- Added a non-authorizing `state/owner-decision-packet.md` that maps remaining domain,
+  target/contract, rubric, source, P0 protocol, conditional-profile, Bologna, DS-017,
+  hosted, and Level 10 owner decisions to consequences, downstream gates, evidence
+  needs, and reversal costs.
+- Routed QFREEZE-1 to done and OWNER-DEC-1 to active while preserving P0 `BLOCKED`,
+  non-P0 `NOT_RUN`, DS-002-only source selection, and blocked Bologna/hosted/DS-017
+  authority.
+- Focused packet/routing tests, readiness-matrix checking, direct qualification status,
+  structural qualification validation, focused ruff/mypy, qualification selftest, diff
+  hygiene, no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation
+  remained `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-22 QFREEZE-1 authorized scope/source freeze
+
+- Started clean worktree `worktrees/qfreeze1` on `codex/qfreeze-cascade-1` from live
+  `origin/main@6f49c7a` after HCV-4 merged through PR #150 and detached proof passed.
+- Re-read the inbox handoff, current worktree list, active goal, startup routing,
+  architecture/ADR context, qualification target registry, backlog, task queue, project
+  state, and focused tests before editing.
+- Baseline qualification status checking, structural validation, and focused
+  qualification/routing tests passed before QFREEZE-1 red tests were added. Baseline
+  status stayed `BLOCKED=1 NOT_RUN=20`.
+- Added red coverage for the owner-authorized partial freeze, DS-002 binding,
+  W-003/W-011 frozen target bindings, controlled owner-disposition ledger, active
+  QFREEZE-1 routing, and the continued `P0 BLOCKED` / non-P0 `NOT_RUN` status cap.
+- Applied the narrow target/backlog/routing slice: DS-002 is the only selected source
+  profile, owner-authorized scope/version fields are populated, W-003/W-011 target
+  bindings are frozen, and DQ/Q1/Q2/M/domain/contract/rubric blockers remain visible.
+- Focused backend tests, direct qualification status/structural validators,
+  readiness-matrix checking, qualification selftest, focused ruff/mypy, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+- Independent review requested changes for owner-authority provenance, blocker-reference
+  preservation, Docker Desktop evidence, and exhaustive frozen-binding test coverage.
+  Added `state/owner-decisions.md`, restored the generated blocker reference in P0
+  status, corrected W-011 evidence to Docker Desktop `4.61.0`, and asserted the full
+  frozen-binding set is exactly W-003/W-011.
+- Final post-review full `.\scripts\verify.ps1` passed with qualification status
+  `BLOCKED=1 NOT_RUN=20`; DB smoke remained skipped by default.
+
+## 2026-06-22 HCV-4 status/config consistency
+
+- Started clean worktree `worktrees/hcv4` on `codex/hcv4-status-config` from live
+  `origin/main@d9e16db` after HCV-3 merged through PR #148 and detached post-merge
+  proof passed.
+- Read the agent inbox, current worktree list, active goal, HCV-4 plan, status checker,
+  structural validator, DS-002 source-quality profile, source-rights schema, production
+  usage-rights helper, task queue, project state, plan index, and focused tests.
+- Baseline focused qualification/status/routing tests, structural validation,
+  qualification status checking, and qualification selftest passed before HCV-4 red
+  tests were added.
+- Added red coverage for P0 remaining `BLOCKED` when target/candidate identity is
+  locally resolved but non-target parameterization blockers remain, DS-002 using
+  production usage-rights vocabulary instead of `CONDITIONAL`, and routing from
+  completed HCV-3 to active HCV-4.
+- Implemented HCV-4 status derivation across unresolved targets/candidate identity,
+  domain/source profile blockers, scope/version fields, ruleset versions, target
+  bindings, criterion contracts, and judgment rubrics; updated DS-002 rights to
+  production vocabulary while preserving condition enforcement; and routed current
+  state to active HCV-4.
+- Focused backend tests, direct qualification status/structural validators,
+  readiness-matrix checking, qualification selftest, focused ruff/mypy, diff hygiene,
+  no-deletion check, and full `.\scripts\verify.ps1` passed. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+
+## 2026-06-21 HCV-3 crosswalk CI gate completeness
+
+- Started clean worktree `worktrees/hcv3` on `codex/hcv3-crosswalk-gates` from live
+  `origin/main@ba75f47` after HCV-2 merged through PR #147 and detached post-merge
+  proof passed.
+- Read startup routing, architecture, ADR 0004, the HCV control-plane plan, HCV-2
+  closeout state, `config/qualification/readiness_crosswalk.yaml`,
+  `schemas/qualification/readiness_crosswalk.schema.json`,
+  `scripts/validate_qualification.py`, `scripts/selftest_qualification_validator.py`,
+  `.github/workflows/ci.yml`, `config/release_readiness.yaml`, and focused crosswalk
+  tests.
+- Confirmed baseline `py -3.12 -m pytest -q
+  backend\tests\test_qualification_readiness_crosswalk.py` passed before adding HCV-3
+  red tests.
+- Added `plans/2026-06-21-hcv-3-crosswalk-ci-gates.md` and routed current state to
+  HCV-3 while keeping HCV-4 queued, P0 BLOCKED, non-P0 NOT_RUN, and Bologna externally
+  blocked.
+- Added red tests for missing CI/release gate-path mappings and validator enforcement.
+  The artifact test failed on unmapped `run_provenance_check.sh`,
+  `run_security_scan.sh`, and `run_backup_restore_check.ps1`; the selftest failed
+  when removing `run_security_scan.sh` did not invalidate the crosswalk.
+- Added optional `gate_paths` to the readiness-crosswalk schema, mapped current CI
+  wrapper gates plus the backup/restore release proof, and made
+  `scripts/validate_qualification.py` derive expected gates from CI while excluding
+  qualification-control-plane self-check wrappers. Focused crosswalk tests and
+  qualification selftest now pass.
+- Structural validation, qualification status, readiness-matrix checking, focused
+  ruff/mypy, diff hygiene, no-deletion check, and final full `.\scripts\verify.ps1`
+  passed. Initial full verify failed only on stale HCV-2 active-plan assertions in
+  routing tests; those assertions now expect HCV-3 active. Status derivation remained
+  `BLOCKED=1 NOT_RUN=20`; DB smoke was skipped by default.
+- Separate review found the first HCV-3 implementation only derived CI workflow gates
+  plus the backup/restore release proof, so other release-readiness proof wrappers
+  could drift unmapped. Updated `scripts/validate_qualification.py` and the focused
+  crosswalk test to derive repo-local release proof wrappers from
+  `config/release_readiness.yaml.required_checks[*].proof`, mapped those wrappers in
+  the crosswalk, and added a selftest mutation that removes
+  `scripts/run_incident_rollback_check.ps1`.
+- Review-response validation passed: structural qualification validation, status
+  checking (`BLOCKED=1 NOT_RUN=20`), readiness-matrix checking, qualification selftest,
+  focused crosswalk/routing tests, focused ruff/mypy, diff hygiene, and no tracked
+  deletions all passed before the final full verify rerun.
+- Final review-response `.\scripts\verify.ps1` passed with workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  backend tests, ruff, and mypy over `366` source files. DB smoke was skipped by
+  default.
+- Live `origin/main` then advanced to PR #149
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`. Rebased HCV-3 cleanly onto that live
+  head; focused structural validation, qualification selftest, status checking
+  (`BLOCKED=1 NOT_RUN=20`), readiness-matrix checking, focused backend tests, focused
+  ruff/mypy, diff hygiene, and no tracked deletions passed before the final full
+  verify rerun.
+
+## 2026-06-21 HCV-2 checker robustness and security hardening
+
+- Started clean worktree `worktrees/hcv2` on
+  `codex/hcv2-checker-hardening` from live `origin/main@79bd89c`, preserving the
+  dirty root checkout as scratch only.
+- Read `README.md`, `MANIFEST.md`, `state/PROJECT_STATE.md`, `.agent/PLANS.md`,
+  `docs/ARCHITECTURE.md`, ADR 0004, `LANE_OWNERSHIP.md`, the HCV control-plane plan,
+  the HCV-1 plan, and the four HCV-2 checker/test surfaces.
+- Confirmed focused HCV-2 baseline tests passed before adding red tests:
+  `backend\tests\test_checklist_dry_run_artifacts.py`,
+  `backend\tests\test_package_manifest_check.py`,
+  `backend\tests\test_private_mvp_readiness.py`, and
+  `backend\tests\test_bologna_pilot_scope_authority_artifacts.py`.
+- Added `plans/2026-06-21-hcv-2-checker-hardening.md` and routed current state to
+  HCV-2 while keeping HCV-3/HCV-4 queued, P0 BLOCKED, and Bologna externally blocked.
+- Added red tests for checklist marker/path/assertion hardening, package duplicate and
+  secret-path detection, private-MVP county/provenance binding, and Bologna wrapper
+  exit-code propagation; the red run failed on those intended missing checks.
+- Hardened `scripts/checklist_dry_run_check.py`, `scripts/package_manifest_check.py`,
+  `scripts/private_mvp_readiness_check.py`, and
+  `scripts/run_bologna_pilot_scope_authority_check.ps1`; focused HCV-2 tests,
+  wrappers/checkers, qualification status, readiness-matrix check, qualification
+  selftest, focused ruff, and focused mypy now pass.
+- First full `.\scripts\verify.ps1` failed on stale HCV-1 active-plan assertions in
+  routing tests; updated those assertions for HCV-2. Focused routing tests and final
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+- After PR #146 advanced live `origin/main` to
+  `b5f6727bd5ab6b9264812e9943a24924eec54b29`, rebased HCV-2 cleanly. Focused HCV-2
+  tests and changed wrapper/status/selftest/readiness checks passed again with
+  `BLOCKED=1 NOT_RUN=20`; final full verification is being rerun on the rebased head.
+- Separate review found `scripts/checklist_dry_run_check.py` still accepted empty and
+  directory evidence paths. Hardened evidence/blocker authority validation to require
+  non-empty repo-local files, replaced the committed directory evidence citation with a
+  concrete file path, and added focused regression tests. Checklist-focused pytest and
+  wrapper validation passed after the fix.
+- Focused HCV-2 tests, wrapper/status/selftest/readiness checks, focused ruff/mypy,
+  diff hygiene, no-deletion check, and full `.\scripts\verify.ps1` passed on the
+  review-response head. Status derivation remained `BLOCKED=1 NOT_RUN=20`; DB smoke was
+  skipped by default.
+
+## 2026-06-21 HCV-1 qualification validator hardening
+
+- Started clean worktree `worktrees/hcv1`; reconciled the PR #142 HCV handoff, the
+  later PR #143 and PR #145 merges, and the open PR #126/#127 review threads against
+  live `origin/main@816a4dd39d174d0b3689837a489879031e49113d`.
+- Added `plans/2026-06-21-hcv-1-qualification-validator.md` and routed the current
+  control-plane lane to HCV-1, with HCV-2, HCV-3, and HCV-4 queued after it.
+- Extended `scripts/selftest_qualification_validator.py` with fail-closed cases for
+  expired PASS gates, mismatched status/result gates, mismatched result scope/version
+  identity, broken per-criterion evidence references, P0 blocked records with
+  `result_path`, missing PASS reviewer metadata, frozen-domain modality/channel drift,
+  unresolved frozen-domain fields, source coverage drift, conditional rights without
+  enforcement controls, and RAW_EXPORT without export rights.
+- Hardened `scripts/validate_qualification.py` and
+  `schemas/qualification/qualification_result.schema.json` for those cases while
+  preserving the committed `P0 = BLOCKED` / non-P0 `NOT_RUN` status.
+- Addressed PR #144 review findings by requiring repo-local PASS evidence,
+  type-safe PASS expiry validation, independent reproduction metadata, frozen
+  spatial/temporal domain tolerances, aggregate selected-source coverage for every
+  target domain, and conditional commercial-use enforcement.
+- Preserved boundaries: no qualification `PASS`, owner-decision unfreeze,
+  source/AOI/Bologna/DS-017/hosted authority, DB/API/UI/report semantic change, source
+  registry promotion, fixture capture, corpus, DB seed, runtime/report proof, or
+  Level 10 claim is introduced.
+
+## 2026-06-21 Bologna source-authority record contract
+
+- Started clean worktree `worktrees/bol-sa` on `codex/bol-src-auth-contract` from live
+  `origin/main` at `e511aa28fc265c8c1f2cdeb25cbce6553709a37c` after PR #140 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-source-authority-record-contract.md` for the next
+  authority-first Bologna slice.
+- Added `source_authority_record_contract` to
+  `config/bologna_source_authority_intake.yaml` and extended
+  `scripts/bologna_source_authority_intake_check.py` so future per-source authority
+  records can be validated for exact fields, upstream scope-authority links, known
+  candidate/cadastral target, full source-rights decision coverage, per-candidate
+  evidence slots, terms/version/retrieval/CRS/attribution/caveat/storage/export/failure
+  policy fields, unique targets, and no downstream unlock requests.
+- Added source-authority intake tests proving a complete hypothetical candidate-source
+  record shape passes, missing evidence slots fail closed, downstream-unlock requests
+  fail closed, and the committed source-authority record list remains empty.
+- Preserved boundaries: `current_source_authority_records` remains empty, `BSA-001`
+  remains blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
+## 2026-06-21 Bologna authority record validation
+
+- Started clean worktree `worktrees/bol-rec` on `codex/bol-record-gate` from live
+  `origin/main` at `d356cfdf20ead6ee11573cfffc502d7c21769012` after PR #139 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-authority-record-validation.md` for the next
+  authority-first Bologna slice.
+- Extended `scripts/bologna_pilot_scope_authority_check.py` so
+  `authority_record_contract.current_authority_records` can be validated when a future
+  complete authority record is provided in test isolation. The validator now checks
+  exact record fields, allowed authority type, ISO decision/effective dates, cited
+  artifacts, caveats, stop conditions, complete first-gate coverage, duplicate record
+  IDs, and no downstream unlock requests.
+- Added pilot-scope authority tests proving a complete hypothetical authority record
+  shape passes, partial records fail closed, downstream-unlock requests fail closed,
+  and the committed authority-record list remains empty.
+- Preserved boundaries: `current_authority_records` remains empty, `BSA-001` remains
+  blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
+## 2026-06-21 Bologna authority record contract
+
+- Started clean worktree `worktrees/bol-auth` on `codex/bol-auth-packet` from live
+  `origin/main` at `604f7c2739095d9cc543b675ed3b84e619cda54d` after PR #138 merged
+  and detached post-merge proof passed.
+- Added `plans/2026-06-21-bologna-authority-record-contract.md` for the next
+  authority-first Bologna slice.
+- Added an `authority_record_contract` to `config/bologna_pilot_scope_authority.yaml`
+  and extended `scripts/bologna_pilot_scope_authority_check.py` so the future
+  product/AOI/scope authority record format is machine-checked for required fields,
+  full scope-decision coverage, and no-overclaim controls.
+- Preserved boundaries: `current_authority_records` remains empty, `BSA-001` remains
+  blocked, and no product/AOI/source authority, source-rights approval, source
+  registry promotion, recorded corpus, fixture capture, source-failure fixture, DB
+  seed, runtime/report proof, qualification `PASS`, owner-decision unfreeze, DS-017
+  approval, hosted authority, or Level 10 claim is introduced.
+
+## 2026-06-21 post-EQP2 Bologna authority routing sync
+
+- Started clean worktree `worktrees/bol-sync` on `codex/bol-auth-routing` from live
+  `origin/main` at `e6b1fe1c75111abc3a7dabd625fa186b2b72115f` after EQP2-4 merged
+  through PR #137 and detached post-merge proof passed.
+- Added `plans/2026-06-21-post-eqp2-bologna-authority-sync.md` to close the completed
+  EQ Phase 2 routing loop and make the next active pursuit the Bologna
+  product/AOI/source-rights authority gate.
+- Updated `tasks/task_queue.yaml`, `plans/README.md`, and `state/PROJECT_STATE.md` so
+  `EQP2-4` is no longer treated as pending and `BOL-AUTH-SYNC` records the routing
+  transition.
+- Preserved boundaries: `BSA-001` remains blocked; no product/AOI/source authority,
+  source-rights approval, source registry promotion, recorded corpus, fixture capture,
+  source-failure fixture, DB seed, runtime/report proof, qualification `PASS`,
+  owner-decision unfreeze, DS-017 approval, hosted authority, or Level 10 claim is
+  introduced.
+
+## 2026-06-21 EQP2-4 checker advertisement parity
+
+- Started clean worktree `worktrees/eqp2-4` on `eqp2/4-checker-parity` from
+  live `origin/main` at `2ba6f1b7423a59e23dec7f3895fb5f6ceb72f663` after
+  EQP2-3 merged through PR #135 and detached post-merge proof passed.
+- Added `plans/2026-06-21-eqp2-4-checker-parity.md` and routed
+  `tasks/task_queue.yaml`, `state/PROJECT_STATE.md`, `plans/README.md`, and
+  `MANIFEST.md` to the EQP2-4 lane.
+- Added `scripts/qualification_checker_advertisement.py` with
+  `qualification_checker_advertisement_v1` JSON output for mapped checker paths.
+- Added an opt-in `--qualification-criteria-json` pre-main hook to all 29 checker
+  paths declared in `config/qualification/readiness_crosswalk.yaml`. Normal checker
+  calls remain on the existing `main()` path.
+- Extended `scripts/validate_qualification.py` to invoke every mapped checker with
+  the advertisement flag and fail closed if the returned criterion IDs drift from the
+  crosswalk.
+- Extended `scripts/qualification_status_check.py` so failed checker results block
+  status through checker-advertised criterion IDs instead of directly reusing
+  crosswalk entries at failure time.
+- Extended `scripts/selftest_qualification_validator.py` and focused pytest coverage
+  to prove checker-advertisement drift fails closed.
+- Preserved boundaries: no qualification `PASS`, no P0 result artifact, no
+  owner-decision unfreeze, no checker gate-behavior change, no Bologna AOI/source
+  approval, no fixture capture, no runtime/report use, no DB seed, no source registry
+  promotion, no DS-017 approval, no hosted authority, and no Level 10 claim.
+
+## 2026-06-21 EQP2-3 blocked P0 repo-local auto-evidence
+
+- Started clean worktree `worktrees/eqp2-3` on `eqp2/3-p0-evidence` from live
+  `origin/main` at `0f0f592b9522d26afb70007281870325edd13579` after EQP2-2
+  merged through PR #131 and detached post-merge proof passed.
+- Added `plans/2026-06-21-eqp2-3-p0-auto-evidence.md` after reconciling the
+  handoff labels for `P0-021` and `P0-023` against the live catalog. Live catalog
+  authority wins: `P0-021` is Evidence integrity and `P0-023` is Threshold
+  immutability.
+- Added `docs/qualification/P0_AUTO_EVIDENCE.yaml` with one row for `P0-004`,
+  `P0-005`, `P0-021`, and `P0-023`. Each row records repo-local evidence pointers,
+  live catalog statement, `auto_evidenced_still_target_blocked`, effective
+  `BLOCKED`, `pass_claimed: false`, and caveats for the missing external authority.
+- Added `scripts/qualification_p0_evidence_check.py`,
+  `scripts/qualification_p0_evidence_check.ps1`, and
+  `scripts/run_qualification_p0_evidence_check.sh`. The checker validates the
+  artifact against the catalog, status link, backlog rows, no-PASS status, no CI
+  `continue-on-error`, no pytest xfail suppression, fixture-boundary text, and
+  qualification-control files.
+- Linked `docs/qualification/P0_AUTO_EVIDENCE.yaml` from
+  `state/EMPIRICAL_QUALIFICATION_STATUS.yaml` under P0 `blocker_references` while
+  preserving P0 `status: BLOCKED` and `result_path: null`.
+- Added a P0 repo-local auto-evidence table to
+  `state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md`; each row remains
+  `auto-evidenced; still target-blocked`.
+- Wired the P0 auto-evidence checker into `scripts/verify.ps1`, `scripts/verify.sh`,
+  and the dedicated `qualification-selftest` CI job.
+- Separate read-only review found live `origin/main` had advanced to PR #132. Rebased
+  `eqp2/3-p0-evidence` onto `be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`,
+  preserving the error-safety redaction hardening and `backend/tests/test_error_safety.py`.
+- A second re-review found live `origin/main` advanced to PR #133. Rebased onto
+  `8822a1408cce54bc99fe760f3386243a29e64b0d`, preserving
+  `docs/adr/lane-d-0021-report-run-contract-backward-compat.md`.
+- Live `origin/main` advanced again to PR #134. Rebased onto
+  `af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, preserving report-run rights
+  optionality changes.
+- Live `origin/main` advanced again to PR #136. Rebased onto
+  `71c6a74eae08811d4e178b0c11365ff1e247772d`, preserving the jsonschema mypy stub
+  fix.
+- Preserved boundaries: no qualification `PASS`, no P0 result artifact, no
+  owner-decision unfreeze, no Bologna AOI/source approval, no fixture capture, no
+  runtime/report use, no DB seed, no source registry promotion, no DS-017 approval,
+  no hosted authority, and no Level 10 claim.
+
 ## 2026-06-21 EQP2-2 executable qualification change impact
 
 - Started clean worktree `worktrees/eqp2-2` on `eqp2/2-change-impact` from live
@@ -4651,6 +5637,42 @@ not run in this slice; DS-017 and hosted-production blockers remain unchanged.
   promotion, recorded fixture, connector, DB seed, report/API/UI/schema change, DS-017
   approval, hosted authority, rulepack approval, multi-geography framework
   implementation, or Level 10 completion claim.
+
+## 2026-06-23 Bologna ODP-BOL-002 final verification
+
+- Focused ruff and mypy passed for the new ODP2 checker and touched tests.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- Final default `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy all passed. DB smoke was skipped by
+  default.
+
+## 2026-06-23 Bologna ODP-BOL-002 source-rights response gate
+
+- Continued from live `origin/main` in clean `worktrees/bol-odp2` on
+  `codex/bol-odp2-gate` after confirming main was
+  `e1d3593a3c5d8c203a721ccde6dde2eb0658a862`, the root checkout was dirty scratch,
+  and the only open PR was unrelated Dependabot #95.
+- Added `plans/2026-06-23-bologna-odp2-source-rights-response-gate.md` to scope this
+  pass to a validate-only ODP-BOL-002 response gate, not source approval or corpus work.
+- Added `config/bologna_odp2_source_rights_response_gate.yaml`,
+  `docs/runbooks/bologna_odp2_source_rights_response_gate.md`,
+  `scripts/bologna_odp2_source_rights_response_gate_check.py`, and Windows/POSIX
+  wrappers. The checker validates owner-answer fields, the missing ODP-BOL-001
+  prerequisite, source-authority record fields, candidate evidence slots, source-rights
+  decisions, candidate review IDs including the cadastral gap, false approval flags,
+  empty references, and no downstream unlocks.
+- Added focused ODP2 artifact tests and mapped the checker into the qualification
+  readiness crosswalk. The first broader validation caught that the active plan did not
+  cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected and the
+  readiness/qualification checks passed.
+- Updated manifest, plan index, project state, backlog, and task routing so
+  `BOL-ODP1-GATE` is done and `BOL-ODP2-GATE` is active.
+- Preserved the boundaries: no owner answer, source authority record, source-rights
+  approval, AOI selection, source registry promotion, recorded corpus, fixture capture,
+  DB seed, connector, runtime/report proof, DS-017 approval, hosted authority,
+  qualification PASS, multi-geography framework, or Level 10 claim.
 
 ## 2026-06-20 Bologna source-rights matrix BSR-001
 

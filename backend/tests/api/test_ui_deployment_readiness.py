@@ -169,7 +169,9 @@ def test_ui_deployment_readiness_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise DeploymentReadinessError("test deployment readiness failure")
+        raise DeploymentReadinessError(
+            "LEAK_SENTINEL drift at /workspace/config/deployment.yaml field image_digest"
+        )
 
     monkeypatch.setattr(ui_module, "load_deployment_readiness", _raise_loader)
     client = TestClient(create_app())
@@ -178,10 +180,12 @@ def test_ui_deployment_readiness_route_returns_503_when_loader_fails(
 
     assert response.status_code == 503
     assert (
-        "Deployment readiness unavailable from repo-owned deployment-path artifacts"
+        "Deployment readiness could not be verified from repo-owned deployment-path artifacts"
         in response.text
     )
-    assert "test deployment readiness failure" in response.text
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 

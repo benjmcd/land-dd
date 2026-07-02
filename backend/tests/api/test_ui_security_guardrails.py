@@ -108,7 +108,9 @@ def test_ui_security_guardrails_route_returns_503_when_loader_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _raise_loader() -> None:
-        raise SecurityGuardrailsError("test security guardrails failure")
+        raise SecurityGuardrailsError(
+            "LEAK_SENTINEL drift at /workspace/config/access_control.yaml field role_mappings"
+        )
 
     monkeypatch.setattr(ui_module, "load_security_guardrails", _raise_loader)
     client = TestClient(create_app())
@@ -116,8 +118,10 @@ def test_ui_security_guardrails_route_returns_503_when_loader_fails(
     response = client.get("/ui/security-guardrails")
 
     assert response.status_code == 503
-    assert "Security guardrails unavailable from repo-owned artifacts" in response.text
-    assert "test security guardrails failure" in response.text
+    assert "Security guardrails could not be verified from repo-owned artifacts" in response.text
+    # Fail-closed: raw exception detail (paths, catalog field names) must NOT leak to the page.
+    assert "LEAK_SENTINEL" not in response.text
+    assert "/workspace/" not in response.text
     assert "Traceback" not in response.text
 
 

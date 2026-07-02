@@ -15,6 +15,9 @@ STATUS_PATH = REPO_ROOT / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml"
 TARGETS_PATH = REPO_ROOT / "config" / "qualification" / "qualification_targets.yaml"
 CATALOG_PATH = REPO_ROOT / "config" / "qualification" / "criterion_catalog.yaml"
 CROSSWALK_PATH = REPO_ROOT / "config" / "qualification" / "readiness_crosswalk.yaml"
+RUBRICS_PATH = REPO_ROOT / "config" / "qualification" / "judgment_rubrics.yaml"
+DOMAIN_PROFILES_DIR = REPO_ROOT / "config" / "qualification" / "domain_profiles"
+SOURCE_PROFILES_DIR = REPO_ROOT / "config" / "qualification" / "source_profiles"
 
 
 def _load_script() -> ModuleType:
@@ -41,6 +44,27 @@ def _controls() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[st
     )
 
 
+def _profile_map(directory: Path, key_field: str) -> dict[str, dict[str, Any]]:
+    profiles: dict[str, dict[str, Any]] = {}
+    for path in directory.glob("*.yaml"):
+        payload = _yaml(path)
+        profiles[payload[key_field]] = payload
+    return profiles
+
+
+def _fill_candidate_identity(status: dict[str, Any]) -> None:
+    status["candidate"].update(
+        {
+            "commit": "0" * 40,
+            "artifact_digest": "sha256:" + "1" * 64,
+            "protocol_version": "qualification_protocol_v3",
+            "targets_version": "0.1.0-test",
+            "vocabulary_version": "qualification_vocabulary_v3",
+            "criteria_catalog_digest": "sha256:" + "2" * 64,
+        }
+    )
+
+
 def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[str, Any]:
     results = {
         path: module.CheckerResult(
@@ -48,6 +72,10 @@ def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[s
             returncode=0,
             stdout="ok",
             stderr="",
+            advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+                crosswalk,
+                path,
+            ),
         )
         for path in module.unique_checker_paths(crosswalk)
     }
@@ -56,12 +84,20 @@ def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[s
         returncode=2,
         stdout="",
         stderr="usage: package_manifest_check.py [-h] manifest",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/package_manifest_check.py",
+        ),
     )
     results["scripts/spatial_query_plan_runtime_check.py"] = module.CheckerResult(
         path="scripts/spatial_query_plan_runtime_check.py",
         returncode=1,
         stdout="missing required --db-url or DATABASE_URL_SYNC",
         stderr="",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/spatial_query_plan_runtime_check.py",
+        ),
     )
     return results
 
@@ -105,6 +141,94 @@ def test_p0_drift_to_not_run_is_rejected() -> None:
     assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
 
 
+def test_p0_stays_blocked_when_non_target_parameterization_is_unresolved() -> None:
+    module = _load_script()
+    status, targets, catalog, crosswalk = _controls()
+    drifted_status = deepcopy(status)
+    drifted_targets = deepcopy(targets)
+    drifted_status["qualifications"]["p0"]["status"] = "NOT_RUN"
+    _fill_candidate_identity(drifted_status)
+    drifted_targets["status"] = "FROZEN"
+    drifted_targets["frozen_at"] = "2026-06-22T00:00:00Z"
+    drifted_targets["approved_by"] = ["test-owner"]
+
+    derived = module.derive_statuses(
+        root=REPO_ROOT,
+        status=drifted_status,
+        targets=drifted_targets,
+        catalog=catalog,
+        crosswalk=crosswalk,
+        checker_results=_successful_results(module, crosswalk),
+        rubrics=_yaml(RUBRICS_PATH),
+        domain_profiles=_profile_map(DOMAIN_PROFILES_DIR, "domain_id"),
+        source_profiles=_profile_map(SOURCE_PROFILES_DIR, "source_id"),
+    )
+    errors = module.compare_committed_statuses(drifted_status, derived)
+
+    assert derived[("qualifications", "p0")] == "BLOCKED"
+    assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
+
+
+def test_owner_authorized_partial_freeze_keeps_status_blocked() -> None:
+    module = _load_script()
+    status, targets, catalog, crosswalk = _controls()
+    scope = targets["scope"]
+    windows_native = targets["windows_native"]
+    bindings = targets["criterion_bindings"]
+
+    assert targets["status"] == "DRAFT"
+    assert scope["product_scope_profile"] == "BOUNDED_USER_VALIDATED"
+    assert scope["deployment_profile"] == "LOCAL_SINGLE_USER"
+    assert scope["windows_native_required"] is True
+    assert scope["source_profile_ids"] == ["DS-002"]
+    assert scope["report_contract_version"] == "report_run_contract_v1"
+    assert scope["api_contract_version"] == "0.1.0"
+    assert scope["ruleset_versions"] == {"homestead_mvp_v0_1": "0.1"}
+    assert scope["normalization_schema_version"] == "0.1.0-alpha"
+    assert scope["geometry_pipeline_version"] == "0.1.0-alpha"
+    assert scope["source_snapshot_policy"] == "HASHED_RETRIEVAL_MANIFEST_PER_SOURCE"
+    assert (
+        scope["data_as_of_policy"]
+        == "SOURCE_DATA_AS_OF_AND_RETRIEVAL_TIMESTAMP_WITH_FRESHNESS_CAVEATS"
+    )
+
+    assert windows_native["long_path_policy"] == "ENABLED"
+    assert windows_native["supported_windows_versions"] == ["Windows 11 (>=22H2)"]
+    assert windows_native["supported_powershell_versions"] == ["5.1", "7.x"]
+    assert windows_native["supported_python_versions"] == ["3.12"]
+    assert windows_native["supported_docker_desktop_versions"] == ["4.x"]
+    frozen_bindings = {
+        criterion_id
+        for criterion_id, binding in bindings.items()
+        if binding["status"] == "FROZEN"
+    }
+    assert frozen_bindings == {"W-003", "W-011"}
+    assert bindings["W-003"]["status"] == "FROZEN"
+    assert bindings["W-011"]["status"] == "FROZEN"
+    assert bindings["DQ-002"]["status"] == "DRAFT"
+    assert bindings["Q1-006"]["status"] == "DRAFT"
+    assert bindings["Q2-001"]["status"] == "DRAFT"
+    assert bindings["M-005"]["status"] == "DRAFT"
+
+    derived = module.derive_statuses(
+        root=REPO_ROOT,
+        status=status,
+        targets=targets,
+        catalog=catalog,
+        crosswalk=crosswalk,
+        checker_results=_successful_results(module, crosswalk),
+        rubrics=_yaml(RUBRICS_PATH),
+        domain_profiles=_profile_map(DOMAIN_PROFILES_DIR, "domain_id"),
+        source_profiles=_profile_map(SOURCE_PROFILES_DIR, "source_id"),
+    )
+    errors = module.compare_committed_statuses(status, derived)
+
+    assert errors == []
+    assert derived[("qualifications", "p0")] == "BLOCKED"
+    assert sum(1 for value in derived.values() if value == "BLOCKED") == 1
+    assert set(derived.values()) == {"BLOCKED", "NOT_RUN"}
+
+
 def test_unexpected_checker_failure_blocks_mapped_statuses() -> None:
     module = _load_script()
     status, targets, catalog, crosswalk = _controls()
@@ -114,6 +238,10 @@ def test_unexpected_checker_failure_blocks_mapped_statuses() -> None:
         returncode=1,
         stdout="unexpected source readiness failure",
         stderr="",
+        advertised_criterion_ids=module.advertised_criterion_ids_for_checker(
+            crosswalk,
+            "scripts/source_readiness.py",
+        ),
     )
 
     derived = module.derive_statuses(
@@ -179,6 +307,11 @@ def test_timeout_output_is_normalized(monkeypatch: Any) -> None:
             stderr=b"partial stderr",
         )
 
+    monkeypatch.setattr(
+        module,
+        "run_checker_advertisement",
+        lambda *args, **kwargs: ("Q1-012",),
+    )
     monkeypatch.setattr(module.subprocess, "run", raise_timeout)
 
     result = module.run_checker(
@@ -192,3 +325,30 @@ def test_timeout_output_is_normalized(monkeypatch: Any) -> None:
     assert result.stdout == "partial stdout"
     assert "partial stderr" in result.stderr
     assert "checker timed out after 1s" in result.stderr
+
+
+def test_missing_checker_advertisement_fails_closed() -> None:
+    module = _load_script()
+    status, targets, catalog, crosswalk = _controls()
+    checker_results = _successful_results(module, crosswalk)
+    checker_results["scripts/source_readiness.py"] = module.CheckerResult(
+        path="scripts/source_readiness.py",
+        returncode=1,
+        stdout="unexpected source readiness failure",
+        stderr="",
+        advertised_criterion_ids=(),
+    )
+
+    try:
+        module.derive_statuses(
+            root=REPO_ROOT,
+            status=status,
+            targets=targets,
+            catalog=catalog,
+            crosswalk=crosswalk,
+            checker_results=checker_results,
+        )
+    except module.QualificationStatusError as exc:
+        assert "missing checker criterion advertisement: scripts/source_readiness.py" in str(exc)
+    else:
+        raise AssertionError("missing checker advertisement should fail closed")

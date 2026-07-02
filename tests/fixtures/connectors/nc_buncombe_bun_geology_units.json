@@ -1,0 +1,75 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e1111111-e111-4111-8111-e11111111111",
+    "dataset_version_id": "99999999-9999-4999-8999-999999999999",
+    "connector_name": "fixture_geology_static",
+    "status": "succeeded",
+    "started_at": "2026-06-10T10:00:00Z",
+    "finished_at": "2026-06-10T10:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_geology_units",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "geologic_unit_count": 2,
+      "nc_geologic_map_bbox": "-82.560000,35.590000,-82.540000,35.610000"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e1112222-e111-4222-8222-e11122222222",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "NC_GEOLOGIC_MAP_UNIT_CONTEXT",
+      "domain": "geology",
+      "observation": "Fixture NCGS 1985 geologic map query found 2 map unit(s) intersecting the query bounding box.",
+      "observed_value": {
+        "has_geologic_map_context": true,
+        "no_geologic_map_context": false,
+        "geologic_unit_count": 2,
+        "geologic_unit_labels": [
+          "Zwe",
+          "Ch"
+        ],
+        "geologic_belts": [
+          "Blue Ridge belt",
+          "Inner Piedmont belt"
+        ],
+        "geologic_types": [
+          "metamorphic",
+          "metasedimentary"
+        ],
+        "geologic_formations": [
+          "Wilhite Formation",
+          "Chauga River Formation"
+        ],
+        "geologic_descriptions": [
+          "Interlayered schist and gneiss from the 1985 statewide geologic map.",
+          "Metasedimentary rocks mapped at statewide scale."
+        ],
+        "nc_geologic_map_bbox": "-82.560000,35.590000,-82.540000,35.610000",
+        "nc_geologic_map_year": "1985",
+        "nc_geologic_map_deprecated": true,
+        "geologic_hazard_determined": false,
+        "buildability_determined": false,
+        "primary_geologic_unit_label": "Zwe",
+        "primary_geologic_formation": "Wilhite Formation"
+      },
+      "source_id": "88888888-8888-4888-8888-888888888888",
+      "dataset_version_id": "99999999-9999-4999-8999-999999999999",
+      "method_code": "fixture_geology_map_unit_context",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only NCGS 1985 statewide geologic map-unit context. This deprecated generalized map is not parcel-scale geology and does not determine landslide, sinkhole, radon, subsidence, geotechnical suitability, engineering feasibility, mineral-resource value, buildability, appraisal value, lending suitability, insurance suitability, investment quality, title, or legal status. Verify geologic concerns with a licensed geologist or geotechnical engineer.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-10",
+      "observed_at": "2026-06-10T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

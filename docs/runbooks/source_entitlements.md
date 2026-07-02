@@ -13,6 +13,17 @@ Run from the repository root:
 .\scripts\run_source_entitlement_check.ps1
 ```
 
+For a consolidated stdout view that includes DS-017 inside the active
+authority-evidence posture, run:
+
+```powershell
+py -3.12 .\scripts\authority_evidence_intake_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable collection tracking. These
+summary modes are reporting only; they do not replace the source-entitlement check,
+approve DS-017, select a vendor, change source readiness, or unlock implementation.
+
 The check is validate-only. It does not approve DS-017, call a live vendor, seed a
 fixture, generate artifacts, select a vendor, change source readiness, or expose raw
 vendor data.

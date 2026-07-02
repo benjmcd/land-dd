@@ -153,6 +153,31 @@ Invoke-PythonCommand `
     -Label 'qualification change impact' `
     -Arguments @('scripts/qualification_change_impact_check.py', '--root', '.')
 
+Write-Host '== qualification P0 auto evidence =='
+Invoke-PythonCommand `
+    -Label 'qualification P0 auto evidence' `
+    -Arguments @('scripts/qualification_p0_evidence_check.py', '--root', '.')
+
+Write-Host '== qualification parameterization backlog =='
+Invoke-PythonCommand `
+    -Label 'qualification parameterization backlog' `
+    -Arguments @('scripts/qualification_parameterization_backlog_check.py', '--root', '.')
+
+Write-Host '== authority evidence intake =='
+Invoke-PythonCommand `
+    -Label 'authority evidence intake' `
+    -Arguments @('scripts/authority_evidence_intake_check.py')
+
+Write-Host '== production authority evidence references =='
+Invoke-PythonCommand `
+    -Label 'production authority evidence references' `
+    -Arguments @('scripts/production_authority_evidence_references_check.py')
+
+Write-Host '== authority follow-on sequence =='
+Invoke-PythonCommand `
+    -Label 'authority follow-on sequence' `
+    -Arguments @('scripts/authority_follow_on_sequence_check.py')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')

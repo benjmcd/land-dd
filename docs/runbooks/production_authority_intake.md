@@ -16,6 +16,35 @@ Run:
 .\scripts\run_production_authority_intake_check.ps1
 ```
 
+To validate the future cited-reference field shape without recording authority, run:
+
+```powershell
+.\scripts\run_production_authority_evidence_references_check.ps1
+```
+
+For a stdout-only view of the required reference fields and per-stream reference
+templates, run:
+
+```powershell
+py -3.12 .\scripts\production_authority_evidence_references_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable reference-template collection
+tracking. These reference-template output modes are reporting only; they do not record
+authority, approve sources, change source rights, request downstream unlocks, or move
+any stream out of `blocked`.
+
+For a consolidated stdout view of the active authority-evidence posture and missing
+evidence counts across production and Bologna streams, run:
+
+```powershell
+py -3.12 .\scripts\authority_evidence_intake_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable collection tracking. These
+summary modes are reporting only; they do not replace the stream-specific checks,
+record authority, approve sources, change source rights, or unlock implementation.
+
 The checker cross-checks `config/production_authority_intake.yaml` against the existing
 authority catalogs:
 
@@ -30,9 +59,10 @@ authority catalogs:
 
 ## Boundary
 
-Every stream remains `blocked`, every `authority_references` list remains empty, and
-every `decision_updates_allowed` value remains false until the matching external
-authority evidence exists and the stream-specific checker validates it.
+Every stream remains `blocked`, every `authority_references` list remains empty, every
+production authority evidence reference template remains empty, and every
+`decision_updates_allowed` value remains false until the matching external authority
+evidence exists and the stream-specific checker validates it.
 
 ## Evidence Checklist
 

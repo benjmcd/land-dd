@@ -2,6 +2,2353 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Post-PR183 Authority Evidence State Sync
+
+**Scope:** Synchronize routing/state wording after PR #183 merged reporting-only
+production authority evidence reference output. The sync records the merged reference
+output posture without recording authority, approving sources, changing source rights,
+capturing corpus or fixtures, seeding the DB, proving a report, provisioning hosted
+runtime, claiming Level 10, unfreezing qualification, approving DS-017, or unblocking
+`P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+py -3.12 scripts\authority_follow_on_sequence_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\authority_evidence_intake_check.py`,
+  `scripts\qualification_parameterization_backlog_check.py --root .`,
+  `scripts\production_authority_evidence_references_check.py --json`, and
+  `scripts\authority_follow_on_sequence_check.py` passed.
+- Focused pytest passed (`19 passed`), focused ruff passed, and focused mypy passed.
+- `git diff --check` and deletion checks passed.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a routing/state synchronization only. Current authority
+references and downstream unlock requests remain empty, so external cited authority is
+still required before Bologna, DS-017, hosted/Level 10, empirical qualification
+`PASS`, owner-decision unfreeze, or `P0` unblock work can proceed.
+
+## 2026-07-02 Production Authority Evidence Reference Output
+
+**Scope:** Add reporting-only `--summary` and `--json` output to the production
+authority evidence reference checker under the active `AUTH-EVIDENCE-INTAKE` posture.
+The output reports the validated reference field shape and per-stream templates without
+recording authority, approving sources, changing source rights, requesting downstream
+unlocks, provisioning hosted runtime, claiming Level 10, unfreezing qualification, or
+unblocking `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py --summary
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+.\scripts\run_production_authority_evidence_references_check.ps1
+.\scripts\run_production_authority_evidence_references_check.ps1 --summary
+.\scripts\run_production_authority_evidence_references_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,contract_status,stream_reference_template_count
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct `scripts\production_authority_evidence_references_check.py` passed.
+- Direct `--summary` reported the blocked reference contract, 15 required reference
+  fields, nine stream templates, zero current references, zero downstream unlock
+  requests, and forbidden effects including `p0_unblock`.
+- Direct `--json` emitted parseable
+  `production_authority_evidence_references_summary_v1` with
+  `contract_status: blocked_no_submitted_references` and nine stream templates.
+- The PowerShell wrapper passed in no-argument mode and forwarded `--summary` /
+  `--json` without appending wrapper confirmation text to reporting output.
+- `scripts\authority_evidence_intake_check.py` and
+  `scripts\qualification_parameterization_backlog_check.py --root .` passed.
+- Focused pytest, ruff, mypy, `git diff --check`, and deletion checks passed.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is reference-template reporting only. Current references and
+downstream unlock requests remain empty, so no production authority, DS-017 approval,
+Bologna owner/source/corpus/report authority, hosted/Level 10 authority,
+qualification `PASS`, or `P0` unblock is introduced.
+
+## 2026-07-02 Production Authority Evidence Reference Contract
+
+**Scope:** Add a validate-only production authority evidence reference contract under
+the active `AUTH-EVIDENCE-INTAKE` posture. The contract defines future cited-reference
+field shape and per-stream templates for `config/production_authority_intake.yaml`
+without recording authority, approving sources, changing source rights, triggering
+follow-on lanes, provisioning hosted runtime, claiming Level 10, unfreezing
+qualification, or unblocking `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\production_authority_evidence_references_check.py
+.\scripts\run_production_authority_evidence_references_check.ps1
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\production_authority_evidence_references_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\production_authority_evidence_references_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\production_authority_evidence_references_check.py` passed and the
+  PowerShell wrapper returned `production authority evidence references: ok`.
+- `scripts\authority_evidence_intake_check.py` passed after adding the reference
+  contract validator to the composition guard.
+- `scripts\qualification_parameterization_backlog_check.py --root .` and
+  `scripts\readiness_matrix_check.py` passed.
+- Focused pytest passed for the new reference-contract artifact tests and the updated
+  authority-evidence / qualification-backlog artifact tests.
+- Focused ruff, mypy, `git diff --check`, and deletion checks passed.
+- `scripts\selftest_qualification_validator.py` and
+  `scripts\validate_qualification.py --root . --layout repo` passed. The qualification
+  validator still reports the expected blocked-readiness conditions and does not claim
+  qualification `PASS`.
+- `scripts\authority_evidence_intake_check.py --summary` and `--json` remained
+  parseable reporting-only views of the blocked posture.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a reference-shape contract only. Current references and
+downstream unlock requests remain empty, so no production authority, DS-017 approval,
+Bologna owner/source/corpus/report authority, hosted/Level 10 authority,
+qualification `PASS`, or `P0` unblock is introduced.
+
+## 2026-07-02 Authority Follow-On Sequence Contract
+
+**Scope:** Add a validate-only authority follow-on sequence contract under the active
+`AUTH-EVIDENCE-INTAKE` posture. The contract machine-checks the repo-local follow-on
+map in `state/PRODUCTION_AUTHORITY_PACKET.md` while preserving all DS-017, Bologna,
+hosted/Level 10, qualification, owner-decision, and P0 blockers. It does not record
+external authority, approve sources, change source rights, capture corpus or fixtures,
+seed the DB, prove reports, change schema/API/auth/UI/runtime behavior, claim hosted
+or Level 10 authority, unfreeze qualification, claim qualification `PASS`, or unblock
+`P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_follow_on_sequence_check.py
+.\scripts\run_authority_follow_on_sequence_check.ps1
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+.\scripts\run_authority_evidence_intake_check.ps1 --summary
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+.\scripts\run_authority_evidence_intake_check.ps1
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_follow_on_sequence_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_follow_on_sequence_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\authority_follow_on_sequence_check.py` passed and the PowerShell wrapper
+  returned `authority follow-on sequence: ok`.
+- `scripts\authority_evidence_intake_check.py` passed after adding the follow-on
+  sequence validator to the composition guard. Summary/JSON modes remained
+  reporting-only and parseable.
+- `scripts\qualification_parameterization_backlog_check.py --root .` and
+  `scripts\readiness_matrix_check.py` passed.
+- Focused pytest, ruff, and mypy gates passed for the new checker and updated
+  authority-evidence/backlog artifact tests.
+- Initial full `.\scripts\verify.ps1` failed at the qualification selftest because the
+  new config/checker matched readiness inventory globs but was not mapped in
+  `config/qualification/readiness_crosswalk.yaml`. Added the
+  `authority_follow_on_sequence` authority-blocker surface to the YAML crosswalk and
+  `docs/qualification/readiness-crosswalk.md`; reran the qualification validator
+  selftest successfully.
+- `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a sequencing guard only. The production workload/retention
+follow-on remains packet-level because `config/production_authority_intake.yaml` has no
+standalone workload/retention authority stream. That is explicit in
+`config/authority_follow_on_sequence.yaml` and does not unlock workload, retention, or
+hosted claims.
+
+## 2026-07-02 Post-PR179 Authority Evidence Support Sync
+
+**Scope:** Synchronize current-state and guard wording after PR #179 so the
+authority-evidence control plane names the landed PR #176-#179 support work while
+keeping `AUTH-EVIDENCE-INTAKE` active and blocked. This is state/plan/task/test
+alignment only. It does not record external authority, approve DS-017, approve Bologna
+sources, change source rights, capture corpus or fixtures, seed the DB, prove reports,
+change schema/API/auth/UI/runtime behavior, claim hosted or Level 10 authority,
+unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+.\scripts\run_authority_evidence_intake_check.ps1 --summary | Select-Object -First 8
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+.\scripts\run_authority_evidence_intake_check.ps1
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused checks failed because both authority-evidence validators still
+  required the old `Post-PR175 authority evidence guard` and
+  `Authority-evidence posture after PR #175` fragments. The guard expectations were
+  updated to require the PR #179 reporting-wrapper checkpoint and wrapper passthrough
+  boundary instead.
+- Direct authority-evidence guard passed.
+- PowerShell `--summary` and `--json` wrapper paths passed; JSON parsed as
+  `authority_evidence_intake_summary_v1` with active task `AUTH-EVIDENCE-INTAKE`.
+- Qualification parameterization backlog check passed with `P0 status: BLOCKED`.
+- Focused authority-evidence, qualification-backlog, and readiness tests passed
+  (`23 passed`).
+- Focused ruff and mypy passed for the changed scripts/tests.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** This only corrects repo-local current-state wording and guard
+expectations. It does not supply external product/AOI/source/source-rights/corpus/
+report authority for Bologna, DS-017 approval, hosted deployment, Level 10 readiness,
+empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Authority Evidence Wrapper Summary Passthrough
+
+**Scope:** Forward arguments through the authority evidence intake wrappers so the
+operator-facing `--summary` and `--json` reporting modes added in the previous slices
+can be used through the same wrapper entrypoints. This preserves the default wrapper
+confirmation for no-argument pass/fail use, but avoids appending wrapper text to
+summary or JSON output. It does not record external authority, approve DS-017, approve
+Bologna sources, change source rights, capture corpus or fixtures, seed the DB, prove
+reports, change schema/API/auth/UI/runtime behavior, claim hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+.\scripts\run_authority_evidence_intake_check.ps1
+.\scripts\run_authority_evidence_intake_check.ps1 --summary | Select-Object -First 8
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+py -3.12 -m ruff check backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_authority_evidence_intake_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Default PowerShell wrapper passed and retained the existing wrapper confirmation.
+- PowerShell `--summary` reported
+  `authority evidence intake summary: blocked`, schema
+  `authority_evidence_intake_summary_v1`, active plan
+  `plans/2026-07-02-authority-evidence-intake.md`, and active task
+  `AUTH-EVIDENCE-INTAKE` without wrapper confirmation text.
+- PowerShell `--json` parsed successfully and reported schema
+  `authority_evidence_intake_summary_v1` and active task `AUTH-EVIDENCE-INTAKE`.
+- Focused authority-evidence tests passed (`10 passed`).
+- Focused ruff and mypy passed for the changed test file.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** Wrapper passthrough only improves operator access to already-blocked
+authority evidence intake reporting. It does not supply external product/AOI/source/
+source-rights/corpus/report authority for Bologna, DS-017 approval, hosted deployment,
+Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Authority Evidence Summary Runbook Links
+
+**Scope:** Add discoverability links from the production authority, Bologna
+owner-answer, and DS-017 source-entitlement runbooks to the existing authority evidence
+intake `--summary` and `--json` modes. This is documentation plus a focused artifact
+test only. It does not record authority, approve DS-017, approve sources, change
+source rights, capture corpus or fixtures, seed the DB, prove reports, change
+schema/API/auth/UI/runtime behavior, claim hosted or Level 10 authority, unfreeze
+qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+py -3.12 -m ruff check backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_authority_evidence_intake_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused authority-evidence artifact tests passed (`9 passed`), including the new
+  runbook discoverability assertion.
+- Focused ruff and mypy passed for the changed test file.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** The links only make the already-validated missing-authority summary
+easier to find from operator runbooks. They do not supply external product/AOI/source/
+source-rights/corpus/report authority for Bologna, DS-017 approval, hosted deployment,
+Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Authority Evidence Intake Summary Output
+
+**Scope:** Add optional reporting output to the existing authority evidence intake
+composition guard. `--summary` and `--json` run the same validate-only guard first,
+then expose the active task, missing production authority streams, Bologna owner-answer
+thread status, P0 status, and blocked implementation boundaries from existing checked
+config/state files. Default checker and wrapper behavior remain pass/fail only. This
+does not write files, seed runtime state, record authority, approve sources, change
+rights, capture corpus or fixtures, seed the DB, prove reports, change
+schema/API/auth/UI/runtime behavior, approve DS-017, claim hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority evidence intake guard passed.
+- `--summary` reported `AUTH-EVIDENCE-INTAKE`, nine blocked production streams, four
+  Bologna threads, and `P0 status: BLOCKED`.
+- `--json` emitted parseable JSON with `production_authority_status:
+  blocked_no_external_authority`, `bologna_owner_answer_status:
+  blocked_review_only_scope_pursuit`, and P0 `BLOCKED`.
+- Focused authority-evidence tests passed (`8 passed`).
+- Ruff and focused mypy passed for the changed guard and tests.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** This only makes the missing external authority evidence easier to
+inspect. It still does not provide the product/AOI/source/source-rights/corpus/report
+authority needed for Bologna implementation, DS-017 approval, hosted deployment, Level
+10 readiness, empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Post-PR175 Authority Evidence Guard Sync
+
+**Scope:** Synchronize live control-plane wording after PR #175 so project state,
+plans, task routing, and checker expectations describe the merged authority evidence
+intake composition guard while keeping `AUTH-EVIDENCE-INTAKE` active. This is a
+state/checker consistency update only. It does not record authority, approve sources,
+change rights, capture corpus or fixtures, seed the DB, prove reports, change
+schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+.\scripts\run_authority_evidence_intake_check.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority evidence intake guard passed.
+- Qualification parameterization backlog check passed with `P0 status: BLOCKED`.
+- Focused authority-evidence, qualification-backlog, and readiness tests passed
+  (`18 passed`).
+- Ruff and focused mypy passed for the changed scripts and tests.
+- PowerShell authority-evidence wrapper passed.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** This sync only corrects repo-local live-state/control-plane
+wording after PR #175. It still does not provide the external product/AOI/source/
+source-rights/corpus/report authority needed for Bologna implementation, DS-017
+approval, hosted deployment, Level 10 readiness, empirical qualification PASS, or P0
+readiness.
+
+## 2026-07-02 Authority Evidence Intake Composition Guard
+
+**Scope:** Add a validate-only composition guard for the active
+`AUTH-EVIDENCE-INTAKE` posture after PR #174. The guard proves that active routing,
+production authority streams, Bologna owner/source-rights/corpus/report gates, empty
+authority records, and qualification `P0 = BLOCKED` agree as one blocked authority
+intake state. It does not record authority, approve sources, change rights, capture
+corpus or fixtures, seed the DB, prove reports, change schema/API/auth/UI/runtime
+behavior, approve DS-017, record hosted or Level 10 authority, unfreeze qualification,
+claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+.\scripts\run_authority_evidence_intake_check.ps1
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority evidence intake guard passed and the PowerShell wrapper passed.
+- Focused authority evidence intake tests passed (`6 passed`).
+- Focused current-posture tests passed (`39 passed`) across readiness core,
+  qualification backlog, authority evidence intake, production authority intake, and
+  Bologna source-authority intake artifacts.
+- Ruff and focused mypy passed for the new guard and tests.
+- Qualification status passed with `passed=37 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed after adding the guard to the readiness
+  crosswalk inventory.
+- Qualification selftest passed, including checker-advertisement drift and readiness
+  crosswalk inventory checks. An earlier failed attempt exposed the missing crosswalk
+  mapping and a recursive status-check call; both were fixed before this final pass.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed after the guard was wired into the canonical
+  verifier. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This proves only the repo-local authority-evidence intake posture
+and checker composition. It does not supply the external product/AOI/source/source-
+rights/corpus/report authority required for Bologna, DS-017 approval, hosted
+deployment, Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Authority Evidence Intake Routing
+
+**Scope:** Route the project after PR #173 so `POST-GEOLOGY-ROUTING` is done and
+`AUTH-EVIDENCE-INTAKE` is the only active task. This is a routing/control-plane update
+for the authority-dependent future sequence. It does not record owner answers, approve
+sources, change source rights, capture corpus or fixtures, seed the DB, prove reports,
+change schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 -m ruff check backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\source_readiness.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused readiness and qualification backlog artifact tests passed (`12 passed`).
+- Qualification parameterization backlog check passed with
+  `AUTH-EVIDENCE-INTAKE` as the only active task and `P0 status: BLOCKED`.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checks passed while preserving blocked authority state.
+- Readiness matrix check passed.
+- Qualification status check passed with `passed=36 not_run=2 unexpected_failed=0`
+  and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused ruff and focused mypy passed for the changed checker and routing tests.
+- Source readiness passed with `sources=25 ready=16 blocked=9`; DS-017 remained
+  blocked.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest.log`.
+
+**Residual risk:** This pass proves only that live routing now reflects the
+authority-dependent future sequence after PR #173. It does not prove external
+product/AOI/source/source-rights/corpus/report authority, DS-017 approval, hosted
+deployment, Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
+## 2026-07-02 Post-Geology Routing Closeout
+
+**Scope:** Close the owner-independent extended-domain fixture-ingestion routing after
+the geology fixture proof merged through PR #172. This records `GEOLOGY-FIXTURE` as
+done, makes `POST-GEOLOGY-ROUTING` the only active task, and preserves the remaining
+authority-dependent blockers. It does not add a connector, run live calls, approve
+sources, change source rights, capture Bologna fixtures, seed the DB, prove a report,
+change schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 -m ruff check backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused readiness and qualification backlog artifact tests passed (`12 passed`).
+- Qualification parameterization backlog check passed with
+  `POST-GEOLOGY-ROUTING` as the only active task and `P0 status: BLOCKED`.
+- Focused ruff and focused mypy passed for the changed checker and routing tests.
+- Source readiness passed with `sources=25 ready=16 blocked=9`; DS-017 remained
+  blocked and DS-015 remained ready.
+- First readiness matrix check failed because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was updated to cite the matrix and the
+  check then passed.
+- First qualification status check failed as a consequence of the readiness matrix
+  checker failure; after the matrix citation fix it passed with
+  `passed=36 not_run=2 unexpected_failed=0` and derived statuses
+  `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest-20260702T032310593Z.log`.
+
+**Residual risk:** This closeout proves only routing/control-plane synchronization
+after the named local fixture-ingestion proofs landed. It does not prove source rights,
+live source access, production connector behavior, Bologna product/AOI/source/corpus/
+report authority, hosted deployment, Level 10, DS-017, empirical qualification PASS,
+or P0 readiness. Additional fixture lanes such as DS-020 or DS-022 require a future
+explicit routing decision rather than inference from this closeout.
+
+## 2026-07-02 Geology Fixture Ingestion
+
+**Scope:** Add an owner-independent NCGS 1985 geologic map-unit context
+fixture-ingestion proof on the existing Buncombe golden AOI and preserve all existing
+authority blockers. This includes local-only fixtures, connector fail-closed
+validation, map-units-present/no-map-units/source-failure routing, advisory
+`GEOLOGY_NOT_EVALUATED` evidence linkage for non-failure geology evidence, Section 14
+dossier rendering, and forbidden-overclaim checks. It does not run live NCGS calls,
+approve sources, change source rights, determine geologic hazards, determine
+geotechnical suitability, determine buildability, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\private_mvp\test_extended_domain_geology.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\geology_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\geology_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_geology_fixture_connector.py backend\tests\private_mvp\test_extended_domain_geology.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Geology connector and private-MVP tests passed (`13 passed`).
+- Broader focused connector/private-MVP/routing pytest passed (`30 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Source readiness passed with `DS-015: ready State geological survey`; `DS-017` and
+  other unresolved sources remained blocked.
+- Qualification parameterization backlog check passed with `GEOLOGY-FIXTURE` as the
+  only active task and `P0 status: BLOCKED`.
+- Readiness matrix check passed.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- First full `.\scripts\verify.ps1` attempt timed out at the command wrapper after 300
+  seconds during backend tests; no lingering Python test process remained. The verifier
+  was rerun with a longer timeout and passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status, default
+  change-impact, P0 auto-evidence, qualification parameterization backlog, backend
+  tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest-20260702T023719398Z.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for DS-015 NCGS 1985
+geologic map-unit context evidence. The 1985 statewide map is historical and
+generalized; map-unit presence or absence does not determine parcel-scale geology,
+landslide, sinkhole, radon, subsidence, geotechnical suitability, engineering
+feasibility, buildability, mineral-resource value, title, legal status, appraisal
+value, insurability, lending suitability, or investment quality. No source approval,
+source-rights change, live connector run, DB-backed production proof, Bologna
+authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock is
+introduced.
+
+## 2026-07-02 Water Fixture Ingestion
+
+**Scope:** Add an owner-independent USGS water monitoring context fixture-ingestion
+proof on the existing Buncombe golden AOI and preserve all existing authority blockers.
+This includes local-only fixtures, connector fail-closed validation, monitoring-
+stations-found/no-monitoring-stations/source-failure/conflicting/stale claim routing,
+evidence-to-claim linkage, Section 9 dossier rendering, and forbidden-overclaim checks.
+It does not run live USGS calls, approve sources, change source rights, determine water
+rights, determine well viability, alter schema/API/auth/report semantics, approve
+DS-017, record Bologna authority, unfreeze qualification, claim hosted/Level 10
+authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\water_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\water_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_water_fixture_connector.py backend\tests\private_mvp\test_extended_domain_water.py
+py -3.12 scripts\source_readiness.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+git diff --check
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Water connector and private-MVP tests passed (`15 passed`) after aligning fixture
+  evidence payloads with the existing source-observation allowlist by keeping bbox
+  metadata in retrieval metrics only.
+- Broader focused connector/private-MVP/routing pytest passed (`29 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Source readiness passed with `DS-005: ready USGS Water Data APIs`; `DS-013: blocked`
+  and `DS-014: blocked` remained blocked.
+- Qualification parameterization backlog check passed with `WATER-FIXTURE` as the only
+  active task and `P0 status: BLOCKED`.
+- Readiness matrix check passed.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- `git diff --check` passed.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set. Backend pytest output was captured at
+  `local_artifacts\backend-pytest.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for DS-005 USGS water
+monitoring context evidence. Monitoring station presence or absence does not determine
+water rights, well yield or viability, legal water access, potable water, lawful
+hauling, supply adequacy, title, buildability, value, insurability, lending
+suitability, or investment quality. No DS-013/DS-014 authority, source approval,
+source-rights change, live connector run, DB-backed production proof, Bologna
+authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock is
+introduced.
+
+## 2026-07-02 Environmental Hazard Fixture Ingestion
+
+**Scope:** Add an owner-independent EPA ECHO environmental hazard fixture-ingestion
+proof on the existing Buncombe golden AOI and preserve all existing authority blockers.
+This includes local-only fixtures, connector fail-closed validation, regulated-facility
+proximity claim generation, source-failure unknown generation, evidence-to-claim
+linkage, Section 11 dossier rendering, and forbidden-overclaim checks. It does not run
+live EPA calls, approve sources, change source rights, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\env_hazard_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\env_hazard_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Env-hazard connector and private-MVP tests passed (`11 passed`).
+- Broader focused connector/private-MVP/routing pytest passed after restoring the
+  explicit minerals plan citation in `plans/README.md` (`25 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Qualification parameterization backlog check passed with `ENV-FIXTURE` as the only
+  active task and `P0 status: BLOCKED`.
+- Readiness matrix initially failed because the active plan omitted the required
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 authority citation. The plan was
+  corrected and the checker passed.
+- Qualification status check passed after the readiness-plan citation fix:
+  `passed=36 not_run=2 unexpected_failed=0`, derived `BLOCKED=1 NOT_RUN=20`.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set. Output was captured at
+  `local_artifacts\verify-20260702T005530104Z.out.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for EPA ECHO screening
+evidence. A nearby regulated facility does not prove subject-property contamination,
+exposure, remediation status, environmental liability, safety, value, insurability,
+lending suitability, or investment quality; no source approval, source-rights change,
+live connector run, DB-backed production proof, Bologna authority, hosted authority,
+Level 10 claim, qualification PASS, or P0 unblock is introduced.
+
+## 2026-07-02 Extended-Domain Broadband Fixture Ingestion
+
+**Scope:** Reconcile post-PR #167/#168 routing, add an owner-independent broadband
+fixture-ingestion proof, and preserve the existing authority blockers. This includes
+local-only FCC Broadband Data Collection fixtures, connector fail-closed validation,
+no-provider advisory generation, source-failure unknown generation, evidence-to-claim
+linkage, Section 12 dossier rendering, and forbidden-overclaim checks. It does not run
+live FCC calls, approve sources, change source rights, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_minerals.py backend\tests\private_mvp\test_extended_domain_broadband.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\broadband_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\broadband_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_broadband_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Broadband connector and private-MVP tests passed (`10 passed`).
+- Broader focused connector/private-MVP/routing pytest passed (`24 passed`).
+- Focused ruff and focused mypy passed for touched implementation and test files.
+- Qualification parameterization backlog check passed with `BROADBAND-FIXTURE` as the
+  only active task.
+- Readiness matrix check passed and preserved the Level 9/10 authority context.
+- Qualification status check passed: `passed=36 not_run=2 unexpected_failed=0`,
+  derived `BLOCKED=1 NOT_RUN=20`.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set.
+
+**Residual risk:** This pass proves only local fixture ingestion for broadband. FCC
+BDC coverage is provider-reported and may lag real availability; no broadband service
+guarantee, source approval, source-rights change, live connector run, DB-backed
+production proof, Bologna authority, hosted authority, Level 10 claim, qualification
+PASS, or P0 unblock is introduced. Remaining extended-domain fixture-ingestion lanes
+include water, environmental hazards, and geology.
+
+## 2026-06-28 ODGAV Owner-Answer Gate Evaluation
+
+**Scope:** Add side-effect-free synthetic Bologna owner-answer evaluation for the
+owner-answer intake, `bol_scope_auth`, and ODP-BOL-001 through ODP-BOL-004 response
+gates. This proves complete future owner answers can be accepted in memory and bad
+inputs rejected, while preserving empty committed authority records, missing source
+rights, missing recorded corpus authority, missing DB report-proof authority, DB state,
+backend app/API surfaces, hosted/Level 10 blockers, and `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bol_scope_auth_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_owner_answer_gate_evaluation.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_bologna_owner_answer_gate_evaluation.py -q
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check <touched scripts and focused tests>
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy <touched scripts and focused tests>
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Bologna owner-answer intake, `bol_scope_auth`, and ODP-BOL-001 through ODP-BOL-004
+  response-gate checkers passed.
+- Focused owner-answer evaluator pytest passed (`3 passed`), including complete
+  synthetic acceptance, malformed/dependency/downstream-unlock rejection, and
+  non-mutation coverage.
+- Focused backlog/readiness/evaluator pytest passed (`15 passed`).
+- Qualification parameterization backlog check passed and now permits only `ODGAV-1`
+  as the active task.
+- Readiness matrix check passed after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Qualification selftest passed in 188.1 seconds, including the new twelve Bologna
+  owner-answer evaluator accept/reject cases.
+- Structural qualification validation passed with target status `DRAFT` and expected
+  blocked-readiness notes.
+- Qualification status check passed after rerunning with the real Python executable:
+  `passed=36 not_run=2 unexpected_failed=0`, derived `BLOCKED=1 NOT_RUN=20`.
+- Change-impact passed as advisory for seven changed Bologna checker/helper paths with
+  no unmatched paths.
+- Focused ruff and focused mypy passed for touched scripts and tests.
+- Full `.\scripts\verify.ps1` passed on the rebased
+  `origin/main@78b233da21c0802267c89ac129e20db0b271b5aa` branch in 541.3 seconds:
+  workspace validation, qualification selftest, structural qualification validation,
+  qualification status, default change-impact, P0 auto-evidence, qualification
+  parameterization backlog, backend tests, backend ruff, and backend mypy all passed.
+  DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This pass proves only owner-independent synthetic evaluation and
+worktree classification. Bologna still needs real cited owner authority in order:
+ODP-BOL-001 product/AOI/scope authority, ODP-BOL-002 source authority/source rights,
+ODP-BOL-003 recorded-source corpus, and ODP-BOL-004 DB-backed report proof. No worktree
+was retired because no unmerged worktree met the full safe-retirement rule.
+
+## 2026-06-27 ODP-BOL-002 Owner-Answer Packet
+
+**Scope:** Add a validate-only ODP-BOL-002 owner-answer packet for later Bologna
+source-authority/source-rights approval. This gives the owner a checked response
+template, source-authority record template, candidate evidence checklist, and
+rights-decision checklist, but does not record authority, approve sources, change
+source rights, create a corpus, capture fixtures, seed the DB, prove a report, approve
+DS-017, change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp2_owner_answer_packet_check.py
+.\scripts\run_bologna_odp2_owner_answer_packet_check.ps1
+py -3.12 scripts\bologna_odp2_owner_answer_packet_check.py --qualification-criteria-json
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_qualification_readiness_crosswalk.py::test_readiness_crosswalk_doc_lists_surfaces_gaps_and_orphans backend\tests\test_readiness_core_artifacts.py::test_project_readiness_app_model_loads_current_control_plane -q
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_odp2_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp2_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_odp2_owner_answer_packet_artifacts.py backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline source-rights and ODP-BOL-002 response-gate checks passed before edits.
+- New packet checker, PowerShell wrapper, and `--qualification-criteria-json`
+  advertisement passed.
+- Backlog checker initially failed because `plans/README.md` no longer contained the
+  exact previous `plans/2026-06-27-bol-scope-auth.md` fragment. The plan index was
+  corrected, and the backlog checker then passed.
+- Focused packet/backlog/crosswalk/readiness tests passed (`18 passed`), and the
+  combined Bologna/backlog/readiness artifact suite passed (`64 passed`).
+- Structural qualification validation passed; qualification status derived
+  `BLOCKED=1 NOT_RUN=20`; readiness matrix and qualification selftest passed.
+- Change-impact passed as advisory for 18 touched paths, reporting
+  `qualification_parameterization_backlog` and `bologna_odp2_owner_answer_packet`
+  crosswalk surfaces.
+- Focused ruff and mypy passed for touched scripts and tests.
+- Full `.\scripts\verify.ps1` passed in 543.9 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is an owner-answer packet only. Bologna remains blocked until
+complete cited `ODP-BOL-001` pilot-scope authority exists, followed by `ODP-BOL-002`
+source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004` DB-backed report proof
+authority. P0 remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
+## 2026-06-27 Bologna Scope-Authority Readiness Gate
+
+**Scope:** Add a validate-only `bol_scope_auth` gate for the later cited
+`ODP-BOL-001` authority-recording slice. This proves the current owner answer remains
+review-only and does not record authority, select an AOI, approve sources or source
+rights, create a corpus, capture fixtures, seed the DB, prove a report, approve DS-017,
+change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bol_scope_auth_check.py
+.\scripts\run_bol_scope_auth_check.ps1
+py -3.12 scripts\bol_scope_auth_check.py --qualification-criteria-json
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 -m pytest backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check scripts\bol_scope_auth_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bol_scope_auth_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New scope-authority readiness checker, PowerShell wrapper, and
+  `--qualification-criteria-json` advertisement passed.
+- Focused backlog/readiness/crosswalk tests passed after updating stale active-plan
+  expectations and adding the human crosswalk row for `bol_scope_auth`.
+- Structural qualification validation passed; qualification status derived
+  `BLOCKED=1 NOT_RUN=20`; qualification selftest passed.
+- Change-impact passed as advisory for 15 touched paths, reporting
+  `qualification_parameterization_backlog` and `bol_scope_auth` crosswalk surfaces.
+- Focused ruff and mypy passed for touched scripts and focused tests.
+- First full `.\scripts\verify.ps1` run failed on the missing human crosswalk row and
+  stale readiness-core active-plan assertion. Both were fixed.
+- Second full `.\scripts\verify.ps1` passed in 581 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is readiness only. Bologna remains blocked until complete cited
+`ODP-BOL-001` pilot-scope authority exists, followed by `ODP-BOL-002` source rights,
+`ODP-BOL-003` recorded corpus, and `ODP-BOL-004` DB-backed report proof authority. P0
+remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
+## 2026-06-26 Bologna Scope-Pursuit Owner Answer
+
+**Scope:** Record the 2026-06-26 owner directive "pursue Bologna scope" as one
+review-only `ODP-BOL-001` owner answer while preserving the missing pilot-scope
+authority boundary. This does not select an AOI, approve sources or source rights,
+create a corpus, capture fixtures, seed the DB, prove a report, approve DS-017,
+change report/API/UI semantics, approve hosted/Level 10 authority, or change
+qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_odp1_owner_answer_packet_check.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 scripts\readiness_matrix_check.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+py -3.12 -m ruff check <touched scripts and focused tests>
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy <touched scripts and focused tests>
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Bologna owner-answer intake, ODP1 response gate, ODP1 owner-answer packet,
+  ODP2/ODP3/ODP4 response gates, pilot-scope authority, and qualification backlog
+  checkers passed.
+- The first focused test run caught stale approval-flag assumptions and the
+  project-readiness parser losing the backticked `EQ-5` task token. Both were fixed.
+- Focused Bologna/backlog/readiness artifact tests passed (`54 passed`).
+- The first readiness/status pass caught a missing active-plan citation to
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, and readiness matrix,
+  qualification status, structural qualification validation, and qualification selftest
+  passed.
+- Change-impact passed as advisory over 33 changed paths, with Bologna and
+  qualification-backlog crosswalk surfaces reported.
+- Focused ruff and mypy passed for the touched scripts and focused tests.
+- Full `.\scripts\verify.ps1` passed in 577 seconds: workspace validation,
+  qualification selftest, structural qualification validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped
+  because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This records review-only scope pursuit only. Bologna remains blocked
+until complete cited `ODP-BOL-001` pilot-scope authority exists, followed by
+`ODP-BOL-002` source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004`
+DB-backed report proof authority. P0 remains `BLOCKED`; all non-P0 statuses remain
+`NOT_RUN`.
+
+## 2026-06-23 Post-ODP1 Packet Authority Routing
+
+**Scope:** Route current state after PR #161 so the ODP-BOL-001 owner-answer packet is
+treated as merged and complete, while preserving the external-owner-authority blocker
+for Bologna product/AOI/scope. This does not record owner authority, select an AOI,
+approve sources, change source rights, create a recorded corpus, capture fixtures,
+seed the DB, prove a report, change API/UI/report semantics, approve hosted/Level 10
+authority, or change qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_parameterization_backlog_check.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline backlog checker, readiness matrix, and focused routing tests passed before
+  edits.
+- First focused post-edit pass caught two routing issues: the exact
+  `EQ-5 qualification parameterization backlog check` fragment was split across a
+  newline, and the active plan did not cite `state/LEVEL_9_10_GATE_MATRIX.md`.
+  Both were corrected.
+- Focused backlog checker and readiness matrix passed after the fixes.
+- Focused readiness/backlog/ODP1 packet tests passed (`19 passed`).
+- Qualification status passed with `passed=34 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the existing blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Focused ruff and mypy passed.
+- Explicit changed-path qualification impact passed as advisory over 9 changed paths.
+- Diff hygiene and no-deletion checks passed.
+- Full `.\scripts\verify.ps1` passed in 557 seconds: workspace validation,
+  qualification selftest, qualification structural validation, qualification status,
+  default change-impact, P0 auto-evidence, qualification parameterization backlog,
+  backend tests, backend ruff, and backend mypy all passed. DB smoke was skipped
+  because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is routing cleanup only. The next substantive Bologna step
+still requires cited owner authority for `ODP-BOL-001` product/AOI/scope. P0 remains
+`BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
+## 2026-06-23 ODP-BOL-001 Owner-Answer Packet
+
+**Scope:** Add a validate-only ODP-BOL-001 owner-answer packet that makes the next
+external Bologna product/AOI/scope response machine-checkable. This does not record
+owner authority, select an AOI, approve sources, change source rights, create a
+recorded corpus, capture fixtures, seed the DB, prove a report, change report/API/UI
+semantics, approve hosted/Level 10 authority, or change qualification status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_answer_packet_check.py
+.\scripts\run_bologna_odp1_owner_answer_packet_check.ps1
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 -m ruff check scripts\bologna_odp1_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp1_owner_answer_packet_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_bologna_odp1_owner_answer_packet_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New packet checker, PowerShell wrapper, owner-answer intake checker, and ODP1
+  response-gate checker passed.
+- EQ-5 backlog checker passed after project-state wording was corrected so its
+  fail-closed exact-fragment check could see
+  `EQ-5 qualification parameterization backlog check`.
+- Focused packet/intake/ODP1/readiness/backlog tests passed (`32 passed`).
+- Qualification status initially failed because the new checker was crosswalk-mapped
+  but did not advertise criterion IDs. The checker entrypoint was updated to use the
+  standard `--qualification-criteria-json` advertisement hook, and status then passed:
+  `passed=34 not_run=2 unexpected_failed=0`, derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the existing blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Focused ruff passed. Focused mypy first found a boolean predicate type issue in the
+  updated backlog checker and backend import-path noise when run from repo root; the
+  predicate was fixed, and mypy passed with `PYTHONPATH`/`MYPYPATH` set to `backend`.
+- Change-impact passed as advisory over 17 changed paths, mapping the new
+  `bologna_odp1_owner_answer_packet` surface to `P0-001`, `G-021`, `R-005`, and
+  `Q3-029`, plus the existing qualification-backlog surface.
+- Diff hygiene and no-deletion checks passed.
+- First full `.\scripts\verify.ps1` attempt timed out at the 5-minute tool limit
+  before a result was available. A later full rerun passed in 576 seconds: workspace
+  validation, qualification selftest, qualification structural validation,
+  qualification status, default change-impact, P0 auto-evidence, qualification
+  parameterization backlog, backend tests, backend ruff, and backend mypy all passed.
+  DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This packet makes the next owner response exact and checkable, but
+it cannot create authority. Bologna remains externally blocked until cited owner
+authority exists for `ODP-BOL-001` product/AOI/scope, followed in sequence by
+`ODP-BOL-002` source rights, `ODP-BOL-003` recorded corpus, and `ODP-BOL-004`
+DB-backed report proof. P0 remains `BLOCKED`; all non-P0 statuses remain `NOT_RUN`.
+
+## 2026-06-23 EQ-R Residual Reconciliation Closeout
+
+**Scope:** Close EQ-R by refreshing `state/residual-reconciliation.md` to live main
+`74af6f5a26594e80efed0fb4cfa9015e7e9e135d`, explicitly recording the 17 remaining
+dirty-root candidate files as `DEFER_STILL_BLOCKED`, and routing EQ-R to done without
+extracting or promoting any deferred product slice. This does not change
+Bologna/source/report/API/DB/runtime behavior, qualification status, hosted authority,
+or any owner/source/AOI decision.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_residual_reconciliation_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path backend/tests/test_qualification_parameterization_backlog_artifacts.py --changed-path backend/tests/test_readiness_core_artifacts.py --changed-path backend/tests/test_residual_reconciliation_artifacts.py --changed-path plans/2026-06-23-eqr-residual-closeout.md --changed-path plans/README.md --changed-path scripts/qualification_parameterization_backlog_check.py --changed-path state/PROJECT_STATE.md --changed-path state/VALIDATION_LOG.md --changed-path state/WORKLOG.md --changed-path state/residual-reconciliation.md --changed-path tasks/task_queue.yaml
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_residual_reconciliation_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline EQ-5 checker, readiness matrix, and focused readiness/backlog tests passed
+  before edits.
+- New focused tests first failed only on the intended stale residual SHA, stale active
+  plan, and queued EQ-R routing assertions.
+- Post-edit focused residual/readiness/backlog tests passed (`13 passed`).
+- EQ-5 backlog checker passed after it was narrowed to validate the EQ-5 task/spec and
+  blocked authority boundary without pinning the current active plan forever.
+- Readiness matrix passed after the EQ-R plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md` and preserved Level 9/10 authority context.
+- Qualification status passed with `passed=33 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with expected blocked-readiness warnings
+  for template domain profiles, draft targets, draft contracts, and draft judgment
+  rubrics.
+- Change-impact passed as advisory over 11 changed paths; the mapped surface remained
+  `qualification_parameterization_backlog` with criteria `P0-001`, `P0-014`,
+  `P0-017`, `P0-025`, and `G-021`.
+- Ruff, diff hygiene, and no-deletion checks passed.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** EQ-R is a control-plane closeout only. The 17 deferred dirty-root
+paths remain decaying candidate evidence, not live product authority. Future use of
+any deferred file requires a fresh current-main worktree, focused plan, tests, and
+validation. Bologna remains externally blocked until cited owner authority exists for
+ODP-BOL-001 product/AOI/scope, then ODP-BOL-002 source rights, then ODP-BOL-003
+recorded corpus, then ODP-BOL-004 DB-backed report proof. P0 remains `BLOCKED`; all
+non-P0 statuses remain `NOT_RUN`.
+
+## 2026-06-23 EQ-5 Qualification Parameterization Backlog Check
+
+**Scope:** Add a validate-only EQ-5 consistency checker for the qualification
+parameterization backlog, owner-decision packet, owner-decision ledger, Bologna
+owner-answer intake, qualification status, qualification targets, selected DS-002 source
+profile, task routing, and verification wiring. This does not resolve any
+external/owner authority blocker or change Bologna/source/report/API/DB/runtime
+behavior.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+.\scripts\run_qualification_parameterization_backlog_check.ps1
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\qualification_parameterization_backlog_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+$python = py -3.12 -c "import sys; print(sys.executable)"
+& $python scripts\qualification_status_check.py --root . --python-command $python
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path <changed path> [...]
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- New EQ-5 checker passed with 11 owner-decision blockers, DS-002 as the only selected
+  source profile, W-003/W-011 as the only frozen criterion bindings, and P0 `BLOCKED`.
+- PowerShell wrapper passed.
+- Checker advertisement passed for `G-021`, `P0-001`, `P0-014`, `P0-017`, and
+  `P0-025`.
+- Structural qualification validation first failed because the new shell wrapper was not
+  mapped in `readiness_crosswalk.yaml`; after adding the crosswalk entry and companion
+  doc row, structural validation passed.
+- Readiness matrix and qualification status first reflected the active-plan citation
+  omission; after adding the Level 9/10 gate matrix citation to the EQ-5 plan, readiness
+  matrix passed and status derivation returned `BLOCKED=1 NOT_RUN=20`.
+- Focused backlog tests passed, including the fail-closed injected owner-answer case.
+- Focused readiness-core plus backlog tests passed (`12 passed`) after updating the
+  app-model expectation to the EQ-5 active plan and completed task.
+- Ruff passed for the new checker and touched focused tests.
+- Change-impact passed as advisory over 15 changed paths; the mapped surface is
+  `qualification_parameterization_backlog` with criteria `P0-001`, `P0-014`,
+  `P0-017`, `P0-025`, and `G-021`.
+- Full `.\scripts\verify.ps1` passed after the focused readiness-core assertion was
+  corrected. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** EQ-5 is complete only as a blocked-state consistency control.
+Bologna remains externally blocked until cited owner authority exists for ODP-BOL-001
+product/AOI/scope, then ODP-BOL-002 source rights, then ODP-BOL-003 recorded corpus,
+then ODP-BOL-004 DB-backed report proof. P0 remains `BLOCKED`; all non-P0 statuses
+remain `NOT_RUN`.
+
+## 2026-06-23 BOL-POST-ODP4-AUTH Post-ODP4 Bologna Authority Routing
+
+**Scope:** Mark the merged `BOL-ODP4-GATE` response gate complete in routing/state and
+record that the next substantive Bologna work requires external owner authority for
+`ODP-BOL-001`, `ODP-BOL-002`, `ODP-BOL-003`, and then `ODP-BOL-004`. This does not
+record owner answers, approve a Bologna AOI, approve sources, change source rights,
+create a recorded corpus, capture fixtures, seed the DB, create report artifacts,
+change API/report semantics, change qualification status, approve hosted authority, or
+claim Level 10.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline ODP4 gate passed before edits.
+- Baseline owner-answer intake passed before edits.
+- Baseline qualification status passed with `passed=32 not_run=2 unexpected_failed=0`
+  and derived `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural qualification validation passed with expected blocked-readiness
+  warnings for template domain profiles, draft targets, draft contracts, and draft
+  judgment rubrics.
+- Post-edit ODP4 gate and owner-answer intake passed.
+- Post-edit qualification status passed with `passed=32 not_run=2 unexpected_failed=0`
+  and derived `BLOCKED=1 NOT_RUN=20`.
+- Post-edit structural qualification validation passed with the same expected
+  blocked-readiness warnings.
+- Focused ODP4/owner-answer/routing artifact tests passed (`25 passed`).
+- Qualification validator selftest passed.
+- Readiness-matrix checking passed.
+- Explicit change-impact checking over the eight changed paths passed as advisory,
+  with one expected domain/rubric review group from the backlog artifact test path and
+  no crosswalk-surface drift.
+- Focused ruff passed after wrapping one long assertion line.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy. DB smoke was skipped because
+  `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** The Bologna DB-backed report proof remains externally blocked. The
+response-gate scaffold is complete, but `current_owner_answers` and authority records
+remain empty; no DB-backed Bologna report proof can be claimed until owner authority is
+cited and recorded in the required sequence.
+
+## 2026-06-23 BOL-ODP4-GATE Bologna ODP-BOL-004 DB Report Proof Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-004 DB-backed Bologna report proof response gate
+and route BOL-ODP3-GATE to done / BOL-ODP4-GATE to active. This does not record owner
+answers, report-proof authority, corpus authority, source-authority records,
+source-rights approvals, DB report runs, DB seeds, report artifacts, API changes,
+runtime artifacts, DS-017 approval, qualification status changes, hosted authority, or
+Level 10 claims.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp4_db_report_proof_response_gate_check.py
+.\scripts\run_bologna_odp4_db_report_proof_response_gate_check.ps1
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\bologna_odp4_db_report_proof_response_gate_check.py
+py -3.12 scripts\qualification_p0_evidence_check.py
+py -3.12 scripts\qualification_change_impact_check.py --changed-path <changed path> [...]
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_odp4_db_report_proof_response_gate_check.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 -m mypy scripts\bologna_odp4_db_report_proof_response_gate_check.py backend\tests\test_bologna_odp4_db_report_proof_response_gate_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline ODP3 gate, owner-answer intake, qualification status, and focused
+  Bologna/routing tests passed before edits.
+- New ODP-BOL-004 DB report proof response gate checker and wrapper passed.
+- Existing ODP3 and owner-answer intake checkers still passed.
+- Focused ODP4/ODP3/owner-answer/routing tests passed (`32 passed`).
+- First qualification-status run failed because `Q1-018` and `Q2-020` in the ODP4
+  crosswalk caused governance/maintainability overlay status drift. The crosswalk was
+  narrowed to authority/report-lineage criteria; caveat/artifact requirements remain in
+  the ODP4 config, checker, runbook, and tests.
+- Structural qualification validation passed with expected blocked-readiness warnings.
+- Qualification status passed with `BLOCKED=1 NOT_RUN=20` and `passed=32`.
+- Readiness-matrix checking passed after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Direct qualification-checker advertisement passed for
+  `scripts/bologna_odp4_db_report_proof_response_gate_check.py` with `P0-001`,
+  `Q1-003`, `Q1-033`, `DQ-018`, `Q3-020`, `R-005`, and `Q3-029`.
+- Explicit change-impact checking over the changed and untracked paths passed and mapped
+  the new config/checker to `bologna_odp4_db_report_proof_response_gate`.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy. DB smoke
+  was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP4-GATE is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. `ODP-BOL-001`, `ODP-BOL-002`,
+`ODP-BOL-003`, and `ODP-BOL-004` still have no owner answers or authority records;
+recorded corpus, fixtures, DB-backed report proof, BSA-001, hosted authority, and Level
+10 remain blocked. DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1`
+was not set.
+
+## 2026-06-23 BOL-ODP3-GATE Bologna ODP-BOL-003 Corpus Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-003 recorded-source corpus response gate and
+route BOL-ODP2-GATE to done / BOL-ODP3-GATE to active. This does not record owner
+answers, corpus authority, source-authority records, source-rights approvals, recorded
+corpus references, fixture capture, source-failure fixture capture, DB seed,
+runtime/report artifacts, DS-017 approval, qualification status changes, hosted
+authority, or Level 10 claims.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp3_corpus_response_gate_check.py
+.\scripts\run_bologna_odp3_corpus_response_gate_check.ps1
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\bologna_odp3_corpus_response_gate_check.py
+py -3.12 scripts\qualification_p0_evidence_check.py
+py -3.12 scripts\qualification_change_impact_check.py --changed-path <changed path> [...]
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_odp3_corpus_response_gate_check.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 -m mypy scripts\bologna_odp3_corpus_response_gate_check.py backend\tests\test_bologna_odp3_corpus_response_gate_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline ODP2 gate, owner-answer intake, recorded-source corpus checker,
+  qualification status, and focused Bologna/routing tests passed before edits.
+- New ODP-BOL-003 corpus response gate checker and wrapper passed.
+- Existing ODP2, owner-answer intake, and recorded-source corpus checkers still passed.
+- Focused ODP3/ODP2/owner-answer/corpus/routing tests passed (`38 passed`).
+- Structural qualification validation passed with expected blocked-readiness warnings.
+- Qualification status passed with `BLOCKED=1 NOT_RUN=20` and `passed=31`.
+- Readiness-matrix checking passed.
+- Direct qualification-checker advertisement passed for
+  `scripts/bologna_odp3_corpus_response_gate_check.py` with `P0-001`, `Q1-003`,
+  `Q1-033`, `DQ-018`, `Q3-020`, `R-005`, and `Q3-029`.
+- Explicit change-impact checking over the changed and untracked paths passed and mapped
+  the new config/checker to `bologna_odp3_corpus_response_gate`.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy. DB smoke
+  was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP3-GATE is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. `ODP-BOL-001`, `ODP-BOL-002`, and
+`ODP-BOL-003` still have no owner answers or authority records; recorded corpus,
+fixtures, DB-backed report proof, BSA-001, hosted authority, and Level 10 remain
+blocked. DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
+
+## 2026-06-23 BOL-ODP1-GATE Bologna ODP-BOL-001 Owner-Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-001 owner-response gate and route BOL-ODP-1
+to done / BOL-ODP1-GATE to active. This does not record owner answers, pilot-scope
+authority, AOI selection, source approval, source-rights changes, corpus approval,
+fixture capture, DB seed, report/runtime artifacts, DS-017 approval, qualification
+status changes, hosted authority, or Level 10 claims.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+.\scripts\run_bologna_odp1_owner_response_gate_check.ps1
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+cd backend; py -3.12 -m pytest -q tests\test_bologna_odp1_owner_response_gate_artifacts.py tests\test_bologna_owner_answer_intake_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-23T12:00:00Z
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_checker_advertisement.py --checker scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 -m ruff check scripts\bologna_odp1_owner_response_gate_check.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_odp1_owner_response_gate_check.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline owner-answer intake checker, pilot-scope authority checker, qualification
+  status, and focused Bologna/routing tests passed before edits.
+- New ODP-BOL-001 owner-response gate checker and wrapper passed.
+- Owner-answer intake and pilot-scope authority checkers still passed.
+- First focused test run failed only on a brittle backlog assertion that crossed a
+  Markdown line wrap; the assertion was narrowed to stable terms.
+- Focused ODP-BOL-001/owner-answer/pilot-scope/routing tests passed (`37 passed`).
+- Structural qualification validation passed with expected blocked-readiness warnings.
+- Qualification status passed with `BLOCKED=1 NOT_RUN=20`.
+- Readiness-matrix checking passed.
+- Direct qualification-checker advertisement passed for
+  `scripts/bologna_odp1_owner_response_gate_check.py`.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `368` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP1-GATE is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. `ODP-BOL-001` still has no owner
+answer or authority record; BSA-001 remains blocked. DB smoke was not run locally in
+this pass because `RUN_DB_SMOKE=1` was not set.
+
+## 2026-06-23 BOL-ODP-1 Bologna Owner-Answer Intake
+
+**Scope:** Add a validate-only Bologna owner-answer intake for ODP-BOL-001 through
+ODP-BOL-004 and route OWNER-DEC-1 to done / BOL-ODP-1 to active. This does not record
+owner answers, grant source/AOI/corpus/report authority, capture fixtures, seed the DB,
+create runtime/report artifacts, approve DS-017, change qualification status, or claim
+hosted/Level 10 authority.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+.\scripts\run_bologna_owner_answer_intake_check.ps1
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+cd backend; py -3.12 -m pytest -q tests\test_bologna_owner_answer_intake_artifacts.py tests\test_bologna_pilot_scope_authority_artifacts.py tests\test_bologna_source_authority_intake_artifacts.py tests\test_bologna_source_rights_artifacts.py tests\test_bologna_recorded_source_corpus_artifacts.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-23T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\bologna_owner_answer_intake_check.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\bologna_owner_answer_intake_check.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Baseline direct Bologna validators passed.
+- Baseline backend-cwd focused Bologna/routing tests passed (`53 passed`). The root-cwd
+  version failed on `app` import and was rerun from `backend`.
+- Baseline qualification status passed with `BLOCKED=1 NOT_RUN=20`; structural
+  qualification validation passed with expected blocked-readiness warnings.
+- New owner-answer intake checker and wrapper passed.
+- Existing Bologna validators still passed.
+- Focused owner-answer/Bologna/routing tests passed (`60 passed`).
+- Initial qualification status failed because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected, readiness-matrix passed,
+  and qualification status passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest passed.
+- First full `.\scripts\verify.ps1` failed in backend tests because
+  `docs/qualification/readiness-crosswalk.md` did not list the new
+  `bologna_owner_answer_intake` mapped surface. Added the doc row and reran the failed
+  crosswalk test with owner-answer tests; focused tests passed (`8 passed`).
+- Structural qualification validation and qualification status remained passing after
+  the doc fix, with status `BLOCKED=1 NOT_RUN=20`.
+- Diff hygiene passed and no tracked deletions were reported.
+- Final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `367` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** BOL-ODP-1 is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. Every ODP-BOL owner answer
+remains missing; BSA-001 remains blocked. DB smoke was not run in this pass because
+`RUN_DB_SMOKE=1` was not set.
+
+## 2026-06-22 OWNER-DEC-1 Owner Decision Consequence Packet
+
+**Scope:** Add a non-authorizing owner decision packet and route QFREEZE-1 to done /
+OWNER-DEC-1 to active. This does not freeze additional targets, rubrics, domain
+profiles, source profiles, Bologna AOI/source/corpus/report authority, P0 protocol,
+DS-017, hosted authority, runtime proof, or Level 10 status.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+cd backend; py -3.12 -m pytest -q tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-22T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial root-cwd focused pytest failed because `backend/tests/test_readiness_core_artifacts.py`
+  imports `app.*`; this was a command-shape issue, not a product failure.
+- Backend-cwd focused pytest passed (`9 passed`) before edits.
+- Baseline qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural qualification validation passed with expected blocked-readiness
+  warnings for template-only domain profiles, draft qualification targets, 96 draft
+  criterion contracts, and 19 draft judgment rubrics.
+- Packet and routing tests were updated to require `state/owner-decision-packet.md`,
+  non-authorizing packet language, QFREEZE-1 done, and OWNER-DEC-1 active.
+- Focused packet/routing tests passed (`10 passed`) after the active plan cited
+  `state/LEVEL_9_10_GATE_MATRIX.md`.
+- Readiness-matrix checking passed.
+- Direct qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed with the expected blocked-readiness
+  warnings.
+- Focused ruff and focused mypy passed.
+- Qualification validator selftest initially exceeded a 124 second command timeout, then
+  passed when rerun with a longer timeout.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** OWNER-DEC-1 is not complete until review, GitHub checks, merge,
+detached post-merge proof, and worktree cleanup pass. P0 must remain `BLOCKED`; all
+non-P0 statuses must remain `NOT_RUN`.
+
+## 2026-06-22 QFREEZE-1 Authorized Scope/Source Freeze
+
+**Scope:** Record the 2026-06-22 owner-authorized conservative defaults, bind DS-002,
+freeze the explicitly authorized scope/version/source fields, and freeze only W-003 and
+W-011 target bindings. This does not promote P0 or any W gate to `PASS`, freeze
+domain-profile rubrics, freeze DQ/Q1/Q2/M thresholds, approve sources beyond DS-002,
+approve Bologna/DS-017/hosted authority, change DB/API/UI/report semantics, capture
+fixtures, create a corpus, seed the DB, or claim Level 10 authority.
+
+**Commands for this gate:**
+
+```powershell
+cd backend; py -3.12 -m pytest -q tests\test_qualification_status_check.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-22T12:00:00Z
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check backend\tests\test_qualification_status_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_qualification_status_check.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Baseline structural validation passed with blocked-readiness warnings for
+  template-only domains, empty source bindings, unresolved scope/version fields,
+  unresolved `ruleset_versions`, draft targets, draft criterion contracts, and draft
+  judgment rubrics.
+- Baseline focused backend qualification/routing tests passed (`15 passed`) before red
+  QFREEZE-1 tests were added.
+- Red focused tests failed on the expected missing DS-002 binding, missing owner
+  disposition, old blocker counts, HCV-4 active routing, and HCV-4 project-state
+  checkpoint.
+- Focused backend tests passed (`17 passed`).
+- Direct qualification status checking passed with `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed; warnings remain for template-only domain
+  profiles, draft qualification targets, 96 draft criterion contracts, and 19 draft
+  judgment rubrics.
+- Readiness-matrix checking passed after the active QFREEZE-1 plan cited the Level 9/10
+  gate matrix.
+- Qualification validator selftest passed all cases.
+- Focused ruff passed and focused mypy passed with `MYPYPATH=backend`.
+- Diff hygiene passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+- Independent review requested changes for four issues: QFREEZE owner authority needed a
+  branch-local decision record, P0 blocker references should preserve the generated
+  blocker source, W-011 evidence needed Docker Desktop rather than Docker CLI versioning,
+  and the frozen-binding test should prove the full frozen set.
+- Review response added `state/owner-decisions.md`, restored
+  `docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md` as a P0 blocker reference,
+  updated W-011 evidence to Docker Desktop `4.61.0`, and asserted exactly W-003/W-011
+  are frozen.
+- Review-response focused backend tests passed (`21 passed`); direct qualification
+  status checking still passed with `BLOCKED=1 NOT_RUN=20`; structural qualification
+  validation passed; readiness-matrix checking passed.
+- Post-review focused ruff/mypy, diff hygiene, and no-deletion check passed.
+- Final post-review `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status (`BLOCKED=1
+  NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and mypy over
+  `366` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** QFREEZE-1 is not complete until separate review, GitHub checks,
+merge, detached post-merge proof, and worktree cleanup pass. P0 must remain `BLOCKED`;
+all non-P0 statuses must remain `NOT_RUN`.
+
+## 2026-06-22 HCV-4 Status/Config Consistency
+
+**Scope:** Align qualification status derivation with the validator's unresolved P0
+parameterization blocker families, reconcile the approved DS-002 source-quality profile
+with production usage-rights vocabulary, and route current work from completed HCV-3 to
+active HCV-4. This does not promote any qualification gate to `PASS`, unfreeze owner
+decisions, bind new sources, approve Bologna/DS-017/hosted authority, change DB/API/UI/
+report semantics, create a corpus, capture fixtures, seed the DB, or claim Level 10
+authority.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_status_check.py::test_p0_stays_blocked_when_non_target_parameterization_is_unresolved
+py -3.12 -m pytest -q backend\tests\test_qualification_honest_blocked_status.py::test_active_source_profile_is_real_ds002_and_maps_production_usage_fields
+py -3.12 -m pytest -q backend\tests\test_qualification_parameterization_backlog_artifacts.py::test_task_queue_reflects_bologna_first_backlog_and_blocked_followons backend\tests\test_readiness_core_artifacts.py::test_project_readiness_app_model_loads_current_control_plane
+cd backend; py -3.12 -m pytest -q tests\test_qualification_status_check.py tests\test_qualification_honest_blocked_status.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_honest_blocked_status.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_honest_blocked_status.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused tests, structural qualification validation, qualification status
+  checking, and qualification selftest passed before HCV-4 red tests were added.
+- Red status-derivation test failed because `derive_statuses(...)` did not accept the
+  HCV-4 blocker inputs (`rubrics`, `domain_profiles`, `source_profiles`).
+- Red DS-002 profile test failed because rights values still used `CONDITIONAL` instead
+  of production source-registry vocabulary.
+- Red routing tests failed because the active plan still pointed to HCV-3 and HCV-4 was
+  queued.
+- Current implementation results: focused backend tests passed (`18 passed`); direct
+  status checking passed with `BLOCKED=1 NOT_RUN=20`; structural qualification
+  validation passed with the expected blocked-readiness warnings; readiness-matrix
+  checking passed; qualification selftest passed after a longer timeout; focused ruff
+  passed; focused mypy passed with `MYPYPATH=backend`; diff hygiene passed; no tracked
+  deletions were reported.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status (`BLOCKED=1 NOT_RUN=20`),
+  change-impact, P0 auto-evidence, backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+- GitHub checks, merge, and detached post-merge proof remain required.
+
+**Residual risk:** HCV-4 is not complete until focused/full validation, separate review,
+GitHub checks, merge, and detached post-merge proof pass. P0 must remain `BLOCKED`; all
+non-P0 statuses must remain `NOT_RUN`.
+
+## 2026-06-21 HCV-3 Crosswalk CI Gate Completeness
+
+**Scope:** Map readiness/release CI wrapper gates into the qualification readiness
+crosswalk and make future unmapped CI wrapper gates fail closed. This does not promote
+any qualification gate to `PASS`, unfreeze owner decisions, approve
+source/AOI/Bologna/DS-017/hosted authority, change DB/API/UI/report semantics, run
+backup/restore proof, seed the DB, or claim Level 10 authority.
+
+**Commands run so far:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_qualification_readiness_crosswalk.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_readiness_crosswalk.py
+py -3.12 -m mypy scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_readiness_crosswalk.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused crosswalk tests passed before HCV-3 red tests were added.
+- HCV-3 planning/routing was updated from live `origin/main@ba75f47` after HCV-2
+  merged and post-merge proof preserved `BLOCKED=1 NOT_RUN=20`.
+- Initial selftest after routing failed because the new HCV-3 plan omitted the
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 context needed by status derivation.
+  The plan was corrected; `py -3.12 scripts\qualification_status_check.py --root .`
+  then passed with `BLOCKED=1 NOT_RUN=20`.
+- Red focused crosswalk tests failed because no `gate_paths` mapped
+  `run_provenance_check.sh`, `run_security_scan.sh`, or
+  `run_backup_restore_check.ps1`.
+- Red qualification selftest failed because removing `scripts/run_security_scan.sh`
+  from a copied crosswalk did not produce `readiness_crosswalk: missing gate inventory
+  paths`.
+- After implementation, focused crosswalk tests passed and
+  `py -3.12 scripts\selftest_qualification_validator.py` passed all 35 selftest cases.
+- Structural qualification validation passed, status checking still derived
+  `BLOCKED=1 NOT_RUN=20`, readiness-matrix checking passed, focused ruff/mypy passed,
+  `git diff --check` passed, and the no-deletion check reported no tracked deletions.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed only because two
+  routing tests still expected HCV-2 as the active plan. Those assertions were updated
+  for HCV-3.
+- Focused routing tests then passed (`7 passed`), and final full
+  `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, change-impact, P0
+  auto-evidence, backend tests, ruff, and mypy over `366` source files. DB smoke was
+  skipped because `RUN_DB_SMOKE=1` was not set.
+- Separate review found a high-severity gap in the first HCV-3 implementation: the
+  validator derived CI workflow gates and the backup/restore release proof, but not the
+  rest of `config/release_readiness.yaml.required_checks[*].proof`. The validator and
+  focused artifact test now derive repo-local release proof wrappers from that
+  release-readiness inventory, the crosswalk maps those wrappers, and selftest removes
+  `scripts/run_incident_rollback_check.ps1` to prove release-proof drift fails closed.
+- Review-response validation passed:
+  `py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z`,
+  `py -3.12 scripts\qualification_status_check.py --root .` (`BLOCKED=1 NOT_RUN=20`),
+  `py -3.12 scripts\readiness_matrix_check.py`,
+  `py -3.12 scripts\selftest_qualification_validator.py` (36 selftest cases),
+  focused backend tests from `backend\` (`11 passed`), focused ruff, focused mypy,
+  `git diff --check`, and `git diff --name-only --diff-filter=D`.
+- Final review-response `.\scripts\verify.ps1` passed: workspace validation,
+  qualification selftest, structural qualification validation, qualification status
+  (`BLOCKED=1 NOT_RUN=20`), change-impact, P0 auto-evidence, backend tests, ruff, and
+  mypy over `366` source files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not
+  set.
+- Live `origin/main` advanced to PR #149 at
+  `e124db6ce002d472ad800dac6ac4af1633c746b4`; HCV-3 rebased cleanly to commit
+  `f615bb9`. Post-rebase focused validation passed: structural qualification
+  validation, qualification selftest, status checking (`BLOCKED=1 NOT_RUN=20`),
+  readiness-matrix checking, focused backend tests (`11 passed`), focused ruff, focused
+  mypy, `git diff --check origin/main..HEAD`, and
+  `git diff --name-only --diff-filter=D origin/main..HEAD`.
+
+**Residual risk:** HCV-3 implementation is in progress. HCV-4 remains queued; this
+lane does not resolve P0 blockers or approve Bologna, source, DS-017, hosted, or Level
+10 authority.
+
+## 2026-06-21 HCV-2 Checker Robustness And Security Hardening
+
+**Scope:** Harden HCV-2 checker surfaces for checklist dry-run assertions/path
+confinement, release-package manifest duplicate/secret detection, selected-county
+private-MVP connector/provenance binding, and Bologna pilot-scope PowerShell exit-code
+propagation. This does not promote any qualification gate to `PASS`, unfreeze owner
+decisions, approve source/AOI/Bologna/DS-017/hosted authority, change DB/API/UI/report
+semantics, create a corpus, capture fixtures, seed the DB, or claim Level 10
+authority.
+
+**Commands run so far:**
+
+```powershell
+py -3.12 -m pytest -q backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+py -3.12 scripts\checklist_dry_run_check.py
+py -3.12 scripts\private_mvp_readiness_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+.\scripts\run_checklist_dry_run_check.ps1
+.\scripts\run_private_mvp_readiness_check.ps1
+.\scripts\run_bologna_pilot_scope_authority_check.ps1
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 -m ruff check scripts\checklist_dry_run_check.py scripts\package_manifest_check.py scripts\private_mvp_readiness_check.py backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+py -3.12 -m mypy scripts\checklist_dry_run_check.py scripts\package_manifest_check.py scripts\private_mvp_readiness_check.py backend\tests\test_checklist_dry_run_artifacts.py backend\tests\test_package_manifest_check.py backend\tests\test_private_mvp_readiness.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results so far:**
+
+- Baseline focused HCV-2 tests passed before red tests were added.
+- The red test run failed on the intended missing checks: unsupported unordered/ordered
+  checklist markers, path traversal not rejected, empty `contains` / `regex`
+  assertions accepted, duplicate ZIP entries collapsed, `*.pem` / `*.key` /
+  `config/prod.*` package paths accepted, cross-county connector swaps accepted,
+  wrong source provenance expectation classes accepted, and missing PowerShell
+  `$LASTEXITCODE` guard.
+- After implementation, the focused HCV-2 tests passed cleanly.
+- Changed wrappers/checkers passed, including checklist dry-run, private-MVP
+  readiness, Bologna pilot-scope authority, and the Bologna PowerShell wrapper.
+- Structural qualification validation passed with the same blocked-readiness warnings
+  preserved.
+- Initial qualification status/selftest failed because the new active HCV-2 plan did
+  not preserve the readiness-matrix `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10
+  context. The plan was corrected, and status checking then passed with
+  `passed=27 not_run=2 unexpected_failed=0` and derived statuses
+  `BLOCKED=1 NOT_RUN=20`.
+- `py -3.12 scripts\selftest_qualification_validator.py` passed all 34 selftest
+  cases after the active-plan correction.
+- Focused ruff and mypy passed for all touched scripts/tests.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed only because
+  two routing tests still expected HCV-1 as the active plan. Those assertions were
+  updated to the HCV-2 active plan.
+- After correcting those routing assertions, focused routing tests passed (`7 passed`)
+  and final full `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, structural qualification validation, qualification status, change-impact,
+  P0 auto-evidence, backend tests, ruff, and mypy over `363` source files. DB smoke was
+  skipped because `RUN_DB_SMOKE=1` was not set.
+- After PR #146 advanced live `origin/main` to
+  `b5f6727bd5ab6b9264812e9943a24924eec54b29`, HCV-2 rebased cleanly. On the rebased
+  head, focused HCV-2 tests passed again, changed wrappers/checkers passed again,
+  structural qualification validation passed, status checking still derived
+  `BLOCKED=1 NOT_RUN=20`, qualification selftest passed all 34 cases, and
+  readiness-matrix checking passed. Full `.\scripts\verify.ps1` is being rerun before
+  force-push/PR merge.
+- Separate review then identified one medium checklist gap: empty paths and directories
+  could still pass as evidence/blocker artifacts through `require_existing()`. The
+  helper now requires a non-empty repo-local file, the committed dry-run catalog no
+  longer cites the `backend/tests/claims_engine` directory, and focused checklist
+  pytest plus `.\scripts\run_checklist_dry_run_check.ps1` passed after the review
+  response.
+- After the review response, the full focused HCV-2 suite passed, changed
+  wrappers/checkers passed, structural qualification validation passed, status checking
+  still derived `BLOCKED=1 NOT_RUN=20`, qualification selftest passed all 34 cases,
+  readiness-matrix checking passed, focused ruff/mypy passed, `git diff --check`
+  passed, the no-deletion check reported no tracked deletions, and final full
+  `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy over `366` source
+  files. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** DB smoke was not run locally because `RUN_DB_SMOKE=1` was not set.
+HCV-3 and HCV-4 remain queued; HCV-2 does not resolve P0 blockers or approve Bologna,
+source, DS-017, hosted, or Level 10 authority.
+
+## 2026-06-21 HCV-1 Qualification Validator Hardening
+
+**Scope:** Harden the empirical-qualification validator and result schema against the
+verified PR #126/#127 HCV-1 findings. This does not promote any qualification gate to
+`PASS`, unfreeze owner decisions, approve source/AOI/Bologna/DS-017/hosted authority,
+change DB/API/UI/report semantics, create a corpus, capture fixtures, seed the DB, or
+claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m py_compile .\scripts\validate_qualification.py .\scripts\selftest_qualification_validator.py
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --now 2026-06-21T12:00:00Z
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red selftest failed first because current main accepted an expired PASS gate.
+- After implementation, the qualification selftest passed all HCV-1 fail-closed cases:
+  expired PASS, gate mismatch, identity mismatch, broken per-criterion evidence,
+  blocked P0 with result path, missing PASS reviewer metadata, frozen-domain scope and
+  unresolved-field drift, source coverage drift, conditional rights without enforcement,
+  and RAW_EXPORT without export rights.
+- Structural qualification validation passed with `P0` still blocked and readiness
+  warnings preserved.
+- Initial status checking failed because the HCV active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 context; the plan was corrected and
+  the status checker then passed with `passed=27 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused routing artifact tests passed (`7 passed`).
+- Focused ruff passed, `git diff --check` passed, and no tracked deletions were
+  reported.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE` was
+  not set.
+- Initial PR #144 CI failed in `qualification-selftest`, `verify`, and `db-verify`
+  because the P0 blocked-record selftest used a Windows-specific outside-repo path
+  (`C:/outside-repo.md`). The selftest was corrected to use the temporary fixture's
+  parent directory so POSIX and Windows both exercise the same repo-locality failure.
+- After the platform-independent selftest correction,
+  `py -3.12 scripts\selftest_qualification_validator.py` passed again locally.
+- Final local `.\scripts\verify.ps1` passed after the selftest correction. DB smoke was
+  still skipped because `RUN_DB_SMOKE` was not set.
+- PR #144 review then identified six remaining fail-closed gaps. Added selftest cases
+  and validator/schema fixes for repo-local-only PASS evidence, non-string PASS expiry
+  values, independent reproduction metadata, frozen `spatial_temporal_tolerances`,
+  selected-source coverage for every target domain, and conditional commercial-use
+  rights enforcement. `py -3.12 scripts\selftest_qualification_validator.py` passed
+  with those review-response cases included.
+- Focused compile/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed after the review-response fixes, and final local `.\scripts\verify.ps1`
+  passed again. DB smoke was skipped locally because `RUN_DB_SMOKE` was not set.
+- After PR #145 advanced `origin/main` to
+  `816a4dd39d174d0b3689837a489879031e49113d`, HCV-1 was rebased cleanly and focused
+  compile/selftest/validation/status/change-impact/artifact-test/ruff/diff checks
+  passed again with no tracked deletions.
+- Final local `.\scripts\verify.ps1` passed on the PR #145 base. DB smoke was skipped
+  locally because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** HCV-2 through HCV-4 remain queued. HCV-1 hardens the validator and
+schema only; it does not resolve P0 blockers, create qualification results, approve
+Bologna/source/DS-017/hosted authority, or prove Level 10 readiness.
+
+## 2026-06-21 Bologna Source Authority Record Contract
+
+**Scope:** Add a machine-checked source-authority record contract to the blocked Bologna
+source-authority intake guard. This does not approve product, AOI, sources,
+source-rights, DS-017, hosted, or Level 10 authority; does not change source-rights
+decisions; does not create a corpus, fixture, DB seed, runtime artifact, report proof,
+source registry row, source profile, domain profile, or qualification result; and does
+not move any qualification status to `PASS`.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_source_authority_intake_artifacts.py -q
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red TDD check failed first because `source_authority_record_contract` and the
+  source-authority record validator did not exist.
+- After implementation, source-authority intake tests passed (`13 passed`).
+- Bologna source-authority intake checker passed while the committed
+  `current_source_authority_records` list remained empty.
+- Initial focused qualification status check failed because the active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` or preserve explicit Level 9/10 context. The plan
+  was corrected to cite the matrix and keep Level 9/10 context.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checkers passed while remaining validate-only and blocked.
+- Qualification status passed with checker results `passed=27 not_run=2
+  unexpected_failed=0` and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Qualification change-impact passed with no changed-path impacts.
+- Focused routing/Bologna artifact pytest passed (`50 passed`).
+- `git diff --check` passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE` was
+  not set.
+
+**Residual risk:** `current_source_authority_records` remains empty and `BSA-001`
+remains blocked because no external product/AOI/source-review authority is cited. This
+slice proves the future source-authority record validation path; it does not satisfy the
+authority blocker or authorize source-rights/corpus/report work.
+
+## 2026-06-21 Bologna Authority Record Validation
+
+**Scope:** Extend the blocked Bologna pilot-scope authority checker so it can validate
+a complete future authority record shape in test isolation while preserving the empty
+committed authority-record list. This does not approve product, AOI, sources,
+source-rights, DS-017, hosted, or Level 10 authority; does not change source-rights
+decisions; does not create a corpus, fixture, DB seed, runtime artifact, report proof,
+source registry row, source profile, domain profile, or qualification result; and does
+not move any qualification status to `PASS`.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py -q
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red TDD check failed first because the checker rejected every non-empty
+  `current_authority_records` list before validating record content.
+- After implementation, pilot-scope authority tests passed (`14 passed`).
+- Bologna pilot-scope authority checker passed while the committed
+  `current_authority_records` list remained empty.
+- Bologna source-authority intake, source-rights, and recorded-source corpus checkers
+  passed while remaining validate-only and blocked.
+- Qualification status passed with checker results `passed=27 not_run=2
+  unexpected_failed=0` and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Qualification change-impact passed with no changed-path impacts.
+- Focused routing/Bologna artifact pytest passed (`46 passed`).
+- `git diff --check` passed and no tracked deletions were reported.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE` was
+  not set.
+
+**Residual risk:** `current_authority_records` remains empty and `BSA-001` remains
+blocked because no external product/AOI/source-review authority is cited. This slice
+proves the future complete authority-record validation path; it does not satisfy the
+authority blocker or authorize corpus/report work.
+
+## 2026-06-21 Bologna Authority Record Contract
+
+**Scope:** Add a machine-checked authority-record contract to the blocked Bologna
+pilot-scope authority packet. This does not approve product, AOI, sources,
+source-rights, DS-017, hosted, or Level 10 authority; does not change source-rights
+decisions; does not create a corpus, fixture, DB seed, runtime artifact, report proof,
+source registry row, source profile, domain profile, or qualification result; and does
+not move any qualification status to `PASS`.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py -q
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red TDD check failed first because `config/bologna_pilot_scope_authority.yaml` had
+  no `authority_record_contract`.
+- After implementation, pilot-scope authority tests passed (`11 passed`).
+- Initial focused validation found `scripts/readiness_matrix_check.py` failing through
+  the qualification status checker because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` or preserve explicit Level 9/10 authority context.
+  The plan was corrected to cite the matrix and keep Level 9/10 context.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checkers passed while remaining validate-only and blocked.
+- Qualification status passed with checker results `passed=27 not_run=2
+  unexpected_failed=0` and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Qualification change-impact passed with no changed-path impacts.
+- Focused routing/Bologna artifact pytest passed (`43 passed`).
+- `git diff --check` passed and no tracked deletions were reported.
+- Initial full `.\scripts\verify.ps1` reached backend tests and failed because the
+  active validation-log section did not yet list `.\scripts\verify.ps1`, causing the
+  project-readiness parser test to reject the active validation evidence. This log was
+  updated before rerunning full verification.
+- Targeted project-readiness parser test passed after the validation-log correction.
+- Final `git diff --check`, no tracked-deletion check, and full `.\scripts\verify.ps1`
+  passed. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** `current_authority_records` remains empty and `BSA-001` remains
+blocked because no external product/AOI/source-review authority is cited. This slice
+makes the future authority evidence format executable; it does not satisfy the
+authority blocker or authorize corpus/report work.
+
+## 2026-06-21 Post-EQP2 Bologna Authority Routing Sync
+
+**Scope:** Close the completed EQ Phase 2 routing loop and make the active routing point
+at the Bologna product/AOI/source-rights authority gate. This does not approve product,
+AOI, source, source-rights, DS-017, hosted, or Level 10 authority; does not change
+source-rights decisions; does not create a corpus, fixture, DB seed, runtime artifact,
+report proof, source registry row, source profile, domain profile, or qualification
+result; and does not move any qualification status to `PASS`.
+
+**Commands run:**
+
+```powershell
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_change_impact_check.py --root .
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_bologna_recorded_source_corpus_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Initial focused validation found `scripts/readiness_matrix_check.py` failing through
+  the qualification status checker because the new active plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md` or preserve explicit Level 9/10 authority context.
+  The plan was corrected to cite the matrix and keep Level 9/10 context.
+- Bologna pilot-scope authority, source-authority intake, source-rights, and
+  recorded-source corpus checkers passed while remaining validate-only and blocked.
+- Qualification status passed with checker results `passed=27 not_run=2
+  unexpected_failed=0` and derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Qualification change-impact and P0 auto-evidence checks passed without changing
+  status.
+- Focused routing/Bologna artifact pytest passed (`41 passed`).
+- `git diff --check`, no tracked-deletion check, and full `.\scripts\verify.ps1`
+  passed. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** `BSA-001` remains blocked because no external product/AOI/source-review
+authority is cited. This sync makes the blocker active and explicit; it does not satisfy
+the blocker or authorize corpus/report work.
+
+## 2026-06-21 EQP2-4 Checker Advertisement Parity
+
+**Scope:** Make crosswalk-mapped readiness/authority checkers advertise their mapped
+criterion IDs in machine-readable form, make validation prove checker/crosswalk parity,
+and make status derivation consume the checker-advertised IDs. This does not change
+checker gate behavior, move any qualification to `PASS`, create a P0 result artifact,
+unfreeze owner/source/AOI/Bologna/hosted/DS-017 decisions, capture fixtures, run
+connectors, seed the database, change API/auth/report semantics, or claim Level 10.
+
+**Commands run:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_checker_advertisement.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_spine.py -q
+py -3.12 scripts\source_readiness.py --qualification-criteria-json
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\qualification_change_impact_check.py --root .
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+ruff check scripts\qualification_checker_advertisement.py scripts\qualification_status_check.py scripts\validate_qualification.py scripts\selftest_qualification_validator.py backend\tests\test_qualification_checker_advertisement.py backend\tests\test_qualification_status_check.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- RED focused tests failed before implementation because mapped checkers did not emit
+  advertisement JSON, `scripts/qualification_checker_advertisement.py` did not exist,
+  `qualification_status_check.py` did not carry checker-advertised criterion IDs, and
+  validator parity checking did not exist.
+- Added the shared advertisement helper and opt-in checker hooks for all 29
+  crosswalk-mapped checker paths.
+- Direct `source_readiness.py --qualification-criteria-json` emitted
+  `qualification_checker_advertisement_v1` with criterion IDs `DQ-001`, `DQ-018`,
+  `Q1-012`, and `S-016`.
+- Initial full verify failed because checker modules imported by tests could not see
+  the helper at module-import time and two routing tests still expected EQP2-3 active.
+  Moved the helper import inside the `__main__` advertisement hook and updated routing
+  tests to EQP2-4.
+- Focused EQP2-4 tests passed.
+- Direct qualification validator, status checker, selftest, change-impact checker, and
+  P0 auto-evidence checker passed.
+- Final `.\scripts\verify.ps1` passed workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change impact,
+  qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke was skipped
+  because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Checker advertisements intentionally derive from the canonical
+crosswalk rather than duplicating criterion IDs in every checker. This avoids a second
+mapping authority and proves every mapped checker participates in the reporting
+protocol, but semantic criterion mapping correctness still belongs to crosswalk review.
+P0 remains blocked and no status moves to `PASS`.
+
+## 2026-06-21 EQP2-3 Blocked P0 Repo-Local Auto-Evidence
+
+**Scope:** Collect repo-local evidence pointers for `P0-004`, `P0-005`,
+`P0-021`, and `P0-023`; link the evidence artifact from the blocked P0 status;
+and keep every row plus the P0 gate blocked. This does not claim criterion PASS,
+create a P0 result artifact, run P0, freeze targets, approve owner decisions,
+approve Bologna, capture fixtures, run connectors, seed the database, approve
+DS-017, provision hosted services, or claim Level 10 authority.
+
+**Commands run:**
+
+```powershell
+py -3.12 -m pytest backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py -q
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_change_impact_check.py --root .
+ruff check scripts\qualification_p0_evidence_check.py backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+Push-Location backend; $env:PYTHONPATH='.'; py -3.12 -m mypy ..\scripts\qualification_p0_evidence_check.py tests\test_qualification_p0_auto_evidence.py tests\test_qualification_spine.py tests\test_qualification_parameterization_backlog_artifacts.py tests\test_readiness_core_artifacts.py; Pop-Location
+.\scripts\qualification_p0_evidence_check.ps1 -PythonCommand <python-3.12-executable>
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+py -3.12 scripts\qualification_change_impact_check.py --root . --changed-path docs/qualification/P0_AUTO_EVIDENCE.yaml --changed-path scripts/qualification_p0_evidence_check.py --changed-path backend/tests/test_qualification_p0_auto_evidence.py
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_error_safety.py -q
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+git fetch origin main --prune
+git rebase origin/main
+git diff --name-only --diff-filter=D origin/main
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Red focused tests failed before implementation because the P0 auto-evidence
+  artifact, checker/wrappers, status link, backlog rows, and verify/CI wiring did
+  not exist.
+- Direct P0 auto-evidence checker passed after implementation, reporting the four
+  selected criteria, `auto_evidenced_still_target_blocked`, and effective P0
+  `BLOCKED`.
+- Focused P0/routing suites passed after adding the active-plan updates and the
+  existing honest-blocked-status assertion was updated to expect the new blocked
+  evidence reference while preserving `result_path: null`.
+- A status/selftest drift appeared when the new active EQP2-3 plan did not cite
+  `state/LEVEL_9_10_GATE_MATRIX.md`; adding that Level 9/10 authority context to
+  the plan restored `qualification_status_check.py` and
+  `selftest_qualification_validator.py` to green.
+- Structural qualification validation passed with targets still `DRAFT`,
+  highest valid classification `L9-R`, and blocked-readiness warnings intact.
+- Focused ruff passed after removing one unused import from the new checker.
+- Targeted mypy passed from the backend context with `PYTHONPATH=.`.
+- PowerShell wrapper passed.
+- First full `.\scripts\verify.ps1` reached backend tests and failed on a stale
+  exact blocker-reference assertion. After updating that test, final full
+  `.\scripts\verify.ps1` passed workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change impact,
+  qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke was
+  skipped because `RUN_DB_SMOKE` was not set.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Explicit change-impact probe for the new P0 evidence artifact/checker/test passed
+  and reported `NEW_INTENT_OR_DOMAIN` plus `DOMAIN_REFERENCE_OR_RUBRIC` with no
+  unmatched paths.
+- Separate read-only review found the branch was stale against live `origin/main` and
+  would appear to remove PR #132 error-safety hardening. Rebased onto
+  `origin/main@be2f504a91dc5503a2fe160432fa7e7e8e05a2ab`.
+- `git diff --name-only --diff-filter=D origin/main` reported no tracked deletions
+  after the rebase.
+- `backend/tests/test_error_safety.py` passed after the rebase, confirming the PR #132
+  redaction regression tests are preserved.
+- Post-rebase `.\scripts\verify.ps1` passed workspace validation, qualification
+  selftest, qualification validation, qualification status, qualification change
+  impact, qualification P0 auto evidence, backend pytest, ruff, and mypy. DB smoke
+  was skipped because `RUN_DB_SMOKE` was not set.
+- A second read-only review found live `origin/main` had advanced to PR #133.
+  Rebased onto `origin/main@8822a1408cce54bc99fe760f3386243a29e64b0d`, preserving
+  `docs/adr/lane-d-0021-report-run-contract-backward-compat.md`.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the second rebase.
+- Post-PR #133 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A third live-base check found `origin/main` had advanced to PR #134. Rebased onto
+  `origin/main@af6dd94d9bb3fb9f53afbd369a7568dfeb72e65e`, preserving report-run
+  rights optionality changes.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the third rebase.
+- Post-PR #134 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+- A fourth live-base check found `origin/main` had advanced to PR #136. Rebased onto
+  `origin/main@71c6a74eae08811d4e178b0c11365ff1e247772d`, preserving the jsonschema
+  mypy stub fix.
+- `git diff --name-only --diff-filter=D origin/main` again reported no tracked
+  deletions after the fourth rebase.
+- Post-PR #136 rebase `.\scripts\verify.ps1` passed workspace validation,
+  qualification selftest, qualification validation, qualification status,
+  qualification change impact, qualification P0 auto evidence, backend pytest, ruff,
+  and mypy. DB smoke was skipped because `RUN_DB_SMOKE` was not set.
+
+**Residual risk:** Repo-local evidence is not sealed acceptance evidence and is not
+immutable external storage. `P0-004`, `P0-005`, `P0-021`, and `P0-023` remain
+blocked until external vault/source/target/candidate/storage authority exists.
+
 ## 2026-06-21 EQP2-2 Executable Qualification Change Impact
 
 **Scope:** Make qualification change-impact invalidation executable against changed
@@ -14522,6 +16869,88 @@ git diff --name-only --diff-filter=D
 - Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
   image-publication, alerting, production workload, and Level 10 authority remain
   unavailable.
+
+---
+
+## 2026-06-23 - Bologna ODP-BOL-002 Final Verification
+
+**Additional commands/checks run:**
+
+```powershell
+cd backend; ruff check ..\scripts\bologna_odp2_source_rights_response_gate_check.py .\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py .\tests\test_qualification_parameterization_backlog_artifacts.py .\tests\test_readiness_core_artifacts.py
+cd backend; py -3.12 -m mypy ..\scripts\bologna_odp2_source_rights_response_gate_check.py .\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py .\tests\test_qualification_parameterization_backlog_artifacts.py .\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Focused ruff passed.
+- Focused mypy passed.
+- `git diff --check` passed.
+- `git diff --name-only --diff-filter=D` reported no tracked deletions.
+- Final default `.\scripts\verify.ps1` passed: workspace validation, qualification
+  selftest, qualification validation, qualification status
+  (`passed=30 not_run=2 unexpected_failed=0`, `BLOCKED=1 NOT_RUN=20`), change-impact,
+  P0 auto-evidence, backend tests, ruff, and mypy all passed. DB smoke was skipped by
+  default.
+
+**Residual risk:**
+
+- Bologna remains externally blocked on cited ODP-BOL-001 product/AOI authority and
+  ODP-BOL-002 per-source rights authority before any source approval, corpus, fixture,
+  DB seed, or report proof can proceed.
+- DB smoke was not run locally because `RUN_DB_SMOKE=1` was not set.
+
+---
+
+## 2026-06-23 - Bologna ODP-BOL-002 Source-Rights Response Gate
+
+**Scope:** Add a validate-only ODP-BOL-002 source-authority/source-rights response
+gate. This is owner-response readiness only; it does not approve sources, select a
+Bologna AOI, promote source registry rows, commit fixtures, run connectors, change
+source readiness, approve DS-017, create a recorded corpus, prove a DB-backed report,
+create hosted authority, or claim Level 10 completion.
+
+**Commands/checks run so far:**
+
+```powershell
+py -3.12 scripts\bologna_odp1_owner_response_gate_check.py
+py -3.12 scripts\bologna_owner_answer_intake_check.py
+py -3.12 scripts\bologna_source_authority_intake_check.py
+py -3.12 scripts\bologna_source_rights_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\bologna_odp2_source_rights_response_gate_check.py
+.\scripts\run_bologna_odp2_source_rights_response_gate_check.ps1
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest -q backend\tests\test_bologna_odp2_source_rights_response_gate_artifacts.py backend\tests\test_bologna_odp1_owner_response_gate_artifacts.py backend\tests\test_bologna_owner_answer_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py backend\tests\test_bologna_source_rights_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\selftest_qualification_validator.py
+```
+
+**Results so far:**
+
+- Baseline Bologna/intake/source-rights validators passed before edits, qualification
+  remained `BLOCKED=1 NOT_RUN=20`, and focused baseline tests passed.
+- New ODP2 checker and PowerShell wrapper passed.
+- Focused ODP2 tests passed (`7 passed`).
+- Combined affected Bologna/routing tests passed (`52 passed`).
+- Initial broader qualification/status run failed because the active ODP2 plan did not
+  cite `state/LEVEL_9_10_GATE_MATRIX.md`; the plan was corrected.
+- Qualification structural validation passed after the fix.
+- Qualification status passed after the fix:
+  `passed=30 not_run=2 unexpected_failed=0`, derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Readiness matrix check passed after the plan citation fix.
+- Qualification selftest passed.
+
+**Residual risk before final verification:**
+
+- Focused ruff/mypy, diff hygiene, no-deletion check, and full `.\scripts\verify.ps1`
+  still need to run.
 - DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
 - DB smoke was not run in this pass because `RUN_DB_SMOKE=1` was not set.
 

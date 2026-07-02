@@ -1,0 +1,81 @@
+schema_version: qualification_p0_auto_evidence_v1
+generated_at: 2026-06-21
+scope: repo-local evidence collection for selected P0 invariant controls
+status_reference: state/EMPIRICAL_QUALIFICATION_STATUS.yaml
+backlog_reference: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+catalog_reference: config/qualification/criterion_catalog.yaml
+effective_gate_status: BLOCKED
+result_claimed: false
+criteria:
+  - criterion_id: P0-004
+    catalog_gate_id: P0
+    catalog_requirement_class: INVARIANT
+    catalog_statement: Sealed acceptance isolation
+    evidence_status: auto_evidenced_still_target_blocked
+    effective_status: BLOCKED
+    pass_claimed: false
+    evidence:
+      - path: config/qualification/qualification_targets.yaml
+        signal: acceptance_case_storage is external_restricted_vault while targets remain DRAFT.
+      - path: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+        signal: backlog authorizes no fixture capture, runtime/report use, or source registry promotion.
+      - path: docs/connectors/connector_runbook.md
+        signal: connector corpora are fixture-only utility or regression inputs, not sealed acceptance proof.
+    caveats:
+      - Repo-local evidence records the current control posture only.
+      - External vault records, access-control records, and sealed-case hashes remain missing, so P0-004 is still target-blocked.
+  - criterion_id: P0-005
+    catalog_gate_id: P0
+    catalog_requirement_class: INVARIANT
+    catalog_statement: Anti-contamination rule
+    evidence_status: auto_evidenced_still_target_blocked
+    effective_status: BLOCKED
+    pass_claimed: false
+    evidence:
+      - path: docs/connectors/connector_runbook.md
+        signal: fixture corpora are explicitly separated from source authority and live coverage claims.
+      - path: tests/fixtures/golden_aois/manifest.yaml
+        signal: golden AOI cases are fixture inputs with caveats and forbidden overclaim phrases.
+      - path: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
+        signal: no fixture capture or runtime/report use is authorized by the backlog.
+    caveats:
+      - Repo-local evidence identifies fixture boundaries but is not an approved case provenance register.
+      - Sealed acceptance case identity and anti-contamination review remain absent, so P0-005 is still target-blocked.
+  - criterion_id: P0-021
+    catalog_gate_id: P0
+    catalog_requirement_class: INVARIANT
+    catalog_statement: Evidence integrity
+    evidence_status: auto_evidenced_still_target_blocked
+    effective_status: BLOCKED
+    pass_claimed: false
+    evidence:
+      - path: scripts/validate_qualification.py
+        signal: qualification artifacts are structurally validated before status claims.
+      - path: scripts/qualification_status_check.py
+        signal: committed status is derived from catalog, crosswalk, and checker results.
+      - path: scripts/qualification_change_impact_check.py
+        signal: changed qualification surfaces report affected criteria for review.
+      - path: .github/workflows/ci.yml
+        signal: qualification checks run in CI without continue-on-error suppression.
+    caveats:
+      - Repo-local checks improve traceability but are not immutable external storage.
+      - Controlled storage, archive manifests, and evidence hashes remain unresolved, so P0-021 is still target-blocked.
+  - criterion_id: P0-023
+    catalog_gate_id: P0
+    catalog_requirement_class: INVARIANT
+    catalog_statement: Threshold immutability
+    evidence_status: auto_evidenced_still_target_blocked
+    effective_status: BLOCKED
+    pass_claimed: false
+    evidence:
+      - path: config/qualification/change_impact_matrix.yaml
+        signal: qualification target, rubric, catalog, schema, script, and docs changes are impact-mapped.
+      - path: scripts/qualification_change_impact_check.py
+        signal: path changes are converted into advisory impacted criteria.
+      - path: state/EMPIRICAL_QUALIFICATION_STATUS.yaml
+        signal: P0 has result_path null and remains BLOCKED.
+      - path: config/qualification/qualification_targets.yaml
+        signal: threshold-bearing targets remain DRAFT and unfrozen.
+    caveats:
+      - Repo-local invalidation evidence does not replace frozen thresholds or a sealed run record.
+      - No candidate artifact or frozen threshold version exists, so P0-023 is still target-blocked.
