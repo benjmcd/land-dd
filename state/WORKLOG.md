@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Geology fixture ingestion
+
+- Started clean worktree `worktrees/geology-fixture` on `codex/geology-fixture` from
+  live `origin/main@6e0d63260ae395730d2a33508059bd0873a88d50`, after water fixture
+  ingestion merged through PR #171.
+- Added active geology fixture-ingestion plan and updated project/task/readiness
+  routing so `WATER-FIXTURE` is completed and `GEOLOGY-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/geology_fixture.py`, a local-only static fixture
+  connector for NCGS 1985 geologic map-unit context evidence. It accepts
+  source-observation success fixtures and source-failure failed/blocked fixtures, and
+  rejects remote paths, connector/domain mismatches, empty evidence, and
+  status/evidence-type mismatches.
+- Added `evaluate_geology_fixture_quality`, public exports, three Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  map-units-present, no-map-units, and source-failure paths.
+- Preserved the authority boundary: no live NCGS calls, source approval,
+  source-rights change, geologic-hazard determination, geotechnical suitability
+  conclusion, buildability conclusion, schema/API/auth/report semantic change,
+  Bologna authority, hosted authority, Level 10 claim, qualification PASS, or P0
+  unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, source readiness retained
+  `DS-015: ready` and `DS-017: blocked`, readiness matrix passed, and qualification
+  status remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1` passed after
+  rerunning with a longer command timeout. DB smoke was skipped by default.
+
 ## 2026-07-02 Water fixture ingestion
 
 - Started clean worktree `worktrees/water-fixture` on `codex/water-fixture` from live

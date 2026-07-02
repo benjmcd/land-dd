@@ -1,0 +1,51 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e3333333-e333-4333-8333-e33333333333",
+    "dataset_version_id": "99999999-9999-4999-8999-999999999999",
+    "connector_name": "fixture_geology_static",
+    "status": "failed",
+    "started_at": "2026-06-10T10:00:00Z",
+    "finished_at": "2026-06-10T10:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_geology_unavailable",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "geologic_unit_count": 0,
+      "failure_reason": "nc_geologic_map_request_error",
+      "nc_geologic_map_bbox": "-82.560000,35.590000,-82.540000,35.610000"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e3334444-e333-4444-8444-e33344444444",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "NC_GEOLOGIC_MAP_SOURCE_FAILURE",
+      "domain": "geology",
+      "observation": "Fixture NCGS geologic map source could not be retrieved.",
+      "observed_value": {
+        "failure_reason": "nc_geologic_map_request_error",
+        "error_message": "NCGS geologic map source failed or returned no usable records.",
+        "retryable": true,
+        "attempted_url": "fixture://connectors/nc_buncombe_bun_geology_unavailable",
+        "connector": "fixture_geology_static"
+      },
+      "source_id": "88888888-8888-4888-8888-888888888888",
+      "dataset_version_id": "99999999-9999-4999-8999-999999999999",
+      "method_code": "fixture_geology_map_unit_context",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "NCGS geologic map source could not be retrieved; recorded as a source failure, not a no-hazard, no-constraint, no-issue, or buildability conclusion. It does not determine geotechnical suitability, engineering feasibility, mineral-resource value, appraisal value, lending suitability, insurance suitability, investment quality, title, or legal status.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": "2026-06-10",
+      "observed_at": "2026-06-10T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

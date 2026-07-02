@@ -27,6 +27,7 @@ EXPECTED_BROADBAND_PLAN = (
 )
 EXPECTED_ENV_HAZARD_PLAN = "plans/2026-07-02-env-fixture.md"
 EXPECTED_WATER_PLAN = "plans/2026-07-02-water-fixture.md"
+EXPECTED_GEOLOGY_PLAN = "plans/2026-07-02-geology-fixture.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -68,6 +69,7 @@ EXPECTED_DONE_TASKS = (
     "MINERALS-FIXTURE",
     "BROADBAND-FIXTURE",
     "ENV-FIXTURE",
+    "WATER-FIXTURE",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -629,8 +631,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_WATER_PLAN,
-            "task queue active_plan must point to the water fixture-ingestion plan",
+            active_plan == EXPECTED_GEOLOGY_PLAN,
+            "task queue active_plan must point to the geology fixture-ingestion plan",
             errors,
         )
         require(
@@ -649,8 +651,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     }
     active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
     require(
-        active_ids == ["WATER-FIXTURE"],
-        f"task queue must have only WATER-FIXTURE active, found {active_ids}",
+        active_ids == ["GEOLOGY-FIXTURE"],
+        f"task queue must have only GEOLOGY-FIXTURE active, found {active_ids}",
         errors,
     )
 
@@ -746,8 +748,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        water.get("status") == "active",
-        "WATER-FIXTURE must be active",
+        water.get("status") == "done",
+        "WATER-FIXTURE must be done",
         errors,
     )
     require(
@@ -758,6 +760,28 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "USGS water monitoring context fixture evidence" in str(water.get("notes") or ""),
         "WATER-FIXTURE notes must preserve USGS water monitoring fixture scope",
+        errors,
+    )
+    geology = by_id.get("GEOLOGY-FIXTURE") or {}
+    require(
+        geology.get("depends_on") == ["WATER-FIXTURE"],
+        "GEOLOGY-FIXTURE dependency drifted",
+        errors,
+    )
+    require(
+        geology.get("status") == "active",
+        "GEOLOGY-FIXTURE must be active",
+        errors,
+    )
+    require(
+        geology.get("spec") == EXPECTED_GEOLOGY_PLAN,
+        "GEOLOGY-FIXTURE spec must point to the geology fixture-ingestion plan",
+        errors,
+    )
+    require(
+        "NC Geological Survey 1985 geologic map-unit context fixture evidence"
+        in str(geology.get("notes") or ""),
+        "GEOLOGY-FIXTURE notes must preserve NCGS geology fixture scope",
         errors,
     )
 
@@ -799,7 +823,8 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("plans/README.md", EXPECTED_BROADBAND_PLAN),
         ("plans/README.md", EXPECTED_ENV_HAZARD_PLAN),
         ("plans/README.md", EXPECTED_WATER_PLAN),
-        ("state/PROJECT_STATE.md", "Post-170 water fixture routing"),
+        ("plans/README.md", EXPECTED_GEOLOGY_PLAN),
+        ("state/PROJECT_STATE.md", "Post-171 geology fixture routing"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
@@ -815,6 +840,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (EXPECTED_BROADBAND_PLAN, "## Decision log"),
         (EXPECTED_ENV_HAZARD_PLAN, "## Decision log"),
         (EXPECTED_WATER_PLAN, "## Decision log"),
+        (EXPECTED_GEOLOGY_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -872,7 +898,7 @@ def main(argv: list[str] | None = None) -> int:
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
-                    "active_plan": EXPECTED_WATER_PLAN,
+                    "active_plan": EXPECTED_GEOLOGY_PLAN,
                 },
                 indent=2,
                 sort_keys=True,

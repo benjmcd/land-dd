@@ -101,6 +101,10 @@ _WATER_FIXTURE_DOMAIN = "water"
 _WATER_FIXTURE_CONNECTOR_NAME = "fixture_water_static"
 _WATER_FIXTURE_METHOD_PREFIX = "fixture_water_"
 
+_GEOLOGY_FIXTURE_DOMAIN = "geology"
+_GEOLOGY_FIXTURE_CONNECTOR_NAME = "fixture_geology_static"
+_GEOLOGY_FIXTURE_METHOD_PREFIX = "fixture_geology_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -922,6 +926,19 @@ def evaluate_water_fixture_quality(
     )
 
 
+def evaluate_geology_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_GEOLOGY_FIXTURE_CONNECTOR_NAME,
+        domain=_GEOLOGY_FIXTURE_DOMAIN,
+        method_prefix=_GEOLOGY_FIXTURE_METHOD_PREFIX,
+        label="geology",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
@@ -931,6 +948,7 @@ __all__ = [
     "evaluate_buildability_fixture_quality",
     "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
+    "evaluate_geology_fixture_quality",
     "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
