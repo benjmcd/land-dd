@@ -1,22 +1,23 @@
 # Project State
 
-## Current checkpoint (2026-07-02 Post-173 authority evidence routing)
+## Current checkpoint (2026-07-02 Post-PR175 authority evidence guard)
 
 This branch starts from live `origin/main`
-`9f184c238793534dd169ceb1462c42e4d48f6a57`, after the ODGAV owner-answer gate
+`0bfc4f395587956c520866a05423531e23270e21`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the first extended-domain minerals
 fixture-ingestion proof merged through PR #168, the broadband fixture-ingestion proof
 merged through PR #169, the environmental hazard fixture-ingestion proof merged through
 PR #170, the water fixture-ingestion proof merged through PR #171, and the geology
 fixture-ingestion proof merged through PR #172, and the post-geology routing closeout
 merged through PR #173, and the authority evidence intake routing merged through PR
-#174. The active posture is authority evidence intake: the next
-substantive work requires cited product/AOI/source/source-rights/corpus/report-proof
-authority before Bologna, DS-017, hosted/Level 10, or empirical qualification
-implementation can proceed. It does not add another connector, run live calls, approve
-sources, change source rights, capture Bologna fixtures, seed the DB, prove a report,
-change schema/API/auth/report semantics, approve DS-017, unfreeze qualification, record
-Bologna authority, claim hosted/Level 10 authority, or change `P0 = BLOCKED`.
+#174, and the authority evidence intake composition guard merged through PR #175. The
+active posture is authority evidence intake: the next substantive work requires cited
+product/AOI/source/source-rights/corpus/report-proof authority before Bologna, DS-017,
+hosted/Level 10, or empirical qualification implementation can proceed. It does not
+add another connector, run live calls, approve sources, change source rights, capture
+Bologna fixtures, seed the DB, prove a report, change schema/API/auth/report semantics,
+approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/Level
+10 authority, or change `P0 = BLOCKED`.
 
 - **Current implementation plan**:
   `plans/2026-07-02-authority-evidence-intake.md`.

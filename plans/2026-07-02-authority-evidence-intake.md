@@ -21,6 +21,9 @@ PR #173 merged the post-geology routing closeout at
 `1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`. The owner-independent
 extended-domain fixture-ingestion sequence is complete through minerals,
 broadband, environmental hazard, water, and NCGS 1985 geologic map-unit context.
+PR #174 then made `AUTH-EVIDENCE-INTAKE` the active routing posture, and PR #175
+merged the validate-only composition guard for that posture at
+`0bfc4f395587956c520866a05423531e23270e21`.
 
 The remaining sequence is authority-dependent:
 
@@ -133,3 +136,6 @@ Pass/fail requirements:
   existing authority validators were strong individually but did not expose one
   current-route check proving that all required authority streams are present,
   blocked, and wired into the canonical verification gate.
+- 2026-07-02: Synchronized current-state and checker wording after PR #175 so live
+  repo controls describe the merged authority-evidence composition guard while keeping
+  `AUTH-EVIDENCE-INTAKE` active and all downstream authority blockers intact.
