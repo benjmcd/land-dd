@@ -107,6 +107,39 @@ def test_authority_evidence_intake_script_and_wrappers_are_validate_only() -> No
     assert "Remove-Item" not in ps1
     assert "mkdir" not in sh
     assert "rm " not in sh
+    assert "@CheckerArgs" in ps1
+    assert 'if ($CheckerArgs.Count -eq 0)' in ps1
+    assert 'if [[ "$#" -eq 0 ]]' in sh
+
+
+def test_authority_evidence_intake_wrapper_forwards_summary_and_json() -> None:
+    wrapper_command = [
+        "powershell",
+        "-NoProfile",
+        "-File",
+        "scripts/run_authority_evidence_intake_check.ps1",
+    ]
+    ps_summary = subprocess.run(
+        [*wrapper_command, "--summary"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "authority evidence intake summary: blocked" in ps_summary.stdout
+    assert "authority evidence intake: ok" not in ps_summary.stdout
+
+    ps_json = subprocess.run(
+        [*wrapper_command, "--json"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    parsed = json.loads(ps_json.stdout)
+    assert parsed["schema_version"] == "authority_evidence_intake_summary_v1"
+    assert parsed["active_task"] == "AUTH-EVIDENCE-INTAKE"
 
 
 def test_authority_evidence_intake_json_summary_reports_missing_authority() -> None:
