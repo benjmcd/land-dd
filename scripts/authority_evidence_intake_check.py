@@ -221,7 +221,7 @@ def validate_plan_and_state_text() -> None:
     ):
         require(phrase in normalized_plan, f"active plan missing boundary: {phrase}")
     for phrase in (
-        "Post-173 authority evidence routing",
+        "Post-PR175 authority evidence guard",
         "`plans/2026-07-02-authority-evidence-intake.md`",
         "Active task is AUTH-EVIDENCE-INTAKE",
         "`P0` remains `BLOCKED`",

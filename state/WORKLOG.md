@@ -2,6 +2,22 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Post-PR175 authority evidence guard sync
+
+- Started clean worktree `worktrees/post175-sync` on `codex/post175-sync` from live
+  `origin/main@0bfc4f395587956c520866a05423531e23270e21`, after PR #175 merged the
+  authority evidence intake composition guard.
+- Updated project state, plan index, active plan notes, task queue wording, and
+  checker/test expectations so the live control plane names the PR #175 guard instead
+  of preserving the stale post-PR173 authority-routing checkpoint text.
+- Kept `AUTH-EVIDENCE-INTAKE` active and preserved every downstream blocker: no owner
+  answer, source approval, source-rights change, corpus, fixture capture, DB seed,
+  report proof, schema/API/auth/UI/runtime change, DS-017 approval, hosted authority,
+  Level 10 claim, qualification PASS, owner-decision unfreeze, or P0 unblock was
+  introduced.
+- Focused authority-evidence, qualification-backlog, readiness, ruff, mypy, diff, and
+  full `.\scripts\verify.ps1` checks passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Authority evidence intake composition guard
 
 - Started clean worktree `worktrees/auth-guard` on

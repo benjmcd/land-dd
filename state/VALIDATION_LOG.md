@@ -2,6 +2,49 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Post-PR175 Authority Evidence Guard Sync
+
+**Scope:** Synchronize live control-plane wording after PR #175 so project state,
+plans, task routing, and checker expectations describe the merged authority evidence
+intake composition guard while keeping `AUTH-EVIDENCE-INTAKE` active. This is a
+state/checker consistency update only. It does not record authority, approve sources,
+change rights, capture corpus or fixtures, seed the DB, prove reports, change
+schema/API/auth/UI/runtime behavior, approve DS-017, record hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+.\scripts\run_authority_evidence_intake_check.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority evidence intake guard passed.
+- Qualification parameterization backlog check passed with `P0 status: BLOCKED`.
+- Focused authority-evidence, qualification-backlog, and readiness tests passed
+  (`18 passed`).
+- Ruff and focused mypy passed for the changed scripts and tests.
+- PowerShell authority-evidence wrapper passed.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** This sync only corrects repo-local live-state/control-plane
+wording after PR #175. It still does not provide the external product/AOI/source/
+source-rights/corpus/report authority needed for Bologna implementation, DS-017
+approval, hosted deployment, Level 10 readiness, empirical qualification PASS, or P0
+readiness.
+
 ## 2026-07-02 Authority Evidence Intake Composition Guard
 
 **Scope:** Add a validate-only composition guard for the active
