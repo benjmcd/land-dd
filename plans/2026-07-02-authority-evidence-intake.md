@@ -27,7 +27,11 @@ merged the validate-only composition guard for that posture at
 wording after that guard, PR #177 added optional reporting-only `--summary` and
 `--json` output, PR #178 linked that output from operator runbooks, and PR #179
 forwarded wrapper arguments so the same reporting modes work through the
-Windows/POSIX entrypoints without corrupting structured output.
+Windows/POSIX entrypoints without corrupting structured output. PR #180
+synchronized the live authority-evidence state after wrapper support. The current
+slice adds a validate-only follow-on sequencing contract so the packet's
+repo-local follow-on map is machine-checked without recording authority or
+unlocking implementation.
 
 The remaining sequence is authority-dependent:
 
@@ -76,6 +80,17 @@ Reporting extension under the same active posture:
 - do not write files, seed runtime state, record authority, approve sources, change
   rights, or unlock any downstream implementation surface.
 
+Follow-on sequencing contract under the same active posture:
+
+- add a structured validate-only map from authority received to the first
+  repo-local follow-on actions listed in `state/PRODUCTION_AUTHORITY_PACKET.md`;
+- require every production authority stream to be covered by a blocked follow-on
+  lane, while also preserving the packet-level production workload/retention lane
+  that is not a standalone production-authority-intake stream;
+- keep DS-017, Bologna owner/source/corpus/report gates, hosted readiness, Level
+  10, qualification `PASS`, owner-decision unfreeze, and `P0` blocked until cited
+  authority is present and the matching source catalog/checker is updated.
+
 Rejected alternatives:
 
 - Start `BSA-001` now: rejected because complete cited product/AOI/source-review
@@ -104,6 +119,10 @@ Rejected alternatives:
 | `scripts/authority_evidence_intake_check.py` | Compose existing authority validators and active routing into one fail-closed posture check. |
 | `scripts/run_authority_evidence_intake_check.ps1` | Windows wrapper for the authority-evidence posture check. |
 | `scripts/run_authority_evidence_intake_check.sh` | POSIX wrapper for the authority-evidence posture check. |
+| `config/authority_follow_on_sequence.yaml` | Validate-only authority-dependent follow-on sequence contract. |
+| `scripts/authority_follow_on_sequence_check.py` | Fail closed if the follow-on map, authority streams, or blocker boundaries drift. |
+| `scripts/run_authority_follow_on_sequence_check.ps1` | Windows wrapper for the follow-on sequence check. |
+| `scripts/run_authority_follow_on_sequence_check.sh` | POSIX wrapper for the follow-on sequence check. |
 | `backend/tests/test_qualification_parameterization_backlog_artifacts.py` | Mirror backlog checker expectations. |
 | `backend/tests/test_readiness_core_artifacts.py` | Mirror readiness model expectations. |
 | `backend/tests/test_authority_evidence_intake_artifacts.py` | Prove the authority-evidence guard passes current artifacts and fails closed on omitted streams, downstream unlocks, or P0 promotion. |
@@ -121,9 +140,11 @@ py -3.12 scripts\bologna_recorded_source_corpus_check.py
 py -3.12 scripts\authority_evidence_intake_check.py
 py -3.12 scripts\authority_evidence_intake_check.py --summary
 py -3.12 scripts\authority_evidence_intake_check.py --json
+py -3.12 scripts\authority_follow_on_sequence_check.py
+.\scripts\run_authority_follow_on_sequence_check.ps1
 py -3.12 scripts\readiness_matrix_check.py
 py -3.12 scripts\qualification_status_check.py --root .
-$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py -q
 git diff --check
 git diff --name-only --diff-filter=D
 .\scripts\verify.ps1
@@ -143,6 +164,10 @@ Pass/fail requirements:
 - Optional `--summary` and `--json` outputs report the same blocked posture and
   missing evidence from existing config/state files only, without generating or
   mutating artifacts.
+- `scripts\authority_follow_on_sequence_check.py` passes and fails closed if the
+  packet follow-on map drifts, a production authority stream is not covered by a
+  follow-on lane, a lane is marked unblocked, or a lane omits the required cited-
+  authority/catalog/checker prerequisites.
 - No new source approval, source-rights change, corpus, fixture capture, DB seed,
   report proof, runtime behavior, schema/API/auth/UI change, or production
   authority is introduced.
@@ -165,3 +190,7 @@ Pass/fail requirements:
   owner-answer, and DS-017 source-entitlement runbooks, then forwarded wrapper
   arguments so operators can use the reporting modes through the same entrypoints
   without adding wrapper text to JSON output.
+- 2026-07-02: Added a validate-only follow-on sequencing contract so the
+  production authority packet's repo-local follow-on map is machine-checked while
+  every covered lane remains blocked until cited authority updates the matching
+  source catalog and checker.

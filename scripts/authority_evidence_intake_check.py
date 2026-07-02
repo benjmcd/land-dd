@@ -85,6 +85,7 @@ EXPECTED_REQUIRED_VALIDATORS = (
     ("readiness matrix", "scripts/readiness_matrix_check.py"),
     ("source entitlement", "scripts/source_entitlement_check.py"),
     ("production authority intake", "scripts/production_authority_intake_check.py"),
+    ("authority follow-on sequence", "scripts/authority_follow_on_sequence_check.py"),
     ("Bologna pilot scope authority", "scripts/bologna_pilot_scope_authority_check.py"),
     ("Bologna owner answer intake", "scripts/bologna_owner_answer_intake_check.py"),
     ("Bologna ODP-BOL-001 owner answer packet", "scripts/bologna_odp1_owner_answer_packet_check.py"),
@@ -117,6 +118,10 @@ REQUIRED_FILES = (
     "scripts/authority_evidence_intake_check.py",
     "scripts/run_authority_evidence_intake_check.ps1",
     "scripts/run_authority_evidence_intake_check.sh",
+    "config/authority_follow_on_sequence.yaml",
+    "scripts/authority_follow_on_sequence_check.py",
+    "scripts/run_authority_follow_on_sequence_check.ps1",
+    "scripts/run_authority_follow_on_sequence_check.sh",
     "scripts/verify.ps1",
     "scripts/verify.sh",
     "MANIFEST.md",
@@ -238,9 +243,10 @@ def validate_plan_and_state_text() -> None:
     ):
         require(phrase in normalized_plan, f"active plan missing boundary: {phrase}")
     for phrase in (
-        "Post-PR179 authority evidence reporting wrapper",
+        "Post-PR180 authority follow-on sequencing contract",
         "`plans/2026-07-02-authority-evidence-intake.md`",
         "Active task is AUTH-EVIDENCE-INTAKE",
+        "authority follow-on sequencing contract",
         "wrapper argument passthrough merged through PR #179",
         "`P0` remains `BLOCKED`",
     ):
@@ -350,11 +356,17 @@ def validate_qualification_status(payload: dict[str, Any]) -> None:
 def validate_repo_wiring() -> None:
     expected_fragments = (
         ("scripts/verify.ps1", "authority_evidence_intake_check.py"),
+        ("scripts/verify.ps1", "authority_follow_on_sequence_check.py"),
         ("scripts/verify.sh", "authority_evidence_intake_check.py"),
+        ("scripts/verify.sh", "authority_follow_on_sequence_check.py"),
         ("MANIFEST.md", "scripts/authority_evidence_intake_check.py"),
+        ("MANIFEST.md", "scripts/authority_follow_on_sequence_check.py"),
         ("MANIFEST.md", "Authority evidence intake posture"),
+        ("MANIFEST.md", "Authority follow-on sequence"),
         (EXPECTED_ACTIVE_PLAN, "scripts\\authority_evidence_intake_check.py"),
+        (EXPECTED_ACTIVE_PLAN, "scripts\\authority_follow_on_sequence_check.py"),
         ("tasks/task_queue.yaml", "scripts\\authority_evidence_intake_check.py"),
+        ("tasks/task_queue.yaml", "scripts\\authority_follow_on_sequence_check.py"),
     )
     for path_text, fragment in expected_fragments:
         require(fragment in read_text(path_text), f"{path_text} missing expected fragment: {fragment}")

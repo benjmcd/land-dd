@@ -1,15 +1,16 @@
 # Project State
 
-## Current checkpoint (2026-07-02 Post-PR179 authority evidence reporting wrapper)
+## Current checkpoint (2026-07-02 Post-PR180 authority follow-on sequencing contract)
 
 This branch starts from live `origin/main`
-`19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, after the ODGAV owner-answer gate
+`139b28ed3644c590768bc1d5d5a82b364e0cf940`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
 evidence intake composition guard merged through PR #175, the post-PR175 guard-state
 sync merged through PR #176, optional authority-evidence summary/JSON output merged
-through PR #177, runbook discoverability links merged through PR #178, and wrapper argument passthrough merged through PR #179. The active posture is still authority
+through PR #177, runbook discoverability links merged through PR #178, wrapper argument passthrough merged through PR #179, and state synchronization after wrapper support
+merged through PR #180. The active posture is still authority
 evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
@@ -37,6 +38,16 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   implementation surface. The same checker can emit reporting-only `--summary` and
   `--json` views, and the Windows/POSIX wrappers forward those arguments without
   appending wrapper confirmation text to structured output.
+- **Current authority follow-on sequencing contract**:
+  `config/authority_follow_on_sequence.yaml` and
+  `scripts/authority_follow_on_sequence_check.py` machine-check the repo-local
+  follow-on map in `state/PRODUCTION_AUTHORITY_PACKET.md`. The contract covers every
+  production authority stream plus the packet-level production workload/retention
+  lane, keeps each follow-on lane `blocked_waiting_for_authority`, and requires cited
+  authority references, a matching source-catalog update, and checker validation before
+  any repo-local follow-on action can proceed. It does not record authority, approve
+  sources, capture fixtures, seed the DB, prove reports, provision hosted runtime,
+  unfreeze qualification, unblock `P0`, or claim Level 10.
 - **Current ODGAV boundary**:
   `scripts/bologna_owner_answer_evaluator.py` remains a pure in-memory evaluator used
   by the Bologna gate checkers and canonical qualification selftest. ODGAV completion
@@ -64,8 +75,9 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until product/AOI and
   source-review authority is cited. Follow-up authority-evidence support slices through
-  PR #179 added current-state sync, reporting output, runbook links, and wrapper
-  passthrough without changing the active task or blocker state. `P0` remains
+  PR #180 added current-state sync, reporting output, runbook links, wrapper
+  passthrough, state synchronization, and the authority follow-on sequencing contract
+  without changing the active task or blocker state. `P0` remains
   `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
