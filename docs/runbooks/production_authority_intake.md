@@ -16,6 +16,12 @@ Run:
 .\scripts\run_production_authority_intake_check.ps1
 ```
 
+To validate the future cited-reference field shape without recording authority, run:
+
+```powershell
+.\scripts\run_production_authority_evidence_references_check.ps1
+```
+
 For a consolidated stdout view of the active authority-evidence posture and missing
 evidence counts across production and Bologna streams, run:
 
@@ -41,9 +47,10 @@ authority catalogs:
 
 ## Boundary
 
-Every stream remains `blocked`, every `authority_references` list remains empty, and
-every `decision_updates_allowed` value remains false until the matching external
-authority evidence exists and the stream-specific checker validates it.
+Every stream remains `blocked`, every `authority_references` list remains empty, every
+production authority evidence reference template remains empty, and every
+`decision_updates_allowed` value remains false until the matching external authority
+evidence exists and the stream-specific checker validates it.
 
 ## Evidence Checklist
 

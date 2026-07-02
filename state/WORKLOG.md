@@ -2,6 +2,29 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Production authority evidence reference contract
+
+- Started clean worktree `worktrees/auth-ref` on `codex/auth-ref` from live
+  `origin/main@c38640b458c6d1da0218c34eeb6b80a02dc53143`, after PR #181 merged the
+  authority follow-on sequence contract.
+- Added `config/production_authority_evidence_references.yaml`, a validate-only
+  contract for future cited production authority evidence references. It defines the
+  required reference fields, allowed artifact types, forbidden effects, and a blocked
+  template for every `config/production_authority_intake.yaml` stream.
+- Added `scripts/production_authority_evidence_references_check.py` plus Windows/POSIX
+  wrappers. The checker fails closed if current evidence references are recorded, a
+  stream template is omitted, required evidence drifts from production authority intake,
+  decision updates are enabled, or downstream unlocks are requested.
+- Wired the checker into the authority-evidence composition guard, canonical
+  Windows/POSIX verification, manifest, active plan, task queue, qualification
+  readiness crosswalk, and focused artifact tests.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, every current
+  evidence reference remains empty, `BSA-001` remains blocked, `P0` remains `BLOCKED`,
+  and no owner/source authority, DS-017 approval, Bologna source-rights/corpus/report
+  authority, hosted/Level 10 authority, fixture capture, DB seed, report proof,
+  schema/API/auth/UI/runtime change, qualification `PASS`, owner-decision unfreeze, or
+  downstream follow-on unlock was introduced.
+
 ## 2026-07-02 Authority follow-on sequence contract
 
 - Started clean worktree `worktrees/auth-seq` on `codex/auth-seq` from live

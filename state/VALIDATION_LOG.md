@@ -2,6 +2,59 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Production Authority Evidence Reference Contract
+
+**Scope:** Add a validate-only production authority evidence reference contract under
+the active `AUTH-EVIDENCE-INTAKE` posture. The contract defines future cited-reference
+field shape and per-stream templates for `config/production_authority_intake.yaml`
+without recording authority, approving sources, changing source rights, triggering
+follow-on lanes, provisioning hosted runtime, claiming Level 10, unfreezing
+qualification, or unblocking `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\production_authority_evidence_references_check.py
+.\scripts\run_production_authority_evidence_references_check.ps1
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\production_authority_evidence_references_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\production_authority_evidence_references_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+py -3.12 scripts\selftest_qualification_validator.py
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\production_authority_evidence_references_check.py` passed and the
+  PowerShell wrapper returned `production authority evidence references: ok`.
+- `scripts\authority_evidence_intake_check.py` passed after adding the reference
+  contract validator to the composition guard.
+- `scripts\qualification_parameterization_backlog_check.py --root .` and
+  `scripts\readiness_matrix_check.py` passed.
+- Focused pytest passed for the new reference-contract artifact tests and the updated
+  authority-evidence / qualification-backlog artifact tests.
+- Focused ruff, mypy, `git diff --check`, and deletion checks passed.
+- `scripts\selftest_qualification_validator.py` and
+  `scripts\validate_qualification.py --root . --layout repo` passed. The qualification
+  validator still reports the expected blocked-readiness conditions and does not claim
+  qualification `PASS`.
+- `scripts\authority_evidence_intake_check.py --summary` and `--json` remained
+  parseable reporting-only views of the blocked posture.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a reference-shape contract only. Current references and
+downstream unlock requests remain empty, so no production authority, DS-017 approval,
+Bologna owner/source/corpus/report authority, hosted/Level 10 authority,
+qualification `PASS`, or `P0` unblock is introduced.
+
 ## 2026-07-02 Authority Follow-On Sequence Contract
 
 **Scope:** Add a validate-only authority follow-on sequence contract under the active
