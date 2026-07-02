@@ -3,25 +3,29 @@
 Active implementation plans live here. Keep them executable and narrow.
 
 Latest completed plan:
-`plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md`.
-
-Current routing plan:
 `plans/2026-07-02-env-fixture.md`.
 
-`ENV-FIXTURE` is the active owner-independent US-MVP fixture-ingestion pass. It extends
-the landed minerals and broadband pattern to EPA ECHO environmental hazard fixture
-evidence for the existing Buncombe golden AOI, covering regulated-facility proximity and
-source-failure paths through evidence ingestion, claim generation, and dossier
-rendering. It does not run live EPA ECHO calls, approve sources, change source rights,
-create hosted authority, touch schema/API/auth/UI surfaces, unfreeze qualification,
-claim Level 10 authority, or unblock P0.
+Current routing plan:
+`plans/2026-07-02-water-fixture.md`.
+
+`WATER-FIXTURE` is the active owner-independent US-MVP fixture-ingestion pass. It
+extends the landed minerals, broadband, and environmental hazard pattern to USGS water
+monitoring context fixture evidence for the existing Buncombe golden AOI, covering
+monitoring-stations-found, no-monitoring-stations, source-failure, conflicting, and
+stale paths through evidence ingestion, claim generation, and dossier rendering. It
+does not run live USGS calls, approve sources, change source rights, determine water
+rights, determine well viability, create hosted authority, touch schema/API/auth/UI
+surfaces, unfreeze qualification, claim Level 10 authority, or unblock P0.
 
 `ODGAV-1` completed the owner-independent Bologna validation pass through PR #167
-under `plans/2026-06-28-odgav-owner-answer-evaluation.md`, the minerals
+under `plans/2026-06-28-odgav-owner-answer-evaluation.md`. The minerals
 extended-domain fixture-ingestion pass under
 `plans/2026-06-29-extended-domain-minerals-fixture-ingestion.md` completed through
-PR #168, and the broadband extended-domain fixture-ingestion pass completed through
-PR #169. ODGAV does not record
+PR #168, the broadband extended-domain fixture-ingestion pass under
+`plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md` completed through
+PR #169, and the environmental hazard fixture-ingestion pass under
+`plans/2026-07-02-env-fixture.md` completed through PR #170.
+ODGAV does not record
 real owner authority, approve sources, create a corpus, capture Bologna fixtures,
 mutate the DB, prove a Bologna report, unfreeze qualification, or unblock P0.
 

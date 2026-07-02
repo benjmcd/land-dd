@@ -26,6 +26,7 @@ EXPECTED_BROADBAND_PLAN = (
     "plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md"
 )
 EXPECTED_ENV_HAZARD_PLAN = "plans/2026-07-02-env-fixture.md"
+EXPECTED_WATER_PLAN = "plans/2026-07-02-water-fixture.md"
 BACKLOG_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
 OWNER_DECISIONS_PATH = "state/owner-decisions.md"
 OWNER_PACKET_PATH = "state/owner-decision-packet.md"
@@ -66,6 +67,7 @@ EXPECTED_DONE_TASKS = (
     "ODGAV-1",
     "MINERALS-FIXTURE",
     "BROADBAND-FIXTURE",
+    "ENV-FIXTURE",
     "EQ-5",
 )
 EXPECTED_BLOCKED_TASKS = (
@@ -627,8 +629,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     )
     if isinstance(active_plan, str):
         require(
-            active_plan == EXPECTED_ENV_HAZARD_PLAN,
-            "task queue active_plan must point to the env-hazard fixture-ingestion plan",
+            active_plan == EXPECTED_WATER_PLAN,
+            "task queue active_plan must point to the water fixture-ingestion plan",
             errors,
         )
         require(
@@ -647,8 +649,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     }
     active_ids = [task_id for task_id, task in by_id.items() if task.get("status") == "active"]
     require(
-        active_ids == ["ENV-FIXTURE"],
-        f"task queue must have only ENV-FIXTURE active, found {active_ids}",
+        active_ids == ["WATER-FIXTURE"],
+        f"task queue must have only WATER-FIXTURE active, found {active_ids}",
         errors,
     )
 
@@ -723,8 +725,8 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        env_hazard.get("status") == "active",
-        "ENV-FIXTURE must be active",
+        env_hazard.get("status") == "done",
+        "ENV-FIXTURE must be done",
         errors,
     )
     require(
@@ -735,6 +737,27 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "EPA ECHO environmental hazard fixture evidence" in str(env_hazard.get("notes") or ""),
         "ENV-FIXTURE notes must preserve EPA ECHO fixture scope",
+        errors,
+    )
+    water = by_id.get("WATER-FIXTURE") or {}
+    require(
+        water.get("depends_on") == ["ENV-FIXTURE"],
+        "WATER-FIXTURE dependency drifted",
+        errors,
+    )
+    require(
+        water.get("status") == "active",
+        "WATER-FIXTURE must be active",
+        errors,
+    )
+    require(
+        water.get("spec") == EXPECTED_WATER_PLAN,
+        "WATER-FIXTURE spec must point to the water fixture-ingestion plan",
+        errors,
+    )
+    require(
+        "USGS water monitoring context fixture evidence" in str(water.get("notes") or ""),
+        "WATER-FIXTURE notes must preserve USGS water monitoring fixture scope",
         errors,
     )
 
@@ -775,7 +798,8 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("plans/README.md", EXPECTED_MINERALS_PLAN),
         ("plans/README.md", EXPECTED_BROADBAND_PLAN),
         ("plans/README.md", EXPECTED_ENV_HAZARD_PLAN),
-        ("state/PROJECT_STATE.md", "Post-169 env-hazard fixture routing"),
+        ("plans/README.md", EXPECTED_WATER_PLAN),
+        ("state/PROJECT_STATE.md", "Post-170 water fixture routing"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),
@@ -790,6 +814,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         (EXPECTED_MINERALS_PLAN, "## Acceptance criteria"),
         (EXPECTED_BROADBAND_PLAN, "## Decision log"),
         (EXPECTED_ENV_HAZARD_PLAN, "## Decision log"),
+        (EXPECTED_WATER_PLAN, "## Decision log"),
     )
     for path_text, fragment in controls:
         text = read_text(root, path_text)
@@ -847,7 +872,7 @@ def main(argv: list[str] | None = None) -> int:
                     "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
-                    "active_plan": EXPECTED_ENV_HAZARD_PLAN,
+                    "active_plan": EXPECTED_WATER_PLAN,
                 },
                 indent=2,
                 sort_keys=True,

@@ -2,6 +2,33 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Water fixture ingestion
+
+- Started clean worktree `worktrees/water-fixture` on `codex/water-fixture` from live
+  `origin/main@6ff207b0b15fdcfc5781a095653a5549a0c4a34d`, after environmental
+  hazard fixture ingestion merged through PR #170.
+- Added active water fixture-ingestion plan and updated project/task/readiness routing
+  so `ENV-FIXTURE` is completed and `WATER-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/water_fixture.py`, a local-only static fixture
+  connector for USGS water monitoring context evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote
+  paths, connector/domain mismatches, empty evidence, and status/evidence-type
+  mismatches.
+- Added `evaluate_water_fixture_quality`, public exports, five Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  monitoring-stations-found, no-monitoring-stations, source-failure, conflicting, and
+  stale paths.
+- Preserved the authority boundary: no live USGS calls, source approval,
+  source-rights change, water-rights determination, well-viability determination,
+  potable-water/supply conclusion, schema/API/auth/report semantic change, Bologna
+  authority, hosted authority, Level 10 claim, qualification PASS, or P0 unblock was
+  introduced.
+- Focused connector/private-MVP/routing checks passed, source readiness retained
+  `DS-005: ready` plus `DS-013`/`DS-014` blocked, readiness matrix passed, and
+  qualification status remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1`
+  passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Environmental hazard fixture ingestion
 
 - Started clean worktree `worktrees/env-fixture` on `codex/env-fixture` from live

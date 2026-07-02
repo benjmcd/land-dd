@@ -97,6 +97,10 @@ _ENV_HAZARD_FIXTURE_DOMAIN = "env_hazard"
 _ENV_HAZARD_FIXTURE_CONNECTOR_NAME = "fixture_env_hazard_static"
 _ENV_HAZARD_FIXTURE_METHOD_PREFIX = "fixture_env_hazard_"
 
+_WATER_FIXTURE_DOMAIN = "water"
+_WATER_FIXTURE_CONNECTOR_NAME = "fixture_water_static"
+_WATER_FIXTURE_METHOD_PREFIX = "fixture_water_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -905,6 +909,19 @@ def evaluate_env_hazard_fixture_quality(
     )
 
 
+def evaluate_water_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_WATER_FIXTURE_CONNECTOR_NAME,
+        domain=_WATER_FIXTURE_DOMAIN,
+        method_prefix=_WATER_FIXTURE_METHOD_PREFIX,
+        label="water",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
@@ -918,6 +935,7 @@ __all__ = [
     "evaluate_parcel_fixture_quality",
     "evaluate_soils_fixture_quality",
     "evaluate_terrain_fixture_quality",
+    "evaluate_water_fixture_quality",
     "evaluate_wetlands_fixture_quality",
     "evaluate_zoning_fixture_quality",
 ]

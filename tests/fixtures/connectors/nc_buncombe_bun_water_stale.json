@@ -1,0 +1,50 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "a5555555-a555-4555-8555-a55555555555",
+    "dataset_version_id": "77777777-7777-4777-8777-777777777777",
+    "connector_name": "fixture_water_static",
+    "status": "succeeded",
+    "started_at": "2026-06-10T10:00:00Z",
+    "finished_at": "2026-06-10T10:00:01Z",
+    "row_count": 1,
+    "error_count": 0,
+    "warning_count": 1,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_water_stale",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "station_count": 1,
+      "source_stale": true,
+      "usgs_bbox": "-82.56000000,35.59000000,-82.54000000,35.61000000"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "a5556666-a555-4666-8666-a55566666666",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_observation",
+      "evidence_code": "WATER_MONITORING_SCREEN",
+      "domain": "water",
+      "observation": "Fixture USGS water monitoring screening found one active monitoring station but the source snapshot is marked stale.",
+      "observed_value": {
+        "plausible_water_context": true,
+        "monitoring_station_count": 1,
+        "water_context_status": "monitoring_stations_found",
+        "source_stale": true
+      },
+      "source_id": "66666666-6666-4666-8666-666666666666",
+      "dataset_version_id": "77777777-7777-4777-8777-777777777777",
+      "method_code": "fixture_water_monitoring_screen",
+      "method_version": "0.1.0",
+      "confidence": "low",
+      "caveat": "Fixture-only USGS water monitoring context screening is marked stale and must be refreshed before relying on it. It does not constitute evidence of water rights, well viability, supply adequacy, legal water access, potable water, lawful hauling, or final water availability.",
+      "is_negative_evidence": false,
+      "is_source_failure": false,
+      "superseded_by": null,
+      "source_date": "2026-06-10",
+      "observed_at": "2026-06-10T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}
