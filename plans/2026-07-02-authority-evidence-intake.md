@@ -31,11 +31,11 @@ Windows/POSIX entrypoints without corrupting structured output. PR #180
 synchronized the live authority-evidence state after wrapper support, and PR #181
 added a validate-only follow-on sequencing contract so the packet's repo-local
 follow-on map is machine-checked without recording authority or unlocking
-implementation. The current slice adds a validate-only production authority evidence
-reference contract so future cited references have a checked field shape before any
-stream can move out of blocked state. The latest support slice adds reporting-only
-`--summary` and `--json` output to that reference contract so operators can collect
-the required fields without generating artifacts or changing blocker state.
+implementation. PR #182 added a validate-only production authority evidence reference
+contract so future cited references have a checked field shape before any stream can
+move out of blocked state. PR #183 added reporting-only `--summary` and `--json`
+output to that reference contract so operators can collect the required fields without
+generating artifacts or changing blocker state.
 
 The remaining sequence is authority-dependent:
 
@@ -239,3 +239,7 @@ Pass/fail requirements:
 - 2026-07-02: Added reporting-only summary/JSON output for the production authority
   evidence reference contract so operators can collect required reference fields from
   validated config without recording authority or unlocking work.
+- 2026-07-02: Synchronized routing/state wording after PR #183 so the merged
+  reference-contract reporting modes are recorded as complete while
+  `AUTH-EVIDENCE-INTAKE`, external authority requirements, and `P0 = BLOCKED` remain
+  unchanged.

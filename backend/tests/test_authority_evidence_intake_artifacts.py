@@ -240,7 +240,7 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
     assert "production authority evidence reference contract" in project_state
-    assert "b7cc96e58c9a881eec0cc6896c1733d44a2f29cb" in project_state
+    assert "084e844b82821066d0d10f3b04518b5d39610833" in project_state
     assert "wrapper argument passthrough merged through PR #179" in project_state
     assert "authority follow-on sequencing contract" in project_state
     assert "reporting-only output for that reference contract" in project_state
@@ -251,10 +251,10 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
     assert "forwarded wrapper arguments" in plan
     assert "production_authority_evidence_references_check.py" in plan
     assert "authority_follow_on_sequence_check.py" in plan
-    assert "through PR #182" in plan_index
+    assert "through PR #183" in plan_index
     assert "production authority evidence reference checker" in plan_index
     assert "authority follow-on sequence checker" in plan_index
-    assert "Authority-evidence posture after PR #182" in (
+    assert "Authority-evidence posture after PR #183" in (
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert "production authority evidence reference contract" in (
