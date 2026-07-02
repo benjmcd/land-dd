@@ -2,6 +2,45 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Post-PR183 Authority Evidence State Sync
+
+**Scope:** Synchronize routing/state wording after PR #183 merged reporting-only
+production authority evidence reference output. The sync records the merged reference
+output posture without recording authority, approving sources, changing source rights,
+capturing corpus or fixtures, seeding the DB, proving a report, provisioning hosted
+runtime, claiming Level 10, unfreezing qualification, approving DS-017, or unblocking
+`P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+py -3.12 scripts\authority_follow_on_sequence_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\authority_evidence_intake_check.py`,
+  `scripts\qualification_parameterization_backlog_check.py --root .`,
+  `scripts\production_authority_evidence_references_check.py --json`, and
+  `scripts\authority_follow_on_sequence_check.py` passed.
+- Focused pytest passed (`19 passed`), focused ruff passed, and focused mypy passed.
+- `git diff --check` and deletion checks passed.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a routing/state synchronization only. Current authority
+references and downstream unlock requests remain empty, so external cited authority is
+still required before Bologna, DS-017, hosted/Level 10, empirical qualification
+`PASS`, owner-decision unfreeze, or `P0` unblock work can proceed.
+
 ## 2026-07-02 Production Authority Evidence Reference Output
 
 **Scope:** Add reporting-only `--summary` and `--json` output to the production

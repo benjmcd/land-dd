@@ -826,7 +826,7 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        "Authority-evidence posture after PR #182"
+        "Authority-evidence posture after PR #183"
         in str(auth_evidence.get("notes") or ""),
         "AUTH-EVIDENCE-INTAKE notes must preserve authority-evidence routing scope",
         errors,

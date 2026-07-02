@@ -2,18 +2,19 @@
 
 ## Current checkpoint (2026-07-02 production authority evidence reference output)
 
-This branch starts from live `origin/main`
-`b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, after the ODGAV owner-answer gate
+This checkpoint is based on live `origin/main`
+`084e844b82821066d0d10f3b04518b5d39610833`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
 evidence intake composition guard merged through PR #175, the post-PR175 guard-state
 sync merged through PR #176, optional authority-evidence summary/JSON output merged
-through PR #177, runbook discoverability links merged through PR #178, wrapper argument passthrough merged through PR #179, and state synchronization after wrapper support
-merged through PR #180, and the authority follow-on sequencing contract merged
-through PR #181, and the production authority evidence reference contract merged
-through PR #182. This branch adds opt-in reporting output for that reference contract.
-The active posture is still authority
+through PR #177, runbook discoverability links merged through PR #178,
+wrapper argument passthrough merged through PR #179, state synchronization after
+wrapper support merged through PR #180, the authority follow-on sequencing contract merged
+through PR #181, the production authority evidence reference contract merged
+through PR #182, and opt-in reporting output for that reference contract merged
+through PR #183. The active posture is still authority
 evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
@@ -88,11 +89,11 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until product/AOI and
   source-review authority is cited. Follow-up authority-evidence support slices through
-  PR #182 added current-state sync, reporting output, runbook links, wrapper
-  passthrough, state synchronization, the authority follow-on sequencing contract, and
-  the production authority evidence reference contract. This branch adds
-  reporting-only output for that reference contract without changing the active task or
-  blocker state. `P0` remains `BLOCKED`.
+  PR #183 added current-state sync, reporting output, runbook links, wrapper
+  passthrough, state synchronization, the authority follow-on sequencing contract, the
+  production authority evidence reference contract, and reporting-only output for that reference contract
+  without changing the active task or blocker state. `P0` remains
+  `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
   product/AOI/source/source-rights/corpus/report-proof authority; until then, BSA-001,
