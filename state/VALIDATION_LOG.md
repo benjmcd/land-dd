@@ -2,6 +2,59 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Authority Evidence Intake Composition Guard
+
+**Scope:** Add a validate-only composition guard for the active
+`AUTH-EVIDENCE-INTAKE` posture after PR #174. The guard proves that active routing,
+production authority streams, Bologna owner/source-rights/corpus/report gates, empty
+authority records, and qualification `P0 = BLOCKED` agree as one blocked authority
+intake state. It does not record authority, approve sources, change rights, capture
+corpus or fixtures, seed the DB, prove reports, change schema/API/auth/UI/runtime
+behavior, approve DS-017, record hosted or Level 10 authority, unfreeze qualification,
+claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+.\scripts\run_authority_evidence_intake_check.ps1
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_intake_artifacts.py backend\tests\test_bologna_source_authority_intake_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_evidence_intake_check.py backend\tests\test_authority_evidence_intake_artifacts.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\selftest_qualification_validator.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority evidence intake guard passed and the PowerShell wrapper passed.
+- Focused authority evidence intake tests passed (`6 passed`).
+- Focused current-posture tests passed (`39 passed`) across readiness core,
+  qualification backlog, authority evidence intake, production authority intake, and
+  Bologna source-authority intake artifacts.
+- Ruff and focused mypy passed for the new guard and tests.
+- Qualification status passed with `passed=37 not_run=2 unexpected_failed=0` and
+  derived statuses `BLOCKED=1 NOT_RUN=20`.
+- Structural qualification validation passed after adding the guard to the readiness
+  crosswalk inventory.
+- Qualification selftest passed, including checker-advertisement drift and readiness
+  crosswalk inventory checks. An earlier failed attempt exposed the missing crosswalk
+  mapping and a recursive status-check call; both were fixed before this final pass.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed after the guard was wired into the canonical
+  verifier. DB smoke was skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This proves only the repo-local authority-evidence intake posture
+and checker composition. It does not supply the external product/AOI/source/source-
+rights/corpus/report authority required for Bologna, DS-017 approval, hosted
+deployment, Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
 ## 2026-07-02 Authority Evidence Intake Routing
 
 **Scope:** Route the project after PR #173 so `POST-GEOLOGY-ROUTING` is done and

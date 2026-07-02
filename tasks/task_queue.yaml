@@ -2817,7 +2817,12 @@ tasks:
       - AUTH-EVIDENCE-INTAKE is the only active task and points to the authority-evidence intake plan
       - BSA-001 and ODP-BOL-002/003/004 remain blocked until cited product/AOI/source/source-rights/corpus/report-proof authority exists
       - DS-017, hosted production, Level 10, qualification PASS, owner-decision unfreeze, and P0 unblock remain blocked by external authority requirements
+      - The authority-evidence intake composition guard passes and proves required production/Bologna/qualification authority streams are present, blocked, and unpromoted
       - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
+    validation:
+      - py -3.12 .\scripts\authority_evidence_intake_check.py
+      - .\scripts\run_authority_evidence_intake_check.ps1
+      - .\scripts\verify.ps1
 
   # --- Completed ---
   - id: T000

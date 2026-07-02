@@ -12,6 +12,7 @@ This document is the human-readable companion to `config/qualification/readiness
 | `source_readiness` | feeds_status | `Q1-012`, `DQ-001`, `DQ-018`, `S-016` | Feeds source registry and source-rights readiness. |
 | `source_entitlements` | authority_blocker | `Q1-012`, `S-016`, `R-005`, `DQ-018` | Blocks restricted source use without entitlement evidence. |
 | `production_authority_intake` | authority_blocker | `G-021`, `O-020`, `S-005`, `R-005` | Records owner production authority decisions. |
+| `authority_evidence_intake` | authority_blocker | `P0-001`, `G-021`, `O-020`, `S-005`, `R-005` | Composes active routing, production authority streams, Bologna ODP gates, empty authority records, and P0 blocked status without recording authority. |
 | `bologna_preflight` | authority_blocker | `R-001`, `R-002`, `Q3-027`, `Q3-028` | Blocks Bologna work before non-US scope boundaries are explicit. |
 | `bologna_pilot_scope_authority` | authority_blocker | `P0-001`, `R-001`, `R-002`, `G-011` | Blocks pilot work until Bologna product scope is approved. |
 | `bologna_source_candidates` | authority_blocker | `DQ-013`, `DQ-017`, `Q3-006`, `R-005` | Blocks corpus work until candidate sources have a governed path. |

@@ -46,6 +46,19 @@ Make a routing-only update:
   evidence exists;
 - keep qualification status at `P0 = BLOCKED`.
 
+Follow-up guard under the same active posture:
+
+- add a thin validate-only composition check that proves the active routing,
+  production authority streams, Bologna ODP/source/corpus/report gates, empty
+  authority records, and empirical qualification status agree as one blocked
+  authority-evidence intake posture;
+- run existing specialized validators instead of re-implementing source-rights,
+  production-authority, owner-answer, corpus, report-proof, readiness, or
+  qualification rules;
+- wire that composition check into the canonical verifier so the posture fails
+  closed if any required authority stream is omitted or promoted without cited
+  authority.
+
 Rejected alternatives:
 
 - Start `BSA-001` now: rejected because complete cited product/AOI/source-review
@@ -71,8 +84,12 @@ Rejected alternatives:
 | `state/PROJECT_STATE.md` | Record post-PR #173 authority-evidence checkpoint. |
 | `tasks/task_queue.yaml` | Mark `POST-GEOLOGY-ROUTING` done and add active `AUTH-EVIDENCE-INTAKE`. |
 | `scripts/qualification_parameterization_backlog_check.py` | Guard the authority-evidence routing boundary. |
+| `scripts/authority_evidence_intake_check.py` | Compose existing authority validators and active routing into one fail-closed posture check. |
+| `scripts/run_authority_evidence_intake_check.ps1` | Windows wrapper for the authority-evidence posture check. |
+| `scripts/run_authority_evidence_intake_check.sh` | POSIX wrapper for the authority-evidence posture check. |
 | `backend/tests/test_qualification_parameterization_backlog_artifacts.py` | Mirror backlog checker expectations. |
 | `backend/tests/test_readiness_core_artifacts.py` | Mirror readiness model expectations. |
+| `backend/tests/test_authority_evidence_intake_artifacts.py` | Prove the authority-evidence guard passes current artifacts and fails closed on omitted streams, downstream unlocks, or P0 promotion. |
 | `state/WORKLOG.md` | Record sync work and validation. |
 | `state/VALIDATION_LOG.md` | Record exact commands, results, and residual risk. |
 
@@ -84,8 +101,10 @@ py -3.12 scripts\bologna_pilot_scope_authority_check.py
 py -3.12 scripts\bologna_source_authority_intake_check.py
 py -3.12 scripts\bologna_source_rights_check.py
 py -3.12 scripts\bologna_recorded_source_corpus_check.py
+py -3.12 scripts\authority_evidence_intake_check.py
 py -3.12 scripts\readiness_matrix_check.py
 py -3.12 scripts\qualification_status_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
 git diff --check
 git diff --name-only --diff-filter=D
 .\scripts\verify.ps1
@@ -98,6 +117,10 @@ Pass/fail requirements:
 - `BSA-001`, ODP-BOL-002, ODP-BOL-003, ODP-BOL-004, DS-017, hosted/Level 10,
   qualification `PASS`, owner-decision unfreeze, and `P0` remain blocked until
   cited authority evidence exists.
+- `scripts\authority_evidence_intake_check.py` passes and fails closed if the
+  active task drifts, a production authority stream is omitted, downstream
+  Bologna updates are enabled, authority records are recorded, or `P0` is
+  promoted.
 - No new source approval, source-rights change, corpus, fixture capture, DB seed,
   report proof, runtime behavior, schema/API/auth/UI change, or production
   authority is introduced.
@@ -106,3 +129,7 @@ Pass/fail requirements:
 - 2026-07-02: Selected an authority-evidence intake posture after PR #173 because
   the owner-independent fixture sequence is complete and every remaining
   substantive milestone depends on cited external authority.
+- 2026-07-02: Added a thin composition guard for the active posture because the
+  existing authority validators were strong individually but did not expose one
+  current-route check proving that all required authority streams are present,
+  blocked, and wired into the canonical verification gate.

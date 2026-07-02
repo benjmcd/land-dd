@@ -3,13 +3,14 @@
 ## Current checkpoint (2026-07-02 Post-173 authority evidence routing)
 
 This branch starts from live `origin/main`
-`1d7c722bd8c1b6ab2ca20458b4fd1e309dd014e3`, after the ODGAV owner-answer gate
+`9f184c238793534dd169ceb1462c42e4d48f6a57`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the first extended-domain minerals
 fixture-ingestion proof merged through PR #168, the broadband fixture-ingestion proof
 merged through PR #169, the environmental hazard fixture-ingestion proof merged through
 PR #170, the water fixture-ingestion proof merged through PR #171, and the geology
 fixture-ingestion proof merged through PR #172, and the post-geology routing closeout
-merged through PR #173. The active posture is authority evidence intake: the next
+merged through PR #173, and the authority evidence intake routing merged through PR
+#174. The active posture is authority evidence intake: the next
 substantive work requires cited product/AOI/source/source-rights/corpus/report-proof
 authority before Bologna, DS-017, hosted/Level 10, or empirical qualification
 implementation can proceed. It does not add another connector, run live calls, approve
@@ -26,6 +27,14 @@ Bologna authority, claim hosted/Level 10 authority, or change `P0 = BLOCKED`.
   DB-backed Bologna report-proof authority, DS-017 approval, hosted authority, Level
   10 authority, qualification PASS, owner-decision unfreeze, or any source/corpus/
   report/runtime unblock from repo-local inference.
+- **Current authority-evidence guard**:
+  `scripts/authority_evidence_intake_check.py` composes the active task/plan,
+  production authority intake streams, Bologna owner-answer/source-rights/corpus/
+  report-proof gates, empty authority-record contracts, readiness matrix, and
+  qualification status into one validate-only check. It runs existing specialized
+  validators and fails closed on omitted authority streams, downstream unlocks,
+  recorded authority, or `P0` promotion; it does not record authority or change any
+  implementation surface.
 - **Current ODGAV boundary**:
   `scripts/bologna_owner_answer_evaluator.py` remains a pure in-memory evaluator used
   by the Bologna gate checkers and canonical qualification selftest. ODGAV completion
