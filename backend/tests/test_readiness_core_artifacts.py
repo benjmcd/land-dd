@@ -60,7 +60,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
 
     assert (
         readiness.checkpoint.active_plan
-        == "plans/2026-07-02-extended-domain-broadband-fixture-ingestion.md"
+        == "plans/2026-07-02-env-fixture.md"
     )
     assert "EQP2-1" in readiness.checkpoint.completed_task_ids
     assert "EQP2-2" in readiness.checkpoint.completed_task_ids
@@ -91,6 +91,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "BOL-ODP2-PACKET" in readiness.checkpoint.completed_task_ids
     assert "ODGAV-1" in readiness.checkpoint.completed_task_ids
     assert "MINERALS-FIXTURE" in readiness.checkpoint.completed_task_ids
+    assert "BROADBAND-FIXTURE" in readiness.checkpoint.completed_task_ids
     assert "READINESS-CORE" in readiness.checkpoint.completed_task_ids
     assert "BOL-PRIORITY" in readiness.checkpoint.completed_task_ids
     assert "BPS-001" in readiness.checkpoint.completed_task_ids
@@ -105,7 +106,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
     assert "Bologna" in readiness.checkpoint.boundary_text
     assert readiness.task_queue.active_plan == readiness.checkpoint.active_plan
     assert [task.task_id for task in readiness.task_queue.active_tasks] == [
-        "BROADBAND-FIXTURE"
+        "ENV-FIXTURE"
     ]
     assert any(task.task_id == "READINESS-CORE" for task in readiness.task_queue.completed_tasks)
     assert any(task.task_id == "BOL-PRIORITY" for task in readiness.task_queue.completed_tasks)
@@ -162,6 +163,10 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
         task.task_id == "MINERALS-FIXTURE"
         for task in readiness.task_queue.completed_tasks
     )
+    assert any(
+        task.task_id == "BROADBAND-FIXTURE"
+        for task in readiness.task_queue.completed_tasks
+    )
     assert not any(
         task.task_id
         in {
@@ -184,6 +189,7 @@ def test_project_readiness_app_model_loads_current_control_plane() -> None:
             "BOL-ODP2-PACKET",
             "ODGAV-1",
             "MINERALS-FIXTURE",
+            "BROADBAND-FIXTURE",
         }
         for task in readiness.task_queue.active_tasks
     )

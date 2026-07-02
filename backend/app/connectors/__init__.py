@@ -99,6 +99,10 @@ from app.connectors.chatham_zoning_recorded import (
     ChathamZoningConnectorResult,
     ChathamZoningRecordedConnector,
 )
+from app.connectors.env_hazard_fixture import (
+    EnvHazardFixtureConnectorResult,
+    StaticEnvHazardFixtureConnector,
+)
 from app.connectors.epa_echo import (
     EPA_ECHO_CAVEAT,
     EPA_ECHO_CONNECTOR_NAME,
@@ -149,6 +153,7 @@ from app.connectors.fixture_quality import (
     evaluate_access_fixture_quality,
     evaluate_broadband_fixture_quality,
     evaluate_buildability_fixture_quality,
+    evaluate_env_hazard_fixture_quality,
     evaluate_flood_fixture_quality,
     evaluate_minerals_fixture_quality,
     evaluate_parcel_fixture_quality,
@@ -514,6 +519,7 @@ __all__ = [
     "StaticAccessFixtureConnector",
     "StaticBroadbandFixtureConnector",
     "StaticBuildabilityFixtureConnector",
+    "StaticEnvHazardFixtureConnector",
     "StaticFloodFixtureConnector",
     "StaticLocalFileConnector",
     "StaticLocalFileConnectorError",
@@ -563,6 +569,7 @@ __all__ = [
     "EpaEchoConnector",
     "EpaEchoConnectorError",
     "EpaEchoConnectorResult",
+    "EnvHazardFixtureConnectorResult",
     "FCC_BROADBAND_API_URL",
     "FCC_BROADBAND_CAVEAT",
     "FCC_BROADBAND_CONNECTOR_NAME",
@@ -604,6 +611,7 @@ __all__ = [
     "evaluate_access_fixture_quality",
     "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
+    "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
