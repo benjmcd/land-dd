@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Production authority evidence reference output
+
+- Started clean worktree `worktrees/auth-out` on `codex/auth-ref-output` from live
+  `origin/main@b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, after PR #182 merged the
+  production authority evidence reference contract.
+- Added optional `--summary` and `--json` output to
+  `scripts/production_authority_evidence_references_check.py`. The outputs run after
+  the same validation and report required reference fields, allowed artifact types,
+  forbidden effects, and per-stream reference-template counts.
+- Updated the Windows/POSIX wrappers so no-argument validation still prints the wrapper
+  confirmation, while `--summary` and `--json` remain clean stdout-only reporting
+  modes with no appended wrapper text.
+- Updated the production authority runbook, active plan, plan index, project state,
+  task queue, and focused tests so the reference-template outputs are discoverable and
+  explicitly reporting-only.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, current
+  evidence references and downstream unlock requests remain empty, `BSA-001` remains
+  blocked, `P0` remains `BLOCKED`, and no owner/source authority, DS-017 approval,
+  Bologna source-rights/corpus/report authority, hosted/Level 10 authority, fixture
+  capture, DB seed, report proof, schema/API/auth/UI/runtime change, qualification
+  `PASS`, owner-decision unfreeze, or downstream follow-on unlock was introduced.
+
 ## 2026-07-02 Production authority evidence reference contract
 
 - Started clean worktree `worktrees/auth-ref` on `codex/auth-ref` from live

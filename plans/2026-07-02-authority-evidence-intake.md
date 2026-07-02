@@ -33,7 +33,9 @@ added a validate-only follow-on sequencing contract so the packet's repo-local
 follow-on map is machine-checked without recording authority or unlocking
 implementation. The current slice adds a validate-only production authority evidence
 reference contract so future cited references have a checked field shape before any
-stream can move out of blocked state.
+stream can move out of blocked state. The latest support slice adds reporting-only
+`--summary` and `--json` output to that reference contract so operators can collect
+the required fields without generating artifacts or changing blocker state.
 
 The remaining sequence is authority-dependent:
 
@@ -103,6 +105,16 @@ Production authority evidence reference contract under the same active posture:
   change rights, trigger follow-on lanes, unfreeze qualification, claim Level 10, or
   unblock `P0`.
 
+Reference-contract reporting extension under the same active posture:
+
+- add optional direct checker output modes that emit the required reference fields,
+  allowed artifact types, forbidden effects, and per-stream reference templates after
+  the same validation passes;
+- keep default checker and wrapper behavior unchanged so canonical verification
+  remains a pass/fail guard;
+- avoid output paths, file writes, generated reference artifacts, source approvals,
+  rights changes, downstream unlock requests, or any authority-recording behavior.
+
 Rejected alternatives:
 
 - Start `BSA-001` now: rejected because complete cited product/AOI/source-review
@@ -132,9 +144,9 @@ Rejected alternatives:
 | `scripts/run_authority_evidence_intake_check.ps1` | Windows wrapper for the authority-evidence posture check. |
 | `scripts/run_authority_evidence_intake_check.sh` | POSIX wrapper for the authority-evidence posture check. |
 | `config/production_authority_evidence_references.yaml` | Validate-only evidence-reference contract for future cited authority references. |
-| `scripts/production_authority_evidence_references_check.py` | Fail closed if reference fields, stream templates, evidence lists, or blocked boundaries drift. |
-| `scripts/run_production_authority_evidence_references_check.ps1` | Windows wrapper for the evidence-reference contract check. |
-| `scripts/run_production_authority_evidence_references_check.sh` | POSIX wrapper for the evidence-reference contract check. |
+| `scripts/production_authority_evidence_references_check.py` | Fail closed if reference fields, stream templates, evidence lists, or blocked boundaries drift; optionally emits reporting-only summary/JSON. |
+| `scripts/run_production_authority_evidence_references_check.ps1` | Windows wrapper for the evidence-reference contract check and reporting modes. |
+| `scripts/run_production_authority_evidence_references_check.sh` | POSIX wrapper for the evidence-reference contract check and reporting modes. |
 | `config/authority_follow_on_sequence.yaml` | Validate-only authority-dependent follow-on sequence contract. |
 | `scripts/authority_follow_on_sequence_check.py` | Fail closed if the follow-on map, authority streams, or blocker boundaries drift. |
 | `scripts/run_authority_follow_on_sequence_check.ps1` | Windows wrapper for the follow-on sequence check. |
@@ -157,6 +169,8 @@ py -3.12 scripts\authority_evidence_intake_check.py
 py -3.12 scripts\authority_evidence_intake_check.py --summary
 py -3.12 scripts\authority_evidence_intake_check.py --json
 py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py --summary
+py -3.12 scripts\production_authority_evidence_references_check.py --json
 .\scripts\run_production_authority_evidence_references_check.ps1
 py -3.12 scripts\authority_follow_on_sequence_check.py
 .\scripts\run_authority_follow_on_sequence_check.ps1
@@ -186,6 +200,9 @@ Pass/fail requirements:
   closed if a current evidence reference is recorded, a stream template is omitted, a
   required evidence list drifts from production authority intake, decision updates are
   allowed, or downstream unlocks are requested.
+- Optional reference-contract `--summary` and `--json` outputs report the same blocked
+  reference shape from existing config files only, without appending wrapper text,
+  generating artifacts, or mutating state.
 - `scripts\authority_follow_on_sequence_check.py` passes and fails closed if the
   packet follow-on map drifts, a production authority stream is not covered by a
   follow-on lane, a lane is marked unblocked, or a lane omits the required cited-
@@ -219,3 +236,6 @@ Pass/fail requirements:
 - 2026-07-02: Added a validate-only production authority evidence reference contract
   so future cited authority references have a checked field shape before any
   production authority stream or follow-on lane can be unblocked.
+- 2026-07-02: Added reporting-only summary/JSON output for the production authority
+  evidence reference contract so operators can collect required reference fields from
+  validated config without recording authority or unlocking work.

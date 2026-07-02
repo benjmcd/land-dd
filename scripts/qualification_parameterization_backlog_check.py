@@ -826,7 +826,7 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        "Authority-evidence posture after PR #181"
+        "Authority-evidence posture after PR #182"
         in str(auth_evidence.get("notes") or ""),
         "AUTH-EVIDENCE-INTAKE notes must preserve authority-evidence routing scope",
         errors,
@@ -849,6 +849,11 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "production authority evidence reference contract" in str(auth_evidence.get("notes") or ""),
         "AUTH-EVIDENCE-INTAKE notes must preserve evidence reference scope",
+        errors,
+    )
+    require(
+        "reporting-only output" in str(auth_evidence.get("notes") or ""),
+        "AUTH-EVIDENCE-INTAKE notes must preserve evidence reference output scope",
         errors,
     )
 

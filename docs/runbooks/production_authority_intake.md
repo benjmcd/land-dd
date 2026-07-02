@@ -22,6 +22,18 @@ To validate the future cited-reference field shape without recording authority, 
 .\scripts\run_production_authority_evidence_references_check.ps1
 ```
 
+For a stdout-only view of the required reference fields and per-stream reference
+templates, run:
+
+```powershell
+py -3.12 .\scripts\production_authority_evidence_references_check.py --summary
+```
+
+Use `--json` on the same checker for machine-readable reference-template collection
+tracking. These reference-template output modes are reporting only; they do not record
+authority, approve sources, change source rights, request downstream unlocks, or move
+any stream out of `blocked`.
+
 For a consolidated stdout view of the active authority-evidence posture and missing
 evidence counts across production and Bologna streams, run:
 

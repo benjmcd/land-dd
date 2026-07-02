@@ -2,6 +2,55 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Production Authority Evidence Reference Output
+
+**Scope:** Add reporting-only `--summary` and `--json` output to the production
+authority evidence reference checker under the active `AUTH-EVIDENCE-INTAKE` posture.
+The output reports the validated reference field shape and per-stream templates without
+recording authority, approving sources, changing source rights, requesting downstream
+unlocks, provisioning hosted runtime, claiming Level 10, unfreezing qualification, or
+unblocking `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py --summary
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+.\scripts\run_production_authority_evidence_references_check.ps1
+.\scripts\run_production_authority_evidence_references_check.ps1 --summary
+.\scripts\run_production_authority_evidence_references_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,contract_status,stream_reference_template_count
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct `scripts\production_authority_evidence_references_check.py` passed.
+- Direct `--summary` reported the blocked reference contract, 15 required reference
+  fields, nine stream templates, zero current references, zero downstream unlock
+  requests, and forbidden effects including `p0_unblock`.
+- Direct `--json` emitted parseable
+  `production_authority_evidence_references_summary_v1` with
+  `contract_status: blocked_no_submitted_references` and nine stream templates.
+- The PowerShell wrapper passed in no-argument mode and forwarded `--summary` /
+  `--json` without appending wrapper confirmation text to reporting output.
+- `scripts\authority_evidence_intake_check.py` and
+  `scripts\qualification_parameterization_backlog_check.py --root .` passed.
+- Focused pytest, ruff, mypy, `git diff --check`, and deletion checks passed.
+- Full `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is reference-template reporting only. Current references and
+downstream unlock requests remain empty, so no production authority, DS-017 approval,
+Bologna owner/source/corpus/report authority, hosted/Level 10 authority,
+qualification `PASS`, or `P0` unblock is introduced.
+
 ## 2026-07-02 Production Authority Evidence Reference Contract
 
 **Scope:** Add a validate-only production authority evidence reference contract under

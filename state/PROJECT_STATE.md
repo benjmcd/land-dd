@@ -1,9 +1,9 @@
 # Project State
 
-## Current checkpoint (2026-07-02 production authority evidence reference contract)
+## Current checkpoint (2026-07-02 production authority evidence reference output)
 
 This branch starts from live `origin/main`
-`c38640b458c6d1da0218c34eeb6b80a02dc53143`, after the ODGAV owner-answer gate
+`b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
@@ -11,8 +11,9 @@ evidence intake composition guard merged through PR #175, the post-PR175 guard-s
 sync merged through PR #176, optional authority-evidence summary/JSON output merged
 through PR #177, runbook discoverability links merged through PR #178, wrapper argument passthrough merged through PR #179, and state synchronization after wrapper support
 merged through PR #180, and the authority follow-on sequencing contract merged
-through PR #181. This branch adds a validate-only production authority evidence
-reference contract. The active posture is still authority
+through PR #181, and the production authority evidence reference contract merged
+through PR #182. This branch adds opt-in reporting output for that reference contract.
+The active posture is still authority
 evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
@@ -46,9 +47,10 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   field shape for future cited production authority evidence references and mirror
   every `config/production_authority_intake.yaml` stream as a blocked reference
   template. Current reference lists and downstream unlock requests remain empty. The
-  contract does not supply authority, approve sources, change source rights, trigger
-  follow-on lanes, provision hosted runtime, unfreeze qualification, claim Level 10,
-  or unblock `P0`.
+  checker can emit reporting-only `--summary` and `--json` views for operator
+  collection tracking. The contract and output modes do not supply authority, approve
+  sources, change source rights, trigger follow-on lanes, provision hosted runtime,
+  unfreeze qualification, claim Level 10, or unblock `P0`.
 - **Current authority follow-on sequencing contract**:
   `config/authority_follow_on_sequence.yaml` and
   `scripts/authority_follow_on_sequence_check.py` machine-check the repo-local
@@ -86,11 +88,11 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until product/AOI and
   source-review authority is cited. Follow-up authority-evidence support slices through
-  PR #181 added current-state sync, reporting output, runbook links, wrapper
+  PR #182 added current-state sync, reporting output, runbook links, wrapper
   passthrough, state synchronization, the authority follow-on sequencing contract, and
-  the production authority evidence reference contract without changing the active
-  task or blocker state. `P0` remains
-  `BLOCKED`.
+  the production authority evidence reference contract. This branch adds
+  reporting-only output for that reference contract without changing the active task or
+  blocker state. `P0` remains `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
   product/AOI/source/source-rights/corpus/report-proof authority; until then, BSA-001,

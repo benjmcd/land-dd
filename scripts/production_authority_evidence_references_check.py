@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -277,11 +279,133 @@ def validate_repo_wiring() -> None:
         require(fragment in read_text(path_text), f"{path_text} missing expected fragment: {fragment}")
 
 
-def main() -> int:
+def build_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    contract = require_mapping(payload.get("reference_contract"), "reference contract missing")
+    current_references = require_list(
+        contract.get("current_evidence_references"),
+        "current evidence references must be a list",
+    )
+    downstream_unlocks = require_list(
+        contract.get("downstream_unlocks_requested"),
+        "downstream unlock requests must be a list",
+    )
+    required_fields = require_non_empty_list(
+        contract.get("required_reference_fields"),
+        "required reference fields missing",
+    )
+    templates = []
+    for raw_template in require_non_empty_list(
+        payload.get("stream_reference_templates"),
+        "stream reference templates missing",
+    ):
+        template = require_mapping(raw_template, "stream reference template must be a mapping")
+        required_evidence = require_non_empty_list(
+            template.get("required_evidence"),
+            "template required evidence missing",
+        )
+        current_authority_references = require_list(
+            template.get("current_authority_references"),
+            "template current authority references must be a list",
+        )
+        template_unlocks = require_list(
+            template.get("downstream_unlocks_requested"),
+            "template downstream unlocks must be a list",
+        )
+        templates.append(
+            {
+                "authority_stream_id": require_text(
+                    template.get("authority_stream_id"),
+                    "template stream id missing",
+                ),
+                "source_catalog": template.get("source_catalog"),
+                "status": template.get("status"),
+                "evidence_status": template.get("evidence_status"),
+                "required_evidence": required_evidence,
+                "required_evidence_count": len(required_evidence),
+                "current_authority_reference_count": len(current_authority_references),
+                "decision_updates_allowed": template.get("decision_updates_allowed"),
+                "downstream_unlock_request_count": len(template_unlocks),
+            }
+        )
+    return {
+        "schema_version": "production_authority_evidence_references_summary_v1",
+        "ok": True,
+        "contract_status": payload.get("status"),
+        "source_intake": payload.get("source_intake"),
+        "follow_on_sequence": payload.get("follow_on_sequence"),
+        "operator_runbook": payload.get("operator_runbook"),
+        "validation": payload.get("validation"),
+        "current_evidence_reference_count": len(current_references),
+        "downstream_unlock_request_count": len(downstream_unlocks),
+        "required_reference_fields": required_fields,
+        "required_reference_field_count": len(required_fields),
+        "allowed_artifact_types": require_non_empty_list(
+            contract.get("allowed_artifact_types"),
+            "allowed artifact types missing",
+        ),
+        "forbidden_reference_effects": require_non_empty_list(
+            contract.get("forbidden_reference_effects"),
+            "forbidden effects missing",
+        ),
+        "stream_reference_templates": templates,
+        "stream_reference_template_count": len(templates),
+    }
+
+
+def format_summary(summary: dict[str, Any]) -> str:
+    templates = require_non_empty_list(
+        summary.get("stream_reference_templates"),
+        "stream templates missing",
+    )
+    lines = [
+        "production authority evidence references summary: blocked",
+        f"schema_version: {summary.get('schema_version')}",
+        f"contract_status: {summary.get('contract_status')}",
+        f"source_intake: {summary.get('source_intake')}",
+        f"follow_on_sequence: {summary.get('follow_on_sequence')}",
+        f"current_evidence_references: {summary.get('current_evidence_reference_count')}",
+        f"downstream_unlock_requests: {summary.get('downstream_unlock_request_count')}",
+        f"required_reference_fields: {summary.get('required_reference_field_count')}",
+        f"stream_reference_templates: {summary.get('stream_reference_template_count')}",
+    ]
+    for raw_template in templates:
+        template = require_mapping(raw_template, "stream template summary must be a mapping")
+        lines.append(
+            "stream_reference_template "
+            f"{template.get('authority_stream_id')}: "
+            f"status={template.get('status')} "
+            f"evidence_status={template.get('evidence_status')} "
+            f"required_evidence={template.get('required_evidence_count')} "
+            "current_authority_references="
+            f"{template.get('current_authority_reference_count')} "
+            f"decision_updates_allowed={template.get('decision_updates_allowed')} "
+            f"downstream_unlocks={template.get('downstream_unlock_request_count')}"
+        )
+    lines.append(
+        "forbidden_reference_effects: "
+        + ", ".join(str(effect) for effect in summary.get("forbidden_reference_effects", []))
+    )
+    lines.append("production authority evidence references check: ok")
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate the production authority evidence reference contract.",
+    )
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--json", action="store_true", dest="json_output")
+    output_group.add_argument("--summary", action="store_true", dest="summary_output")
+    args = parser.parse_args([] if argv is None else argv)
     validate_required_files()
-    validate_catalog(load_yaml(CONFIG_PATH))
+    payload = validate_catalog(load_yaml(CONFIG_PATH))
     validate_repo_wiring()
-    print("production authority evidence references check: ok")
+    if args.json_output:
+        print(json.dumps(build_summary(payload), indent=2, sort_keys=True))
+    elif args.summary_output:
+        print(format_summary(build_summary(payload)))
+    else:
+        print("production authority evidence references check: ok")
     return 0
 
 
@@ -293,4 +417,4 @@ if __name__ == "__main__":
     from qualification_checker_advertisement import maybe_emit_qualification_criteria
 
     maybe_emit_qualification_criteria(__file__)
-    raise SystemExit(main())
+    raise SystemExit(main(_qualification_sys.argv[1:]))
