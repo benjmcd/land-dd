@@ -2,6 +2,58 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Environmental Hazard Fixture Ingestion
+
+**Scope:** Add an owner-independent EPA ECHO environmental hazard fixture-ingestion
+proof on the existing Buncombe golden AOI and preserve all existing authority blockers.
+This includes local-only fixtures, connector fail-closed validation, regulated-facility
+proximity claim generation, source-failure unknown generation, evidence-to-claim
+linkage, Section 11 dossier rendering, and forbidden-overclaim checks. It does not run
+live EPA calls, approve sources, change source rights, alter schema/API/auth/report
+semantics, approve DS-017, record Bologna authority, unfreeze qualification, claim
+hosted/Level 10 authority, or change `P0 = BLOCKED`.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_broadband.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 -m ruff check backend\app\connectors\env_hazard_fixture.py backend\app\connectors\fixture_quality.py backend\app\connectors\__init__.py backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py scripts\qualification_parameterization_backlog_check.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\app\connectors\env_hazard_fixture.py backend\app\connectors\fixture_quality.py backend\tests\connectors\test_env_hazard_fixture_connector.py backend\tests\private_mvp\test_extended_domain_env_hazard.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Env-hazard connector and private-MVP tests passed (`11 passed`).
+- Broader focused connector/private-MVP/routing pytest passed after restoring the
+  explicit minerals plan citation in `plans/README.md` (`25 passed`).
+- Focused ruff and focused mypy passed for touched implementation, test, and guardrail
+  files.
+- Qualification parameterization backlog check passed with `ENV-FIXTURE` as the only
+  active task and `P0 status: BLOCKED`.
+- Readiness matrix initially failed because the active plan omitted the required
+  `state/LEVEL_9_10_GATE_MATRIX.md` / Level 9/10 authority citation. The plan was
+  corrected and the checker passed.
+- Qualification status check passed after the readiness-plan citation fix:
+  `passed=36 not_run=2 unexpected_failed=0`, derived `BLOCKED=1 NOT_RUN=20`.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  structural qualification validation, qualification status, default change-impact,
+  P0 auto-evidence, qualification parameterization backlog, backend tests, backend
+  ruff, and backend mypy all passed. DB smoke was skipped because `RUN_DB_SMOKE=1` was
+  not set. Output was captured at
+  `local_artifacts\verify-20260702T005530104Z.out.log`.
+
+**Residual risk:** This pass proves only local fixture ingestion for EPA ECHO screening
+evidence. A nearby regulated facility does not prove subject-property contamination,
+exposure, remediation status, environmental liability, safety, value, insurability,
+lending suitability, or investment quality; no source approval, source-rights change,
+live connector run, DB-backed production proof, Bologna authority, hosted authority,
+Level 10 claim, qualification PASS, or P0 unblock is introduced.
+
 ## 2026-07-02 Extended-Domain Broadband Fixture Ingestion
 
 **Scope:** Reconcile post-PR #167/#168 routing, add an owner-independent broadband

@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Environmental hazard fixture ingestion
+
+- Started clean worktree `worktrees/env-fixture` on `codex/env-fixture` from live
+  `origin/main@3b2bd1897f8227ca24cb7290d8026ff3b2757356`, after broadband fixture
+  ingestion merged through PR #169.
+- Added active env-hazard fixture-ingestion plan and updated project/task/readiness
+  routing so `BROADBAND-FIXTURE` is completed and `ENV-FIXTURE` is the only active
+  owner-independent extended-domain lane.
+- Added `backend/app/connectors/env_hazard_fixture.py`, a local-only static fixture
+  connector for EPA ECHO environmental hazard evidence. It accepts source-observation
+  success fixtures and source-failure failed/blocked fixtures, and rejects remote paths,
+  connector/domain mismatches, empty evidence, and status/evidence-type mismatches.
+- Added `evaluate_env_hazard_fixture_quality`, public exports, two Buncombe connector
+  fixtures, connector fail-closed tests, and private-MVP end-to-end tests for
+  regulated-facility proximity and source-failure unknown paths.
+- Preserved the authority boundary: no live EPA ECHO calls, source approval,
+  source-rights change, schema/API/auth/report semantic change, contamination or
+  liability conclusion, Bologna authority, hosted authority, Level 10 claim,
+  qualification PASS, or P0 unblock was introduced.
+- Focused connector/private-MVP/routing checks passed, readiness matrix passed after
+  the active plan cited `state/LEVEL_9_10_GATE_MATRIX.md`, and qualification status
+  remained `BLOCKED=1 NOT_RUN=20`. Full `.\scripts\verify.ps1` passed. DB smoke was
+  skipped by default.
+
 ## 2026-07-02 Extended-domain broadband fixture ingestion
 
 - Started clean worktree `worktrees/post168-sync` on `codex/post168-sync` from live

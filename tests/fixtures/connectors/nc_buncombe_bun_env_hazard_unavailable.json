@@ -1,0 +1,47 @@
+{
+  "retrieval_run": {
+    "ingest_run_id": "e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2",
+    "dataset_version_id": "33333333-3333-4333-8333-333333333333",
+    "connector_name": "fixture_env_hazard_static",
+    "status": "failed",
+    "started_at": "2026-06-07T10:00:00Z",
+    "finished_at": "2026-06-07T10:00:01Z",
+    "row_count": 0,
+    "error_count": 1,
+    "warning_count": 0,
+    "log_uri": "fixture://connectors/nc_buncombe_bun_env_hazard_unavailable",
+    "metrics": {
+      "fixture_only": true,
+      "source": "local_json",
+      "failure_reason": "epa_echo_request_error"
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "e2e3e4e5-e2e3-4e4e-8e5e-e2e3e4e5e6e7",
+      "area_id": "44444444-4444-4444-8444-444444444444",
+      "evidence_type": "source_failure",
+      "evidence_code": "ENV_HAZ_SOURCE_UNAVAILABLE",
+      "domain": "env_hazard",
+      "observation": "Fixture EPA ECHO FRS screening: environmental hazard source could not be retrieved.",
+      "observed_value": {
+        "failure_reason": "epa_echo_request_error",
+        "error_message": "EPA ECHO facility proximity source failed or returned no usable records.",
+        "retryable": true
+      },
+      "source_id": "55555555-5555-4555-8555-555555555555",
+      "dataset_version_id": "33333333-3333-4333-8333-333333333333",
+      "method_code": "fixture_env_hazard_facility_screen",
+      "method_version": "0.1.0",
+      "confidence": "unknown",
+      "caveat": "EPA ECHO facility-proximity source could not be retrieved; recorded as a source failure, not a no-hazard conclusion. A Phase I/II ESA is required for regulatory and transactional environmental due diligence.",
+      "is_negative_evidence": false,
+      "is_source_failure": true,
+      "superseded_by": null,
+      "source_date": "2026-06-07",
+      "observed_at": "2026-06-07T10:00:01Z",
+      "geometry_geojson": null,
+      "spatial_precision_meters": null
+    }
+  ]
+}

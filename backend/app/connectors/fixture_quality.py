@@ -93,6 +93,10 @@ _BROADBAND_FIXTURE_DOMAIN = "broadband"
 _BROADBAND_FIXTURE_CONNECTOR_NAME = "fixture_broadband_static"
 _BROADBAND_FIXTURE_METHOD_PREFIX = "fixture_broadband_"
 
+_ENV_HAZARD_FIXTURE_DOMAIN = "env_hazard"
+_ENV_HAZARD_FIXTURE_CONNECTOR_NAME = "fixture_env_hazard_static"
+_ENV_HAZARD_FIXTURE_METHOD_PREFIX = "fixture_env_hazard_"
+
 
 @dataclass(frozen=True)
 class ConnectorFixtureQualityIssue:
@@ -888,6 +892,19 @@ def evaluate_broadband_fixture_quality(
     )
 
 
+def evaluate_env_hazard_fixture_quality(
+    connector_result: FixtureConnectorResultProtocol,
+) -> ConnectorFixtureQualityProfile:
+    return _evaluate_fixture_quality(
+        connector_result,
+        connector_name=_ENV_HAZARD_FIXTURE_CONNECTOR_NAME,
+        domain=_ENV_HAZARD_FIXTURE_DOMAIN,
+        method_prefix=_ENV_HAZARD_FIXTURE_METHOD_PREFIX,
+        label="env-hazard",
+        require_spatial_geometry=False,
+    )
+
+
 __all__ = [
     "ConnectorFixtureQualityIssue",
     "ConnectorFixtureQualityIssueCode",
@@ -895,6 +912,7 @@ __all__ = [
     "evaluate_access_fixture_quality",
     "evaluate_broadband_fixture_quality",
     "evaluate_buildability_fixture_quality",
+    "evaluate_env_hazard_fixture_quality",
     "evaluate_flood_fixture_quality",
     "evaluate_minerals_fixture_quality",
     "evaluate_parcel_fixture_quality",
