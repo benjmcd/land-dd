@@ -238,9 +238,10 @@ def validate_plan_and_state_text() -> None:
     ):
         require(phrase in normalized_plan, f"active plan missing boundary: {phrase}")
     for phrase in (
-        "Post-PR175 authority evidence guard",
+        "Post-PR179 authority evidence reporting wrapper",
         "`plans/2026-07-02-authority-evidence-intake.md`",
         "Active task is AUTH-EVIDENCE-INTAKE",
+        "wrapper argument passthrough merged through PR #179",
         "`P0` remains `BLOCKED`",
     ):
         require(phrase in project_state, f"project state missing boundary: {phrase}")

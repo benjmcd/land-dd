@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Post-PR179 authority evidence support sync
+
+- Started clean worktree `worktrees/domain-next` on `codex/domain-next` from live
+  `origin/main@19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6`, after PR #179 merged the
+  authority-evidence wrapper passthrough slice.
+- Synchronized the current project-state checkpoint, active authority-evidence plan,
+  plans index, and task queue so they describe the landed PR #176-#179 support work:
+  guard-state sync, summary/JSON output, runbook links, and wrapper passthrough.
+- Updated the authority-evidence and qualification-backlog guards/tests so the active
+  posture fails closed if it drifts back to the stale post-PR175 wording or omits the
+  reporting-only wrapper boundary.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, `BSA-001`
+  remains blocked, `P0` remains `BLOCKED`, and no owner/source authority, DS-017
+  approval, Bologna source-rights/corpus/report authority, hosted/Level 10 authority,
+  fixture capture, DB seed, schema/API/auth/UI/runtime change, qualification `PASS`, or
+  owner-decision unfreeze was introduced.
+
 ## 2026-07-02 Authority evidence wrapper summary passthrough
 
 - Started clean worktree `worktrees/auth-wrap` on `codex/auth-wrapper` from live
