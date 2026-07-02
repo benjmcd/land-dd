@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from copy import deepcopy
@@ -106,3 +107,79 @@ def test_authority_evidence_intake_script_and_wrappers_are_validate_only() -> No
     assert "Remove-Item" not in ps1
     assert "mkdir" not in sh
     assert "rm " not in sh
+
+
+def test_authority_evidence_intake_json_summary_reports_missing_authority() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/authority_evidence_intake_check.py", "--json"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    summary = json.loads(result.stdout)
+    assert summary["schema_version"] == "authority_evidence_intake_summary_v1"
+    assert summary["ok"] is True
+    assert summary["active_plan"] == "plans/2026-07-02-authority-evidence-intake.md"
+    assert summary["active_task"] == "AUTH-EVIDENCE-INTAKE"
+    assert summary["active_tasks"] == ["AUTH-EVIDENCE-INTAKE"]
+    assert summary["completed_prerequisite"] == "POST-GEOLOGY-ROUTING"
+    assert summary["production_authority_status"] == "blocked_no_external_authority"
+    assert summary["bologna_owner_answer_status"] == "blocked_review_only_scope_pursuit"
+    assert summary["qualification"]["p0_status"] == "BLOCKED"
+    assert summary["qualification"]["p0_result_path"] is None
+    assert summary["authority_record_state"] == {
+        "odp2_owner_answer_reference_count": 0,
+        "odp2_source_authority_record_reference_count": 0,
+        "odp2_source_rights_approval_reference_count": 0,
+        "pilot_authority_record_count": 0,
+        "source_authority_record_count": 0,
+    }
+
+    streams = {stream["id"]: stream for stream in summary["production_streams"]}
+    assert set(streams) == validator_expected_streams()
+    assert streams["ds017_source_entitlement"]["evidence_status"] == "missing"
+    assert streams["ds017_source_entitlement"]["authority_reference_count"] == 0
+    assert streams["ds017_source_entitlement"]["decision_updates_allowed"] is False
+    assert streams["bologna_pilot_scope"]["required_evidence_count"] == 12
+
+    threads = {thread["odp_id"]: thread for thread in summary["bologna_threads"]}
+    assert threads["ODP-BOL-001"]["status"] == "review_only_scope_pursuit_answered"
+    assert "config/bologna_pilot_scope_authority.yaml" in threads["ODP-BOL-001"]["source_packets"]
+    assert threads["ODP-BOL-002"]["status"] == "missing_owner_answer"
+    assert threads["ODP-BOL-002"]["owner_answer_reference_count"] == 0
+    assert threads["ODP-BOL-004"]["required_field_count"] == 11
+    assert all(thread["downstream_updates_allowed"] is False for thread in threads.values())
+    assert "p0_unblock" in summary["blocked_implementation_boundaries"]
+    assert "hosted_level_10_authority" in summary["blocked_implementation_boundaries"]
+
+
+def test_authority_evidence_intake_text_summary_keeps_blocked_boundaries() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/authority_evidence_intake_check.py", "--summary"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "authority evidence intake summary: blocked" in result.stdout
+    assert "schema_version: authority_evidence_intake_summary_v1" in result.stdout
+    assert "active_task: AUTH-EVIDENCE-INTAKE" in result.stdout
+    assert "active_tasks: AUTH-EVIDENCE-INTAKE" in result.stdout
+    assert "completed_prerequisite: POST-GEOLOGY-ROUTING" in result.stdout
+    assert (
+        "production_stream ds017_source_entitlement: status=blocked evidence_status=missing"
+        in result.stdout
+    )
+    assert "bologna_thread ODP-BOL-002: status=missing_owner_answer" in result.stdout
+    assert "authority_record_state: pilot=0 source=0 odp2_owner_answers=0" in result.stdout
+    assert "blocked_implementation_boundaries:" in result.stdout
+    assert "p0_unblock" in result.stdout
+    assert "authority evidence intake check: ok" in result.stdout
+
+
+def validator_expected_streams() -> set[str]:
+    validator = cast(Any, _load_validator())
+    return set(validator.EXPECTED_PRODUCTION_STREAMS)

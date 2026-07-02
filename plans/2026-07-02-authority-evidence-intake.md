@@ -62,6 +62,16 @@ Follow-up guard under the same active posture:
   closed if any required authority stream is omitted or promoted without cited
   authority.
 
+Reporting extension under the same active posture:
+
+- add optional direct checker output modes that emit a human summary or JSON view
+  of missing production authority streams, Bologna owner-answer threads, P0 status,
+  and blocked implementation boundaries after the same validation passes;
+- keep default checker and wrapper behavior unchanged so canonical verification
+  remains a pass/fail guard;
+- do not write files, seed runtime state, record authority, approve sources, change
+  rights, or unlock any downstream implementation surface.
+
 Rejected alternatives:
 
 - Start `BSA-001` now: rejected because complete cited product/AOI/source-review
@@ -105,6 +115,8 @@ py -3.12 scripts\bologna_source_authority_intake_check.py
 py -3.12 scripts\bologna_source_rights_check.py
 py -3.12 scripts\bologna_recorded_source_corpus_check.py
 py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
 py -3.12 scripts\readiness_matrix_check.py
 py -3.12 scripts\qualification_status_check.py --root .
 $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
@@ -124,6 +136,9 @@ Pass/fail requirements:
   active task drifts, a production authority stream is omitted, downstream
   Bologna updates are enabled, authority records are recorded, or `P0` is
   promoted.
+- Optional `--summary` and `--json` outputs report the same blocked posture and
+  missing evidence from existing config/state files only, without generating or
+  mutating artifacts.
 - No new source approval, source-rights change, corpus, fixture capture, DB seed,
   report proof, runtime behavior, schema/API/auth/UI change, or production
   authority is introduced.
@@ -139,3 +154,6 @@ Pass/fail requirements:
 - 2026-07-02: Synchronized current-state and checker wording after PR #175 so live
   repo controls describe the merged authority-evidence composition guard while keeping
   `AUTH-EVIDENCE-INTAKE` active and all downstream authority blockers intact.
+- 2026-07-02: Added optional summary/JSON output to the composition guard so the
+  current missing authority evidence can be collected from machine-checked configs
+  without creating a new runbook, generating artifacts, or changing blocker state.

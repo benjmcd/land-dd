@@ -2,6 +2,24 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority evidence intake summary output
+
+- Started clean worktree `worktrees/auth-summary` on `codex/auth-summary` from live
+  `origin/main@fe0eaade0fb76c1a325ec7a174892c5bc96e3b95`, after PR #176 merged the
+  post-PR175 authority guard sync.
+- Added optional `--summary` and `--json` output modes to
+  `scripts/authority_evidence_intake_check.py`. Both modes run the existing validation
+  first, then report active task, missing production authority streams, Bologna owner
+  answer thread status, P0 status, and blocked implementation boundaries from existing
+  checked config/state files.
+- Preserved default checker and wrapper behavior. The reporting modes do not create
+  files, seed runtime state, record authority, approve sources, change rights, capture
+  corpus/fixtures, seed the DB, prove a report, change schema/API/auth/UI/runtime
+  behavior, approve DS-017, claim hosted/Level 10, claim qualification PASS, unfreeze
+  owner decisions, or unblock P0.
+- Focused guard runs, summary/JSON smoke, focused tests, ruff, mypy, diff checks, and
+  full `.\scripts\verify.ps1` passed. DB smoke was skipped by default.
+
 ## 2026-07-02 Post-PR175 authority evidence guard sync
 
 - Started clean worktree `worktrees/post175-sync` on `codex/post175-sync` from live
