@@ -2,6 +2,62 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Authority Follow-On Sequence Contract
+
+**Scope:** Add a validate-only authority follow-on sequence contract under the active
+`AUTH-EVIDENCE-INTAKE` posture. The contract machine-checks the repo-local follow-on
+map in `state/PRODUCTION_AUTHORITY_PACKET.md` while preserving all DS-017, Bologna,
+hosted/Level 10, qualification, owner-decision, and P0 blockers. It does not record
+external authority, approve sources, change source rights, capture corpus or fixtures,
+seed the DB, prove reports, change schema/API/auth/UI/runtime behavior, claim hosted
+or Level 10 authority, unfreeze qualification, claim qualification `PASS`, or unblock
+`P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_follow_on_sequence_check.py
+.\scripts\run_authority_follow_on_sequence_check.ps1
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+.\scripts\run_authority_evidence_intake_check.ps1 --summary
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+.\scripts\run_authority_evidence_intake_check.ps1
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_follow_on_sequence_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_follow_on_sequence_check.py scripts\authority_evidence_intake_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `scripts\authority_follow_on_sequence_check.py` passed and the PowerShell wrapper
+  returned `authority follow-on sequence: ok`.
+- `scripts\authority_evidence_intake_check.py` passed after adding the follow-on
+  sequence validator to the composition guard. Summary/JSON modes remained
+  reporting-only and parseable.
+- `scripts\qualification_parameterization_backlog_check.py --root .` and
+  `scripts\readiness_matrix_check.py` passed.
+- Focused pytest, ruff, and mypy gates passed for the new checker and updated
+  authority-evidence/backlog artifact tests.
+- Initial full `.\scripts\verify.ps1` failed at the qualification selftest because the
+  new config/checker matched readiness inventory globs but was not mapped in
+  `config/qualification/readiness_crosswalk.yaml`. Added the
+  `authority_follow_on_sequence` authority-blocker surface to the YAML crosswalk and
+  `docs/qualification/readiness-crosswalk.md`; reran the qualification validator
+  selftest successfully.
+- `.\scripts\verify.ps1` passed with DB smoke skipped by default.
+
+**Residual risk:** This is a sequencing guard only. The production workload/retention
+follow-on remains packet-level because `config/production_authority_intake.yaml` has no
+standalone workload/retention authority stream. That is explicit in
+`config/authority_follow_on_sequence.yaml` and does not unlock workload, retention, or
+hosted claims.
+
 ## 2026-07-02 Post-PR179 Authority Evidence Support Sync
 
 **Scope:** Synchronize current-state and guard wording after PR #179 so the

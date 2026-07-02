@@ -2,6 +2,32 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-02 Authority follow-on sequence contract
+
+- Started clean worktree `worktrees/auth-seq` on `codex/auth-seq` from live
+  `origin/main@139b28ed3644c590768bc1d5d5a82b364e0cf940`, after PR #180 merged the
+  authority-evidence state sync.
+- Added `config/authority_follow_on_sequence.yaml`, a validate-only contract for the
+  repo-local follow-on map in `state/PRODUCTION_AUTHORITY_PACKET.md`. It maps each
+  "authority received" row to blocked first repo-local actions, covers every
+  production-authority stream, and preserves the packet-level production
+  workload/retention lane.
+- Added `scripts/authority_follow_on_sequence_check.py` plus Windows/POSIX wrappers.
+  The checker fails closed if follow-on map text drifts, a production authority stream
+  is uncovered, a lane is unblocked, or a lane omits cited-authority/source-catalog/
+  checker prerequisites.
+- Wired the new check into the authority-evidence composition guard, canonical
+  Windows/POSIX verification, manifest, active plan, task queue, and focused artifact
+  tests.
+- Mapped the new config/checker in the qualification readiness crosswalk after the
+  full verifier correctly rejected unmapped readiness inventory paths.
+- Preserved the authority posture: `AUTH-EVIDENCE-INTAKE` remains active, every
+  follow-on lane remains `blocked_waiting_for_authority`, `BSA-001` remains blocked,
+  `P0` remains `BLOCKED`, and no owner/source authority, DS-017 approval, Bologna
+  source-rights/corpus/report authority, hosted/Level 10 authority, fixture capture,
+  DB seed, report proof, schema/API/auth/UI/runtime change, qualification `PASS`, or
+  owner-decision unfreeze was introduced.
+
 ## 2026-07-02 Post-PR179 authority evidence support sync
 
 - Started clean worktree `worktrees/domain-next` on `codex/domain-next` from live

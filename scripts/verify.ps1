@@ -168,6 +168,11 @@ Invoke-PythonCommand `
     -Label 'authority evidence intake' `
     -Arguments @('scripts/authority_evidence_intake_check.py')
 
+Write-Host '== authority follow-on sequence =='
+Invoke-PythonCommand `
+    -Label 'authority follow-on sequence' `
+    -Arguments @('scripts/authority_follow_on_sequence_check.py')
+
 if ($env:RUN_DB_SMOKE -eq '1') {
     Write-Host '== db migration =='
     & (Join-Path $PSScriptRoot 'db_apply_migrations.ps1')

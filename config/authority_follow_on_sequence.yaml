@@ -1,0 +1,290 @@
+schema_version: authority_follow_on_sequence_v1
+status: blocked_waiting_for_external_authority
+source_packet: state/PRODUCTION_AUTHORITY_PACKET.md
+source_intake: config/production_authority_intake.yaml
+operator_runbook: docs/runbooks/production_authority_intake.md
+validation: scripts/run_authority_follow_on_sequence_check.ps1
+
+limits:
+  validate_only_sequence: true
+  records_authority: false
+  records_owner_answer: false
+  approves_sources: false
+  changes_source_rights: false
+  captures_fixtures: false
+  seeds_database: false
+  proves_report: false
+  changes_schema_api_auth_ui_runtime: false
+  provisions_hosted_runtime: false
+  unfreezes_qualification: false
+  unblocks_p0: false
+  claims_level_10: false
+
+sequence_policy:
+  authority_source: config/production_authority_intake.yaml
+  packet_follow_on_map: state/PRODUCTION_AUTHORITY_PACKET.md#repo-local-follow-on-map
+  unlock_rule: >
+    Follow-on lanes stay blocked until cited external authority exists in the
+    matching source catalog and the relevant checker validates exact field-level
+    decisions. This contract maps the first repo-local actions after authority;
+    it never supplies authority itself.
+  required_before_any_follow_on:
+    - cited_authority_references
+    - matching_source_catalog_updated
+    - field_level_decision_validated
+  blocked_boundaries:
+    - ds017_approval
+    - bologna_owner_decisions
+    - bologna_source_rights
+    - bologna_recorded_corpus
+    - bologna_db_report_proof
+    - hosted_readiness
+    - level_10_authority
+    - qualification_pass
+    - owner_decision_unfreeze
+    - p0_unblock
+
+follow_on_lanes:
+  - id: ds017_source_entitlement_follow_on
+    authority_received: DS-017 vendor/license/cost/entitlement authority
+    repo_local_follow_on: Source review, registry/seed updates, entitlement tests, cost meter, connector plan, then approved connector slice.
+    authority_streams:
+      - ds017_source_entitlement
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/source_entitlements.yaml
+      - registers/data_source_registry.csv
+      - config/ops_cost_monitoring.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - source_review
+      - registry_seed_updates
+      - entitlement_tests
+      - cost_meter
+      - connector_plan
+      - approved_connector_slice
+    forbidden_until_authority:
+      - ds017_connector_implementation
+      - source_readiness_promotion
+      - vendor_data_report_output
+      - raw_vendor_export
+      - paid_data_cost_claims
+    allowed_after_authority_only: true
+
+  - id: hosted_platform_follow_on
+    authority_received: Hosted platform/database/DNS/TLS authority
+    repo_local_follow_on: Hosted attestation, platform-specific deployment smoke, migration/rollback proof, backup/restore proof.
+    authority_streams:
+      - hosted_platform
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/hosted_deployment.yaml
+      - config/release_readiness.yaml
+      - state/LEVEL_9_10_GATE_MATRIX.md
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - hosted_attestation
+      - platform_specific_deployment_smoke
+      - migration_rollback_proof
+      - backup_restore_proof
+    forbidden_until_authority:
+      - hosted_deployment_claim
+      - public_url_readiness_claim
+      - production_database_binding
+      - level_10_claim
+    allowed_after_authority_only: true
+
+  - id: secrets_manager_follow_on
+    authority_received: Secret-manager authority
+    repo_local_follow_on: Secret reference catalog update, runtime binding checks, rotation proof, access-control validation.
+    authority_streams:
+      - secrets_manager
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/access_control.yaml
+      - config/hosted_deployment.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - secret_reference_catalog_update
+      - runtime_binding_checks
+      - rotation_proof
+      - access_control_validation
+    forbidden_until_authority:
+      - committed_secret_values
+      - production_secret_binding
+      - secret_rotation_claim
+      - hosted_auth_unlock
+    allowed_after_authority_only: true
+
+  - id: identity_rbac_follow_on
+    authority_received: IdP/RBAC authority
+    repo_local_follow_on: Account/role schema plan, OAuth/OIDC integration, route-scope enforcement, user-bound audit migration.
+    authority_streams:
+      - identity_rbac
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/access_control.yaml
+      - state/LEVEL_9_10_GATE_MATRIX.md
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - account_role_schema_plan
+      - oauth_oidc_integration
+      - route_scope_enforcement
+      - user_bound_audit_migration
+    forbidden_until_authority:
+      - account_persistence_change
+      - hosted_identity_claim
+      - full_rbac_claim
+      - reviewer_scope_weakening
+    allowed_after_authority_only: true
+
+  - id: image_publication_follow_on
+    authority_received: Registry/image authority
+    repo_local_follow_on: Image publish workflow, digest/SBOM/provenance evidence capture, release package and deployment linkage.
+    authority_streams:
+      - image_publication
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/image_publication.yaml
+      - config/release_readiness.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - image_publish_workflow
+      - digest_sbom_provenance_evidence_capture
+      - release_package_linkage
+      - deployment_linkage
+    forbidden_until_authority:
+      - registry_push
+      - deployable_image_claim
+      - unsigned_attestation_acceptance
+      - level_10_claim
+    allowed_after_authority_only: true
+
+  - id: billing_cost_follow_on
+    authority_received: Billing/cost authority
+    repo_local_follow_on: Hosted billing reconciliation, paid-source cost attribution, spend alerts, batch/concurrency guardrails.
+    authority_streams:
+      - billing_cost
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/ops_cost_monitoring.yaml
+      - config/release_readiness.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - hosted_billing_reconciliation
+      - paid_source_cost_attribution
+      - spend_alerts
+      - batch_concurrency_guardrails
+    forbidden_until_authority:
+      - paid_source_runtime_use
+      - paid_data_report_claim
+      - vendor_spend_claim
+      - production_cost_readiness_claim
+    allowed_after_authority_only: true
+
+  - id: hosted_observability_follow_on
+    authority_received: Alerting/on-call authority
+    repo_local_follow_on: Hosted alert routes, dashboards, queue/source freshness monitors, incident validation.
+    authority_streams:
+      - hosted_observability
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/observability_readiness.yaml
+      - config/ops_alert_rules.yaml
+      - config/release_readiness.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - hosted_alert_routes
+      - hosted_dashboards
+      - queue_source_freshness_monitors
+      - incident_validation
+    forbidden_until_authority:
+      - hosted_alerting_readiness_claim
+      - pager_route_claim
+      - hosted_log_retention_claim
+      - source_failure_clean_finding
+    allowed_after_authority_only: true
+
+  - id: production_workload_retention_follow_on
+    authority_received: Production workload/retention authority
+    repo_local_follow_on: Hosted load proof, SLO threshold checks, retention scheduler, log retention, object-store capacity proof.
+    authority_streams: []
+    packet_only_authority_area: true
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/performance_baseline.yaml
+      - config/data_retention.yaml
+      - state/LEVEL_9_10_GATE_MATRIX.md
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - hosted_load_proof
+      - slo_threshold_checks
+      - retention_scheduler
+      - log_retention
+      - object_store_capacity_proof
+    forbidden_until_authority:
+      - hosted_slo_claim
+      - production_capacity_claim
+      - retention_scheduler_enablement
+      - destructive_retention_apply
+    allowed_after_authority_only: true
+
+  - id: bologna_recorded_source_pilot_follow_on
+    authority_received: Bologna recorded-source pilot authority
+    repo_local_follow_on: Complete pilot-scope authority, source-authority intake, source-rights matrix, recorded-source fixture corpus, Italy/EU/local source-rights checks, evidence-only or rulepack scope, DB-backed pilot proof, then multi-geography framework plan.
+    authority_streams:
+      - bologna_pilot_scope
+      - bologna_recorded_source
+    status: blocked_waiting_for_authority
+    source_catalogs:
+      - config/bologna_pilot_scope_authority.yaml
+      - config/bologna_source_authority_intake.yaml
+      - config/bologna_source_rights.yaml
+      - config/bologna_recorded_source_corpus.yaml
+      - config/bologna_preflight.yaml
+    required_before_unblock:
+      - cited_authority_references
+      - matching_source_catalog_updated
+      - field_level_decision_validated
+    first_allowed_repo_local_actions:
+      - complete_pilot_scope_authority
+      - source_authority_intake
+      - source_rights_matrix
+      - recorded_source_fixture_corpus
+      - italy_eu_local_source_rights_checks
+      - evidence_only_or_rulepack_scope
+      - db_backed_pilot_proof
+      - post_pilot_multi_geography_framework_plan
+    forbidden_until_authority:
+      - bologna_aoi_selection
+      - bologna_source_approval
+      - fixture_capture
+      - runtime_use
+      - db_seed
+      - report_proof
+      - multi_geography_framework_claim
+    allowed_after_authority_only: true

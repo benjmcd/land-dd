@@ -826,7 +826,7 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         errors,
     )
     require(
-        "Authority-evidence posture after PR #179"
+        "Authority-evidence posture after PR #180"
         in str(auth_evidence.get("notes") or ""),
         "AUTH-EVIDENCE-INTAKE notes must preserve authority-evidence routing scope",
         errors,
@@ -839,6 +839,11 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
     require(
         "wrapper passthrough" in str(auth_evidence.get("notes") or ""),
         "AUTH-EVIDENCE-INTAKE notes must preserve wrapper passthrough scope",
+        errors,
+    )
+    require(
+        "authority follow-on sequencing contract" in str(auth_evidence.get("notes") or ""),
+        "AUTH-EVIDENCE-INTAKE notes must preserve follow-on sequencing scope",
         errors,
     )
 
@@ -883,8 +888,9 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
         ("plans/README.md", EXPECTED_GEOLOGY_PLAN),
         ("plans/README.md", EXPECTED_POST_GEOLOGY_PLAN),
         ("plans/README.md", EXPECTED_AUTH_EVIDENCE_PLAN),
-        ("state/PROJECT_STATE.md", "Post-PR179 authority evidence reporting wrapper"),
+        ("state/PROJECT_STATE.md", "Post-PR180 authority follow-on sequencing contract"),
         ("state/PROJECT_STATE.md", "wrapper argument passthrough merged through PR #179"),
+        ("state/PROJECT_STATE.md", "authority follow-on sequencing contract"),
         (ODP1_OWNER_ANSWER_PACKET_PATH, "downstream_updates_allowed_by_packet: false"),
         (BOL_SCOPE_AUTH_PATH, "required_next_owner_answer_type: approve_with_cited_authority"),
         (ODP2_OWNER_ANSWER_PACKET_PATH, "requires_odp_bol_001_cited_authority_first: true"),

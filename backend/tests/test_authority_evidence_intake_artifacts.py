@@ -228,7 +228,7 @@ def test_authority_evidence_summary_is_discoverable_from_operator_runbooks() -> 
         assert "unlock" in text
 
 
-def test_authority_evidence_state_is_synced_after_wrapper_passthrough() -> None:
+def test_authority_evidence_state_is_synced_after_follow_on_sequence() -> None:
     project_state = (REPO_ROOT / "state" / "PROJECT_STATE.md").read_text(
         encoding="utf-8",
     )
@@ -239,21 +239,30 @@ def test_authority_evidence_state_is_synced_after_wrapper_passthrough() -> None:
     task_queue = _yaml(REPO_ROOT / "tasks" / "task_queue.yaml")
     tasks = {task["id"]: task for task in task_queue["tasks"]}
 
-    assert "Post-PR179 authority evidence reporting wrapper" in project_state
-    assert "19ed766e1c2e1a99367d72f1a4b56d311d9d7fb6" in project_state
+    assert "Post-PR180 authority follow-on sequencing contract" in project_state
+    assert "139b28ed3644c590768bc1d5d5a82b364e0cf940" in project_state
     assert "wrapper argument passthrough merged through PR #179" in project_state
+    assert "authority follow-on sequencing contract" in project_state
     assert "it does not record authority or change any" in project_state
     assert "implementation surface" in project_state
     assert "PR #179" in plan
     assert "forwarded wrapper arguments" in plan
-    assert "through PR #179" in plan_index
-    assert "posture remains active pending external authority evidence" in plan_index
-    assert "Authority-evidence posture after PR #179" in (
+    assert "authority_follow_on_sequence_check.py" in plan
+    assert "through PR #180" in plan_index
+    assert "authority follow-on sequence checker" in plan_index
+    assert "Authority-evidence posture after PR #180" in (
+        tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    )
+    assert "authority follow-on sequencing contract" in (
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert any(
         "Summary/JSON output and wrapper passthrough remain reporting-only"
         in acceptance
+        for acceptance in tasks["AUTH-EVIDENCE-INTAKE"]["acceptance"]
+    )
+    assert any(
+        "authority follow-on sequence checker" in acceptance
         for acceptance in tasks["AUTH-EVIDENCE-INTAKE"]["acceptance"]
     )
     assert tasks["AUTH-EVIDENCE-INTAKE"]["status"] == "active"
