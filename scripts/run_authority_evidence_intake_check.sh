@@ -9,4 +9,6 @@ if [[ ! -f "./scripts/authority_evidence_intake_check.py" ]]; then
 fi
 
 "$PYTHON_BIN" ./scripts/authority_evidence_intake_check.py "$@"
-echo "authority evidence intake: ok"
+if [[ "$#" -eq 0 ]]; then
+  echo "authority evidence intake: ok"
+fi

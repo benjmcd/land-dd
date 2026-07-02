@@ -2,6 +2,53 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-02 Authority Evidence Wrapper Summary Passthrough
+
+**Scope:** Forward arguments through the authority evidence intake wrappers so the
+operator-facing `--summary` and `--json` reporting modes added in the previous slices
+can be used through the same wrapper entrypoints. This preserves the default wrapper
+confirmation for no-argument pass/fail use, but avoids appending wrapper text to
+summary or JSON output. It does not record external authority, approve DS-017, approve
+Bologna sources, change source rights, capture corpus or fixtures, seed the DB, prove
+reports, change schema/API/auth/UI/runtime behavior, claim hosted or Level 10
+authority, unfreeze qualification, claim qualification `PASS`, or unblock `P0`.
+
+**Commands for this gate:**
+
+```powershell
+.\scripts\run_authority_evidence_intake_check.ps1
+.\scripts\run_authority_evidence_intake_check.ps1 --summary | Select-Object -First 8
+.\scripts\run_authority_evidence_intake_check.ps1 --json | ConvertFrom-Json | Select-Object schema_version,active_task
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py -q
+py -3.12 -m ruff check backend\tests\test_authority_evidence_intake_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy backend\tests\test_authority_evidence_intake_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Default PowerShell wrapper passed and retained the existing wrapper confirmation.
+- PowerShell `--summary` reported
+  `authority evidence intake summary: blocked`, schema
+  `authority_evidence_intake_summary_v1`, active plan
+  `plans/2026-07-02-authority-evidence-intake.md`, and active task
+  `AUTH-EVIDENCE-INTAKE` without wrapper confirmation text.
+- PowerShell `--json` parsed successfully and reported schema
+  `authority_evidence_intake_summary_v1` and active task `AUTH-EVIDENCE-INTAKE`.
+- Focused authority-evidence tests passed (`10 passed`).
+- Focused ruff and mypy passed for the changed test file.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` returned no
+  deletions.
+- Full `.\scripts\verify.ps1` passed. DB smoke was skipped because `RUN_DB_SMOKE=1`
+  was not set.
+
+**Residual risk:** Wrapper passthrough only improves operator access to already-blocked
+authority evidence intake reporting. It does not supply external product/AOI/source/
+source-rights/corpus/report authority for Bologna, DS-017 approval, hosted deployment,
+Level 10 readiness, empirical qualification PASS, or P0 readiness.
+
 ## 2026-07-02 Authority Evidence Summary Runbook Links
 
 **Scope:** Add discoverability links from the production authority, Bologna
