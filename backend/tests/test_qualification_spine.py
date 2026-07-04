@@ -186,7 +186,7 @@ def test_qualification_ci_verify_and_dev_dependency_are_wired() -> None:
     job = ci["jobs"]["qualification-selftest"]
     job_steps = _steps_text(job)
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in job_steps
+    assert "actions/checkout@v7" in job_steps
     assert "actions/setup-python@v6" in job_steps
     assert "python-version: '3.12'" in ci_text
     assert 'python -m pip install -e "backend[dev]"' in job_steps
@@ -199,7 +199,7 @@ def test_qualification_ci_verify_and_dev_dependency_are_wired() -> None:
         checkout_steps = [
             step
             for step in ci["jobs"][job_name]["steps"]
-            if step.get("uses") == "actions/checkout@v6"
+            if step.get("uses") == "actions/checkout@v7"
         ]
         assert len(checkout_steps) == 1
         assert checkout_steps[0].get("with", {}).get("fetch-depth") == 0

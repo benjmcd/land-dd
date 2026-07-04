@@ -33,7 +33,7 @@ def test_ci_has_container_image_scan_job() -> None:
     steps_text = _steps_text(job)
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in steps_text
+    assert "actions/checkout@v7" in steps_text
     assert (
         "docker build -f backend/Dockerfile -t land-diligence-backend:${{ github.sha }} ."
         in steps_text

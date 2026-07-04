@@ -106,7 +106,7 @@ def validate_ci() -> None:
 
     steps_text = text_from_steps(job)
     for phrase, message in (
-        ("actions/checkout@v6", "container-image-scan job must checkout repo"),
+        ("actions/checkout@v7", "container-image-scan job must checkout repo"),
         ("Check Docker Scout entitlement", "container-image-scan job must check entitlement"),
         (
             "Docker Scout entitlement is not configured for this repository.",
