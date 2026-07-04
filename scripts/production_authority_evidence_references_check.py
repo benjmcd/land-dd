@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +90,13 @@ REQUIRED_FILES = (
 )
 
 
+@dataclass(frozen=True)
+class EvidenceReferenceEvaluation:
+    accepted: bool
+    errors: tuple[str, ...]
+    still_blocked: tuple[str, ...]
+
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise SystemExit(message)
@@ -134,6 +144,156 @@ def load_yaml(path_text: str) -> dict[str, Any]:
 
 def list_set(value: Any, message: str) -> set[str]:
     return {str(item) for item in require_non_empty_list(value, message)}
+
+
+def text_value(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()
+
+
+def text_list_values(
+    record: Mapping[str, Any],
+    field_name: str,
+    errors: list[str],
+    *,
+    allow_empty: bool = False,
+) -> list[str]:
+    value = record.get(field_name)
+    if not isinstance(value, list):
+        errors.append(f"evidence_reference.{field_name} must be a list")
+        return []
+    if not value and not allow_empty:
+        errors.append(f"evidence_reference.{field_name} must not be empty")
+    items: list[str] = []
+    for index, item in enumerate(value):
+        text = text_value(item)
+        if text is None:
+            errors.append(f"evidence_reference.{field_name}[{index}] must be non-empty text")
+        else:
+            items.append(text)
+    return items
+
+
+def require_reference_date(record: Mapping[str, Any], field_name: str, errors: list[str]) -> None:
+    text = text_value(record.get(field_name))
+    if text is None:
+        errors.append(f"evidence_reference.{field_name} must be non-empty text")
+        return
+    try:
+        date.fromisoformat(text)
+    except ValueError:
+        errors.append(f"evidence_reference.{field_name} must be an ISO date")
+
+
+def blocked_reference_effects(payload: Mapping[str, Any]) -> tuple[str, ...]:
+    contract = payload.get("reference_contract")
+    if isinstance(contract, Mapping):
+        effects = contract.get("forbidden_reference_effects")
+        if isinstance(effects, list):
+            return tuple(str(effect) for effect in effects)
+    return tuple(sorted(EXPECTED_FORBIDDEN_EFFECTS))
+
+
+def reference_templates(payload: Mapping[str, Any], errors: list[str]) -> dict[str, Mapping[str, Any]]:
+    raw_templates = payload.get("stream_reference_templates")
+    if not isinstance(raw_templates, list) or not raw_templates:
+        errors.append("stream_reference_templates must be a non-empty list")
+        return {}
+    templates: dict[str, Mapping[str, Any]] = {}
+    for index, raw_template in enumerate(raw_templates):
+        if not isinstance(raw_template, Mapping):
+            errors.append(f"stream_reference_templates[{index}] must be a mapping")
+            continue
+        stream_id = text_value(raw_template.get("authority_stream_id"))
+        if stream_id is None:
+            errors.append(f"stream_reference_templates[{index}].authority_stream_id missing")
+            continue
+        templates[stream_id] = raw_template
+    return templates
+
+
+def evaluate_submitted_evidence_reference(
+    payload: Mapping[str, Any],
+    evidence_reference: Mapping[str, Any],
+) -> EvidenceReferenceEvaluation:
+    """Evaluate a hypothetical authority evidence reference without recording it."""
+    errors: list[str] = []
+    if not isinstance(payload, Mapping):
+        return EvidenceReferenceEvaluation(
+            accepted=False,
+            errors=("payload must be a mapping",),
+            still_blocked=tuple(sorted(EXPECTED_FORBIDDEN_EFFECTS)),
+        )
+    if not isinstance(evidence_reference, Mapping):
+        return EvidenceReferenceEvaluation(
+            accepted=False,
+            errors=("evidence_reference must be a mapping",),
+            still_blocked=blocked_reference_effects(payload),
+        )
+
+    required_fields = set(EXPECTED_REFERENCE_FIELDS)
+    actual_fields = set(evidence_reference)
+    missing_fields = sorted(required_fields - actual_fields)
+    extra_fields = sorted(actual_fields - required_fields)
+    if missing_fields:
+        errors.append(f"evidence_reference missing required fields: {', '.join(missing_fields)}")
+    if extra_fields:
+        errors.append(f"evidence_reference has unexpected fields: {', '.join(extra_fields)}")
+
+    for field_name in (
+        "reference_id",
+        "authority_stream_id",
+        "evidence_item_id",
+        "authority_reference",
+        "artifact_location_or_citation",
+        "decision_owner",
+        "review_owner",
+        "scope_summary",
+        "evidence_summary",
+    ):
+        if text_value(evidence_reference.get(field_name)) is None:
+            errors.append(f"evidence_reference.{field_name} must be non-empty text")
+
+    require_reference_date(evidence_reference, "decision_date", errors)
+    require_reference_date(evidence_reference, "effective_date", errors)
+    text_list_values(evidence_reference, "caveats", errors)
+    text_list_values(evidence_reference, "supersedes_reference_ids", errors, allow_empty=True)
+    downstream_unlocks = text_list_values(
+        evidence_reference,
+        "downstream_unlocks_requested",
+        errors,
+        allow_empty=True,
+    )
+    if downstream_unlocks:
+        errors.append("evidence_reference must not request downstream unlocks")
+
+    artifact_type = evidence_reference.get("artifact_type")
+    if artifact_type not in EXPECTED_ARTIFACT_TYPES:
+        errors.append("evidence_reference.artifact_type is not allowed")
+
+    templates = reference_templates(payload, errors)
+    authority_stream_id = text_value(evidence_reference.get("authority_stream_id"))
+    evidence_item_id = text_value(evidence_reference.get("evidence_item_id"))
+    if authority_stream_id is not None:
+        template = templates.get(authority_stream_id)
+        if template is None:
+            errors.append(f"unknown authority_stream_id: {authority_stream_id}")
+        elif evidence_item_id is not None:
+            required_evidence = template.get("required_evidence")
+            if not isinstance(required_evidence, list):
+                errors.append(f"{authority_stream_id} required_evidence must be a list")
+            elif evidence_item_id not in {str(item) for item in required_evidence}:
+                errors.append(
+                    "evidence_reference.evidence_item_id is not required for "
+                    f"{authority_stream_id}"
+                )
+
+    return EvidenceReferenceEvaluation(
+        accepted=not errors,
+        errors=tuple(errors),
+        still_blocked=blocked_reference_effects(payload),
+    )
 
 
 def validate_required_files() -> None:

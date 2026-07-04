@@ -17062,3 +17062,61 @@ git diff --name-only --diff-filter=D
 - This state sync does not collect cited external authority, so BSA-001,
   ODP-BOL-002/003/004, DS-017, hosted production, Level 10, qualification PASS,
   owner-decision unfreeze, and P0 unblock remain externally blocked.
+
+---
+
+## 2026-07-04 - authority reference evaluator hardening
+
+**Scope:** Add side-effect-free synthetic submitted-reference evaluation to the
+production authority evidence reference checker and update authority-evidence routing
+surfaces to record the validation-only hardening. This does not record authority,
+approve sources, change source rights, request downstream unlocks, or move P0.
+
+**Commands/checks run so far:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_production_authority_evidence_references_artifacts.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py -q
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py --summary
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+py -3.12 scripts\authority_follow_on_sequence_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 -m ruff check scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\production_authority_evidence_references_check.py scripts\qualification_parameterization_backlog_check.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py
+.\scripts\verify.ps1
+git diff --check
+git diff --name-only --diff-filter=D
+```
+
+**Results:**
+
+- Focused production-authority evidence reference tests passed (`13 passed`).
+- Combined authority evidence, production authority reference, and backlog artifact
+  tests passed (`32 passed`).
+- Authority evidence intake, production authority evidence references, authority
+  follow-on sequence, readiness matrix, qualification status, and qualification
+  parameterization backlog checks passed.
+- Reference-contract summary/JSON still reported
+  `production_authority_evidence_references_summary_v1`, zero current evidence
+  references, and zero downstream unlock requests.
+- Qualification status remained `passed=39 not_run=2 unexpected_failed=0` with derived
+  statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused ruff passed, and focused mypy reported no issues in the five checked files.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change-impact, P0
+  auto-evidence, qualification backlog, authority evidence intake, production authority
+  evidence references, authority follow-on sequence, backend tests, ruff, and mypy all
+  passed.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+
+**Residual risk:**
+
+- DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
+- This hardening does not collect or record cited external authority, so BSA-001,
+  ODP-BOL-002/003/004, DS-017, hosted production, Level 10, qualification PASS,
+  owner-decision unfreeze, and P0 unblock remain externally blocked.

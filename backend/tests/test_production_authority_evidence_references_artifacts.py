@@ -26,6 +26,7 @@ def _load_validator() -> ModuleType:
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -34,6 +35,30 @@ def _yaml(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert isinstance(payload, dict)
     return cast(dict[str, Any], payload)
+
+
+def _evidence_reference(
+    *,
+    stream_id: str = "ds017_source_entitlement",
+    evidence_item_id: str = "reviewed_terms_or_redacted_contract_reference",
+) -> dict[str, Any]:
+    return {
+        "reference_id": "synthetic-production-authority-reference",
+        "authority_stream_id": stream_id,
+        "evidence_item_id": evidence_item_id,
+        "authority_reference": "external cited authority reference",
+        "artifact_type": "terms_url",
+        "artifact_location_or_citation": "https://example.invalid/authority",
+        "decision_owner": "benjmcd",
+        "review_owner": "benjmcd",
+        "decision_date": "2026-07-04",
+        "effective_date": "2026-07-04",
+        "scope_summary": "Synthetic submitted reference shape for validator coverage only.",
+        "evidence_summary": "Synthetic cited evidence summary for validator coverage only.",
+        "caveats": ["synthetic caveat"],
+        "downstream_unlocks_requested": [],
+        "supersedes_reference_ids": [],
+    }
 
 
 def test_production_authority_evidence_references_current_artifacts_validate() -> None:
@@ -132,6 +157,62 @@ def test_production_authority_evidence_references_reject_required_evidence_drift
     ]
 
     with pytest.raises(SystemExit, match="required evidence drifted"):
+        validator.validate_catalog(catalog)
+
+
+def test_production_authority_evidence_references_accept_synthetic_reference_shape() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = _yaml(CONFIG_PATH)
+    evidence_reference = _evidence_reference()
+    catalog_before = deepcopy(catalog)
+    reference_before = deepcopy(evidence_reference)
+
+    result = validator.evaluate_submitted_evidence_reference(catalog, evidence_reference)
+
+    assert result.accepted, result.errors
+    assert "source_approval" in result.still_blocked
+    assert "p0_unblock" in result.still_blocked
+    assert catalog == catalog_before
+    assert evidence_reference == reference_before
+
+
+def test_production_authority_evidence_references_reject_bad_synthetic_references() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = _yaml(CONFIG_PATH)
+
+    missing_authority = _evidence_reference()
+    missing_authority.pop("authority_reference")
+    unknown_stream = _evidence_reference(stream_id="unknown_stream")
+    unknown_evidence = _evidence_reference(evidence_item_id="not_a_required_evidence_item")
+    unlock_request = _evidence_reference()
+    unlock_request["downstream_unlocks_requested"] = ["p0_unblock"]
+    bad_artifact_type = _evidence_reference()
+    bad_artifact_type["artifact_type"] = "fixture_capture"
+    bad_effective_date = _evidence_reference()
+    bad_effective_date["effective_date"] = "July 4, 2026"
+
+    cases = [
+        (missing_authority, "missing required fields"),
+        (unknown_stream, "unknown authority_stream_id"),
+        (unknown_evidence, "evidence_item_id is not required"),
+        (unlock_request, "must not request downstream unlocks"),
+        (bad_artifact_type, "artifact_type is not allowed"),
+        (bad_effective_date, "effective_date must be an ISO date"),
+    ]
+    for evidence_reference, expected_error in cases:
+        result = validator.evaluate_submitted_evidence_reference(catalog, evidence_reference)
+        assert not result.accepted
+        assert any(expected_error in error for error in result.errors), result.errors
+
+
+def test_production_authority_evidence_references_still_reject_current_reference() -> None:
+    validator = cast(Any, _load_validator())
+    catalog = deepcopy(_yaml(CONFIG_PATH))
+    catalog["reference_contract"]["current_evidence_references"] = [
+        _evidence_reference(),
+    ]
+
+    with pytest.raises(SystemExit, match="current evidence references must remain empty"):
         validator.validate_catalog(catalog)
 
 

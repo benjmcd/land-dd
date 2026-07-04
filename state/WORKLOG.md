@@ -2,6 +2,28 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-04 authority reference evaluator hardening
+
+- Continued from live `origin/main` at
+  `d0d1d00c011cee5b0204e4974c1db06bcf09ecf4` in isolated worktree
+  `worktrees/auth-ref-hardening` on branch `codex/auth-ref-hardening`; the root
+  checkout remained stale/dirty and was not used as implementation authority.
+- Added side-effect-free synthetic submitted-reference evaluation to
+  `scripts/production_authority_evidence_references_check.py` so complete future
+  reference shapes can be checked in memory and malformed, unknown-stream,
+  unknown-evidence, bad-artifact, bad-date, or downstream-unlocking reference shapes
+  fail closed before any authority can be recorded.
+- Added focused artifact tests proving the evaluator accepts complete synthetic
+  references without mutating inputs, rejects malformed references, and still rejects
+  any committed current evidence reference.
+- Synchronized the active authority-evidence plan, plan index, project state, task
+  routing, and backlog/authority tests so the evaluator is recorded as validation-only
+  hardening under `AUTH-EVIDENCE-INTAKE`.
+- Preserved the boundaries: no source approval, source-rights change, owner answer,
+  authority record, corpus/fixture capture, DB seed, report proof, runtime behavior,
+  schema/API/auth/UI change, hosted authority, DS-017 approval, Level 10 claim,
+  qualification PASS, owner-decision unfreeze, or P0 unblock.
+
 ## 2026-07-04 post-PR95 checkout policy state sync
 
 - Continued from live `origin/main` at
