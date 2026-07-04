@@ -35,7 +35,12 @@ implementation. PR #182 added a validate-only production authority evidence refe
 contract so future cited references have a checked field shape before any stream can
 move out of blocked state. PR #183 added reporting-only `--summary` and `--json`
 output to that reference contract so operators can collect the required fields without
-generating artifacts or changing blocker state.
+generating artifacts or changing blocker state. PR #184 synchronized the live
+authority-evidence state after that output support. PR #95 then completed the
+GitHub Actions checkout v7 dependency-policy update and aligned the repo-owned
+validate-only policy checkers, artifact tests, and security-scan runbook example to
+`actions/checkout@v7`; this was CI hygiene only and did not change the active
+authority-evidence posture or any downstream blocker.
 
 The remaining sequence is authority-dependent:
 
@@ -243,3 +248,6 @@ Pass/fail requirements:
   reference-contract reporting modes are recorded as complete while
   `AUTH-EVIDENCE-INTAKE`, external authority requirements, and `P0 = BLOCKED` remain
   unchanged.
+- 2026-07-04: Synchronized routing/state wording after PR #95 so the checkout v7
+  dependency-policy closeout is recorded as complete while `AUTH-EVIDENCE-INTAKE`,
+  external authority requirements, and `P0 = BLOCKED` remain unchanged.

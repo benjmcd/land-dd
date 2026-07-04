@@ -17,9 +17,11 @@ reporting modes. PR #180 synchronized state after wrapper support, and the curre
 follow-on sequencing contract machine-checks the packet's authority-dependent
 repo-local follow-on map without unlocking work. PR #181 merged that sequencing
 contract, PR #182 merged the validate-only production authority evidence reference
-contract, and PR #183 merged reporting-only output for that reference contract so
+contract, PR #183 merged reporting-only output for that reference contract so
 future cited-reference fields and per-stream templates can be collected
-without writing artifacts, recording authority, or requesting downstream unlocks. The
+without writing artifacts, recording authority, or requesting downstream unlocks, PR
+#184 synchronized state after that output support, and PR #95 completed the checkout v7
+dependency-policy closeout. The
 posture records that the
 owner-independent extended-domain
 fixture-ingestion sequence and post-geology closeout are complete, and that the next
@@ -47,7 +49,9 @@ authority-evidence intake posture is tracked under
 through PR #175, and its reporting/runbook/wrapper support completed through PR #179
 while state sync completed through PR #180. The authority follow-on sequence checker
 completed through PR #181, the production authority evidence reference checker
-completed through PR #182, and its reporting modes completed through PR #183. The
+completed through PR #182, its reporting modes completed through PR #183, post-output
+state synchronization completed through PR #184, and checkout v7 policy alignment
+completed through PR #95. The
 same active posture remains pending external authority evidence.
 ODGAV does not record
 real owner authority, approve sources, create a corpus, capture Bologna fixtures,

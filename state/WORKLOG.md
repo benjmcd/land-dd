@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-04 post-PR95 checkout policy state sync
+
+- Continued from live `origin/main` at
+  `422436225307723407ece25574505880bb3781cb` in isolated worktree
+  `worktrees/post95-sync` on branch `codex/post95-state-sync`; the root checkout
+  remained stale/dirty and was not used as implementation authority.
+- Synchronized `state/PROJECT_STATE.md`, `plans/README.md`,
+  `plans/2026-07-02-authority-evidence-intake.md`, and `tasks/task_queue.yaml`
+  so PR #184 and PR #95 are recorded while `AUTH-EVIDENCE-INTAKE` remains the
+  active posture.
+- Updated the qualification backlog checker and focused artifact tests to pin the
+  new `Authority-evidence posture after PR #95` task note and live-main SHA.
+- Preserved the boundaries: no source approval, source-rights change, authority
+  record, fixture capture, DB seed, report proof, runtime behavior, schema/API/
+  auth/UI change, hosted authority, DS-017 approval, Level 10 claim,
+  qualification PASS, owner-decision unfreeze, or P0 unblock.
+
 ## 2026-07-02 Post-PR183 authority evidence state sync
 
 - Started clean worktree `worktrees/auth-sync` on `codex/auth-ref-output-sync` from

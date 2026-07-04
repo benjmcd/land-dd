@@ -16384,7 +16384,7 @@ private-MVP authority only; it does not seed runtime provenance, run connectors,
 DS-017, expand county/vendor coverage, change report/API/UI semantics, or claim hosted
 deployment/identity authority.
 
-**Commands/checks run so far:**
+**Commands/checks run:**
 
 ```powershell
 git fetch --prune origin
@@ -17011,3 +17011,54 @@ git diff --name-only --diff-filter=D
 - Hosted platform, identity/RBAC, observability, object-store, billing, secret-manager,
   image-publication, alerting, production workload, and Level 10 authority remain
   unavailable.
+
+---
+
+## 2026-07-04 - post-PR95 checkout policy state sync
+
+**Scope:** Synchronize routing/state/history after PR #95 merged the
+`actions/checkout@v7` dependency-policy closeout. This is CI policy/state hygiene
+only; it does not change active authority routing, source rights, evidence contracts,
+runtime behavior, hosted readiness, Level 10 status, qualification status, or P0.
+
+**Commands/checks run so far:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\authority_follow_on_sequence_check.py
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py -q
+py -3.12 -m ruff check scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+$env:MYPYPATH='backend'; py -3.12 -m mypy scripts\qualification_parameterization_backlog_check.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Authority evidence intake, production authority evidence references, authority
+  follow-on sequence, qualification parameterization backlog, readiness matrix, and
+  qualification status checks passed.
+- Qualification status remained `passed=39 not_run=2 unexpected_failed=0` with derived
+  statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused authority/backlog/readiness tests passed (`23 passed`).
+- Focused ruff passed, and focused mypy reported no issues in the four checked files.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change-impact, P0
+  auto-evidence, qualification backlog, authority evidence intake, production authority
+  evidence references, authority follow-on sequence, backend tests, ruff, and mypy all
+  passed.
+
+**Residual risk:**
+
+- DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set; the
+  merged PR #95 post-merge main run already supplied remote `db-verify` evidence.
+- This state sync does not collect cited external authority, so BSA-001,
+  ODP-BOL-002/003/004, DS-017, hosted production, Level 10, qualification PASS,
+  owner-decision unfreeze, and P0 unblock remain externally blocked.
