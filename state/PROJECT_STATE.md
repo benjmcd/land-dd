@@ -1,9 +1,9 @@
 # Project State
 
-## Current checkpoint (2026-07-04 authority reference evaluator hardening)
+## Current checkpoint (2026-07-04 scope-authority reporting hardening)
 
 This checkpoint is based on live `origin/main`
-`d0d1d00c011cee5b0204e4974c1db06bcf09ecf4`, after the ODGAV owner-answer gate
+`dfcbccd948a35927f6784d0dfdd6a2cba54d6780`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
@@ -17,10 +17,12 @@ through PR #182, and opt-in reporting output for that reference contract merged
 through PR #183, post-output state synchronization merged through PR #184, and
 the GitHub Actions checkout v7 dependency-policy closeout merged through PR #95 at
 `422436225307723407ece25574505880bb3781cb` with post-closeout state synchronization
-merged through PR #185. This checkpoint adds
-side-effect-free synthetic submitted-reference evaluation to the production authority
-evidence reference checker so future cited-reference shapes can fail closed in memory
-before any authority is recorded.
+merged through PR #185 at `d0d1d00c011cee5b0204e4974c1db06bcf09ecf4`, and authority
+reference evaluator hardening merged through PR #186. This checkpoint adds
+reporting-only `--summary` and `--json` output to
+`scripts/bol_scope_auth_check.py` so ODP-BOL-001 cited-authority acceptance
+requirements can be inspected from committed config without recording authority or
+unlocking downstream work.
 The active posture is still authority evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
@@ -61,6 +63,17 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   modes do not supply authority, approve sources, change source rights, trigger
   follow-on lanes, provision hosted runtime, unfreeze qualification, claim Level 10,
   or unblock `P0`.
+- **Current ODP-BOL-001 scope-authority reporting boundary**:
+  `config/bol_scope_auth.yaml` remains validate-only and blocked on a future
+  `approve_with_cited_authority` owner answer plus a complete pilot-scope authority
+  record. `scripts/bol_scope_auth_check.py` can now emit reporting-only `--summary`
+  and `--json` views showing the required owner-answer fields, required
+  authority-record fields, required scope decisions, downstream ODP-BOL-002/003/004
+  blocked gates, and no-overclaim controls. These output modes read committed config
+  only; they do not generate artifacts, record owner answers, record pilot-scope
+  authority, select an AOI, approve sources, change source rights, capture corpus or
+  fixtures, seed the DB, prove reports, change runtime/API/report semantics, claim
+  hosted/Level 10 authority, unfreeze qualification, or unblock `P0`.
 - **Current CI dependency-policy boundary**:
   PR #95 updated the GitHub Actions checkout action from `actions/checkout@v6` to
   `actions/checkout@v7` and aligned the repo-owned validate-only policy checkers,
@@ -110,9 +123,12 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   production authority evidence reference contract, and reporting-only output for that reference contract
   without changing the active task or blocker state. PR #95 then closed the checkout v7
   dependency-policy update without changing the active task or blocker state. PR #185
-  synchronized post-PR95 state. This checkpoint adds side-effect-free synthetic submitted-
-  reference evaluation for the production authority evidence reference contract while
-  keeping all current references and downstream unlocks empty. `P0` remains `BLOCKED`.
+  synchronized post-PR95 state, and PR #186 added side-effect-free synthetic submitted-reference evaluation
+  for the production authority evidence reference contract while
+  keeping all current references and downstream unlocks empty. This checkpoint adds
+  reporting-only ODP-BOL-001 scope-authority summary/JSON output while keeping the
+  current review-only owner answer and empty pilot-scope authority records unchanged.
+  `P0` remains `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
   product/AOI/source/source-rights/corpus/report-proof authority; until then, BSA-001,

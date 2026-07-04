@@ -17120,3 +17120,73 @@ git diff --name-only --diff-filter=D
 - This hardening does not collect or record cited external authority, so BSA-001,
   ODP-BOL-002/003/004, DS-017, hosted production, Level 10, qualification PASS,
   owner-decision unfreeze, and P0 unblock remain externally blocked.
+
+---
+
+## 2026-07-04 - ODP-BOL-001 scope-authority reporting hardening
+
+**Scope:** Add reporting-only `--summary` and `--json` output to the validate-only
+ODP-BOL-001 scope-authority readiness checker and wrappers. This exposes the required
+future cited-authority owner-answer fields, pilot-scope authority-record fields,
+scope decisions, downstream blocked gates, and no-overclaim controls without recording
+authority or changing blocker state.
+
+**Commands/checks run so far:**
+
+```powershell
+py -3.12 scripts\bol_scope_auth_check.py
+py -3.12 scripts\bol_scope_auth_check.py --summary
+py -3.12 scripts\bol_scope_auth_check.py --json
+powershell -NoProfile -File scripts\run_bol_scope_auth_check.ps1 --summary
+powershell -NoProfile -File scripts\run_bol_scope_auth_check.ps1 --json
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_bologna_owner_answer_gate_evaluation.py -q
+py -3.12 -m ruff check scripts\bol_scope_auth_check.py backend\tests\test_bol_scope_auth_artifacts.py
+py -3.12 -m mypy scripts\bol_scope_auth_check.py backend\tests\test_bol_scope_auth_artifacts.py
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\production_authority_evidence_references_check.py --summary
+py -3.12 scripts\production_authority_evidence_references_check.py --json
+py -3.12 scripts\authority_follow_on_sequence_check.py
+py -3.12 scripts\readiness_matrix_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_readiness_core_artifacts.py backend\tests\test_bol_scope_auth_artifacts.py -q
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `bol_scope_auth_check.py --summary` reported
+  `bol_scope_auth_summary_v1`, `blocked_review_only_owner_answer`, zero current
+  authority records, 11 required owner-answer fields, 14 required authority-record
+  fields, 12 required scope decisions, and three downstream ODP-BOL-002/003/004 gates
+  with `update_allowed_by_this_gate=False`.
+- `bol_scope_auth_check.py --json` and the PowerShell wrapper JSON output parsed
+  cleanly without appended wrapper text.
+- Focused Bologna scope-authority and owner-answer evaluator tests passed (`14 passed`).
+- Combined authority/reference/follow-on/backlog/readiness/scope artifact tests passed
+  (`54 passed`).
+- Authority evidence intake, production authority evidence references, authority
+  follow-on sequence, readiness matrix, qualification status, and qualification
+  parameterization backlog checks passed.
+- Qualification status remained `passed=39 not_run=2 unexpected_failed=0` with derived
+  statuses `BLOCKED=1 NOT_RUN=20`.
+- Focused ruff passed, and focused mypy reported no issues in the two checked files.
+- `git diff --check` passed and `git diff --name-only --diff-filter=D` reported no
+  tracked deletions.
+- Full `.\scripts\verify.ps1` passed: workspace validation, qualification selftest,
+  qualification validation, qualification status, qualification change-impact, P0
+  auto-evidence, qualification backlog, authority evidence intake, production authority
+  evidence references, authority follow-on sequence, backend tests, ruff, and mypy all
+  passed.
+
+**Residual risk:**
+
+- DB smoke was not run locally in this pass because `RUN_DB_SMOKE=1` was not set.
+- This reporting hardening does not collect or record cited external authority, so
+  BSA-001, ODP-BOL-002/003/004, DS-017, hosted production, Level 10, qualification
+  PASS, owner-decision unfreeze, and P0 unblock remain externally blocked.

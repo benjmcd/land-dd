@@ -14,6 +14,19 @@ Run:
 .\scripts\run_bol_scope_auth_check.ps1
 ```
 
+For operator-facing collection, the same wrapper accepts reporting-only output modes:
+
+```powershell
+.\scripts\run_bol_scope_auth_check.ps1 --summary
+.\scripts\run_bol_scope_auth_check.ps1 --json
+```
+
+The summary and JSON views report the current blocked state, required owner-answer
+fields, required pilot-scope authority-record fields, required scope decisions,
+downstream gates that remain blocked, and no-overclaim controls from committed
+config only. They do not write artifacts, record authority, select an AOI, approve
+sources, or request downstream unlocks.
+
 The checker verifies alignment with:
 
 - `config/bologna_owner_answer_intake.yaml`
