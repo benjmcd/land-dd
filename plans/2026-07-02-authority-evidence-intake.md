@@ -40,7 +40,11 @@ authority-evidence state after that output support. PR #95 then completed the
 GitHub Actions checkout v7 dependency-policy update and aligned the repo-owned
 validate-only policy checkers, artifact tests, and security-scan runbook example to
 `actions/checkout@v7`; this was CI hygiene only and did not change the active
-authority-evidence posture or any downstream blocker.
+authority-evidence posture or any downstream blocker. PR #185 synchronized state after
+that checkout v7 closeout. This pass adds side-effect-free synthetic submitted-
+reference evaluation to the production authority evidence reference checker so future
+cited-reference shapes can fail closed in memory before authority recording remains
+blocked.
 
 The remaining sequence is authority-dependent:
 
@@ -149,7 +153,7 @@ Rejected alternatives:
 | `scripts/run_authority_evidence_intake_check.ps1` | Windows wrapper for the authority-evidence posture check. |
 | `scripts/run_authority_evidence_intake_check.sh` | POSIX wrapper for the authority-evidence posture check. |
 | `config/production_authority_evidence_references.yaml` | Validate-only evidence-reference contract for future cited authority references. |
-| `scripts/production_authority_evidence_references_check.py` | Fail closed if reference fields, stream templates, evidence lists, or blocked boundaries drift; optionally emits reporting-only summary/JSON. |
+| `scripts/production_authority_evidence_references_check.py` | Fail closed if reference fields, stream templates, evidence lists, or blocked boundaries drift; evaluates synthetic submitted-reference shapes in memory; optionally emits reporting-only summary/JSON. |
 | `scripts/run_production_authority_evidence_references_check.ps1` | Windows wrapper for the evidence-reference contract check and reporting modes. |
 | `scripts/run_production_authority_evidence_references_check.sh` | POSIX wrapper for the evidence-reference contract check and reporting modes. |
 | `config/authority_follow_on_sequence.yaml` | Validate-only authority-dependent follow-on sequence contract. |
@@ -205,6 +209,9 @@ Pass/fail requirements:
   closed if a current evidence reference is recorded, a stream template is omitted, a
   required evidence list drifts from production authority intake, decision updates are
   allowed, or downstream unlocks are requested.
+- Side-effect-free submitted-reference evaluation accepts complete synthetic reference
+  shapes in memory, rejects malformed/unknown/unlocking reference shapes, and does not
+  mutate the catalog or reference inputs.
 - Optional reference-contract `--summary` and `--json` outputs report the same blocked
   reference shape from existing config files only, without appending wrapper text,
   generating artifacts, or mutating state.
@@ -251,3 +258,7 @@ Pass/fail requirements:
 - 2026-07-04: Synchronized routing/state wording after PR #95 so the checkout v7
   dependency-policy closeout is recorded as complete while `AUTH-EVIDENCE-INTAKE`,
   external authority requirements, and `P0 = BLOCKED` remain unchanged.
+- 2026-07-04: Added side-effect-free synthetic submitted-reference evaluation to the
+  production authority evidence reference checker so future cited-reference shapes can
+  fail closed in memory while current references, downstream unlocks, and all authority
+  blockers remain empty/blocked.

@@ -480,6 +480,9 @@ def test_task_queue_reflects_bologna_first_backlog_and_blocked_followons() -> No
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert "reporting-only output" in tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    assert "side-effect-free synthetic submitted-reference evaluation" in (
+        tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    )
     assert tasks["BSA-001"]["status"] == "blocked"
 
 

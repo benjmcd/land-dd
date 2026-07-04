@@ -241,8 +241,10 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
 
     assert "production authority evidence reference contract" in project_state
     assert "422436225307723407ece25574505880bb3781cb" in project_state
+    assert "d0d1d00c011cee5b0204e4974c1db06bcf09ecf4" in project_state
     assert "wrapper argument passthrough merged through PR #179" in project_state
     assert "authority follow-on sequencing contract" in project_state
+    assert "side-effect-free synthetic submitted-reference evaluation" in project_state
     assert "reporting-only output for that reference contract" in project_state
     assert "production_authority_evidence_references_check.py" in project_state
     assert "it does not record authority or change any" in project_state
@@ -252,6 +254,7 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
     assert "production_authority_evidence_references_check.py" in plan
     assert "authority_follow_on_sequence_check.py" in plan
     assert "through PR #95" in plan_index
+    assert "side-effect-free synthetic submitted-reference" in plan_index
     assert "production authority evidence reference checker" in plan_index
     assert "authority follow-on sequence checker" in plan_index
     assert "Authority-evidence posture after PR #95" in (
@@ -261,6 +264,9 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
     assert "reporting-only output" in tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    assert "side-effect-free synthetic submitted-reference evaluation" in (
+        tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
+    )
     assert "authority follow-on sequencing contract" in (
         tasks["AUTH-EVIDENCE-INTAKE"]["notes"]
     )
@@ -271,6 +277,10 @@ def test_authority_evidence_state_includes_reference_contract() -> None:
     )
     assert any(
         "production authority evidence reference checker" in acceptance
+        for acceptance in tasks["AUTH-EVIDENCE-INTAKE"]["acceptance"]
+    )
+    assert any(
+        "complete synthetic submitted-reference shapes" in acceptance
         for acceptance in tasks["AUTH-EVIDENCE-INTAKE"]["acceptance"]
     )
     assert any(

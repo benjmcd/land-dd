@@ -856,6 +856,11 @@ def validate_task_queue(root: Path, task_queue: dict[str, Any], errors: list[str
         "AUTH-EVIDENCE-INTAKE notes must preserve evidence reference output scope",
         errors,
     )
+    require(
+        "side-effect-free synthetic submitted-reference evaluation" in str(auth_evidence.get("notes") or ""),
+        "AUTH-EVIDENCE-INTAKE notes must preserve submitted-reference evaluator scope",
+        errors,
+    )
 
     for task_id in EXPECTED_BLOCKED_TASKS:
         task = by_id.get(task_id)

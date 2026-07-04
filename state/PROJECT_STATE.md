@@ -1,9 +1,9 @@
 # Project State
 
-## Current checkpoint (2026-07-04 checkout v7 policy sync)
+## Current checkpoint (2026-07-04 authority reference evaluator hardening)
 
 This checkpoint is based on live `origin/main`
-`422436225307723407ece25574505880bb3781cb`, after the ODGAV owner-answer gate
+`d0d1d00c011cee5b0204e4974c1db06bcf09ecf4`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
@@ -15,7 +15,12 @@ wrapper support merged through PR #180, the authority follow-on sequencing contr
 through PR #181, the production authority evidence reference contract merged
 through PR #182, and opt-in reporting output for that reference contract merged
 through PR #183, post-output state synchronization merged through PR #184, and
-the GitHub Actions checkout v7 dependency-policy closeout merged through PR #95.
+the GitHub Actions checkout v7 dependency-policy closeout merged through PR #95 at
+`422436225307723407ece25574505880bb3781cb` with post-closeout state synchronization
+merged through PR #185. This checkpoint adds
+side-effect-free synthetic submitted-reference evaluation to the production authority
+evidence reference checker so future cited-reference shapes can fail closed in memory
+before any authority is recorded.
 The active posture is still authority evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
@@ -50,9 +55,12 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   every `config/production_authority_intake.yaml` stream as a blocked reference
   template. Current reference lists and downstream unlock requests remain empty. The
   checker can emit reporting-only `--summary` and `--json` views for operator
-  collection tracking. The contract and output modes do not supply authority, approve
-  sources, change source rights, trigger follow-on lanes, provision hosted runtime,
-  unfreeze qualification, claim Level 10, or unblock `P0`.
+  collection tracking. The checker also evaluates complete or malformed hypothetical
+  submitted references in memory without mutating repo state, preserving the same
+  forbidden effects after a valid shape check. The contract, evaluator, and output
+  modes do not supply authority, approve sources, change source rights, trigger
+  follow-on lanes, provision hosted runtime, unfreeze qualification, claim Level 10,
+  or unblock `P0`.
 - **Current CI dependency-policy boundary**:
   PR #95 updated the GitHub Actions checkout action from `actions/checkout@v6` to
   `actions/checkout@v7` and aligned the repo-owned validate-only policy checkers,
@@ -101,8 +109,10 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   passthrough, state synchronization, the authority follow-on sequencing contract, the
   production authority evidence reference contract, and reporting-only output for that reference contract
   without changing the active task or blocker state. PR #95 then closed the checkout v7
-  dependency-policy update without changing the active task or blocker state. `P0` remains
-  `BLOCKED`.
+  dependency-policy update without changing the active task or blocker state. PR #185
+  synchronized post-PR95 state. This checkpoint adds side-effect-free synthetic submitted-
+  reference evaluation for the production authority evidence reference contract while
+  keeping all current references and downstream unlocks empty. `P0` remains `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
   product/AOI/source/source-rights/corpus/report-proof authority; until then, BSA-001,
