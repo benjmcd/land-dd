@@ -92,7 +92,7 @@ def validate_supply_chain_job(ci_text: str, jobs: dict[str, Any]) -> None:
 
     steps_text = text_from_steps(job, "supply-chain")
     for phrase, message in (
-        ("actions/checkout@v6", "supply-chain job must checkout repo"),
+        ("actions/checkout@v7", "supply-chain job must checkout repo"),
         ("actions/setup-python@v6", "supply-chain job must setup Python"),
         ("python -m pip install PyYAML", "supply-chain job must install PyYAML"),
         (

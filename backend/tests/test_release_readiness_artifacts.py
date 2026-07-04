@@ -140,7 +140,7 @@ def test_ci_has_release_readiness_job() -> None:
     )
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in steps_text
+    assert "actions/checkout@v7" in steps_text
     assert "actions/setup-python@v6" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text
@@ -157,7 +157,7 @@ def test_ci_has_release_package_manifest_job() -> None:
     job_steps_text = steps_text(job)
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in job_steps_text
+    assert "actions/checkout@v7" in job_steps_text
     assert "actions/setup-python@v6" in job_steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in job_steps_text
@@ -221,7 +221,7 @@ def test_ci_has_image_publication_job() -> None:
     )
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in steps_text
+    assert "actions/checkout@v7" in steps_text
     assert "actions/setup-python@v6" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text
@@ -244,7 +244,7 @@ def test_ci_has_hosted_deployment_job() -> None:
     )
 
     assert job["permissions"]["contents"] == "read"
-    assert "actions/checkout@v6" in steps_text
+    assert "actions/checkout@v7" in steps_text
     assert "actions/setup-python@v6" in steps_text
     assert "python-version: '3.12'" in ci_text
     assert "python -m pip install PyYAML" in steps_text

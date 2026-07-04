@@ -1725,7 +1725,7 @@ def validate_ci_and_runbook() -> None:
         "access-control must use read-only contents permission",
     )
     text = step_text(job, "access-control")
-    require("actions/checkout@v6" in text, "access-control job must checkout repo")
+    require("actions/checkout@v7" in text, "access-control job must checkout repo")
     require("actions/setup-python@v6" in text, "access-control job must setup Python")
     require("python-version: '3.12'" in ci_text, "access-control job must use Python 3.12")
     require("python -m pip install PyYAML" in text, "access-control job must install PyYAML")

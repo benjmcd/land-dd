@@ -349,7 +349,7 @@ def validate_ci() -> None:
         "release-readiness must use read-only contents permission",
     )
     text = step_text(job, "release-readiness")
-    require("actions/checkout@v6" in text, "release-readiness job must checkout repo")
+    require("actions/checkout@v7" in text, "release-readiness job must checkout repo")
     require(
         "actions/setup-python@v6" in text,
         "release-readiness job must setup Python",
@@ -378,7 +378,7 @@ def validate_ci() -> None:
     )
     package_text = step_text(package_job, "release-package-manifest")
     require(
-        "actions/checkout@v6" in package_text,
+        "actions/checkout@v7" in package_text,
         "release-package-manifest job must checkout repo",
     )
     require(
@@ -412,7 +412,7 @@ def validate_ci() -> None:
         "image-publication must use read-only contents permission",
     )
     image_text = step_text(image_job, "image-publication")
-    require("actions/checkout@v6" in image_text, "image-publication job must checkout repo")
+    require("actions/checkout@v7" in image_text, "image-publication job must checkout repo")
     require(
         "actions/setup-python@v6" in image_text,
         "image-publication job must setup Python",
@@ -436,7 +436,7 @@ def validate_ci() -> None:
         "hosted-deployment must use read-only contents permission",
     )
     hosted_text = step_text(hosted_job, "hosted-deployment")
-    require("actions/checkout@v6" in hosted_text, "hosted-deployment job must checkout repo")
+    require("actions/checkout@v7" in hosted_text, "hosted-deployment job must checkout repo")
     require(
         "actions/setup-python@v6" in hosted_text,
         "hosted-deployment job must setup Python",
