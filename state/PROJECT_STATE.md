@@ -1,9 +1,9 @@
 # Project State
 
-## Current checkpoint (2026-07-02 production authority evidence reference output)
+## Current checkpoint (2026-07-04 checkout v7 policy sync)
 
 This checkpoint is based on live `origin/main`
-`084e844b82821066d0d10f3b04518b5d39610833`, after the ODGAV owner-answer gate
+`422436225307723407ece25574505880bb3781cb`, after the ODGAV owner-answer gate
 evaluation merged through PR #167, the owner-independent extended-domain fixture
 sequence merged through PRs #168-#172, the post-geology routing closeout merged
 through PR #173, authority-evidence routing merged through PR #174, the authority
@@ -14,8 +14,9 @@ wrapper argument passthrough merged through PR #179, state synchronization after
 wrapper support merged through PR #180, the authority follow-on sequencing contract merged
 through PR #181, the production authority evidence reference contract merged
 through PR #182, and opt-in reporting output for that reference contract merged
-through PR #183. The active posture is still authority
-evidence intake: the next substantive work requires cited product/AOI/source/
+through PR #183, post-output state synchronization merged through PR #184, and
+the GitHub Actions checkout v7 dependency-policy closeout merged through PR #95.
+The active posture is still authority evidence intake: the next substantive work requires cited product/AOI/source/
 source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/Level 10,
 or empirical qualification implementation can proceed. It does not add another
 connector, run live calls, approve sources, change source rights, capture Bologna
@@ -52,6 +53,13 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   collection tracking. The contract and output modes do not supply authority, approve
   sources, change source rights, trigger follow-on lanes, provision hosted runtime,
   unfreeze qualification, claim Level 10, or unblock `P0`.
+- **Current CI dependency-policy boundary**:
+  PR #95 updated the GitHub Actions checkout action from `actions/checkout@v6` to
+  `actions/checkout@v7` and aligned the repo-owned validate-only policy checkers,
+  artifact tests, and the security-scan runbook example to the same version. This is
+  CI dependency hygiene only; it does not change verification semantics, evidence
+  contracts, source rights, authority posture, qualification status, hosted readiness,
+  or Level 10 status.
 - **Current authority follow-on sequencing contract**:
   `config/authority_follow_on_sequence.yaml` and
   `scripts/authority_follow_on_sequence_check.py` machine-check the repo-local
@@ -89,10 +97,11 @@ approve DS-017, unfreeze qualification, record Bologna authority, claim hosted/L
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until product/AOI and
   source-review authority is cited. Follow-up authority-evidence support slices through
-  PR #183 added current-state sync, reporting output, runbook links, wrapper
+  PR #184 added current-state sync, reporting output, runbook links, wrapper
   passthrough, state synchronization, the authority follow-on sequencing contract, the
   production authority evidence reference contract, and reporting-only output for that reference contract
-  without changing the active task or blocker state. `P0` remains
+  without changing the active task or blocker state. PR #95 then closed the checkout v7
+  dependency-policy update without changing the active task or blocker state. `P0` remains
   `BLOCKED`.
 - **Immediate next pursuit**: collect and cite external authority evidence before any
   implementation. The first unblocked future implementation lane requires cited
