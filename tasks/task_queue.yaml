@@ -113,9 +113,11 @@ routing_note: >
   `b7cc96e58c9a881eec0cc6896c1733d44a2f29cb`, and reporting-only output for that
   reference contract through PR #183 at
   `084e844b82821066d0d10f3b04518b5d39610833`, post-output state synchronization
-  through PR #184 at `13f77cbc74c0f5535ce53cab7d3e461016538ca2`, and the checkout v7
+  through PR #184 at `13f77cbc74c0f5535ce53cab7d3e461016538ca2`, the checkout v7
   dependency-policy closeout through PR #95 at
-  `422436225307723407ece25574505880bb3781cb`. AUTH-EVIDENCE-INTAKE is the active
+  `422436225307723407ece25574505880bb3781cb`, and authority reference evaluator
+  hardening through PR #186 at `dfcbccd948a35927f6784d0dfdd6a2cba54d6780`.
+  AUTH-EVIDENCE-INTAKE is the active
   authority-evidence posture: the next substantive work requires cited product/AOI/
   source/source-rights/corpus/report-proof authority before Bologna, DS-017, hosted/
   Level 10, or empirical qualification implementation can proceed. Do not add another
@@ -2827,9 +2829,12 @@ tasks:
       dependency-policy closeout and post-closeout state sync are also complete. The
       production authority evidence reference checker now has side-effect-free
       synthetic submitted-reference evaluation so future cited-reference shapes can
-      fail closed in memory while the next substantive work remains dependent on cited
-      external owner/source authority before Bologna, DS-017, hosted/Level 10, or
-      empirical qualification implementation can proceed.
+      fail closed in memory. The ODP-BOL-001 scope-authority readiness checker now has
+      reporting-only summary/JSON output for required cited-authority owner-answer
+      fields, pilot-scope authority-record fields, scope decisions, downstream blocked
+      gates, and no-overclaim controls. The next substantive work remains dependent on
+      cited external owner/source authority before Bologna, DS-017, hosted/Level 10,
+      or empirical qualification implementation can proceed.
       Do not record owner answers, approve sources, change source rights, capture
       corpus/fixtures, seed the DB, prove a report, alter schema/API/auth/UI behavior,
       unfreeze qualification, unblock P0, approve DS-017, create hosted authority, or
@@ -2844,6 +2849,7 @@ tasks:
       - The production authority evidence reference checker defines future cited-reference shape while keeping current references and downstream unlock requests empty
       - The production authority evidence reference checker summary/JSON output remains reporting-only and does not append wrapper text to JSON output
       - The production authority evidence reference checker accepts complete synthetic submitted-reference shapes in memory, rejects malformed/unknown/unlocking shapes, and does not mutate inputs
+      - The ODP-BOL-001 scope-authority readiness checker summary/JSON output remains reporting-only and does not append wrapper text to JSON output
       - The authority follow-on sequence checker covers every production authority stream plus the packet-level workload/retention lane and keeps every follow-on lane blocked until cited authority exists
       - No source approval, source-rights change, fixture capture, DB seed, report proof, runtime behavior, schema/API/auth/UI change, or production authority is introduced
     validation:
@@ -2855,6 +2861,10 @@ tasks:
       - py -3.12 .\scripts\production_authority_evidence_references_check.py --summary
       - py -3.12 .\scripts\production_authority_evidence_references_check.py --json
       - .\scripts\run_production_authority_evidence_references_check.ps1
+      - py -3.12 .\scripts\bol_scope_auth_check.py --summary
+      - py -3.12 .\scripts\bol_scope_auth_check.py --json
+      - .\scripts\run_bol_scope_auth_check.ps1 --summary
+      - .\scripts\run_bol_scope_auth_check.ps1 --json
       - py -3.12 .\scripts\authority_follow_on_sequence_check.py
       - .\scripts\run_authority_follow_on_sequence_check.ps1
       - .\scripts\verify.ps1

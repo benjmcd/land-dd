@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -451,12 +453,146 @@ def validate_runbook() -> None:
         require(phrase in runbook, f"runbook missing phrase: {phrase}")
 
 
-def main() -> int:
+def build_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    readiness = require_mapping(
+        payload.get("promotion_readiness"),
+        "promotion readiness missing",
+    )
+    downstream_rows = []
+    for raw_item in require_non_empty_list(
+        payload.get("downstream_after_valid_scope_authority"),
+        "downstream status missing",
+    ):
+        item = require_mapping(raw_item, "each downstream row must be a mapping")
+        downstream_rows.append(
+            {
+                "id": require_text(item.get("id"), "downstream id missing"),
+                "status": item.get("status"),
+                "update_allowed_by_this_gate": item.get("update_allowed_by_this_gate"),
+            }
+        )
+    owner_fields = require_non_empty_list(
+        readiness.get("required_owner_answer_fields"),
+        "owner fields missing",
+    )
+    authority_fields = require_non_empty_list(
+        readiness.get("required_authority_record_fields"),
+        "authority fields missing",
+    )
+    scope_decisions = require_non_empty_list(
+        readiness.get("required_scope_decisions"),
+        "scope decisions missing",
+    )
+    current_authority_refs = require_list(
+        readiness.get("current_authority_record_references"),
+        "authority refs must be a list",
+    )
+    return {
+        "schema_version": "bol_scope_auth_summary_v1",
+        "ok": True,
+        "gate_status": payload.get("status"),
+        "operator_runbook": payload.get("operator_runbook"),
+        "validation": payload.get("validation"),
+        "odp_id": readiness.get("odp_id"),
+        "sequence": readiness.get("sequence"),
+        "readiness_state": readiness.get("readiness_state"),
+        "current_owner_answer_references": require_list(
+            readiness.get("current_owner_answer_references"),
+            "current owner refs must be a list",
+        ),
+        "current_authority_record_reference_count": len(current_authority_refs),
+        "current_owner_answer_type": readiness.get("current_owner_answer_type"),
+        "required_next_owner_answer_type": readiness.get("required_next_owner_answer_type"),
+        "owner_answer_submission_target": readiness.get("owner_answer_submission_target"),
+        "authority_record_submission_target": readiness.get(
+            "authority_record_submission_target",
+        ),
+        "required_owner_answer_fields": owner_fields,
+        "required_owner_answer_field_count": len(owner_fields),
+        "required_authority_record_fields": authority_fields,
+        "required_authority_record_field_count": len(authority_fields),
+        "required_scope_decisions": scope_decisions,
+        "required_scope_decision_count": len(scope_decisions),
+        "future_authority_record_requirements": require_mapping(
+            readiness.get("future_authority_record_requirements"),
+            "future requirements missing",
+        ),
+        "allowed_future_authority_targets": require_non_empty_list(
+            payload.get("allowed_future_authority_targets"),
+            "allowed targets missing",
+        ),
+        "forbidden_bundled_targets": require_non_empty_list(
+            payload.get("forbidden_bundled_targets"),
+            "forbidden targets missing",
+        ),
+        "downstream_after_valid_scope_authority": downstream_rows,
+        "downstream_gate_count": len(downstream_rows),
+        "no_overclaim_controls": require_mapping(
+            payload.get("no_overclaim_controls"),
+            "no-overclaim missing",
+        ),
+        "no_overclaim_control_count": len(
+            require_mapping(payload.get("no_overclaim_controls"), "no-overclaim missing"),
+        ),
+    }
+
+
+def format_summary(summary: dict[str, Any]) -> str:
+    downstream = require_non_empty_list(
+        summary.get("downstream_after_valid_scope_authority"),
+        "downstream status missing",
+    )
+    lines = [
+        "Bologna scope authority readiness summary: blocked",
+        f"schema_version: {summary.get('schema_version')}",
+        f"gate_status: {summary.get('gate_status')}",
+        f"odp_id: {summary.get('odp_id')}",
+        f"readiness_state: {summary.get('readiness_state')}",
+        f"current_owner_answer_type: {summary.get('current_owner_answer_type')}",
+        f"required_next_owner_answer_type: {summary.get('required_next_owner_answer_type')}",
+        "current_authority_records: "
+        f"{summary.get('current_authority_record_reference_count')}",
+        f"required_owner_answer_fields: {summary.get('required_owner_answer_field_count')}",
+        "required_authority_record_fields: "
+        f"{summary.get('required_authority_record_field_count')}",
+        f"required_scope_decisions: {summary.get('required_scope_decision_count')}",
+        f"downstream_gates: {summary.get('downstream_gate_count')}",
+    ]
+    for raw_item in downstream:
+        item = require_mapping(raw_item, "downstream row must be a mapping")
+        lines.append(
+            "downstream_after_valid_scope_authority "
+            f"{item.get('id')}: "
+            f"status={item.get('status')} "
+            f"update_allowed_by_this_gate={item.get('update_allowed_by_this_gate')}"
+        )
+    lines.append(
+        "no_overclaim_controls: "
+        f"{summary.get('no_overclaim_control_count')}"
+    )
+    lines.append("Bologna scope authority readiness check: ok")
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate the Bologna ODP-BOL-001 scope-authority readiness gate.",
+    )
+    output_group = parser.add_mutually_exclusive_group()
+    output_group.add_argument("--json", action="store_true", dest="json_output")
+    output_group.add_argument("--summary", action="store_true", dest="summary_output")
+    args = parser.parse_args([] if argv is None else argv)
     validate_required_files()
-    validate_catalog(load_yaml(CONFIG_PATH))
+    payload = load_yaml(CONFIG_PATH)
+    validate_catalog(payload)
     validate_current_source_state()
     validate_runbook()
-    print("Bologna scope authority readiness check: ok")
+    if args.json_output:
+        print(json.dumps(build_summary(payload), indent=2, sort_keys=True))
+    elif args.summary_output:
+        print(format_summary(build_summary(payload)))
+    else:
+        print("Bologna scope authority readiness check: ok")
     return 0
 
 
@@ -468,4 +604,4 @@ if __name__ == "__main__":
     from qualification_checker_advertisement import maybe_emit_qualification_criteria
 
     maybe_emit_qualification_criteria(__file__)
-    raise SystemExit(main())
+    raise SystemExit(main(_qualification_sys.argv[1:]))

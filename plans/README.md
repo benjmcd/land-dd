@@ -20,11 +20,14 @@ contract, PR #182 merged the validate-only production authority evidence referen
 contract, PR #183 merged reporting-only output for that reference contract so
 future cited-reference fields and per-stream templates can be collected
 without writing artifacts, recording authority, or requesting downstream unlocks, PR
-#184 synchronized state after that output support, and PR #95 completed the checkout v7
-dependency-policy closeout while PR #185 synchronized state afterward. The current
-reference-contract hardening adds side-effect-free synthetic submitted-reference
-evaluation so future cited-reference shapes can be checked in memory before any
-authority recording remains externally blocked. The
+#184 synchronized state after that output support, PR #95 completed the checkout v7
+dependency-policy closeout while PR #185 synchronized state afterward, and PR #186
+added side-effect-free synthetic submitted-reference evaluation so future cited-
+reference shapes can be checked in memory before any authority recording remains
+externally blocked. The current scope-authority reporting hardening adds optional
+summary/JSON output to `bol_scope_auth` so the immediate ODP-BOL-001 cited-authority
+acceptance requirements are visible without creating artifacts, recording authority,
+or unblocking ODP-BOL-002/003/004. The
 posture records that the
 owner-independent extended-domain
 fixture-ingestion sequence and post-geology closeout are complete, and that the next
@@ -386,7 +389,9 @@ ODP-BOL-001 authority-recording slice. It proves the current owner answer remain
 `approve_review_only`, requires a future
 `approve_with_cited_authority` answer before authority can be recorded, keeps
 `current_authority_records` empty, and forbids bundling source, corpus, fixture, DB,
-report, hosted, or Level 10 work.
+report, hosted, or Level 10 work. The current reporting hardening makes those blocked
+requirements available through opt-in `--summary` and `--json` checker output without
+changing the gate state or allowing downstream work.
 
 `BOL-ODP2-PACKET` (`plans/2026-06-27-odp2-owner-answer-packet.md`) adds
 `config/bologna_odp2_owner_answer_packet.yaml`, a validate-only owner-facing packet for

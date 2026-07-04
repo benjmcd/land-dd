@@ -41,10 +41,13 @@ GitHub Actions checkout v7 dependency-policy update and aligned the repo-owned
 validate-only policy checkers, artifact tests, and security-scan runbook example to
 `actions/checkout@v7`; this was CI hygiene only and did not change the active
 authority-evidence posture or any downstream blocker. PR #185 synchronized state after
-that checkout v7 closeout. This pass adds side-effect-free synthetic submitted-
+that checkout v7 closeout. PR #186 added side-effect-free synthetic submitted-
 reference evaluation to the production authority evidence reference checker so future
 cited-reference shapes can fail closed in memory before authority recording remains
-blocked.
+blocked. This pass adds reporting-only `--summary` and `--json` output to the
+immediate ODP-BOL-001 scope-authority readiness gate so the required owner-answer
+fields, pilot-scope authority-record fields, scope decisions, downstream blocked gates,
+and no-overclaim controls are visible without recording authority or unlocking work.
 
 The remaining sequence is authority-dependent:
 
@@ -124,6 +127,19 @@ Reference-contract reporting extension under the same active posture:
 - avoid output paths, file writes, generated reference artifacts, source approvals,
   rights changes, downstream unlock requests, or any authority-recording behavior.
 
+ODP-BOL-001 scope-authority reporting extension under the same active posture:
+
+- add optional direct checker output modes that emit the blocked ODP-BOL-001
+  promotion-readiness requirements as a human summary or JSON view after the same
+  validation passes;
+- include the required owner-answer fields, required pilot-scope authority-record
+  fields, required scope decisions, downstream ODP-BOL-002/003/004 blocked gates, and
+  no-overclaim controls from existing config only;
+- forward wrapper arguments without appending wrapper confirmation text to JSON output;
+- avoid output paths, file writes, generated artifacts, owner-answer recording,
+  pilot-scope authority recording, source approvals, source-rights changes, corpus or
+  fixture capture, DB/report work, or any downstream unlock.
+
 Rejected alternatives:
 
 - Start `BSA-001` now: rejected because complete cited product/AOI/source-review
@@ -160,6 +176,11 @@ Rejected alternatives:
 | `scripts/authority_follow_on_sequence_check.py` | Fail closed if the follow-on map, authority streams, or blocker boundaries drift. |
 | `scripts/run_authority_follow_on_sequence_check.ps1` | Windows wrapper for the follow-on sequence check. |
 | `scripts/run_authority_follow_on_sequence_check.sh` | POSIX wrapper for the follow-on sequence check. |
+| `scripts/bol_scope_auth_check.py` | Optionally emits reporting-only summary/JSON for ODP-BOL-001 promotion-readiness requirements. |
+| `scripts/run_bol_scope_auth_check.ps1` | Windows wrapper forwards ODP-BOL-001 scope-authority reporting modes without corrupting JSON. |
+| `scripts/run_bol_scope_auth_check.sh` | POSIX wrapper forwards ODP-BOL-001 scope-authority reporting modes without corrupting JSON. |
+| `docs/runbooks/bol_scope_auth.md` | Documents the reporting modes and their validate-only boundary. |
+| `backend/tests/test_bol_scope_auth_artifacts.py` | Proves the reporting output and wrapper passthrough remain validate-only and blocked. |
 | `backend/tests/test_qualification_parameterization_backlog_artifacts.py` | Mirror backlog checker expectations. |
 | `backend/tests/test_readiness_core_artifacts.py` | Mirror readiness model expectations. |
 | `backend/tests/test_authority_evidence_intake_artifacts.py` | Prove the authority-evidence guard passes current artifacts and fails closed on omitted streams, downstream unlocks, or P0 promotion. |
@@ -181,11 +202,16 @@ py -3.12 scripts\production_authority_evidence_references_check.py
 py -3.12 scripts\production_authority_evidence_references_check.py --summary
 py -3.12 scripts\production_authority_evidence_references_check.py --json
 .\scripts\run_production_authority_evidence_references_check.ps1
+py -3.12 scripts\bol_scope_auth_check.py
+py -3.12 scripts\bol_scope_auth_check.py --summary
+py -3.12 scripts\bol_scope_auth_check.py --json
+.\scripts\run_bol_scope_auth_check.ps1 --summary
+.\scripts\run_bol_scope_auth_check.ps1 --json
 py -3.12 scripts\authority_follow_on_sequence_check.py
 .\scripts\run_authority_follow_on_sequence_check.ps1
 py -3.12 scripts\readiness_matrix_check.py
 py -3.12 scripts\qualification_status_check.py --root .
-$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py -q
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py backend\tests\test_bol_scope_auth_artifacts.py -q
 git diff --check
 git diff --name-only --diff-filter=D
 .\scripts\verify.ps1
@@ -215,6 +241,10 @@ Pass/fail requirements:
 - Optional reference-contract `--summary` and `--json` outputs report the same blocked
   reference shape from existing config files only, without appending wrapper text,
   generating artifacts, or mutating state.
+- Optional ODP-BOL-001 scope-authority `--summary` and `--json` outputs report the
+  same blocked promotion-readiness requirements from existing config files only,
+  without appending wrapper text to JSON output, generating artifacts, recording an
+  owner answer, recording pilot-scope authority, or allowing downstream unlocks.
 - `scripts\authority_follow_on_sequence_check.py` passes and fails closed if the
   packet follow-on map drifts, a production authority stream is not covered by a
   follow-on lane, a lane is marked unblocked, or a lane omits the required cited-
@@ -262,3 +292,6 @@ Pass/fail requirements:
   production authority evidence reference checker so future cited-reference shapes can
   fail closed in memory while current references, downstream unlocks, and all authority
   blockers remain empty/blocked.
+- 2026-07-04: Added reporting-only summary/JSON output for `bol_scope_auth` so the
+  immediate ODP-BOL-001 cited-authority acceptance requirements are visible without
+  creating artifacts, recording authority, or unblocking ODP-BOL-002/003/004.

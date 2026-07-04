@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-04 ODP-BOL-001 scope-authority reporting hardening
+
+- Continued from live `origin/main` at
+  `dfcbccd948a35927f6784d0dfdd6a2cba54d6780` in isolated worktree
+  `worktrees/bol-scope-summary` on branch `codex/bol-scope-summary`; the root
+  checkout remained stale/dirty and was not used as implementation authority.
+- Added reporting-only `--summary` and `--json` output to
+  `scripts/bol_scope_auth_check.py` so the immediate ODP-BOL-001
+  cited-authority acceptance requirements can be inspected from committed config.
+- Updated the Windows/POSIX wrappers to forward reporting arguments without appending
+  wrapper confirmation text to JSON output.
+- Added focused artifact tests proving the JSON and summary views report the blocked
+  current answer, required owner-answer fields, required pilot-scope authority-record
+  fields, required scope decisions, downstream ODP-BOL-002/003/004 blocked gates, and
+  no-overclaim controls.
+- Synchronized the active authority-evidence plan, plan index, project state, task
+  routing, runbook, and validation log so this remains part of
+  `AUTH-EVIDENCE-INTAKE`, not a new authority-recording lane.
+- Preserved the boundaries: no owner answer, pilot-scope authority record, AOI
+  selection, source approval, source-rights change, corpus/fixture capture, DB seed,
+  report proof, runtime behavior, schema/API/auth/UI change, hosted authority,
+  DS-017 approval, Level 10 claim, qualification PASS, owner-decision unfreeze, or P0
+  unblock.
+
 ## 2026-07-04 authority reference evaluator hardening
 
 - Continued from live `origin/main` at
