@@ -1,17 +1,25 @@
 # QFREEZE-2 Flood-Only Proposal Packet
 
+> SUPERSEDED/APPLIED 2026-07-06 via PR #191; live freeze in `state/owner-decisions.md`
+> QFREEZE-2 block; live derived P0 is NOT_RUN.
+
 Generated: 2026-07-06
 
-Status: review-only proposal. This packet freezes nothing, records no owner authority,
-does not update `state/owner-decisions.md`, does not change qualification config, and
-does not change `state/EMPIRICAL_QUALIFICATION_STATUS.yaml`. `P0` remains `BLOCKED`.
+Historical status at generation: review-only proposal. At generation time this packet
+froze nothing, recorded no owner authority, did not update `state/owner-decisions.md`,
+did not change qualification config, and did not change
+`state/EMPIRICAL_QUALIFICATION_STATUS.yaml`. It was later superseded/applied by PR
+#191 under the QFREEZE-2 owner-decision block, and live `P0` is now `NOT_RUN`, not
+`PASS`.
 
 ## Authority Boundary
 
-This packet is a proposed owner-ratifiable freeze design for a future follow-up slice.
-The future slice would still need a cited owner decision before it can change any
-`DRAFT` status to `FROZEN`, approve anything beyond already-approved `DS-002`, or
-write any owner-decision/status/config record.
+Historical authority boundary at generation: this packet was a proposed
+owner-ratifiable freeze design for a future follow-up slice. That follow-up slice was
+later applied by PR #191 under the 2026-07-06 QFREEZE-2 owner-decision block. The
+packet itself remains historical evidence and does not by itself grant new authority,
+approve anything beyond already-approved `DS-002`, or write any owner-decision/status/
+config record.
 
 Current evidence anchors:
 

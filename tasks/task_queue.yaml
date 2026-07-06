@@ -1840,8 +1840,9 @@ tasks:
     spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
     notes: >
       BLOCKED external/owner authority: active qualification target bindings and
-      criterion contracts remain DRAFT/unresolved until owners freeze thresholds,
-      contracts, reviewers, and evidence expectations.
+      criterion contracts are closed only for the QFREEZE-2 flood-only DS-002 scope.
+      Non-flood qualification, sealed-run reviewer/evidence protocol, and any future
+      PASS remain blocked until owners freeze the remaining applicable authority.
 
   - id: EQ-BLOCK-RUBRICS
     title: Freeze active judgment rubrics
@@ -1850,9 +1851,10 @@ tasks:
     lane: coordinator
     spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
     notes: >
-      BLOCKED external/owner authority: active judgment rubrics require reviewer
-      competence, dimensions, scales, pass rules, adjudication, calibration cases, and
-      evidence schema before any gate can pass.
+      BLOCKED external/owner authority: QFREEZE-2 froze the active judgment rubrics for
+      flood-only parameterization, but reviewer competence, adjudication, calibration
+      cases, evidence schema, and sealed-run proof remain required before any gate can
+      pass.
 
   - id: EQ-BLOCK-DOMAINS
     title: Freeze qualification domain profiles
@@ -1861,10 +1863,11 @@ tasks:
     lane: coordinator
     spec: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
     notes: >
-      BLOCKED external/owner authority: flood, wetlands, slope/terrain, soils/septic,
-      access, zoning, environmental, and source-conflict profiles remain DRAFT until
-      source hierarchy, issue taxonomy, tolerances, metrics, reviewers, and surveillance
-      plans are frozen.
+      BLOCKED external/owner authority: QFREEZE-2 froze the `flood` profile for DS-002
+      and excluded the seven non-flood domains as
+      PROFILE_EXCLUDED_WITH_EVIDENCED_NA. Non-flood domain qualification and any future
+      expansion still require owner-frozen source hierarchy, issue taxonomy,
+      tolerances, metrics, reviewers, and surveillance plans.
 
   - id: EQ-BLOCK-SOURCES
     title: Approve selected source-quality profiles
@@ -2416,6 +2419,26 @@ tasks:
       - Packet states it is not an authority ledger and does not authorize downstream work
       - QFREEZE-1 is done and OWNER-DEC-1 is the only active task
       - P0 remains BLOCKED and non-P0 statuses remain NOT_RUN
+
+  - id: QFREEZE-2
+    title: Flood-only qualification parameterization freeze
+    status: done
+    depends_on: [OWNER-DEC-1]
+    lane: coordinator
+    spec: state/qfreeze2-flood-proposal.md
+    notes: >
+      Record the 2026-07-06 owner-authorized flood-only QFREEZE-2 disposition:
+      qualified scope is narrowed to `flood`, targets/rubrics/flood profile are
+      FROZEN under benjmcd authority, the seven non-flood domains are
+      PROFILE_EXCLUDED_WITH_EVIDENCED_NA, and P0 derives to NOT_RUN only.
+      This records no P0 PASS, sealed result artifact, non-flood domain qualification,
+      source approval beyond DS-002, Bologna authority, DS-017 approval, hosted
+      authority, or Level 10 claim.
+    acceptance:
+      - Flood is the only qualified domain under the QFREEZE-2 DS-002 scope
+      - Qualification targets, judgment rubrics, and config/qualification/domain_profiles/flood.yaml are FROZEN under owner=benjmcd authority
+      - Wetlands, slope_terrain, soils_septic_proxy, physical_road_access_proxy, zoning_context, environmental_context, and source_availability_and_conflict are PROFILE_EXCLUDED_WITH_EVIDENCED_NA
+      - P0 remains NOT_RUN with no result path and never PASS from the freeze
 
   - id: BOL-ODP-1
     title: Bologna owner-answer intake

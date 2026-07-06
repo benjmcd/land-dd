@@ -20,6 +20,11 @@ decision-request-only artifact; it does not authorize any target freeze, rubric 
 domain profile freeze, source approval, Bologna AOI/source/corpus/report work,
 qualification PASS, hosted authority, or Level 10 claim.
 
+P0 sealed-run decision packet: `state/p0-sealed-run-decision-packet.md`. That packet
+records the future `P0 = PASS` prerequisites and owner/infra dependencies; it does not
+authorize a run, create a `qualification_result_v3` artifact, or change P0 from
+`NOT_RUN`.
+
 Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`. That intake is
 validate-only, records one review-only `ODP-BOL-001` scope-pursuit owner answer, and
 keeps `ODP-BOL-002` through `ODP-BOL-004` owner answers missing until cited external
@@ -126,10 +131,13 @@ any empirical result or qualification `PASS`.
 
 ## P0 Repo-Local Auto-Evidence
 
-These rows have repo-local evidence collected in
-`docs/qualification/P0_AUTO_EVIDENCE.yaml`. They remain `NOT_RUN` because QFREEZE-2
-freezes parameterization only; it records no sealed P0 run, no empirical result, and
-no qualification `PASS`.
+Selected rows have repo-local evidence collected in
+`docs/qualification/P0_AUTO_EVIDENCE.yaml`; the full never-N/A invariant boundary is
+recorded in `state/p0-sealed-run-decision-packet.md`. They remain `NOT_RUN` because
+QFREEZE-2 freezes parameterization only; it records no sealed P0 run, no empirical
+result, and no qualification `PASS`. No `qualification_result_v3` writer or runner
+exists in this repository today; the current `scripts/qualification_*.py` tools are
+validators/checkers.
 
 | Criterion | Evidence status | Effective status | Not-run boundary |
 |---|---|---|---|
@@ -137,6 +145,8 @@ no qualification `PASS`.
 | `P0-005` | auto-evidenced; P0 not run | NOT_RUN | Sealed acceptance case identity and case provenance records are not qualification results. |
 | `P0-021` | auto-evidenced; P0 not run | NOT_RUN | Controlled storage, archive manifests, and evidence hashes are not qualification results. |
 | `P0-023` | auto-evidenced; P0 not run | NOT_RUN | Frozen thresholds and candidate identity are not a sealed P0 run/result. |
+| `P0-027` | never-N/A invariant; sealed-run packet dependency | NOT_RUN | Qualification implementation integrity requires a controlled result writer/runner and cannot be inferred from validators alone. |
+| `P0-030` | never-N/A invariant; sealed-run packet dependency | NOT_RUN | Safety stop behavior must be proven in a sealed run; the QFREEZE-2 parameterization freeze is not stop-rule evidence. |
 
 ## Active Gates
 
@@ -246,7 +256,7 @@ not grant authority.
 | `ODP-TGT-001` | Active targets and criterion contracts | Blocks P0 and all downstream qualification results. |
 | `ODP-RUB-001` | Judgment rubrics | Blocks P0/Q1/Q2/A/DQ/M/R rubric-dependent criteria. |
 | `ODP-SRC-001` | Selected source profile set | Blocks source expansion beyond `DS-002`. |
-| `ODP-PRO-001` | Candidate and evidence protocol | Blocks sealed cases, reviewer protocol, and run evidence. |
+| `ODP-PRO-001` | Candidate and evidence protocol | Blocks `external_restricted_vault`, fresh non-fixture cohort, 2+ independent reviewers plus adjudicator with IRR >= 0.7 for P0-012/013/014/015/025, independent reproducer for P0-022, run authorization, and any later status-flip authorization; see `state/p0-sealed-run-decision-packet.md`. |
 | `ODP-CON-001` | Conditional profiles | Blocks AI, candidate-generation, financial, economics, hosted, and expansion profiles. |
 | `ODP-BOL-001` | Bologna product and AOI authority | Blocks Bologna source authority, corpus, DB proof, and implementation. |
 | `ODP-BOL-002` | Bologna source authority and rights | Blocks Bologna recorded corpus and report-use authority. |

@@ -92,6 +92,14 @@ python scripts\db_smoke_check.py
 $env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
 ```
 
+## Workspace operations caveats
+- This workspace is OneDrive-synced. `git worktree remove` can fail with
+  permission-denied errors while OneDrive or an editor holds a lock; retry after the
+  lock releases instead of deleting files manually.
+- Local `main` can silently drift behind `origin/main`. Before starting a branch or
+  worktree, fetch and confirm the intended base against `origin/main`; reset only when
+  the checkout owner and dirty-state boundary are clear.
+
 ## Work protocol
 For trivial single-file fixes: make the smallest safe change, run the narrowest relevant check, then report changed files and verification result.
 

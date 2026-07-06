@@ -2,6 +2,64 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-06 DB Spine Regression (PR #188)
+
+**Scope:** Add regression coverage proving the US-MVP DB spine carries committed
+fixture evidence through Postgres-backed evidence, claim, and report-run surfaces, and
+that stable report artifacts are reproducible across independent runs over identical
+inputs.
+
+**Commands for this gate:**
+
+```powershell
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\api\test_db_backed_extended_domain_dossier.py backend\tests\reports\test_report_regression.py -q
+$env:RUN_DB_SMOKE='1'; $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\api\test_db_backed_extended_domain_dossier.py backend\tests\reports\test_report_regression.py -q
+py -3.12 -m ruff check backend\tests\api\test_db_backed_extended_domain_dossier.py backend\tests\reports\test_report_regression.py
+Push-Location backend
+$env:PYTHONPATH='.'; py -3.12 -m mypy tests\api\test_db_backed_extended_domain_dossier.py tests\reports\test_report_regression.py
+Pop-Location
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+$env:RUN_DB_SMOKE='1'; .\scripts\verify.ps1
+```
+
+**Results:**
+
+- The default focused test run reported `s.....`: the DB-backed test remained skipped
+  without `RUN_DB_SMOKE=1`, while the non-DB report-regression assertions passed.
+- The `RUN_DB_SMOKE=1` focused test run reported `......`: the DB-backed test ingested
+  committed `nc_buncombe_bun_minerals_active.json` through
+  `StaticMineralsFixtureConnector` plus the public fixture workflow into Postgres,
+  created a DB-backed report run, and asserted persisted `claims.claim_evidence`
+  links evidence id `c1c2c3c4-c1c2-4c3c-8c4c-c1c2c3c4c5c6` to
+  `MINERALS_ACTIVE_CLAIMS_001`.
+- The same DB-backed test reloaded the persisted report artifact and verified the
+  Section 14 dossier output includes the active-mining-claim finding plus a non-empty
+  caveats line.
+- The report regression test created two independent report runs over identical
+  area/evidence with distinct `report_run_ids` and byte-compared the stable serialized
+  artifact projection, excluding run-id/timestamp fields through the existing stable
+  projection helper.
+- Focused ruff and mypy passed. `authority_evidence_intake_check.py` passed.
+  `qualification_status_check.py --root .` reported derived statuses
+  `BLOCKED=1 NOT_RUN=20`, and
+  `qualification_parameterization_backlog_check.py --root .` reported
+  `P0 status: BLOCKED` in the PR #188 branch context, before QFREEZE-2 later moved
+  P0 to `NOT_RUN`.
+- Full `RUN_DB_SMOKE=1` `.\scripts\verify.ps1` passed with backend tests, ruff, mypy,
+  and DB smoke green. PR #188 CI was green before merge, including `verify`,
+  `db-verify`, `qualification-selftest`, supply-chain, security, release, hosted,
+  package, image, access-control, and attestation gates.
+- Review discipline: Codex authored the branch `codex/db-spine-proof` in isolated
+  worktree `worktrees/db-spine-proof` at commit
+  `a45e36c7fe6803ce23b7d7d165ec86a071084b71`; the branch held at PR #188 for
+  orchestrator/owner review and was merged externally after checks were green.
+
+**Residual risk:** This was test coverage only. It did not change product code,
+schema, migration, API, report semantics, authority records, qualification status, P0
+state, Bologna authority, DS-017, hosted, or Level 10 claims.
+
 ## 2026-07-06 QFREEZE-2 Flood-Only Qualification Freeze
 
 **Scope:** Apply the owner-authorized QFREEZE-2 flood-only parameterization freeze
@@ -37,6 +95,11 @@ $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_s
 - The unresolved-token scan found only the explanatory owner-decision sentence that
   states the ratified catch-all `UNKNOWN` was removed; no frozen YAML value retains the
   bare catch-all token.
+- Review discipline across the 2026-07-06 closeout lane: PRs #188, #189, #190, and
+  #191 were authored by Codex and held at PR; approval/merge authority remained with
+  the orchestrator/owner, not the implementation author. QFREEZE-2 specifically had a
+  triple gate: orchestrator read, independent code review that forged a P0 `PASS` and
+  confirmed the untouched validator rejected it, and green CI.
 
 **Residual risk:** QFREEZE-2 is a parameterization freeze only. It does not record a
 sealed P0 run/result, does not qualify non-flood domains, does not approve sources

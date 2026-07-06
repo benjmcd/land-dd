@@ -11,13 +11,30 @@ Append concise entries. Do not rely on chat history.
 - Recorded `state/p0-sealed-run-decision-packet.md` as a documentation-only packet
   for the post-QFREEZE-2 path from `P0 = NOT_RUN` to a possible future sealed
   `P0 = PASS`.
-- Summarized the 2026-07-06 arc: DB spine and authority-validator hardening landed
-  through PR #188 and PR #189; PR #190 ratified the QFREEZE-2 flood-only packet;
-  PR #191 applied the freeze and left P0 `NOT_RUN`; this packet scopes the separate
-  sealed-run work.
+- Summarized the 2026-07-06 arc at the sealed-run boundary. The dedicated entries
+  below carry the DB-spine, authority-validator, and QFREEZE-2 details.
 - Updated only `state/PROJECT_STATE.md` and this worklog as pointers. No
   qualification config, owner-decision ledger, qualification status record, runner,
   result artifact, or P0 `PASS` claim was changed or created.
+
+## 2026-07-06 DB spine regression coverage (PR #188)
+
+- Continued from live `origin/main` at
+  `26dc41a61fb6ee3aa722db3b7772c47f8d0d77c2` in isolated worktree
+  `worktrees/db-spine-proof` on branch `codex/db-spine-proof`; the root checkout
+  remained inbox-only dirty and was not used as implementation authority.
+- Added commit `a45e36c7fe6803ce23b7d7d165ec86a071084b71`
+  (`Add DB spine regression coverage`) and opened PR #188.
+- Added `RUN_DB_SMOKE=1` regression coverage proving the committed Buncombe minerals
+  fixture flows through `StaticMineralsFixtureConnector`, public fixture ingestion,
+  Postgres, persisted `claims.claim_evidence`, and Section 14 dossier output with an
+  active-mining-claim finding plus caveats.
+- Added report-run reproducibility coverage proving two independent report runs over
+  identical area/evidence have distinct `report_run_ids` but byte-identical stable
+  serialized artifact projections after excluding run-id/timestamp fields.
+- Preserved the boundaries: tests only; no product code, schema, migration, API,
+  report semantics, authority records, qualification status, P0 promotion, Bologna,
+  DS-017, hosted, or Level 10 change.
 
 ## 2026-07-06 QFREEZE-2 flood-only qualification freeze
 
@@ -38,6 +55,10 @@ Append concise entries. Do not rely on chat history.
 - Preserved the boundaries: no non-flood domain qualification, no source approvals
   beyond DS-002, no Bologna AOI/source/corpus/DB proof authority, no hosted/Level 10
   authority, no report/API/UI/runtime proof, and no P0 result/PASS claim.
+- Review discipline: Codex authored the QFREEZE-2 packet/freeze PRs and held them at
+  PR; orchestrator/owner review and merge were separate. The QFREEZE-2 freeze had the
+  triple gate of orchestrator read, independent forged-P0-PASS validator challenge,
+  and green CI.
 
 ## 2026-07-06 authority-validator consolidation
 

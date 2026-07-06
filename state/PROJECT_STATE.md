@@ -3,11 +3,12 @@
 ## Current checkpoint (2026-07-06 P0 sealed-run packet)
 
 This checkpoint is based on live `origin/main`
-`b8c5f096f3d535974e8a41bde1ee38dc2565ec98`, after PR #191 merged the
-owner-authorized QFREEZE-2 flood-only parameterization freeze. QFREEZE-2 moved the
-empirical qualification control plane to `P0 = NOT_RUN` with derived status
-`BLOCKED=0 NOT_RUN=21`; it did not produce a sealed P0 run or any qualification
-`PASS`.
+`070e6ebcb10133c74399397b042828cd97951703`, after PR #192 merged the P0
+sealed-run decision packet on top of the PR #191 owner-authorized QFREEZE-2
+flood-only parameterization freeze. QFREEZE-2 moved the empirical qualification
+control plane to `P0 = NOT_RUN` with derived status `BLOCKED=0 NOT_RUN=21`; the
+packet recorded the later sealed-run path but did not produce a sealed P0 run or any
+qualification `PASS`.
 
 - **Current implementation plan**:
   `plans/2026-07-02-authority-evidence-intake.md` remains the broad authority-evidence
@@ -44,6 +45,14 @@ empirical qualification control plane to `P0 = NOT_RUN` with derived status
   appointed independent reviewers, and an independent reproducer. `BSA-001`,
   `DS-017`, hosted production, and Level 10 remain blocked by their separate
   authority streams. The freeze alone forbids a PASS.
+- **Strategic posture**:
+  At live-main intake for this documentation reconciliation, `tasks/task_queue.yaml`
+  parsed as `153 done / 10 blocked / 1 active / 0 pending`; this reconciliation adds
+  the omitted done `QFREEZE-2` task row, so later counts should include that single
+  documentation correction. The substantive posture remains one active
+  `AUTH-EVIDENCE-INTAKE` lane and ten blocked owner/external-authority freeze gates.
+  PRs #175 through #187 were diminishing-returns validate-only authority plumbing and
+  must not be extended absent cited owner authority.
 
 ## Prior checkpoint (2026-07-06 authority-validator consolidation)
 
