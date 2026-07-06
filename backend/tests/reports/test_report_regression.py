@@ -21,6 +21,7 @@ from app.domain.evidence_contracts import EvidenceContract
 from app.domain.source_contracts import SourceContract
 from app.evidence_ledger.evidence_repo import InMemoryEvidenceRepository
 from app.evidence_ledger.service import EvidenceService
+from app.reports.artifacts import serialize_report_artifact
 from app.reports.service import ReportRunService
 from app.source_registry.service import SourceService
 from app.source_registry.source_repo import InMemorySourceRepository
@@ -484,6 +485,69 @@ def test_generated_report_source_details_carries_rights_sub_fields() -> None:
         )
 
 
+def test_repeated_report_runs_have_identical_stable_artifact_projection() -> None:
+    source_service = SourceService(InMemorySourceRepository())
+    area_service = AreaService(InMemoryAreaRepository())
+    evidence_repo = InMemoryEvidenceRepository()
+    evidence_service = EvidenceService(evidence_repo, source_service, area_service)
+    claim_service = ClaimService(InMemoryClaimRepository(), evidence_repo)
+    report_service = ReportRunService(
+        source_service=source_service,
+        area_service=area_service,
+        evidence_service=evidence_service,
+        claim_service=claim_service,
+        rule_engine=RuleEngine.from_file(),
+    )
+    source = source_service.register(
+        SourceContract(
+            name="Fixture FEMA Flood Map",
+            organization="FEMA",
+            domain="flood",
+            license_status="approved",
+            commercial_use_status="approved",
+            redistribution_status="restricted",
+            cache_allowed="approved",
+            export_allowed="approved-with-restrictions",
+            raw_data_allowed="approved",
+            ai_use_allowed="restricted",
+            review_status="approved",
+        )
+    )
+    area = area_service.create(
+        AreaContract(
+            label="cross-run reproducibility fixture polygon",
+            geom_geojson=load_geometry("valid_polygon.geojson"),
+            geom_source="report reproducibility fixture",
+        )
+    )
+    evidence_service.create_observation(
+        EvidenceContract(
+            area_id=area.area_id,
+            source_id=source.source_id,
+            evidence_type=EvidenceType.SPATIAL_INTERSECTION,
+            evidence_code="FLOOD_ZONE_SCREEN",
+            domain="flood",
+            observation="Fixture flood source intersects a mapped flood zone.",
+            observed_value={"flood_zone": "AE"},
+            method_code="fixture_flood_overlay",
+            confidence=ConfidenceBand.MEDIUM,
+            caveat="Screening fixture only; confirm locally.",
+        )
+    )
+
+    first = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+    second = report_service.create_report_run(
+        area_id=area.area_id,
+        intent_code=IntentCode.HOMESTEAD_FEASIBILITY,
+    )
+
+    assert first.report_run_id != second.report_run_id
+    assert _stable_artifact_bytes(first) == _stable_artifact_bytes(second)
+
+
 def load_geometry(name: str) -> dict[str, object]:
     data = json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
     assert isinstance(data, dict)
@@ -531,3 +595,12 @@ def stable_report_projection(report: dict[str, Any]) -> dict[str, Any]:
         "caveats": report["caveats"],
         "artifact_metadata": report["artifact_metadata"],
     }
+
+
+def _stable_artifact_bytes(report_run: Any) -> bytes:
+    artifact = json.loads(serialize_report_artifact(report_run))
+    return json.dumps(
+        stable_report_projection(cast(dict[str, Any], artifact)),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
