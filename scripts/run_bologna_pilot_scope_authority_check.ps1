@@ -1,13 +1,20 @@
+param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]] $CheckerArgs
+)
+
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repoRoot
 try {
-    py -3.12 .\scripts\bologna_pilot_scope_authority_check.py
+    py -3.12 .\scripts\bologna_pilot_scope_authority_check.py @CheckerArgs
     if ($LASTEXITCODE -ne 0) {
-        throw "Bologna pilot scope authority check failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
     }
-    Write-Host "Bologna pilot scope authority check: ok"
+    if ($CheckerArgs.Count -eq 0) {
+        Write-Host "Bologna pilot scope authority check: ok"
+    }
 }
 finally {
     Pop-Location

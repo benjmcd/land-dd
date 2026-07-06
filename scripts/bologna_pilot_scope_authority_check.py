@@ -1,13 +1,29 @@
 from __future__ import annotations
 
-
-from datetime import date
+import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-ROOT = Path(__file__).resolve().parents[1]
+from authority_check_lib import (  # noqa: E402
+    build_summary as _build_summary,
+    format_summary as _format_summary,
+    list_set,
+    load_yaml as _load_yaml,
+    read_text as _read_text,
+    require,
+    require_existing as _require_existing,
+    require_iso_date,
+    require_list,
+    require_mapping,
+    require_non_empty_list,
+    require_text,
+    row_summary,
+    run_reporting_cli,
+)
 
 CONFIG_PATH = "config/bologna_pilot_scope_authority.yaml"
 RUNBOOK_PATH = "docs/runbooks/bologna_pilot_scope_authority.md"
@@ -130,66 +146,16 @@ RUNBOOK_PHRASES = (
 )
 
 
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise SystemExit(message)
-
-
-def require_mapping(value: Any, message: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise SystemExit(message)
-    return value
-
-
-def require_non_empty_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list) or not value:
-        raise SystemExit(message)
-    return value
-
-
-def require_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list):
-        raise SystemExit(message)
-    return value
-
-
-def require_text(value: Any, message: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(message)
-    return value.strip()
-
-
-def require_iso_date(value: Any, message: str) -> str:
-    text = require_text(value, message)
-    try:
-        date.fromisoformat(text)
-    except ValueError as exc:
-        raise SystemExit(message) from exc
-    return text
-
-
-def normalize_path(path_text: str) -> str:
-    return path_text.replace("\\", "/")
-
-
 def require_existing(path_text: str) -> None:
-    normalized = normalize_path(path_text)
-    require((ROOT / normalized).exists(), f"pilot-scope artifact missing: {normalized}")
+    _require_existing(path_text, "pilot-scope artifact missing")
 
 
 def read_text(path_text: str) -> str:
-    return (ROOT / normalize_path(path_text)).read_text(encoding="utf-8")
+    return _read_text(path_text)
 
 
 def load_yaml(path_text: str) -> dict[str, Any]:
-    return require_mapping(
-        yaml.safe_load(read_text(path_text)),
-        f"{path_text} must be a mapping",
-    )
-
-
-def list_set(value: Any, message: str) -> set[str]:
-    return {str(item) for item in require_non_empty_list(value, message)}
+    return _load_yaml(path_text, reader=read_text)
 
 
 def require_text_list(value: Any, message: str, *, allow_empty: bool = False) -> list[str]:
@@ -453,19 +419,176 @@ def validate_runbook(payload: dict[str, Any]) -> None:
         require(f"`{decision}`" in runbook, f"pilot-scope runbook missing {decision}")
 
 
-def main() -> int:
+def validate_for_output() -> dict[str, Any]:
     validate_required_files()
     payload = validate_catalog()
     validate_runbook(payload)
-    print("Bologna pilot scope authority check: ok")
-    return 0
+    return payload
+
+
+def scope_decision_summary_row(raw_request: Any) -> dict[str, Any]:
+    request = require_mapping(raw_request, "each scope decision request must be a mapping")
+    minimum_evidence = require_non_empty_list(
+        request.get("minimum_evidence"),
+        "minimum evidence missing",
+    )
+    authority_references = require_list(
+        request.get("authority_references"),
+        "authority references must be a list",
+    )
+    return {
+        "id": require_text(request.get("id"), "scope decision request id missing"),
+        "status": request.get("status"),
+        "expected_reference": request.get("expected_reference"),
+        "minimum_evidence": minimum_evidence,
+        "minimum_evidence_count": len(minimum_evidence),
+        "downstream_use": request.get("downstream_use"),
+        "authority_reference_count": len(authority_references),
+        "decision_updates_allowed": request.get("decision_updates_allowed"),
+    }
+
+
+def downstream_unlock_summary_row(raw_item: Any) -> dict[str, Any]:
+    item = require_mapping(raw_item, "each downstream unlock must be a mapping")
+    return {
+        "id": require_text(item.get("id"), "downstream id missing"),
+        "target_catalog": item.get("target_catalog"),
+        "status": item.get("status"),
+        "update_allowed": item.get("update_allowed"),
+    }
+
+
+def build_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    contract = require_mapping(payload.get("authority_record_contract"), "authority record contract missing")
+    review = require_mapping(payload.get("scope_authority_review"), "scope authority review missing")
+    request_rows = [
+        scope_decision_summary_row(raw_request)
+        for raw_request in require_non_empty_list(
+            payload.get("scope_decision_requests"),
+            "scope decision requests missing",
+        )
+    ]
+    downstream_rows = [
+        downstream_unlock_summary_row(raw_item)
+        for raw_item in require_non_empty_list(payload.get("downstream_unlocks"), "downstream missing")
+    ]
+    current_records = require_list(
+        contract.get("current_authority_records"),
+        "authority records must be a list",
+    )
+    required_scope_decisions = require_non_empty_list(
+        payload.get("required_scope_decisions"),
+        "scope decisions missing",
+    )
+    required_authority_record_fields = require_non_empty_list(
+        contract.get("required_record_fields"),
+        "authority record fields missing",
+    )
+    allowed_authority_types = require_non_empty_list(
+        contract.get("allowed_authority_types"),
+        "authority types missing",
+    )
+    no_overclaim_controls = require_mapping(
+        contract.get("no_overclaim_controls"),
+        "authority record no-overclaim controls missing",
+    )
+    return _build_summary(
+        "bologna_pilot_scope_authority_summary_v1",
+        {
+            "gate_status": payload.get("status"),
+            "operator_runbook": payload.get("operator_runbook"),
+            "validation": payload.get("validation"),
+            "authority_state": review.get("authority_state"),
+            "evidence_status": review.get("evidence_status"),
+            "authority_reference_count": len(
+                require_list(review.get("authority_references"), "authority references must be a list")
+            ),
+            "decision_updates_allowed": review.get("decision_updates_allowed"),
+            "required_scope_decisions": required_scope_decisions,
+            "required_scope_decision_count": len(required_scope_decisions),
+            "scope_decision_requests": request_rows,
+            "scope_decision_request_count": len(request_rows),
+            "authority_record_contract_state": contract.get("contract_state"),
+            "current_authority_record_count": len(current_records),
+            "required_authority_record_fields": required_authority_record_fields,
+            "required_authority_record_field_count": len(required_authority_record_fields),
+            "allowed_authority_types": allowed_authority_types,
+            "allowed_authority_type_count": len(allowed_authority_types),
+            "coverage_policy": contract.get("coverage_policy"),
+            "decision_update_policy": contract.get("decision_update_policy"),
+            "no_overclaim_controls": no_overclaim_controls,
+            "no_overclaim_control_count": len(no_overclaim_controls),
+            "downstream_unlocks": downstream_rows,
+            "downstream_unlock_count": len(downstream_rows),
+        },
+    )
+
+
+def format_summary(summary: dict[str, Any]) -> str:
+    require_non_empty_list(summary.get("scope_decision_requests"), "scope decision requests missing")
+    require_non_empty_list(summary.get("downstream_unlocks"), "downstream missing")
+    return _format_summary(
+        "Bologna pilot scope authority summary: blocked",
+        summary,
+        (
+            ("schema_version", "schema_version"),
+            ("gate_status", "gate_status"),
+            ("authority_state", "authority_state"),
+            ("evidence_status", "evidence_status"),
+            ("authority_references", "authority_reference_count"),
+            ("decision_updates_allowed", "decision_updates_allowed"),
+            ("required_scope_decisions", "required_scope_decision_count"),
+            ("scope_decision_requests", "scope_decision_request_count"),
+            ("current_authority_records", "current_authority_record_count"),
+            (
+                "required_authority_record_fields",
+                "required_authority_record_field_count",
+            ),
+            ("allowed_authority_types", "allowed_authority_type_count"),
+            ("coverage_policy", "coverage_policy"),
+            ("decision_update_policy", "decision_update_policy"),
+        ),
+        row_groups=(
+            (
+                "scope_decision_requests",
+                "scope_decision_request",
+                row_summary(
+                    "id",
+                    (
+                        ("status", "status"),
+                        ("minimum_evidence", "minimum_evidence_count"),
+                        ("authority_references", "authority_reference_count"),
+                        ("decision_updates_allowed", "decision_updates_allowed"),
+                    ),
+                ),
+            ),
+            (
+                "downstream_unlocks",
+                "downstream_unlock",
+                row_summary("id", (("status", "status"), ("update_allowed", "update_allowed"))),
+            ),
+        ),
+        fields_after_rows=(("no_overclaim_controls", "no_overclaim_control_count"),),
+        footer="Bologna pilot scope authority check: ok",
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    return run_reporting_cli(
+        description="Validate the Bologna pilot-scope authority packet.",
+        ok_message="Bologna pilot scope authority check: ok",
+        validate=validate_for_output,
+        summary_builder=build_summary,
+        summary_formatter=format_summary,
+        argv=argv,
+    )
 
 
 if __name__ == "__main__":
     from pathlib import Path as _QualificationPath
-    import sys as _qualification_sys
+    _qualification_sys = sys
     _qualification_sys.path.insert(0, str(_QualificationPath(__file__).resolve().parent))
     from qualification_checker_advertisement import maybe_emit_qualification_criteria
 
     maybe_emit_qualification_criteria(__file__)
-    raise SystemExit(main())
+    raise SystemExit(main(_qualification_sys.argv[1:]))

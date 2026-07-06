@@ -19,6 +19,18 @@ Run:
 .\scripts\run_bologna_pilot_scope_authority_check.ps1
 ```
 
+For collection planning only, the wrapper also accepts reporting-only views:
+
+```powershell
+.\scripts\run_bologna_pilot_scope_authority_check.ps1 --summary
+.\scripts\run_bologna_pilot_scope_authority_check.ps1 --json
+```
+
+Those modes print the committed missing-evidence request table, authority-record
+field contract, downstream blocked targets, and no-overclaim controls to stdout only.
+They do not generate artifacts, record authority, select an AOI, approve sources,
+change source rights, capture fixtures, seed the database, or unlock downstream work.
+
 The checker verifies that `config/bologna_pilot_scope_authority.yaml` remains
 blocked, references the current Bologna authority catalogs, and keeps every downstream
 unlock disabled until cited authority exists.

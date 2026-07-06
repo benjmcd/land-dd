@@ -1,16 +1,31 @@
 from __future__ import annotations
 
-import argparse
-import json
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-import yaml
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-ROOT = Path(__file__).resolve().parents[1]
+from authority_check_lib import (  # noqa: E402
+    build_summary as _build_summary,
+    format_summary as _format_summary,
+    list_set,
+    load_yaml,
+    read_text,
+    repo_path,
+    require,
+    require_list,
+    require_mapping,
+    require_non_empty_list,
+    require_text,
+    row_summary,
+    run_reporting_cli,
+)
 
 CONFIG_PATH = "config/production_authority_evidence_references.yaml"
 PRODUCTION_INTAKE_PATH = "config/production_authority_intake.yaml"
@@ -95,55 +110,6 @@ class EvidenceReferenceEvaluation:
     accepted: bool
     errors: tuple[str, ...]
     still_blocked: tuple[str, ...]
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise SystemExit(message)
-
-
-def require_mapping(value: Any, message: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise SystemExit(message)
-    return value
-
-
-def require_non_empty_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list) or not value:
-        raise SystemExit(message)
-    return value
-
-
-def require_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list):
-        raise SystemExit(message)
-    return value
-
-
-def require_text(value: Any, message: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(message)
-    return value.strip()
-
-
-def normalize_path(path_text: str) -> str:
-    return path_text.replace("\\", "/")
-
-
-def repo_path(path_text: str) -> Path:
-    return ROOT / normalize_path(path_text)
-
-
-def read_text(path_text: str) -> str:
-    return repo_path(path_text).read_text(encoding="utf-8")
-
-
-def load_yaml(path_text: str) -> dict[str, Any]:
-    return require_mapping(yaml.safe_load(read_text(path_text)), f"{path_text} must be a mapping")
-
-
-def list_set(value: Any, message: str) -> set[str]:
-    return {str(item) for item in require_non_empty_list(value, message)}
 
 
 def text_value(value: Any) -> str | None:
@@ -487,86 +453,85 @@ def build_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 "downstream_unlock_request_count": len(template_unlocks),
             }
         )
-    return {
-        "schema_version": "production_authority_evidence_references_summary_v1",
-        "ok": True,
-        "contract_status": payload.get("status"),
-        "source_intake": payload.get("source_intake"),
-        "follow_on_sequence": payload.get("follow_on_sequence"),
-        "operator_runbook": payload.get("operator_runbook"),
-        "validation": payload.get("validation"),
-        "current_evidence_reference_count": len(current_references),
-        "downstream_unlock_request_count": len(downstream_unlocks),
-        "required_reference_fields": required_fields,
-        "required_reference_field_count": len(required_fields),
-        "allowed_artifact_types": require_non_empty_list(
-            contract.get("allowed_artifact_types"),
-            "allowed artifact types missing",
-        ),
-        "forbidden_reference_effects": require_non_empty_list(
-            contract.get("forbidden_reference_effects"),
-            "forbidden effects missing",
-        ),
-        "stream_reference_templates": templates,
-        "stream_reference_template_count": len(templates),
-    }
+    return _build_summary(
+        "production_authority_evidence_references_summary_v1",
+        {
+            "contract_status": payload.get("status"),
+            "source_intake": payload.get("source_intake"),
+            "follow_on_sequence": payload.get("follow_on_sequence"),
+            "operator_runbook": payload.get("operator_runbook"),
+            "validation": payload.get("validation"),
+            "current_evidence_reference_count": len(current_references),
+            "downstream_unlock_request_count": len(downstream_unlocks),
+            "required_reference_fields": required_fields,
+            "required_reference_field_count": len(required_fields),
+            "allowed_artifact_types": require_non_empty_list(
+                contract.get("allowed_artifact_types"),
+                "allowed artifact types missing",
+            ),
+            "forbidden_reference_effects": require_non_empty_list(
+                contract.get("forbidden_reference_effects"),
+                "forbidden effects missing",
+            ),
+            "stream_reference_templates": templates,
+            "stream_reference_template_count": len(templates),
+        },
+    )
 
 
 def format_summary(summary: dict[str, Any]) -> str:
-    templates = require_non_empty_list(
-        summary.get("stream_reference_templates"),
-        "stream templates missing",
-    )
-    lines = [
+    require_non_empty_list(summary.get("stream_reference_templates"), "stream templates missing")
+    return _format_summary(
         "production authority evidence references summary: blocked",
-        f"schema_version: {summary.get('schema_version')}",
-        f"contract_status: {summary.get('contract_status')}",
-        f"source_intake: {summary.get('source_intake')}",
-        f"follow_on_sequence: {summary.get('follow_on_sequence')}",
-        f"current_evidence_references: {summary.get('current_evidence_reference_count')}",
-        f"downstream_unlock_requests: {summary.get('downstream_unlock_request_count')}",
-        f"required_reference_fields: {summary.get('required_reference_field_count')}",
-        f"stream_reference_templates: {summary.get('stream_reference_template_count')}",
-    ]
-    for raw_template in templates:
-        template = require_mapping(raw_template, "stream template summary must be a mapping")
-        lines.append(
-            "stream_reference_template "
-            f"{template.get('authority_stream_id')}: "
-            f"status={template.get('status')} "
-            f"evidence_status={template.get('evidence_status')} "
-            f"required_evidence={template.get('required_evidence_count')} "
-            "current_authority_references="
-            f"{template.get('current_authority_reference_count')} "
-            f"decision_updates_allowed={template.get('decision_updates_allowed')} "
-            f"downstream_unlocks={template.get('downstream_unlock_request_count')}"
-        )
-    lines.append(
-        "forbidden_reference_effects: "
-        + ", ".join(str(effect) for effect in summary.get("forbidden_reference_effects", []))
+        summary,
+        (
+            ("schema_version", "schema_version"),
+            ("contract_status", "contract_status"),
+            ("source_intake", "source_intake"),
+            ("follow_on_sequence", "follow_on_sequence"),
+            ("current_evidence_references", "current_evidence_reference_count"),
+            ("downstream_unlock_requests", "downstream_unlock_request_count"),
+            ("required_reference_fields", "required_reference_field_count"),
+            ("stream_reference_templates", "stream_reference_template_count"),
+        ),
+        row_groups=(
+            (
+                "stream_reference_templates",
+                "stream_reference_template",
+                row_summary(
+                    "authority_stream_id",
+                    (
+                        ("status", "status"),
+                        ("evidence_status", "evidence_status"),
+                        ("required_evidence", "required_evidence_count"),
+                        ("current_authority_references", "current_authority_reference_count"),
+                        ("decision_updates_allowed", "decision_updates_allowed"),
+                        ("downstream_unlocks", "downstream_unlock_request_count"),
+                    ),
+                ),
+            ),
+        ),
+        list_fields=(("forbidden_reference_effects", "forbidden_reference_effects"),),
+        footer="production authority evidence references check: ok",
     )
-    lines.append("production authority evidence references check: ok")
-    return "\n".join(lines)
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Validate the production authority evidence reference contract.",
-    )
-    output_group = parser.add_mutually_exclusive_group()
-    output_group.add_argument("--json", action="store_true", dest="json_output")
-    output_group.add_argument("--summary", action="store_true", dest="summary_output")
-    args = parser.parse_args([] if argv is None else argv)
+def validate_for_output() -> dict[str, Any]:
     validate_required_files()
     payload = validate_catalog(load_yaml(CONFIG_PATH))
     validate_repo_wiring()
-    if args.json_output:
-        print(json.dumps(build_summary(payload), indent=2, sort_keys=True))
-    elif args.summary_output:
-        print(format_summary(build_summary(payload)))
-    else:
-        print("production authority evidence references check: ok")
-    return 0
+    return payload
+
+
+def main(argv: list[str] | None = None) -> int:
+    return run_reporting_cli(
+        description="Validate the production authority evidence reference contract.",
+        ok_message="production authority evidence references check: ok",
+        validate=validate_for_output,
+        summary_builder=build_summary,
+        summary_formatter=format_summary,
+        argv=argv,
+    )
 
 
 if __name__ == "__main__":

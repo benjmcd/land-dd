@@ -1,22 +1,32 @@
 from __future__ import annotations
 
-import argparse
 import contextlib
 import importlib.util
 import io
-import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from types import ModuleType
 from typing import Any, cast
-
-import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+
+from authority_check_lib import (  # noqa: E402
+    build_summary as _build_summary,
+    format_summary as _format_summary,
+    load_yaml,
+    read_text,
+    repo_path,
+    require,
+    require_list,
+    require_mapping,
+    require_text,
+    row_summary,
+    run_reporting_cli,
+)
 
 EXPECTED_ACTIVE_PLAN = "plans/2026-07-02-authority-evidence-intake.md"
 EXPECTED_ACTIVE_TASK = "AUTH-EVIDENCE-INTAKE"
@@ -121,6 +131,7 @@ REQUIRED_FILES = (
     "state/EMPIRICAL_QUALIFICATION_STATUS.yaml",
     "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
     "scripts/authority_evidence_intake_check.py",
+    "scripts/authority_check_lib.py",
     "scripts/run_authority_evidence_intake_check.ps1",
     "scripts/run_authority_evidence_intake_check.sh",
     "config/production_authority_evidence_references.yaml",
@@ -135,45 +146,6 @@ REQUIRED_FILES = (
     "scripts/verify.sh",
     "MANIFEST.md",
 )
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise SystemExit(message)
-
-
-def require_mapping(value: Any, message: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise SystemExit(message)
-    return value
-
-
-def require_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list):
-        raise SystemExit(message)
-    return value
-
-
-def require_text(value: Any, message: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(message)
-    return value.strip()
-
-
-def normalize_path(path_text: str) -> str:
-    return path_text.replace("\\", "/")
-
-
-def repo_path(path_text: str) -> Path:
-    return ROOT / normalize_path(path_text)
-
-
-def read_text(path_text: str) -> str:
-    return repo_path(path_text).read_text(encoding="utf-8")
-
-
-def load_yaml(path_text: str) -> dict[str, Any]:
-    return require_mapping(yaml.safe_load(read_text(path_text)), f"{path_text} must be a mapping")
 
 
 def validate_required_files() -> None:
@@ -371,15 +343,18 @@ def validate_repo_wiring() -> None:
         ("scripts/verify.sh", "authority_evidence_intake_check.py"),
         ("scripts/verify.sh", "production_authority_evidence_references_check.py"),
         ("scripts/verify.sh", "authority_follow_on_sequence_check.py"),
+        ("MANIFEST.md", "scripts/authority_check_lib.py"),
         ("MANIFEST.md", "scripts/authority_evidence_intake_check.py"),
         ("MANIFEST.md", "scripts/production_authority_evidence_references_check.py"),
         ("MANIFEST.md", "scripts/authority_follow_on_sequence_check.py"),
         ("MANIFEST.md", "Authority evidence intake posture"),
         ("MANIFEST.md", "Production authority evidence references"),
         ("MANIFEST.md", "Authority follow-on sequence"),
+        (EXPECTED_ACTIVE_PLAN, "scripts/authority_check_lib.py"),
         (EXPECTED_ACTIVE_PLAN, "scripts\\authority_evidence_intake_check.py"),
         (EXPECTED_ACTIVE_PLAN, "scripts\\production_authority_evidence_references_check.py"),
         (EXPECTED_ACTIVE_PLAN, "scripts\\authority_follow_on_sequence_check.py"),
+        ("tasks/task_queue.yaml", "scripts/authority_check_lib.py"),
         ("tasks/task_queue.yaml", "scripts\\authority_evidence_intake_check.py"),
         ("tasks/task_queue.yaml", "scripts\\production_authority_evidence_references_check.py"),
         ("tasks/task_queue.yaml", "scripts\\authority_follow_on_sequence_check.py"),
@@ -443,7 +418,7 @@ def required_thread_fields(thread: dict[str, Any]) -> list[str]:
     return fields
 
 
-def build_summary() -> dict[str, Any]:
+def build_summary(_payload: Any = None) -> dict[str, Any]:
     task_queue = load_yaml("tasks/task_queue.yaml")
     production = load_yaml("config/production_authority_intake.yaml")
     bologna = load_yaml("config/bologna_owner_answer_intake.yaml")
@@ -516,104 +491,72 @@ def build_summary() -> dict[str, Any]:
         "source authority record contract missing",
     )
     odp2 = require_mapping(odp2_packet.get("packet"), "ODP2 packet missing")
-    return {
-        "schema_version": "authority_evidence_intake_summary_v1",
-        "ok": True,
-        "active_plan": task_queue.get("active_plan"),
-        "active_task": active_tasks[0] if len(active_tasks) == 1 else None,
-        "active_tasks": active_tasks,
-        "completed_prerequisite": EXPECTED_COMPLETED_PREREQUISITE,
-        "production_authority_status": production.get("status"),
-        "production_streams": production_streams,
-        "bologna_owner_answer_status": bologna.get("status"),
-        "bologna_threads": bologna_threads,
-        "authority_record_state": {
-            "pilot_authority_record_count": len(
-                require_list(
-                    pilot_contract.get("current_authority_records"),
-                    "pilot authority records must be a list",
-                )
-            ),
-            "source_authority_record_count": len(
-                require_list(
-                    source_contract.get("current_source_authority_records"),
-                    "source authority records must be a list",
-                )
-            ),
-            "odp2_owner_answer_reference_count": len(
-                require_list(
-                    odp2.get("current_owner_answer_references"),
-                    "ODP2 owner answer references must be a list",
-                )
-            ),
-            "odp2_source_authority_record_reference_count": len(
-                require_list(
-                    odp2.get("current_source_authority_record_references"),
-                    "ODP2 source authority record references must be a list",
-                )
-            ),
-            "odp2_source_rights_approval_reference_count": len(
-                require_list(
-                    odp2.get("current_source_rights_approval_references"),
-                    "ODP2 source rights approval references must be a list",
-                )
-            ),
-        },
-        "qualification": {
-            "p0_status": p0.get("status"),
-            "p0_result_path": p0.get("result_path"),
-            "non_p0_statuses": {
-                qualification_id: require_mapping(qualification, f"{qualification_id} status missing").get("status")
-                for qualification_id, qualification in qualifications.items()
-                if qualification_id != "p0"
+    return _build_summary(
+        "authority_evidence_intake_summary_v1",
+        {
+            "active_plan": task_queue.get("active_plan"),
+            "active_task": active_tasks[0] if len(active_tasks) == 1 else None,
+            "active_tasks": active_tasks,
+            "completed_prerequisite": EXPECTED_COMPLETED_PREREQUISITE,
+            "production_authority_status": production.get("status"),
+            "production_streams": production_streams,
+            "bologna_owner_answer_status": bologna.get("status"),
+            "bologna_threads": bologna_threads,
+            "authority_record_state": {
+                "pilot_authority_record_count": len(
+                    require_list(
+                        pilot_contract.get("current_authority_records"),
+                        "pilot authority records must be a list",
+                    )
+                ),
+                "source_authority_record_count": len(
+                    require_list(
+                        source_contract.get("current_source_authority_records"),
+                        "source authority records must be a list",
+                    )
+                ),
+                "odp2_owner_answer_reference_count": len(
+                    require_list(
+                        odp2.get("current_owner_answer_references"),
+                        "ODP2 owner answer references must be a list",
+                    )
+                ),
+                "odp2_source_authority_record_reference_count": len(
+                    require_list(
+                        odp2.get("current_source_authority_record_references"),
+                        "ODP2 source authority record references must be a list",
+                    )
+                ),
+                "odp2_source_rights_approval_reference_count": len(
+                    require_list(
+                        odp2.get("current_source_rights_approval_references"),
+                        "ODP2 source rights approval references must be a list",
+                    )
+                ),
             },
+            "qualification": {
+                "p0_status": p0.get("status"),
+                "p0_result_path": p0.get("result_path"),
+                "non_p0_statuses": {
+                    qualification_id: require_mapping(
+                        qualification,
+                        f"{qualification_id} status missing",
+                    ).get("status")
+                    for qualification_id, qualification in qualifications.items()
+                    if qualification_id != "p0"
+                },
+            },
+            "blocked_implementation_boundaries": list(BLOCKED_IMPLEMENTATION_BOUNDARIES),
         },
-        "blocked_implementation_boundaries": list(BLOCKED_IMPLEMENTATION_BOUNDARIES),
-    }
+    )
 
 
-def format_summary(summary: dict[str, Any]) -> str:
-    production_streams = require_list(summary.get("production_streams"), "production streams missing")
-    bologna_threads = require_list(summary.get("bologna_threads"), "Bologna threads missing")
-    lines = [
-        "authority evidence intake summary: blocked",
-        f"schema_version: {summary.get('schema_version')}",
-        f"active_plan: {summary.get('active_plan')}",
-        f"active_task: {summary.get('active_task')}",
-        f"active_tasks: {', '.join(str(task) for task in summary.get('active_tasks', []))}",
-        f"completed_prerequisite: {summary.get('completed_prerequisite')}",
-        f"production_authority_status: {summary.get('production_authority_status')}",
-        f"bologna_owner_answer_status: {summary.get('bologna_owner_answer_status')}",
-        f"p0_status: {require_mapping(summary.get('qualification'), 'qualification missing').get('p0_status')}",
-        f"production_streams: {len(production_streams)}",
-    ]
-    for stream in production_streams:
-        stream_map = require_mapping(stream, "production stream must be a mapping")
-        lines.append(
-            "production_stream "
-            f"{stream_map.get('id')}: "
-            f"status={stream_map.get('status')} "
-            f"evidence_status={stream_map.get('evidence_status')} "
-            f"required_evidence={stream_map.get('required_evidence_count')} "
-            f"authority_references={stream_map.get('authority_reference_count')} "
-            f"decision_updates_allowed={stream_map.get('decision_updates_allowed')}"
-        )
-    lines.append(f"bologna_threads: {len(bologna_threads)}")
-    for thread in bologna_threads:
-        thread_map = require_mapping(thread, "Bologna thread must be a mapping")
-        lines.append(
-            "bologna_thread "
-            f"{thread_map.get('odp_id')}: "
-            f"status={thread_map.get('status')} "
-            f"required_fields={thread_map.get('required_field_count')} "
-            f"owner_answer_references={thread_map.get('owner_answer_reference_count')} "
-            f"downstream_updates_allowed={thread_map.get('downstream_updates_allowed')}"
-        )
+def format_authority_record_state(summary: Mapping[str, Any]) -> str:
     authority_record_state = require_mapping(
         summary.get("authority_record_state"),
         "authority record state missing",
     )
-    lines.append(
+    return (
         "authority_record_state: "
         f"pilot={authority_record_state.get('pilot_authority_record_count')} "
         f"source={authority_record_state.get('source_authority_record_count')} "
@@ -623,12 +566,68 @@ def format_summary(summary: dict[str, Any]) -> str:
         "odp2_source_rights_refs="
         f"{authority_record_state.get('odp2_source_rights_approval_reference_count')}"
     )
-    lines.append(
-        "blocked_implementation_boundaries: "
-        + ", ".join(str(boundary) for boundary in summary.get("blocked_implementation_boundaries", []))
+
+
+def format_summary(summary: dict[str, Any]) -> str:
+    production_streams = require_list(summary.get("production_streams"), "production streams missing")
+    bologna_threads = require_list(summary.get("bologna_threads"), "Bologna threads missing")
+    qualification = require_mapping(summary.get("qualification"), "qualification missing")
+    return _format_summary(
+        "authority evidence intake summary: blocked",
+        {
+            **summary,
+            "active_tasks_text": ", ".join(str(task) for task in summary.get("active_tasks", [])),
+            "p0_status": qualification.get("p0_status"),
+            "production_stream_count": len(production_streams),
+            "bologna_thread_count": len(bologna_threads),
+        },
+        (
+            ("schema_version", "schema_version"),
+            ("active_plan", "active_plan"),
+            ("active_task", "active_task"),
+            ("active_tasks", "active_tasks_text"),
+            ("completed_prerequisite", "completed_prerequisite"),
+            ("production_authority_status", "production_authority_status"),
+            ("bologna_owner_answer_status", "bologna_owner_answer_status"),
+            ("p0_status", "p0_status"),
+            ("production_streams", "production_stream_count"),
+        ),
+        row_groups=(
+            (
+                "production_streams",
+                "production_stream",
+                row_summary(
+                    "id",
+                    (
+                        ("status", "status"),
+                        ("evidence_status", "evidence_status"),
+                        ("required_evidence", "required_evidence_count"),
+                        ("authority_references", "authority_reference_count"),
+                        ("decision_updates_allowed", "decision_updates_allowed"),
+                    ),
+                ),
+            ),
+            (
+                "bologna_threads",
+                "bologna_thread",
+                row_summary(
+                    "odp_id",
+                    (
+                        ("status", "status"),
+                        ("required_fields", "required_field_count"),
+                        ("owner_answer_references", "owner_answer_reference_count"),
+                        ("downstream_updates_allowed", "downstream_updates_allowed"),
+                    ),
+                ),
+            ),
+        ),
+        fields_after_rows=(("bologna_threads", "bologna_thread_count"),),
+        extra_lines_after_rows=(format_authority_record_state,),
+        list_fields=(
+            ("blocked_implementation_boundaries", "blocked_implementation_boundaries"),
+        ),
+        footer="authority evidence intake check: ok",
     )
-    lines.append("authority evidence intake check: ok")
-    return "\n".join(lines)
 
 
 def validate() -> None:
@@ -645,21 +644,14 @@ def validate() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
+    return run_reporting_cli(
         description="Validate the active authority-evidence intake composition boundary.",
+        ok_message="authority evidence intake check: ok",
+        validate=validate,
+        summary_builder=build_summary,
+        summary_formatter=format_summary,
+        argv=argv,
     )
-    output_group = parser.add_mutually_exclusive_group()
-    output_group.add_argument("--json", action="store_true", dest="json_output")
-    output_group.add_argument("--summary", action="store_true", dest="summary_output")
-    args = parser.parse_args(argv)
-    validate()
-    if args.json_output:
-        print(json.dumps(build_summary(), indent=2, sort_keys=True))
-    elif args.summary_output:
-        print(format_summary(build_summary()))
-    else:
-        print("authority evidence intake check: ok")
-    return 0
 
 
 if __name__ == "__main__":
@@ -669,4 +661,4 @@ if __name__ == "__main__":
     from qualification_checker_advertisement import maybe_emit_qualification_criteria
 
     maybe_emit_qualification_criteria(__file__)
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

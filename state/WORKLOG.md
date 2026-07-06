@@ -2,6 +2,27 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-06 authority-validator consolidation
+
+- Continued from live `origin/main` at
+  `26dc41a61fb6ee3aa722db3b7772c47f8d0d77c2` in isolated worktree
+  `worktrees/auth-lib` on branch `codex/auth-lib`; the root checkout remained
+  stale/dirty and was not used as implementation authority.
+- Added `scripts/authority_check_lib.py` and refactored the overlapping authority
+  validators to consume shared fail-closed guard, path/YAML, summary, and reporting
+  CLI helpers.
+- Added reporting-only `--summary` and `--json` output to
+  `scripts/bologna_pilot_scope_authority_check.py` through the shared helper, with
+  wrapper passthrough that does not append wrapper text to JSON output.
+- Updated pilot-scope artifact tests and runbook coverage for the missing-evidence
+  request table, authority-record field contract, downstream blocked targets, and
+  no-overclaim controls.
+- Preserved the boundaries: no owner answer, pilot-scope authority record, AOI
+  selection, source approval, source-rights change, corpus/fixture capture, DB seed,
+  report proof, runtime behavior, schema/API/auth/UI change, hosted authority,
+  DS-017 approval, Level 10 claim, qualification PASS, owner-decision unfreeze, or P0
+  unblock.
+
 ## 2026-07-04 ODP-BOL-001 scope-authority reporting hardening
 
 - Continued from live `origin/main` at

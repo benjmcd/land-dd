@@ -27,7 +27,12 @@ reference shapes can be checked in memory before any authority recording remains
 externally blocked. The current scope-authority reporting hardening adds optional
 summary/JSON output to `bol_scope_auth` so the immediate ODP-BOL-001 cited-authority
 acceptance requirements are visible without creating artifacts, recording authority,
-or unblocking ODP-BOL-002/003/004. The
+or unblocking ODP-BOL-002/003/004. The current authority-validator consolidation
+extracts shared guard/YAML/reporting plumbing into `scripts/authority_check_lib.py`,
+refactors the overlapping authority validator family to consume it, and routes
+pilot-scope authority summary/JSON output through the shared helper without recording
+authority, selecting an AOI, approving sources, changing source rights, or unlocking
+downstream work. The
 posture records that the
 owner-independent extended-domain
 fixture-ingestion sequence and post-geology closeout are complete, and that the next

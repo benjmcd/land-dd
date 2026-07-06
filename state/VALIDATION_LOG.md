@@ -2,6 +2,61 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-06 Authority Validator Consolidation
+
+**Scope:** Consolidate the overlapping authority-validator helper/reporting plumbing
+into `scripts/authority_check_lib.py`, route pilot-scope authority `--summary` and
+`--json` output through the shared helper, and preserve the active
+`AUTH-EVIDENCE-INTAKE` blocker posture without recording authority, selecting an AOI,
+approving sources, changing source rights, capturing fixtures, seeding the DB, proving
+a report, provisioning hosted runtime, claiming Level 10, unfreezing qualification, or
+unblocking `P0`.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\authority_evidence_intake_check.py --summary
+py -3.12 scripts\authority_evidence_intake_check.py --json
+py -3.12 scripts\bologna_pilot_scope_authority_check.py
+py -3.12 scripts\bologna_pilot_scope_authority_check.py --summary
+py -3.12 scripts\bologna_pilot_scope_authority_check.py --json
+powershell -NoProfile -File scripts\run_bologna_pilot_scope_authority_check.ps1 --json
+py -3.12 scripts\production_authority_evidence_references_check.py
+py -3.12 scripts\bol_scope_auth_check.py
+py -3.12 scripts\authority_follow_on_sequence_check.py
+py -3.12 scripts\qualification_status_check.py --root .
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_bologna_pilot_scope_authority_artifacts.py backend\tests\test_bol_scope_auth_artifacts.py backend\tests\test_authority_evidence_intake_artifacts.py backend\tests\test_production_authority_evidence_references_artifacts.py backend\tests\test_authority_follow_on_sequence_artifacts.py -q
+py -3.12 -m ruff check scripts\authority_check_lib.py scripts\authority_evidence_intake_check.py scripts\production_authority_evidence_references_check.py scripts\authority_follow_on_sequence_check.py scripts\bol_scope_auth_check.py scripts\bologna_pilot_scope_authority_check.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+$env:PYTHONPATH='backend'; $env:MYPYPATH='backend'; py -3.12 -m mypy scripts\authority_check_lib.py scripts\authority_evidence_intake_check.py scripts\production_authority_evidence_references_check.py scripts\authority_follow_on_sequence_check.py scripts\bol_scope_auth_check.py scripts\bologna_pilot_scope_authority_check.py backend\tests\test_bologna_pilot_scope_authority_artifacts.py
+git diff --check
+git diff --name-only --diff-filter=D
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Direct authority validators and reporting modes passed; PowerShell pilot-scope JSON
+  parsed cleanly and did not append wrapper confirmation text.
+- Focused authority artifact pytest passed; focused ruff passed; focused mypy passed.
+- Qualification status remained `BLOCKED=1 NOT_RUN=20`.
+- Pilot-scope authority records remained empty; production authority streams remained
+  `blocked=9` with zero authority references.
+- Validator line count vs the superseded standalone pilot-scope slice dropped from
+  2,837 lines to 2,836 lines when counting the shared helper, and the five active
+  validator files alone dropped to 2,684 lines.
+- First `.\scripts\verify.ps1` run exposed a readiness-state parser invariant because
+  the new top checkpoint omitted `Current task state`; after adding the required state
+  label, the targeted readiness test passed and the full rerun passed.
+- Final `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy green; DB
+  smoke remained skipped because `RUN_DB_SMOKE=1` was not set.
+
+**Residual risk:** This is structural consolidation plus reporting-only pilot-scope
+output. External cited authority is still required before Bologna implementation,
+source approval, source-rights changes, corpus/fixture capture, DB-backed report
+proof, DS-017, hosted/Level 10, empirical qualification `PASS`, owner-decision
+unfreeze, or `P0` unblock work can proceed.
+
 ## 2026-07-02 Post-PR183 Authority Evidence State Sync
 
 **Scope:** Synchronize routing/state wording after PR #183 merged reporting-only

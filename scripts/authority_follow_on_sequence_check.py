@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-ROOT = Path(__file__).resolve().parents[1]
+from authority_check_lib import (  # noqa: E402
+    list_set as _list_set,
+    load_yaml as _load_yaml,
+    read_text as _read_text,
+    require,
+    require_existing as _require_existing,
+    require_mapping,
+    require_non_empty_list,
+    require_text,
+)
 
 CONFIG_PATH = "config/authority_follow_on_sequence.yaml"
 PACKET_PATH = "state/PRODUCTION_AUTHORITY_PACKET.md"
@@ -70,58 +82,20 @@ REQUIRED_FILES = (
 )
 
 
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise SystemExit(message)
-
-
-def require_mapping(value: Any, message: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise SystemExit(message)
-    return value
-
-
-def require_non_empty_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list) or not value:
-        raise SystemExit(message)
-    return value
-
-
-def require_list(value: Any, message: str) -> list[Any]:
-    if not isinstance(value, list):
-        raise SystemExit(message)
-    return value
-
-
-def require_text(value: Any, message: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(message)
-    return value.strip()
-
-
-def normalize_path(path_text: str) -> str:
-    return path_text.replace("\\", "/")
-
-
-def repo_path(path_text: str) -> Path:
-    return ROOT / normalize_path(path_text)
-
-
 def require_existing(path_text: str) -> None:
-    normalized = normalize_path(path_text)
-    require(repo_path(normalized).exists(), f"authority follow-on artifact missing: {normalized}")
+    _require_existing(path_text, "authority follow-on artifact missing")
 
 
 def read_text(path_text: str) -> str:
-    return repo_path(path_text).read_text(encoding="utf-8")
+    return _read_text(path_text)
 
 
 def load_yaml(path_text: str) -> dict[str, Any]:
-    return require_mapping(yaml.safe_load(read_text(path_text)), f"{path_text} must be a mapping")
+    return _load_yaml(path_text, reader=read_text)
 
 
 def list_set(value: Any, message: str) -> set[str]:
-    return {str(item) for item in require_list(value, message)}
+    return _list_set(value, message, allow_empty=True)
 
 
 def validate_required_files() -> None:

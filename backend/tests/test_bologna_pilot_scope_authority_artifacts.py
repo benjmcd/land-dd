@@ -235,11 +235,110 @@ def test_bologna_pilot_scope_authority_script_and_wrappers_are_validate_only() -
         assert "bologna_pilot_scope_authority_check.py" in script
         assert "Bologna pilot scope authority check: ok" in script
     assert "$LASTEXITCODE" in ps1
-    assert "Bologna pilot scope authority check failed" in ps1
+    assert "CheckerArgs.Count -eq 0" in ps1
     assert "New-Item" not in ps1
     assert "Remove-Item" not in ps1
     assert "mkdir" not in sh
     assert "rm " not in sh
+    assert 'if [[ "$#" -eq 0 ]]' in sh
+
+
+def test_bologna_pilot_scope_authority_json_reports_missing_evidence_requirements() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/bologna_pilot_scope_authority_check.py", "--json"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    summary = yaml.safe_load(result.stdout)
+    assert summary["schema_version"] == "bologna_pilot_scope_authority_summary_v1"
+    assert summary["ok"] is True
+    assert summary["gate_status"] == "blocked_no_pilot_scope_authority"
+    assert summary["authority_state"] == "missing_authority"
+    assert summary["evidence_status"] == "missing"
+    assert summary["authority_reference_count"] == 0
+    assert summary["decision_updates_allowed"] is False
+    assert summary["required_scope_decision_count"] == 12
+    assert summary["scope_decision_request_count"] == 12
+    assert summary["current_authority_record_count"] == 0
+    assert summary["required_authority_record_field_count"] == 14
+    assert summary["allowed_authority_type_count"] == 11
+    assert summary["coverage_policy"] == "all_required_scope_decisions"
+    assert summary["decision_update_policy"] == "disabled_until_complete_cited_record"
+    assert summary["downstream_unlock_count"] == 3
+    assert summary["no_overclaim_control_count"] == 7
+    assert {row["id"] for row in summary["scope_decision_requests"]} == set(
+        summary["required_scope_decisions"]
+    )
+    assert all(
+        row["authority_reference_count"] == 0
+        and row["decision_updates_allowed"] is False
+        for row in summary["scope_decision_requests"]
+    )
+    assert all(row["update_allowed"] is False for row in summary["downstream_unlocks"])
+
+
+def test_bologna_pilot_scope_authority_summary_keeps_blocked_boundaries() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/bologna_pilot_scope_authority_check.py", "--summary"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Bologna pilot scope authority summary: blocked" in result.stdout
+    assert "schema_version: bologna_pilot_scope_authority_summary_v1" in result.stdout
+    assert "gate_status: blocked_no_pilot_scope_authority" in result.stdout
+    assert "authority_state: missing_authority" in result.stdout
+    assert "authority_references: 0" in result.stdout
+    assert "required_scope_decisions: 12" in result.stdout
+    assert "current_authority_records: 0" in result.stdout
+    assert "allowed_authority_types: 11" in result.stdout
+    assert (
+        "scope_decision_request product_authorizes_bologna_pilot_reference: "
+        "status=missing_authority"
+    ) in result.stdout
+    assert (
+        "downstream_unlock bologna_source_authority_intake: "
+        "status=blocked_until_scope_authority update_allowed=False"
+    ) in result.stdout
+    assert "Bologna pilot scope authority check: ok" in result.stdout
+
+
+def test_bologna_pilot_scope_authority_wrapper_forwards_summary_and_json() -> None:
+    wrapper_command = [
+        "powershell",
+        "-NoProfile",
+        "-File",
+        "scripts/run_bologna_pilot_scope_authority_check.ps1",
+    ]
+    ps_summary = subprocess.run(
+        [*wrapper_command, "--summary"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Bologna pilot scope authority summary: blocked" in ps_summary.stdout
+    assert "Bologna pilot scope authority check: ok" in ps_summary.stdout
+    assert ps_summary.stdout.count("Bologna pilot scope authority check: ok") == 1
+
+    ps_json = subprocess.run(
+        [*wrapper_command, "--json"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    parsed = yaml.safe_load(ps_json.stdout)
+    assert parsed["schema_version"] == "bologna_pilot_scope_authority_summary_v1"
+    assert parsed["gate_status"] == "blocked_no_pilot_scope_authority"
+    assert parsed["current_authority_record_count"] == 0
+    assert "Bologna pilot scope authority check: ok" not in ps_json.stdout
 
 
 def test_bologna_pilot_scope_authority_runbook_preserves_boundary() -> None:
