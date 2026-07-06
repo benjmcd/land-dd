@@ -1,5 +1,64 @@
 # Project State
 
+## Current checkpoint (2026-07-06 authority-validator consolidation)
+
+This checkpoint is based on live `origin/main`
+`26dc41a61fb6ee3aa722db3b7772c47f8d0d77c2`, after the ODP-BOL-001
+scope-authority reporting modes merged through PR #187 and DB spine regression
+coverage merged through PR #188. The active posture remains
+`AUTH-EVIDENCE-INTAKE`: substantive Bologna, DS-017, hosted/Level 10, and empirical
+qualification work still requires cited external authority before any implementation
+surface can move.
+
+- **Current implementation plan**:
+  `plans/2026-07-02-authority-evidence-intake.md`.
+- **Known boundaries to preserve**:
+  The authority-evidence intake posture is repo-local routing and reporting only. It
+  must not record real owner authority, product/AOI authority, source authority,
+  source-rights approval, Bologna recorded-corpus authority, DB-backed Bologna
+  report-proof authority, DS-017 approval, hosted authority, Level 10 authority,
+  qualification PASS, owner-decision unfreeze, or any source/corpus/report/runtime
+  unblock from repo-local inference.
+- **Current authority-validator consolidation boundary**:
+  `scripts/authority_check_lib.py` is the shared helper for the overlapping
+  authority-validator family. `scripts/authority_evidence_intake_check.py`,
+  `scripts/authority_follow_on_sequence_check.py`,
+  `scripts/production_authority_evidence_references_check.py`,
+  `scripts/bol_scope_auth_check.py`, and
+  `scripts/bologna_pilot_scope_authority_check.py` consume shared fail-closed guard,
+  path/YAML, summary, and reporting-CLI plumbing instead of carrying duplicate local
+  copies.
+- **Current pilot-scope reporting boundary**:
+  `scripts/bologna_pilot_scope_authority_check.py` can emit reporting-only
+  `--summary` and `--json` views showing the committed missing-evidence request table,
+  authority-record field contract, downstream blocked targets, and no-overclaim
+  controls. These modes read committed config only; they do not generate artifacts,
+  record pilot-scope authority, select an AOI, approve sources, change source rights,
+  capture corpus or fixtures, seed the DB, prove reports, change runtime/API/report
+  semantics, claim hosted/Level 10 authority, unfreeze qualification, or unblock `P0`.
+- **Frozen invariants preserved**:
+  Pilot and source authority records remain empty, downstream unlocks remain disabled,
+  production authority reference lists remain empty, and qualification status remains
+  `P0 = BLOCKED` with non-P0 rows `NOT_RUN`.
+- **Current task state**:
+  Active task is `AUTH-EVIDENCE-INTAKE`. Completed task lineage retained from prior
+  checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`,
+  `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`,
+  `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`, `HCV-2`,
+  `HCV-3`, `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, `BOL-ODP-1`, `BOL-ODP1-GATE`,
+  `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`, `BOL-POST-ODP4-AUTH`, `EQ-5`,
+  `EQ-R`, `BOL-ODP1-PACKET`, `BOL-POST-ODP1-PACKET`, `BOL-SCOPE-PURSUIT`,
+  `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`,
+  `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
+  `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until cited product/AOI/source
+  authority exists. `P0` remains `BLOCKED`.
+- **Immediate next pursuit**:
+  collect and cite external authority evidence. The first unblocked future
+  implementation lane still requires cited product/AOI/source/source-rights/corpus/
+  report-proof authority; until then, BSA-001, ODP-BOL-002, ODP-BOL-003,
+  ODP-BOL-004, DS-017, hosted production, Level 10, qualification PASS,
+  owner-decision unfreeze, and P0 unblock remain blocked.
+
 ## Current checkpoint (2026-07-04 scope-authority reporting hardening)
 
 This checkpoint is based on live `origin/main`
