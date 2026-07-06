@@ -23,9 +23,16 @@ Both gates require Python 3.12+. The Windows wrapper selects `py -3.12` when
 | domain contract tests | evidence/claim/source invariants | current |
 | API smoke tests | health/version and future report endpoints | current/future |
 | DB migration smoke | PostGIS schema applies and core tables exist | current optional Docker |
-| connector fixture tests | source success/failure behavior | future |
-| rule-engine tests | evidence-to-claim semantics | future |
-| report reproducibility tests | run versions and outputs stable | future |
+| connector fixture tests | source success/failure behavior | current |
+| rule-engine tests | evidence-to-claim semantics | current |
+| report reproducibility tests | run versions and outputs stable + cross-run byte-identical artifact projection | current |
+| DB-spine regression | fixture ingest → persisted claim_evidence → DB-loaded dossier | current (RUN_DB_SMOKE) |
+
+Report-reproducibility and DB-spine coverage landed 2026-07-06 (PR #188): a
+`RUN_DB_SMOKE=1` regression ingests a committed domain fixture, asserts the persisted
+`claims.claim_evidence` row cites the ingested `evidence_id`, and the DB-loaded dossier
+renders the domain finding plus caveats; a separate in-memory test asserts two independent
+report runs over identical inputs produce a byte-identical stable artifact projection.
 
 ## Test-first expectations
 
