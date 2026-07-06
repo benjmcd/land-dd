@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate blocked repo-local P0 auto-evidence records."""
+"""Validate repo-local P0 auto-evidence records for the NOT_RUN boundary."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ except ImportError as exc:
 AUTO_EVIDENCE_IDS = ("P0-004", "P0-005", "P0-021", "P0-023")
 ARTIFACT_RELATIVE_PATH = "docs/qualification/P0_AUTO_EVIDENCE.yaml"
 BACKLOG_RELATIVE_PATH = "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"
-BACKLOG_STATUS_PHRASE = "auto-evidenced; still target-blocked"
+BACKLOG_STATUS_PHRASE = "auto-evidenced; P0 not run"
 EXPECTED_SCHEMA_VERSION = "qualification_p0_auto_evidence_v1"
 SUPPRESSION_TOKENS = ("pytest.mark.xfail", "@pytest.mark.xfail", "xfail(")
 
@@ -96,8 +96,8 @@ def validate_artifact(
 ) -> None:
     if artifact.get("schema_version") != EXPECTED_SCHEMA_VERSION:
         errors.append(f"artifact schema_version must be {EXPECTED_SCHEMA_VERSION}")
-    if artifact.get("effective_gate_status") != "BLOCKED":
-        errors.append("artifact effective_gate_status must remain BLOCKED")
+    if artifact.get("effective_gate_status") != "NOT_RUN":
+        errors.append("artifact effective_gate_status must remain NOT_RUN")
     if artifact.get("result_claimed") is not False:
         errors.append("artifact must not claim a qualification result")
     if artifact.get("status_reference") != "state/EMPIRICAL_QUALIFICATION_STATUS.yaml":
@@ -127,18 +127,18 @@ def validate_artifact(
             errors.append(f"{criterion_id} catalog_requirement_class must be INVARIANT")
         if row.get("catalog_statement") != catalog_row.get("statement"):
             errors.append(f"{criterion_id} catalog_statement drifted from catalog")
-        if row.get("evidence_status") != "auto_evidenced_still_target_blocked":
-            errors.append(f"{criterion_id} evidence_status must be blocked auto-evidence")
-        if row.get("effective_status") != "BLOCKED":
-            errors.append(f"{criterion_id} effective_status must remain BLOCKED")
+        if row.get("evidence_status") != "auto_evidenced_p0_not_run":
+            errors.append(f"{criterion_id} evidence_status must be P0 NOT_RUN auto-evidence")
+        if row.get("effective_status") != "NOT_RUN":
+            errors.append(f"{criterion_id} effective_status must remain NOT_RUN")
         if row.get("pass_claimed") is not False:
             errors.append(f"{criterion_id} must not claim PASS")
 
         caveats = row.get("caveats")
         if not isinstance(caveats, list) or not caveats:
             errors.append(f"{criterion_id} caveats must be a non-empty list")
-        elif "still target-blocked" not in " ".join(str(value) for value in caveats):
-            errors.append(f"{criterion_id} caveats must state it is still target-blocked")
+        elif "P0 remains NOT_RUN" not in " ".join(str(value) for value in caveats):
+            errors.append(f"{criterion_id} caveats must state P0 remains NOT_RUN")
 
         evidence = row.get("evidence")
         if not isinstance(evidence, list) or not evidence:
@@ -163,16 +163,16 @@ def validate_status_link(root: Path, status: dict[str, Any], errors: list[str]) 
     if not isinstance(p0, dict):
         errors.append("status missing qualifications.p0")
         return
-    if p0.get("status") != "BLOCKED":
-        errors.append("qualifications.p0.status must remain BLOCKED")
+    if p0.get("status") != "NOT_RUN":
+        errors.append("qualifications.p0.status must remain NOT_RUN")
     if p0.get("result_path") is not None:
         errors.append("qualifications.p0.result_path must remain null")
     references = p0.get("blocker_references")
     if not isinstance(references, list):
         errors.append("qualifications.p0.blocker_references must be a list")
         return
-    if ARTIFACT_RELATIVE_PATH not in references:
-        errors.append(f"qualifications.p0.blocker_references must include {ARTIFACT_RELATIVE_PATH}")
+    if references != []:
+        errors.append("qualifications.p0.blocker_references must remain empty after QFREEZE-2")
     require_file(root, ARTIFACT_RELATIVE_PATH, errors)
 
 
@@ -188,8 +188,8 @@ def validate_no_pass_status(status: dict[str, Any], errors: list[str]) -> None:
 
 
 def validate_backlog(backlog_text: str, errors: list[str]) -> None:
-    if "Status: `P0 = BLOCKED`" not in backlog_text:
-        errors.append("backlog must keep P0 = BLOCKED")
+    if "Status: `P0 = NOT_RUN`" not in backlog_text:
+        errors.append("backlog must keep P0 = NOT_RUN")
     if "No AOI selection, source approval, fixture capture" not in backlog_text:
         errors.append("backlog must preserve no-AOI/no-fixture authorization boundary")
     for criterion_id in AUTO_EVIDENCE_IDS:
@@ -259,7 +259,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
     require_text_fragments(
         root,
         "config/qualification/qualification_targets.yaml",
-        ("status: DRAFT", "acceptance_case_storage: external_restricted_vault"),
+        ("status: FROZEN", "acceptance_case_storage: external_restricted_vault"),
         errors,
     )
     require_text_fragments(
@@ -272,7 +272,7 @@ def validate_repo_controls(root: Path, errors: list[str]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Validate repo-local evidence records for blocked P0 invariants.",
+        description="Validate repo-local evidence records for NOT_RUN P0 invariants.",
     )
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--artifact", type=Path)
@@ -311,8 +311,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(f"P0 auto evidence criteria: {', '.join(AUTO_EVIDENCE_IDS)}")
-    print("evidence status: auto_evidenced_still_target_blocked")
-    print("effective P0 status: BLOCKED")
+    print("evidence status: auto_evidenced_p0_not_run")
+    print("effective P0 status: NOT_RUN")
     print("qualification P0 auto evidence check: ok")
     return 0
 

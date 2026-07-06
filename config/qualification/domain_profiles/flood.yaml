@@ -1,0 +1,101 @@
+schema_version: domain_qualification_profile_v3
+domain_id: flood
+version: 0.1.0-qfreeze2-proposal
+status: FROZEN
+scope:
+  intents:
+  - rural_land_purchase
+  - homestead_feasibility
+  geographies:
+  - US-NC-Buncombe
+  - US-NC-Chatham
+  - US-NC-Brunswick
+  input_modalities:
+  - parcel_id
+  - address
+  - coordinates
+  - drawn_or_uploaded_geometry
+  - multi_parcel_aoi
+  output_channels:
+  - api_json
+  - web_ui
+  - exported_report
+reference_hierarchy:
+- rank: 1
+  source_id: DS-002
+  name: FEMA National Flood Hazard Layer effective data
+  use: primary public-official flood hazard screening reference
+  limitations: screening only; no FEMA endorsement; no final floodplain, insurance, lending, survey, engineering, or NFIP determination
+issue_taxonomy:
+- id: FLOOD_SFHA_INTERSECTION
+  criticality: critical
+  definition: AOI intersects a FEMA effective special flood hazard area or regulatory floodway feature.
+- id: FLOOD_BOUNDARY_NEAR
+  criticality: material
+  definition: AOI touches or falls within the conservative boundary caution band around a mapped flood feature.
+- id: FLOOD_OUTSIDE_MODERNIZED_COVERAGE
+  criticality: material_unknown
+  definition: FEMA effective digital flood layer is missing, non-modernized, or outside coverage.
+- id: FLOOD_SOURCE_FAILURE
+  criticality: material_unknown
+  definition: DS-002 retrieval, parsing, or lineage proof fails.
+severity_rubric:
+- level: critical
+  rule: SFHA or floodway intersection, source failure masking flood status, or wrong-AOI flood evidence.
+- level: material
+  rule: boundary-near condition, stale/partial DS-002 metadata, or mapped low/moderate risk needing caveat.
+- level: informational
+  rule: no mapped effective NFHL feature, with source/date/coverage caveat retained.
+confidence_rubric:
+- band: high
+  rule: DS-002 retrieval succeeded, AOI geometry is unambiguous, and intersection is not boundary-near.
+- band: medium
+  rule: AOI is boundary-near, source metadata is partial, or geometry normalization needed manual review.
+- band: low
+  rule: DS-002 coverage is absent/stale/conflicting or source failure is recorded.
+source_requirements:
+- source_id: DS-002
+  required_state: APPROVED
+  required_fields:
+  - retrieved_at
+  - source_url
+  - dataset_label
+  - source_version_or_effective_date_when_available
+  - checksum_or_retrieval_manifest
+  - FEMA attribution
+  - no-endorsement caveat
+spatial_temporal_tolerances:
+  boundary_caution_band_meters: 30
+  no_clearance_if_source_failed: true
+  temporal_policy: retrieval timestamp plus FEMA effective date when available; review before live connector enablement or material FEMA terms/service change
+unknown_states:
+- SOURCE_FAILED
+- OUTSIDE_COVERAGE
+- STALE
+- CONFLICTING
+metrics:
+- id: flood_critical_issue_recall
+  threshold: 1.0
+- id: flood_material_issue_recall_point_minimum
+  threshold: 0.9
+- id: flood_source_failure_false_clear_maximum
+  threshold: 0
+- id: flood_evidence_linkage
+  threshold: 1.0
+known_exclusions:
+- No final legal access, title, survey, buildability, insurance, lending, NFIP, engineering, appraisal, valuation, or investment conclusion.
+- No wetland jurisdiction, septic approval, water rights, mineral rights, local flood ordinance, storm-surge, climate projection, or private/local source qualification.
+- Preliminary, pending, logo/trademark, private basemap, and third-party FEMA-adjacent layers are excluded unless separately approved.
+owner: benjmcd
+reviewers:
+- qualification-reviewer
+- flood-domain-reviewer
+expires_at: '2027-07-06T00:00:00Z'
+frozen_at: '2026-07-06T20:26:43Z'
+approved_by:
+- benjmcd
+invalidation_triggers:
+- FEMA terms, service access, dataset label, source rights, preservation, data quality, coverage, or caveat requirements materially change.
+- The profile is used outside flood-only DS-002 effective-data screening.
+- A source failure, wrong-AOI event, critical false-clearance, or report overclaim is found.
+field_surveillance_plan: Review at least 20 flood reports or all critical incidents per 180 days; re-run DS-002 source drift review every 90 days; immediately invalidate on critical false-clearance or source-rights breach.

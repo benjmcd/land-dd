@@ -1,6 +1,6 @@
 # Qualification Parameterization Backlog
 
-Status: `P0 = BLOCKED`
+Status: `P0 = NOT_RUN`
 
 This file is a visibility register for the empirical-qualification adoption path. It
 does not land the qualification validator, catalog, status schema, source profiles, or
@@ -8,9 +8,10 @@ CI selftest. It records only the owner-authorized dispositions explicitly cited 
 It does not approve Bologna, DS-017, hosted authority, source rights beyond DS-002, or
 any qualification `PASS`.
 
-Rows remain `BLOCKED (external/owner authority)` until a cited decision record, review
-artifact, or approved source profile exists. Resolved rows are recorded only in the
-controlled owner disposition table below.
+Rows remain blocked until a cited decision record, review artifact, or approved source
+profile exists. QFREEZE-2 closed the flood-only parameterization blockers and moved
+derived P0 to `NOT_RUN`; empirical result gates still remain unrun and no `PASS` is
+authorized.
 
 No AOI selection, source approval, fixture capture, runtime/report use, or source registry promotion is authorized by this backlog.
 
@@ -27,7 +28,7 @@ authority exists.
 EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`.
 That checker is validate-only and fails closed if the backlog, owner packet, owner
 decision ledger, owner-answer intake, qualification targets/status, selected source
-profile, task queue, or verification wiring drift from this blocked-state boundary.
+profile, task queue, or verification wiring drift from this QFREEZE-2 not-PASS boundary.
 
 ODP-BOL-001 owner-response gate:
 `config/bologna_odp1_owner_response_gate.yaml`. That gate is validate-only and keeps
@@ -108,27 +109,34 @@ ODP-BOL-003 corpus authority, and missing cited report-proof authority.
 | Blocker class | Count/status | Gate effect |
 |---|---:|---|
 | Active gates | 12 | BLOCKED (external/owner authority) |
-| Active DRAFT criterion contracts | 60 | BLOCKED (external/owner authority) |
-| Active DRAFT/unresolved target bindings | 49 | BLOCKED (external/owner authority) |
-| Active DRAFT judgment rubrics | 16 | BLOCKED (external/owner authority) |
-| Qualified-domain profiles still DRAFT | 8 | BLOCKED (external/owner authority) |
+| Active DRAFT criterion contracts | 0 | CLOSED by QFREEZE-2 parameterization freeze |
+| Active DRAFT/unresolved target bindings | 0 | CLOSED by QFREEZE-2 parameterization freeze |
+| Active DRAFT judgment rubrics | 0 | CLOSED by QFREEZE-2 rubric freeze |
+| Qualified-domain profiles still DRAFT | 0 | flood profile FROZEN; non-flood domains excluded |
 | Approved source profiles selected | 1 | DS-002 only; remaining selections blocked |
-| Unresolved scope/version fields | 0 owner-authorized fields; other thresholds remain blocked | P0 still BLOCKED |
-| Inactive/conditional DRAFT contracts | 36 | excluded unless owner activates profile |
+| Unresolved scope/version fields | 0 owner-authorized fields | P0 parameterization can derive NOT_RUN |
+| Inactive/conditional DRAFT contracts | 0 | frozen as evidenced N/A unless owner activates profile |
+
+## QFREEZE-2 Controlled Freeze - 2026-07-06
+
+QFREEZE-2 records a flood-only parameterization freeze for DS-002 FEMA NFHL screening.
+It freezes target bindings, non-DIAGNOSTIC criterion-contract parameterization status,
+judgment rubrics, candidate identity, and the `flood` domain profile without recording
+any empirical result or qualification `PASS`.
 
 ## P0 Repo-Local Auto-Evidence
 
 These rows have repo-local evidence collected in
-`docs/qualification/P0_AUTO_EVIDENCE.yaml`. They remain blocked because no external
-target, vault, source, rubric, reviewer, candidate, or controlled storage authority has
-been frozen.
+`docs/qualification/P0_AUTO_EVIDENCE.yaml`. They remain `NOT_RUN` because QFREEZE-2
+freezes parameterization only; it records no sealed P0 run, no empirical result, and
+no qualification `PASS`.
 
-| Criterion | Evidence status | Effective status | Still-blocked reason |
+| Criterion | Evidence status | Effective status | Not-run boundary |
 |---|---|---|---|
-| `P0-004` | auto-evidenced; still target-blocked | BLOCKED | External vault/access-control records and sealed-case hashes are not approved. |
-| `P0-005` | auto-evidenced; still target-blocked | BLOCKED | Sealed acceptance case identity and case provenance register are not approved. |
-| `P0-021` | auto-evidenced; still target-blocked | BLOCKED | Controlled storage, archive manifests, and evidence hashes are not approved. |
-| `P0-023` | auto-evidenced; still target-blocked | BLOCKED | Frozen thresholds, candidate artifact, and sealed run/version records are absent. |
+| `P0-004` | auto-evidenced; P0 not run | NOT_RUN | External vault/access-control records and sealed-case hashes are not qualification results. |
+| `P0-005` | auto-evidenced; P0 not run | NOT_RUN | Sealed acceptance case identity and case provenance records are not qualification results. |
+| `P0-021` | auto-evidenced; P0 not run | NOT_RUN | Controlled storage, archive manifests, and evidence hashes are not qualification results. |
+| `P0-023` | auto-evidenced; P0 not run | NOT_RUN | Frozen thresholds and candidate identity are not a sealed P0 run/result. |
 
 ## Active Gates
 
@@ -137,9 +145,11 @@ authority, and empirical evidence before any `PASS` claim:
 
 `A`, `DB`, `DQ`, `G`, `IR`, `M`, `P0`, `Q1`, `Q2`, `R`, `S`, `W`.
 
-## Active Criterion Contracts Requiring Freeze
+## Frozen Criterion Contracts Pending Empirical Result
 
-Every listed criterion is `BLOCKED (external/owner authority)`.
+Every listed criterion has a `FROZEN` parameterization contract under QFREEZE-2. This
+does not claim any empirical `PASS`; it only removes parameterization drift from the
+P0 derivation predicates.
 
 - `A`: `A-008`, `A-009`, `A-010`, `A-012`, `A-013`.
 - `DB`: `DB-007`, `DB-009`, `DB-013`, `DB-015`, `DB-020`.
@@ -153,11 +163,12 @@ Every listed criterion is `BLOCKED (external/owner authority)`.
 - `S`: `S-009`.
 - `W`: `W-003`, `W-011`.
 
-## Target Binding Blockers
+## Frozen Target Bindings Pending Empirical Result
 
-Every target binding below must become frozen with resolved values before P0 can pass.
+Every target binding below is frozen with resolved values. Before P0 or downstream
+qualifications can pass, a separate sealed run/result record must be produced.
 
-| Gate group | Blocked target bindings |
+| Gate group | Frozen target bindings |
 |---|---|
 | `P0` | `P0-014`, `P0-017`, `P0-025` |
 | `Q1` | `Q1-006`, `Q1-007`, `Q1-008`, `Q1-016`, `Q1-017`, `Q1-019`, `Q1-020`, `Q1-029`, `Q1-034` |
@@ -171,25 +182,27 @@ Every target binding below must become frozen with resolved values before P0 can
 | `R` | `R-008` |
 | `W` | none; `W-003` and `W-011` target bindings are frozen but W remains `NOT_RUN` until a future qualification result is produced |
 
-Unresolved reference families include practical-effect thresholds, Q1/Q2 calibration
-targets, runtime and memory budgets, data-quality thresholds, database latency and
-capacity budgets, security quota profile, accessibility supported matrix, regulatory
+Previously unresolved reference families are now frozen for the flood-only DS-002
+screening profile, including practical-effect thresholds, Q1/Q2 calibration targets,
+runtime and memory budgets, data-quality thresholds, database latency and capacity
+budgets, security quota profile, accessibility supported matrix, regulatory
 change-monitoring frequency, criterion contracts, judgment rubrics, and domain-profile
-rubrics. `ruleset_versions` is now frozen for `homestead_mvp_v0_1` only.
+rubrics. `ruleset_versions` is frozen for `homestead_mvp_v0_1` only.
 
-## Judgment Rubric Blockers
+## Frozen Judgment Rubrics Pending Empirical Result
 
-Every rubric must define reviewer competence, dimensions, scale, pass rule,
-adjudication, calibration cases, and evidence schema before it can unblock its gate:
+Every applicable rubric now defines reviewer competence, dimensions, scale, pass rule,
+adjudication, calibration cases, and evidence schema. Non-applicable rubrics are frozen
+as evidenced profile exclusions where QFREEZE-2 disables the corresponding profile:
 
 `A-010`, `A-012`, `A-013`, `DQ-020`, `M-004`, `M-015`, `P0-025`, `Q1-020`, `Q2-009`,
 `Q2-012`, `Q2-014`, `Q2-022`, `Q2-023`, `Q2-029`, `Q2-030`, `R-009`.
 
-## Domain Profile Blockers
+## Domain Profile Boundary
 
-Every domain profile remains `DRAFT` and must freeze source hierarchy, issue taxonomy,
-critical/material definitions, severity/confidence rubrics, tolerances, exclusions,
-metrics, reviewers, and surveillance plan:
+The `flood` domain profile is `FROZEN` for DS-002 FEMA NFHL effective-data screening.
+The remaining domain profiles are explicitly unqualified/excluded for this freeze;
+they are not qualified domains and do not supply a non-flood `PASS` claim:
 
 `flood`, `wetlands`, `slope_terrain`, `soils_septic_proxy`,
 `physical_road_access_proxy`, `zoning_context`, `environmental_context`,
@@ -207,7 +220,7 @@ retain/export/AI permissions, preservation mode, coverage, freshness, quality,
 normalization, failure behavior, retirement, enabled operations, and enforcement
 controls.
 
-## Scope And Version Blockers
+## Scope And Version Boundary
 
 The owner-authorized scope/version fields are frozen in
 `config/qualification/qualification_targets.yaml`:
@@ -216,8 +229,9 @@ The owner-authorized scope/version fields are frozen in
 `geometry_pipeline_version`, `source_snapshot_policy`, `data_as_of_policy`,
 `ruleset_versions`.
 
-P0 remains BLOCKED because DQ/Q1/Q2/M target thresholds remain blocked, domain profiles
-remain blocked, and criterion contracts and judgment rubrics remain blocked.
+P0 remains `NOT_RUN` because QFREEZE-2 records parameterization only. It does not
+produce a sealed P0 run/result, does not authorize a `PASS`, and does not unblock
+Q1/Q2/Q3 or any overlay result.
 
 ## Owner Decision Blockers
 
@@ -264,12 +278,14 @@ reversal=requires a new owner decision + full requalification
 | `criterion_bindings.W-003` | frozen | FROZEN_TARGET | Long-path target frozen; controlled smoke evidence recorded separately. |
 | `criterion_bindings.W-011` | frozen | FROZEN_TARGET | Version matrix target frozen; upgrade policy recorded separately. |
 
-Remaining blockers:
+QFREEZE-1 remaining parameterization blockers were superseded for the flood-only
+DS-002 profile by QFREEZE-2. Remaining owner-authority blockers are outside the
+flood-only parameterization freeze:
 
-- DQ/Q1/Q2/M target thresholds remain blocked.
-- domain profiles remain blocked.
-- criterion contracts and judgment rubrics remain blocked.
-- P0 remains BLOCKED.
+- non-flood domain qualification remains unqualified/excluded.
+- Bologna AOI/source/corpus/DB proof authority remains blocked.
+- DS-017, hosted production, and Level 10 authority remain blocked.
+- P0 remains `NOT_RUN`; no qualification `PASS` is recorded.
 
 ## Bologna Priority Blockers
 

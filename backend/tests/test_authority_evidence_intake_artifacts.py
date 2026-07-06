@@ -80,7 +80,7 @@ def test_authority_evidence_intake_rejects_p0_pass() -> None:
     status = deepcopy(_yaml(REPO_ROOT / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml"))
     status["qualifications"]["p0"]["status"] = "PASS"
 
-    with pytest.raises(SystemExit, match="P0 must remain BLOCKED"):
+    with pytest.raises(SystemExit, match="P0 must not be PASS"):
         validator.validate_qualification_status(status)
 
 
@@ -160,7 +160,7 @@ def test_authority_evidence_intake_json_summary_reports_missing_authority() -> N
     assert summary["completed_prerequisite"] == "POST-GEOLOGY-ROUTING"
     assert summary["production_authority_status"] == "blocked_no_external_authority"
     assert summary["bologna_owner_answer_status"] == "blocked_review_only_scope_pursuit"
-    assert summary["qualification"]["p0_status"] == "BLOCKED"
+    assert summary["qualification"]["p0_status"] == "NOT_RUN"
     assert summary["qualification"]["p0_result_path"] is None
     assert summary["authority_record_state"] == {
         "odp2_owner_answer_reference_count": 0,

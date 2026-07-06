@@ -49,7 +49,7 @@ def test_p0_auto_evidence_artifact_records_live_catalog_rows() -> None:
     catalog = _catalog_by_id()
 
     assert artifact["schema_version"] == "qualification_p0_auto_evidence_v1"
-    assert artifact["effective_gate_status"] == "BLOCKED"
+    assert artifact["effective_gate_status"] == "NOT_RUN"
     assert artifact["result_claimed"] is False
     assert artifact["status_reference"] == "state/EMPIRICAL_QUALIFICATION_STATUS.yaml"
 
@@ -61,10 +61,10 @@ def test_p0_auto_evidence_artifact_records_live_catalog_rows() -> None:
         assert row["catalog_gate_id"] == "P0"
         assert row["catalog_requirement_class"] == "INVARIANT"
         assert row["catalog_statement"] == criterion["statement"]
-        assert row["evidence_status"] == "auto_evidenced_still_target_blocked"
-        assert row["effective_status"] == "BLOCKED"
+        assert row["evidence_status"] == "auto_evidenced_p0_not_run"
+        assert row["effective_status"] == "NOT_RUN"
         assert row["pass_claimed"] is False
-        assert "still target-blocked" in " ".join(row["caveats"])
+        assert "P0 remains NOT_RUN" in " ".join(row["caveats"])
 
         evidence = row["evidence"]
         assert evidence
@@ -79,14 +79,14 @@ def test_p0_status_and_backlog_link_auto_evidence_without_result_pass() -> None:
     status = _yaml(STATUS_PATH)
     p0 = status["qualifications"]["p0"]
 
-    assert p0["status"] == "BLOCKED"
+    assert p0["status"] == "NOT_RUN"
     assert p0["result_path"] is None
-    assert "docs/qualification/P0_AUTO_EVIDENCE.yaml" in p0["blocker_references"]
+    assert p0["blocker_references"] == []
 
     backlog = BACKLOG_PATH.read_text(encoding="utf-8")
     for criterion_id in AUTO_EVIDENCE_IDS:
         assert f"`{criterion_id}`" in backlog
-        assert f"`{criterion_id}` | auto-evidenced; still target-blocked" in backlog
+        assert f"`{criterion_id}` | auto-evidenced; P0 not run" in backlog
 
 
 def test_p0_auto_evidence_checker_passes() -> None:
@@ -101,20 +101,20 @@ def test_p0_auto_evidence_checker_passes() -> None:
 
     assert exit_code == 0, output
     assert "qualification P0 auto evidence check: ok" in output
-    assert "effective P0 status: BLOCKED" in output
+    assert "effective P0 status: NOT_RUN" in output
 
 
-def test_p0_auto_evidence_checker_rejects_missing_status_link() -> None:
+def test_p0_auto_evidence_checker_rejects_stale_status_blocker_link() -> None:
     checker = _load_script(
         REPO_ROOT / "scripts" / "qualification_p0_evidence_check.py",
         "qualification_p0_evidence_check_mutation_under_test",
     )
     status = deepcopy(_yaml(STATUS_PATH))
     status["qualifications"]["p0"]["blocker_references"] = [
-        "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
+        "docs/qualification/P0_AUTO_EVIDENCE.yaml",
     ]
 
     errors: list[str] = []
     checker.validate_status_link(REPO_ROOT, status, errors)
 
-    assert any("docs/qualification/P0_AUTO_EVIDENCE.yaml" in error for error in errors)
+    assert any("blocker_references must remain empty" in error for error in errors)

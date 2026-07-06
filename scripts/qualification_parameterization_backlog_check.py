@@ -57,7 +57,7 @@ EXPECTED_OWNER_DECISION_IDS = (
 )
 EXPECTED_BOL_THREADS = ("ODP-BOL-001", "ODP-BOL-002", "ODP-BOL-003", "ODP-BOL-004")
 EXPECTED_SELECTED_SOURCE_PROFILE_IDS = ("DS-002",)
-EXPECTED_FROZEN_BINDINGS = ("W-003", "W-011")
+EXPECTED_MINIMUM_FROZEN_BINDINGS = ("W-003", "W-011")
 ODP1_OWNER_ANSWER_ID = "odp-bol-001-scope-pursuit-2026-06-26"
 EXPECTED_DONE_TASKS = (
     "BOL-ODP4-GATE",
@@ -204,7 +204,7 @@ def validate_backlog(backlog: str, errors: list[str]) -> None:
         backlog,
         BACKLOG_PATH,
         (
-            "Status: `P0 = BLOCKED`",
+            "Status: `P0 = NOT_RUN`",
             "No AOI selection, source approval, fixture capture",
             "Owner decision consequence map: `state/owner-decision-packet.md`",
             "Bologna owner-answer intake: `config/bologna_owner_answer_intake.yaml`",
@@ -217,11 +217,12 @@ def validate_backlog(backlog: str, errors: list[str]) -> None:
             "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
             "## Owner Decision Blockers",
             "Active gates | 12 | BLOCKED (external/owner authority)",
-            "Active DRAFT criterion contracts | 60 | BLOCKED (external/owner authority)",
-            "Active DRAFT/unresolved target bindings | 49 | BLOCKED (external/owner authority)",
-            "Active DRAFT judgment rubrics | 16 | BLOCKED (external/owner authority)",
-            "Qualified-domain profiles still DRAFT | 8 | BLOCKED (external/owner authority)",
+            "Active DRAFT criterion contracts | 0 | CLOSED by QFREEZE-2 parameterization freeze",
+            "Active DRAFT/unresolved target bindings | 0 | CLOSED by QFREEZE-2 parameterization freeze",
+            "Active DRAFT judgment rubrics | 0 | CLOSED by QFREEZE-2 rubric freeze",
+            "Qualified-domain profiles still DRAFT | 0 | flood profile FROZEN; non-flood domains excluded",
             "Approved source profiles selected | 1 | DS-002 only; remaining selections blocked",
+            "## QFREEZE-2 Controlled Freeze - 2026-07-06",
             "## Controlled Owner Disposition - 2026-06-22",
             "## Bologna Priority Blockers",
         ),
@@ -259,16 +260,22 @@ def validate_owner_decisions(decisions: str, errors: list[str]) -> None:
         OWNER_DECISIONS_PATH,
         (
             "## 2026-06-22 QFREEZE-1 Qualification Freeze",
+            "## 2026-07-06 QFREEZE-2 Flood-Only Qualification Freeze",
             "repo-local authority ledger",
             "owner=benjmcd",
             "authority=owner directive 2026-06-22",
+            "authority=owner directive 2026-07-06 (interactive session): authorized the flood-only QFREEZE-2 proposal",
             "rationale=conservative defaults matching operational reality",
             "reversal=requires a new owner decision + full requalification",
             "`scope.source_profile_ids` | [`DS-002`] | APPROVED_SOURCE_PROFILE",
             "`criterion_bindings.W-003` | frozen | FROZEN_TARGET",
             "`criterion_bindings.W-011` | frozen | FROZEN_TARGET",
+            "`scope.qualified_domains` | [`flood`] | FROZEN_TARGET",
+            "`domain_profiles.flood` | frozen flood-only DS-002 profile with corrected four-state unknown_states list | FROZEN_DOMAIN_PROFILE",
+            "P0 remains not-PASS",
             "no P0 `PASS`",
             "no source approvals beyond DS-002",
+            "no non-flood domain qualification",
             "no Bologna AOI/source authority",
             "no DB seed",
             "no report/API/UI/runtime proof",
@@ -544,18 +551,23 @@ def validate_odp2_owner_answer_packet(packet: dict[str, Any], errors: list[str])
 
 def validate_qualification_status(status: dict[str, Any], errors: list[str]) -> None:
     candidate = require_mapping(status.get("candidate"), "qualification status candidate", errors)
-    for key, value in candidate.items():
-        require(value is None, f"qualification candidate.{key} must remain null", errors)
+    for key in (
+        "commit",
+        "artifact_digest",
+        "protocol_version",
+        "targets_version",
+        "vocabulary_version",
+        "criteria_catalog_digest",
+    ):
+        require(bool(candidate.get(key)), f"qualification candidate.{key} must be populated", errors)
+    require(candidate.get("tag") is None, "qualification candidate.tag must remain null unless a tag is sealed", errors)
 
     qualifications = require_mapping(status.get("qualifications"), "qualification statuses", errors)
     p0 = require_mapping(qualifications.get("p0"), "qualification p0 status", errors)
-    require(p0.get("status") == "BLOCKED", "P0 must remain BLOCKED", errors)
+    require(p0.get("status") == "NOT_RUN", "P0 must be NOT_RUN after QFREEZE-2", errors)
     require(p0.get("result_path") is None, "P0 result_path must remain null", errors)
-    require(
-        BACKLOG_PATH in (p0.get("blocker_references") or []),
-        "P0 blocker references must include the parameterization backlog",
-        errors,
-    )
+    require(p0.get("blocked_reason") is None, "P0 blocked_reason must be cleared after QFREEZE-2", errors)
+    require(p0.get("blocker_references") == [], "P0 blocker references must be cleared after QFREEZE-2", errors)
     for name, record in qualifications.items():
         if name == "p0":
             continue
@@ -576,9 +588,9 @@ def validate_qualification_status(status: dict[str, Any], errors: list[str]) -> 
 
 
 def validate_targets(targets: dict[str, Any], errors: list[str]) -> None:
-    require(targets.get("status") == "DRAFT", "qualification targets must remain globally DRAFT", errors)
-    require(targets.get("frozen_at") is None, "qualification targets frozen_at must remain null", errors)
-    require(targets.get("approved_by") == [], "qualification targets approved_by must remain empty", errors)
+    require(targets.get("status") == "FROZEN", "qualification targets must be globally FROZEN", errors)
+    require(isinstance(targets.get("frozen_at"), str) and bool(targets.get("frozen_at")), "qualification targets frozen_at must be populated", errors)
+    require(targets.get("approved_by") == ["benjmcd"], "qualification targets approved_by must be benjmcd", errors)
 
     scope = require_mapping(targets.get("scope"), "qualification target scope", errors)
     for key, expected in EXPECTED_SCOPE_VALUES.items():
@@ -588,6 +600,7 @@ def validate_targets(targets: dict[str, Any], errors: list[str]) -> None:
         "scope.source_profile_ids must remain DS-002 only",
         errors,
     )
+    require(scope.get("qualified_domains") == ["flood"], "scope.qualified_domains must be flood-only", errors)
     require(
         scope.get("ruleset_versions") == {"homestead_mvp_v0_1": "0.1"},
         "scope.ruleset_versions drifted",
@@ -600,7 +613,13 @@ def validate_targets(targets: dict[str, Any], errors: list[str]) -> None:
         for criterion_id, record in bindings.items()
         if isinstance(record, dict) and record.get("status") == "FROZEN"
     )
-    require(frozen_bindings == EXPECTED_FROZEN_BINDINGS, "only W-003 and W-011 may be frozen", errors)
+    for criterion_id in EXPECTED_MINIMUM_FROZEN_BINDINGS:
+        require(criterion_id in frozen_bindings, f"{criterion_id} must remain frozen", errors)
+    require(
+        all(isinstance(record, dict) and record.get("status") == "FROZEN" for record in bindings.values()),
+        "all QFREEZE-2 target bindings must be frozen",
+        errors,
+    )
     for criterion_id, record in bindings.items():
         if isinstance(record, dict):
             require(record.get("status") != "PASS", f"{criterion_id} must not be PASS", errors)
@@ -979,7 +998,7 @@ def main(argv: list[str] | None = None) -> int:
                     "ok": True,
                     "owner_decision_ids": list(EXPECTED_OWNER_DECISION_IDS),
                     "selected_source_profile_ids": list(EXPECTED_SELECTED_SOURCE_PROFILE_IDS),
-                    "frozen_bindings": list(EXPECTED_FROZEN_BINDINGS),
+                    "minimum_frozen_bindings": list(EXPECTED_MINIMUM_FROZEN_BINDINGS),
                     "bologna_threads": list(EXPECTED_BOL_THREADS),
                     "eq5_plan": EXPECTED_EQ5_PLAN,
                     "active_plan": EXPECTED_AUTH_EVIDENCE_PLAN,
@@ -991,8 +1010,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"owner decision blockers: {len(EXPECTED_OWNER_DECISION_IDS)}")
         print(f"selected source profiles: {', '.join(EXPECTED_SELECTED_SOURCE_PROFILE_IDS)}")
-        print(f"frozen criterion bindings: {', '.join(EXPECTED_FROZEN_BINDINGS)}")
-        print("P0 status: BLOCKED")
+        print(f"minimum frozen criterion bindings: {', '.join(EXPECTED_MINIMUM_FROZEN_BINDINGS)}")
+        print("P0 status: NOT_RUN")
         print("qualification parameterization backlog check: ok")
     return 0
 

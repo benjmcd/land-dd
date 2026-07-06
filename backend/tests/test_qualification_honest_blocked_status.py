@@ -43,31 +43,29 @@ def _production_usage_fields() -> tuple[str, ...]:
     raise AssertionError("PRODUCTION_USAGE_FIELDS not found")
 
 
-def test_p0_is_honestly_blocked_without_result_artifact() -> None:
+def test_p0_is_not_run_without_result_artifact_after_qfreeze2() -> None:
     status = _load_yaml(REPO_ROOT / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml")
     p0 = status["qualifications"]["p0"]
 
     assert status["highest_valid_classification"] == "L9-R"
-    assert p0["status"] == "BLOCKED"
+    assert p0["status"] == "NOT_RUN"
     assert p0["result_path"] is None
     assert p0["expires_at"] is None
-    assert p0["blocked_reason"].strip()
-    assert p0["blocker_references"] == [
-        "state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md",
-        "docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md",
-        "docs/qualification/P0_AUTO_EVIDENCE.yaml",
-    ]
-    for reference in p0["blocker_references"]:
-        assert (REPO_ROOT / reference).exists(), reference
+    assert p0["blocked_reason"] is None
+    assert p0["blocker_references"] == []
 
     candidate = status["candidate"]
-    assert candidate["commit"] is None
-    assert candidate["artifact_digest"] is None
+    assert candidate["commit"] == "2447349aa06d11ccb9e0d4ab01433c7c2c0a4b0c"
+    assert candidate["tag"] is None
+    assert candidate["artifact_digest"] == (
+        "sha256:457412c1d29543f89be7c5d2c9d521bd999ae1395df5885ddd902865057bb978"
+    )
+    assert candidate["protocol_version"] == "qualification_protocol_v3"
 
 
-def test_active_domain_profiles_are_template_only_with_stubs_archived() -> None:
+def test_active_domain_profiles_include_template_and_frozen_flood_profile() -> None:
     active_profiles = sorted(path.name for path in DOMAIN_DIR.glob("*.yaml"))
-    assert active_profiles == ["domain_profile.template.yaml"]
+    assert active_profiles == ["domain_profile.template.yaml", "flood.yaml"]
 
     template = _load_yaml(DOMAIN_DIR / "domain_profile.template.yaml")
     assert template["schema_version"] == "domain_qualification_profile_v3"
@@ -78,6 +76,19 @@ def test_active_domain_profiles_are_template_only_with_stubs_archived() -> None:
 
     archived = {path.name for path in DOMAIN_ARCHIVE.glob("*.yaml")}
     assert archived == OLD_DOMAIN_STUBS
+
+    flood = _load_yaml(DOMAIN_DIR / "flood.yaml")
+    assert flood["schema_version"] == "domain_qualification_profile_v3"
+    assert flood["domain_id"] == "flood"
+    assert flood["status"] == "FROZEN"
+    assert flood["approved_by"] == ["benjmcd"]
+    assert flood["unknown_states"] == [
+        "SOURCE_FAILED",
+        "OUTSIDE_COVERAGE",
+        "STALE",
+        "CONFLICTING",
+    ]
+    assert flood["source_requirements"][0]["source_id"] == "DS-002"
 
 
 def test_active_source_profile_is_real_ds002_and_maps_production_usage_fields() -> None:

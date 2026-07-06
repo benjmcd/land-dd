@@ -1,135 +1,130 @@
 schema_version: empirical_qualification_status_v3
 project: land-dd
-updated_at: null
+updated_at: '2026-07-06T20:26:43Z'
 selected_product_scope_profile: BOUNDED_USER_VALIDATED
 selected_deployment_profile: LOCAL_SINGLE_USER
 highest_valid_classification: L9-R
 candidate:
-  commit: null
-  tag: null
-  artifact_digest: null
-  protocol_version: null
-  targets_version: null
-  vocabulary_version: null
-  criteria_catalog_digest: null
+  commit: 2447349aa06d11ccb9e0d4ab01433c7c2c0a4b0c
+  tag:
+  artifact_digest: sha256:457412c1d29543f89be7c5d2c9d521bd999ae1395df5885ddd902865057bb978
+  protocol_version: qualification_protocol_v3
+  targets_version: 0.1.0-draft
+  vocabulary_version: qualification_vocabulary_v3
+  criteria_catalog_digest: sha256:a6490c75627a7d5bd05e6ed055de7f5a3e84408957a6e00a4dfa00fd4ebb0f55
 qualifications:
   p0:
-    status: BLOCKED
+    status: NOT_RUN
     prerequisites: []
-    result_path: null
-    expires_at: null
-    blocked_reason: P0 cannot run or pass until unresolved project parameterization blockers are closed and frozen.
-    blocker_references:
-    - state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
-    - docs/qualification/PROJECT_PARAMETERIZATION_BLOCKERS.md
-    - docs/qualification/P0_AUTO_EVIDENCE.yaml
+    result_path:
+    expires_at:
+    blocked_reason:
+    blocker_references: []
   q1:
     status: NOT_RUN
     prerequisites:
     - p0
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   q2:
     status: NOT_RUN
     prerequisites:
     - p0
     - q1
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   q3a:
     status: NOT_RUN
     prerequisites:
     - p0
     - q1
     - q2
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   q3b:
     status: NOT_RUN
     prerequisites:
     - p0
     - q1
     - q2
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   q3c:
     status: NOT_RUN
     prerequisites:
     - p0
     - q1
     - q2
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
 overlays:
   data_quality:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   input_resolution:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   database:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   security_privacy_compliance:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   accessibility_human_factors:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   maintainability_modularity:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   hosted_operations:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   regulatory_professional_scope:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   field_surveillance:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   economics:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   governance_release:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   windows_native:
     status: NOT_RUN
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
 conditional_overlays:
   ai_llm:
     status: NOT_RUN
     applicable: false
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   candidate_generation:
     status: NOT_RUN
     applicable: false
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
   financial_modeling:
     status: NOT_RUN
     applicable: false
-    result_path: null
-    expires_at: null
+    result_path:
+    expires_at:
 accepted_residual_risks: []
 blocked_decisions:
-- Freeze remaining null/TBD qualification targets and all applicable DRAFT criterion contracts before P0.
-- Freeze domain qualification profiles for every claimed MVP domain.
-- Approve source-quality/rights/preservation profiles for every enabled production source.
-- Select and freeze exact production deployment targets before any Level 10 claim.
-next_lowest_dependency_action: Resolve project parameterization blockers, freeze the bounded NC qualification scope,
-  validate profiles/targets/contracts, and pass P0 before unsealing Q1 cases.
+- Produce a sealed P0 run/result before any P0 PASS claim.
+- Keep Bologna AOI/source/source-rights/corpus/report-proof authority blocked until cited owner authority exists.
+- Keep DS-017, hosted production, and Level 10 authority blocked until separately authorized.
+next_lowest_dependency_action: Keep P0 NOT_RUN until a sealed P0 protocol run produces a cited result artifact; do not unseal Q1 or claim PASS from the QFREEZE-2 parameterization freeze alone.

@@ -114,14 +114,17 @@ def test_qualification_parameterization_backlog_records_p0_blockers() -> None:
 
     for phrase in (
         "# Qualification Parameterization Backlog",
-        "P0 = BLOCKED",
+        "P0 = NOT_RUN",
         "BLOCKED (external/owner authority)",
         "Active gates | 12",
-        "Active DRAFT criterion contracts | 60",
-        "Active DRAFT/unresolved target bindings | 49",
-        "Active DRAFT judgment rubrics | 16",
-        "Qualified-domain profiles still DRAFT | 8",
+        "Active DRAFT criterion contracts | 0",
+        "Active DRAFT/unresolved target bindings | 0",
+        "Active DRAFT judgment rubrics | 0",
+        "Qualified-domain profiles still DRAFT | 0",
         "Approved source profiles selected | 1",
+        "## QFREEZE-2 Controlled Freeze - 2026-07-06",
+        "## Frozen Criterion Contracts Pending Empirical Result",
+        "## Frozen Target Bindings Pending Empirical Result",
         "ruleset_versions",
         "EQ-5 consistency checker: `scripts/qualification_parameterization_backlog_check.py`",
         "ODP-BOL-001 owner-answer packet:",
@@ -176,10 +179,10 @@ def test_owner_authorized_freeze_disposition_is_recorded() -> None:
         assert phrase in backlog
 
     for blocked_phrase in (
-        "DQ/Q1/Q2/M target thresholds remain blocked",
-        "domain profiles remain blocked",
-        "criterion contracts and judgment rubrics remain blocked",
-        "P0 remains BLOCKED",
+        "QFREEZE-1 remaining parameterization blockers were superseded",
+        "non-flood domain qualification remains unqualified/excluded",
+        "Bologna AOI/source/corpus/DB proof authority remains blocked",
+        "P0 remains `NOT_RUN`; no qualification `PASS` is recorded",
     ):
         assert blocked_phrase in backlog
 

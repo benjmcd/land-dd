@@ -2,6 +2,48 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-06 QFREEZE-2 Flood-Only Qualification Freeze
+
+**Scope:** Apply the owner-authorized QFREEZE-2 flood-only parameterization freeze
+for DS-002 FEMA NFHL screening, record the four-state `unknown_states`
+validator-compatibility correction, keep qualification `PASS` impossible, and derive
+P0 to `NOT_RUN` without recording any empirical result artifact.
+
+**Commands for this gate:**
+
+```powershell
+py -3.12 scripts\validate_qualification.py --root . --layout repo
+py -3.12 scripts\qualification_status_check.py --root .
+py -3.12 scripts\qualification_parameterization_backlog_check.py --root .
+py -3.12 scripts\authority_evidence_intake_check.py
+py -3.12 scripts\qualification_p0_evidence_check.py --root .
+rg -n "\b(UNKNOWN|TBD|TODO)\b" config/qualification/qualification_targets.yaml config/qualification/domain_profiles/flood.yaml config/qualification/judgment_rubrics.yaml config/qualification/criterion_catalog.yaml state/qfreeze2-flood-proposal.md state/owner-decisions.md state/EMPIRICAL_QUALIFICATION_STATUS.yaml
+git diff --check
+$env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_status_check.py backend\tests\test_qualification_honest_blocked_status.py backend\tests\test_qualification_parameterization_backlog_artifacts.py backend\tests\test_qualification_p0_auto_evidence.py backend\tests\test_qualification_spine.py backend\tests\test_authority_evidence_intake_artifacts.py -q
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Structural qualification validation passed with target status `FROZEN`,
+  framework criteria `392`, and highest valid classification `L9-R`.
+- Qualification status derivation passed with `passed=39`, `not_run=2`,
+  `unexpected_failed=0`, and derived statuses `BLOCKED=0 NOT_RUN=21`.
+- Backlog, authority-evidence intake, and P0 auto-evidence checks passed; P0 status is
+  `NOT_RUN` and P0 auto-evidence reports `auto_evidenced_p0_not_run`.
+- The focused qualification/intake pytest set passed (`40 passed`).
+- Full `.\scripts\verify.ps1` passed with backend tests, ruff, and mypy green; DB
+  smoke remained skipped because `RUN_DB_SMOKE=1` was not set.
+- The unresolved-token scan found only the explanatory owner-decision sentence that
+  states the ratified catch-all `UNKNOWN` was removed; no frozen YAML value retains the
+  bare catch-all token.
+
+**Residual risk:** QFREEZE-2 is a parameterization freeze only. It does not record a
+sealed P0 run/result, does not qualify non-flood domains, does not approve sources
+beyond DS-002, does not authorize Bologna AOI/source/corpus/DB proof work, does not
+create report/API/UI/runtime proof, does not authorize hosted/Level 10 status, and
+does not permit any qualification `PASS` claim.
+
 ## 2026-07-06 Authority Validator Consolidation
 
 **Scope:** Consolidate the overlapping authority-validator helper/reporting plumbing

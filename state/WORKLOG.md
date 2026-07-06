@@ -2,6 +2,26 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-06 QFREEZE-2 flood-only qualification freeze
+
+- Continued from live `origin/main` at
+  `2447349aa06d11ccb9e0d4ab01433c7c2c0a4b0c` in isolated worktree
+  `worktrees/qfreeze2-freeze` on branch `codex/qfreeze2-freeze`; the root checkout
+  remained inbox-only dirty and was not used as implementation authority.
+- Applied the owner-authorized QFREEZE-2 flood-only parameterization freeze for
+  DS-002 FEMA NFHL screening, including frozen target bindings, criterion contract
+  parameterization status, judgment rubrics, candidate identity, and a frozen
+  `config/qualification/domain_profiles/flood.yaml`.
+- Recorded the validator-compatibility correction removing the bare catch-all
+  `UNKNOWN` from the flood `unknown_states` list while retaining
+  `SOURCE_FAILED`, `OUTSIDE_COVERAGE`, `STALE`, and `CONFLICTING`.
+- Updated status/checker/test surfaces so derived qualification status is
+  `BLOCKED=0 NOT_RUN=21`; P0 remains `NOT_RUN` with no result path and no
+  qualification `PASS`.
+- Preserved the boundaries: no non-flood domain qualification, no source approvals
+  beyond DS-002, no Bologna AOI/source/corpus/DB proof authority, no hosted/Level 10
+  authority, no report/API/UI/runtime proof, and no P0 result/PASS claim.
+
 ## 2026-07-06 authority-validator consolidation
 
 - Continued from live `origin/main` at

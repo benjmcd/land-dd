@@ -230,7 +230,7 @@ def validate_plan_and_state_text() -> None:
         "production_authority_evidence_references_check.py",
         "authority follow-on sequencing contract",
         "wrapper argument passthrough merged through PR #179",
-        "`P0` remains `BLOCKED`",
+        "`P0` remains `NOT_RUN`",
     ):
         require(phrase in project_state, f"project state missing boundary: {phrase}")
     require(
@@ -326,7 +326,8 @@ def validate_empty_authority_records() -> None:
 def validate_qualification_status(payload: dict[str, Any]) -> None:
     qualifications = require_mapping(payload.get("qualifications"), "qualifications missing")
     p0 = require_mapping(qualifications.get("p0"), "P0 status missing")
-    require(p0.get("status") == "BLOCKED", "P0 must remain BLOCKED")
+    require(p0.get("status") != "PASS", "P0 must not be PASS")
+    require(p0.get("status") in {"BLOCKED", "NOT_RUN"}, "P0 must remain blocked or not-run")
     require(p0.get("result_path") is None, "P0 result path must remain null")
     for qualification_id, qualification in qualifications.items():
         if qualification_id == "p0":

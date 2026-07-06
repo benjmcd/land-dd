@@ -1,222 +1,295 @@
 schema_version: judgment_rubrics_v3
-status: DRAFT
+status: FROZEN
 rubric_version: 0.1.0-draft
-frozen_at: null
-approved_by: []
+frozen_at: '2026-07-06T20:26:43Z'
+approved_by:
+- benjmcd
 criteria:
   A-010:
-    status: DRAFT
-    purpose: Human factors review finds no dark pattern, forced overconfidence, hidden uncertainty, or deceptive ranking
-      presentation.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Human factors review finds no dark pattern, forced overconfidence, hidden uncertainty, or deceptive ranking presentation.
+    reviewer_competency: Accessibility/human-factors reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: no dark patterns
+    - name: no hidden uncertainty
+    - name: no deceptive ranking
+    - name: caveat visibility
+    rating_scale: &id001
+      1: fail
+      2: weak
+      3: acceptable
+      4: strong
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: &id002
+    - id: flood_boundary_near_with_source_caveat
+      expected_result: reviewer preserves caution band, unknown/source caveats, and no final determination language
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   A-012:
-    status: DRAFT
-    purpose: Reading level, terminology, abbreviations, and uncertainty language are validated for each target persona
-      without removing precision.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Reading level, terminology, abbreviations, and uncertainty language are validated for each target persona without removing precision.
+    reviewer_competency: Accessibility/content reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: persona comprehension
+    - name: terminology
+    - name: precision retained
+    - name: uncertainty understood
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   A-013:
-    status: DRAFT
-    purpose: Map scale, symbology, overlap, uncertainty, and source-coverage legends do not imply precision beyond the
-      data.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Map scale, symbology, overlap, uncertainty, and source-coverage legends do not imply precision beyond the data.
+    reviewer_competency: Map UX/geospatial reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: scale
+    - name: symbol clarity
+    - name: overlap handling
+    - name: source-coverage legend
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   DQ-020:
-    status: DRAFT
+    status: FROZEN
     purpose: Sampling/measurement bias and known blind spots are documented for every derived or modeled layer.
-    reviewer_competency: null
+    reviewer_competency: Data-quality reviewer familiar with geospatial source quality.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: coverage gaps
+    - name: measurement bias
+    - name: source limitations
+    - name: mitigation/caveats
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   E-012:
-    status: DRAFT
+    status: FROZEN
     purpose: Vendor concentration and contract-renewal sensitivity have an approved mitigation or accepted bounded risk.
-    reviewer_competency: null
+    reviewer_competency: 'PROFILE_EXCLUDED_WITH_EVIDENCED_NA: economics or financial modeling disabled under QFREEZE-2 flood-only scope.'
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: profile_excluded_with_evidenced_na
+    rating_scale: PROFILE_EXCLUDED_WITH_EVIDENCED_NA
+    pass_rule: Not applicable under QFREEZE-2 flood-only scope unless owner later activates economics or financial modeling.
+    adjudication_rule: Owner reactivation decision plus full requalification required before this rubric can support a PASS claim.
+    calibration_cases:
+    - id: disabled_profile_evidenced_na
+      expected_result: reviewer confirms disabled-profile N/A disposition and no economics/financial-modeling claim
+    evidence_record_schema: qualification_rubric_review_v1 disabled-profile N/A evidence record
   FIN-005:
-    status: DRAFT
-    purpose: Comparable selection and adjustment are explainable, reproducible, and reviewed for inappropriate proxy
-      use.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Comparable selection and adjustment are explainable, reproducible, and reviewed for inappropriate proxy use.
+    reviewer_competency: 'PROFILE_EXCLUDED_WITH_EVIDENCED_NA: economics or financial modeling disabled under QFREEZE-2 flood-only scope.'
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: profile_excluded_with_evidenced_na
+    rating_scale: PROFILE_EXCLUDED_WITH_EVIDENCED_NA
+    pass_rule: Not applicable under QFREEZE-2 flood-only scope unless owner later activates economics or financial modeling.
+    adjudication_rule: Owner reactivation decision plus full requalification required before this rubric can support a PASS claim.
+    calibration_cases:
+    - id: disabled_profile_evidenced_na
+      expected_result: reviewer confirms disabled-profile N/A disposition and no economics/financial-modeling claim
+    evidence_record_schema: qualification_rubric_review_v1 disabled-profile N/A evidence record
   FIN-018:
-    status: DRAFT
-    purpose: Independent review finds no material model-risk, fairness, leakage, or regulatory blocker for the released
-      claim.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Independent review finds no material model-risk, fairness, leakage, or regulatory blocker for the released claim.
+    reviewer_competency: 'PROFILE_EXCLUDED_WITH_EVIDENCED_NA: economics or financial modeling disabled under QFREEZE-2 flood-only scope.'
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: profile_excluded_with_evidenced_na
+    rating_scale: PROFILE_EXCLUDED_WITH_EVIDENCED_NA
+    pass_rule: Not applicable under QFREEZE-2 flood-only scope unless owner later activates economics or financial modeling.
+    adjudication_rule: Owner reactivation decision plus full requalification required before this rubric can support a PASS claim.
+    calibration_cases:
+    - id: disabled_profile_evidenced_na
+      expected_result: reviewer confirms disabled-profile N/A disposition and no economics/financial-modeling claim
+    evidence_record_schema: qualification_rubric_review_v1 disabled-profile N/A evidence record
   M-004:
-    status: DRAFT
-    purpose: Critical rule, evidence, geometry, rights, and report logic has unit, integration, DB, regression, and negative-path
-      coverage appropriate to risk.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Critical rule, evidence, geometry, rights, and report logic has unit, integration, DB, regression, and negative-path coverage appropriate to risk.
+    reviewer_competency: Senior engineer independent of touched implementation.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: unit/integration/DB/regression/negative paths
+    - name: evidence preservation
+    - name: risk fit
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   M-015:
-    status: DRAFT
+    status: FROZEN
     purpose: A fresh agent completes a bounded maintenance/change task without chat history and without violating invariants.
-    reviewer_competency: null
+    reviewer_competency: Maintainer not relying on chat history.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: discoverability
+    - name: context routing
+    - name: invariant preservation
+    - name: bounded change success
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   P0-025:
-    status: DRAFT
+    status: FROZEN
     purpose: Reviewer competency
-    reviewer_competency: null
+    reviewer_competency: Qualification lead plus domain/source-rights familiarity.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: competence
+    - name: independence
+    - name: conflict disclosure
+    - name: evidence handling
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q1-020:
-    status: DRAFT
+    status: FROZEN
     purpose: Verification-action quality
-    reviewer_competency: null
+    reviewer_competency: Flood due-diligence reviewer familiar with DS-002 caveats.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: action specificity
+    - name: owner usability
+    - name: caveat preservation
+    - name: no overclaim
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-009:
-    status: DRAFT
+    status: FROZEN
     purpose: Decision concordance
-    reviewer_competency: null
+    reviewer_competency: User-study reviewer independent of implementation.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: scenario framing
+    - name: decision agreement
+    - name: uncertainty handling
+    - name: no steering
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-012:
-    status: DRAFT
+    status: FROZEN
     purpose: Verification-action quality
-    reviewer_competency: null
+    reviewer_competency: Same as Q1-020 plus user workflow review.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: follow-up clarity
+    - name: evidence link
+    - name: caveat retention
+    - name: comprehension
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-014:
-    status: DRAFT
+    status: FROZEN
     purpose: Trust calibration
-    reviewer_competency: null
+    reviewer_competency: Human-factors reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: confidence alignment
+    - name: unknown recognition
+    - name: no false reassurance
+    - name: no alarmism
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-022:
-    status: DRAFT
+    status: FROZEN
     purpose: Usability floor
-    reviewer_competency: null
+    reviewer_competency: Human-factors/user-study reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: task completion
+    - name: caveat comprehension
+    - name: report/API consistency
+    - name: help burden
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-023:
-    status: DRAFT
+    status: FROZEN
     purpose: Qualitative defect saturation
-    reviewer_competency: null
+    reviewer_competency: User-study lead independent from feature implementation.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: defect taxonomy
+    - name: saturation evidence
+    - name: critical defect handling
+    - name: persona coverage
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-029:
-    status: DRAFT
+    status: FROZEN
     purpose: Cognitive-load control
-    reviewer_competency: null
+    reviewer_competency: Human-factors reviewer.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: workload score interpretation
+    - name: caveat density
+    - name: map/report clarity
+    - name: escalation clarity
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   Q2-030:
-    status: DRAFT
+    status: FROZEN
     purpose: Comparator honesty
-    reviewer_competency: null
+    reviewer_competency: Reviewer familiar with baseline workflow and product non-goals.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: comparator fairness
+    - name: no cherry-picking
+    - name: time/quality tradeoff
+    - name: limitations
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes
   R-009:
-    status: DRAFT
-    purpose: Qualified external review is obtained before enabling a materially new high-risk claim class or jurisdiction;
-      reviewer scope and conclusions are recorded.
-    reviewer_competency: null
+    status: FROZEN
+    purpose: Qualified external review is obtained before enabling a materially new high-risk claim class or jurisdiction; reviewer scope and conclusions are recorded.
+    reviewer_competency: Qualified external professional or domain expert for new high-risk claims.
     reviewer_independence_required: true
-    dimensions: []
-    rating_scale: null
-    pass_rule: null
-    adjudication_rule: null
-    calibration_cases: []
-    evidence_record_schema: null
+    dimensions:
+    - name: scope
+    - name: independence
+    - name: authority
+    - name: conclusions
+    - name: recorded limitations
+    rating_scale: *id001
+    pass_rule: all critical dimensions score 4 and all other dimensions score at least 3; no unresolved critical objection
+    adjudication_rule: two reviewers; disagreement on any critical dimension goes to independent adjudicator; lower score controls until resolved
+    calibration_cases: *id002
+    evidence_record_schema: qualification_rubric_review_v1 with criterion_id, reviewer_id, independence_attestation, dimensions, rating, rationale, evidence_refs, adjudication_notes

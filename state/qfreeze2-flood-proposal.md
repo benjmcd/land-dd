@@ -188,7 +188,7 @@ spatial_temporal_tolerances:
   boundary_caution_band_meters: 30
   no_clearance_if_source_failed: true
   temporal_policy: retrieval timestamp plus FEMA effective date when available; review before live connector enablement or material FEMA terms/service change
-unknown_states: [SOURCE_FAILED, OUTSIDE_COVERAGE, STALE, CONFLICTING, UNKNOWN]
+unknown_states: [SOURCE_FAILED, OUTSIDE_COVERAGE, STALE, CONFLICTING]
 metrics:
 - id: flood_critical_issue_recall
   threshold: 1.0

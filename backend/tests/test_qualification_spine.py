@@ -102,7 +102,7 @@ def test_qualification_spine_artifacts_are_repo_owned() -> None:
     assert source_profiles
 
 
-def test_qualification_status_is_non_passing_and_targets_remain_draft() -> None:
+def test_qualification_status_is_non_passing_and_targets_are_frozen() -> None:
     status = yaml.safe_load(
         (REPO_ROOT / "state" / "EMPIRICAL_QUALIFICATION_STATUS.yaml").read_text(
             encoding="utf-8",
@@ -114,11 +114,11 @@ def test_qualification_status_is_non_passing_and_targets_remain_draft() -> None:
         ),
     )
 
-    assert targets["status"] == "DRAFT"
-    assert targets["approved_by"] == []
+    assert targets["status"] == "FROZEN"
+    assert targets["approved_by"] == ["benjmcd"]
     assert status["highest_valid_classification"] == "L9-R"
-    assert status["qualifications"]["p0"]["status"] == "BLOCKED"
-    assert status["blocked_decisions"]
+    assert status["qualifications"]["p0"]["status"] == "NOT_RUN"
+    assert status["qualifications"]["p0"]["result_path"] is None
 
 
 def test_qualification_validator_passes_and_pins_catalog_to_framework() -> None:
@@ -133,9 +133,8 @@ def test_qualification_validator_passes_and_pins_catalog_to_framework() -> None:
 
     assert exit_code == 0, output
     assert "qualification structural validation: PASS" in output
-    assert "target status: DRAFT" in output
+    assert "target status: FROZEN" in output
     assert "highest valid classification: L9-R" in output
-    assert "BLOCKED-READINESS:" in output
 
     framework_ids = validator.framework_ids(
         REPO_ROOT / "docs" / "qualification" / "EMPIRICAL_QUALIFICATION_FRAMEWORK.md",
