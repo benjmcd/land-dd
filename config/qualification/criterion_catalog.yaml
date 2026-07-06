@@ -569,7 +569,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -689,7 +689,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -1006,7 +1006,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.P0-025
   human_judgment_required: true
   controlled_terms:
@@ -1484,7 +1484,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -1531,7 +1531,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -1576,7 +1576,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -1930,7 +1930,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -1977,7 +1977,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -2070,7 +2070,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -2119,7 +2119,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q1-020
   human_judgment_required: true
   controlled_terms:
@@ -2517,7 +2517,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -2745,7 +2745,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -2978,7 +2978,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3148,7 +3148,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3192,7 +3192,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -3238,7 +3238,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3282,7 +3282,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3326,7 +3326,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-009
   human_judgment_required: true
   controlled_terms:
@@ -3371,7 +3371,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3415,7 +3415,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3459,7 +3459,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-012
   human_judgment_required: true
   controlled_terms:
@@ -3551,7 +3551,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-014
   human_judgment_required: true
   controlled_terms: []
@@ -3638,7 +3638,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -3725,7 +3725,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -3855,7 +3855,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -3901,7 +3901,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-022
   human_judgment_required: true
   controlled_terms:
@@ -3946,7 +3946,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-023
   human_judgment_required: true
   controlled_terms:
@@ -4121,7 +4121,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -4214,7 +4214,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-029
   human_judgment_required: true
   controlled_terms:
@@ -4261,7 +4261,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.Q2-030
   human_judgment_required: true
   controlled_terms: []
@@ -5192,7 +5192,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -5236,7 +5236,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -6479,7 +6479,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -6558,7 +6558,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -6715,7 +6715,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -6796,7 +6796,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -6996,7 +6996,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -7321,7 +7321,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -7362,7 +7362,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.R-009
   human_judgment_required: true
   controlled_terms:
@@ -7542,7 +7542,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -7629,7 +7629,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -7674,7 +7674,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -7810,7 +7810,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -8032,7 +8032,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -8119,7 +8119,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -8163,7 +8163,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -8209,7 +8209,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -8468,7 +8468,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -8600,7 +8600,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -8775,7 +8775,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -8820,7 +8820,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.DQ-020
   human_judgment_required: true
   controlled_terms: []
@@ -8909,7 +8909,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -9321,7 +9321,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -10294,7 +10294,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -10340,7 +10340,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -10379,7 +10379,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.A-010
   human_judgment_required: true
   controlled_terms:
@@ -10464,7 +10464,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.A-012
   human_judgment_required: true
   controlled_terms: []
@@ -10503,7 +10503,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.A-013
   human_judgment_required: true
   controlled_terms: []
@@ -10704,7 +10704,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.M-004
   human_judgment_required: true
   controlled_terms:
@@ -10748,7 +10748,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -10829,7 +10829,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -10912,7 +10912,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -11150,7 +11150,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.M-015
   human_judgment_required: true
   controlled_terms: []
@@ -11555,7 +11555,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -11634,7 +11634,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -11674,7 +11674,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -11716,7 +11716,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -11877,7 +11877,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12036,7 +12036,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12316,7 +12316,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12399,7 +12399,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12478,7 +12478,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12557,7 +12557,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12638,7 +12638,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12797,7 +12797,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -12836,7 +12836,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.E-012
   human_judgment_required: true
   controlled_terms: []
@@ -13118,7 +13118,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -13841,7 +13841,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -14162,7 +14162,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -14423,7 +14423,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -14467,7 +14467,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -14511,7 +14511,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -14823,7 +14823,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -14912,7 +14912,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -14956,7 +14956,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -15179,7 +15179,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -15222,7 +15222,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.FIN-005
   human_judgment_required: true
   controlled_terms:
@@ -15403,7 +15403,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -15449,7 +15449,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -15493,7 +15493,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -15724,7 +15724,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -15812,7 +15812,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: judgment_rubrics.yaml#criteria.FIN-018
   human_judgment_required: true
   controlled_terms:
@@ -16055,7 +16055,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -16218,7 +16218,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []
@@ -16383,7 +16383,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms:
@@ -16544,7 +16544,7 @@ criteria:
   expiry_policy: Defined by the gate validity period, source volatility, and change-impact matrix.
   invalidation_triggers:
   - See change_impact_matrix.yaml and the framework material-change rules.
-  parameterization_status: DRAFT
+  parameterization_status: FROZEN
   rubric_reference: null
   human_judgment_required: false
   controlled_terms: []

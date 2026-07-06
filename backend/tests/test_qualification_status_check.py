@@ -102,7 +102,7 @@ def _successful_results(module: ModuleType, crosswalk: dict[str, Any]) -> dict[s
     return results
 
 
-def test_status_derivation_matches_committed_blocked_not_run_shape() -> None:
+def test_status_derivation_matches_committed_not_run_shape() -> None:
     module = _load_script()
     status, targets, catalog, crosswalk = _controls()
 
@@ -117,16 +117,16 @@ def test_status_derivation_matches_committed_blocked_not_run_shape() -> None:
     errors = module.compare_committed_statuses(status, derived)
 
     assert errors == []
-    assert derived[("qualifications", "p0")] == "BLOCKED"
-    assert sum(1 for value in derived.values() if value == "BLOCKED") == 1
-    assert set(derived.values()) == {"BLOCKED", "NOT_RUN"}
+    assert derived[("qualifications", "p0")] == "NOT_RUN"
+    assert sum(1 for value in derived.values() if value == "BLOCKED") == 0
+    assert set(derived.values()) == {"NOT_RUN"}
 
 
-def test_p0_drift_to_not_run_is_rejected() -> None:
+def test_p0_drift_to_blocked_is_rejected() -> None:
     module = _load_script()
     status, targets, catalog, crosswalk = _controls()
     drifted = deepcopy(status)
-    drifted["qualifications"]["p0"]["status"] = "NOT_RUN"
+    drifted["qualifications"]["p0"]["status"] = "BLOCKED"
 
     derived = module.derive_statuses(
         root=REPO_ROOT,
@@ -138,25 +138,25 @@ def test_p0_drift_to_not_run_is_rejected() -> None:
     )
     errors = module.compare_committed_statuses(drifted, derived)
 
-    assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
+    assert any("qualifications.p0 expected NOT_RUN but found BLOCKED" in error for error in errors)
 
 
 def test_p0_stays_blocked_when_non_target_parameterization_is_unresolved() -> None:
     module = _load_script()
     status, targets, catalog, crosswalk = _controls()
     drifted_status = deepcopy(status)
-    drifted_targets = deepcopy(targets)
-    drifted_status["qualifications"]["p0"]["status"] = "NOT_RUN"
+    drifted_catalog = deepcopy(catalog)
     _fill_candidate_identity(drifted_status)
-    drifted_targets["status"] = "FROZEN"
-    drifted_targets["frozen_at"] = "2026-06-22T00:00:00Z"
-    drifted_targets["approved_by"] = ["test-owner"]
+    for criterion in drifted_catalog["criteria"]:
+        if criterion.get("requirement_class") != module.NONBLOCKING_CLASS:
+            criterion["parameterization_status"] = "DRAFT"
+            break
 
     derived = module.derive_statuses(
         root=REPO_ROOT,
         status=drifted_status,
-        targets=drifted_targets,
-        catalog=catalog,
+        targets=targets,
+        catalog=drifted_catalog,
         crosswalk=crosswalk,
         checker_results=_successful_results(module, crosswalk),
         rubrics=_yaml(RUBRICS_PATH),
@@ -169,17 +169,31 @@ def test_p0_stays_blocked_when_non_target_parameterization_is_unresolved() -> No
     assert any("qualifications.p0 expected BLOCKED but found NOT_RUN" in error for error in errors)
 
 
-def test_owner_authorized_partial_freeze_keeps_status_blocked() -> None:
+def test_owner_authorized_qfreeze2_freeze_keeps_status_not_run() -> None:
     module = _load_script()
     status, targets, catalog, crosswalk = _controls()
     scope = targets["scope"]
     windows_native = targets["windows_native"]
     bindings = targets["criterion_bindings"]
 
-    assert targets["status"] == "DRAFT"
+    assert targets["status"] == "FROZEN"
+    assert targets["frozen_at"] == "2026-07-06T20:26:43Z"
+    assert targets["approved_by"] == ["benjmcd"]
     assert scope["product_scope_profile"] == "BOUNDED_USER_VALIDATED"
     assert scope["deployment_profile"] == "LOCAL_SINGLE_USER"
     assert scope["windows_native_required"] is True
+    assert scope["qualified_domains"] == ["flood"]
+    assert {
+        "environmental_context",
+        "physical_road_access_proxy",
+        "slope_terrain",
+        "soils_septic_proxy",
+        "source_availability_and_conflict",
+        "wetlands",
+        "zoning_context",
+    } <= set(scope["explicitly_unqualified_domains"])
+    assert "legal_access_determination" in scope["explicitly_unqualified_domains"]
+    assert "appraisal_or_valuation" in scope["explicitly_unqualified_domains"]
     assert scope["source_profile_ids"] == ["DS-002"]
     assert scope["report_contract_version"] == "report_run_contract_v1"
     assert scope["api_contract_version"] == "0.1.0"
@@ -202,13 +216,13 @@ def test_owner_authorized_partial_freeze_keeps_status_blocked() -> None:
         for criterion_id, binding in bindings.items()
         if binding["status"] == "FROZEN"
     }
-    assert frozen_bindings == {"W-003", "W-011"}
+    assert frozen_bindings == set(bindings)
     assert bindings["W-003"]["status"] == "FROZEN"
     assert bindings["W-011"]["status"] == "FROZEN"
-    assert bindings["DQ-002"]["status"] == "DRAFT"
-    assert bindings["Q1-006"]["status"] == "DRAFT"
-    assert bindings["Q2-001"]["status"] == "DRAFT"
-    assert bindings["M-005"]["status"] == "DRAFT"
+    assert bindings["DQ-002"]["status"] == "FROZEN"
+    assert bindings["Q1-006"]["status"] == "FROZEN"
+    assert bindings["Q2-001"]["status"] == "FROZEN"
+    assert bindings["M-005"]["status"] == "FROZEN"
 
     derived = module.derive_statuses(
         root=REPO_ROOT,
@@ -224,9 +238,9 @@ def test_owner_authorized_partial_freeze_keeps_status_blocked() -> None:
     errors = module.compare_committed_statuses(status, derived)
 
     assert errors == []
-    assert derived[("qualifications", "p0")] == "BLOCKED"
-    assert sum(1 for value in derived.values() if value == "BLOCKED") == 1
-    assert set(derived.values()) == {"BLOCKED", "NOT_RUN"}
+    assert derived[("qualifications", "p0")] == "NOT_RUN"
+    assert sum(1 for value in derived.values() if value == "BLOCKED") == 0
+    assert set(derived.values()) == {"NOT_RUN"}
 
 
 def test_unexpected_checker_failure_blocks_mapped_statuses() -> None:

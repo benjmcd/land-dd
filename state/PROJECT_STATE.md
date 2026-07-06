@@ -35,11 +35,11 @@ surface can move.
   controls. These modes read committed config only; they do not generate artifacts,
   record pilot-scope authority, select an AOI, approve sources, change source rights,
   capture corpus or fixtures, seed the DB, prove reports, change runtime/API/report
-  semantics, claim hosted/Level 10 authority, unfreeze qualification, or unblock `P0`.
+  semantics, claim hosted/Level 10 authority, unfreeze qualification, or run/pass `P0`.
 - **Frozen invariants preserved**:
   Pilot and source authority records remain empty, downstream unlocks remain disabled,
   production authority reference lists remain empty, and qualification status remains
-  `P0 = BLOCKED` with non-P0 rows `NOT_RUN`.
+  `P0 = NOT_RUN` with non-P0 rows `NOT_RUN`.
 - **Current task state**:
   Active task is `AUTH-EVIDENCE-INTAKE`. Completed task lineage retained from prior
   checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`,
@@ -51,13 +51,13 @@ surface can move.
   `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`,
   `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, and
   `POST-GEOLOGY-ROUTING`. `BSA-001` remains blocked until cited product/AOI/source
-  authority exists. `P0` remains `BLOCKED`.
+  authority exists. `P0` remains `NOT_RUN` with no result path.
 - **Immediate next pursuit**:
   collect and cite external authority evidence. The first unblocked future
   implementation lane still requires cited product/AOI/source/source-rights/corpus/
   report-proof authority; until then, BSA-001, ODP-BOL-002, ODP-BOL-003,
   ODP-BOL-004, DS-017, hosted production, Level 10, qualification PASS,
-  owner-decision unfreeze, and P0 unblock remain blocked.
+  owner-decision unfreeze, and P0 run/PASS remain blocked.
 
 ## Current checkpoint (2026-07-04 scope-authority reporting hardening)
 

@@ -575,18 +575,22 @@ def main() -> int:
         status_drift = temp_root / "status-drift"
         copy_fixture(source, status_drift)
 
-        def drift_p0_to_not_run(value):
-            value["qualifications"]["p0"]["status"] = "NOT_RUN"
+        def drift_q1_to_blocked(value):
+            q1 = value["qualifications"]["q1"]
+            q1["status"] = "BLOCKED"
+            q1["result_path"] = None
+            q1["blocked_reason"] = "selftest drift fixture"
+            q1["blocker_references"] = ["state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md"]
 
         mutate_yaml(
             control_paths(status_drift)["status"],
-            drift_p0_to_not_run,
+            drift_q1_to_blocked,
         )
         assert_result(
             "derived status drift is rejected",
             run_status_checker(status_checker, status_drift),
             False,
-            "qualifications.p0 expected BLOCKED but found NOT_RUN",
+            "qualifications.q1 expected NOT_RUN but found BLOCKED",
         )
 
         non_target_parameterization_drift = temp_root / "non-target-parameterization-drift"
@@ -610,9 +614,19 @@ def main() -> int:
                 }
             )
 
+        def drift_catalog_contract_to_draft(value):
+            for item in value["criteria"]:
+                if item.get("requirement_class") != "DIAGNOSTIC":
+                    item["parameterization_status"] = "DRAFT"
+                    return
+
         mutate_yaml(
             control_paths(non_target_parameterization_drift)["targets"],
             resolve_target_and_candidate,
+        )
+        mutate_yaml(
+            control_paths(non_target_parameterization_drift)["catalog"],
+            drift_catalog_contract_to_draft,
         )
         mutate_yaml(
             control_paths(non_target_parameterization_drift)["status"],
@@ -808,14 +822,12 @@ def main() -> int:
         frozen_draft = temp_root / "frozen-draft"
         copy_fixture(source, frozen_draft)
 
-        def falsely_freeze(value):
-            value["status"] = "FROZEN"
-            value["frozen_at"] = "2026-06-21T00:00:00Z"
-            value["approved_by"] = ["selftest"]
+        def drift_frozen_binding_to_draft(value):
+            value["criterion_bindings"]["P0-014"]["status"] = "DRAFT"
 
         mutate_yaml(
             control_paths(frozen_draft)["targets"],
-            falsely_freeze,
+            drift_frozen_binding_to_draft,
         )
         assert_result(
             "frozen target registry cannot retain unresolved active bindings",
@@ -1503,10 +1515,10 @@ def main() -> int:
             claim_p0,
         )
         assert_result(
-            "P0 cannot pass with draft targets/contracts/missing evidence",
+            "P0 cannot pass without result evidence",
             run_validator(validator, false_p0),
             False,
-            "P0 cannot PASS while qualification targets are not FROZEN",
+            "result file does not exist",
         )
 
     print("qualification validator self-test: PASS")

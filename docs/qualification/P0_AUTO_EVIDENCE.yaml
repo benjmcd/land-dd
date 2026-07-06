@@ -4,32 +4,32 @@ scope: repo-local evidence collection for selected P0 invariant controls
 status_reference: state/EMPIRICAL_QUALIFICATION_STATUS.yaml
 backlog_reference: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
 catalog_reference: config/qualification/criterion_catalog.yaml
-effective_gate_status: BLOCKED
+effective_gate_status: NOT_RUN
 result_claimed: false
 criteria:
   - criterion_id: P0-004
     catalog_gate_id: P0
     catalog_requirement_class: INVARIANT
     catalog_statement: Sealed acceptance isolation
-    evidence_status: auto_evidenced_still_target_blocked
-    effective_status: BLOCKED
+    evidence_status: auto_evidenced_p0_not_run
+    effective_status: NOT_RUN
     pass_claimed: false
     evidence:
       - path: config/qualification/qualification_targets.yaml
-        signal: acceptance_case_storage is external_restricted_vault while targets remain DRAFT.
+        signal: acceptance_case_storage is external_restricted_vault under the QFREEZE-2 frozen target profile.
       - path: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
-        signal: backlog authorizes no fixture capture, runtime/report use, or source registry promotion.
+        signal: backlog records P0 as NOT_RUN and authorizes no qualification PASS.
       - path: docs/connectors/connector_runbook.md
         signal: connector corpora are fixture-only utility or regression inputs, not sealed acceptance proof.
     caveats:
       - Repo-local evidence records the current control posture only.
-      - External vault records, access-control records, and sealed-case hashes remain missing, so P0-004 is still target-blocked.
+      - No sealed P0 run or qualification result is claimed; P0 remains NOT_RUN.
   - criterion_id: P0-005
     catalog_gate_id: P0
     catalog_requirement_class: INVARIANT
     catalog_statement: Anti-contamination rule
-    evidence_status: auto_evidenced_still_target_blocked
-    effective_status: BLOCKED
+    evidence_status: auto_evidenced_p0_not_run
+    effective_status: NOT_RUN
     pass_claimed: false
     evidence:
       - path: docs/connectors/connector_runbook.md
@@ -37,16 +37,16 @@ criteria:
       - path: tests/fixtures/golden_aois/manifest.yaml
         signal: golden AOI cases are fixture inputs with caveats and forbidden overclaim phrases.
       - path: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
-        signal: no fixture capture or runtime/report use is authorized by the backlog.
+        signal: no fixture capture or runtime/report use is authorized by the backlog as a P0 result.
     caveats:
       - Repo-local evidence identifies fixture boundaries but is not an approved case provenance register.
-      - Sealed acceptance case identity and anti-contamination review remain absent, so P0-005 is still target-blocked.
+      - No sealed P0 run or qualification result is claimed; P0 remains NOT_RUN.
   - criterion_id: P0-021
     catalog_gate_id: P0
     catalog_requirement_class: INVARIANT
     catalog_statement: Evidence integrity
-    evidence_status: auto_evidenced_still_target_blocked
-    effective_status: BLOCKED
+    evidence_status: auto_evidenced_p0_not_run
+    effective_status: NOT_RUN
     pass_claimed: false
     evidence:
       - path: scripts/validate_qualification.py
@@ -59,13 +59,13 @@ criteria:
         signal: qualification checks run in CI without continue-on-error suppression.
     caveats:
       - Repo-local checks improve traceability but are not immutable external storage.
-      - Controlled storage, archive manifests, and evidence hashes remain unresolved, so P0-021 is still target-blocked.
+      - No sealed P0 run or qualification result is claimed; P0 remains NOT_RUN.
   - criterion_id: P0-023
     catalog_gate_id: P0
     catalog_requirement_class: INVARIANT
     catalog_statement: Threshold immutability
-    evidence_status: auto_evidenced_still_target_blocked
-    effective_status: BLOCKED
+    evidence_status: auto_evidenced_p0_not_run
+    effective_status: NOT_RUN
     pass_claimed: false
     evidence:
       - path: config/qualification/change_impact_matrix.yaml
@@ -73,9 +73,9 @@ criteria:
       - path: scripts/qualification_change_impact_check.py
         signal: path changes are converted into advisory impacted criteria.
       - path: state/EMPIRICAL_QUALIFICATION_STATUS.yaml
-        signal: P0 has result_path null and remains BLOCKED.
+        signal: P0 has result_path null and remains NOT_RUN.
       - path: config/qualification/qualification_targets.yaml
-        signal: threshold-bearing targets remain DRAFT and unfrozen.
+        signal: threshold-bearing targets are frozen by QFREEZE-2 without any PASS result.
     caveats:
       - Repo-local invalidation evidence does not replace frozen thresholds or a sealed run record.
-      - No candidate artifact or frozen threshold version exists, so P0-023 is still target-blocked.
+      - No sealed P0 run or qualification result is claimed; P0 remains NOT_RUN.
