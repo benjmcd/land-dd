@@ -1,6 +1,51 @@
 # Project State
 
-## Current checkpoint (2026-07-06 authority-validator consolidation)
+## Current checkpoint (2026-07-06 P0 sealed-run packet)
+
+This checkpoint is based on live `origin/main`
+`b8c5f096f3d535974e8a41bde1ee38dc2565ec98`, after PR #191 merged the
+owner-authorized QFREEZE-2 flood-only parameterization freeze. QFREEZE-2 moved the
+empirical qualification control plane to `P0 = NOT_RUN` with derived status
+`BLOCKED=0 NOT_RUN=21`; it did not produce a sealed P0 run or any qualification
+`PASS`.
+
+- **Current implementation plan**:
+  `plans/2026-07-02-authority-evidence-intake.md` remains the broad authority-evidence
+  posture. The P0 sealed-run scope is recorded in
+  `state/p0-sealed-run-decision-packet.md`.
+- **Known boundaries to preserve**:
+  The P0 sealed-run packet is documentation only. It must not mutate
+  `config/qualification/**`, `state/owner-decisions.md`, or
+  `state/EMPIRICAL_QUALIFICATION_STATUS.yaml`; it must not record `PASS`, create a
+  sealed result artifact, approve non-flood domains, approve sources beyond DS-002,
+  unlock Bologna or `BSA-001`, approve `DS-017`, or claim hosted/Level 10 authority.
+- **Current qualification state**:
+  `P0` remains `NOT_RUN` with no result path. All non-P0 qualifications and overlays
+  remain `NOT_RUN`.
+- **Current task state**:
+  Active task is `AUTH-EVIDENCE-INTAKE`. The P0 sealed-run packet is a documentation
+  pointer under the current authority-evidence posture, not a new active
+  implementation lane. P0 sealed-run scaffolding remains held until a separate PR
+  branch is authorized and must not change P0 status. Completed task lineage retained
+  from prior checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`,
+  `BPS-REQ-001`, `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`,
+  `EQP2-3`, `EQP2-4`, `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`,
+  `HCV-1`, `HCV-2`, `HCV-3`, `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, `BOL-ODP-1`,
+  `BOL-ODP1-GATE`, `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`,
+  `BOL-POST-ODP4-AUTH`, `EQ-5`, `EQ-R`, `BOL-ODP1-PACKET`,
+  `BOL-POST-ODP1-PACKET`, `BOL-SCOPE-PURSUIT`, `BOL-SCOPE-AUTH`,
+  `BOL-ODP2-PACKET`, `ODGAV-1`, `MINERALS-FIXTURE`, `BROADBAND-FIXTURE`,
+  `ENV-FIXTURE`, `WATER-FIXTURE`, `GEOLOGY-FIXTURE`, `POST-GEOLOGY-ROUTING`,
+  and `QFREEZE-2`.
+- **Immediate next empirical-qualification pursuit**:
+  P0 sealed-run preparation may proceed only as owner-independent scaffolding and must
+  hold at PR without changing P0 status. A real `P0 = PASS` remains blocked on
+  ODP-PRO-001 authority, an external restricted vault, a fresh non-fixture cohort,
+  appointed independent reviewers, and an independent reproducer. `BSA-001`,
+  `DS-017`, hosted production, and Level 10 remain blocked by their separate
+  authority streams. The freeze alone forbids a PASS.
+
+## Prior checkpoint (2026-07-06 authority-validator consolidation)
 
 This checkpoint is based on live `origin/main`
 `26dc41a61fb6ee3aa722db3b7772c47f8d0d77c2`, after the ODP-BOL-001

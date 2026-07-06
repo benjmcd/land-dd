@@ -2,6 +2,23 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-06 P0 sealed-run decision packet
+
+- Continued from live `origin/main` at
+  `b8c5f096f3d535974e8a41bde1ee38dc2565ec98` in isolated worktree
+  `worktrees/p0-run-packet` on branch `codex/p0-run-packet`; the root checkout
+  remained inbox-only dirty and was not used as implementation authority.
+- Recorded `state/p0-sealed-run-decision-packet.md` as a documentation-only packet
+  for the post-QFREEZE-2 path from `P0 = NOT_RUN` to a possible future sealed
+  `P0 = PASS`.
+- Summarized the 2026-07-06 arc: DB spine and authority-validator hardening landed
+  through PR #188 and PR #189; PR #190 ratified the QFREEZE-2 flood-only packet;
+  PR #191 applied the freeze and left P0 `NOT_RUN`; this packet scopes the separate
+  sealed-run work.
+- Updated only `state/PROJECT_STATE.md` and this worklog as pointers. No
+  qualification config, owner-decision ledger, qualification status record, runner,
+  result artifact, or P0 `PASS` claim was changed or created.
+
 ## 2026-07-06 QFREEZE-2 flood-only qualification freeze
 
 - Continued from live `origin/main` at
