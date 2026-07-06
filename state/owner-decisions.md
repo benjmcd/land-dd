@@ -62,6 +62,14 @@ Provenance: owner authorization delivered to the workspace handoff for this QFRE
 
 Validator-compatibility correction: frozen flood unknown_states = [SOURCE_FAILED, OUTSIDE_COVERAGE, STALE, CONFLICTING]. The ratified packet catch-all UNKNOWN was removed under the same owner directive 2026-07-06 as a validator-compatibility correction; benjmcd authorized the flood profile with fail-closed unknown handling, and this preserves that intent while changing no threshold, scope, or safety posture.
 
+Stop-and-record reconciliation: the bare-UNKNOWN removal was surfaced as an explicit
+implementation blocker before the freeze was applied and was resolved by owner
+directive, not by silent agent edit.
+
+Contract-count reconciliation: the `96` dispositioned DRAFT contracts were the DRAFT
+subset of the `391` total non-DIAGNOSTIC contracts frozen or dispositioned under
+QFREEZE-2; this note records count provenance only and grants no new authority.
+
 Authorized fields:
 
 | Field path | Authorized value | Disposition |

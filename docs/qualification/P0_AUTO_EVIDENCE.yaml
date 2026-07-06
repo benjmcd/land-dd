@@ -1,11 +1,15 @@
 schema_version: qualification_p0_auto_evidence_v1
-generated_at: 2026-06-21
+generated_at: 2026-07-06
+last_updated: 2026-07-06
 scope: repo-local evidence collection for selected P0 invariant controls
 status_reference: state/EMPIRICAL_QUALIFICATION_STATUS.yaml
 backlog_reference: state/QUALIFICATION_PARAMETERIZATION_BACKLOG.md
 catalog_reference: config/qualification/criterion_catalog.yaml
+p0_packet_reference: state/p0-sealed-run-decision-packet.md
 effective_gate_status: NOT_RUN
 result_claimed: false
+configuration_caveats:
+  - acceptance_case_storage=external_restricted_vault is a QFREEZE-2 target-config string, not proof that an actual external restricted vault exists; see state/p0-sealed-run-decision-packet.md.
 criteria:
   - criterion_id: P0-004
     catalog_gate_id: P0

@@ -124,7 +124,7 @@ conditional_overlays:
     expires_at:
 accepted_residual_risks: []
 blocked_decisions:
-- Produce a sealed P0 run/result before any P0 PASS claim.
+- Produce a sealed P0 run/result before any P0 PASS claim; follow state/p0-sealed-run-decision-packet.md, and note no qualification_result_v3 writer or runner exists yet.
 - Keep Bologna AOI/source/source-rights/corpus/report-proof authority blocked until cited owner authority exists.
 - Keep DS-017, hosted production, and Level 10 authority blocked until separately authorized.
-next_lowest_dependency_action: Keep P0 NOT_RUN until a sealed P0 protocol run produces a cited result artifact; do not unseal Q1 or claim PASS from the QFREEZE-2 parameterization freeze alone.
+next_lowest_dependency_action: Keep P0 NOT_RUN until the sealed-run path in state/p0-sealed-run-decision-packet.md has a greenfield qualification_result_v3 writer/runner, owner/infra authorization, and a cited result artifact; do not unseal Q1 or claim PASS from the QFREEZE-2 parameterization freeze alone.
