@@ -12,6 +12,9 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -26,6 +29,9 @@ jobs:
 
   db-verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
     services:
       db:
         image: postgis/postgis:16-3.4
@@ -61,6 +67,7 @@ jobs:
 
   qualification-selftest:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
