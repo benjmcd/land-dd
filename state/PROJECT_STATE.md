@@ -48,11 +48,13 @@ checkpoint as the top routing anchor while preserving all older checkpoint secti
   `plans/2026-07-06-ci-shard-speedup.md`, recs 1, 3, 5, 6, 7, and 8 are done; rec 2
   push-to-main trigger de-dup remains held for owner decision; rec 4 mypy cache is
   optional; rec 9 buildx cache is deferred because of 10 GB LRU-eviction risk.
-- **Pending review, not merged**:
-  PR #202 (`codex/qfreeze2-provenance-fix`) is pending and records the QFREEZE-2
-  provenance correction: UNKNOWN removal was orchestrator-authorized as a disclosed
-  deviation from the AS-IS owner authorization, with the owner's 2026-07-06 value-level
-  ratification. It is documentation only and changes no qualification value or status.
+- **Provenance correction (merged)**:
+  PR #202 (`codex/qfreeze2-provenance-fix`) and PR #203 (the doc-currency checkpoint
+  refresh) merged to `origin/main@0e863175`. #202 records the QFREEZE-2 provenance
+  correction: the UNKNOWN removal was orchestrator-authorized as a disclosed deviation
+  from the AS-IS owner authorization, with the owner's 2026-07-06 value-level
+  ratification. Documentation only; no qualification value or status change; P0 remains
+  NOT_RUN (`BLOCKED=0 NOT_RUN=21`).
 
 ## Current checkpoint (2026-07-06 P0 sealed-run packet)
 
