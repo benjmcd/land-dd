@@ -113,6 +113,13 @@ $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_s
   forbidden-fragment guard, so the over-attribution passed CI at both injections;
   provenance-attribution accuracy currently relies on author!=approver review, not
   machine enforcement -- flagged for hardening consideration, no guard added here.
+  Note: author!=approver here is evidenced by the agent-inbox handoff records and PR
+  `codex/*` branch authorship, not by git author identity (which is uniformly
+  `benjmcd` per the non-attribution policy). Follow-up (this PR): the #202
+  ratification wording was itself downgraded -- it had recorded the relay-delivered
+  owner ratification as an 'explicit value-level' directive citing 019f2153 (which
+  verified only the negative); corrected to state relay-delivery + merge-approval +
+  accurate citation.
 
 **Residual risk:** QFREEZE-2 is a parameterization freeze only. It does not record a
 sealed P0 run/result, does not qualify non-flood domains, does not approve sources

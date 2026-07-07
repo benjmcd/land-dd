@@ -3,8 +3,9 @@
 ## Current checkpoint (2026-07-06 CI hardening + provenance correction)
 
 This checkpoint is based on live `origin/main`
-`609133bed3548e6329b9dd66575ca65e737de59e`, after PR #201 merged the
-CI_DB_SLICE_ONLY verify/db-verify de-duplication guard on top of the 2026-07-06
+`84e87a71b7f749310bf6ef037b69e6753da9f444`, incorporating the PR #202-#204
+provenance-correction and doc-currency arc after PR #201 delivered the
+`CI_DB_SLICE_ONLY` verify/db-verify de-duplication guard on top of the 2026-07-06
 documentation and CI-hardening batch. It supersedes the earlier `070e6ebc` PR #192
 checkpoint as the top routing anchor while preserving all older checkpoint sections below.
 
@@ -19,6 +20,12 @@ checkpoint as the top routing anchor while preserving all older checkpoint secti
   qualification values, record `PASS`, unfreeze owner decisions, create a sealed P0
   result, or permit any source/corpus/report/runtime unblock from repo-local inference.
   The empirical-qualification catalog remains canonical.
+- **Provenance-attribution accuracy (open control gap):** `state/owner-decisions.md`
+  provenance text is CI-validated by positive `require_fragments` only -- no
+  forbidden-fragment guard (`scripts/qualification_parameterization_backlog_check.py`);
+  attribution accuracy is enforced by author!=approver review + adversarial audit, not
+  by CI. See the 2026-07-06 SYSTEMIC NOTE in `state/VALIDATION_LOG.md`. Open owner
+  decision: add a negative-assertion guard vs. accept process-enforcement.
 - **Current qualification state**:
   Qualification state is unchanged across the whole batch: `P0 = NOT_RUN`, derived
   status `BLOCKED=0 NOT_RUN=21`; the freeze alone forbids a PASS.
