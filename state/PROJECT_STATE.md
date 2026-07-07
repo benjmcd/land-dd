@@ -1,5 +1,59 @@
 # Project State
 
+## Current checkpoint (2026-07-06 CI hardening + provenance correction)
+
+This checkpoint is based on live `origin/main`
+`609133bed3548e6329b9dd66575ca65e737de59e`, after PR #201 merged the
+CI_DB_SLICE_ONLY verify/db-verify de-duplication guard on top of the 2026-07-06
+documentation and CI-hardening batch. It supersedes the earlier `070e6ebc` PR #192
+checkpoint as the top routing anchor while preserving all older checkpoint sections below.
+
+- **Current implementation plan**:
+  `plans/2026-07-02-authority-evidence-intake.md` remains the active authority-evidence
+  posture. The CI-hardening execution details live in
+  `plans/2026-07-06-ci-shard-speedup.md`.
+- **Known boundaries to preserve**:
+  The merged CI-hardening and documentation-refresh batch is documentation/process/CI
+  plumbing only. It does not record owner/source/Bologna authority, approve DS-017,
+  unlock `BSA-001`, authorize hosted production or Level 10 status, change empirical
+  qualification values, record `PASS`, unfreeze owner decisions, create a sealed P0
+  result, or permit any source/corpus/report/runtime unblock from repo-local inference.
+  The empirical-qualification catalog remains canonical.
+- **Current qualification state**:
+  Qualification state is unchanged across the whole batch: `P0 = NOT_RUN`, derived
+  status `BLOCKED=0 NOT_RUN=21`; the freeze alone forbids a PASS.
+- **Current task state**:
+  Active task is `AUTH-EVIDENCE-INTAKE`. `tasks/task_queue.yaml` parses as
+  `154 done / 10 blocked / 1 active`. Completed task lineage retained from prior
+  checkpoints includes `READINESS-CORE`, `BOL-PRIORITY`, `BPS-001`, `BPS-REQ-001`,
+  `EQ-1`, `EQ-BOL`, `EQ-2`, `EQ-3`, `EQ-4`, `EQP2-1`, `EQP2-2`, `EQP2-3`, `EQP2-4`,
+  `BOL-AUTH-SYNC`, `BAP-001`, `BAR-001`, `BSA-REC`, `HCV-1`, `HCV-2`, `HCV-3`,
+  `HCV-4`, `QFREEZE-1`, `OWNER-DEC-1`, `BOL-ODP-1`, `BOL-ODP1-GATE`,
+  `BOL-ODP2-GATE`, `BOL-ODP3-GATE`, `BOL-ODP4-GATE`, `BOL-POST-ODP4-AUTH`,
+  `EQ-5`, `EQ-R`, `BOL-ODP1-PACKET`, `BOL-POST-ODP1-PACKET`,
+  `BOL-SCOPE-PURSUIT`, `BOL-SCOPE-AUTH`, `BOL-ODP2-PACKET`, `ODGAV-1`,
+  `MINERALS-FIXTURE`, `BROADBAND-FIXTURE`, `ENV-FIXTURE`, `WATER-FIXTURE`,
+  `GEOLOGY-FIXTURE`, `POST-GEOLOGY-ROUTING`, and `QFREEZE-2`. `BSA-001`,
+  `DS-017`, hosted production, Level 10, qualification PASS, owner-decision unfreeze,
+  and P0 unblock remain blocked by external authority requirements.
+- **Merged since the PR #192 checkpoint**:
+  PR #193 added the CI shard speedup plan; PR #194 recorded the doc-completeness
+  closeout; PR #195 refreshed testing/readiness/architecture documentation; PR #196
+  corrected the CI-plan re-check; PR #197 added main-exempt concurrency cancel plus
+  `workflow_dispatch`; PR #198 added timeout-minutes and least-privilege permissions
+  for heavy jobs; PR #199 piloted pip caching on `verify`; PR #200 extended pip
+  caching to `db-verify` and `qualification-selftest`; PR #201 added the
+  `CI_DB_SLICE_ONLY` verify/db-verify de-duplication guard with lockstep docs.
+  These are the Claude-lane CI-hardening batch. In
+  `plans/2026-07-06-ci-shard-speedup.md`, recs 1, 3, 5, 6, 7, and 8 are done; rec 2
+  push-to-main trigger de-dup remains held for owner decision; rec 4 mypy cache is
+  optional; rec 9 buildx cache is deferred because of 10 GB LRU-eviction risk.
+- **Pending review, not merged**:
+  PR #202 (`codex/qfreeze2-provenance-fix`) is pending and records the QFREEZE-2
+  provenance correction: UNKNOWN removal was orchestrator-authorized as a disclosed
+  deviation from the AS-IS owner authorization, with the owner's 2026-07-06 value-level
+  ratification. It is documentation only and changes no qualification value or status.
+
 ## Current checkpoint (2026-07-06 P0 sealed-run packet)
 
 This checkpoint is based on live `origin/main`
