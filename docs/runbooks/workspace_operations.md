@@ -31,6 +31,22 @@ does not change source authority, qualification status, or release readiness.
   commit and dirty-state boundary before creating a new worktree. Do not reset a dirty
   checkout unless its owner and scope are clear.
 
+## Local Process Contention
+
+- Multiple concurrent heavy Python processes contend for CPU, RAM, and disk on this
+  development machine. Each `verify.ps1` run executes the roughly 400-file pytest
+  suite; `RUN_DB_SMOKE=1` also starts the PostGIS compose database on port 55432.
+- The multi-agent topology amplifies this contention: Claude workflows can spawn many
+  concurrent agents, and multiple Codex Desktop threads plus their subagents can run
+  independent lanes at the same time.
+- Mitigation: serialize or throttle concurrent `verify.ps1`, `db-verify`, and heavy
+  pytest runs across sessions. Avoid two `verify.ps1` runs at once, keep read-only
+  analysis off the heavy-pytest path, leave `RUN_DB_SMOKE` unset locally unless the
+  change touches the DB path, and run one `verify.ps1` at the end of a lane rather than
+  repeatedly.
+- Cross-reference only: DB compose port 55432 is documented in `docs/TESTING.md` and
+  `docs/runbooks/mvp_operator.md`.
+
 ## CI Timing
 
 Recent land-dd PR checks with the heavy shards have taken approximately (timings measured
