@@ -67,23 +67,25 @@ echo "== agent context =="
 echo "== workspace validation =="
 PYTHON_BIN="$PYTHON_BIN" ./scripts/validate_workspace.sh
 
-echo "== qualification selftest =="
-"$PYTHON_BIN" scripts/selftest_qualification_validator.py
+if [[ "${CI_DB_SLICE_ONLY:-0}" != "1" ]]; then
+  echo "== qualification selftest =="
+  "$PYTHON_BIN" scripts/selftest_qualification_validator.py
 
-echo "== qualification validation =="
-"$PYTHON_BIN" scripts/validate_qualification.py --root . --layout repo
+  echo "== qualification validation =="
+  "$PYTHON_BIN" scripts/validate_qualification.py --root . --layout repo
 
-echo "== qualification status =="
-"$PYTHON_BIN" scripts/qualification_status_check.py --root . --python-command "$PYTHON_BIN"
+  echo "== qualification status =="
+  "$PYTHON_BIN" scripts/qualification_status_check.py --root . --python-command "$PYTHON_BIN"
 
-echo "== qualification change impact =="
-"$PYTHON_BIN" scripts/qualification_change_impact_check.py --root .
+  echo "== qualification change impact =="
+  "$PYTHON_BIN" scripts/qualification_change_impact_check.py --root .
 
-echo "== qualification P0 auto evidence =="
-"$PYTHON_BIN" scripts/qualification_p0_evidence_check.py --root .
+  echo "== qualification P0 auto evidence =="
+  "$PYTHON_BIN" scripts/qualification_p0_evidence_check.py --root .
 
-echo "== qualification parameterization backlog =="
-"$PYTHON_BIN" scripts/qualification_parameterization_backlog_check.py --root .
+  echo "== qualification parameterization backlog =="
+  "$PYTHON_BIN" scripts/qualification_parameterization_backlog_check.py --root .
+fi
 
 echo "== authority evidence intake =="
 "$PYTHON_BIN" scripts/authority_evidence_intake_check.py
@@ -105,18 +107,22 @@ echo "== backend tests =="
   PYTHONPATH=. run_python_with_log "backend tests" "backend-pytest.log" -m pytest -q
 )
 
-if command -v ruff >/dev/null 2>&1; then
-  echo "== backend lint =="
-  (cd backend && ruff check .)
-else
-  echo "ruff not installed; skipping lint"
+if [[ "${CI_DB_SLICE_ONLY:-0}" != "1" ]]; then
+  if command -v ruff >/dev/null 2>&1; then
+    echo "== backend lint =="
+    (cd backend && ruff check .)
+  else
+    echo "ruff not installed; skipping lint"
+  fi
 fi
 
-if command -v mypy >/dev/null 2>&1; then
-  echo "== backend typecheck =="
-  (cd backend && mypy app tests)
-else
-  echo "mypy not installed; skipping typecheck"
+if [[ "${CI_DB_SLICE_ONLY:-0}" != "1" ]]; then
+  if command -v mypy >/dev/null 2>&1; then
+    echo "== backend typecheck =="
+    (cd backend && mypy app tests)
+  else
+    echo "mypy not installed; skipping typecheck"
+  fi
 fi
 
 if [[ "${RUN_DB_SMOKE:-0}" == "1" ]]; then

@@ -33,7 +33,11 @@ does not change source authority, qualification status, or release readiness.
 
 ## CI Timing
 
-Recent land-dd PR checks with the heavy shards have taken approximately:
+Recent land-dd PR checks with the heavy shards have taken approximately (timings measured
+before the July 2026 CI caching/concurrency changes and before the `db-verify`
+lint/typecheck/qualification de-duplication; `verify` and `db-verify` should be faster once
+pip caching is warm and `db-verify` skips its duplicated non-DB checks — re-measure before
+treating these as current):
 
 | Check | Observed timing |
 |---|---:|

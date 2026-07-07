@@ -80,5 +80,9 @@ $env:RUN_DB_SMOKE='1'
 .\scripts\verify.ps1
 ```
 
-CI has a separate PostGIS-backed job that runs the full gate with
-`RUN_DB_SMOKE=1`. The default CI job remains the fast non-DB gate.
+CI splits the gate across two jobs. The `verify` job runs the full non-DB gate
+(workspace validation, qualification/authority validators, backend tests, ruff, mypy).
+The `db-verify` job runs the PostGIS-backed slice with `RUN_DB_SMOKE=1` (the same backend
+tests against real Postgres, plus DB migrations and DB smoke) under `CI_DB_SLICE_ONLY=1`,
+which skips the ruff/mypy/qualification-validator checks that `verify` already covers so
+they are not duplicated. Both jobs run in parallel; neither is a strict superset of the other.

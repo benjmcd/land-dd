@@ -9,13 +9,15 @@ start without re-litigating basic authority.
 - Fast local verification passes through `scripts/verify.*`.
 - The in-memory API demo runs the fixture-to-report workflow through public
   endpoints.
-- CI runs both the fast verification job and the PostGIS-backed DB verification
-  job on `main`.
+- CI runs the `verify` job (full non-DB gate) and the PostGIS-backed `db-verify` job
+  (DB-backed test slice, migrations, and DB smoke) on `main` and on PRs; `db-verify`
+  delegates lint/typecheck/qualification validation to `verify` to avoid duplication.
 - The DB-backed report path is proven end-to-end: a `RUN_DB_SMOKE=1` regression
   ingests a committed domain fixture, asserts the persisted `claims.claim_evidence`
   row cites the ingested evidence, and the DB-loaded dossier renders the domain finding
   plus caveats; a companion test asserts byte-identical cross-run report reproducibility
-  (PR #188). The default CI gate stays the fast non-DB job.
+  (PR #188). The `verify` job remains the full non-DB gate; `db-verify` runs only the
+  DB-backed slice.
 - Private MVP geography is selected: North Carolina, with Buncombe, Chatham,
   and Brunswick as the selected NC counties.
 - The selected-county operator path is routed through

@@ -133,35 +133,37 @@ Select-Python
 Write-Host '== workspace validation =='
 & (Join-Path $PSScriptRoot 'validate_workspace.ps1')
 
-Write-Host '== qualification selftest =='
-Invoke-PythonCommand `
-    -Label 'qualification selftest' `
-    -Arguments @('scripts/selftest_qualification_validator.py')
+if ($env:CI_DB_SLICE_ONLY -ne '1') {
+    Write-Host '== qualification selftest =='
+    Invoke-PythonCommand `
+        -Label 'qualification selftest' `
+        -Arguments @('scripts/selftest_qualification_validator.py')
 
-Write-Host '== qualification validation =='
-Invoke-PythonCommand `
-    -Label 'qualification validation' `
-    -Arguments @('scripts/validate_qualification.py', '--root', '.', '--layout', 'repo')
+    Write-Host '== qualification validation =='
+    Invoke-PythonCommand `
+        -Label 'qualification validation' `
+        -Arguments @('scripts/validate_qualification.py', '--root', '.', '--layout', 'repo')
 
-Write-Host '== qualification status =='
-Invoke-PythonCommand `
-    -Label 'qualification status' `
-    -Arguments @('scripts/qualification_status_check.py', '--root', '.', '--python-command', $script:PythonExecutable)
+    Write-Host '== qualification status =='
+    Invoke-PythonCommand `
+        -Label 'qualification status' `
+        -Arguments @('scripts/qualification_status_check.py', '--root', '.', '--python-command', $script:PythonExecutable)
 
-Write-Host '== qualification change impact =='
-Invoke-PythonCommand `
-    -Label 'qualification change impact' `
-    -Arguments @('scripts/qualification_change_impact_check.py', '--root', '.')
+    Write-Host '== qualification change impact =='
+    Invoke-PythonCommand `
+        -Label 'qualification change impact' `
+        -Arguments @('scripts/qualification_change_impact_check.py', '--root', '.')
 
-Write-Host '== qualification P0 auto evidence =='
-Invoke-PythonCommand `
-    -Label 'qualification P0 auto evidence' `
-    -Arguments @('scripts/qualification_p0_evidence_check.py', '--root', '.')
+    Write-Host '== qualification P0 auto evidence =='
+    Invoke-PythonCommand `
+        -Label 'qualification P0 auto evidence' `
+        -Arguments @('scripts/qualification_p0_evidence_check.py', '--root', '.')
 
-Write-Host '== qualification parameterization backlog =='
-Invoke-PythonCommand `
-    -Label 'qualification parameterization backlog' `
-    -Arguments @('scripts/qualification_parameterization_backlog_check.py', '--root', '.')
+    Write-Host '== qualification parameterization backlog =='
+    Invoke-PythonCommand `
+        -Label 'qualification parameterization backlog' `
+        -Arguments @('scripts/qualification_parameterization_backlog_check.py', '--root', '.')
+}
 
 Write-Host '== authority evidence intake =='
 Invoke-PythonCommand `
@@ -197,6 +199,8 @@ try {
 
     if ($backendTestsExitCode -ne 0) {
         Write-Host "backend tests failed; skipping lint and typecheck"
+    } elseif ($env:CI_DB_SLICE_ONLY -eq '1') {
+        Write-Host 'CI_DB_SLICE_ONLY=1; skipping lint (verify job covers it)'
     } elseif (Get-Command ruff -ErrorAction SilentlyContinue) {
         Write-Host '== backend lint =='
         Invoke-NativeCommand -Label 'backend lint' -Command { ruff check . }
@@ -204,7 +208,7 @@ try {
         Write-Host 'ruff not installed; skipping lint'
     }
 
-    if ($backendTestsExitCode -eq 0) {
+    if ($backendTestsExitCode -eq 0 -and $env:CI_DB_SLICE_ONLY -ne '1') {
         & $script:PythonExecutable -m mypy --version *> $null
         if ($LASTEXITCODE -eq 0) {
             Write-Host '== backend typecheck =='
