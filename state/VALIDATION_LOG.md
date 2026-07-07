@@ -100,6 +100,19 @@ $env:PYTHONPATH='backend'; py -3.12 -m pytest backend\tests\test_qualification_s
   the orchestrator/owner, not the implementation author. QFREEZE-2 specifically had a
   triple gate: orchestrator read, independent code review that forged a P0 `PASS` and
   confirmed the untouched validator rejected it, and green CI.
+- 2026-07-06 QFREEZE-2 provenance correction (PR #202): an adversarial completeness
+  audit found the UNKNOWN-removal over-attribution had been committed twice to
+  `state/owner-decisions.md` -- at freeze time (0c53023f / PR #191) and
+  re-introduced by the doc-completeness pass (b86f177a / PR #194). PR #202 rewrites
+  both sentences to record the removal as orchestrator-authorized (a disclosed
+  deviation from the AS-IS authorization) plus the owner's 2026-07-06 value-level
+  ratification; no qualification value or status changed (`BLOCKED=0 NOT_RUN=21`;
+  P0 `NOT_RUN`). SYSTEMIC NOTE: `state/owner-decisions.md` provenance text is
+  CI-validated by positive `require_fragments` only
+  (`scripts/qualification_parameterization_backlog_check.py`) with no
+  forbidden-fragment guard, so the over-attribution passed CI at both injections;
+  provenance-attribution accuracy currently relies on author!=approver review, not
+  machine enforcement -- flagged for hardening consideration, no guard added here.
 
 **Residual risk:** QFREEZE-2 is a parameterization freeze only. It does not record a
 sealed P0 run/result, does not qualify non-flood domains, does not approve sources
