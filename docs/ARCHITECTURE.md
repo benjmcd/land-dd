@@ -29,9 +29,9 @@ The architecture is claim-first rather than layer-first. Map layers are evidence
 | Persistence | `backend/app/db/`, `db/migrations/` | Postgres/PostGIS storage | Hide source failures |
 | Source registry | `db/seeds/`, `schemas/source_schema.json` | Dataset/license/provenance metadata | Treat unknown license as allowed |
 | Evidence ledger | DB tables + contracts | Store observations and failures | Generate claims without traceability |
-| Rule/claim engine | future `backend/app/rules/` | Convert evidence into cautious claims | Make legal/appraisal/final truth assertions |
-| Report runs | DB + future compiler | Reproducible dossier runs | Be non-reproducible or source-version opaque |
-| Connectors | future `backend/app/connectors/` | Fixture-first data acquisition | Use live APIs without approval/license review |
+| Rule/claim engine | `backend/app/claims_engine/` | Convert evidence into cautious claims | Make legal/appraisal/final truth assertions |
+| Report runs | `backend/app/reports/`, DB | Reproducible dossier runs (cross-run byte-identical projection proven, PR #188) | Be non-reproducible or source-version opaque |
+| Connectors | `backend/app/connectors/` | Fixture-first data acquisition | Use live APIs without approval/license review |
 
 ## Key domain objects
 
