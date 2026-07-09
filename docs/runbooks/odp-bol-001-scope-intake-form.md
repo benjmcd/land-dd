@@ -59,7 +59,7 @@ Date you made this decision, in strict ISO format `YYYY-MM-DD` (e.g. `2026-07-07
 REJECTED IF: not a parseable ISO date (blank, `TBD`, `07/07/2026`, "July 7" all fail).
 
 ### 1.6 `authority_reference` — REQUIRED
-Citation to the EXTERNAL decision record backing this answer: a signed decision document, ADR, or ticket that exists outside this repository's own inference chain. Give a locator a reviewer can independently find (document title + date + where it lives, or ticket ID).
+Citation to the EXTERNAL decision record backing this answer: a signed decision document, ADR, or ticket that exists outside this repository's own inference chain (an owner-signed, owner-merged ADR committed to docs/adr/ qualifies; an external ticket is optional corroboration). Give a locator a reviewer can independently find (document title + date + where it lives, or ticket ID).
 > Fill in: `____________________________________________`
 
 REJECTED IF: empty; OR (human review) it is repo-local inference, self-referential (cites this form), or cites only the prior review-only pursuit note — that note explicitly disclaims supplying a complete pilot-scope authority record. The code checks only non-emptiness; a reviewer checks externality. Both must pass.
@@ -118,7 +118,7 @@ REJECTED IF: empty or placeholder.
 Category label for this record. The schema allows exactly 11 values: `product_decision`, `aoi_boundary_decision`, `operator_use_case_decision`, `non_goal_review`, `jurisdiction_review`, `scope_mode_decision`, `ds017_treatment_decision`, `source_selection_policy`, `fixture_boundary_decision`, `runtime_boundary_decision`, `no_overclaim_review`. Because this ONE record bundles all 12 scope decisions (coverage is proven by `scope_decision_ids` in 2.7, not by this label), use the umbrella value:
 > Value: `product_decision` (keep unless you have a specific reason to change; if changing, pick only from the 11 values above)
 
-REJECTED IF: empty. (Known schema note: the 11-value list is not code-enforced, and no value maps 1:1 to the stop-conditions decision — stay inside the list anyway for config fidelity.)
+REJECTED IF: empty. (Known schema note: the 11-value list is not enforced by the pre-record intake evaluator, but IS enforced at recording time by `scripts/bologna_pilot_scope_authority_check.py` (EXPECTED_AUTHORITY_TYPES, exact match); and no value maps 1:1 to the stop-conditions decision — stay inside the list.)
 
 ### 2.3 `authority_reference` — REQUIRED
 Citation to the external decision record for the scope bundle. Normally the same external record as 1.6.
@@ -267,7 +267,7 @@ Each worksheet below is one of the 12 required scope decisions. For EVERY worksh
 **Question:** Is DS-017 (US commercial parcel vendor, currently blocked pending external authority) approved, deferred, removed, or substituted for this Bologna pilot? (choose one)
 **Must cite:** (1) approve, defer, remove, or substitute decision; (2) vendor/license/cost status if approval is proposed; (3) confirmation that DS-017 is not approved by Bologna inference.
 **If missing:** Source-readiness and paid/commercial data assumptions remain blocked.
-**Constraint:** DS-017 is a US-registry source unrelated to the 7 Bologna candidates; leaving this blank, or letting Bologna scope silently "inherit" DS-017 approval, fails.
+**Constraint:** DS-017 is a US-registry source unrelated to the 6 Bologna candidate sources; leaving this blank, or letting Bologna scope silently "inherit" DS-017 approval, fails.
 > Decision (approve / defer / remove / substitute): `____________________________________________`
 > Evidence cited (all applicable items, including the explicit no-inference confirmation): `____________________________________________`
 
@@ -275,7 +275,7 @@ Each worksheet below is one of the 12 required scope decisions. For EVERY worksh
 **Question:** Which candidate source IDs or categories may enter source-authority review?
 **Must cite:** (1) allowed candidate IDs or source categories; (2) owner for exact source selection; (3) required per-source rights review before promotion.
 **If missing:** Bologna source-authority intake and source-rights rows remain blocked.
-**Constraint:** this selects candidates for REVIEW ONLY — it approves nothing and grants no rights. The 7 known candidates you may name: `arpae_cartographic_portal`, `cadastral_gap`, `comune_bologna_open_data_pug_constraints`, `comune_bologna_pug_webgis`, `rer_crs_reference`, `rer_geoportale_catalog_services`, `rer_geoportale_dbtr_altimetry`.
+**Constraint:** this selects candidates for REVIEW ONLY — it approves nothing and grants no rights. The 6 known candidate sources you may name (`config/bologna_source_candidates.yaml` `candidate_id` rows): `arpae_cartographic_portal`, `comune_bologna_open_data_pug_constraints`, `comune_bologna_pug_webgis`, `rer_crs_reference`, `rer_geoportale_catalog_services`, `rer_geoportale_dbtr_altimetry`. Italian cadastral coverage is a documented GAP (`known_gaps` gap_id `italian_cadastral_cartography`, represented downstream as `cadastral_gap`) with a heightened no-owner/title/legal-access/buildability caution -- it is NOT a candidate source.
 > Decision (named IDs or categories): `____________________________________________`
 > Evidence cited (all 3 items): `____________________________________________`
 
@@ -309,7 +309,7 @@ Each worksheet below is one of the 12 required scope decisions. For EVERY worksh
 
 The automated evaluator enforces record structure/shape, all-12 scope-decision coverage (criterion 3), and the no-downstream-unlocks rule (criterion 4). A human reviewer verifies the criteria code cannot judge: external authority (criterion 1), per-decision cited evidence (criterion 2), and no bundled source/corpus/DB/report changes (criterion 5). Check every box and sign — an unchecked box means the submission is not review-ready.
 
-- [ ] My `authority_reference` (1.6 and 2.3) cites EXTERNAL owner authority — a real signed decision record, ADR, or ticket outside this repository — not repo-local inference, not this form, not the prior review-only pursuit note.
+- [ ] My `authority_reference` (1.6 and 2.3) cites EXTERNAL owner authority outside the AGENT-INFERENCE CHAIN (not necessarily outside the repository): an owner-signed, owner-merged ADR committed to docs/adr/ qualifies as the primary/sufficient record; an external owner-controlled ticket is optional. NOT repo-local inference, not this form, not the prior review-only pursuit note.
 - [ ] Every one of the 12 scope decisions in Part 3 is answered with its specific cited evidence (every "Must cite" item addressed).
 - [ ] The authority record's `scope_decision_ids` (2.7) covers every required scope decision (all 12, unedited).
 - [ ] Neither record requests any downstream unlock (`downstream_unlocks_requested` is `[]` in both 1.10 and 2.11).
