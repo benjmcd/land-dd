@@ -270,11 +270,20 @@ Justification: A decouples from B-full (Debate i), so serializing A strictly aft
 
 ---
 
-## 7. Owner decisions 2026-07-06 (relay-delivered) — Bologna-centric revision (SUPERSEDES the geography/user/timing calls in §4–§6)
+## 7. Historical relay-delivered Bologna revision
 
-The owner resolved the three "owner-only" questions this session (delivered via orchestrator handoff — relay-delivered; recorded in `state/owner-decisions.md`). These reorient the operative plan.
+> Authority warning: this section originally treated a relay as resolved owner authority.
+> That interpretation was later downgraded to pending direct ratification. Statements
+> below such as "live product line" and "nothing to build" are preserved historical
+> reasoning only; they are not current authority, status, or execution guidance.
 
-**Decision 1 — Geography = Bologna, Italy.** This *inverts* §6's "defer Bologna, NC-first." The **live product line is Bologna**. Consequences (repo-grounded):
+The relay reported three owner decisions and the historical analysis below treated them
+as operative. Current disposition is controlled by `plans/2026-07-22-program-roadmap.md`
+and the pending-ratification record in `state/owner-decisions.md`.
+
+**Reported decision 1 — Geography = Bologna, Italy.** This historically *inverted*
+§6's "defer Bologna, NC-first" and described Bologna as the live product line.
+Consequences asserted at that time:
 - The NC/flood QFREEZE-2 qualification (`qualified_domains:[flood]`, DS-002) becomes a **frozen reference / proof-of-method** — it proves the architecture end-to-end but is **not the target**. It stays frozen; no unfreeze, no change.
 - Bologna is its **own qualification line**, blocked at **ODP-BOL-001** (owner defines pilot product/AOI/scope) → ODP-BOL-002 + BSA-001 (source rights) → ODP-BOL-003 (recorded corpus) → ODP-BOL-004 (DB-backed report proof), **strict order, all owner-gated** (`task_queue` EQ-BLOCK-BOLOGNA-* + BSA-001).
 - Zero Bologna connectors/fixtures exist; the US/NC-federal connectors (FEMA/EPA/FCC/census/etc.) **do not serve Bologna**. Bologna sources are a fresh ODP-BOL-002 batch.
