@@ -1,7 +1,9 @@
 # Plan: CI shard speedup (land-dd `.github/workflows/ci.yml`)
 
 Date: 2026-07-06
-Status: PROPOSED — **CONFIRM_WITH_CONDITIONS** (see Re-check verdict). Not yet executed.
+Status: HISTORICAL / PARTIALLY EXECUTED. The proposal was confirmed with conditions;
+recs 1, 3, 5, 6, 7, and 8 landed, rec 2 is owner-held, rec 4 is optional, and rec 9 is
+deferred. `state/PROJECT_STATE.md` is the current disposition authority.
 Lane: Claude backend/app lane (CI + `scripts/verify.sh` / `scripts/verify.ps1`), per AGENTS.md fence — NOT the Codex qualification/bologna lane.
 Method: opus investigation → opus recommend → 2 fable adversarial → opus reconcile (first pass); then a SECOND re-check with inverted composition (3 opus scouts → fable plan → 2 opus adversarial → fable confirm/deny). The re-check corrected material errors in the first pass — folded in below.
 

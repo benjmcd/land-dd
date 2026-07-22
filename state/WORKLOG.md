@@ -2,6 +2,30 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-22 program-roadmap adversarial reconciliation (PR #206)
+
+- Continued in the owned `worktrees/roadmap-land` worktree on
+  `codex/forward-roadmap`, reconciled against local
+  `origin/main@26d8b1342a2d0b1cf8435b6fad7b1542d3f097ae`; the dirty root remained
+  preservation/coordination state and PR #207 was not edited.
+- Re-audited the two authorized Codex task histories, the supplied Claude export
+  (SHA-256 `B5551523937C8B1501235FC1441E6BA69BA73647FC290D68E035154973FE5EBF`),
+  live plan/task/state routing, authority and qualification controls, and the current
+  report/job/idempotency/persistence/rendering contracts.
+- Consolidated the current-vs-historical plan taxonomy, corrected current P0 vocabulary
+  to `NOT_RUN` with advancement/PASS blocked, marked the CI proposal partially executed,
+  and refreshed the top project-state routing anchor without changing the active plan.
+- Strengthened the candidate roadmap with explicit authority crosswalk, jurisdiction
+  readiness, exact report-input identity, mode/job/idempotency propagation, old-artifact
+  compatibility, immutable asset/review handling, orphan recovery, lifecycle, invalidation,
+  and qualification sequencing acceptance criteria and Mermaid flow.
+- Preserved the anti-bloat boundary: no mass plan archive, new checker, speculative
+  multi-jurisdiction framework, runtime code, schema, authority record, qualification
+  value/status, source approval, corpus capture, DB proof, or merge was performed.
+- Validate-only authority and qualification checks passed; the full default
+  `scripts/verify.ps1` gate passed with backend tests, ruff, and mypy. DB smoke was
+  explicitly skipped and is not claimed as Bologna persistence proof.
+
 ## 2026-07-06 P0 sealed-run decision packet
 
 - Continued from live `origin/main` at

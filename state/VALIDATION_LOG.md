@@ -2,6 +2,48 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-22 Program-Roadmap Adversarial Reconciliation (PR #206)
+
+**Scope:** Reconcile the program roadmap and plan routing against the two authorized
+Codex task histories, supplied Claude export, local Git/PR evidence, canonical
+authority/qualification state, the planning corpus, and the current report runtime and
+persistence contracts. Documentation/state only; no runtime, schema, authority, source,
+corpus, report execution, or qualification transition.
+
+**Commands for this gate:**
+
+```powershell
+git diff --check
+python scripts\authority_evidence_intake_check.py --summary
+python scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `git diff --check` passed before the full gate.
+- Authority intake remained honestly blocked: active task
+  `AUTH-EVIDENCE-INTAKE`; ODP-BOL-001 review-only; ODP-BOL-002/003/004 missing owner
+  answers; pilot/source authority records zero; every downstream implementation
+  boundary blocked; checker result `ok`.
+- Qualification status passed with `passed=39 not_run=2 unexpected_failed=0` and
+  derived `BLOCKED=0 NOT_RUN=21`; P0 remains `NOT_RUN` and no `PASS` was recorded.
+- Default `scripts/verify.ps1` passed in 552.9 seconds: workspace/JSON/source and
+  structural checks, qualification self-test/validation/status/change-impact/P0/backlog,
+  authority controls, backend tests, Ruff, and mypy all passed.
+- The full gate explicitly reported `db smoke skipped`; no real Bologna DB/object-store
+  round trip, mode propagation, corpus selection, immutable asset, orphan recovery,
+  operator utility, or empirical qualification was executed or proven.
+- Two independent read-only post-edit reviews found two wording defects (fragment-qualified
+  plan counting and one stale P0 sentence); both were corrected without adding tests or
+  checker families.
+
+**Residual risk:** PR #206 remains a non-authorizing candidate until reviewed and merged.
+PR #207 remains separate. Owner direction, source terms/rights, exact corpus, Bologna
+jurisdiction readiness, evidence-only report implementation, real isolated persistence,
+operator utility, lifecycle/security/recovery, and Bologna qualification all remain
+future gated work.
+
 ## 2026-07-06 DB Spine Regression (PR #188)
 
 **Scope:** Add regression coverage proving the US-MVP DB spine carries committed

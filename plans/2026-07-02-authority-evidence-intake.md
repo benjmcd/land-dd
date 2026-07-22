@@ -71,7 +71,8 @@ Make a routing-only update:
 - make `AUTH-EVIDENCE-INTAKE` the only active task;
 - keep `BSA-001` and every downstream authority task blocked until cited
   evidence exists;
-- keep qualification status at `P0 = BLOCKED`.
+- keep qualification status at `P0 = NOT_RUN`; keep P0 advancement/unblock and any
+  qualification `PASS` blocked until the required authority and empirical evidence exist.
 
 Follow-up guard under the same active posture:
 
@@ -151,8 +152,8 @@ Authority-validator consolidation under the same active posture:
   downstream blocked targets, and no-overclaim controls are visible without recording
   authority;
 - preserve existing frozen invariants: pilot/source authority records stay empty,
-  downstream unlocks stay disabled, qualification `P0` stays `BLOCKED`, and all other
-  qualification rows stay `NOT_RUN`.
+  downstream unlocks stay disabled, qualification `P0` stays `NOT_RUN` with advancement
+  blocked, and all other qualification rows stay `NOT_RUN`.
 
 Rejected alternatives:
 
@@ -310,11 +311,11 @@ Pass/fail requirements:
   validated config without recording authority or unlocking work.
 - 2026-07-02: Synchronized routing/state wording after PR #183 so the merged
   reference-contract reporting modes are recorded as complete while
-  `AUTH-EVIDENCE-INTAKE`, external authority requirements, and `P0 = BLOCKED` remain
-  unchanged.
+  `AUTH-EVIDENCE-INTAKE`, external authority requirements, and the P0-advancement
+  blocker remain unchanged.
 - 2026-07-04: Synchronized routing/state wording after PR #95 so the checkout v7
   dependency-policy closeout is recorded as complete while `AUTH-EVIDENCE-INTAKE`,
-  external authority requirements, and `P0 = BLOCKED` remain unchanged.
+  external authority requirements, and the P0-advancement blocker remain unchanged.
 - 2026-07-04: Added side-effect-free synthetic submitted-reference evaluation to the
   production authority evidence reference checker so future cited-reference shapes can
   fail closed in memory while current references, downstream unlocks, and all authority
@@ -325,4 +326,4 @@ Pass/fail requirements:
 - 2026-07-06: Consolidated the overlapping authority-validator helper/reporting
   plumbing into `scripts/authority_check_lib.py` and routed pilot-scope authority
   summary/JSON output through the shared helper while preserving empty authority
-  records, blocked downstream updates, and `P0 = BLOCKED`.
+  records, blocked downstream updates, and blocked P0 advancement.
