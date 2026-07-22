@@ -1,13 +1,27 @@
-# Forward Roadmap — What Comes Next For The Whole Project
+# Forward Roadmap - Superseded Analysis
 
-Status: `living-analysis` (Claude initial pass 2026-07-06; Opus adversarial pass appended below)
-Basis: live `origin/main@26d8b134`. Evidence: `docs/IMPLEMENTATION_READINESS.md`,
+Status: `superseded`
+
+Superseded by: `plans/2026-07-22-program-roadmap.md`
+
+Reason: this file accumulated an initial NC-first recommendation, an adversarial
+reordering, and a later Bologna-primary revision as competing operative sections. It is
+preserved as the reasoning trail for PR #206, but it is not the current program roadmap
+or implementation authority. The successor consolidates the valid evidence, separates
+landed facts from pending owner direction, and supplies one acceptance-gated sequence.
+
+---
+
+## Preserved historical analysis
+
+Historical status: `living-analysis` (Claude initial pass 2026-07-06; adversarial pass appended below)
+Historical basis: `origin/main@26d8b134`. Evidence: `docs/IMPLEMENTATION_READINESS.md`,
 `state/p0-sealed-run-decision-packet.md`, `tasks/task_queue.yaml`,
 `state/EMPIRICAL_QUALIFICATION_STATUS.yaml`, `backend/app/connectors/`,
 `state/owner-decisions.md`.
 
-This file is a standalone, maintained analysis. Findings are appended/updated as they land.
-It records **strategy**, not implementation authority — it changes no qualification value/status.
+The material below is frozen historical reasoning. Do not append new operative findings
+here; maintain `plans/2026-07-22-program-roadmap.md` instead.
 
 ---
 
