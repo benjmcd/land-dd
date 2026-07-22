@@ -2,6 +2,50 @@
 
 Append concise entries. Do not rely on chat history.
 
+## 2026-07-22 program-roadmap adversarial reconciliation (PR #206)
+
+- Continued in the owned `worktrees/roadmap-land` worktree on
+  `codex/forward-roadmap`, reconciled against local
+  `origin/main@26d8b1342a2d0b1cf8435b6fad7b1542d3f097ae`; the dirty root remained
+  preservation/coordination state and PR #207 was not edited.
+- Re-audited the two authorized Codex task histories, the supplied Claude export
+  (SHA-256 `B5551523937C8B1501235FC1441E6BA69BA73647FC290D68E035154973FE5EBF`),
+  live plan/task/state routing, authority and qualification controls, and the current
+  report/job/idempotency/persistence/rendering contracts.
+- Consolidated the current-vs-historical plan taxonomy, corrected current P0 vocabulary
+  to `NOT_RUN` with advancement/PASS blocked, marked the CI proposal partially executed,
+  and refreshed the top project-state routing anchor without changing the active plan.
+- Strengthened the candidate roadmap with explicit authority crosswalk, jurisdiction
+  readiness, exact report-input identity, mode/job/idempotency propagation, old-artifact
+  compatibility, immutable asset/review handling, orphan recovery, lifecycle, invalidation,
+  and qualification sequencing acceptance criteria and Mermaid flow.
+- Preserved the anti-bloat boundary: no mass plan archive, new checker, speculative
+  multi-jurisdiction framework, runtime code, schema, authority record, qualification
+  value/status, source approval, corpus capture, DB proof, or merge was performed.
+- Validate-only authority and qualification checks passed; the full default
+  `scripts/verify.ps1` gate passed with backend tests, ruff, and mypy. DB smoke was
+  explicitly skipped and is not claimed as Bologna persistence proof.
+- A renewed shortest-path audit separated the landed NC fixture rehearsal (`U0`), one
+  bounded Bologna first use (`U1`), maintained private operation (`U2`), and optional
+  interpreted/qualified scope (`U3`) so lifecycle and qualification work do not gate
+  initial operator learning.
+- Repository evidence exposed four material planning defects: ODP2/3 fan out over all
+  seven candidates despite the one/two-source target; ODP4 requires proof artifacts before
+  authorizing their creation; the production jurisdiction checklist includes generated-
+  sample items; and the earlier plan put generic async job/retry compatibility before U1.
+- Corrected the roadmap to use selected-set ODP2/3 gates, a prospective/result ODP4
+  lifecycle, staged jurisdiction review, server-resolved corpus/input identity, executable
+  field allowlist/denylist projection, one bounded synchronous local route, and explicit
+  `FIRST_USE_READY`/`FIRST_USE_COMPLETE` evidence. Generic async expansion, automated
+  reconciliation, maintenance, claims, and qualification remain conditional after U1.
+- Separated an authorized recorded source-failure/no-data degraded result, which remains
+  visible with unaffected evidence, from manifest/tamper/persistence integrity failures,
+  which must produce no successful report.
+- Added an explicit warning to the superseded July 7 analysis so its relay-era "live
+  product line" and "nothing to build" language cannot be mistaken for current authority.
+  No runtime, schema, authority record, source/corpus data, test family, or new gate family
+  was added by this correction.
+
 ## 2026-07-06 P0 sealed-run decision packet
 
 - Continued from live `origin/main` at

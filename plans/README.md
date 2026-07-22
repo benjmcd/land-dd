@@ -1,12 +1,25 @@
 # Plans
 
-Active implementation plans live here. Keep them executable and narrow.
+This directory contains active execution plans, completed or historical plans,
+strategic analyses, and roadmap candidates. File presence does not confer active
+authority.
 
-Latest completed standalone routing plan:
-`plans/2026-07-02-post-geology-routing.md`.
+## Current routing (2026-07-22)
 
-Current routing plan:
-`plans/2026-07-02-authority-evidence-intake.md`.
+- Active execution plan: `plans/2026-07-02-authority-evidence-intake.md`.
+- Machine-readable task and plan lifecycle: `tasks/task_queue.yaml`; it is the
+  authority for which task is active, blocked, or done.
+- Current strategic roadmap candidate: `plans/2026-07-22-program-roadmap.md`. It
+  consolidates progress, choices, risks, and the future sequence, but it does not
+  record owner/source/corpus/report authority or change qualification state.
+- Superseded strategic analysis: `plans/2026-07-07-forward-roadmap.md`; it remains at
+  its stable path for referenced history and points to the current candidate.
+- Latest completed standalone routing plan:
+  `plans/2026-07-02-post-geology-routing.md`.
+
+The dated entries below are retained history. Any use of "current" inside an older
+entry means current at the time of that entry unless the routing block above says
+otherwise.
 
 `AUTH-EVIDENCE-INTAKE` is the active authority-evidence routing posture after
 `POST-GEOLOGY-ROUTING` merged through PR #173, authority-evidence routing merged
@@ -414,4 +427,7 @@ Lane 1 routing artifacts remain `state/reconciliation-inventory.md`,
 source for initial retain/rework/defer/archive/discard decisions; current residual
 classification is in `state/residual-reconciliation.md`.
 
-Superseded plans should be moved to `plans/archive/` with a note at the top.
+Superseded plans may remain at stable paths when task, state, or historical references
+depend on them, but they must say what supersedes them near the top. Move a plan to
+`plans/archive/` only in a deliberate reference-update slice; do not mass-move plans
+for cosmetic normalization.

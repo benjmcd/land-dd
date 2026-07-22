@@ -2,6 +2,114 @@
 
 Record commands, results, and residual risk.
 
+## 2026-07-22 Program-Roadmap Adversarial Reconciliation (PR #206)
+
+**Scope:** Reconcile the program roadmap and plan routing against the two authorized
+Codex task histories, supplied Claude export, local Git/PR evidence, canonical
+authority/qualification state, the planning corpus, and the current report runtime and
+persistence contracts. Documentation/state only; no runtime, schema, authority, source,
+corpus, report execution, or qualification transition.
+
+**Commands for this gate:**
+
+```powershell
+git diff --check
+python scripts\authority_evidence_intake_check.py --summary
+python scripts\qualification_status_check.py --root .
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- `git diff --check` passed before the full gate.
+- Authority intake remained honestly blocked: active task
+  `AUTH-EVIDENCE-INTAKE`; ODP-BOL-001 review-only; ODP-BOL-002/003/004 missing owner
+  answers; pilot/source authority records zero; every downstream implementation
+  boundary blocked; checker result `ok`.
+- Qualification status passed with `passed=39 not_run=2 unexpected_failed=0` and
+  derived `BLOCKED=0 NOT_RUN=21`; P0 remains `NOT_RUN` and no `PASS` was recorded.
+- Default `scripts/verify.ps1` passed in 552.9 seconds: workspace/JSON/source and
+  structural checks, qualification self-test/validation/status/change-impact/P0/backlog,
+  authority controls, backend tests, Ruff, and mypy all passed.
+- The full gate explicitly reported `db smoke skipped`; no real Bologna DB/object-store
+  round trip, mode propagation, corpus selection, immutable asset, orphan recovery,
+  operator utility, or empirical qualification was executed or proven.
+- Two independent read-only post-edit reviews found two wording defects (fragment-qualified
+  plan counting and one stale P0 sentence); both were corrected without adding tests or
+  checker families.
+
+**Residual risk:** PR #206 remains a non-authorizing candidate until reviewed and merged.
+PR #207 remains separate. Owner direction, source terms/rights, exact corpus, Bologna
+jurisdiction readiness, evidence-only report implementation, real isolated persistence,
+operator utility, lifecycle/security/recovery, and Bologna qualification all remain
+future gated work.
+
+### Renewed first-use critical-path correction
+
+**Scope:** Re-audit whether the candidate sequence is the shortest safe route to actual
+private operator use without universal TDD, generic infrastructure expansion, duplicate
+gate families, production-checklist cycles, or premature maintenance/qualification work.
+
+**Repo-confirmed defects:**
+
+- ODP2 requires full source-authority records for all seven `candidate_review_ids`, and
+  ODP3 catalogs the same seven, despite the candidate U1 target being one or two selected
+  datasets.
+- ODP4 requires an actual DB report-run ID, evidence rows, and artifact references while
+  prohibiting DB runs/artifacts until a response is later recorded; its claim-link wording
+  also conflicts with evidence-only zero-claim semantics.
+- The jurisdiction checklist includes generated-sample and production-geography items,
+  so treating the whole checklist as pre-capture would create a dependency cycle.
+- The current report API loads area-wide approved evidence and the generic async job path
+  has no evaluation mode. Broadly modifying every job/retry/idempotency path before U1
+  would add avoidable work; accepting caller-selected evidence would preserve contamination
+  risk.
+- Current field-exposure controls do not establish that exact Bologna allowlists/denylists
+  survive normalization and both output artifacts.
+- Earlier wording conflated an authorized recorded source-failure/no-data degraded run
+  with manifest, tamper, or persistence failure. The former must remain visible with
+  unaffected evidence; the latter must produce no successful report.
+
+**Corrections validated as planning only:** U0-U3 maturity levels; selected-set ODP2/3;
+prospective/result ODP4 phases in the existing gate family; staged jurisdiction review;
+server-resolved `corpus_id`/input manifest; executable default-deny field projection; one
+bounded synchronous U1 route with generic evidence-only rejection; bounded failure cleanup;
+distinct recorded-degradation versus integrity-failure outcomes; and distinct
+`FIRST_USE_READY`/non-implementer `FIRST_USE_COMPLETE` evidence.
+
+**Commands:**
+
+```powershell
+git diff --check
+git diff --name-only --diff-filter=D
+& 'C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe' .\scripts\authority_evidence_intake_check.py --summary
+& 'C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe' .\scripts\qualification_status_check.py --root .
+& 'C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe' .\scripts\bologna_odp2_source_rights_response_gate_check.py
+& 'C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe' .\scripts\bologna_odp3_corpus_response_gate_check.py
+& 'C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe' .\scripts\bologna_odp4_db_report_proof_response_gate_check.py
+.\scripts\verify.ps1
+```
+
+**Results:**
+
+- Diff whitespace and no-deletion checks passed.
+- The shell-default and bundled Python runtimes lacked PyYAML; no dependency was installed.
+  The existing Python 3.11 project runtime had PyYAML 6.0.2 and ran all five focused
+  validators successfully.
+- Authority remained blocked with ODP1 review-only, ODP2/3/4 missing, zero pilot/source
+  authority records, and no downstream implementation unlock.
+- Qualification remained `passed=39 not_run=2 unexpected_failed=0`, derived
+  `BLOCKED=0 NOT_RUN=21`; P0 remained `NOT_RUN`.
+- Three independent read-only reviews plus the local audit converged on the bounded U1
+  path. Review findings were reconciled against repository files before inclusion.
+- Full default `verify.ps1` passed in 553.3 seconds, including backend tests, Ruff, and
+  mypy (`400 source files`). DB smoke was explicitly skipped.
+
+**Non-claims:** This pass did not amend the live ODP gates, implement the proposed route,
+verify external source terms, capture a Bologna corpus, execute Postgres/object-store
+proof, run a non-implementer workflow, establish utility, change authority, or change any
+qualification value. Those are acceptance-gated future steps, not results of green docs CI.
+
 ## 2026-07-06 DB Spine Regression (PR #188)
 
 **Scope:** Add regression coverage proving the US-MVP DB spine carries committed

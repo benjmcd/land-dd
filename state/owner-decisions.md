@@ -120,3 +120,21 @@ Explicit exclusions:
 - no wetland jurisdiction, septic approval, water rights, mineral rights, local flood ordinance, storm-surge, climate projection, or private/local source qualification;
 - no candidate-generation, financial modeling, decision-relevant AI, commercial economics, valuation, lending, insurance, investment, protected-class, demographic, neighborhood desirability, or residential steering feature qualification;
 - P0 remains not-PASS until a separate sealed evidence run and result file satisfy the empirical qualification protocol.
+
+## 2026-07-06 Pending product-direction context (relay-delivered; not ratified)
+
+reported_owner=benjmcd
+provenance=orchestrator handoff attributed these statements to the owner on 2026-07-06; no separately committed owner-authored/signed artifact or explicit authenticated ratification is present in this branch
+authority_status=PENDING_DIRECT_RATIFICATION
+
+The relay reported the following candidate direction. Preserve it for owner review, but
+do not treat it as an accepted owner decision or as authority to supersede current main:
+
+1. Candidate geography direction: Bologna, Italy becomes the live product line; the NC/flood QFREEZE-2 qualification remains a frozen reference/proof-of-method; Bologna follows its own owner-gated ODP-BOL-001 -> ODP-BOL-002/BSA-001 -> ODP-BOL-003 -> ODP-BOL-004 line.
+2. Candidate user boundary: private/operator use only; hosted production, Level 10, OAuth/OIDC, registry publication, billing, external secret-manager, and arbitrary-parcel external intake remain outside the candidate current target. Existing hosted/Level-10 blockers and checkers remain intact.
+3. Candidate P0 timing: defer the reviewer/vault/adjudicator/reproducer bundle and any speculative A-prep until a Bologna target approaches qualification freeze. This timing was an orchestrator determination based on the reported direction, not an independently owner-authored decision.
+
+These pending statements grant no product-direction authority, qualification unfreeze,
+source approval, Bologna scope/rights/corpus/report authority, P0 run/PASS, or
+Level-10/hosted authority. If the owner explicitly ratifies the exact statements, record
+that authenticated action and stable locator before changing this section to accepted.

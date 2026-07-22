@@ -1,18 +1,21 @@
 # Project State
 
-## Current checkpoint (2026-07-06 CI hardening + provenance correction)
+## Current checkpoint (2026-07-22 program-roadmap reconciliation)
 
-This checkpoint is based on live `origin/main`
-`84e87a71b7f749310bf6ef037b69e6753da9f444`, incorporating the PR #202-#204
-provenance-correction and doc-currency arc after PR #201 delivered the
-`CI_DB_SLICE_ONLY` verify/db-verify de-duplication guard on top of the 2026-07-06
-documentation and CI-hardening batch. It supersedes the earlier `070e6ebc` PR #192
-checkpoint as the top routing anchor while preserving all older checkpoint sections below.
+This documentation checkpoint was reconciled against the local `origin/main` ref
+`26d8b1342a2d0b1cf8435b6fad7b1542d3f097ae` before the current PR #206 update. It
+refreshes routing and provenance only: `AUTH-EVIDENCE-INTAKE` remains the active
+execution posture, and `plans/2026-07-22-program-roadmap.md` remains a strategic
+candidate rather than owner, source, corpus, report, runtime, release, or qualification
+authority. It supersedes the older `84e87a71` checkpoint as the top routing anchor while
+preserving the historical checkpoint sections below.
 
 - **Current implementation plan**:
   `plans/2026-07-02-authority-evidence-intake.md` remains the active authority-evidence
-  posture. The CI-hardening execution details live in
-  `plans/2026-07-06-ci-shard-speedup.md`.
+  posture. The partially executed CI-hardening proposal and its disposition live in
+  `plans/2026-07-06-ci-shard-speedup.md` and this checkpoint. The strategic progress,
+  options, risks, and future sequence are consolidated in the non-authorizing candidate
+  `plans/2026-07-22-program-roadmap.md`.
 - **Known boundaries to preserve**:
   The merged CI-hardening and documentation-refresh batch is documentation/process/CI
   plumbing only. It does not record owner/source/Bologna authority, approve DS-017,
